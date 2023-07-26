@@ -22,8 +22,7 @@
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/infra/common/secp256k1_context.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/crypto/ecdsa_signature.hpp>
 #include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/rlpx/crypto/xor.hpp>
 
@@ -31,53 +30,20 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-static Bytes sign(ByteView data, ByteView private_key) {
-    SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
-    secp256k1_ecdsa_recoverable_signature signature;
-    bool ok = ctx.sign_recoverable(&signature, data, private_key);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::sign failed to sign an AuthMessage");
-    }
-
-    auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
-    signature_data.push_back(recovery_id);
-    return signature_data;
-}
-
-static common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id) {
-    if (signature_and_recovery_id.empty()) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: AuthMessage signature is empty");
-    }
-    uint8_t recovery_id = signature_and_recovery_id.back();
-    ByteView signature_data = {signature_and_recovery_id.data(), signature_and_recovery_id.size() - 1};
-
-    SecP256K1Context ctx;
-    secp256k1_ecdsa_recoverable_signature signature;
-    bool ok = ctx.parse_recoverable_signature(&signature, signature_data, recovery_id);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to parse an AuthMessage signature");
-    }
-
-    secp256k1_pubkey public_key;
-    ok = ctx.recover_signature_public_key(&public_key, &signature, data);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to recover a public key from an AuthMessage signature");
-    }
-    return common::EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
-}
+using namespace silkworm::sentry::crypto::ecdsa_signature;
 
 const uint8_t AuthMessage::version = 4;
 
 AuthMessage::AuthMessage(
-    const common::EccKeyPair& initiator_key_pair,
-    common::EccPublicKey recipient_public_key,
-    const common::EccKeyPair& ephemeral_key_pair)
+    const EccKeyPair& initiator_key_pair,
+    EccPublicKey recipient_public_key,
+    const EccKeyPair& ephemeral_key_pair)
     : initiator_public_key_(initiator_key_pair.public_key()),
       recipient_public_key_(std::move(recipient_public_key)),
       ephemeral_public_key_(ephemeral_key_pair.public_key()) {
     Bytes shared_secret = EciesCipher::compute_shared_secret(recipient_public_key_, initiator_key_pair.private_key());
 
-    nonce_ = common::random_bytes(shared_secret.size());
+    nonce_ = random_bytes(shared_secret.size());
 
     // shared_secret ^= nonce_
     crypto::xor_bytes(shared_secret, nonce_);
@@ -85,7 +51,7 @@ AuthMessage::AuthMessage(
     signature_ = sign(shared_secret, ephemeral_key_pair.private_key());
 }
 
-AuthMessage::AuthMessage(ByteView data, const common::EccKeyPair& recipient_key_pair)
+AuthMessage::AuthMessage(ByteView data, const EccKeyPair& recipient_key_pair)
     : initiator_public_key_(Bytes{}),
       recipient_public_key_(recipient_key_pair.public_key()),
       ephemeral_public_key_(Bytes{}) {
@@ -115,7 +81,7 @@ void AuthMessage::init_from_rlp(ByteView data) {
     if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
         throw DecodingException(result.error(), "Failed to decode AuthMessage RLP");
     }
-    initiator_public_key_ = common::EccPublicKey::deserialize(public_key_data);
+    initiator_public_key_ = EccPublicKey::deserialize(public_key_data);
 }
 
 Bytes AuthMessage::serialize_size(size_t body_size) {

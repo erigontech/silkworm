@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/node/test/context.hpp>
 
@@ -27,7 +27,7 @@ namespace silkworm::execution {
 namespace asio = boost::asio;
 
 TEST_CASE("execution::LocalClient") {
-    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
     test::Context context;
     context.add_genesis_data();
     context.commit_txn();

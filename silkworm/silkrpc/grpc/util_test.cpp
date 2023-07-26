@@ -18,13 +18,13 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 
 TEST_CASE("print grpc::Status", "[silkrpc][grpc][util]") {
-    CHECK_NOTHROW(test::null_stream() << grpc::Status::OK);
-    CHECK_NOTHROW(test::null_stream() << grpc::Status::CANCELLED);
+    CHECK_NOTHROW(test_util::null_stream() << grpc::Status::OK);
+    CHECK_NOTHROW(test_util::null_stream() << grpc::Status::CANCELLED);
 }
 
 }  // namespace silkworm

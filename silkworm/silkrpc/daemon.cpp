@@ -255,11 +255,14 @@ void Daemon::add_shared_services() {
     }
 }
 
-void Daemon::add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend) {
+void Daemon::add_backend_services(std::vector<std::unique_ptr<ethbackend::BackEnd>>&& backends) {
+    ensure(backends.size() == settings_.context_pool_settings.num_contexts,
+           "Daemon::add_backend_service: number of backends must be equal to the number of contexts");
+
     // Add the BackEnd state to each execution context
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
-        add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));
+        add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backends[i]));
     }
 }
 

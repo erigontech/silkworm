@@ -23,7 +23,7 @@ namespace silkworm::sentry::rlpx::auth {
 
 class EciesCipher {
   public:
-    using PublicKey = common::EccPublicKey;
+    using PublicKey = EccPublicKey;
     using PublicKeyView = const PublicKey&;
     using PrivateKeyView = ByteView;
 

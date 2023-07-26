@@ -29,8 +29,8 @@
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/sentry/api/api_common/peer_event.hpp>
-#include <silkworm/sentry/api/api_common/peer_info.hpp>
+#include <silkworm/sentry/api/common/peer_event.hpp>
+#include <silkworm/sentry/api/common/peer_info.hpp>
 #include <silkworm/sentry/api/router/peer_call.hpp>
 #include <silkworm/sentry/api/router/peer_events_call.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
@@ -64,7 +64,7 @@ class PeerManagerApi : public PeerManagerObserver {
         return peer_count_calls_channel_;
     }
 
-    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::api_common::PeerInfos>>>& peers_calls_channel() {
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::PeerInfos>>>& peers_calls_channel() {
         return peers_calls_channel_;
     }
 
@@ -72,7 +72,7 @@ class PeerManagerApi : public PeerManagerObserver {
         return peer_calls_channel_;
     }
 
-    Channel<std::optional<common::EccPublicKey>>& peer_penalize_calls_channel() {
+    Channel<std::optional<EccPublicKey>>& peer_penalize_calls_channel() {
         return peer_penalize_calls_channel_;
     }
 
@@ -96,20 +96,20 @@ class PeerManagerApi : public PeerManagerObserver {
     PeerManager& peer_manager_;
 
     Channel<std::shared_ptr<concurrency::AwaitablePromise<size_t>>> peer_count_calls_channel_;
-    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::api_common::PeerInfos>>> peers_calls_channel_;
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::PeerInfos>>> peers_calls_channel_;
     Channel<api::router::PeerCall> peer_calls_channel_;
-    Channel<std::optional<common::EccPublicKey>> peer_penalize_calls_channel_;
+    Channel<std::optional<EccPublicKey>> peer_penalize_calls_channel_;
     Channel<api::router::PeerEventsCall> peer_events_calls_channel_;
 
     struct Subscription {
-        std::shared_ptr<Channel<api::api_common::PeerEvent>> events_channel;
+        std::shared_ptr<Channel<api::PeerEvent>> events_channel;
         std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;
     };
 
     std::list<Subscription> events_subscriptions_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     concurrency::TaskGroup events_unsubscription_tasks_;
-    Channel<api::api_common::PeerEvent> peer_events_channel_;
+    Channel<api::PeerEvent> peer_events_channel_;
 };
 
 }  // namespace silkworm::sentry

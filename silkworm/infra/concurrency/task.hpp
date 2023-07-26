@@ -25,7 +25,11 @@
 /// So that we can write Task<void> foo(); instead of concurrency::Task<void> foo();
 namespace silkworm {
 
+//! Asynchronous task returned by any coroutine, i.e. asynchronous operation
 template <typename T>
 using Task = boost::asio::awaitable<T>;
+
+//! Namespace for the current coroutine types
+namespace ThisTask = boost::asio::this_coro;
 
 }  // namespace silkworm

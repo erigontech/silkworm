@@ -20,9 +20,10 @@
 #include <iostream>
 
 namespace silkworm {
+
 void abort_due_to_assertion_failure(char const* expr, char const* file, long line) {
-    std::cerr << "Assert failed: " << expr << " "
-              << "Source: " << file << ", line " << line;
+    std::cerr << "Assert failed: " << expr << " Source: " << file << ", line " << line << "\n";
     std::abort();
 }
+
 }  // namespace silkworm

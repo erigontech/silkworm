@@ -21,7 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 
 namespace silkworm::succinct {
@@ -68,7 +68,7 @@ static void test_trees(GolombRiceVector& v, const Uint64Sequence& keys, uint64_t
 }
 
 TEST_CASE("GolombRiceVector", "[silkworm][recsplit][golomb_rice]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     const std::vector<std::size_t> golomb_params{0, 1, 2, 3, 4, 5, 6};
     for (std::size_t i{0}; i < golomb_params.size(); ++i) {

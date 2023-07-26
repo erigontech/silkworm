@@ -39,7 +39,7 @@ struct Settings {
 
     std::string api_address{"127.0.0.1:9091"};
 
-    // RLPx TCP port
+    // RLPx TCP port and disc v4 UDP port
     uint16_t port{30303};
 
     nat::NatOption nat;
@@ -51,7 +51,9 @@ struct Settings {
 
     std::optional<std::variant<std::filesystem::path, Bytes>> node_key;
 
-    std::vector<common::EnodeUrl> static_peers;
+    std::vector<EnodeUrl> static_peers;
+
+    bool no_discover{true};
 
     size_t max_peers{100};
 };

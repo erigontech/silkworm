@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/test/context.hpp>
 
@@ -100,17 +100,17 @@ void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
 }
 
 TEST_CASE("collect_and_default_load") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_move") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr, false);
 }
 
 TEST_CASE("collect_and_load") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;

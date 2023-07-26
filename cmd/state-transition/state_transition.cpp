@@ -27,6 +27,7 @@
 
 #include "expected_state.hpp"
 #include "silkworm/core/common/cast.hpp"
+#include "silkworm/core/common/util.hpp"
 #include "silkworm/core/execution/execution.hpp"
 #include "silkworm/core/protocol/param.hpp"
 #include "silkworm/core/protocol/rule_set.hpp"
@@ -179,7 +180,7 @@ std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std
 
     auto private_key_bytes = from_hex(private_key).value();
 
-    sentry::common::EccKeyPair pair = sentry::common::EccKeyPair(private_key_bytes);
+    auto pair = sentry::EccKeyPair(private_key_bytes);
 
     uint8_t out[kAddressLength];
     auto public_key_hash = keccak256(pair.public_key().serialized());
@@ -206,7 +207,7 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
     } else {
-        txn.type = TransactionType::kEip1559;
+        txn.type = TransactionType::kDynamicFee;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxFeePerGas").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxPriorityFeePerGas").get<std::string>());
     }
@@ -249,7 +250,7 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
         }
 
         if (txn.type == TransactionType::kLegacy) {
-            txn.type = TransactionType::kEip2930;
+            txn.type = TransactionType::kAccessList;
         }
     }
 
@@ -336,7 +337,7 @@ void StateTransition::run() {
             auto pre_block_validation = ruleSet->pre_validate_block_body(block, *state);
             auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
             auto pre_txn_validation = protocol::pre_validate_transaction(txn, rev, config.chain_id, block.header.base_fee_per_gas, block.header.data_gas_price());
-            auto txn_validation = processor.validate_transaction(txn);
+            auto txn_validation = protocol::validate_transaction(txn, processor.evm().state(), processor.available_gas());
 
             // std::cout << "pre: " << std::endl;
             // state->print_state_root_hash();

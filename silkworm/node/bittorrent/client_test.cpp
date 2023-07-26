@@ -35,7 +35,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 
@@ -154,7 +154,7 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 }
 
 TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};
@@ -162,7 +162,9 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
 
     SECTION("no info hash") {
         BitTorrentClient client{settings};
-        CHECK_NOTHROW(client.execute_loop());
+        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        CHECK_NOTHROW(client.stop());
+        client_thread.join();
     }
 
     SECTION("invalid info hash") {
@@ -183,7 +185,7 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
 }
 
 TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};
@@ -192,15 +194,12 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
 
     SECTION("empty magnet file") {
         BitTorrentClient client{settings};
-        CHECK_NOTHROW(client.execute_loop());
+        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        CHECK_NOTHROW(client.stop());
+        client_thread.join();
     }
 
-    SECTION("empty magnet file on separate thread") {
-        BitTorrentClient client{settings};
-        std::thread{[&client]() { client.execute_loop(); }}.join();
-    }
-
-    SECTION("nonempty magnet file on separate thread") {
+    SECTION("nonempty magnet file") {
         repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
         BitTorrentClient client{settings};
@@ -209,7 +208,7 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
         client_thread.join();
     }
 
-    SECTION("nonempty magnet file w/ startup verification on separate thread") {
+    SECTION("nonempty magnet file w/ startup verification") {
         repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
         settings.verify_on_startup = true;
@@ -232,12 +231,6 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
     }
 
     SECTION("after empty execution loop") {
-        BitTorrentClient client{settings};
-        client.execute_loop();
-        CHECK_NOTHROW(client.stop());
-    }
-
-    SECTION("after empty execution loop on separate thread") {
         BitTorrentClient client{settings};
         std::thread execution_thread{[&client]() { client.execute_loop(); }};
         CHECK_NOTHROW(client.stop());
@@ -286,7 +279,7 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
 }
 
 TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};

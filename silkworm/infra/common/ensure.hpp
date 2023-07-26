@@ -23,7 +23,7 @@ namespace silkworm {
 
 //! Ensure that condition is met, otherwise raise a logic error with specified message
 inline void ensure(bool condition, const std::string& message) {
-    if (!condition) {
+    if (!condition) [[unlikely]] {
         throw std::logic_error(message);
     }
 }
@@ -31,6 +31,18 @@ inline void ensure(bool condition, const std::string& message) {
 //! Similar to \code ensure with emphasis on invariant violation
 inline void ensure_invariant(bool condition, const std::string& message) {
     ensure(condition, "Invariant violation: " + message);
+}
+
+//! Similar to \code ensure with emphasis on pre-condition violation
+inline void ensure_pre_condition(bool condition, const std::string& message) {
+    if (!condition) [[unlikely]] {
+        throw std::invalid_argument("Pre-condition violation: " + message);
+    }
+}
+
+//! Similar to \code ensure with emphasis on post-condition violation
+inline void ensure_post_condition(bool condition, const std::string& message) {
+    ensure(condition, "Post-condition violation: " + message);
 }
 
 }  // namespace silkworm

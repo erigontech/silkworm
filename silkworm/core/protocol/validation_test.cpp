@@ -18,6 +18,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+
 namespace silkworm::protocol {
 
 TEST_CASE("Validate transaction types") {
@@ -41,7 +44,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = TransactionType::kEip2930;
+    txn.type = TransactionType::kAccessList;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas, data_gas_price) !=
@@ -49,7 +52,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas, data_gas_price) !=
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = TransactionType::kEip1559;
+    txn.type = TransactionType::kDynamicFee;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas, data_gas_price) ==
@@ -63,7 +66,7 @@ TEST_CASE("Validate max_fee_per_gas") {
     const std::optional<intx::uint256> data_gas_price{std::nullopt};
 
     Transaction txn;
-    txn.type = TransactionType::kEip1559;
+    txn.type = TransactionType::kDynamicFee;
 
     txn.max_priority_fee_per_gas = 500'000'000;
     txn.max_fee_per_gas = 700'000'000;
@@ -104,6 +107,22 @@ TEST_CASE("Validate withdrawals_root") {
         };
         CHECK(compute_withdrawals_root(body) == 0xc32381c919dad80afe8fe0df79460418e350725a63f67c55b27ee168ef464e5d_bytes32);
     }
+}
+
+TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
+    const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
+
+    Transaction txn{test::sample_transactions()[0]};
+    txn.nonce = 0;
+    txn.from = sender;
+
+    InMemoryState state;
+    IntraBlockState ibs{state};
+
+    ibs.add_to_balance(sender, 10 * kEther);
+    ibs.set_code(sender, *from_hex("B0B0FACE"));
+
+    CHECK(validate_transaction(txn, ibs, UINT64_MAX) == ValidationResult::kSenderNoEOA);
 }
 
 }  // namespace silkworm::protocol

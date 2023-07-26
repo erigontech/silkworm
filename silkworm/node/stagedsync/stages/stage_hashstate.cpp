@@ -66,7 +66,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
             txn->clear_map(db::table::kHashedStorage.name);
             log::Info(log_prefix_, {"clearing", db::table::kHashedCodeHash.name});
             txn->clear_map(db::table::kHashedCodeHash.name);
-            txn.commit();
+            txn.commit_and_renew();
 
             success_or_throw(hash_from_plainstate(txn));
             collector_->clear();
@@ -86,7 +86,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
 
         throw_if_stopping();
         db::stages::write_stage_progress(txn, db::stages::kHashStateKey, execution_stage_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -142,7 +142,7 @@ Stage::Result HashState::unwind(db::RWTxn& txn) {
 
         throw_if_stopping();
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

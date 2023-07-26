@@ -42,7 +42,7 @@ TEST_CASE("HeadersStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
-        db::RWTxn tx(context.env());
+        db::RWTxnManaged tx(context.env());
 
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -75,7 +75,7 @@ TEST_CASE("HeadersStage - data model") {
         // check db content
         // REQUIRE(db::read_head_header_hash(tx) == header1_hash);
         REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
-        REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number);
+        // REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
     }
 
     /* status:
@@ -85,7 +85,7 @@ TEST_CASE("HeadersStage - data model") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
-        db::RWTxn tx(context.env());
+        db::RWTxnManaged tx(context.env());
 
         // starting from an initial status
         auto header0 = db::read_canonical_header(tx, 0);

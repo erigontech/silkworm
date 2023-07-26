@@ -24,7 +24,7 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
-#include <silkworm/sentry/api/api_common/peer_filter.hpp>
+#include <silkworm/sentry/api/common/peer_filter.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
 
@@ -32,11 +32,11 @@ namespace silkworm::sentry::api::router {
 
 class SendMessageCall final {
   public:
-    using PeerKeys = std::vector<sentry::common::EccPublicKey>;
+    using PeerKeys = std::vector<sentry::EccPublicKey>;
 
     SendMessageCall(
-        sentry::common::Message message,
-        api_common::PeerFilter peer_filter,
+        sentry::Message message,
+        PeerFilter peer_filter,
         boost::asio::any_io_executor& executor)
         : message_(std::move(message)),
           peer_filter_(std::move(peer_filter)),
@@ -44,8 +44,8 @@ class SendMessageCall final {
 
     SendMessageCall() = default;
 
-    [[nodiscard]] const sentry::common::Message& message() const { return message_; }
-    [[nodiscard]] const api_common::PeerFilter& peer_filter() const { return peer_filter_; }
+    [[nodiscard]] const sentry::Message& message() const { return message_; }
+    [[nodiscard]] const PeerFilter& peer_filter() const { return peer_filter_; }
 
     Task<PeerKeys> result() {
         auto future = result_promise_->get_future();
@@ -57,8 +57,8 @@ class SendMessageCall final {
     }
 
   private:
-    sentry::common::Message message_;
-    api_common::PeerFilter peer_filter_;
+    sentry::Message message_;
+    PeerFilter peer_filter_;
     std::shared_ptr<concurrency::AwaitablePromise<PeerKeys>> result_promise_;
 };
 

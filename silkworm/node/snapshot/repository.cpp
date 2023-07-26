@@ -21,11 +21,47 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshot {
 
 namespace fs = std::filesystem;
+
+template <ConcreteSnapshot T>
+const T* get_segment(const SnapshotsByPath<T>& segments, const SnapshotPath& path) {
+    if (not segments.contains(path.path())) {
+        return nullptr;
+    }
+    return segments.find(path.path())->second.get();
+}
+
+template <ConcreteSnapshot T>
+SnapshotRepository::ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker) {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
+        const auto& snapshot = it->second;
+        // We're looking for the segment containing the target block number in its block range
+        if (snapshot->block_from() <= number && number < snapshot->block_to()) {
+            const bool walk_done = walker(snapshot.get());
+            return walk_done ? SnapshotRepository::kWalkSuccess : SnapshotRepository::kWalkFailed;
+        }
+    }
+    return SnapshotRepository::kSnapshotNotFound;
+}
+
+template <ConcreteSnapshot T>
+std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& walker) {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    std::size_t visited_views{0};
+    bool walk_done{false};
+    for (auto it = segments.rbegin(); it != segments.rend() && !walk_done; ++it) {
+        const auto& snapshot = it->second;
+        walk_done = walker(snapshot.get());
+        ++visited_views;
+    }
+    return visited_views;
+}
 
 SnapshotRepository::SnapshotRepository(SnapshotSettings settings) : settings_(std::move(settings)) {}
 
@@ -36,11 +72,11 @@ SnapshotRepository::~SnapshotRepository() {
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotPathList segment_files = get_segment_files();
-    reopen_list(segment_files, /*.optimistic=*/false);
+    reopen_list(segment_files);
 }
 
 void SnapshotRepository::close() {
-    SILK_INFO << "Close snapshot repository folder: " << settings_.repository_dir.string();
+    SILK_DEBUG << "Close snapshot repository folder: " << settings_.repository_dir.string();
     for (const auto& [_, header_seg] : this->header_segments_) {
         header_seg->close();
     }
@@ -101,6 +137,42 @@ SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum numb
     return view(tx_segments_, number, walker);
 }
 
+std::size_t SnapshotRepository::view_header_segments(const HeaderSnapshotWalker& walker) {
+    return view(header_segments_, walker);
+}
+
+std::size_t SnapshotRepository::view_body_segments(const BodySnapshotWalker& walker) {
+    return view(body_segments_, walker);
+}
+
+std::size_t SnapshotRepository::view_tx_segments(const TransactionSnapshotWalker& walker) {
+    return view(tx_segments_, walker);
+}
+
+const HeaderSnapshot* SnapshotRepository::get_header_segment(const SnapshotPath& path) const {
+    return get_segment(header_segments_, path);
+}
+
+const BodySnapshot* SnapshotRepository::get_body_segment(const SnapshotPath& path) const {
+    return get_segment(body_segments_, path);
+}
+
+const TransactionSnapshot* SnapshotRepository::get_tx_segment(const SnapshotPath& path) const {
+    return get_segment(tx_segments_, path);
+}
+
+const HeaderSnapshot* SnapshotRepository::find_header_segment(BlockNum number) const {
+    return find_segment(header_segments_, number);
+}
+
+const BodySnapshot* SnapshotRepository::find_body_segment(BlockNum number) const {
+    return find_segment(body_segments_, number);
+}
+
+const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) const {
+    return find_segment(tx_segments_, number);
+}
+
 std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
     std::vector<std::shared_ptr<Index>> missing_index_list;
@@ -133,13 +205,17 @@ std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const 
     return missing_index_list;
 }
 
+void SnapshotRepository::reopen_file(const SnapshotPath& segment_path, bool optimistic) {
+    reopen_list(SnapshotPathList{segment_path}, optimistic);
+}
+
 void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool optimistic) {
     close_segments_not_in_list(segment_files);
 
     BlockNum segment_max_block{0};
     for (const auto& seg_file : segment_files) {
         try {
-            SILK_INFO << "Reopen segment file: " << seg_file.path();
+            SILK_INFO << "Reopen segment file: " << seg_file.path().filename().string();
             bool snapshot_added{false};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
@@ -203,15 +279,20 @@ void SnapshotRepository::close_segments_not_in_list(const SnapshotPathList& /*se
 }
 
 template <ConcreteSnapshot T>
-SnapshotRepository::ViewResult SnapshotRepository::view(const SnapshotsByPath<T>& segments, BlockNum number,
-                                                        const SnapshotWalker<T>& walker) {
-    for (const auto& [_, snapshot] : segments) {
+const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const {
+    if (number > max_block_available()) {
+        return nullptr;
+    }
+
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
+        const auto& snapshot = it->second;
+        // We're looking for the segment containing the target block number in its block range
         if (snapshot->block_from() <= number && number < snapshot->block_to()) {
-            const bool walk_done = walker(snapshot.get());
-            return walk_done ? kWalkSuccess : kWalkFailed;
+            return snapshot.get();
         }
     }
-    return kSnapshotNotFound;
+    return nullptr;
 }
 
 template <ConcreteSnapshot T>
@@ -229,7 +310,10 @@ bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
-    SILKWORM_ASSERT(fs::exists(settings_.repository_dir) && fs::is_directory(settings_.repository_dir));
+    ensure(fs::exists(settings_.repository_dir),
+           "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist");
+    ensure(fs::is_directory(settings_.repository_dir),
+           "SnapshotRepository: " + settings_.repository_dir.string() + " is a not folder");
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
     SnapshotPathList snapshot_files;
@@ -237,7 +321,7 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
         if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
             continue;
         }
-        SILK_DEBUG << "Path: " << file.path() << " name: " << file.path().filename();
+        SILK_TRACE << "Path: " << file.path() << " name: " << file.path().filename();
         const auto snapshot_file = SnapshotPath::parse(file);
         if (snapshot_file) {
             snapshot_files.push_back(snapshot_file.value());

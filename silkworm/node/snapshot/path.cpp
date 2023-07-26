@@ -54,6 +54,10 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     }
 
     // Expected scaled block format: <dddddd>
+    if (scaled_from.size() > 6 || scaled_to.size() > 6) {
+        return std::nullopt;
+    }
+
     BlockNum scaled_block_from{0};
     const auto from_result = std::from_chars(scaled_from.data(), scaled_from.data() + scaled_from.size(), scaled_block_from);
     if (from_result.ec == std::errc::invalid_argument) {

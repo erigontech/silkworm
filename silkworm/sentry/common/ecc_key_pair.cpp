@@ -20,14 +20,15 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>
-#include <silkworm/sentry/common/random.hpp>
 
-namespace silkworm::sentry::common {
+#include "random.hpp"
+
+namespace silkworm::sentry {
 
 EccKeyPair::EccKeyPair() {
     SecP256K1Context ctx;
     do {
-        private_key_ = common::random_bytes(32);
+        private_key_ = random_bytes(32);
     } while (!ctx.verify_private_key_data(private_key_));
 }
 
@@ -53,4 +54,4 @@ std::string EccKeyPair::private_key_hex() const {
     return ::silkworm::to_hex(private_key_);
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

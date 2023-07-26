@@ -20,6 +20,9 @@
 #include <sstream>
 #include <string>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/format.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
@@ -43,6 +46,104 @@ namespace silkworm::rpc::call {
 
 using boost::asio::awaitable;
 
+CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* config,
+                                                  const silkworm::BlockWithHash& block_with_hash,
+                                                  ethdb::TransactionDatabase& tx_database,
+                                                  const Bundles& bundles,
+                                                  std::optional<std::uint64_t> opt_timeout,
+                                                  const AccountsOverrides& accounts_overrides,
+                                                  int32_t transaction_index,
+                                                  boost::asio::any_io_executor& this_executor) {
+    CallManyResult result;
+    const auto& block = block_with_hash.block;
+    const auto& block_transactions = block.transactions;
+    auto state = transaction_.create_state(this_executor, tx_database, block.header.number);
+    state::OverrideState override_state{*state, accounts_overrides};
+    EVMExecutor executor{*config, workers_, state};
+
+    std::uint64_t timeout = opt_timeout.value_or(5000);
+    const auto start_time = clock_time::now();
+    for (auto idx{0}; idx < transaction_index; idx++) {
+        silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+
+        if (!txn.from) {
+            txn.recover_sender();
+        }
+
+        auto exec_result = executor.call(block, txn);
+
+        if ((clock_time::since(start_time) / 1000000) > timeout) {
+            std::ostringstream oss;
+            oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
+            result.error = oss.str();
+            return result;
+        }
+    }
+    executor.reset();
+
+    result.results.reserve(bundles.size());
+    for (const auto& bundle : bundles) {
+        const auto& block_override = bundle.block_override;
+
+        rpc::Block blockContext{{block_with_hash.block}};
+        if (block_override.block_number) {
+            blockContext.block.header.number = block_override.block_number.value();
+        }
+        if (block_override.coin_base) {
+            blockContext.block.header.beneficiary = block_override.coin_base.value();
+        }
+        if (block_override.timestamp) {
+            blockContext.block.header.timestamp = block_override.timestamp.value();
+        }
+        if (block_override.difficulty) {
+            blockContext.block.header.difficulty = block_override.difficulty.value();
+        }
+        if (block_override.gas_limit) {
+            blockContext.block.header.gas_limit = block_override.gas_limit.value();
+        }
+        if (block_override.base_fee) {
+            blockContext.block.header.base_fee_per_gas = block_override.base_fee;
+        }
+
+        std::vector<nlohmann::json> results;
+        result.results.reserve(bundle.transactions.size());
+        for (const auto& call : bundle.transactions) {
+            silkworm::Transaction txn{call.to_transaction()};
+
+            auto call_execution_result = executor.call(blockContext.block, txn);
+
+            if (call_execution_result.pre_check_error) {
+                result.error = call_execution_result.pre_check_error;
+                return result;
+            }
+
+            if ((clock_time::since(start_time) / 1000000) > timeout) {
+                std::ostringstream oss;
+                oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
+                result.error = oss.str();
+                return result;
+            }
+
+            nlohmann::json reply;
+            if (call_execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+                reply["value"] = "0x" + silkworm::to_hex(call_execution_result.data);
+            } else {
+                const auto error_message = call_execution_result.error_message();
+                if (call_execution_result.data.empty()) {
+                    reply["error"] = error_message;
+                } else {
+                    RevertError revert_error{{3, error_message}, call_execution_result.data};
+                    reply = revert_error;
+                }
+            }
+
+            results.push_back(reply);
+        }
+        result.results.push_back(results);
+    }
+    return result;
+}
+
 boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
                                                              const AccountsOverrides& accounts_overrides,
                                                              std::optional<std::uint64_t> opt_timeout) {
@@ -63,103 +164,26 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     }
 
     const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
-    auto block_number = block_with_hash->block.header.number;
-    const auto& block = block_with_hash->block;
-    const auto& block_transactions = block.transactions;
-
-    auto state = co_await transaction_.create_state(tx_database, block_number);
-    state::OverrideState override_state{*state, accounts_overrides};
-
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    EVMExecutor executor{*chain_config_ptr, workers_, override_state};
-
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
     auto transaction_index = context.transaction_index;
     if (transaction_index == -1) {
-        transaction_index = static_cast<std::int32_t>(block_transactions.size());
+        transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());
     }
 
-    std::uint64_t timeout = opt_timeout.value_or(5000);
-    const auto start_time = clock_time::now();
-    for (auto idx{0}; idx < transaction_index; idx++) {
-        silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+    auto this_executor = co_await boost::asio::this_coro::executor;
+    result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                result = executes_all_bundles(chain_config_ptr, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
+                boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
+                    self.complete(result);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
 
-        if (!txn.from) {
-            txn.recover_sender();
-        }
-        co_await executor.call(block, txn);
-
-        if ((clock_time::since(start_time) / 1000000) > timeout) {
-            std::ostringstream oss;
-            oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
-            result.error = oss.str();
-            co_return result;
-        }
-    }
-    executor.reset();
-
-    result.results.reserve(bundles.size());
-    for (const auto& bundle : bundles) {
-        const auto& block_override = bundle.block_override;
-
-        rpc::Block blockContext{{block_with_hash->block}};
-        if (block_override.block_number) {
-            blockContext.block.header.number = block_override.block_number.value();
-        }
-        if (block_override.coin_base) {
-            // blockContext.block.header.number = block_override.coin_base.value();
-        }
-        if (block_override.timestamp) {
-            blockContext.block.header.timestamp = block_override.timestamp.value();
-        }
-        if (block_override.difficulty) {
-            blockContext.block.header.difficulty = block_override.difficulty.value();
-        }
-        if (block_override.gas_limit) {
-            blockContext.block.header.gas_limit = block_override.gas_limit.value();
-        }
-        if (block_override.base_fee) {
-            blockContext.block.header.base_fee_per_gas = block_override.base_fee;
-        }
-
-        std::vector<nlohmann::json> results;
-        result.results.reserve(bundle.transactions.size());
-        for (const auto& call : bundle.transactions) {
-            silkworm::Transaction txn{call.to_transaction()};
-
-            auto execution_result = co_await executor.call(blockContext.block, txn);
-
-            if (execution_result.pre_check_error) {
-                result.error = execution_result.pre_check_error;
-                co_return result;
-            }
-
-            if ((clock_time::since(start_time) / 1000000) > timeout) {
-                std::ostringstream oss;
-                oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
-                result.error = oss.str();
-                co_return result;
-            }
-
-            nlohmann::json reply;
-            if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
-                reply["value"] = "0x" + silkworm::to_hex(execution_result.data);
-            } else {
-                const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
-                if (execution_result.data.empty()) {
-                    reply["error"] = error_message;
-                } else {
-                    RevertError revert_error{{3, error_message}, execution_result.data};
-                    reply = revert_error;
-                }
-            }
-
-            results.push_back(reply);
-        }
-        result.results.push_back(results);
-    }
     co_return result;
 }
 

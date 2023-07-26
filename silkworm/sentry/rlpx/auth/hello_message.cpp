@@ -26,8 +26,6 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-using common::Message;
-
 const uint8_t HelloMessage::kId = 0;
 const uint8_t HelloMessage::kProtocolVersion = 5;
 

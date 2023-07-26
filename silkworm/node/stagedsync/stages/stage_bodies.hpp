@@ -60,9 +60,13 @@ class BodiesStage : public Stage {
         BlockNum highest_height() const;
         Hash bad_block() const;
 
+        bool get_canonical_block(BlockNum height, Block& block) const;
+
         void set_preverified_height(BlockNum height);
 
       private:
+        db::RWTxn& tx_;
+        db::DataModel data_model_;
         const ChainConfig& chain_config_;
         protocol::RuleSetPtr rule_set_;
         db::Buffer chain_state_;

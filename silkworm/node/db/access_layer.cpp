@@ -22,8 +22,10 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
 
@@ -63,7 +65,7 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height) {
+void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     auto cursor = txn.rw_cursor(db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     cursor->upsert(db::to_slice(key), db::to_slice(value));
@@ -336,6 +338,22 @@ void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, st
     SILKWORM_ASSERT(i == count);
 }
 
+void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& rlp_txs) {
+    rlp_txs.resize(count);
+    if (count == 0) {
+        return;
+    }
+
+    const auto key{db::block_key(base_id)};
+    auto cursor = txn.ro_cursor(table::kBlockTransactions);
+    uint64_t i{0};
+    for (auto data{cursor->find(to_slice(key), false)}; data.done && i < count;
+         data = cursor->to_next(/*throw_notfound = */ false), ++i) {
+        rlp_txs[i] = from_slice(data.value);
+    }
+    SILKWORM_ASSERT(i == count);
+}
+
 bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block) {
     auto canonical_hashes_cursor = txn.ro_cursor(table::kCanonicalHashes);
     const Bytes key{block_key(number)};
@@ -376,24 +394,25 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 
     auto count = db::cursor_for_prefix(
         *bodies_cursor, key_prefix,
-        [&process_func, &txn, &read_senders](ByteView key, ByteView raw_body) {
+        [&process_func, &txn, &height, &read_senders](ByteView key, ByteView raw_body) {
             if (raw_body.empty()) throw std::logic_error("empty header in table Headers");
             // read block...
             Block block;
             // ...ommers
-            auto body_for_storage = detail::decode_stored_block_body(raw_body);
-            std::swap(block.ommers, body_for_storage.ommers);
+            auto body = detail::decode_stored_block_body(raw_body);
+            std::swap(block.ommers, body.ommers);
             // ...transactions
-            read_transactions(txn, body_for_storage.base_txn_id, body_for_storage.txn_count, block.transactions);
+            ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for number=" + std::to_string(height));
+            read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, block.transactions);
             // ...senders
             if (!block.transactions.empty() && read_senders) {
-                Bytes kkey{key.data(), key.length()};
-                db::parse_senders(txn, kkey, block.transactions);
+                Bytes key_bytes{key.data(), key.length()};  // TODO(canepat) avoid unnecessary copy by changing read_senders API
+                db::parse_senders(txn, key_bytes, block.transactions);
             }
             // ...header
             auto [block_num, hash] = split_block_key(key);
-            bool present = read_header(txn, hash, block_num, block.header);
-            if (!present) throw std::logic_error("header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            const bool present = read_header(txn, hash, block_num, block.header);
+            ensure(present, "header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
             // invoke handler
             process_func(block);
         },
@@ -422,10 +441,26 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     auto body{detail::decode_stored_block_body(data_view)};
 
     std::swap(out.ommers, body.ommers);
-    read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
+    std::swap(out.withdrawals, body.withdrawals);
+    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + to_hex(key));
+    read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, out.transactions);
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
     }
+    return true;
+}
+
+bool read_rlp_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) {
+    const auto key{block_key(block_number, hash.bytes)};
+    auto cursor = txn.ro_cursor(table::kBlockBodies);
+    const auto data{cursor->find(to_slice(key), false)};
+    if (!data) return false;
+
+    ByteView data_view{from_slice(data.value)};
+    const auto body{detail::decode_stored_block_body(data_view)};
+    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(block_number));
+    read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
+
     return true;
 }
 
@@ -457,11 +492,6 @@ bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return db::has_body(txn, block_number, hash.bytes);
 }
 
-bool has_sibling(ROTxn&, BlockNum) {
-    return false;
-    // todo: implement!
-}
-
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
     write_body(txn, body, hash.bytes, bn);
 }
@@ -469,7 +499,8 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
-    body_for_storage.txn_count = body.transactions.size();
+    body_for_storage.withdrawals = body.withdrawals;
+    body_for_storage.txn_count = body.transactions.size() + 2;
     body_for_storage.base_txn_id =
         increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
     Bytes value{body_for_storage.encode()};
@@ -478,11 +509,23 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     auto target = txn.rw_cursor(table::kBlockBodies);
     target->upsert(to_slice(key), to_slice(value));
 
-    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id + 1);
 }
 
-void write_sibling(RWTxn&, const BlockBody&, const evmc::bytes32&, BlockNum) {
-    throw std::runtime_error("write_sibling not implemented");
+void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+    detail::BlockBodyForStorage body_for_storage{};
+    body_for_storage.ommers = body.ommers;
+    body_for_storage.withdrawals = body.withdrawals;
+    body_for_storage.txn_count = body.transactions.size();
+    body_for_storage.base_txn_id =
+        increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
+    Bytes value{body_for_storage.encode()};
+    auto key{db::block_key(bn, hash.bytes)};
+
+    auto target = txn.rw_cursor(table::kBlockBodies);
+    target->upsert(to_slice(key), to_slice(value));
+
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
@@ -526,6 +569,38 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
             transaction.recover_sender();
         }
     }
+}
+
+void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
+    auto key{db::block_key(block_number, hash.bytes)};
+    auto target = txn.rw_cursor(table::kSenders);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        if (block_txn.from.has_value()) {
+            data.append(block_txn.from.value().bytes, kAddressLength);
+        } else {
+            throw std::runtime_error("Missing senders for block " + std::to_string(block_number));
+        }
+    }
+
+    target->upsert(to_slice(key), to_slice(data));
+}
+
+void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block) {
+    auto target = txn.rw_cursor(table::kTxLookup);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        auto tx_key = block_txn.hash();
+        auto tx_data = db::block_key(block_number);
+        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data));
+    }
+}
+
+void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number) {
+    auto target = txn.rw_cursor(table::kBlockReceipts);
+    auto key{db::block_key(block_number)};
+    Bytes value{cbor_encode(receipts)};
+    target->upsert(to_slice(key), to_slice(value));
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {
@@ -829,6 +904,420 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
         target->upsert(key, to_slice(new_sequence_buffer));
     }
     return current_sequence;
+}
+
+const std::string kHeadBlockHash = "headBlockHash";
+const std::string kSafeBlockHash = "safeBlockHash";
+const std::string kFinalizedBlockHash = "finalizedBlockHash";
+
+std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& field) {
+    auto cursor = txn.ro_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    auto data{cursor->find(skey, /*throw_notfound=*/false)};
+    if (!data || data.value.length() != kHashLength) {
+        return std::nullopt;
+    }
+    return to_bytes32(from_slice(data.value));
+}
+
+void write_last_fcu_field(RWTxn& txn, const std::string& field, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    cursor->upsert(skey, to_slice(hash));
+}
+
+std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kHeadBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_safe_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kSafeBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_finalized_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kFinalizedBlockHash);
+}
+
+void write_last_head_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kHeadBlockHash, hash);
+}
+
+void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kSafeBlockHash, hash);
+}
+
+void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kFinalizedBlockHash, hash);
+}
+
+void DataModel::set_snapshot_repository(snapshot::SnapshotRepository* repository) {
+    ensure(repository, "DataModel::set_snapshot_repository: repository is null");
+    repository_ = repository;
+}
+
+DataModel::DataModel(ROTxn& txn) : txn_{txn} {}
+
+std::optional<ChainConfig> DataModel::read_chain_config() const {
+    return db::read_chain_config(txn_);
+}
+
+std::optional<ChainId> DataModel::read_chain_id() const {
+    const auto chain_config{read_chain_config()};
+    std::optional<ChainId> chain_id;
+    if (chain_config) {
+        chain_id = chain_config->chain_id;
+    }
+    return chain_id;
+}
+
+BlockNum DataModel::highest_block_number() const {
+    // Assume last block is likely on db: first lookup there
+    const auto header_cursor{txn_.ro_cursor(db::table::kHeaders)};
+    const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
+    if (data.done && data.key.size() >= sizeof(uint64_t)) {
+        ByteView key = from_slice(data.key);
+        ByteView block_num_data = key.substr(0, sizeof(BlockNum));
+        BlockNum block_num = endian::load_big_u64(block_num_data.data());
+        if (block_num > 0) {  // skip genesis block if present
+            return block_num;
+        }
+    }
+
+    // If none is found on db, then ask the snapshot repository (if any) for highest block
+    return repository_ ? repository_->max_block_available() : 0;
+}
+
+std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsArray block_hash) const {
+    return read_header(block_number, Hash(block_hash));
+}
+
+std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const Hash& block_hash) const {
+    if (repository_ && block_number <= repository_->max_block_available()) {
+        auto header = read_header_from_snapshot(block_number);  // todo: check if it is more efficient reading using hash
+        if (header && header->hash() == block_hash) {           // reading using hash avoid this heavy hash calculation
+            return header;
+        }
+        return {};
+    } else {
+        return db::read_header(txn_, block_number, block_hash);
+    }
+}
+
+std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
+    if (repository_ && block_number <= repository_->max_block_available()) {
+        return read_header_from_snapshot(block_number);
+    } else {
+        auto hash = db::read_canonical_hash(txn_, block_number);
+        return db::read_header(txn_, block_number, *hash);
+    }
+}
+
+std::optional<BlockHeader> DataModel::read_header(const Hash& block_hash) const {
+    // Assume recent blocks are more probable: first lookup the block header in the db
+    auto block_header{db::read_header(txn_, block_hash)};
+    if (block_header) return block_header;
+
+    // Then search for it in the snapshots (if any)
+    return read_header_from_snapshot(block_hash);
+}
+
+std::optional<BlockNum> DataModel::read_block_number(const Hash& block_hash) const {
+    // Assume recent blocks are more probable: first lookup the block in the db
+    auto block_number{db::read_block_number(txn_, block_hash)};
+    if (block_number) return block_number;
+
+    // Then search for it in the snapshots (if any)
+    const auto block_header{read_header_from_snapshot(block_hash)};
+    if (block_header) {
+        block_number = block_header->number;
+    }
+    return block_number;
+}
+
+std::vector<BlockHeader> DataModel::read_sibling_headers(BlockNum block_number) const {
+    std::vector<BlockHeader> sibling_headers;
+
+    // Read all siblings headers at specified height from db
+    process_headers_at_height(txn_, block_number, [&](BlockHeader&& header) {
+        sibling_headers.push_back(std::move(header));
+    });
+
+    // Read block header at specified height from snapshot (if any) just in case
+    std::optional<BlockHeader> header = read_header_from_snapshot(block_number);
+    if (header) {
+        sibling_headers.push_back(std::move(*header));
+    }
+
+    return sibling_headers;
+}
+
+bool DataModel::read_body(BlockNum height, HashAsArray hash, bool read_senders, BlockBody& body) const {
+    // Assume recent blocks are more probable: first lookup the block body in the db
+    const bool found = db::read_body(txn_, height, hash, read_senders, body);
+    if (found) return found;
+
+    return read_body_from_snapshot(height, read_senders, body);
+}
+
+bool DataModel::read_body(const Hash& hash, BlockNum height, BlockBody& body) const {
+    return read_body(height, hash.bytes, /*read_senders=*/false, body);
+}
+
+bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
+    const bool found = db::read_body(txn_, hash, body);
+    if (found) return found;
+
+    // Then search for it in the snapshots (if any)
+    const auto block_header{read_header_from_snapshot(hash)};
+    if (block_header) {
+        return read_body(block_header->number, hash.bytes, /*read_senders=*/false, body);
+    }
+
+    return false;
+}
+
+std::optional<Hash> DataModel::read_canonical_hash(BlockNum height) const {
+    return db::read_canonical_hash(txn_, height);
+}
+
+std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
+
+    return read_header(height, *canonical_hash);
+}
+
+bool DataModel::read_canonical_body(BlockNum height, BlockBody& body) const {
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
+
+    return read_body(*canonical_hash, height, body);
+}
+
+bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
+
+    return read_block(*canonical_hash, height, block);
+}
+
+bool DataModel::has_body(BlockNum height, HashAsArray hash) const {
+    const bool found = db::has_body(txn_, height, hash);
+    if (found) return found;
+
+    return is_body_in_snapshot(height);
+}
+
+bool DataModel::has_body(BlockNum height, const Hash& hash) const {
+    return has_body(height, hash.bytes);
+}
+
+bool DataModel::read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const {
+    const bool found = db::read_block(txn_, hash, height, read_senders, block);
+    if (found) return found;
+
+    return read_block_from_snapshot(height, read_senders, block);
+}
+
+bool DataModel::read_block(const evmc::bytes32& hash, BlockNum height, Block& block) const {
+    const bool found = db::read_block(txn_, hash, height, block);
+    if (found) return found;
+
+    return read_block_from_snapshot(height, /*read_senders=*/true, block);
+}
+
+void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const {
+    constexpr bool throw_notfound{false};
+
+    // Try to read N headers from the database
+    size_t read_count{0};
+    std::optional<BlockNum> last_read_number_from_db;
+
+    const auto headers_cursor{txn_.ro_cursor(db::table::kHeaders)};
+    auto data = headers_cursor->to_last(throw_notfound);
+    while (data && read_count < n) {
+        // Read header
+        BlockHeader header;
+        ByteView data_view = db::from_slice(data.value);
+        success_or_throw(rlp::decode(data_view, header));
+        ++read_count;
+        last_read_number_from_db = header.number;
+        // Consume header
+        callback(std::move(header));
+        // Move backward
+        data = headers_cursor->to_previous(throw_notfound);
+    }
+    if (read_count == n) {
+        return;
+    }
+
+    // We've reached the first header in db but still need to read more from snapshots
+    if (last_read_number_from_db) {
+        ensure(*last_read_number_from_db == repository_->max_block_available() + 1,
+               "db and snapshot block numbers are not contiguous");
+    }
+    auto block_number_in_snapshots = repository_->max_block_available();
+    while (read_count < n) {
+        auto header{read_header_from_snapshot(block_number_in_snapshots)};
+        if (!header) return;
+        ++block_number_in_snapshots;
+        ++read_count;
+        // Consume header
+        callback(std::move(*header));
+    }
+}
+
+bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) const {
+    const auto hash{db::read_canonical_hash(txn_, number)};
+    if (!hash) {
+        return false;
+    }
+    return read_block(hash->bytes, number, read_senders, block);
+}
+
+bool DataModel::read_block_from_snapshot(BlockNum height, bool read_senders, Block& block) {
+    if (!repository_) {
+        return false;
+    }
+
+    auto block_header{read_header_from_snapshot(height)};
+    if (!block_header) return false;
+
+    block.header = std::move(*block_header);
+
+    return read_body_from_snapshot(height, read_senders, block);
+}
+
+std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height) {
+    if (!repository_) {
+        return {};
+    }
+
+    std::optional<BlockHeader> block_header;
+    // We know the header snapshot in advance: find it based on target block number
+    const auto header_snapshot = repository_->find_header_segment(height);
+    if (header_snapshot) {
+        block_header = header_snapshot->header_by_number(height);
+    }
+    return block_header;
+}
+
+std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) {
+    if (!repository_) {
+        return {};
+    }
+
+    std::optional<BlockHeader> block_header;
+    // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
+    repository_->view_header_segments([&](const snapshot::HeaderSnapshot* snapshot) -> bool {
+        block_header = snapshot->header_by_hash(hash);
+        return block_header.has_value();
+    });
+    return block_header;
+}
+
+bool DataModel::read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body) {
+    if (!repository_) {
+        return false;
+    }
+
+    // We know the body snapshot in advance: find it based on target block number
+    const auto body_snapshot = repository_->find_body_segment(height);
+    if (!body_snapshot) return false;
+
+    auto stored_body = body_snapshot->body_by_number(height);
+    if (!stored_body) return false;
+
+    // Skip first and last *system transactions* in block body
+    const auto base_txn_id{stored_body->base_txn_id + 1};
+    const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
+
+    std::vector<Transaction> transactions;
+    const auto read_ok{read_transactions_from_snapshot(height, base_txn_id, txn_count, read_senders, transactions)};
+    if (!read_ok) return false;
+
+    body.transactions = std::move(transactions);
+    body.ommers = std::move(stored_body->ommers);
+    body.withdrawals = std::move(stored_body->withdrawals);
+    return true;
+}
+
+bool DataModel::is_body_in_snapshot(BlockNum height) {
+    if (!repository_) {
+        return false;
+    }
+
+    // We know the body snapshot in advance: find it based on target block number
+    const auto body_snapshot = repository_->find_body_segment(height);
+    if (body_snapshot) {
+        const auto stored_body = body_snapshot->body_by_number(height);
+        return stored_body.has_value();
+    }
+
+    return false;
+}
+
+bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
+                                                bool read_senders, std::vector<Transaction> txs) {
+    txs.reserve(txn_count);
+    if (txn_count == 0) {
+        return true;
+    }
+
+    const auto tx_snapshot = repository_->find_tx_segment(height);
+    if (!tx_snapshot) return false;
+
+    txs = tx_snapshot->txn_range(base_txn_id, txn_count, read_senders);
+
+    return true;
+}
+
+bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
+    const auto body_snapshot = repository_->find_body_segment(height);
+    if (body_snapshot) {
+        auto stored_body = body_snapshot->body_by_number(height);
+        if (!stored_body) return false;
+
+        // Skip first and last *system transactions* in block body
+        const auto base_txn_id{stored_body->base_txn_id + 1};
+        const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
+
+        if (txn_count == 0) return true;
+
+        const auto tx_snapshot = repository_->find_tx_segment(height);
+        if (!tx_snapshot) return false;
+
+        rlp_txs = tx_snapshot->txn_rlp_range(base_txn_id, txn_count);
+
+        return true;
+    }
+
+    return false;
+}
+
+bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& transactions) const {
+    bool found = db::read_rlp_transactions(txn_, height, hash, transactions);
+    if (found) return true;
+
+    return read_rlp_transactions_from_snapshot(height, transactions);
+}
+
+std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {
+    return db::read_total_difficulty(txn_, height, hash);
+}
+
+std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, HashAsArray hash) const {
+    return db::read_total_difficulty(txn_, height, hash);
+}
+
+std::optional<intx::uint256> DataModel::read_total_difficulty(ByteView key) const {
+    return db::read_total_difficulty(txn_, key);
 }
 
 }  // namespace silkworm::db

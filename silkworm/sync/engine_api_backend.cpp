@@ -18,52 +18,56 @@
 
 namespace silkworm::chainsync {
 
-awaitable<rpc::PayloadStatus> EngineApiBackend::engine_new_payload(const rpc::ExecutionPayload& payload) {
+Task<rpc::PayloadStatus> EngineApiBackend::engine_new_payload(const rpc::ExecutionPayload& payload) {
     co_return co_await pos_sync_.new_payload(payload);
 }
 
-awaitable<rpc::ExecutionPayloadAndValue> EngineApiBackend::engine_get_payload(uint64_t payload_id) {
+Task<rpc::ExecutionPayloadAndValue> EngineApiBackend::engine_get_payload(uint64_t payload_id) {
     co_return co_await pos_sync_.get_payload(payload_id);
 }
 
-awaitable<rpc::ForkChoiceUpdatedReply> EngineApiBackend::engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) {
+Task<rpc::ForkChoiceUpdatedReply> EngineApiBackend::engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) {
     co_return co_await pos_sync_.fork_choice_update(fcu_request.fork_choice_state, fcu_request.payload_attributes);
 }
 
-awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
+Task<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
     co_return co_await pos_sync_.get_payload_bodies_by_hash(block_hashes);
 }
 
-awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
+Task<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
     co_return co_await pos_sync_.get_payload_bodies_by_range(start, count);
 }
 
-awaitable<evmc::address> EngineApiBackend::etherbase() {
-    co_return evmc::address{};
+Task<evmc::address> EngineApiBackend::etherbase() {
+    throw std::logic_error{"EngineApiBackend::etherbase not implemented"};
 }
 
-awaitable<uint64_t> EngineApiBackend::protocol_version() {
-    co_return 0;
+Task<uint64_t> EngineApiBackend::protocol_version() {
+    throw std::logic_error{"EngineApiBackend::protocol_version not implemented"};
 }
 
-awaitable<uint64_t> EngineApiBackend::net_version() {
-    co_return 0;
+Task<uint64_t> EngineApiBackend::net_version() {
+    throw std::logic_error{"EngineApiBackend::net_version not implemented"};
 }
 
-awaitable<std::string> EngineApiBackend::client_version() {
-    co_return "";
+Task<std::string> EngineApiBackend::client_version() {
+    throw std::logic_error{"EngineApiBackend::client_version not implemented"};
 }
 
-awaitable<uint64_t> EngineApiBackend::net_peer_count() {
-    co_return 0;
+Task<uint64_t> EngineApiBackend::net_peer_count() {
+    throw std::logic_error{"EngineApiBackend::net_peer_count not implemented"};
 }
 
-awaitable<rpc::NodeInfos> EngineApiBackend::engine_node_info() {
-    co_return 0;
+Task<rpc::NodeInfos> EngineApiBackend::engine_node_info() {
+    throw std::logic_error{"EngineApiBackend::engine_node_info not implemented"};
 }
 
-awaitable<rpc::PeerInfos> EngineApiBackend::peers() {
-    co_return rpc::PeerInfos{};
+Task<rpc::PeerInfos> EngineApiBackend::peers() {
+    throw std::logic_error{"EngineApiBackend::peers not implemented"};
+}
+
+Task<bool> EngineApiBackend::get_block(uint64_t /* block_number*/, const HashAsSpan& /* hash */, bool /*read_senders*/, silkworm::Block& /*block*/) {
+    throw std::logic_error{"EngineApiBackend::get_block not implemented"};
 }
 
 }  // namespace silkworm::chainsync

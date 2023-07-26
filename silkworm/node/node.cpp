@@ -23,6 +23,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/bittorrent/client.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/resource_usage.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
@@ -32,7 +33,7 @@ namespace silkworm::node {
 
 constexpr uint64_t kMaxFileDescriptors{10'240};
 
-using SentryClientPtr = std::shared_ptr<sentry::api::api_common::SentryClient>;
+using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
 class NodeImpl final {
   public:
@@ -42,7 +43,7 @@ class NodeImpl final {
     NodeImpl& operator=(const NodeImpl&) = delete;
 
     execution::LocalClient& execution_local_client() { return execution_local_client_; }
-    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client() { return sentry_client_; }
+    std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
     void setup();
 
@@ -54,11 +55,15 @@ class NodeImpl final {
     Task<void> run_tasks();
     Task<void> start_execution_server();
     Task<void> start_backend_kv_grpc_server();
+    Task<void> start_bittorrent_client();
     Task<void> start_resource_usage_log();
     Task<void> start_execution_log_timer();
 
     Settings& settings_;
     mdbx::env& chaindata_db_;
+
+    //! The repository for snapshots
+    snapshot::SnapshotRepository snapshot_repository_;
 
     //! The execution layer server engine
     execution::Server execution_server_;
@@ -67,11 +72,13 @@ class NodeImpl final {
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<rpc::BackEndKvServer> backend_kv_rpc_server_;
     ResourceUsageLog resource_usage_log_;
+    std::unique_ptr<BitTorrentClient> bittorrent_client_;
 };
 
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)
     : settings_{settings},
       chaindata_db_{chaindata_db},
+      snapshot_repository_{settings_.snapshot_settings},
       execution_server_{settings_, db::RWAccess{chaindata_db_}},
       execution_local_client_{execution_server_},
       sentry_client_{std::move(sentry_client)},
@@ -79,6 +86,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env&
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.node_name);
     backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings.server_settings, *backend_);
+    bittorrent_client_ = std::make_unique<BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
 
 void NodeImpl::setup() {
@@ -95,15 +103,16 @@ void NodeImpl::setup_snapshots() {
             throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
         }
 
-        db::RWTxn rw_txn{chaindata_db_};
+        db::RWTxnManaged rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
-        snapshot::SnapshotSync snapshot_sync{
-            settings_.snapshot_settings,
-            settings_.chain_config.value()};
+        snapshot::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
         snapshot_sync.download_and_index_snapshots(rw_txn);
 
         rw_txn.commit_and_stop();
+
+        // Set snapshot repository into snapshot-aware database access
+        db::DataModel::set_snapshot_repository(&snapshot_repository_);
     } else {
         log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
     }
@@ -111,7 +120,7 @@ void NodeImpl::setup_snapshots() {
 
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
-    return (run_tasks() && start_backend_kv_grpc_server());
+    return (run_tasks() && start_backend_kv_grpc_server() && start_bittorrent_client());
 }
 
 Task<void> NodeImpl::run_tasks() {
@@ -132,6 +141,18 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
         backend_kv_rpc_server_->shutdown();
     };
     co_await concurrency::async_thread(std::move(run), std::move(stop));
+}
+
+Task<void> NodeImpl::start_bittorrent_client() {
+    if (settings_.snapshot_settings.bittorrent_settings.seeding) {
+        auto run = [this]() {
+            bittorrent_client_->execute_loop();
+        };
+        auto stop = [this]() {
+            bittorrent_client_->stop();
+        };
+        co_await concurrency::async_thread(std::move(run), std::move(stop));
+    }
 }
 
 Task<void> NodeImpl::start_resource_usage_log() {

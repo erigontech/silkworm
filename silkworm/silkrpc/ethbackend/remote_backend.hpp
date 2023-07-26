@@ -22,8 +22,8 @@
 #include <vector>
 
 #include <agrpc/grpc_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <gsl/pointers>
 #include <nlohmann/json.hpp>
@@ -35,29 +35,28 @@
 
 namespace silkworm::rpc::ethbackend {
 
-using boost::asio::awaitable;
-
 class RemoteBackEnd final : public BackEnd {
   public:
-    explicit RemoteBackEnd(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
-                           agrpc::GrpcContext& grpc_context);
-    explicit RemoteBackEnd(boost::asio::io_context::executor_type executor,
-                           std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
-                           agrpc::GrpcContext& grpc_context);
+    RemoteBackEnd(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
+                  agrpc::GrpcContext& grpc_context);
+    RemoteBackEnd(boost::asio::io_context::executor_type executor,
+                  std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
+                  agrpc::GrpcContext& grpc_context);
     ~RemoteBackEnd() override = default;
 
-    awaitable<evmc::address> etherbase() override;
-    awaitable<uint64_t> protocol_version() override;
-    awaitable<uint64_t> net_version() override;
-    awaitable<std::string> client_version() override;
-    awaitable<uint64_t> net_peer_count() override;
-    awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
-    awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
-    awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
-    awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
-    awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
-    awaitable<NodeInfos> engine_node_info() override;
-    awaitable<PeerInfos> peers() override;
+    Task<evmc::address> etherbase() override;
+    Task<uint64_t> protocol_version() override;
+    Task<uint64_t> net_version() override;
+    Task<std::string> client_version() override;
+    Task<uint64_t> net_peer_count() override;
+    Task<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
+    Task<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
+    Task<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
+    Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
+    Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
+    Task<NodeInfos> engine_node_info() override;
+    Task<PeerInfos> peers() override;
+    Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
 
   private:
     static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);

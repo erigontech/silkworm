@@ -56,7 +56,7 @@ class MemoryOverlay {
 
 class MemoryMutationCursor;
 
-class MemoryMutation : public RWTxn {
+class MemoryMutation : public RWTxnManaged {
   public:
     explicit MemoryMutation(MemoryOverlay& overlay);
     MemoryMutation(MemoryMutation&& other) noexcept = default;

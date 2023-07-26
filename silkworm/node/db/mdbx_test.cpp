@@ -218,7 +218,7 @@ TEST_CASE("RWTxn") {
 
     SECTION("Managed") {
         {
-            auto tx{db::RWTxn(env)};
+            auto tx{db::RWTxnManaged(env)};
             db::PooledCursor table_cursor(*tx, {table_name});
 
             // populate table
@@ -226,7 +226,7 @@ TEST_CASE("RWTxn") {
                 table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
             }
 
-            tx.commit();
+            tx.commit_and_renew();
         }
 
         auto tx{env.start_read()};
@@ -235,19 +235,19 @@ TEST_CASE("RWTxn") {
     }
 
     SECTION("External") {
-        RWTxn tx{env};
+        RWTxnManaged tx{env};
         tx.disable_commit();
         {
             (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
-            tx.commit();  // Does not have any effect
+            tx.commit_and_renew();  // Does not have any effect
         }
         tx.abort();
-        RWTxn tx2{env};
+        RWTxnManaged tx2{env};
         REQUIRE(db::has_map(tx2, table_name) == false);
     }
 
     SECTION("Cursor from RWTxn") {
-        auto tx{db::RWTxn(env)};
+        auto tx{db::RWTxnManaged(env)};
         db::PooledCursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
@@ -481,7 +481,7 @@ TEST_CASE("OF pages") {
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
         target.insert(db::to_slice(key), db::to_slice(value));
-        txn.commit(/*renew=*/true);
+        txn.commit_and_renew();
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};
         REQUIRE(!stats.ms_overflow_pages);
@@ -492,7 +492,7 @@ TEST_CASE("OF pages") {
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
         target.insert(db::to_slice(key), db::to_slice(value));
-        txn.commit(/*renew=*/true);
+        txn.commit_and_renew();
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};
         REQUIRE(stats.ms_overflow_pages);

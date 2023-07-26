@@ -36,8 +36,8 @@
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
+#include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
-#include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
 namespace silkworm::sentry {
@@ -78,7 +78,7 @@ class PeerManager {
     Task<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
     Task<void> drop_peer(
         std::shared_ptr<rlpx::Peer> peer,
-        rlpx::rlpx_common::DisconnectReason reason);
+        rlpx::DisconnectReason reason);
 
     static constexpr size_t kMaxSimultaneousDropPeerTasks = 10;
 
@@ -90,12 +90,12 @@ class PeerManager {
     void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
 
-    static std::vector<common::EnodeUrl> peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers);
+    static std::vector<EnodeUrl> peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers);
     Task<void> discover_peers(
         discovery::Discovery& discovery,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
     Task<void> connect_peer(
-        common::EnodeUrl peer_url,
+        EnodeUrl peer_url,
         bool is_static_peer,
         std::unique_ptr<rlpx::Client> client);
 
@@ -107,7 +107,7 @@ class PeerManager {
     concurrency::TaskGroup drop_peer_tasks_;
     size_t drop_peer_tasks_count_{0};
 
-    std::set<common::EnodeUrl> connecting_peer_urls_;
+    std::set<EnodeUrl> connecting_peer_urls_;
     silkworm::rpc::ServerContextPool& context_pool_;
     concurrency::EventNotifier need_peers_notifier_;
     concurrency::TaskGroup connect_peer_tasks_;

@@ -33,7 +33,7 @@ namespace silkworm::sentry::rlpx {
 class Client {
   public:
     Client(
-        common::EccKeyPair node_key,
+        EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
         std::function<std::unique_ptr<Protocol>()> protocol_factory)
@@ -44,11 +44,11 @@ class Client {
     }
 
     Task<std::unique_ptr<Peer>> connect(
-        common::EnodeUrl peer_url,
+        EnodeUrl peer_url,
         bool is_static_peer);
 
   private:
-    common::EccKeyPair node_key_;
+    EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;
     std::function<std::unique_ptr<Protocol>()> protocol_factory_;

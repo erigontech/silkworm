@@ -73,13 +73,10 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
 
-    - name: Test
+    - name: Unit tests
+      run: make "SILKWORM_BUILD_DIR=${{runner.workspace}}/build" run_unit_tests
+
+    - name: Ethereum EL tests
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmd/test/core_test
-        cmd/test/infra_test
-        cmd/test/node_test
-        cmd/test/rpcdaemon_test
-        cmd/test/sentry_test
-        cmd/test/sync_test
         cmd/test/ethereum --threads 4

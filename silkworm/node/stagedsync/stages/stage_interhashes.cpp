@@ -37,6 +37,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
+        db::DataModel data_model{txn};
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
@@ -69,7 +70,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(hashstate_stage_progress));
         }
-        auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
+        auto header{data_model.read_header(hashstate_stage_progress, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(hashstate_stage_progress) +
@@ -95,7 +96,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         success_or_throw(ret);
         throw_if_stopping();
         db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -129,6 +130,8 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
+        db::DataModel data_model{txn};
+
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {
             // Actually nothing to unwind
@@ -152,7 +155,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(to));
         }
-        auto header{db::read_header(txn, to, header_hash->bytes)};
+        auto header{data_model.read_header(to, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(to) +
@@ -173,7 +176,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         success_or_throw(ret);
         throw_if_stopping();
         db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -436,7 +439,7 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
         txn->clear_map(db::table::kTrieOfAccounts.name);
         log::Info(log_prefix_, {"clearing", db::table::kTrieOfStorage.name});
         txn->clear_map(db::table::kTrieOfStorage.name);
-        txn.commit();
+        txn.commit_and_renew();
 
         account_collector_ = std::make_unique<etl::Collector>(node_settings_);
         storage_collector_ = std::make_unique<etl::Collector>(node_settings_);

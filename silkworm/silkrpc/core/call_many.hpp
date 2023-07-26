@@ -26,12 +26,12 @@
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/block_cache.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -60,6 +60,15 @@ class CallExecutor {
     CallExecutor& operator=(const CallExecutor&) = delete;
 
     boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, const AccountsOverrides& accounts_overrides, std::optional<std::uint64_t> timeout);
+
+    CallManyResult executes_all_bundles(const silkworm::ChainConfig* config,
+                                        const silkworm::BlockWithHash& block,
+                                        ethdb::TransactionDatabase& tx_database,
+                                        const Bundles& bundles,
+                                        std::optional<std::uint64_t> opt_timeout,
+                                        const AccountsOverrides& accounts_overrides,
+                                        int32_t transaction_index,
+                                        boost::asio::any_io_executor& executor);
 
   private:
     ethdb::Transaction& transaction_;

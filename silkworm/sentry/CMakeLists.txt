@@ -18,6 +18,7 @@ set(TARGET silkworm_sentry)
 
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED thread)
+find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -37,6 +38,15 @@ add_library(stun_msg "${STUN_MSG_SRC}")
 target_include_directories(stun_msg PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/include")
 target_compile_options(stun_msg PRIVATE -w) # disable warnings
 
+# sentry common
+add_subdirectory(common)
+
+# node DB
+add_subdirectory(discovery/node_db)
+
+# disc v4
+add_subdirectory(discovery/disc_v4)
+
 set(SRC "")
 file(
   GLOB_RECURSE
@@ -49,6 +59,8 @@ file(
   "*.cc"
 )
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SRC EXCLUDE REGEX "sentry/common")
+list(FILTER SRC EXCLUDE REGEX "discovery/[a-z0-9_]+/")
 
 add_library(${TARGET} ${SRC})
 
@@ -71,6 +83,9 @@ set(LIBS_PRIVATE
     silkworm_core
     silkworm_interfaces
     silkworm-buildinfo
+    silkworm_sentry_common
+    silkworm_sentry_node_db
+    silkworm_sentry_disc_v4
 )
 if(MSVC)
   list(APPEND LIBS_PRIVATE ntdll.lib)
@@ -89,3 +104,14 @@ target_link_libraries(
   PUBLIC "${LIBS_PUBLIC}"
   PRIVATE "${LIBS_PRIVATE}"
 )
+
+# unit tests
+set(TEST_TARGET sentry_test)
+file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
+list(FILTER TEST_SRC EXCLUDE REGEX "sentry/common")
+list(FILTER TEST_SRC EXCLUDE REGEX "discovery/")
+add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
+if(SILKWORM_SANITIZE)
+  target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+endif()
+target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)

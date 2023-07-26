@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/files.hpp>
 
 static char hex2ascii(char c) {
@@ -52,7 +52,7 @@ static std::string ascii_from_hex(const std::string& hex) {
 namespace silkworm {
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::TemporaryFile tmp_jwt_file;
 
     SECTION("empty file path") {
@@ -72,7 +72,7 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
 }
 
 TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::TemporaryFile tmp_jwt_file;
     std::ofstream tmp_jwt_ofs{tmp_jwt_file.path()};
 

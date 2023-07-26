@@ -109,7 +109,7 @@ void ClientContextPool::start() {
 void ClientContextPool::add_context(concurrency::WaitMode wait_mode) {
     const auto context_count = num_contexts();
     const auto& client_context = ContextPool::add_context(ClientContext{context_count, wait_mode});
-    SILK_DEBUG << "ClientContextPool::add_context context[" << context_count << "] " << client_context;
+    SILK_TRACE << "ClientContextPool::add_context context[" << context_count << "] " << client_context;
 }
 
 }  // namespace silkworm::rpc

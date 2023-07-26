@@ -13,16 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
-
-#include <tuple>
 
 #include "request.hpp"
 
@@ -31,12 +23,7 @@ namespace silkworm::rpc::http {
 //! Parser for incoming requests.
 class RequestParser {
   public:
-    //! Construct ready to parse the request method.
     RequestParser();
-
-    //! Reset to initial parser state.
-    void reset();
-
     //! Result of parse.
     enum class ResultType {
         good,
@@ -51,58 +38,13 @@ class RequestParser {
      * required. The InputIterator return value indicates how much of the input
      * has been consumed.
      */
-    template <typename InputIterator>
-    ResultType parse(Request& req, InputIterator begin, InputIterator end) {
-        while (begin != end) {
-            ResultType result = consume(req, *begin++);
-            if (result == ResultType::good || result == ResultType::bad || result == ResultType::processing_continue) {
-                return result;
-            }
-        }
+    ResultType parse(Request& req, const char* begin, const char* end);
 
-        return ResultType::indeterminate;
-    }
+    void reset();
 
   private:
-    //! Handle the next character of input.
-    ResultType consume(Request& req, char input);
-
-    //! Check if a byte is an HTTP character.
-    static bool is_char(int c);
-
-    //! Check if a byte is an HTTP control character.
-    static bool is_ctl(int c);
-
-    //! Check if a byte is defined as an HTTP tspecial character.
-    static bool is_tspecial(int c);
-
-    //! Check if a byte is a digit.
-    static bool is_digit(int c);
-
-    //! The current state of the parser.
-    enum State {
-        method_start,
-        method,
-        uri,
-        http_version_h,
-        http_version_t_1,
-        http_version_t_2,
-        http_version_p,
-        http_version_slash,
-        http_version_major_start,
-        http_version_major,
-        http_version_minor_start,
-        http_version_minor,
-        expecting_newline_1,
-        header_line_start,
-        header_lws,
-        header_name,
-        space_before_header_value,
-        header_value,
-        expecting_newline_2,
-        expecting_newline_3,
-        content_start
-    } state_;
+    uint64_t prev_len_{0};
+    std::vector<char> buffer_;
 };
 
 }  // namespace silkworm::rpc::http

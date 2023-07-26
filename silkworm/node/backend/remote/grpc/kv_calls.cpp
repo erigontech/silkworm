@@ -83,7 +83,7 @@ awaitable<void> TxCall::operator()(const EthereumBackEnd& backend) {
     grpc::Status status{grpc::Status::OK};
     try {
         // Create a new read-only transaction.
-        read_only_txn_ = db::ROTxn{*chaindata_env};
+        read_only_txn_ = db::ROTxnManaged{*chaindata_env};
         SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << read_only_txn_->id();
 
         // Send an unsolicited message containing the transaction ID.
@@ -336,7 +336,7 @@ void TxCall::handle_max_ttl_timer_expired(const EthereumBackEnd& backend) {
 
     // Close and reopen to avoid long-lived transactions (resource-consuming for MDBX)
     read_only_txn_.abort();
-    read_only_txn_ = db::ROTxn{*chaindata_env};
+    read_only_txn_ = db::ROTxnManaged{*chaindata_env};
 
     // Restore the whole state of the transaction (i.e. all cursor positions)
     const bool restore_success = restore_cursors(positions);

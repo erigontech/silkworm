@@ -21,7 +21,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -44,7 +44,7 @@ TEST_CASE("Empty DumpAccounts", "[silkrpc][types][dump_account]") {
     }
 
     SECTION("print") {
-        CHECK_NOTHROW(silkworm::test::null_stream() << da);
+        CHECK_NOTHROW(silkworm::test_util::null_stream() << da);
     }
 
     SECTION("json") {
@@ -78,7 +78,7 @@ TEST_CASE("Filled DumpAccounts", "[silkrpc][types][dump_account]") {
     }
 
     SECTION("print") {
-        CHECK_NOTHROW(silkworm::test::null_stream() << das);
+        CHECK_NOTHROW(silkworm::test_util::null_stream() << das);
     }
 
     SECTION("json") {
@@ -111,7 +111,7 @@ TEST_CASE("Filled zero-account DumpAccounts", "[silkrpc][types][dump_account]") 
     }
 
     SECTION("print") {
-        CHECK_NOTHROW(silkworm::test::null_stream() << da);
+        CHECK_NOTHROW(silkworm::test_util::null_stream() << da);
     }
 
     SECTION("json") {

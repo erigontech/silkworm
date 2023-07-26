@@ -30,16 +30,16 @@ namespace silkworm::sentry::rlpx::auth {
 const uint8_t AuthAckMessage::version = 4;
 
 AuthAckMessage::AuthAckMessage(
-    common::EccPublicKey initiator_public_key,
-    common::EccPublicKey ephemeral_public_key)
+    EccPublicKey initiator_public_key,
+    EccPublicKey ephemeral_public_key)
     : initiator_public_key_(std::move(initiator_public_key)),
       ephemeral_public_key_(std::move(ephemeral_public_key)),
-      nonce_(common::random_bytes(32)) {
+      nonce_(random_bytes(32)) {
 }
 
 AuthAckMessage::AuthAckMessage(
     ByteView data,
-    const common::EccKeyPair& initiator_key_pair)
+    const EccKeyPair& initiator_key_pair)
     : initiator_public_key_(initiator_key_pair.public_key()),
       ephemeral_public_key_(Bytes{}) {
     init_from_rlp(AuthAckMessage::decrypt_body(data, initiator_key_pair.private_key()));
@@ -57,7 +57,7 @@ void AuthAckMessage::init_from_rlp(ByteView data) {
     if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
         throw DecodingException(result.error(), "Failed to decode AuthAckMessage RLP");
     }
-    ephemeral_public_key_ = common::EccPublicKey::deserialize(public_key_data);
+    ephemeral_public_key_ = EccPublicKey::deserialize(public_key_data);
 }
 
 Bytes AuthAckMessage::serialize_size(size_t body_size) {

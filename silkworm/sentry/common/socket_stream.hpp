@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 class SocketStream {
   public:
@@ -48,4 +48,4 @@ class SocketStream {
     boost::asio::ip::tcp::socket socket_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

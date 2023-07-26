@@ -102,6 +102,18 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
+    boost::asio::awaitable<KeyValue> previous() override {
+        KeyValue out;
+
+        if (--itr_ != table_.begin()) {
+            auto key{*silkworm::from_hex(itr_.key())};
+            auto value{*silkworm::from_hex(itr_.value().get<std::string>())};
+            out = KeyValue{key, value};
+        }
+
+        co_return out;
+    }
+
     boost::asio::awaitable<KeyValue> next_dup() override {
         KeyValue out;
 
@@ -168,8 +180,12 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkworm::State>> create_state(const core::rawdb::DatabaseReader& /* db_reader */, uint64_t /* block_number */) override {
-        co_return nullptr;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
+        return nullptr;
+    }
+
+    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+        return nullptr;
     }
 
     boost::asio::awaitable<void> close() override {

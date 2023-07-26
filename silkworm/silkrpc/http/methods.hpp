@@ -92,8 +92,10 @@ constexpr const char* k_debug_accountRange{"debug_accountRange"};
 constexpr const char* k_debug_getModifiedAccountsByNumber{"debug_getModifiedAccountsByNumber"};
 constexpr const char* k_debug_getModifiedAccountsByHash{"debug_getModifiedAccountsByHash"};
 constexpr const char* k_debug_storageRangeAt{"debug_storageRangeAt"};
+constexpr const char* k_debug_accountAt{"debug_accountAt"};
 constexpr const char* k_debug_traceTransaction{"debug_traceTransaction"};
 constexpr const char* k_debug_traceCall{"debug_traceCall"};
+constexpr const char* k_debug_traceCallMany{"debug_traceCallMany"};
 constexpr const char* k_debug_traceBlockByNumber{"debug_traceBlockByNumber"};
 constexpr const char* k_debug_traceBlockByHash{"debug_traceBlockByHash"};
 
@@ -144,5 +146,8 @@ constexpr const char* k_ots_getTransactionBySenderAndNonce{"ots_getTransactionBy
 constexpr const char* k_ots_getContractCreator{"ots_getContractCreator"};
 constexpr const char* k_ots_traceTransaction{"ots_traceTransaction"};
 constexpr const char* k_ots_getTransactionError{"ots_getTransactionError"};
+constexpr const char* k_ots_getInternalOperations{"ots_getInternalOperations"};
+constexpr const char* k_ots_search_transactions_after{"ots_searchTransactionsAfter"};
+constexpr const char* k_ots_search_transactions_before{"ots_searchTransactionsBefore"};
 
 }  // namespace silkworm::rpc::http::method

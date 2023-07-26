@@ -27,17 +27,17 @@
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
-#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
-#include <silkworm/sentry/api/api_common/message_id_set.hpp>
+#include <silkworm/sentry/api/common/message_from_peer.hpp>
+#include <silkworm/sentry/api/common/message_id_set.hpp>
 
 namespace silkworm::sentry::api::router {
 
 class MessagesCall final {
   public:
-    using TResult = std::shared_ptr<concurrency::Channel<api_common::MessageFromPeer>>;
+    using TResult = std::shared_ptr<concurrency::Channel<MessageFromPeer>>;
 
     MessagesCall(
-        api_common::MessageIdSet message_id_filter,
+        MessageIdSet message_id_filter,
         boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
           result_promise_(std::make_shared<concurrency::AwaitablePromise<TResult>>(executor)),
@@ -45,7 +45,7 @@ class MessagesCall final {
 
     MessagesCall() = default;
 
-    [[nodiscard]] const api_common::MessageIdSet& message_id_filter() const { return message_id_filter_; }
+    [[nodiscard]] const MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
     Task<TResult> result() {
         auto future = result_promise_->get_future();
@@ -61,7 +61,7 @@ class MessagesCall final {
     }
 
   private:
-    api_common::MessageIdSet message_id_filter_;
+    MessageIdSet message_id_filter_;
     std::shared_ptr<concurrency::AwaitablePromise<TResult>> result_promise_;
     std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal_;
 };

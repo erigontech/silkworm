@@ -129,6 +129,13 @@ asio::awaitable<std::optional<BlockHeader>> Server::get_header(Hash block_hash) 
     return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
+asio::awaitable<std::optional<BlockHeader>> Server::get_header(BlockNum height, Hash hash) {
+    auto lambda = [](Server* me, BlockNum bn, Hash h) -> asio::awaitable<std::optional<BlockHeader>> {
+        co_return me->exec_engine_.get_header(bn, h);
+    };
+    return co_spawn(io_context_, lambda(this, height, hash), asio::use_awaitable);
+}
+
 asio::awaitable<std::vector<BlockHeader>> Server::get_last_headers(BlockNum limit) {
     auto lambda = [](Server* me, BlockNum l) -> asio::awaitable<std::vector<BlockHeader>> {
         co_return me->exec_engine_.get_last_headers(l);

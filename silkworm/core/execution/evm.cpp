@@ -142,12 +142,13 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     state_.add_to_balance(contract_addr, value);
 
     const evmc_message deploy_message{
-        .kind = EVMC_CALL,
+        .kind = message.depth > 0 ? message.kind : EVMC_CALL,
         .depth = message.depth,
         .gas = message.gas,
         .recipient = contract_addr,
         .sender = message.sender,
         .value = message.value,
+        .create2_salt = message.create2_salt,
     };
 
     auto evm_res{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};

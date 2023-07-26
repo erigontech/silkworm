@@ -29,8 +29,8 @@ struct StatusMessage {
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static StatusMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] common::Message to_message() const;
-    [[nodiscard]] static StatusMessage from_message(const common::Message& message);
+    [[nodiscard]] Message to_message() const;
+    [[nodiscard]] static StatusMessage from_message(const Message& message);
 
     uint8_t version;
     uint64_t network_id;

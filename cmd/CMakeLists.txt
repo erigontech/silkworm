@@ -18,6 +18,9 @@
 add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
+  # C API
+  add_subdirectory(api)
+
   # Benchmarks
   add_subdirectory(benchmark)
 
@@ -31,7 +34,7 @@ if(NOT SILKWORM_CORE_ONLY)
   # Common modules for commands
   add_subdirectory(common)
 
-  # State transtion and fuzzy tests runner tool
+  # State transition and fuzzy tests runner tool
   add_subdirectory(state-transition)
 
   # Development utility tools

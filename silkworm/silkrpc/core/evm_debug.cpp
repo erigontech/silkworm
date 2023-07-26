@@ -19,6 +19,9 @@
 #include <memory>
 #include <string>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
@@ -27,8 +30,10 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::debug {
@@ -237,6 +242,13 @@ void DebugTracer::flush_logs() {
     }
 }
 
+void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& intra_block_state) noexcept {
+    nonce = intra_block_state.get_nonce(address_);
+    balance = intra_block_state.get_balance(address_);
+    code_hash = intra_block_state.get_code_hash(address_);
+    code = intra_block_state.get_code(address_);
+}
+
 void DebugTracer::write_log(const DebugLog& log) {
     nlohmann::json json;
 
@@ -261,6 +273,79 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_json(json);
 }
 
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, database_reader_, block_number);
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, storage, block_hash);
+
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, bnoh);
+    rpc::Transaction transaction{call.to_transaction()};
+
+    const auto& block = block_with_hash->block;
+    const auto number = block.header.number;
+
+    stream.write_field("result");
+    stream.open_object();
+    co_await execute(stream, number, block, transaction, -1);
+    stream.close_object();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash) {
+    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, database_reader_, tx_hash);
+
+    if (!tx_with_block) {
+        std::ostringstream oss;
+        oss << "transaction 0x" << tx_hash << " not found";
+        const Error error{-32000, oss.str()};
+        stream.write_field("error", error);
+    } else {
+        const auto& block = tx_with_block->block_with_hash.block;
+        const auto& transaction = tx_with_block->transaction;
+        const auto number = block.header.number - 1;
+
+        stream.write_field("result");
+        stream.open_object();
+        co_await execute(stream, number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
+        stream.close_object();
+    }
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, context.block_number);
+    auto transaction_index = context.transaction_index;
+    if (transaction_index == -1) {
+        transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());
+    }
+
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, *block_with_hash, bundles, transaction_index);
+    stream.close_array();
+
+    co_return;
+}
+
 awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
@@ -270,42 +355,50 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     auto current_executor = co_await boost::asio::this_coro::executor;
-    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
-    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
-    for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
-        rpc::Transaction txn{block.transactions[idx]};
-        if (!txn.from) {
-            txn.recover_sender();
-        }
-        SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-        auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+                for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
+                    rpc::Transaction txn{block.transactions[idx]};
+                    if (!txn.from) {
+                        txn.recover_sender();
+                    }
+                    SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
-        stream.open_object();
-        stream.write_field("result");
-        stream.open_object();
-        stream.write_field("structLogs");
-        stream.open_array();
+                    auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
-        Tracers tracers{debug_tracer};
-        const auto execution_result = co_await executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                    stream.open_object();
+                    stream.write_field("result");
+                    stream.open_object();
+                    stream.write_field("structLogs");
+                    stream.open_array();
 
-        debug_tracer->flush_logs();
-        stream.close_array();
+                    Tracers tracers{debug_tracer};
+                    const auto execution_result = executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
-        if (execution_result.pre_check_error) {
-            SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
+                    debug_tracer->flush_logs();
+                    stream.close_array();
 
-            stream.write_field("failed", true);
-        } else {
-            stream.write_field("failed", execution_result.error_code != evmc_status_code::EVMC_SUCCESS);
-            stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
-            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
-        }
-        stream.close_object();
-        stream.close_object();
-    }
+                    stream.write_field("failed", !execution_result.success());
+                    if (!execution_result.pre_check_error) {
+                        stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
+                        stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+                    }
+
+                    stream.close_object();
+                    stream.close_object();
+                }
+                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+                    self.complete();
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
     co_return;
 }
 
@@ -326,38 +419,144 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     auto current_executor = co_await boost::asio::this_coro::executor;
-    state::RemoteState remote_state{current_executor, database_reader_, block_number};
-    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
-    for (auto idx{0}; idx < index; idx++) {
-        silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, block_number);
+                EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-        if (!txn.from) {
-            txn.recover_sender();
-        }
-        co_await executor.call(block, txn);
-    }
-    executor.reset();
+                for (auto idx{0}; idx < index; idx++) {
+                    silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
 
-    auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+                    if (!txn.from) {
+                        txn.recover_sender();
+                    }
+                    executor.call(block, txn);
+                }
+                executor.reset();
 
-    stream.write_field("structLogs");
-    stream.open_array();
+                auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
-    Tracers tracers{debug_tracer};
-    const auto execution_result = co_await executor.call(block, transaction, tracers);
+                stream.write_field("structLogs");
+                stream.open_array();
 
-    debug_tracer->flush_logs();
-    stream.close_array();
-    if (execution_result.pre_check_error) {
-        SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
+                Tracers tracers{debug_tracer};
+                const auto execution_result = executor.call(block, transaction, tracers);
 
-        stream.write_field("failed", true);
-    } else {
-        stream.write_field("failed", execution_result.error_code != evmc_status_code::EVMC_SUCCESS);
-        stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-        stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
-    }
+                debug_tracer->flush_logs();
+                stream.close_array();
+
+                SILK_DEBUG << "debug return: " << execution_result.error_message();
+
+                stream.write_field("failed", !execution_result.success());
+                if (!execution_result.pre_check_error) {
+                    stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
+                    stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+                }
+                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+                    self.complete();
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
+    co_return;
+}
+
+awaitable<void> DebugExecutor::execute(json::Stream& stream,
+                                       const silkworm::BlockWithHash& block_with_hash,
+                                       const Bundles& bundles,
+                                       int32_t transaction_index) {
+    const auto& block = block_with_hash.block;
+    const auto& block_transactions = block.transactions;
+
+    SILK_INFO << "DebugExecutor::execute: "
+              << " block number: " << block.header.number
+              << " txns in block: " << block_transactions.size()
+              << " bundles: [" << bundles << "]"
+              << " transaction_index: " << std::dec << transaction_index
+              << " config: " << config_;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, block.header.number);
+                EVMExecutor executor{*chain_config_ptr, workers_, state};
+
+                for (auto idx{0}; idx < transaction_index; idx++) {
+                    silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+
+                    if (!txn.from) {
+                        txn.recover_sender();
+                    }
+
+                    executor.call(block, txn);
+                }
+                executor.reset();
+
+                for (const auto& bundle : bundles) {
+                    const auto& block_override = bundle.block_override;
+
+                    rpc::Block blockContext{{block_with_hash.block}};
+                    if (block_override.block_number) {
+                        blockContext.block.header.number = block_override.block_number.value();
+                    }
+                    if (block_override.coin_base) {
+                        blockContext.block.header.beneficiary = block_override.coin_base.value();
+                    }
+                    if (block_override.timestamp) {
+                        blockContext.block.header.timestamp = block_override.timestamp.value();
+                    }
+                    if (block_override.difficulty) {
+                        blockContext.block.header.difficulty = block_override.difficulty.value();
+                    }
+                    if (block_override.gas_limit) {
+                        blockContext.block.header.gas_limit = block_override.gas_limit.value();
+                    }
+                    if (block_override.base_fee) {
+                        blockContext.block.header.base_fee_per_gas = block_override.base_fee;
+                    }
+
+                    stream.open_array();
+
+                    for (const auto& call : bundle.transactions) {
+                        silkworm::Transaction txn{call.to_transaction()};
+
+                        stream.open_object();
+                        stream.write_field("structLogs");
+                        stream.open_array();
+
+                        auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+                        Tracers tracers{debug_tracer};
+
+                        const auto execution_result = executor.call(blockContext.block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+
+                        debug_tracer->flush_logs();
+                        stream.close_array();
+
+                        SILK_DEBUG << "debug return: " << execution_result.error_message();
+
+                        stream.write_field("failed", !execution_result.success());
+                        if (!execution_result.pre_check_error) {
+                            stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
+                            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+                        }
+                        stream.close_object();
+                    }
+
+                    stream.close_array();
+                }
+                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+                    self.complete();
+                });
+            });
+        },
+        boost::asio::use_awaitable);
 
     co_return;
 }

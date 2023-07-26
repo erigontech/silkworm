@@ -163,10 +163,10 @@ awaitable<BlockId> RemoteClient::last_fork_choice() {
 }
 
 awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) {
-    BlockNum block_number = 0;  // proto file support get_header by block number, but we don't use it
+    // BlockNum block_number = 0;  // proto file support get_header by block number, but we don't use it
     BlockHeader header;
     ::execution::GetSegmentRequest request;
-    request.set_block_number(block_number);
+    // request.set_block_number(block_number);
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
@@ -178,7 +178,29 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) 
 
     const auto& received_header = response.header();
     match_or_throw(block_hash, received_header.block_hash());
-    match_or_throw(block_number, received_header.block_number());
+    // match_or_throw(block_number, received_header.block_number());
+
+    deserialize_header(received_header, header);
+
+    co_return header;
+}
+
+awaitable<std::optional<BlockHeader>> RemoteClient::get_header(BlockNum height, Hash hash) {
+    BlockHeader header;
+    ::execution::GetSegmentRequest request;
+    request.set_block_number(height);
+    request.set_allocated_block_hash(rpc::H256_from_bytes32(hash).release());
+
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
+
+    if (!response.has_header()) {
+        co_return std::nullopt;
+    }
+
+    const auto& received_header = response.header();
+    match_or_throw(hash, received_header.block_hash());
+    match_or_throw(height, received_header.block_number());
 
     deserialize_header(received_header, header);
 

@@ -25,7 +25,7 @@
 namespace silkworm::sentry::rlpx::auth {
 
 TEST_CASE("EciesCipher.encrypt_decrypt_message") {
-    common::EccKeyPair receiver_key;
+    EccKeyPair receiver_key;
 
     Bytes expected_plain_text = {1, 2, 3, 4, 5};
     expected_plain_text.resize(crypto::kAESBlockSize);
@@ -43,7 +43,7 @@ TEST_CASE("EciesCipher.encrypt_decrypt_message") {
 }
 
 TEST_CASE("EciesCipher.encrypt_decrypt_bytes") {
-    common::EccKeyPair receiver_key;
+    EccKeyPair receiver_key;
 
     Bytes expected_plain_text = {1, 2, 3, 4, 5};
     expected_plain_text.resize(crypto::kAESBlockSize);

@@ -20,7 +20,7 @@
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -35,7 +35,7 @@ TEST_CASE("create empty chain config", "[silkrpc][types][chain_config]") {
 
 TEST_CASE("print empty chain config", "[silkrpc][types][chain_config]") {
     ChainConfig chain_config{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << chain_config);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << chain_config);
 }
 
 TEST_CASE("cannot create forks from empty chain config", "[silkrpc][types][chain_config]") {

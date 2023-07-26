@@ -60,7 +60,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         .in_memory = true,
     };
     auto main_env{db::open_env(main_db_config)};
-    RWTxn main_rw_txn{main_env};
+    RWTxnManaged main_rw_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_rw_txn};
 
     SECTION("Create one memory mutation") {

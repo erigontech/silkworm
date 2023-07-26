@@ -18,6 +18,7 @@
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(api)
   add_subdirectory(interfaces)
   add_subdirectory(infra)
   add_subdirectory(sentry)

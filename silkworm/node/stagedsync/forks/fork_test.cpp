@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -43,9 +43,6 @@ class Fork_ForTest : public Fork {
     using Fork::canonical_chain_;
     using Fork::current_head_;
     using Fork::Fork;
-    using Fork::last_fork_choice_;
-    using Fork::last_head_status_;
-    using Fork::last_verified_head_;
     using Fork::main_tx_;
     using Fork::memory_db_;
     using Fork::memory_tx_;
@@ -72,7 +69,7 @@ static Block generateSampleChildrenBlock(const BlockHeader& parent) {
 }
 
 TEST_CASE("Fork") {
-    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
     context.add_genesis_data();
@@ -123,7 +120,7 @@ TEST_CASE("Fork") {
     auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash, block1_hash);
     REQUIRE(fcu_updated);
 
-    auto final_canonical_head = main_chain.canonical_head();
+    auto final_canonical_head = main_chain.last_chosen_head();
     REQUIRE(final_canonical_head == BlockId{3, block3_hash});
 
     SECTION("creating a fork") {
@@ -133,15 +130,17 @@ TEST_CASE("Fork") {
                 auto block4 = generateSampleChildrenBlock(block3.header);
                 auto block4_hash = block4.header.hash();
 
-                BlockId forking_point = main_chain.canonical_head();
+                BlockId forking_point = main_chain.last_chosen_head();
 
                 Fork_ForTest fork{forking_point,
-                                  db::ROTxn(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                                  db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
                                   context.node_settings()};
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 3);
+
+                CHECK(!fork.head_status().has_value());
 
                 // inserting blocks
                 fork.extend_with(block4);
@@ -159,10 +158,10 @@ TEST_CASE("Fork") {
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 4);
 
                 // fork choice
-                bool updated = fork.notify_fork_choice_update(block4_hash, block3_hash);
+                bool updated = fork.fork_choice(block4_hash, block3_hash);
                 CHECK(updated);
                 CHECK(fork.current_head() == BlockId{4, block4_hash});
-                CHECK(fork.last_fork_choice() == BlockId{4, block4_hash});
+                CHECK((fork.head_status().has_value() && holds_alternative<ValidChain>(*fork.head_status())));
 
                 // close
                 fork.close();

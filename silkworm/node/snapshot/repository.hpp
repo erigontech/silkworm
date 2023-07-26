@@ -55,12 +55,19 @@ class SnapshotRepository {
     explicit SnapshotRepository(SnapshotSettings settings = {});
     ~SnapshotRepository();
 
+    [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
+    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
+
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
+    [[nodiscard]] SnapshotPathList get_segment_files() const {
+        return get_files(kSegmentExtension);
+    }
+
+    void reopen_list(const SnapshotPathList& segment_files, bool optimistic = false);
+    void reopen_file(const SnapshotPath& segment_path, bool optimistic = false);
     void reopen_folder();
     void close();
-
-    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
     bool for_each_header(const HeaderSnapshot::Walker& fn);
     bool for_each_body(const BodySnapshot::Walker& fn);
@@ -79,14 +86,24 @@ class SnapshotRepository {
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
+    std::size_t view_header_segments(const HeaderSnapshotWalker& walker);
+    std::size_t view_body_segments(const BodySnapshotWalker& walker);
+    std::size_t view_tx_segments(const TransactionSnapshotWalker& walker);
+
+    [[nodiscard]] const HeaderSnapshot* get_header_segment(const SnapshotPath& path) const;
+    [[nodiscard]] const BodySnapshot* get_body_segment(const SnapshotPath& path) const;
+    [[nodiscard]] const TransactionSnapshot* get_tx_segment(const SnapshotPath& path) const;
+
+    [[nodiscard]] const HeaderSnapshot* find_header_segment(BlockNum number) const;
+    [[nodiscard]] const BodySnapshot* find_body_segment(BlockNum number) const;
+    [[nodiscard]] const TransactionSnapshot* find_tx_segment(BlockNum number) const;
+
     [[nodiscard]] std::vector<std::shared_ptr<Index>> missing_indexes() const;
 
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
     [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
 
   private:
-    void reopen_list(const SnapshotPathList& segment_files, bool optimistic);
-
     bool reopen_header(const SnapshotPath& seg_file);
     bool reopen_body(const SnapshotPath& seg_file);
     bool reopen_transaction(const SnapshotPath& seg_file);
@@ -94,14 +111,10 @@ class SnapshotRepository {
     void close_segments_not_in_list(const SnapshotPathList& segment_files);
 
     template <ConcreteSnapshot T>
-    static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
+    const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const;
 
     template <ConcreteSnapshot T>
     static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);
-
-    [[nodiscard]] SnapshotPathList get_segment_files() const {
-        return get_files(kSegmentExtension);
-    }
 
     [[nodiscard]] SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);

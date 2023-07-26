@@ -52,7 +52,7 @@ Task<void> MessageReceiver::handle_calls() {
     while (true) {
         auto call = co_await message_calls_channel_.receive();
 
-        auto messages_channel = std::make_shared<concurrency::Channel<api::api_common::MessageFromPeer>>(executor);
+        auto messages_channel = std::make_shared<concurrency::Channel<api::MessageFromPeer>>(executor);
 
         subscriptions_.push_back({
             messages_channel,
@@ -71,7 +71,7 @@ Task<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::E
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
+            log::Trace("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
             co_return;
         }
         log::Error("sentry") << "MessageReceiver::unsubscribe_on_signal system_error: " << ex.what();
@@ -93,19 +93,19 @@ Task<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::E
 Task<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
     // loop until DisconnectedError
     while (true) {
-        common::Message message;
+        Message message;
         try {
             message = co_await peer->receive_message();
         } catch (const rlpx::Peer::DisconnectedError& ex) {
             break;
         }
 
-        api::api_common::MessageFromPeer message_from_peer{
+        api::MessageFromPeer message_from_peer{
             std::move(message),
             {peer->peer_public_key()},
         };
 
-        std::list<std::shared_ptr<concurrency::Channel<api::api_common::MessageFromPeer>>> messages_channels;
+        std::list<std::shared_ptr<concurrency::Channel<api::MessageFromPeer>>> messages_channels;
         for (auto& subscription : subscriptions_) {
             if (subscription.message_id_filter.empty() || subscription.message_id_filter.contains(message_from_peer.message.id)) {
                 messages_channels.push_back(subscription.messages_channel);

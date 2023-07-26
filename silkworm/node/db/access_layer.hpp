@@ -19,6 +19,7 @@
 // Database Access Layer
 // See Erigon core/rawdb/accessors_chain.go
 
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -27,8 +28,11 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/hash.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
 
 namespace silkworm::db {
 
@@ -41,7 +45,7 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version);
 //! \brief Updates database info with build info at provided height
 //! \details Is useful to track whether increasing heights have been affected by
 //! upgrades or downgrades of Silkworm's build
-void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height);
+void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height);
 
 //! \brief Read the list of snapshot file names
 std::vector<std::string> read_snapshots(ROTxn& txn);
@@ -112,15 +116,10 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash);
 
-//! \brief Check the presence of a block with the same number
-[[nodiscard]] bool has_sibling(ROTxn& txn, BlockNum block_number);
-
 //! \brief Writes block body in table::kBlockBodies
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
-
-//! \brief Writes block body in table::kBlockBodies and transactions in table::KNonCanonicalTransactions
-void write_sibling(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
+void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);
@@ -147,10 +146,16 @@ std::vector<evmc::address> read_senders(ROTxn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
+void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
+
+void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block);
+void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
+
+bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& out);
 
 //! \brief Persist transactions into db's bucket table::kBlockTransactions.
 //! The key starts from base_id and is incremented by 1 for each transaction.
@@ -220,5 +225,113 @@ uint64_t read_map_sequence(ROTxn& txn, const char* map_name);
 //! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is
 //! committed
 uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_sequence);
+
+//! \brief Read the last head block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn);
+
+//! \brief Read the last safe block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_safe_block(ROTxn& txn);
+
+//! \brief Read the last finalized block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_finalized_block(ROTxn& txn);
+
+//! \brief Write the last head block as stated by the last FCU
+void write_last_head_block(RWTxn& txn, const evmc::bytes32& hash);
+
+//! \brief Write the last safe block as stated by the last FCU
+void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash);
+
+//! \brief Write the last finalized block as stated by the last FCU
+void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash);
+
+class DataModel {
+  public:
+    static void set_snapshot_repository(snapshot::SnapshotRepository* repository);
+
+    explicit DataModel(db::ROTxn& txn);
+    ~DataModel() = default;
+
+    // Not copyable nor movable
+    DataModel(const DataModel&) = delete;
+    DataModel& operator=(const DataModel&) = delete;
+
+    //! Retrieve the chain configuration for which database is populated
+    [[nodiscard]] std::optional<ChainConfig> read_chain_config() const;
+
+    //! Retrieve the chain unique identifier for which database is populated
+    [[nodiscard]] std::optional<ChainId> read_chain_id() const;
+
+    //! Get the highest block number
+    [[nodiscard]] BlockNum highest_block_number() const;
+
+    //! Read block header with the specified key (block number, hash)
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
+
+    //! Read block header with the specified key (block number, hash)
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, const Hash& block_hash) const;
+
+    //! Read block header with the specified hash
+    [[nodiscard]] std::optional<BlockHeader> read_header(const Hash& block_hash) const;
+
+    //! Read block header with the specified block number
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number) const;
+
+    //! Read block number from hash
+    [[nodiscard]] std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
+
+    //! Read all sibling block headers at specified height
+    [[nodiscard]] std::vector<BlockHeader> read_sibling_headers(BlockNum block_number) const;
+
+    //! Read block body in output parameter returning true on success and false on missing block
+    [[nodiscard]] bool read_body(BlockNum height, HashAsArray hash, bool read_senders, BlockBody& body) const;
+    [[nodiscard]] bool read_body(const Hash& hash, BlockNum height, BlockBody& body) const;
+    [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
+
+    //! Read the canonical block header at specified height
+    [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
+
+    //! Read the canonical block header at specified height
+    [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
+
+    //! Read the canonical block body at specified height
+    [[nodiscard]] bool read_canonical_body(BlockNum height, BlockBody& body) const;
+
+    //! Read the canonical block at specified height
+    [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block) const;
+
+    //! Check the presence of a block body using block number and hash
+    [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash) const;
+    [[nodiscard]] bool has_body(BlockNum height, const Hash& hash) const;
+
+    //! Read block returning true on success and false on missing block
+    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
+    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
+    [[nodiscard]] bool read_block(BlockNum number, bool read_senders, Block& block) const;
+
+    //! Read the RLP encoded block transactions at specified height
+    [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
+
+    //! Read total difficulty at specified height
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
+
+    //! Read all block headers up to limit in reverse order from last, processing each one via a user defined callback
+    void for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const;
+
+  private:
+    static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
+    static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);
+    static std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash);
+    static bool read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body);
+    static bool is_body_in_snapshot(BlockNum height);
+    static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
+    static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
+                                                bool read_senders, std::vector<Transaction> txs);
+
+    static inline snapshot::SnapshotRepository* repository_{nullptr};
+
+    db::ROTxn& txn_;
+};
 
 }  // namespace silkworm::db

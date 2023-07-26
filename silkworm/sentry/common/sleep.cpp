@@ -21,7 +21,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 using namespace boost::asio;
 
@@ -32,4 +32,4 @@ Task<void> sleep(std::chrono::milliseconds duration) {
     co_await timer.async_wait(use_awaitable);
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

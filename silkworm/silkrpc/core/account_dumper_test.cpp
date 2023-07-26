@@ -27,7 +27,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -105,6 +105,18 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
+    boost::asio::awaitable<KeyValue> previous() override {
+        KeyValue out;
+
+        if (--itr_ != table_.begin()) {
+            auto key{*silkworm::from_hex(itr_.key())};
+            auto value{*silkworm::from_hex(itr_.value().get<std::string>())};
+            out = KeyValue{key, value};
+        }
+
+        co_return out;
+    }
+
     boost::asio::awaitable<KeyValue> next_dup() override {
         KeyValue out;
 
@@ -171,9 +183,12 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkworm::State>> create_state(const core::rawdb::DatabaseReader& /* db_reader */,
-                                                                          uint64_t /* block_number */) override {
-        co_return nullptr;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
+        return nullptr;
+    }
+
+    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+        return nullptr;
     }
 
     boost::asio::awaitable<void> close() override {
@@ -200,7 +215,7 @@ class DummyDatabase : public ethdb::Database {
 // const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
 TEST_CASE("account dumper") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);

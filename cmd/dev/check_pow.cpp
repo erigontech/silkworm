@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
         auto env{db::open_env(db_config)};
-        db::ROTxn txn{env};
+        db::ROTxnManaged txn{env};
 
         auto config{db::read_chain_config(txn)};
         if (!config.has_value()) {

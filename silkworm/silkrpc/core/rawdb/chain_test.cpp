@@ -28,7 +28,7 @@
 
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
@@ -128,7 +128,7 @@ static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
 }
 
 TEST_CASE("read_header_number") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -153,7 +153,7 @@ TEST_CASE("read_header_number") {
 }
 
 TEST_CASE("read_chain_config") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -200,7 +200,7 @@ TEST_CASE("read_chain_config") {
 }
 
 TEST_CASE("read_chain_id") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -228,7 +228,7 @@ TEST_CASE("read_chain_id") {
 }
 
 TEST_CASE("read_canonical_block_hash") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -265,7 +265,7 @@ TEST_CASE("read_canonical_block_hash") {
 }
 
 TEST_CASE("read_total_difficulty") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -296,7 +296,7 @@ TEST_CASE("read_total_difficulty") {
 }
 
 TEST_CASE("read_block_by_hash") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -354,7 +354,7 @@ TEST_CASE("read_block_by_hash") {
 }
 
 TEST_CASE("read_block_by_number") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -428,7 +428,7 @@ TEST_CASE("read_block_by_number") {
 }
 
 TEST_CASE("read_block_number_by_transaction_hash") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -460,7 +460,7 @@ TEST_CASE("read_block_number_by_transaction_hash") {
 }
 
 TEST_CASE("read_block") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -534,7 +534,7 @@ TEST_CASE("read_block") {
 }
 
 TEST_CASE("read_header_by_hash") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -584,7 +584,7 @@ TEST_CASE("read_header_by_hash") {
 }
 
 TEST_CASE("read_header_by_number") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -634,7 +634,7 @@ TEST_CASE("read_header_by_number") {
 }
 
 TEST_CASE("read_header") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -673,7 +673,7 @@ TEST_CASE("read_header") {
 }
 
 TEST_CASE("read_body") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -767,7 +767,7 @@ TEST_CASE("read_body") {
 }
 
 TEST_CASE("read_header_rlp") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -789,7 +789,7 @@ TEST_CASE("read_header_rlp") {
 }
 
 TEST_CASE("read_body_rlp") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -811,7 +811,7 @@ TEST_CASE("read_body_rlp") {
 }
 
 TEST_CASE("read_senders") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -853,7 +853,7 @@ TEST_CASE("read_senders") {
 }
 
 TEST_CASE("read_raw_receipts") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -991,7 +991,7 @@ TEST_CASE("read_raw_receipts") {
 }
 
 TEST_CASE("read_receipts") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -1149,7 +1149,7 @@ TEST_CASE("read_receipts") {
 }
 
 TEST_CASE("read_canonical_transactions") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -1281,7 +1281,7 @@ TEST_CASE("read_canonical_transactions") {
 }
 
 TEST_CASE("read_noncanonical_transactions") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -1411,7 +1411,7 @@ TEST_CASE("read_noncanonical_transactions") {
 }
 
 TEST_CASE("read_cumulative_transaction_count") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("block found and matching") {
         boost::asio::thread_pool pool{1};
         test::MockDatabaseReader db_reader;
@@ -1448,7 +1448,7 @@ TEST_CASE("read_cumulative_transaction_count") {
 }
 
 TEST_CASE("read_total_issued") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -1459,7 +1459,7 @@ TEST_CASE("read_total_issued") {
 }
 
 TEST_CASE("read_total_burnt") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
@@ -1470,7 +1470,7 @@ TEST_CASE("read_total_burnt") {
 }
 
 TEST_CASE("read_cumulative_gas_used") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("read_cumulative_gas_used") {
         boost::asio::thread_pool pool{1};
         test::MockDatabaseReader db_reader;

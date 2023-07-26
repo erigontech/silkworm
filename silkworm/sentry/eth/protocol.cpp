@@ -22,7 +22,7 @@ namespace silkworm::sentry::eth {
 
 const uint8_t Protocol::kVersion = 68;
 
-void Protocol::handle_peer_first_message(const common::Message& message) {
+void Protocol::handle_peer_first_message(const Message& message) {
     if (message.id != StatusMessage::kId)
         throw std::runtime_error("eth::Protocol: unexpected first message id=" + std::to_string(message.id));
 

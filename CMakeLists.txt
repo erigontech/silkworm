@@ -14,8 +14,7 @@
    limitations under the License.
 ]]
 
-# ethash requires cmake 3.16.2
-cmake_minimum_required(VERSION 3.16.2)
+cmake_minimum_required(VERSION 3.19.0)
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
@@ -98,3 +97,15 @@ if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
   add_subdirectory(examples)
 endif()
+
+# All unit tests target
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_all_targets.cmake)
+get_all_targets(UNIT_TEST_TARGETS)
+list(FILTER UNIT_TEST_TARGETS INCLUDE REGEX "_test$")
+list(REMOVE_ITEM UNIT_TEST_TARGETS backend_kv_test benchmark_test sentry_client_test)
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+  # avoid fatal error C1002: compiler is out of heap space
+  list(REMOVE_ITEM UNIT_TEST_TARGETS rpcdaemon_test)
+endif()
+message(STATUS "UNIT_TEST_TARGETS: ${UNIT_TEST_TARGETS}")
+add_custom_target(all_unit_tests DEPENDS ${UNIT_TEST_TARGETS})

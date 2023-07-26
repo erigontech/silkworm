@@ -38,13 +38,13 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
     }
 
     // Open chaindata environment and check tables are consistent
-    log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
+    log::Info("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxn tx(chaindata_env);
+    db::RWTxnManaged tx(chaindata_env);
 
     // Ensures all tables are present
     db::table::check_or_create_chaindata_tables(tx);
-    log::Message("Database schema", {"version", db::read_schema_version(tx)->to_string()});
+    log::Info("Database schema", {"version", db::read_schema_version(tx)->to_string()});
 
     // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
@@ -62,7 +62,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             }
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
-            tx.commit();
+            tx.commit_and_renew();
             node_settings.chain_config = db::read_chain_config(tx);
         }
 
@@ -153,7 +153,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
 
             if (new_members_added || old_members_changed) {
                 db::update_chain_config(tx, *(known_chain->second));
-                tx.commit();
+                tx.commit_and_renew();
                 node_settings.chain_config = *(known_chain->second);
             }
         }
@@ -163,8 +163,8 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
         if (!node_settings.chain_config->genesis_hash.has_value())
             throw std::runtime_error("Could not load genesis hash");
 
-        log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
-                                           "config", node_settings.chain_config->to_json().dump()});
+        log::Info("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
+                                        "config", node_settings.chain_config->to_json().dump()});
     }
 
     // Detect prune-mode and verify is compatible
@@ -180,10 +180,10 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             db::write_prune_mode(*tx, *node_settings.prune_mode);
             node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
         }
-        log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
+        log::Info("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
     }
 
-    tx.commit(/*renew=*/false);
+    tx.commit_and_stop();
     chaindata_env.close();
     node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
     node_settings.chaindata_env_config.create = false;  // Has already been created

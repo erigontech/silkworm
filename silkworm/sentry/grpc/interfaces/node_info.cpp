@@ -43,16 +43,16 @@ boost::asio::ip::tcp::endpoint parse_endpoint(const std::string& address) {
     return {ip, port};
 }
 
-api::api_common::NodeInfo node_info_from_proto_node_info(const types::NodeInfoReply& info) {
-    return api::api_common::NodeInfo{
-        sentry::common::EnodeUrl{info.enode()},
+api::NodeInfo node_info_from_proto_node_info(const types::NodeInfoReply& info) {
+    return api::NodeInfo{
+        sentry::EnodeUrl{info.enode()},
         info.name(),
         parse_endpoint(info.listener_addr()),
         static_cast<uint16_t>(info.ports().listener()),
     };
 }
 
-types::NodeInfoReply proto_node_info_from_node_info(const api::api_common::NodeInfo& info) {
+types::NodeInfoReply proto_node_info_from_node_info(const api::NodeInfo& info) {
     types::NodeInfoReply reply;
     reply.set_id(peer_id_string_from_public_key(info.node_url.public_key()));
     reply.set_name(info.client_id);

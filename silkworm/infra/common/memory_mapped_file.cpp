@@ -83,13 +83,18 @@ void MemoryMappedFile::advise_sequential() {
 
 void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
     DWORD protection = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
-    mapping_ = ::CreateFileMapping(fd, nullptr, protection, 0, static_cast<DWORD>(length_), nullptr);
+
+    mapping_ = ::CreateFileMapping(fd, nullptr, protection, 0, 0, nullptr);  // note: no size specified to avoid MapViewOfFile failure
     if (nullptr == mapping_) {
         throw std::runtime_error{"CreateFileMapping failed for: " + path_.string() + " error: " + std::to_string(GetLastError())};
     }
 
     DWORD desired_access = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
     void* memory = (LPTSTR)::MapViewOfFile(mapping_, desired_access, 0, static_cast<DWORD>(0), length_);
+
+    if (memory == nullptr) {
+        throw std::runtime_error{"MapViewOfFile failed for: " + path_.string() + " error: " + std::to_string(GetLastError())};
+    }
 
     return static_cast<std::uint8_t*>(memory);
 }

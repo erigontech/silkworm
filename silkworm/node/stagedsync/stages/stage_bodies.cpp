@@ -28,7 +28,9 @@
 namespace silkworm::stagedsync {
 
 BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
-    : chain_config_{chain_config},
+    : tx_(tx),
+      data_model_(tx_),
+      chain_config_{chain_config},
       rule_set_{protocol::rule_set_factory(chain_config)},
       chain_state_{tx, /*prune_history_threshold=*/0, /*historical_block=null*/} {
     initial_height_ = bodies_stage_height;
@@ -88,6 +90,10 @@ void BodiesStage::BodyDataModel::remove_bodies(BlockNum, std::optional<Hash>, db
     // maybe we should remove only the bad block
 }
 
+bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& block) const {
+    return data_model_.read_canonical_block(height, block);
+}
+
 BodiesStage::BodiesStage(NodeSettings* ns, SyncContext* sc)
     : Stage(sc, db::stages::kBlockBodiesKey, ns) {
 }
@@ -116,7 +122,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
             // process header and ommers at current height
             Block block;
-            bool present = read_canonical_block(tx, current_height_, block);
+            bool present = body_persistence.get_canonical_block(current_height_, block);
             if (!present) throw std::logic_error("table Bodies has a hole");
 
             body_persistence.update_tables(block);
@@ -137,7 +143,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         body_persistence.close();
 
-        tx.commit();  // this will commit if the tx was started here
+        tx.commit_and_renew();
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
@@ -168,7 +174,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
 
         current_height_ = new_height;
 
-        tx.commit();
+        tx.commit_and_renew();
 
         result = Stage::Result::kSuccess;
 

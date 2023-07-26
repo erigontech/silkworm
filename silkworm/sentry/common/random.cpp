@@ -16,7 +16,7 @@
 
 #include "random.hpp"
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 Bytes random_bytes(Bytes::size_type size) {
     std::default_random_engine random_engine{std::random_device{}()};
@@ -29,4 +29,4 @@ Bytes random_bytes(Bytes::size_type size) {
     return data;
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

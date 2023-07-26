@@ -17,22 +17,29 @@
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED container thread)
+find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
+find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
+
+add_subdirectory(test_util)
+
+set(TARGET silkworm_infra)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
+list(FILTER SRC EXCLUDE REGEX "test_util/")
 
-add_library(silkworm_infra "${SRC}")
+add_library(${TARGET} "${SRC}")
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
 # https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
-  target_compile_definitions(silkworm_infra PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(silkworm_infra PUBLIC "${SILKWORM_MAIN_DIR}")
+target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(LIBS_PUBLIC
     silkworm_core
@@ -56,7 +63,20 @@ if(MSVC)
 endif(MSVC)
 
 target_link_libraries(
-  silkworm_infra
+  ${TARGET}
   PUBLIC "${LIBS_PUBLIC}"
   PRIVATE "${LIBS_PRIVATE}"
+)
+
+# unit tests
+set(TEST_TARGET ${TARGET}_test)
+file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
+add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
+if(SILKWORM_SANITIZE)
+  target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+endif()
+target_link_libraries(
+  ${TEST_TARGET}
+  PRIVATE ${TARGET} Catch2::Catch2 GTest::gmock
+  INTERFACE silkworm_infra_test_util
 )

@@ -241,6 +241,20 @@ std::unique_ptr<RWCursorDupSort> RWTxn::rw_cursor_dup_sort(const MapConfig& conf
     return std::make_unique<PooledCursor>(*this, config);
 }
 
+void RWTxnManaged::commit_and_renew() {
+    if (!commit_disabled_) {
+        mdbx::env env = db();
+        managed_txn_.commit();
+        managed_txn_ = env.start_write();  // renew transaction
+    }
+}
+
+void RWTxnManaged::commit_and_stop() {
+    if (!commit_disabled_) {
+        managed_txn_.commit();
+    }
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
 
 PooledCursor::PooledCursor() {
@@ -250,7 +264,7 @@ PooledCursor::PooledCursor() {
     }
 }
 
-PooledCursor::PooledCursor(RWTxn& txn, ::mdbx::map_handle map) {
+PooledCursor::PooledCursor(ROTxn& txn, ::mdbx::map_handle map) {
     handle_ = handles_pool_.acquire();
     if (!handle_) {
         handle_ = ::mdbx_cursor_create(nullptr);

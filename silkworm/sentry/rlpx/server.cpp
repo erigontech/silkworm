@@ -41,7 +41,7 @@ ip::tcp::endpoint Server::listen_endpoint() const {
 
 Task<void> Server::start(
     silkworm::rpc::ServerContextPool& context_pool,
-    common::EccKeyPair node_key,
+    EccKeyPair node_key,
     std::string client_id,
     std::function<std::unique_ptr<Protocol>()> protocol_factory) {
     auto executor = co_await this_coro::executor;
@@ -62,12 +62,12 @@ Task<void> Server::start(
     acceptor.bind(endpoint);
     acceptor.listen();
 
-    common::EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
+    EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
     log::Info("sentry") << "rlpx::Server is listening at " << node_url.to_string();
 
     while (acceptor.is_open()) {
         auto& client_context = context_pool.next_io_context();
-        common::SocketStream stream{client_context};
+        SocketStream stream{client_context};
         co_await acceptor.async_accept(stream.socket(), use_awaitable);
 
         auto remote_endpoint = stream.socket().remote_endpoint();

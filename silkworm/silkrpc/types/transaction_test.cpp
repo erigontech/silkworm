@@ -22,7 +22,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -40,19 +40,19 @@ TEST_CASE("create empty transaction", "[silkrpc][types][transaction]") {
 
 TEST_CASE("create empty silkworm::transaction", "[silkrpc][types][silkworm::transaction]") {
     silkworm::Transaction txn{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << txn);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
 TEST_CASE("print empty transaction", "[silkrpc][types][transaction]") {
     Transaction txn{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << txn);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
 TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     Transaction txn{
         {
-            {.type = TransactionType::kEip1559,
+            {.type = TransactionType::kDynamicFee,
              .chain_id = 1,
              .nonce = 371,
              .max_priority_fee_per_gas = 1 * kGiga,
@@ -71,13 +71,13 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
         110'045'619'790,                                                             // block_base_fee_per_gas
         144,                                                                         // transaction index
     };
-    CHECK_NOTHROW(silkworm::test::null_stream() << txn);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
 TEST_CASE("print type-2 silkworm::transaction", "[silkrpc][types][silkworm::transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     silkworm::Transaction txn{
-        {.type = TransactionType::kEip1559,
+        {.type = TransactionType::kDynamicFee,
          .chain_id = 1,
          .nonce = 371,
          .max_priority_fee_per_gas = 1 * kGiga,
@@ -91,7 +91,7 @@ TEST_CASE("print type-2 silkworm::transaction", "[silkrpc][types][silkworm::tran
         intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
         0x7ad75fdb6244111753822140dad3337f5535f718_address,                                                      // from
     };
-    CHECK_NOTHROW(silkworm::test::null_stream() << txn);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
 TEST_CASE("create legacy transaction", "[silkrpc][types][transaction]") {
@@ -135,7 +135,7 @@ TEST_CASE("create legacy silkworm::transaction", "[silkrpc][types][silkworm::tra
         0xa1e4380a3b1f749673e270229993ee55f35663b4_address,                                                      // from
     };
 
-    CHECK_NOTHROW(silkworm::test::null_stream() << txn);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
 }  // namespace silkworm::rpc

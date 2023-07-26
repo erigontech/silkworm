@@ -16,6 +16,7 @@
 
 #include "debug_api.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <ostream>
 #include <set>
@@ -23,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -35,6 +38,7 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_debug.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
@@ -47,6 +51,8 @@
 #include <silkworm/silkrpc/types/dump_account.hpp>
 
 namespace silkworm::rpc::commands {
+
+using boost::asio::awaitable;
 
 static constexpr int16_t kAccountRangeMaxResults{256};
 
@@ -209,8 +215,9 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         auto block_number = block_with_hash->block.header.number - 1;
 
         nlohmann::json storage({});
@@ -256,6 +263,100 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     co_return;
 }
 
+// https://github.com/ethereum/retesteth/wiki/RPC-Methods#debugdebugaccountat
+awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.empty() || params.size() < 3) {
+        auto error_msg = "invalid debug_accountAt params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    auto block_hash = params[0].get<evmc::bytes32>();
+    auto tx_index = params[1].get<uint64_t>();
+    auto address = params[2].get<evmc::address>();
+
+    SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
+               << " tx_index: " << tx_index
+               << " address: 0x" << silkworm::to_hex(address);
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+
+        const auto& block = block_with_hash->block;
+        auto block_number = block.header.number - 1;
+        const auto& transactions = block.transactions;
+
+        SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
+
+        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+        const auto chain_config_ptr = lookup_chain_config(chain_id);
+        auto this_executor = co_await boost::asio::this_coro::executor;
+
+        auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
+            [&](auto&& self) {
+                boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                    auto state = tx->create_state(this_executor, tx_database, block_number - 1);
+                    auto account_opt = state->read_account(address);
+                    account_opt.value_or(silkworm::Account{});
+
+                    EVMExecutor executor{*chain_config_ptr, workers_, state};
+
+                    uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index + 1);
+                    for (uint64_t idx{0}; idx < index; idx++) {
+                        rpc::Transaction txn{transactions[idx]};
+                        if (!txn.from) {
+                            txn.recover_sender();
+                        }
+                        executor.call(block, txn);
+                    }
+
+                    const auto& ibs = executor.get_ibs_state();
+
+                    nlohmann::json json_result;
+                    if (ibs.exists(address)) {
+                        std::ostringstream oss;
+                        oss << ibs.get_nonce(address);
+                        json_result["nonce"] = "0x" + oss.str();
+                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address));
+                        json_result["codeHash"] = ibs.get_code_hash(address);
+                        json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
+                    } else {
+                        json_result["balance"] = "0x0";
+                        json_result["code"] = "0x";
+                        json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                        json_result["nonce"] = "0x0";
+                    }
+
+                    boost::asio::post(this_executor, [json_result, self = std::move(self)]() mutable {
+                        self.complete(json_result);
+                    });
+                });
+            },
+            boost::asio::use_awaitable);
+
+        reply = make_json_content(request["id"], result);
+    } catch (const std::invalid_argument& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], -32000, e.what());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracetransaction
 awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
@@ -284,20 +385,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
-        if (!tx_with_block) {
-            std::ostringstream oss;
-            oss << "transaction 0x" << transaction_hash << " not found";
-            const Error error{-32000, oss.str()};
-            stream.write_field("error", error);
-        } else {
-            debug::DebugExecutor executor{tx_database, workers_, config};
-
-            stream.write_field("result");
-            stream.open_object();
-            co_await executor.execute(stream, tx_with_block->block_with_hash.block, tx_with_block->transaction);
-            stream.close_object();
-        }
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        co_await executor.trace_transaction(stream, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
@@ -343,23 +432,83 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        debug::DebugExecutor executor{db_reader, workers_, config};
 
-        stream.write_field("result");
-        stream.open_object();
-        co_await executor.execute(stream, block_with_hash->block, call);
-        stream.close_object();
+        debug::DebugExecutor executor{db_reader, *block_cache_, workers_, *tx, config};
+        co_await executor.trace_call(stream, block_number_or_hash, *chain_storage, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
         oss << "block " << block_number_or_hash.number() << "(" << block_number_or_hash.hash() << ") not found";
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        const Error error{100, "unexpected exception"};
+        stream.write_field("error", error);
+    }
+
+    stream.close_object();
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+// https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracecallmany
+awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& request, json::Stream& stream) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required arguments";
+        SILK_ERROR << error_msg << request.dump();
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+
+    const auto& params = request["params"];
+    if (params.size() < 2) {
+        auto error_msg = "invalid debug_traceCallMany params: " + params.dump();
+        SILK_ERROR << error_msg;
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+    const auto bundles = params[0].get<Bundles>();
+
+    if (bundles.empty()) {
+        const auto error_msg = "invalid debug_traceCallMany bundle list: " + params.dump();
+        SILK_ERROR << error_msg;
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+
+    const auto simulation_context = params[1].get<SimulationContext>();
+
+    debug::DebugConfig config;
+    if (params.size() > 2) {
+        config = params[2].get<debug::DebugConfig>();
+    }
+
+    SILK_DEBUG << "bundles: " << bundles << " simulation_context: " << simulation_context << " config: {" << config << "}";
+
+    stream.open_object();
+    stream.write_field("id", request["id"]);
+    stream.write_field("jsonrpc", "2.0");
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
@@ -399,15 +548,10 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-
-        debug::DebugExecutor executor{tx_database, workers_, config};
-
-        stream.write_field("result");
-        stream.open_array();
-        co_await executor.execute(stream, block_with_hash->block);
-        stream.close_array();
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        co_await executor.trace_block(stream, *chain_storage, block_number);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
@@ -457,15 +601,10 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-
-        debug::DebugExecutor executor{tx_database, workers_, config};
-
-        stream.write_field("result");
-        stream.open_array();
-        co_await executor.execute(stream, block_with_hash->block);
-        stream.close_array();
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        co_await executor.trace_block(stream, *chain_storage, block_hash);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;

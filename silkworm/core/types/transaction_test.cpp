@@ -73,7 +73,7 @@ TEST_CASE("Legacy Transaction RLP") {
 
 TEST_CASE("EIP-2930 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip2930,
+        {.type = TransactionType::kAccessList,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 30000000000,
@@ -139,7 +139,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
 TEST_CASE("EIP-1559 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip1559,
+        {.type = TransactionType::kDynamicFee,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 10000000000,
@@ -166,7 +166,7 @@ TEST_CASE("EIP-1559 Transaction RLP") {
 
 TEST_CASE("EIP-4844 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip4844,
+        {.type = TransactionType::kBlob,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 10000000000,
@@ -214,6 +214,7 @@ TEST_CASE("Recover sender 1") {
     txn.recover_sender();
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
     txn.recover_sender();  // Only for coverage - should not recover twice
+    CHECK(txn.hash() == 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060_bytes32);
 }
 
 TEST_CASE("Recover sender 2") {
@@ -235,6 +236,7 @@ TEST_CASE("Recover sender 2") {
 
     txn.recover_sender();
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
+    CHECK(txn.hash() == 0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314_bytes32);
 }
 
 }  // namespace silkworm

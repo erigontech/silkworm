@@ -32,14 +32,15 @@
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/block_cache.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -337,13 +338,29 @@ struct TraceEntry {
     std::string input;
 };
 
+enum OperationType : int {
+    OP_TRANSFER = 0,
+    OP_SELF_DESTRUCT = 1,
+    OP_CREATE = 2,
+    OP_CREATE2 = 3
+};
+
+struct InternalOperation {
+    OperationType type;
+    evmc::address from;
+    evmc::address to;
+    std::string value;
+};
+
 using TraceEntriesResult = std::vector<TraceEntry>;
+using TraceOperationsResult = std::vector<InternalOperation>;
 
 void to_json(nlohmann::json& json, const TraceCallTraces& result);
 void to_json(nlohmann::json& json, const TraceCallResult& result);
 void to_json(nlohmann::json& json, const TraceManyCallResult& result);
 void to_json(nlohmann::json& json, const TraceDeployResult& result);
 void to_json(nlohmann::json& json, const TraceEntry& trace_entry);
+void to_json(nlohmann::json& json, const InternalOperation& trace_operation);
 
 class IntraBlockStateTracer : public silkworm::EvmTracer {
   public:
@@ -410,6 +427,52 @@ class EntryTracer : public silkworm::EvmTracer {
     TraceEntriesResult result_;
 };
 
+class OperationTracer : public silkworm::EvmTracer {
+  public:
+    explicit OperationTracer(silkworm::IntraBlockState& initial_ibs) : initial_ibs_(initial_ibs) {}
+
+    OperationTracer(const OperationTracer&) = delete;
+    OperationTracer& operator=(const OperationTracer&) = delete;
+
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    TraceOperationsResult result() const { return result_; }
+
+  private:
+    const silkworm::IntraBlockState& initial_ibs_;
+    TraceOperationsResult result_;
+};
+
+class TouchTracer : public silkworm::EvmTracer {
+  public:
+    explicit TouchTracer(const evmc::address& address, silkworm::IntraBlockState& initial_ibs) : address_(address), initial_ibs_(initial_ibs) {}
+
+    TouchTracer(const TouchTracer&) = delete;
+    TouchTracer& operator=(const TouchTracer&) = delete;
+
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    bool found() const { return found_; }
+
+  private:
+    bool found_{false};
+    const evmc::address& address_;
+    const silkworm::IntraBlockState& initial_ibs_;
+    TraceOperationsResult result_;
+};
+
 struct Filter {
     std::set<evmc::address> from_addresses;
     std::set<evmc::address> to_addresses;
@@ -422,8 +485,9 @@ class TraceCallExecutor {
   public:
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const core::rawdb::DatabaseReader& database_reader,
-                               boost::asio::thread_pool& workers)
-        : block_cache_(block_cache), database_reader_(database_reader), workers_{workers} {}
+                               boost::asio::thread_pool& workers,
+                               ethdb::Transaction& tx)
+        : block_cache_(block_cache), database_reader_(database_reader), workers_{workers}, tx_{tx} {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -440,6 +504,8 @@ class TraceCallExecutor {
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
     boost::asio::awaitable<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
+    boost::asio::awaitable<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
+    boost::asio::awaitable<bool> trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address);
     boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
 
   private:
@@ -449,6 +515,7 @@ class TraceCallExecutor {
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
+    ethdb::Transaction& tx_;
 };
 
 }  // namespace silkworm::rpc::trace

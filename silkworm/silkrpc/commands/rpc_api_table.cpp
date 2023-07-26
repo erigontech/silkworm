@@ -101,8 +101,10 @@ void RpcApiTable::add_debug_handlers() {
     method_handlers_[http::method::k_debug_getModifiedAccountsByNumber] = &commands::RpcApi::handle_debug_get_modified_accounts_by_number;
     method_handlers_[http::method::k_debug_getModifiedAccountsByHash] = &commands::RpcApi::handle_debug_get_modified_accounts_by_hash;
     method_handlers_[http::method::k_debug_storageRangeAt] = &commands::RpcApi::handle_debug_storage_range_at;
+    method_handlers_[http::method::k_debug_accountAt] = &commands::RpcApi::handle_debug_account_at;
 
     stream_handlers_[http::method::k_debug_traceCall] = &commands::RpcApi::handle_debug_trace_call;
+    stream_handlers_[http::method::k_debug_traceCallMany] = &commands::RpcApi::handle_debug_trace_call_many;
     stream_handlers_[http::method::k_debug_traceTransaction] = &commands::RpcApi::handle_debug_trace_transaction;
     stream_handlers_[http::method::k_debug_traceBlockByNumber] = &commands::RpcApi::handle_debug_trace_block_by_number;
     stream_handlers_[http::method::k_debug_traceBlockByHash] = &commands::RpcApi::handle_debug_trace_block_by_hash;
@@ -234,6 +236,9 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_get_contract_creator;
     method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
     method_handlers_[http::method::k_ots_getTransactionError] = &commands::RpcApi::handle_ots_get_transaction_error;
+    method_handlers_[http::method::k_ots_getInternalOperations] = &commands::RpcApi::handle_ots_get_internal_operations;
+    method_handlers_[http::method::k_ots_search_transactions_before] = &commands::RpcApi::handle_ots_search_transactions_before;
+    method_handlers_[http::method::k_ots_search_transactions_after] = &commands::RpcApi::handle_ots_search_transactions_after;
 }
 
 }  // namespace silkworm::rpc::commands

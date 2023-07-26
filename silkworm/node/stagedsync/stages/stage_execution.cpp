@@ -118,7 +118,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             }
 
             (void)commit_stopwatch.start(/*with_reset=*/true);
-            txn.commit();
+            txn.commit_and_renew();
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
@@ -163,6 +163,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
 
+    db::DataModel data_model{txn};
     auto canonicals = txn.ro_cursor(db::table::kCanonicalHashes);
     Bytes starting_key{db::block_key(from)};
     if (canonicals->seek(db::to_slice(starting_key))) {
@@ -181,8 +182,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 
             const auto hash_ptr{value.data()};
             prefetched_blocks_.push_back();
-            if (!db::read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
-                                /*read_senders=*/true, prefetched_blocks_.back())) {
+            if (!data_model.read_block(std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
+                                       /*read_senders=*/true, prefetched_blocks_.back())) {
                 throw std::runtime_error("Unable to read block " + std::to_string(block_num));
             }
             ++block_num;
@@ -369,7 +370,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -521,7 +522,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, forward_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

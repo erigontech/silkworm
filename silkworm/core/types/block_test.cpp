@@ -13,6 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "block.hpp"
 
 #include <catch2/catch.hpp>
@@ -77,7 +78,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
     body.transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
 
-    body.transactions[1].type = TransactionType::kEip1559;
+    body.transactions[1].type = TransactionType::kDynamicFee;
     body.transactions[1].nonce = 1;
     body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     body.transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -168,7 +169,7 @@ TEST_CASE("EIP-2718 Block RLP") {
     CHECK(block.transactions[0].type == TransactionType::kLegacy);
     CHECK(block.transactions[0].access_list.empty());
 
-    CHECK(block.transactions[1].type == TransactionType::kEip2930);
+    CHECK(block.transactions[1].type == TransactionType::kAccessList);
     CHECK(block.transactions[1].access_list.size() == 1);
 }
 

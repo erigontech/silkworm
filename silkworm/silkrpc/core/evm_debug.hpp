@@ -27,12 +27,15 @@
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/block_cache.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/ethdb/transaction.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -94,30 +97,67 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
+class AccountTracer : public silkworm::EvmTracer {
+  public:
+    explicit AccountTracer(const evmc::address& address) : address_{address} {}
+
+    AccountTracer(const AccountTracer&) = delete;
+    AccountTracer& operator=(const AccountTracer&) = delete;
+
+    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override{};
+
+    void on_instruction_start(uint32_t, const intx::uint256*, int, int64_t,
+                              const evmone::ExecutionState&, const silkworm::IntraBlockState&) noexcept override{};
+    void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_precompiled_run(const evmc_result&, int64_t, const silkworm::IntraBlockState&) noexcept override{};
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
+  private:
+    const evmc::address& address_;
+    uint64_t nonce{0};
+    intx::uint256 balance;
+    evmc::bytes32 code_hash{kEmptyHash};
+    silkworm::Bytes code;
+};
+
 class DebugExecutor {
   public:
     explicit DebugExecutor(
         const core::rawdb::DatabaseReader& database_reader,
+        BlockCache& block_cache,
         boost::asio::thread_pool& workers,
+        ethdb::Transaction& tx,
         DebugConfig config = {})
-        : database_reader_(database_reader), workers_{workers}, config_{config} {}
+        : database_reader_(database_reader), block_cache_(block_cache), workers_{workers}, tx_{tx}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
     DebugExecutor& operator=(const DebugExecutor&) = delete;
 
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
+    boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number);
+    boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
+    boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call);
+    boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
+    boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
+
+  protected:
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Transaction& transaction) {
-        return execute(stream, block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
-    }
 
   private:
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
     boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 
+    boost::asio::awaitable<void> execute(json::Stream& stream,
+                                         const silkworm::BlockWithHash& block_with_hash,
+                                         const Bundles& bundles,
+                                         int32_t transaction_index);
+
     const core::rawdb::DatabaseReader& database_reader_;
+    BlockCache& block_cache_;
     boost::asio::thread_pool& workers_;
+    ethdb::Transaction& tx_;
     DebugConfig config_;
 };
 }  // namespace silkworm::rpc::debug

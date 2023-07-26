@@ -55,7 +55,7 @@ Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlp
         if (peers_.size() + starting_peers_.size() >= max_peers_) {
             if (drop_peer_tasks_count_ < kMaxSimultaneousDropPeerTasks) {
                 drop_peer_tasks_count_++;
-                drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::rlpx_common::DisconnectReason::TooManyPeers));
+                drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::TooManyPeers));
             } else {
                 log::Warning("sentry") << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }
@@ -100,7 +100,7 @@ Task<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer
 
 Task<void> PeerManager::drop_peer(
     std::shared_ptr<rlpx::Peer> peer,
-    rlpx::rlpx_common::DisconnectReason reason) {
+    rlpx::DisconnectReason reason) {
     auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
 
     try {
@@ -140,7 +140,7 @@ Task<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callbac
 }
 
 Task<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback) {
-    for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
+    for (auto peer_ptr : random_list_items(peers_, max_count)) {
         callback(*peer_ptr);
     }
     co_return;
@@ -175,8 +175,8 @@ void PeerManager::on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer) {
     }
 }
 
-std::vector<common::EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers) {
-    std::vector<common::EnodeUrl> urls;
+std::vector<EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers) {
+    std::vector<EnodeUrl> urls;
     for (auto& peer : peers) {
         auto url_opt = peer->url();
         if (url_opt) {
@@ -212,7 +212,7 @@ Task<void> PeerManager::discover_peers(
     }
 }
 
-Task<void> PeerManager::connect_peer(common::EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
+Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
     auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {

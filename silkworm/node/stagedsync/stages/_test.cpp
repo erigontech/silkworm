@@ -23,7 +23,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -51,18 +51,22 @@ TEST_CASE("Sync Stages") {
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxn txn(chaindata_env);
+    db::RWTxnManaged txn(chaindata_env);
     db::table::check_or_create_chaindata_tables(txn);
-    txn.commit(true);
+    txn.commit_and_renew();
+    const auto initial_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+    REQUIRE(initial_tx_sequence == 0);  // no txs at start
 
     auto source_data{read_genesis_data(node_settings.network_id)};
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
     db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
-    txn.commit();
+    txn.commit_and_renew();
     node_settings.chain_config = db::read_chain_config(txn);
+    const auto tx_sequence_after_genesis{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+    REQUIRE(tx_sequence_after_genesis == 2);  // 2 system txs for genesis
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
@@ -91,7 +95,7 @@ TEST_CASE("Sync Stages") {
                 canonical_table.insert(db::to_slice(block_key), db::to_slice(hash));
             }
             db::stages::write_stage_progress(txn, db::stages::kHeadersKey, 3);
-            REQUIRE_NOTHROW(txn.commit(true));
+            REQUIRE_NOTHROW(txn.commit_and_renew());
 
             stagedsync::SyncContext sync_context{};
             stagedsync::BlockHashes stage(&node_settings, &sync_context);
@@ -99,7 +103,7 @@ TEST_CASE("Sync Stages") {
             // Forward
             auto stage_result{stage.forward(txn)};
             REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
-            txn.commit(true);
+            txn.commit_and_renew();
 
             {
                 // Verify written data is consistent
@@ -151,9 +155,13 @@ TEST_CASE("Sync Stages") {
         // First block - 1 transaction
         block_body.transactions.push_back(sample_transactions[0]);
         REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[0].bytes, 1));
+        const auto tx_sequence_after_block1{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        REQUIRE(tx_sequence_after_block1 == 5);  // 1 tx + 2 system txs for block 1
 
         // Second block - 1 transactions
         REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[1].bytes, 2));
+        const auto tx_sequence_after_block2{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        REQUIRE(tx_sequence_after_block2 == 8);  // 1 tx + 2 system txs for block 2
 
         // Third block - 0 transactions
         block_body.transactions.clear();
@@ -169,11 +177,11 @@ TEST_CASE("Sync Stages") {
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, 3));
 
         // Commit
-        REQUIRE_NOTHROW(txn.commit());
+        REQUIRE_NOTHROW(txn.commit_and_renew());
 
         // Verify sequence for transactions has been incremented properly
-        auto last_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
-        REQUIRE(last_tx_sequence == 2);
+        const auto last_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        REQUIRE(last_tx_sequence == 10);  // 2 system txs for block 3
 
         // Prepare stage
         stagedsync::SyncContext sync_context{};
@@ -195,7 +203,7 @@ TEST_CASE("Sync Stages") {
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
         REQUIRE(stage.get_progress(txn) == 3);
 
-        REQUIRE_NOTHROW(txn.commit());
+        REQUIRE_NOTHROW(txn.commit_and_renew());
 
         {
             auto senders_map{txn->open_map(db::table::kSenders.name)};
@@ -340,7 +348,7 @@ TEST_CASE("Sync Stages") {
         REQUIRE(expected_validation_result == actual_validation_result);
         REQUIRE_NOTHROW(buffer.write_to_db());
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
-        REQUIRE_NOTHROW(txn.commit());
+        REQUIRE_NOTHROW(txn.commit_and_renew());
 
         SECTION("Execution Unwind") {
             // ---------------------------------------

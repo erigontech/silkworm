@@ -33,7 +33,6 @@ target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11 Boost::headers)
 set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")
 set(SILKWORM_TOML_SRC
     ${SILKWORM_TOML_SRC_DIR}/bor-mainnet.toml
-    ${SILKWORM_TOML_SRC_DIR}/bsc.toml
     ${SILKWORM_TOML_SRC_DIR}/gnosis.toml
     ${SILKWORM_TOML_SRC_DIR}/goerli.toml
     ${SILKWORM_TOML_SRC_DIR}/mainnet.toml
@@ -44,7 +43,6 @@ set(SILKWORM_TOML_SRC
 set(SILKWORM_TOML_CPP_SRC_DIR "${SILKWORM_MAIN_SRC_DIR}/node/snapshot/config")
 set(SILKWORM_TOML_CPP_SRC
     ${SILKWORM_TOML_CPP_SRC_DIR}/bor_mainnet.cpp
-    ${SILKWORM_TOML_CPP_SRC_DIR}/bsc.cpp
     ${SILKWORM_TOML_CPP_SRC_DIR}/gnosis.cpp
     ${SILKWORM_TOML_CPP_SRC_DIR}/goerli.cpp
     ${SILKWORM_TOML_CPP_SRC_DIR}/mainnet.cpp
@@ -56,10 +54,10 @@ set(SILKWORM_TOML_CPP_SRC
 add_custom_command(
   OUTPUT "${SILKWORM_TOML_CPP_SRC}"
   COMMAND "${SILKWORM_EMBED}" ARGS -i "${SILKWORM_TOML_SRC_DIR}" -o "${SILKWORM_TOML_CPP_SRC_DIR}" -e ".toml" -s "toml"
-  DEPENDS "${SILKWORM_EMBED}"
+  DEPENDS "${SILKWORM_EMBED}" "${SILKWORM_TOML_SRC}"
 )
 
-add_custom_target(generate_toml DEPENDS "${SILKWORM_TOML_SRC}" "${SILKWORM_EMBED}")
+add_custom_target(generate_toml ALL DEPENDS "${SILKWORM_TOML_CPP_SRC}" "${SILKWORM_EMBED}")
 
 file(
   GLOB_RECURSE

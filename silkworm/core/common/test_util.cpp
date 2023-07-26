@@ -37,7 +37,7 @@ std::vector<Transaction> sample_transactions() {
     transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
-    transactions[1].type = TransactionType::kEip1559;
+    transactions[1].type = TransactionType::kDynamicFee;
     transactions[1].nonce = 1;
     transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -74,7 +74,7 @@ std::vector<Receipt> sample_receipts() {
         },
     };
 
-    receipts[1].type = TransactionType::kEip1559;
+    receipts[1].type = TransactionType::kDynamicFee;
     receipts[1].success = true;
     receipts[1].cumulative_gas_used = 0xbeadd0;
     receipts[1].logs = {};

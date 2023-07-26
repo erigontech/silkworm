@@ -46,6 +46,11 @@ int main(int argc, char* argv[]) {
     // Iterating through all the files in the input folder
     for (const auto& entry : fs::recursive_directory_iterator(input_folder)) {
         const fs::path& entry_path = entry.path();
+        // Skip any file in 'history' sub-folder
+        if (entry_path.parent_path().string().ends_with("history")) {
+            continue;
+        }
+        // Match only required extension
         if (entry_path.extension() == extension) {
             // Open the input .toml file
             std::ifstream input{entry_path.string(), std::ios::binary};
@@ -57,6 +62,8 @@ int main(int argc, char* argv[]) {
             std::vector<char> bytes(input_size);
             input.read(bytes.data(), static_cast<std::streamsize>(input_size));
             assert(static_cast<size_t>(input.gcount()) == input_size);
+
+            std::cout << "Processing TOML file: " << entry_path.string() << "\n";
 
             // Open the output .cpp file
             fs::path entry_filename = entry.path().stem();

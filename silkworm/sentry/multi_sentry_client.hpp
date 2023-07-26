@@ -19,18 +19,18 @@
 #include <memory>
 #include <vector>
 
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 
 namespace silkworm::sentry {
 
 class MultiSentryClientImpl;
 
-class MultiSentryClient : public api::api_common::SentryClient {
+class MultiSentryClient : public api::SentryClient {
   public:
-    explicit MultiSentryClient(std::vector<std::shared_ptr<api::api_common::SentryClient>> clients);
+    explicit MultiSentryClient(std::vector<std::shared_ptr<api::SentryClient>> clients);
     ~MultiSentryClient() override;
 
-    Task<std::shared_ptr<api::api_common::Service>> service() override;
+    Task<std::shared_ptr<api::Service>> service() override;
 
     [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<Task<void>()> callback) override;

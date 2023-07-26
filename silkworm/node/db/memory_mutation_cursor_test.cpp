@@ -18,14 +18,14 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/context.hpp>
 
 namespace silkworm::db {
 
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
-    RWTxn main_txn{main_env};
+    RWTxnManaged main_txn{main_env};
     table::check_or_create_chaindata_tables(main_txn);
     open_map(main_txn, db::table::kCode);
     open_map(main_txn, db::table::kAccountChangeSet);
@@ -85,10 +85,10 @@ struct MemoryMutationCursorTest {
         .in_memory = true,
     };
     mdbx::env_managed main_env{create_main_env(main_db_config)};
-    RWTxn main_txn{main_env};
+    RWTxnManaged main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn};
     MemoryMutation mutation{overlay};
-    test::SetLogVerbosityGuard log_guard_{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
@@ -1133,6 +1133,100 @@ TEST_CASE("MemoryMutationCursor: upsert+flush+to_last", "[silkworm][node][db][me
     CHECK(mem_result.done);
     CHECK(mem_result.key == "CC");
     CHECK(mem_result.value == "22");
+}
+
+TEST_CASE("MemoryMutationCursor: upsert value w/ different one", "[silkworm][node][db][memory_mutation]") {
+    MemoryMutationCursorTest test1;
+
+    SECTION("to_previous") {
+        auto rw_cursor1{test1.main_txn.rw_cursor(db::table::kCode)};  // non dupsort table
+        rw_cursor1->upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
+        rw_cursor1->upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
+        rw_cursor1->upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
+        test1.main_txn.commit_and_renew();
+
+        MemoryMutationCursor mutation_cursor{test1.mutation, db::table::kCode};
+        mutation_cursor.upsert(mdbx::slice{"BB"}, mdbx::slice{"11b"});  // replace (BB,11) with (BB,11b) & memory value > db value
+
+        // searching the new record
+        auto result = mutation_cursor.find("BB", /*throw_notfound=*/false);
+        CHECK(result.done);
+        CHECK(result.key == "BB");
+        CHECK(result.value == "11b");
+
+        auto next_result = mutation_cursor.to_previous(/*throw_notfound=*/true);
+        CHECK(next_result.done);
+        CHECK(next_result.key == "AA");
+        CHECK(next_result.value == "00");
+    }
+
+    SECTION("to_next") {
+        auto rw_cursor1{test1.main_txn.rw_cursor(db::table::kCode)};  // non dupsort table
+        rw_cursor1->upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
+        rw_cursor1->upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
+        test1.main_txn.commit_and_renew();
+
+        MemoryMutationCursor mutation_cursor{test1.mutation, db::table::kCode};
+        mutation_cursor.upsert(mdbx::slice{"BB"}, mdbx::slice{"11b"});  // replace (BB,11) with (BB,11b) & memory value > db value
+
+        // searching the new record
+        auto result = mutation_cursor.find("AA", /*throw_notfound=*/false);
+        CHECK(result.done);
+
+        auto next_result = mutation_cursor.to_next(/*throw_notfound=*/true);
+        CHECK(next_result.done);
+        CHECK(next_result.key == "BB");
+        CHECK(next_result.value == "11b");
+        const auto next_next_result = mutation_cursor.to_next(/*throw_notfound=*/false);
+        CHECK(!next_next_result.done);
+    }
+}
+
+TEST_CASE("MemoryMutationCursor: update value w/ different one", "[silkworm][node][db][memory_mutation]") {
+    MemoryMutationCursorTest test1;
+
+    SECTION("to_previous") {
+        auto rw_cursor1{test1.main_txn.rw_cursor(db::table::kCode)};  // non dupsort table
+        rw_cursor1->upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
+        rw_cursor1->upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
+        rw_cursor1->upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
+        test1.main_txn.commit_and_renew();
+
+        MemoryMutationCursor mutation_cursor{test1.mutation, db::table::kCode};
+        mutation_cursor.update(mdbx::slice{"BB"}, mdbx::slice{"11b"});  // replace (BB,11) with (BB,11b) & memory value > db value
+
+        // searching the new record
+        auto result = mutation_cursor.find("BB", /*throw_notfound=*/false);
+        CHECK(result.done);
+        CHECK(result.key == "BB");
+        CHECK(result.value == "11b");
+
+        auto next_result = mutation_cursor.to_previous(/*throw_notfound=*/true);
+        CHECK(next_result.done);
+        CHECK(next_result.key == "AA");
+        CHECK(next_result.value == "00");
+    }
+
+    SECTION("to_next") {
+        auto rw_cursor1{test1.main_txn.rw_cursor(db::table::kCode)};  // non dupsort table
+        rw_cursor1->upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
+        rw_cursor1->upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
+        test1.main_txn.commit_and_renew();
+
+        MemoryMutationCursor mutation_cursor{test1.mutation, db::table::kCode};
+        mutation_cursor.update(mdbx::slice{"BB"}, mdbx::slice{"11b"});  // replace (BB,11) with (BB,11b) & memory value > db value
+
+        // searching the new record
+        auto result = mutation_cursor.find("AA", /*throw_notfound=*/false);
+        CHECK(result.done);
+
+        auto next_result = mutation_cursor.to_next(/*throw_notfound=*/true);
+        CHECK(next_result.done);
+        CHECK(next_result.key == "BB");
+        CHECK(next_result.value == "11b");
+        const auto next_next_result = mutation_cursor.to_next(/*throw_notfound=*/false);
+        CHECK(!next_next_result.done);
+    }
 }
 
 #endif  // SILKWORM_SANITIZE

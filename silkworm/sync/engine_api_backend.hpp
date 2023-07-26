@@ -18,12 +18,12 @@
 
 #include <memory>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/sync/sync_pos.hpp>
 
 namespace silkworm::chainsync {
-
-using boost::asio::awaitable;
 
 class EngineApiBackend : public rpc::ethbackend::BackEnd {
   public:
@@ -33,18 +33,19 @@ class EngineApiBackend : public rpc::ethbackend::BackEnd {
     EngineApiBackend(const EngineApiBackend&) = delete;
     EngineApiBackend& operator=(const EngineApiBackend&) = delete;
 
-    awaitable<rpc::PayloadStatus> engine_new_payload(const rpc::ExecutionPayload& payload) override;
-    awaitable<rpc::ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
-    awaitable<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) override;
-    awaitable<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
-    awaitable<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
-    awaitable<evmc::address> etherbase() override;
-    awaitable<uint64_t> protocol_version() override;
-    awaitable<uint64_t> net_version() override;
-    awaitable<std::string> client_version() override;
-    awaitable<uint64_t> net_peer_count() override;
-    awaitable<rpc::NodeInfos> engine_node_info() override;
-    awaitable<rpc::PeerInfos> peers() override;
+    Task<rpc::PayloadStatus> engine_new_payload(const rpc::ExecutionPayload& payload) override;
+    Task<rpc::ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
+    Task<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) override;
+    Task<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
+    Task<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
+    Task<evmc::address> etherbase() override;
+    Task<uint64_t> protocol_version() override;
+    Task<uint64_t> net_version() override;
+    Task<std::string> client_version() override;
+    Task<uint64_t> net_peer_count() override;
+    Task<rpc::NodeInfos> engine_node_info() override;
+    Task<rpc::PeerInfos> peers() override;
+    Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
 
   private:
     //! The Execution Layer Engine API RPC server.

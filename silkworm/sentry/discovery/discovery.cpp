@@ -19,18 +19,75 @@
 #include <algorithm>
 #include <iterator>
 
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/random.hpp>
+
+#include "disc_v4/discovery.hpp"
+#include "node_db/node_db_sqlite.hpp"
 
 namespace silkworm::sentry::discovery {
 
 using namespace boost::asio;
 
-Discovery::Discovery(std::vector<common::EnodeUrl> peer_urls)
-    : peer_urls_(std::move(peer_urls)) {
+class DiscoveryImpl {
+  public:
+    explicit DiscoveryImpl(
+        std::vector<EnodeUrl> peer_urls,
+        bool with_dynamic_discovery,
+        const std::filesystem::path& data_dir_path,
+        boost::asio::any_io_executor node_db_executor,
+        std::function<EccKeyPair()> node_key,
+        std::function<EnodeUrl()> node_url,
+        uint16_t disc_v4_port);
+
+    DiscoveryImpl(const DiscoveryImpl&) = delete;
+    DiscoveryImpl& operator=(const DiscoveryImpl&) = delete;
+
+    Task<void> run();
+
+    Task<std::vector<EnodeUrl>> request_peer_urls(
+        size_t max_count,
+        std::vector<EnodeUrl> exclude_urls);
+
+    bool is_static_peer_url(const EnodeUrl& peer_url);
+
+  private:
+    void setup_node_db();
+
+    const std::vector<EnodeUrl> peer_urls_;
+    bool with_dynamic_discovery_;
+    std::filesystem::path data_dir_path_;
+    node_db::NodeDbSqlite node_db_;
+    disc_v4::Discovery disc_v4_discovery_;
+};
+
+DiscoveryImpl::DiscoveryImpl(
+    std::vector<EnodeUrl> peer_urls,
+    bool with_dynamic_discovery,
+    const std::filesystem::path& data_dir_path,
+    boost::asio::any_io_executor node_db_executor,
+    std::function<EccKeyPair()> node_key,
+    std::function<EnodeUrl()> node_url,
+    uint16_t disc_v4_port)
+    : peer_urls_(std::move(peer_urls)),
+      with_dynamic_discovery_(with_dynamic_discovery),
+      data_dir_path_(data_dir_path),
+      node_db_(std::move(node_db_executor)),
+      disc_v4_discovery_(disc_v4_port, node_key, node_url, node_db_.interface()) {
 }
 
-Task<void> Discovery::start() {
-    co_return;
+Task<void> DiscoveryImpl::run() {
+    setup_node_db();
+
+    if (with_dynamic_discovery_) {
+        co_await disc_v4_discovery_.run();
+    }
+}
+
+void DiscoveryImpl::setup_node_db() {
+    DataDirectory data_dir{data_dir_path_, true};
+    node_db_.setup(data_dir.nodes().path());
 }
 
 template <typename T>
@@ -47,17 +104,52 @@ static std::vector<T> exclude_vector_items(
     return remaining_items;
 }
 
-Task<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
+Task<std::vector<EnodeUrl>> DiscoveryImpl::request_peer_urls(
     size_t max_count,
-    std::vector<common::EnodeUrl> exclude_urls) {
+    std::vector<EnodeUrl> exclude_urls) {
     auto peer_urls = exclude_vector_items(peer_urls_, std::move(exclude_urls));
-    co_return common::random_vector_items(peer_urls, max_count);
+    co_return random_vector_items(peer_urls, max_count);
 }
 
-bool Discovery::is_static_peer_url(const common::EnodeUrl& peer_url) {
-    return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const common::EnodeUrl& it) {
+bool DiscoveryImpl::is_static_peer_url(const EnodeUrl& peer_url) {
+    return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const EnodeUrl& it) {
         return it == peer_url;
     });
+}
+
+Discovery::Discovery(
+    std::vector<EnodeUrl> peer_urls,
+    bool with_dynamic_discovery,
+    const std::filesystem::path& data_dir_path,
+    boost::asio::any_io_executor node_db_executor,
+    std::function<EccKeyPair()> node_key,
+    std::function<EnodeUrl()> node_url,
+    uint16_t disc_v4_port)
+    : p_impl_(std::make_unique<DiscoveryImpl>(
+          std::move(peer_urls),
+          with_dynamic_discovery,
+          data_dir_path,
+          std::move(node_db_executor),
+          std::move(node_key),
+          std::move(node_url),
+          disc_v4_port)) {}
+
+Discovery::~Discovery() {
+    log::Trace("sentry") << "silkworm::sentry::discovery::Discovery::~Discovery";
+}
+
+Task<void> Discovery::run() {
+    return p_impl_->run();
+}
+
+Task<std::vector<EnodeUrl>> Discovery::request_peer_urls(
+    size_t max_count,
+    std::vector<EnodeUrl> exclude_urls) {
+    return p_impl_->request_peer_urls(max_count, std::move(exclude_urls));
+}
+
+bool Discovery::is_static_peer_url(const EnodeUrl& peer_url) {
+    return p_impl_->is_static_peer_url(peer_url);
 }
 
 }  // namespace silkworm::sentry::discovery

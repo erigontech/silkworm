@@ -23,7 +23,7 @@
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
+#include <silkworm/sentry/api/common/message_from_peer.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
@@ -48,7 +48,7 @@ class BlockExchange final : public ActiveComponent {
     };
     void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
 
-    void new_target_block(const Block&);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
+    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
 
     void stop_downloading();  // stop downloading blocks
 

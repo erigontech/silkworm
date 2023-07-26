@@ -20,6 +20,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -62,6 +63,7 @@ class Snapshot {
     };
     using WordItemFunc = std::function<bool(WordItem&)>;
     bool for_each_item(const WordItemFunc& fn);
+    [[nodiscard]] std::optional<WordItem> next_item(uint64_t offset, ByteView prefix = {}) const;
 
     void close();
 
@@ -86,16 +88,24 @@ class HeaderSnapshot : public Snapshot {
 
     using Walker = std::function<bool(const BlockHeader* header)>;
     bool for_each_header(const Walker& walker);
+    [[nodiscard]] std::optional<BlockHeader> next_header(uint64_t offset, std::optional<Hash> hash = {}) const;
+
+    [[nodiscard]] std::optional<BlockHeader> header_by_hash(const Hash& block_hash) const;
+    [[nodiscard]] std::optional<BlockHeader> header_by_number(BlockNum block_height) const;
 
     void reopen_index() override;
 
   protected:
+    bool decode_header(const Snapshot::WordItem& item, BlockHeader& header) const;
+
     void close_index() override;
 
   private:
     //! Index header_hash -> headers_segment_offset
     std::unique_ptr<succinct::RecSplitIndex> idx_header_hash_;
 };
+
+using StoredBlockBody = db::detail::BlockBodyForStorage;
 
 class BodySnapshot : public Snapshot {
   public:
@@ -106,14 +116,19 @@ class BodySnapshot : public Snapshot {
     [[nodiscard]] SnapshotPath path() const override;
     [[nodiscard]] const succinct::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
-    using Walker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
+    using Walker = std::function<bool(BlockNum number, const StoredBlockBody* body)>;
     bool for_each_body(const Walker& walker);
+    [[nodiscard]] std::optional<StoredBlockBody> next_body(uint64_t offset) const;
 
     std::pair<uint64_t, uint64_t> compute_txs_amount();
+
+    [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
 
     void reopen_index() override;
 
   protected:
+    static DecodingResult decode_body(const Snapshot::WordItem& item, StoredBlockBody& body);
+
     void close_index() override;
 
   private:
@@ -131,9 +146,21 @@ class TransactionSnapshot : public Snapshot {
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
 
+    [[nodiscard]] std::optional<Transaction> next_txn(uint64_t offset, std::optional<Hash> hash = {}) const;
+
+    [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
+    [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
+    [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
+    [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const;
+
     void reopen_index() override;
 
   protected:
+    static DecodingResult decode_txn(const Snapshot::WordItem& item, Transaction& tx);
+
+    using Walker = std::function<bool(uint64_t i, ByteView senders_data, ByteView txn_rlp)>;
+    void for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const;
+
     void close_index() override;
 
   private:

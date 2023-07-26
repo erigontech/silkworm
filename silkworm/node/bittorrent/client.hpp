@@ -86,7 +86,6 @@ class BitTorrentClient {
     [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
     [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
-    [[nodiscard]] inline bool all_torrents_seeding() const;
 
     void recheck_all_finished_torrents();
     void request_torrent_updates(bool stats_included);

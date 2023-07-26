@@ -29,7 +29,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -111,6 +111,18 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
+    awaitable<KeyValue> previous() override {
+        KeyValue out;
+
+        if (--itr_ != table_.begin()) {
+            auto key{*silkworm::from_hex(itr_.key())};
+            auto value{*silkworm::from_hex(itr_.value().get<std::string>())};
+            out = KeyValue{key, value};
+        }
+
+        co_return out;
+    }
+
     awaitable<KeyValue> next_dup() override {
         KeyValue out;
 
@@ -180,8 +192,12 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    awaitable<std::shared_ptr<silkworm::State>> create_state(const core::rawdb::DatabaseReader& /* db_reader */, uint64_t /* block_number */) override {
-        co_return nullptr;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
+        return nullptr;
+    }
+
+    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+        return nullptr;
     }
 
     awaitable<void> close() override {
@@ -208,7 +224,7 @@ class DummyDatabase : public ethdb::Database {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());

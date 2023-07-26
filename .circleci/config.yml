@@ -51,11 +51,6 @@ commands:
           name: "Install compiler"
           command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
-          name: "Install dependencies"
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y m4 texinfo bison
-      - run:
           name: "Cmake"
           working_directory: ~/build
           command: |
@@ -118,31 +113,8 @@ commands:
         default: true
     steps:
       - run:
-          name: "Core unit tests"
-          working_directory: ~/build
-          command: |
-            ulimit -s unlimited
-            cmd/test/core_test
-      - run:
-          name: "Infra unit tests"
-          working_directory: ~/build
-          command: cmd/test/infra_test
-      - run:
-          name: "Node unit tests"
-          working_directory: ~/build
-          command: cmd/test/node_test
-      - run:
-          name: "RpcDaemon unit tests"
-          working_directory: ~/build
-          command: cmd/test/rpcdaemon_test
-      - run:
-          name: "Sentry unit tests"
-          working_directory: ~/build
-          command: cmd/test/sentry_test
-      - run:
-          name: "Sync unit tests"
-          working_directory: ~/build
-          command: cmd/test/sync_test
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" run_unit_tests
       - when:
           condition: <<parameters.ethereum_tests>>
           steps:
@@ -231,6 +203,7 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
+      UBSAN_OPTIONS: print_stacktrace=1
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
@@ -255,41 +228,22 @@ jobs:
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
-          name: "Core unit tests"
-          working_directory: ~/build
-          command: |
-            cmd/test/core_test
-            mv default.profraw core_test.profraw
-      - run:
-          name: "Node unit tests"
-          working_directory: ~/build
-          command: |
-            cmd/test/node_test
-            mv default.profraw node_test.profraw
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=ON run_unit_tests
       - run:
           name: "Ethereum EL tests"
-          working_directory: ~/build
           no_output_timeout: 30m
-          command: |
-            cmd/test/ethereum
-            mv default.profraw ethereum.profraw
+          command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
       - run:
           name: "Coverage"
-          working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/ethereum > silkworm.lcov
-      - run:
-          name: "Upload to Codecov"
-          command: |
-            sudo pip install codecov==2.1.13
-
-            counter=1
-            until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
-              counter=$((counter+1))
-              sleep 1
-              echo "Try #$counter..."
-            done
+            llvm-cov export -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
+            llvm-cov report -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+      - store_artifacts:
+          path: /tmp/silkworm.lcov
+      - store_artifacts:
+          path: /tmp/report.txt
 
   linux-clang-tidy:
     environment:

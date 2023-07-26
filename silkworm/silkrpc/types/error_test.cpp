@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -39,12 +39,12 @@ TEST_CASE("create empty revert error", "[silkrpc][types][error]") {
 
 TEST_CASE("print empty error", "[silkrpc][types][error]") {
     Error err{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << err);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << err);
 }
 
 TEST_CASE("print empty revert error", "[silkrpc][types][error]") {
     RevertError err{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << err);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << err);
 }
 
 }  // namespace silkworm::rpc

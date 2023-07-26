@@ -28,6 +28,7 @@
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::huffman {
@@ -182,7 +183,12 @@ class Decompressor {
         explicit Iterator(const Decompressor* decoder);
 
         [[nodiscard]] std::size_t data_size() const { return decoder_->words_length_; }
+
+        //! Check if any next word is present in the data stream
         [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
+
+        //! Check if the word at the current offset has the specified prefix (this does not move offset to the next)
+        [[nodiscard]] bool has_prefix(ByteView prefix);
 
         //! Extract one *compressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
@@ -235,6 +241,8 @@ class Decompressor {
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
 
+    [[nodiscard]] const std::string compressed_filename() const { return compressed_path_.filename().string(); }
+
     [[nodiscard]] uint64_t words_count() const { return words_count_; }
 
     [[nodiscard]] uint64_t empty_words_count() const { return empty_words_count_; }
@@ -243,10 +251,15 @@ class Decompressor {
         return compressed_file_->last_write_time();
     }
 
+    [[nodiscard]] bool is_open() const { return bool(compressed_file_); }
+
     void open();
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order
     bool read_ahead(ReadAheadFuncRef fn);
+
+    //! Get an iterator to the compressed data
+    [[nodiscard]] Iterator make_iterator() const { return Iterator{this}; }
 
     void close();
 

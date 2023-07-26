@@ -27,8 +27,6 @@
 
 namespace silkworm::sentry::rlpx::framing {
 
-using common::Message;
-
 const size_t MessageFrameCodec::kMaxFrameSize = 16 << 20;
 
 static Bytes snappy_compress(ByteView data) {

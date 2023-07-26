@@ -37,12 +37,12 @@ class Protocol : public rlpx::Protocol {
         return {"eth", Protocol::kVersion};
     }
 
-    [[nodiscard]] common::Message first_message() override {
+    [[nodiscard]] Message first_message() override {
         auto status = status_provider_();
         return status.message.to_message();
     }
 
-    void handle_peer_first_message(const common::Message& message) override;
+    void handle_peer_first_message(const Message& message) override;
 
     static const uint8_t kVersion;
 

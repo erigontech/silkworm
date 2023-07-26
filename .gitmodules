@@ -45,3 +45,10 @@
 [submodule "third_party/stun-msg"]
 	path = third_party/stun-msg
 	url = https://github.com/battlmonstr/stun-msg.git
+[submodule "third_party/execution-apis"]
+	path = third_party/execution-apis
+	url = https://github.com/ethereum/execution-apis.git
+	branch = main
+[submodule "third_party/picohttpparser"]
+	path = third_party/picohttpparser
+	url = https://github.com/h2o/picohttpparser

@@ -19,10 +19,11 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/use_awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
@@ -33,18 +34,19 @@ namespace silkworm::rpc::ethbackend {
 class BackEnd {
   public:
     virtual ~BackEnd() = default;
-    virtual boost::asio::awaitable<evmc::address> etherbase() = 0;
-    virtual boost::asio::awaitable<uint64_t> protocol_version() = 0;
-    virtual boost::asio::awaitable<uint64_t> net_version() = 0;
-    virtual boost::asio::awaitable<std::string> client_version() = 0;
-    virtual boost::asio::awaitable<uint64_t> net_peer_count() = 0;
-    virtual boost::asio::awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) = 0;
-    virtual boost::asio::awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) = 0;
-    virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) = 0;
-    virtual boost::asio::awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) = 0;
-    virtual boost::asio::awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) = 0;
-    virtual boost::asio::awaitable<NodeInfos> engine_node_info() = 0;
-    virtual boost::asio::awaitable<PeerInfos> peers() = 0;
+    virtual Task<evmc::address> etherbase() = 0;
+    virtual Task<uint64_t> protocol_version() = 0;
+    virtual Task<uint64_t> net_version() = 0;
+    virtual Task<std::string> client_version() = 0;
+    virtual Task<uint64_t> net_peer_count() = 0;
+    virtual Task<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) = 0;
+    virtual Task<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) = 0;
+    virtual Task<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) = 0;
+    virtual Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) = 0;
+    virtual Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) = 0;
+    virtual Task<NodeInfos> engine_node_info() = 0;
+    virtual Task<PeerInfos> peers() = 0;
+    virtual Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
 };
 
 }  // namespace silkworm::rpc::ethbackend

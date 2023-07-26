@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 
+#include "block_bodies_packet.hpp"
 #include "block_headers_packet.hpp"
 #include "get_block_bodies_packet.hpp"
 #include "get_block_headers_packet.hpp"
@@ -64,7 +65,7 @@ TEST_CASE("NewBlockHashesPacket encoding") {
     NewBlockHashesPacket packet;
 
     NewBlockHash newBlock;
-    newBlock.hash = Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
+    newBlock.hash = *Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
     newBlock.number = 12'420'112;
     packet.push_back(newBlock);
 
@@ -1025,8 +1026,8 @@ TEST_CASE("GetBlockBodiesPacket (eth/66) encoding") {
     GetBlockBodiesPacket66 packet;
 
     packet.requestId = 0xae9405dbeebf3f01;
-    packet.request.push_back(Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
-    packet.request.push_back(Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
+    packet.request.push_back(*Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
+    packet.request.push_back(*Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
 
     Bytes encoded;
     rlp::encode(encoded, packet);
@@ -1104,7 +1105,27 @@ decoded:
 */
 
 TEST_CASE("BlockBodiesPacket (eth/66) decoding/encoding") {
-    // todo: implement!
+    SECTION("empty list of bodies: VALID") {
+        Bytes rlp_bytes{*from_hex("0xca880d2c08e12ca20890c0")};
+        ByteView view{rlp_bytes};
+        BlockBodiesPacket66 packet;
+        CHECK(rlp::decode(view, packet));
+        CHECK(packet.requestId == 0x0d2c08e12ca20890);
+        CHECK(packet.request.empty());
+    }
+    SECTION("non-empty list of empty bodies: INVALID") {
+        Bytes rlp_bytes{*from_hex(
+            "0xf88b880d2c08e12ca20890f880c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+            "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+            "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0")};
+        ByteView view{rlp_bytes};
+        BlockBodiesPacket66 packet;
+        auto result = rlp::decode(view, packet);
+        CHECK(!result);
+        if (!result) {
+            CHECK(result.error() == DecodingError::kUnexpectedListElements);
+        }
+    }
 }
 
 }  // namespace silkworm

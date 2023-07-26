@@ -27,7 +27,7 @@ namespace silkworm::chainsync {
 Sync::Sync(boost::asio::io_context& io_context,
            mdbx::env_managed& chaindata_env,
            execution::Client& execution,
-           const std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>& sentry_client,
+           const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
            const EngineRpcSettings& rpc_settings)
     : sync_sentry_client_{io_context, sentry_client},
@@ -60,7 +60,9 @@ Sync::Sync(boost::asio::io_context& io_context,
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_unique<PoSSync>(block_exchange_, execution);
-        engine_rpc_server_->add_backend_service(std::make_unique<EngineApiBackend>(*pos_sync));
+        std::vector<std::unique_ptr<rpc::ethbackend::BackEnd>> backends;
+        backends.push_back(std::make_unique<EngineApiBackend>(*pos_sync));  // just one PoS-based Engine backend
+        engine_rpc_server_->add_backend_services(std::move(backends));
         chain_sync_ = std::move(pos_sync);
     } else {
         // Create the synchronization algorithm based on GHOST, i.e. PoW
@@ -92,7 +94,10 @@ boost::asio::awaitable<void> Sync::start_block_exchange() {
 }
 
 boost::asio::awaitable<void> Sync::start_chain_sync() {
-    return chain_sync_->async_run();
+    // The ChainSync async loop *must* run onto the Engine RPC server unique execution context
+    // This is *strictly* required by the current design assumptions in PoSSync
+    auto& engine_rpc_ioc = engine_rpc_server_->context_pool().next_io_context();
+    return boost::asio::co_spawn(engine_rpc_ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> Sync::start_engine_rpc_server() {

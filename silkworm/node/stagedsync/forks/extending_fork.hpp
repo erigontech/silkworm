@@ -53,7 +53,7 @@ class ExtendingFork {
     // verification
     auto verify_chain()
         -> concurrency::AwaitableFuture<VerificationResult>;
-    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    auto fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> concurrency::AwaitableFuture<bool>;
 
     // state

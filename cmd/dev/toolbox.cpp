@@ -457,7 +457,7 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
@@ -468,7 +468,7 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
     auto old_height{db::stages::read_stage_progress(txn, stage_name.c_str())};
     db::stages::write_stage_progress(txn, stage_name.c_str(), new_height);
     if (!dry) {
-        txn.commit();
+        txn.commit_and_renew();
     }
 
     std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n"
@@ -551,7 +551,7 @@ void do_freelist(db::EnvConfig& config, bool detail) {
 
 void do_schema(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     auto schema_version{db::read_schema_version(txn)};
     if (!schema_version.has_value()) {
@@ -845,7 +845,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     // Prime database
     db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
     auto env{db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     db::table::check_or_create_chaindata_tables(txn);
     db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
 
@@ -854,7 +854,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     db::write_schema_version(txn, v);
 
     if (!dry) {
-        txn.commit();
+        txn.commit_and_renew();
     } else {
         txn.abort();
     }
@@ -863,17 +863,15 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
 
 void do_chainconfig(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
     auto chain_config{db::read_chain_config(txn)};
     if (!chain_config.has_value()) {
         throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
     }
     const auto& chain{chain_config.value()};
-    std::cout << "\n Chain id " << chain.chain_id << "\n Settings (json) : \n"
-              << chain.to_json().dump() << "\n"
-              << std::endl;
-
-    env.close(config.shared);
+    std::cout << "\n Chain ID: " << chain.chain_id
+              << "\n Settings (json): \n"
+              << chain.to_json().dump(/*indent=*/2) << "\n\n";
 }
 
 void do_first_byte_analysis(db::EnvConfig& config) {
@@ -884,7 +882,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     std::cout << "\n"
               << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
@@ -947,7 +945,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     // We can store all header hashes into a single byte array given all
     // hashes are same in length. By consequence we only need to assert
@@ -1365,7 +1363,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                             }
                             throw std::runtime_error(what);
                         }
-                    };
+                    }
                 }
             }
 
@@ -1403,7 +1401,7 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     log::Info("Clearing ...", {"table", db::table::kTrieOfAccounts.name});
     txn->clear_map(db::table::kTrieOfAccounts.name);
     log::Info("Clearing ...", {"table", db::table::kTrieOfStorage.name});
@@ -1411,7 +1409,7 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
     log::Info("Setting progress ...", {"key", db::stages::kIntermediateHashesKey, "value", "0"});
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
     log::Info("Committing ...", {});
-    txn.commit();
+    txn.commit_and_renew();
     log::Info("Closing db", {"path", env.get_path().string()});
     env.close();
 }
@@ -1422,7 +1420,7 @@ void do_trie_root(db::EnvConfig& config) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
     db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
     std::string source{db::table::kTrieOfAccounts.name};
 
@@ -1475,12 +1473,12 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     log::Info() << "Ok boss ... you say it. Please be patient...";
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn(env);
+    db::RWTxnManaged txn(env);
 
     StopWatch sw(/*auto_start=*/true);
     // Void finish stage
     db::stages::write_stage_progress(txn, db::stages::kFinishKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kFinishKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1490,7 +1488,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kTxLookupKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kTxLookupKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1503,7 +1501,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kLogIndexKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kLogIndexKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kLogIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1516,7 +1514,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kHistoryIndexKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kHistoryIndexKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1532,7 +1530,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kHashStateKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kHashStateKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1544,7 +1542,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     source.bind(*txn, db::table::kTrieOfAccounts);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kIntermediateHashesKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
@@ -1599,7 +1597,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
         }
         log::Info(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << " truncating ...";
         txn->clear_map(account_changeset.map());
-        txn.commit(/*renew=*/true);
+        txn.commit_and_renew();
     }
 
     {
@@ -1622,12 +1620,12 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
         }
         log::Info(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << " truncating ...";
         txn->clear_map(storage_changeset.map());
-        txn.commit(/*renew=*/true);
+        txn.commit_and_renew();
     }
 
     db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, 0);
-    txn.commit(/*renew=*/true);
+    txn.commit_and_renew();
     log::Info(db::stages::kExecutionKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
 
     if (!keep_senders) {
@@ -1637,7 +1635,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
         txn->clear_map(source.map());
         db::stages::write_stage_progress(txn, db::stages::kSendersKey, 0);
         db::stages::write_stage_prune_progress(txn, db::stages::kSendersKey, 0);
-        txn.commit(/*renew=*/true);
+        txn.commit_and_renew();
         log::Info(db::stages::kSendersKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
         if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
     }
@@ -1784,7 +1782,7 @@ int main(int argc, char* argv[]) {
     /*
      * Parse arguments and validate
      */
-    CLI11_PARSE(app_main, argc, argv);
+    CLI11_PARSE(app_main, argc, argv)
 
     auto data_dir_factory = [&chaindata_opt, &datadir_opt]() -> DataDirectory {
         if (*chaindata_opt) {

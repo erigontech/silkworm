@@ -32,7 +32,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/http/connection.hpp>
 
 namespace silkworm::rpc::http {
@@ -70,7 +69,7 @@ Server::Server(const std::string& end_point,
 }
 
 void Server::start() {
-    boost::asio::co_spawn(acceptor_.get_executor(), run(), [&](std::exception_ptr eptr) {
+    boost::asio::co_spawn(acceptor_.get_executor(), run(), [&](const std::exception_ptr& eptr) {
         if (eptr) std::rethrow_exception(eptr);
     });
 }
@@ -94,7 +93,7 @@ boost::asio::awaitable<void> Server::run() {
             SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
             auto connection_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
 
-            boost::asio::co_spawn(io_context_, connection_loop, [&](std::exception_ptr eptr) {
+            boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
                 if (eptr) std::rethrow_exception(eptr);
             });
         }

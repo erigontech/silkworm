@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -28,7 +28,7 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call][.]") {
         explicit FakeRpc(grpc::ServerContext& server_context) : server::Call(server_context) {}
     };
 
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     grpc::ServerContext server_context;
 
     SECTION("count live instances") {

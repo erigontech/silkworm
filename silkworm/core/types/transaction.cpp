@@ -18,6 +18,7 @@
 
 #include <ethash/keccak.hpp>
 
+#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/protocol/param.hpp>
@@ -40,6 +41,12 @@ bool Transaction::set_v(const intx::uint256& v) {
     odd_y_parity = parity_and_id->odd;
     chain_id = parity_and_id->chain_id;
     return true;
+}
+
+evmc::bytes32 Transaction::hash() const {
+    Bytes rlp;
+    rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
+    return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
 namespace rlp {
@@ -71,7 +78,7 @@ namespace rlp {
         }
 
         h.payload_length += length(txn.nonce);
-        if (txn.type == TransactionType::kEip1559 || txn.type == TransactionType::kEip4844) {
+        if (txn.type == TransactionType::kDynamicFee || txn.type == TransactionType::kBlob) {
             h.payload_length += length(txn.max_priority_fee_per_gas);
         }
         h.payload_length += length(txn.max_fee_per_gas);
@@ -82,7 +89,7 @@ namespace rlp {
 
         if (txn.type != TransactionType::kLegacy) {
             h.payload_length += length(txn.access_list);
-            if (txn.type == TransactionType::kEip4844) {
+            if (txn.type == TransactionType::kBlob) {
                 h.payload_length += length(txn.max_fee_per_data_gas);
                 h.payload_length += length(txn.blob_versioned_hashes);
             }
@@ -149,7 +156,7 @@ namespace rlp {
         encode(to, txn.chain_id.value_or(0));
 
         encode(to, txn.nonce);
-        if (txn.type != TransactionType::kEip2930) {
+        if (txn.type != TransactionType::kAccessList) {
             encode(to, txn.max_priority_fee_per_gas);
         }
         encode(to, txn.max_fee_per_gas);
@@ -163,7 +170,7 @@ namespace rlp {
         encode(to, txn.data);
         encode(to, txn.access_list);
 
-        if (txn.type == TransactionType::kEip4844) {
+        if (txn.type == TransactionType::kBlob) {
             encode(to, txn.max_fee_per_data_gas);
             encode(to, txn.blob_versioned_hashes);
         }
@@ -216,9 +223,9 @@ namespace rlp {
     }
 
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
-        if (to.type != TransactionType::kEip2930 &&
-            to.type != TransactionType::kEip1559 &&
-            to.type != TransactionType::kEip4844) {
+        if (to.type != TransactionType::kAccessList &&
+            to.type != TransactionType::kDynamicFee &&
+            to.type != TransactionType::kBlob) {
             return tl::unexpected{DecodingError::kUnsupportedTransactionType};
         }
 
@@ -240,7 +247,7 @@ namespace rlp {
             return res;
         }
 
-        if (to.type == TransactionType::kEip2930) {
+        if (to.type == TransactionType::kAccessList) {
             to.max_fee_per_gas = to.max_priority_fee_per_gas;
         } else if (DecodingResult res{decode(from, to.max_fee_per_gas, Leftover::kAllow)}; !res) {
             return res;
@@ -264,7 +271,7 @@ namespace rlp {
             return res;
         }
 
-        if (to.type != TransactionType::kEip4844) {
+        if (to.type != TransactionType::kBlob) {
             to.max_fee_per_data_gas = 0;
             to.blob_versioned_hashes.clear();
         } else if (DecodingResult res{decode_items(from, to.max_fee_per_data_gas, to.blob_versioned_hashes)}; !res) {

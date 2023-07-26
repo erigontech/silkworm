@@ -33,14 +33,14 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 
 using namespace std::chrono_literals;
 
@@ -207,9 +207,9 @@ constexpr const char* kTestSentryNodeClientId{"MockSentryClient"};
 
 class MockSentryClient
     : public std::enable_shared_from_this<MockSentryClient>,
-      public silkworm::sentry::api::api_common::SentryClient,
-      public silkworm::sentry::api::api_common::Service {
-    boost::asio::awaitable<std::shared_ptr<silkworm::sentry::api::api_common::Service>> service() override {
+      public silkworm::sentry::api::SentryClient,
+      public silkworm::sentry::api::Service {
+    boost::asio::awaitable<std::shared_ptr<silkworm::sentry::api::Service>> service() override {
         co_return shared_from_this();
     }
     [[nodiscard]] bool is_ready() override { return true; }
@@ -227,8 +227,8 @@ class MockSentryClient
         const uint16_t port = 50555;
         const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
 
-        silkworm::sentry::api::api_common::NodeInfo info = {
-            silkworm::sentry::common::EnodeUrl{node_url_str},
+        silkworm::sentry::api::NodeInfo info = {
+            silkworm::sentry::EnodeUrl{node_url_str},
             kTestSentryNodeClientId,
             boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
             port,
@@ -236,40 +236,40 @@ class MockSentryClient
         co_return NodeInfos{info};
     }
 
-    boost::asio::awaitable<PeerKeys> send_message_by_id(silkworm::sentry::common::Message /*message*/, silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+    boost::asio::awaitable<PeerKeys> send_message_by_id(silkworm::sentry::Message /*message*/, silkworm::sentry::EccPublicKey /*public_key*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<PeerKeys> send_message_to_random_peers(silkworm::sentry::common::Message /*message*/, size_t /*max_peers*/) override {
+    boost::asio::awaitable<PeerKeys> send_message_to_random_peers(silkworm::sentry::Message /*message*/, size_t /*max_peers*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<PeerKeys> send_message_to_all(silkworm::sentry::common::Message /*message*/) override {
+    boost::asio::awaitable<PeerKeys> send_message_to_all(silkworm::sentry::Message /*message*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<PeerKeys> send_message_by_min_block(silkworm::sentry::common::Message /*message*/, size_t /*max_peers*/) override {
+    boost::asio::awaitable<PeerKeys> send_message_by_min_block(silkworm::sentry::Message /*message*/, size_t /*max_peers*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<void> peer_min_block(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+    boost::asio::awaitable<void> peer_min_block(silkworm::sentry::EccPublicKey /*public_key*/) override {
         throw std::runtime_error("not implemented");
     }
     boost::asio::awaitable<void> messages(
-        silkworm::sentry::api::api_common::MessageIdSet /*message_id_filter*/,
-        std::function<boost::asio::awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> /*consumer*/) override {
+        silkworm::sentry::api::MessageIdSet /*message_id_filter*/,
+        std::function<boost::asio::awaitable<void>(silkworm::sentry::api::MessageFromPeer)> /*consumer*/) override {
         throw std::runtime_error("not implemented");
     }
 
-    boost::asio::awaitable<silkworm::sentry::api::api_common::PeerInfos> peers() override {
+    boost::asio::awaitable<silkworm::sentry::api::PeerInfos> peers() override {
         throw std::runtime_error("not implemented");
     }
     boost::asio::awaitable<size_t> peer_count() override {
         co_return kTestSentryPeerCount;
     }
-    boost::asio::awaitable<std::optional<silkworm::sentry::api::api_common::PeerInfo>> peer_by_id(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+    boost::asio::awaitable<std::optional<silkworm::sentry::api::PeerInfo>> peer_by_id(silkworm::sentry::EccPublicKey /*public_key*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<void> penalize_peer(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+    boost::asio::awaitable<void> penalize_peer(silkworm::sentry::EccPublicKey /*public_key*/) override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> /*consumer*/) override {
+    boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(silkworm::sentry::api::PeerEvent)> /*consumer*/) override {
         throw std::runtime_error("not implemented");
     }
 };
@@ -376,7 +376,7 @@ struct BackEndKvE2eTest {
         server->join();
     }
 
-    test::SetLogVerbosityGuard set_verbosity_log_guard;
+    test_util::SetLogVerbosityGuard set_verbosity_log_guard;
     rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
     std::unique_ptr<BackEndClient> backend_client;
@@ -397,7 +397,7 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
     ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
@@ -869,6 +869,7 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") 
     }
 }
 
+#ifndef _WIN32
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
@@ -891,11 +892,15 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
     }
     // Server-side life cycle of Tx calls must be OK.
 }
+#endif  // _WIN32
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     // This check can be improved in Catch2 version 3.3.0 where SKIP is available
     if (os::max_file_descriptors() < 1024) {
-        FAIL("insufficient number of process file descriptors, increase to 1024 at least");
+        bool ok = os::set_max_file_descriptors(1024);
+        if (!ok) {
+            FAIL("insufficient number of process file descriptors, increase to 1024 has failed");
+        }
     }
 
     BackEndKvE2eTest test;
@@ -2200,6 +2205,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
+#ifndef _WIN32
     SECTION("Tx: cursor NEXT op after renew sees changes") {
         grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMap table
@@ -2352,6 +2358,8 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
     }
+
+#endif  // _WIN32
 }
 #endif  // SILKWORM_SANITIZE
 

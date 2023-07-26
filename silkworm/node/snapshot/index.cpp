@@ -23,6 +23,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
@@ -78,9 +79,13 @@ void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
 
-bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t /*i*/, uint64_t offset, ByteView word) {
+bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) {
+    ensure(!word.empty(), "HeaderIndex: word empty i=" + std::to_string(i));
+    const uint8_t first_hash_byte{word[0]};
     const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
+    ensure(hash.bytes[0] == first_hash_byte,
+           "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes));
     rec_split.add_key(hash.bytes, kHashLength, offset);
     return true;
 }
@@ -202,7 +207,7 @@ void TransactionIndex::build() {
                         tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
                         tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
                     } else {
-                        // Skip first byte plus address length for transaction decoding
+                        // Skip tx hash first byte plus address length for transaction decoding
                         constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
                         const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
                         ByteView tx_envelope_view{tx_envelope};

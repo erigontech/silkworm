@@ -24,14 +24,14 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::concurrency {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Context ctx{0};
 
     SECTION("ServerContext") {
@@ -65,12 +65,12 @@ TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
     }
 
     SECTION("print") {
-        CHECK_NOTHROW(test::null_stream() << ctx);
+        CHECK_NOTHROW(test_util::null_stream() << ctx);
     }
 }
 
 TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("ContextPool OK") {
         ContextPool context_pool{2};

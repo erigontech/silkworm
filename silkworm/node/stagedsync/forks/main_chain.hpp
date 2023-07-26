@@ -46,7 +46,6 @@ class ExtendingFork;
 class MainChain {
   public:
     explicit MainChain(asio::io_context&, NodeSettings&, db::RWAccess);
-    MainChain(MainChain&&);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -67,20 +66,24 @@ class MainChain {
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto canonical_head() const -> BlockId;
+    auto last_chosen_head() const -> BlockId;  // set by notify_fork_choice_update(), is always valid
+    auto last_finalized_head() const -> BlockId;
 
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
-    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
-    auto get_body(Hash) const -> std::optional<BlockBody>;
-    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto get_last_headers(uint64_t limit) const -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
+    auto is_canonical(Hash) const -> bool;
+    // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto get_block_number(Hash) const -> std::optional<BlockNum>;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
@@ -89,18 +92,22 @@ class MainChain {
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
+    auto current_head() const -> BlockId;  // private state, it is implementation dependent, this head can be invalid
+
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
     asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
-    mutable db::RWTxn tx_;
+    mutable db::RWTxnManaged tx_;
+    db::DataModel data_model_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;
     VerificationResult canonical_head_status_;
     BlockId last_fork_choice_;
+    BlockId last_finalized_head_;
 };
 
 }  // namespace silkworm::stagedsync

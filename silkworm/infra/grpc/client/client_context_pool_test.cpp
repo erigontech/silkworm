@@ -24,7 +24,7 @@
 #include <boost/asio/post.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -72,13 +72,13 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
         }
 
         SECTION("print") {
-            CHECK_NOTHROW(test::null_stream() << context);
+            CHECK_NOTHROW(test_util::null_stream() << context);
         }
     }
 }
 
 TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("reject size 0") {
         CHECK_THROWS_MATCHES((ClientContextPool{0}), std::logic_error,
@@ -121,7 +121,7 @@ TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][cli
 }
 
 TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
@@ -139,7 +139,7 @@ TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][clie
 }
 
 TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
@@ -168,7 +168,7 @@ TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client
 }
 
 TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("not yet running") {
         ClientContextPool cp{3};
@@ -194,7 +194,7 @@ TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][clien
 }
 
 TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("running 1 thread") {
         ClientContextPool cp{1};

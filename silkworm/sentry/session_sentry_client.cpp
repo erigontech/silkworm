@@ -27,7 +27,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-class SessionSentryClientImpl : public api::api_common::SentryClient {
+class SessionSentryClientImpl : public api::SentryClient {
   private:
     enum class State {
         kInit,
@@ -48,7 +48,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
     using Waiter = concurrency::AwaitableConditionVariable::Waiter;
 
     SessionSentryClientImpl(
-        std::shared_ptr<api::api_common::SentryClient> sentry_client,
+        std::shared_ptr<api::SentryClient> sentry_client,
         StatusDataProvider status_data_provider)
         : sentry_client_(std::move(sentry_client)),
           status_data_provider_(std::move(status_data_provider)),
@@ -61,7 +61,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         sentry_client_->on_disconnect([]() -> Task<void> { co_return; });
     }
 
-    Task<std::shared_ptr<api::api_common::Service>> service() override {
+    Task<std::shared_ptr<api::Service>> service() override {
         co_await run_transitions_until_ready(Event::kSessionRequired);
         co_return (co_await sentry_client_->service());
     }
@@ -128,7 +128,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
                 // Delay reconnection to make these corner cases less likely:
                 // - a late failed call triggers Event::kDisconnected again, and we'll have to redo the handshake;
                 // - a successful reconnect right after co_await service() where a call would proceed without a handshake;
-                co_await common::sleep(1s);
+                co_await sleep(1s);
                 co_await sentry_client_->reconnect();
                 break;
             }
@@ -170,7 +170,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         return run_transitions_until_ready(Event::kDisconnected);
     }
 
-    std::shared_ptr<api::api_common::SentryClient> sentry_client_;
+    std::shared_ptr<api::SentryClient> sentry_client_;
     StatusDataProvider status_data_provider_;
     uint8_t eth_version_;
     State state_;
@@ -179,7 +179,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
 };
 
 SessionSentryClient::SessionSentryClient(
-    std::shared_ptr<api::api_common::SentryClient> sentry_client,
+    std::shared_ptr<api::SentryClient> sentry_client,
     StatusDataProvider status_data_provider)
     : p_impl_(std::make_unique<SessionSentryClientImpl>(sentry_client, status_data_provider)) {
 }
@@ -188,7 +188,7 @@ SessionSentryClient::~SessionSentryClient() {
     [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
 }
 
-Task<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
+Task<std::shared_ptr<api::Service>> SessionSentryClient::service() {
     return p_impl_->service();
 }
 

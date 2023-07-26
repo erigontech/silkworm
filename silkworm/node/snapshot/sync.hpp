@@ -31,24 +31,27 @@ namespace silkworm::snapshot {
 
 class SnapshotSync : public Stoppable {
   public:
-    SnapshotSync(const SnapshotSettings& settings, const ChainConfig& config);
+    SnapshotSync(SnapshotRepository* repository, const ChainConfig& config);
     ~SnapshotSync() override;
 
-    [[nodiscard]] SnapshotRepository& repository() { return repository_; }
+    bool stop() override;
 
     bool download_and_index_snapshots(db::RWTxn& txn);
     bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
-    bool index_snapshots(db::RWTxn& txn, const std::vector<std::string>& snapshot_file_names);
-    bool stop() override;
+    void index_snapshots();
 
   private:
     void reopen();
     void build_missing_indexes();
-    bool save(db::RWTxn& txn, BlockNum max_block_available);
+    void update_database(db::RWTxn& txn, BlockNum max_block_available);
+    void update_block_headers(db::RWTxn& txn, BlockNum max_block_available);
+    void update_block_bodies(db::RWTxn& txn, BlockNum max_block_available);
+    static void update_block_hashes(db::RWTxn& txn, BlockNum max_block_available);
+    static void update_block_senders(db::RWTxn& txn, BlockNum max_block_available);
 
-    SnapshotSettings settings_;
+    SnapshotRepository* repository_;
+    const SnapshotSettings& settings_;
     const ChainConfig& config_;
-    SnapshotRepository repository_;
     BitTorrentClient client_;
     std::thread client_thread_;
 };

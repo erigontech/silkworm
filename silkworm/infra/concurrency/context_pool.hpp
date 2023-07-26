@@ -100,7 +100,7 @@ class ContextPool {
     const T& add_context(T&& context) {
         const auto num_contexts = contexts_.size();
         contexts_.emplace_back(std::move(context));
-        SILK_DEBUG << "ContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
+        SILK_TRACE << "ContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
         return contexts_[num_contexts];
     }
 
@@ -117,7 +117,7 @@ class ContextPool {
                 context.execute_loop();
                 SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
-            SILK_DEBUG << "ContextPool::start context[" << i << "] started: " << context.io_context();
+            SILK_TRACE << "ContextPool::start context[" << i << "] started: " << context.io_context();
         }
 
         SILK_TRACE << "ContextPool::start END";
@@ -129,7 +129,7 @@ class ContextPool {
         SILK_TRACE << "ContextPool::join START";
 
         // Wait for all threads in the pool to exit.
-        SILK_DEBUG << "ContextPool::join joining...";
+        SILK_TRACE << "ContextPool::join joining...";
         context_threads_.join();
 
         SILK_TRACE << "ContextPool::join END";
@@ -143,7 +143,7 @@ class ContextPool {
             // Explicitly stop all context runnable components
             for (std::size_t i{0}; i < contexts_.size(); ++i) {
                 contexts_[i].stop();
-                SILK_DEBUG << "ContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
+                SILK_TRACE << "ContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
             }
         }
 

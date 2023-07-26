@@ -35,12 +35,12 @@ Bytes PongMessage::rlp_encode() const {
     return data;
 }
 
-sentry::common::Message PingMessage::to_message() const {
-    return sentry::common::Message{kId, rlp_encode()};
+sentry::Message PingMessage::to_message() const {
+    return sentry::Message{kId, rlp_encode()};
 }
 
-sentry::common::Message PongMessage::to_message() const {
-    return sentry::common::Message{kId, rlp_encode()};
+sentry::Message PongMessage::to_message() const {
+    return sentry::Message{kId, rlp_encode()};
 }
 
 }  // namespace silkworm::sentry::rlpx

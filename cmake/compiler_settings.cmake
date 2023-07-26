@@ -117,6 +117,9 @@ if(SILKWORM_SANITIZE)
   endif()
 endif()
 
+# Position independent code
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
 # Stack
 set(SILKWORM_STACK_SIZE 0x1000000)
 

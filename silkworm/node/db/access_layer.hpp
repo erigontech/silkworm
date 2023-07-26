@@ -149,7 +149,6 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
 
 void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block);
-
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
 
 // See Erigon ReadTransactions
@@ -307,6 +306,7 @@ class DataModel {
     //! Read block returning true on success and false on missing block
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
+    [[nodiscard]] bool read_block(BlockNum number, bool read_senders, Block& block) const;
 
     //! Read the RLP encoded block transactions at specified height
     [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;

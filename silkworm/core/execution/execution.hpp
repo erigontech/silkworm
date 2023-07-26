@@ -27,6 +27,16 @@
 
 namespace silkworm {
 
+[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state, const ChainConfig& chain_config,
+                                                    std::vector<Receipt>& receipts) noexcept {
+    auto rule_set{protocol::rule_set_factory(chain_config)};
+    if (!rule_set) {
+        return ValidationResult::kUnknownProtocolRuleSet;
+    }
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
+    return processor.execute_and_write_block(receipts);
+}
+
 /** @brief Executes a given block and writes resulting changes into the state.
  *
  * Preconditions:
@@ -42,13 +52,8 @@ namespace silkworm {
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& chain_config) noexcept {
-    auto rule_set{protocol::rule_set_factory(chain_config)};
-    if (!rule_set) {
-        return ValidationResult::kUnknownProtocolRuleSet;
-    }
-    ExecutionProcessor processor{block, *rule_set, state, chain_config};
     std::vector<Receipt> receipts;
-    return processor.execute_and_write_block(receipts);
+    return execute_block(block, state, chain_config, receipts);
 }
 
 }  // namespace silkworm

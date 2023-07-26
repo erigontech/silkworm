@@ -69,6 +69,16 @@ SnapshotRepository::~SnapshotRepository() {
     close();
 }
 
+void SnapshotRepository::add_snapshot_bundle(SnapshotBundle&& bundle) {
+    header_segments_[bundle.headers_snapshot_path.path()] = std::move(bundle.headers_snapshot);
+    body_segments_[bundle.bodies_snapshot_path.path()] = std::move(bundle.bodies_snapshot);
+    tx_segments_[bundle.tx_snapshot_path.path()] = std::move(bundle.tx_snapshot);
+    if (bundle.tx_snapshot_path.block_to() > segment_max_block_) {
+        segment_max_block_ = bundle.tx_snapshot_path.block_to() - 1;
+    }
+    idx_max_block_ = max_idx_available();
+}
+
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotPathList segment_files = get_segment_files();

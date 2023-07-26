@@ -327,7 +327,7 @@ class DataModel {
     static bool is_body_in_snapshot(BlockNum height);
     static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
     static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
-                                                bool read_senders, std::vector<Transaction> txs);
+                                                bool read_senders, std::vector<Transaction>& txs);
 
     static inline snapshot::SnapshotRepository* repository_{nullptr};
 

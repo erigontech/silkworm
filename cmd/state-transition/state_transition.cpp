@@ -25,15 +25,15 @@
 #include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
+
 #include "expected_state.hpp"
-#include "silkworm/core/common/cast.hpp"
-#include "silkworm/core/common/util.hpp"
-#include "silkworm/core/execution/execution.hpp"
-#include "silkworm/core/protocol/param.hpp"
-#include "silkworm/core/protocol/rule_set.hpp"
-#include "silkworm/core/rlp/encode_vector.hpp"
-#include "silkworm/core/state/in_memory_state.hpp"
-#include "silkworm/sentry/common/ecc_key_pair.hpp"
 
 namespace silkworm::cmd::state_transition {
 

@@ -25,6 +25,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
 
@@ -64,7 +65,7 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height) {
+void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     auto cursor = txn.rw_cursor(db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     cursor->upsert(db::to_slice(key), db::to_slice(value));
@@ -498,6 +499,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
+    body_for_storage.withdrawals = body.withdrawals;
     body_for_storage.txn_count = body.transactions.size() + 2;
     body_for_storage.base_txn_id =
         increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
@@ -508,6 +510,22 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     target->upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id + 1);
+}
+
+void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+    detail::BlockBodyForStorage body_for_storage{};
+    body_for_storage.ommers = body.ommers;
+    body_for_storage.withdrawals = body.withdrawals;
+    body_for_storage.txn_count = body.transactions.size();
+    body_for_storage.base_txn_id =
+        increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
+    Bytes value{body_for_storage.encode()};
+    auto key{db::block_key(bn, hash.bytes)};
+
+    auto target = txn.rw_cursor(table::kBlockBodies);
+    target->upsert(to_slice(key), to_slice(value));
+
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
@@ -551,6 +569,38 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
             transaction.recover_sender();
         }
     }
+}
+
+void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
+    auto key{db::block_key(block_number, hash.bytes)};
+    auto target = txn.rw_cursor(table::kSenders);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        if (block_txn.from.has_value()) {
+            data.append(block_txn.from.value().bytes, kAddressLength);
+        } else {
+            throw std::runtime_error("Missing senders for block " + std::to_string(block_number));
+        }
+    }
+
+    target->upsert(to_slice(key), to_slice(data));
+}
+
+void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block) {
+    auto target = txn.rw_cursor(table::kTxLookup);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        auto tx_key = block_txn.hash();
+        auto tx_data = db::block_key(block_number);
+        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data));
+    }
+}
+
+void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number) {
+    auto target = txn.rw_cursor(table::kBlockReceipts);
+    auto key{db::block_key(block_number)};
+    Bytes value{cbor_encode(receipts)};
+    target->upsert(to_slice(key), to_slice(value));
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {

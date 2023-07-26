@@ -16,6 +16,7 @@
 
 #include "rpc_api.hpp"
 
+#include <bit>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -33,12 +34,10 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/genesis.hpp>
+#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
-
-#include "silkworm/core/common/cast.hpp"
-#include "silkworm/silkrpc/common/constants.hpp"
 
 namespace silkworm::rpc::commands {
 
@@ -85,7 +84,7 @@ void populate_genesis(db::RWTxn& txn) {
 
             if (account_alloc_json.contains("code")) {
                 const auto acc_code{from_hex(std::string(account_alloc_json.at("code"))).value()};
-                const auto acc_codehash{bit_cast<evmc_bytes32>(keccak256(acc_code))};
+                const auto acc_codehash{std::bit_cast<evmc_bytes32>(keccak256(acc_code))};
                 account.code_hash = acc_codehash;
                 state_buffer.update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
             }

@@ -377,8 +377,6 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
         }
 
         transactions.push_back(std::move(transaction));
-
-        transactions.emplace_back();
         return true;
     });
 

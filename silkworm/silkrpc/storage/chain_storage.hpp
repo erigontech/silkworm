@@ -90,7 +90,7 @@ class ChainStorage {
     //! Read total difficulty for block specified by hash and number
     [[nodiscard]] virtual Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const = 0;
 
-    // Task<uint64_t> read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash);
+    virtual Task<uint64_t> read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
 
     // Task<silkworm::BlockHeader> read_current_header();
 

@@ -118,4 +118,8 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(number, hash);
 }
 
+Task<uint64_t> LocalChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32&) const {
+    co_return 0;  // temporary
+}
+
 }  // namespace silkworm::rpc

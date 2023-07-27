@@ -70,4 +70,8 @@ Task<bool> EngineApiBackend::get_block(uint64_t /* block_number*/, const HashAsS
     throw std::logic_error{"EngineApiBackend::get_block not implemented"};
 }
 
+Task<uint64_t> EngineApiBackend::get_block_number_from_txn_hash(const HashAsSpan& hashs) override {
+   throw std::logic_error{"EngineApiBackend::get_block_number_from_txn_hash not implemented"};
+}
+
 }  // namespace silkworm::chainsync

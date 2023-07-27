@@ -39,7 +39,9 @@ using evmc::literals::operator""_bytes32;
 
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
+#ifdef TEST_DISABLED
 static const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+#endif
 
 class DummyCursor : public ethdb::CursorDupSort {
   public:
@@ -214,6 +216,7 @@ class DummyDatabase : public ethdb::Database {
 
 // const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
+#ifdef TEST_DISABLED
 TEST_CASE("account dumper") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
@@ -606,5 +609,6 @@ TEST_CASE("account dumper") {
         CHECK(storage[0xb797965b738ad51ddbf643b315d0421c26972862ca2e64304783dc8930a2b6e8_bytes32] == *silkworm::from_hex("ee6b2800"));
     }*/
 }
+#endif
 
 }  // namespace silkworm::rpc

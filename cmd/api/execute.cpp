@@ -140,7 +140,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                         .memory_length = idx_txn_hash_2_block->memory_file_size()}};
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
             } break;
-            default: ensure(false, "unexpected snapshot type: " + std::string{magic_enum::enum_name(segment_file.type())});
+            default:
+                ensure(false, "unexpected snapshot type: " + std::string{magic_enum::enum_name(segment_file.type())});
         }
     }
 

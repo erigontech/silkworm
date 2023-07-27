@@ -19,4 +19,4 @@ find_package(CLI11 REQUIRED)
 
 add_executable(execute_cpp execute.cpp)
 target_include_directories(execute_cpp PUBLIC ${CMAKE_SOURCE_DIR} "${SILKWORM_MAIN_DIR}/third_party/libmdbx")
-target_link_libraries(execute_cpp PRIVATE Boost::headers Boost::filesystem Boost::system CLI11::CLI11 silkworm_node)
+target_link_libraries(execute_cpp PRIVATE Boost::headers Boost::filesystem Boost::system CLI11::CLI11 silkworm_node cmd_common)

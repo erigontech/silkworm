@@ -46,6 +46,7 @@ class EngineApiBackend : public rpc::ethbackend::BackEnd {
     Task<rpc::NodeInfos> engine_node_info() override;
     Task<rpc::PeerInfos> peers() override;
     Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
+    Task<uint64_t> get_block_number_from_txn_hash(const HashAsSpan& hash) override;
 
   private:
     //! The Execution Layer Engine API RPC server.

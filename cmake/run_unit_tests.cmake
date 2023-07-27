@@ -42,5 +42,5 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
     set(ENV{LLVM_PROFILE_FILE} "${TEST_COMMAND_NAME}.profraw")
   endif()
 
-  execute_process(COMMAND "${TEST_COMMAND}" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${TEST_COMMAND}" "~[ignore]" COMMAND_ERROR_IS_FATAL ANY)
 endforeach()

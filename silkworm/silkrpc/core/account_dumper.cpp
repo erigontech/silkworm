@@ -36,12 +36,13 @@
 
 namespace silkworm::rpc::core {
 
-boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, const evmc::address& start_address, int16_t max_result,
+boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, ethbackend::BackEnd* backend, const evmc::address& start_address, int16_t max_result,
                                                                   bool exclude_code, bool exclude_storage) {
     DumpAccounts dump_accounts;
     ethdb::TransactionDatabase tx_database{transaction_};
+    const auto chain_storage = transaction_.create_storage(tx_database, backend);
 
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, tx_database, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, tx_database, bnoh);
     const auto block_number = block_with_hash->block.header.number;
 
     dump_accounts.root = block_with_hash->block.header.state_root;

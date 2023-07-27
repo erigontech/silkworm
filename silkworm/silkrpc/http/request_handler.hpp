@@ -51,10 +51,11 @@ class RequestHandler {
 
     boost::asio::awaitable<void> handle(const http::Request& request);
 
+  protected:
+    boost::asio::awaitable<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
+
   private:
     boost::asio::awaitable<std::optional<std::string>> is_request_authorized(const http::Request& request);
-
-    boost::asio::awaitable<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
 
     boost::asio::awaitable<void> handle_request(uint32_t request_id,
                                                 commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);

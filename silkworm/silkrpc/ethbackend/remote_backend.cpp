@@ -246,6 +246,16 @@ Task<bool> RemoteBackEnd::get_block(uint64_t block_number, const HashAsSpan& has
     co_return true;
 }
 
+Task<uint64_t> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& hash) {
+    const auto start_time = clock_time::now();
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncTxnLookup> txn_lookup_rpc{*stub_, grpc_context_};
+    ::remote::TxnLookupRequest request;
+    request.set_allocated_txn_hash(H256_from_bytes(hash).release());
+    const auto reply = co_await txn_lookup_rpc.finish_on(executor_, request);
+    SILK_TRACE << "RemoteBackEnd::get_block_number_from_txn_hash hash=" << hash << " t=" << clock_time::since(start_time);
+    co_return reply.block_number();
+}
+
 ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& grpc_payload) {
     const auto& state_root_h256{grpc_payload.state_root()};
     const auto& receipts_root_h256{grpc_payload.receipt_root()};

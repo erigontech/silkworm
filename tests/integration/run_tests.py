@@ -125,6 +125,8 @@ def get_jwt_secret(name):
 #
 #
 def to_lower_case(file):
+    """ converts input string into lower case
+    """
     lowercase_file = "/tmp/lowercase"
     cmd = "tr '[:upper:]' '[:lower:]' < " + file + " > " + lowercase_file
     os.system(cmd)
@@ -397,6 +399,7 @@ def usage(argv):
     print("Launch an automated test sequence on Silkrpc or RPCDaemon")
     print("")
     print("-h print this help")
+    print("-f shows only failed tests (not Skipped)")
     print("-c runs all tests even if one test fails [ default exit at first test fail ]")
     print("-r connect to rpcdaemon [ default connect to silk ] ")
     print("-l <number of loops>")
@@ -437,9 +440,10 @@ def main(argv):
     exclude_test_list = ""
     start_test = ""
     jwt_secret = ""
+    display_only_fail = 0
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "hrcvt:l:a:di:b:ox:X:H:k:s:")
+        opts, _ = getopt.getopt(argv[1:], "hfrcvt:l:a:di:b:ox:X:H:k:s:")
         for option, optarg in opts:
             if option in ("-h", "--help"):
                 usage(argv)
@@ -453,6 +457,8 @@ def main(argv):
                 infura_url = optarg
             elif option == "-H":
                 daemon_on_host = optarg
+            elif option == "-f":
+                display_only_fail = 1
             elif option == "-v":
                 verbose = 1
             elif option == "-t":
@@ -515,9 +521,10 @@ def main(argv):
                     test_file = api_file + "/" + test_name
                     if  is_skipped(api_file, exclude_api_list, exclude_test_list, test_file, req_test, verify_with_daemon, global_test_number) == 1:
                         if start_test == "" or global_test_number >= int(start_test):
-                            file = test_file.ljust(60)
-                            print(f"{global_test_number:03d}. {file} Skipped")
-                            tests_not_executed = tests_not_executed + 1
+                            if display_only_fail == 0:
+                                file = test_file.ljust(60)
+                                print(f"{global_test_number:03d}. {file} Skipped")
+                                tests_not_executed = tests_not_executed + 1
                     else:
                         # runs all tests req_test refers global test number or
                         # runs only tests on specific api req_test refers all test on specific api

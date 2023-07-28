@@ -253,6 +253,8 @@ class Decompressor {
 
     [[nodiscard]] bool is_open() const { return bool(compressed_file_); }
 
+    [[nodiscard]] const MemoryMappedFile* memory_file() const { return compressed_file_.get(); }
+
     void open();
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order

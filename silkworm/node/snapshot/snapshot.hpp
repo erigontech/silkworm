@@ -49,6 +49,9 @@ class Snapshot {
     [[nodiscard]] bool empty() const { return item_count() == 0; }
     [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
 
+    [[nodiscard]] void* memory_file_address() const;
+    [[nodiscard]] std::size_t memory_file_size() const;
+
     void reopen_segment();
     virtual void reopen_index() = 0;
 

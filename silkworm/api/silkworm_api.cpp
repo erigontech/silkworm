@@ -16,10 +16,8 @@
 
 #include "silkworm_api.h"
 
-#include <cassert>
+#include <memory>
 #include <vector>
-
-#include <gsl/util>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
@@ -27,57 +25,95 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 
-namespace silkworm::db {
+using namespace silkworm;
 
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-only transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not abort the transaction.
-class ROTxnUnmanaged : public ROTxn, protected ::mdbx::txn {
-  public:
-    explicit ROTxnUnmanaged(MDBX_txn* ptr) : ROTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~ROTxnUnmanaged() override = default;
+SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    const auto snapshot_repository = new snapshot::SnapshotRepository{};
+    db::DataModel::set_snapshot_repository(snapshot_repository);
+    *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
+    return SILKWORM_OK;
+}
 
-    void abort() override {}
-};
+SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!snapshot) {
+        return SILKWORM_INVALID_SNAPSHOT;
+    }
+    const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
 
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
-class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
-  public:
-    explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
+    const SilkwormHeadersSnapshot& headers_snapshot = snapshot->headers;
+    const auto headers_segment_path = snapshot::SnapshotPath::parse(headers_snapshot.segment.file_path);
+    if (!headers_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    // TODO(canepat) HeaderSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
+    // TODO(canepat) The same holds for its index
+    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(
+        headers_segment_path->path(), headers_segment_path->block_from(), headers_segment_path->block_to());
+    headers_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    headers_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
-};
+    const SilkwormBodiesSnapshot& bodies_snapshot = snapshot->bodies;
+    const auto bodies_segment_path = snapshot::SnapshotPath::parse(bodies_snapshot.segment.file_path);
+    if (!bodies_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    // TODO(canepat) BodySnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
+    // TODO(canepat) The same holds for its index
+    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(
+        bodies_segment_path->path(), bodies_segment_path->block_from(), bodies_segment_path->block_to());
+    bodies_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    bodies_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
-}  // namespace silkworm::db
+    const SilkwormTransactionsSnapshot& transactions_snapshot = snapshot->transactions;
+    const auto transactions_segment_path = snapshot::SnapshotPath::parse(transactions_snapshot.segment.file_path);
+    if (!transactions_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    // TODO(canepat) TransactionSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
+    // TODO(canepat) The same holds for its index
+    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(
+        transactions_segment_path->path(), transactions_segment_path->block_from(), transactions_segment_path->block_to());
+    transactions_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    transactions_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+
+    snapshot::SnapshotBundle bundle{
+        .headers_snapshot_path = *headers_segment_path,
+        .headers_snapshot = std::move(headers_segment),
+        .bodies_snapshot_path = *bodies_segment_path,
+        .bodies_snapshot = std::move(bodies_segment),
+        .tx_snapshot_path = *transactions_segment_path,
+        .tx_snapshot = std::move(transactions_segment)};
+    snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    return SILKWORM_OK;
+}
 
 SILKWORM_EXPORT
-SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-                                           uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block,
-                                           int* mdbx_error_code) SILKWORM_NOEXCEPT {
-    assert(mdbx_txn);
-
-    using namespace silkworm;
-
+int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
+                            uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!mdbx_txn) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
     if (start_block > max_block) {
-        return kSilkwormInvalidBlockRange;
+        return SILKWORM_INVALID_BLOCK_RANGE;
     }
     const auto chain_info = lookup_known_chain(chain_id);
     if (!chain_info) {
-        return kSilkwormUnknownChainId;
+        return SILKWORM_UNKNOWN_CHAIN_ID;
     }
     const ChainConfig* chain_config{chain_info->second};
 
     try {
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
-
-        // TODO(txn and snapshot+index memory-mapped files in silkworm_init API)
-        snapshot::SnapshotRepository snapshot_repo;
-        snapshot_repo.reopen_folder();
-        db::DataModel::set_snapshot_repository(&snapshot_repo);
 
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
@@ -93,7 +129,7 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
             prefetched_blocks.emplace_back();
             const bool success{access_layer.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
             if (!success) {
-                return kSilkwormBlockNotFound;
+                return SILKWORM_BLOCK_NOT_FOUND;
             }
         }
 
@@ -103,7 +139,7 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
             std::vector<Receipt> receipts;
             const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
             if (validation_result != ValidationResult::kOk) {
-                return kSilkwormInvalidBlock;
+                return SILKWORM_INVALID_BLOCK;
             }
 
             if (write_receipts) {
@@ -131,18 +167,27 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
         }
 
         state_buffer.write_to_db();
-        return kSilkwormSuccess;
+        return SILKWORM_OK;
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {
             *mdbx_error_code = e.error().code();
         }
-        return kSilkwormMdbxError;
+        return SILKWORM_MDBX_ERROR;
     } catch (const DecodingError&) {
-        return kSilkwormDecodingError;
+        return SILKWORM_DECODING_ERROR;
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
-        return kSilkwormUnknownError;
+        return SILKWORM_INTERNAL_ERROR;
     } catch (...) {
-        return kSilkwormUnknownError;
+        return SILKWORM_UNKNOWN_ERROR;
     }
+}
+
+SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
+    if (!snapshot_repository) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    delete snapshot_repository;
+    return SILKWORM_OK;
 }

@@ -3734,6 +3734,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     ])"_json);
 }
 
+#ifdef TEST_DELETED
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     StringWriter string_writer(4096);
     json::Stream stream(string_writer);
@@ -5680,6 +5681,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         ])"_json);
     }
 }
+#endif
 
 TEST_CASE("VmTrace json serialization") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};

@@ -351,9 +351,11 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
-        co_await executor.trace_filter(trace_filter, &stream);
+        co_await executor.trace_filter(trace_filter, *chain_storage, &stream);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
 

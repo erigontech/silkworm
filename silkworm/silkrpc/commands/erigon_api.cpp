@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/block_reader.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -57,12 +58,31 @@ awaitable<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& re
 
 // https://eth.wiki/json-rpc/API#erigon_getbalancechangesinblock
 awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() < 1) {
+        auto error_msg = "invalid erigon_getBalanceChangesInBlock params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+
+        co_return;
+    }
+    const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
+
+    SILK_DEBUG << "block_number_or_hash: " << block_number_or_hash;
+
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
+        auto start = std::chrono::system_clock::now();
+        rpc::BlockReader block_reader{*tx};
 
-        reply = make_json_content(request["id"], to_quantity(0));
+        rpc::BalanceChanges balance_changes;
+        co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
+        auto end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        SILK_DEBUG << "balance_changes: elapsed " << elapsed_seconds.count() << " sec";
+
+        // reply = make_json_content(request["id"], balance_changes);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

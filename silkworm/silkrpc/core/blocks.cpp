@@ -17,6 +17,7 @@
 #include "blocks.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -78,10 +79,13 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
     } else if (block_id == kLatestExecutedBlockId) {
         block_number = co_await get_latest_executed_block_number(reader);
         is_latest_block = true;
-    } else {
-        block_number = static_cast<uint64_t>(std::stol(block_id, nullptr, 0));
+    } else if (is_valid_hex(block_id)) {
+        block_number = static_cast<uint64_t>(std::stol(block_id, nullptr, 16));
         check_if_latest = latest_required;
+    } else {
+        throw std::invalid_argument("Invalid Block Id");
     }
+
     if (check_if_latest) {
         is_latest_block = co_await is_latest_block_number(block_number, reader);
     }

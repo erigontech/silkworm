@@ -65,7 +65,7 @@ class LocalChainStorage : public ChainStorage {
     [[nodiscard]] Task<bool> has_body(BlockNum number, const Hash& hash) const override;
 
     Task<bool> read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const override;
-    [[nodiscard]] Task<Bytes> read_rlp_transaction(const evmc::bytes32& txn_hash) const override;
+    Task<bool> read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const override;
 
     [[nodiscard]] Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const override;
 

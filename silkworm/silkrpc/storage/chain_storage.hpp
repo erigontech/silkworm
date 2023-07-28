@@ -87,7 +87,7 @@ class ChainStorage {
     //! Read the RLP encoded block transactions at specified height
     virtual Task<bool> read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const = 0;
 
-    [[nodiscard]] virtual Task<Bytes> read_rlp_transaction(const evmc::bytes32& txn_hash) const = 0;
+    virtual Task<bool> read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const = 0;
 
     //! Read total difficulty for block specified by hash and number
     [[nodiscard]] virtual Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const = 0;

@@ -1323,7 +1323,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
     if (!data) {
         return std::nullopt;
     }
-    auto block_num = endian::load_big_u64(static_cast<const unsigned char*>(data.value.data()));
+    auto block_num = endian::load_big_u64(from_slice(data.value).data());
     return block_num;
 }
 

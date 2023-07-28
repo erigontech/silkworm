@@ -167,7 +167,7 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum number, const evmc
     co_return true;
 }
 
-Task<Bytes> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& /*txn_hash*/) const {
+Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& /*txn_hash*/, Bytes& /*rlp_tx*/) const {
     throw std::logic_error{"RemoteChainStorage::read_rlp_transaction not implemented"};
 }
 

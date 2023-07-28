@@ -116,25 +116,26 @@ Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum number, const evmc:
     co_return data_model_.read_rlp_transactions(number, hash, rlp_txs);
 }
 
-Task<Bytes> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash) const {
-    auto block_id = data_model_.read_tx_lookup(txn_hash);
-    if (!block_id) {
-        co_return Bytes{};
+Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
+    auto block_number = data_model_.read_tx_lookup(txn_hash);
+    if (!block_number) {
+        co_return false;
     }
-    auto block_hash = data_model_.read_canonical_hash(*block_id);
+    auto block_hash = data_model_.read_canonical_hash(*block_number);
     if (!block_hash) {
-        co_return Bytes{};
+        co_return false;
     }
     std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_id, *block_hash, rlp_txs)) {
-        co_return Bytes{};
+    if (!co_await read_rlp_transactions(*block_number, *block_hash, rlp_txs)) {
+        co_return false;
     }
-    for (const auto& rlp_tx : rlp_txs) {
-        if (bit_cast<evmc_bytes32>(keccak256(rlp_tx)) == txn_hash) {
-            co_return rlp_tx;
+    for (const auto& rlp : rlp_txs) {
+        if (bit_cast<evmc_bytes32>(keccak256(rlp)) == txn_hash) {
+            rlp_tx = rlp;
+            co_return true;
         }
     }
-    co_return Bytes{};
+    co_return false;
 }
 
 Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(const Hash& hash, BlockNum number) const {

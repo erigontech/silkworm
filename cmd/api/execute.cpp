@@ -34,11 +34,27 @@
 #include <silkworm/node/db/mdbx.hpp>
 
 const char* kSilkwormApiLibPath = "../../silkworm/api/libsilkworm_api.dylib";
+const char* kSilkwormInitSymbol = "silkworm_init";
+const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
 const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
+const char* kSilkwormFiniSymbol = "silkworm_fini";
+
+//! Function signature for silkworm_init C API
+using SilkwormInitSig = int(SilkwormHandle**);
+
+//! Function signature for silkworm_add_snapshot C API
+using SilkwormAddSnapshotSig = int(SilkwormHandle*, SilkwormChainSnapshot*);
 
 //! Function signature for silkworm_execute_blocks C API
 using SilkwormExecuteBlocksSig =
-    SilkwormStatusCode(MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, uint64_t*, int*);
+    int(SilkwormHandle*, MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, uint64_t*, int*);
+
+//! Function signature for silkworm_fini C API
+using SilkwormFiniSig = int(SilkwormHandle*);
+
+constexpr const char* kHeader1{"/Users/tullio/Library/Silkworm/snapshots/v1-000000-000500-headers.seg"};
+constexpr const char* kBody1{"/Users/tullio/Library/Silkworm/snapshots/v1-000000-000500-bodies.seg"};
+constexpr const char* kTransaction1{"/Users/tullio/Library/Silkworm/snapshots/v1-000000-000500-transactions.seg"};
 
 int main(int /*argc*/, char* /*argv*/[]) {
     CLI::App app{"Execute blocks"};
@@ -48,9 +64,74 @@ int main(int /*argc*/, char* /*argv*/[]) {
         std::cout << "Execute blocks starting [pid=" << std::to_string(pid) << "]\n";
         // parse_command_line(argc, argv, app, settings);
 
+        // Import the silkworm_init symbol from silkworm API library
+        const auto silkworm_init{
+            boost::dll::import_symbol<SilkwormInitSig>(kSilkwormApiLibPath, kSilkwormInitSymbol)};
+
+        // Import the silkworm_add_snapshot symbol from silkworm API library
+        const auto silkworm_add_snapshot{
+            boost::dll::import_symbol<SilkwormAddSnapshotSig>(kSilkwormApiLibPath, kSilkwormAddSnapshotSymbol)};
+
         // Import the silkworm_execute_blocks symbol from silkworm API library
         const auto silkworm_execute_blocks{
             boost::dll::import_symbol<SilkwormExecuteBlocksSig>(kSilkwormApiLibPath, kSilkwormExecuteBlocksSymbol)};
+
+        // Import the silkworm_fini symbol from silkworm API library
+        const auto silkworm_fini{
+            boost::dll::import_symbol<SilkwormFiniSig>(kSilkwormApiLibPath, kSilkwormFiniSymbol)};
+
+        // Initialize SilkwormAPI library
+        SilkwormHandle* handle{nullptr};
+        const int init_status_code = silkworm_init(&handle);
+        if (init_status_code != SILKWORM_OK) {
+            std::cerr << "Execute blocks silkworm_init failed [code=" << std::to_string(init_status_code) << "]\n";
+            return init_status_code;
+        }
+
+        // Add snapshots to SilkwormAPI library
+        SilkwormChainSnapshot chain_snapshot{
+            .headers{
+                .segment{
+                    .file_path = kHeader1,
+                    .memory_address = 0,
+                    .memory_length = 0,
+                },
+                .header_hash_index{
+                    .file_path = "",
+                    .memory_address = 0,
+                    .memory_length = 0,
+                }},
+            .bodies{
+                .segment{
+                    .file_path = kBody1,
+                    .memory_address = 0,
+                    .memory_length = 0,
+                },
+                .block_num_index{
+                    .file_path = "",
+                    .memory_address = 0,
+                    .memory_length = 0,
+                }},
+            .transactions{
+                .segment{
+                    .file_path = kTransaction1,
+                    .memory_address = 0,
+                    .memory_length = 0,
+                },
+                .tx_hash_index{
+                    .file_path = "",
+                    .memory_address = 0,
+                    .memory_length = 0,
+                },
+                .tx_hash_2_block_index{
+                    .file_path = "",
+                    .memory_address = 0,
+                    .memory_length = 0,
+                }}};
+        const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
+        if (add_snapshot_status_code != SILKWORM_OK) {
+            return init_status_code;
+        }
 
         silkworm::DataDirectory data_dir{};
         silkworm::db::EnvConfig config{
@@ -62,9 +143,18 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         uint64_t last_executed_block{std::numeric_limits<uint64_t>::max()};
         int mdbx_error_code{0};
-        const auto status_code{
-            silkworm_execute_blocks(&*rw_txn, 1, 1, 1, 1, false, &last_executed_block, &mdbx_error_code)};
+        const int status_code{
+            silkworm_execute_blocks(handle, &*rw_txn, 1, 46147, 46147, 1, false, &last_executed_block, &mdbx_error_code)};
         std::cout << "Execute blocks status code: " << std::to_string(status_code) << "\n";
+
+        // Finalize SilkwormAPI library
+        const int fini_status_code = silkworm_fini(handle);
+        if (fini_status_code != SILKWORM_OK) {
+            std::cerr << "Execute blocks silkworm_fini failed [code=" << std::to_string(fini_status_code) << "]\n";
+            return fini_status_code;
+        }
+
+        rw_txn.abort();  // We do not want to commit anything now
 
         std::cout << "Execute blocks exiting [pid=" << std::to_string(pid) << "]\n";
         return status_code;

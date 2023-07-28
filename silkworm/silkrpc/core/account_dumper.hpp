@@ -46,7 +46,7 @@ class AccountDumper {
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
 
-    boost::asio::awaitable<DumpAccounts> dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, const evmc::address& start_address, int16_t max_result,
+    boost::asio::awaitable<DumpAccounts> dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, ethbackend::BackEnd* backend, const evmc::address& start_address, int16_t max_result,
                                                        bool exclude_code, bool exclude_storage);
 
   private:

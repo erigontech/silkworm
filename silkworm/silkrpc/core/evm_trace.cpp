@@ -1561,11 +1561,11 @@ boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const si
     co_return ret_entry_tracer->found();
 }
 
-awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
+awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
-    const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.from_block);
-    const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.to_block);
+    const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
+    const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.to_block);
 
     if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
@@ -1599,7 +1599,7 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
         if (block_number == to_block_with_hash->block.header.number) {
             block_with_hash = to_block_with_hash;
         } else {
-            block_with_hash = co_await core::read_block_by_number(block_cache_, database_reader_, block_number);
+            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, database_reader_, block_number);
         }
     }
 

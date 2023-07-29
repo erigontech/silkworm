@@ -63,8 +63,8 @@ using SilkwormFiniSig = int(SilkwormHandle*);
 
 struct ExecuteSettings {
     log::Settings log_settings;
-    BlockNum start_block{0};
-    BlockNum max_block{0};
+    BlockNum start_block{1};
+    BlockNum max_block{1};
     uint64_t batch_size{1};
     bool write_receipts{false};
 };
@@ -75,15 +75,27 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, ExecuteSettings& 
     add_logging_options(app, log_settings);
 
     app.add_option("--from", settings.start_block, "The start block number to execute")
-        ->capture_default_str();
+        ->capture_default_str()
+        ->check(CLI::Range{1ull, std::numeric_limits<BlockNum>::max()});
     app.add_option("--to", settings.max_block, "The maximum block number to execute")
-        ->capture_default_str();
+        ->capture_default_str()
+        ->check(CLI::Range{1ull, std::numeric_limits<BlockNum>::max()});
+    ;
     app.add_option("--batch_size", settings.batch_size, "The block batch size to use")
-        ->capture_default_str();
+        ->capture_default_str()
+        ->check(CLI::Range{1ull, std::numeric_limits<uint64_t>::max()});
+    ;
     app.add_flag("--write_receipts", settings.write_receipts, "Flag indicating if transaction receipts must be written or not")
         ->capture_default_str();
 
     app.parse(argc, argv);
+}
+
+const char* make_path(const snapshot::SnapshotPath& p) {
+    const auto path_string{p.path().string()};
+    char* path = new char[path_string.size()];
+    std::memcpy(path, path_string.data(), path_string.size());
+    return path;
 }
 
 std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepository& snapshot_repository) {
@@ -98,11 +110,11 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 const auto* idx_header_hash{header_snapshot->idx_header_hash()};
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
-                        .file_path = segment_file.path().c_str(),
+                        .file_path = make_path(segment_file),
                         .memory_address = header_snapshot->memory_file_address(),
                         .memory_length = header_snapshot->memory_file_size()},
                     .header_hash_index{
-                        .file_path = segment_file.index_file().path().c_str(),
+                        .file_path = make_path(segment_file.index_file()),
                         .memory_address = idx_header_hash->memory_file_address(),
                         .memory_length = idx_header_hash->memory_file_size()}};
                 headers_snapshot_sequence.push_back(raw_headers_snapshot);
@@ -112,11 +124,11 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 const auto* idx_body_number{body_snapshot->idx_body_number()};
                 SilkwormBodiesSnapshot raw_bodies_snapshot{
                     .segment{
-                        .file_path = segment_file.path().c_str(),
+                        .file_path = make_path(segment_file),
                         .memory_address = body_snapshot->memory_file_address(),
                         .memory_length = body_snapshot->memory_file_size()},
                     .block_num_index{
-                        .file_path = segment_file.index_file().path().c_str(),
+                        .file_path = make_path(segment_file.index_file()),
                         .memory_address = idx_body_number->memory_file_address(),
                         .memory_length = idx_body_number->memory_file_size()}};
                 bodies_snapshot_sequence.push_back(raw_bodies_snapshot);
@@ -127,15 +139,15 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 const auto* idx_txn_hash_2_block{tx_snapshot->idx_txn_hash_2_block()};
                 SilkwormTransactionsSnapshot raw_transactions_snapshot{
                     .segment{
-                        .file_path = segment_file.path().c_str(),
+                        .file_path = make_path(segment_file),
                         .memory_address = tx_snapshot->memory_file_address(),
                         .memory_length = tx_snapshot->memory_file_size()},
                     .tx_hash_index{
-                        .file_path = segment_file.index_file().path().c_str(),
+                        .file_path = make_path(segment_file.index_file()),
                         .memory_address = idx_txn_hash->memory_file_address(),
                         .memory_length = idx_txn_hash->memory_file_size()},
                     .tx_hash_2_block_index{
-                        .file_path = segment_file.index_file_for_type(SnapshotType::transactions2block).path().c_str(),
+                        .file_path = make_path(segment_file.index_file_for_type(SnapshotType::transactions2block)),
                         .memory_address = idx_txn_hash_2_block->memory_file_address(),
                         .memory_length = idx_txn_hash_2_block->memory_file_size()}};
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
@@ -193,7 +205,7 @@ int main(int argc, char* argv[]) {
         SilkwormHandle* handle{nullptr};
         const int init_status_code = silkworm_init(&handle);
         if (init_status_code != SILKWORM_OK) {
-            SILK_ERROR << "Execute blocks silkworm_init failed [code=" << std::to_string(init_status_code) << "]";
+            SILK_ERROR << "silkworm_init failed [code=" << std::to_string(init_status_code) << "]";
             return init_status_code;
         }
 
@@ -202,10 +214,21 @@ int main(int argc, char* argv[]) {
         repository.reopen_folder();
 
         auto all_chain_snapshots{collect_all_snapshots(repository)};
+        auto _ = gsl::finally([&]() {
+            for (auto& chain_snapshot : all_chain_snapshots) {
+                delete[] chain_snapshot.headers.segment.file_path;
+                delete[] chain_snapshot.headers.header_hash_index.file_path;
+                delete[] chain_snapshot.bodies.segment.file_path;
+                delete[] chain_snapshot.bodies.block_num_index.file_path;
+                delete[] chain_snapshot.transactions.segment.file_path;
+                delete[] chain_snapshot.transactions.tx_hash_index.file_path;
+                delete[] chain_snapshot.transactions.tx_hash_2_block_index.file_path;
+            }
+        });
         for (auto& chain_snapshot : all_chain_snapshots) {
             const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
             if (add_snapshot_status_code != SILKWORM_OK) {
-                SILK_ERROR << "Execute blocks silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
+                SILK_ERROR << "silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
                 return add_snapshot_status_code;
             }
         }
@@ -228,16 +251,24 @@ int main(int argc, char* argv[]) {
         const auto max_block{settings.max_block};
         const auto batch_size{settings.batch_size};
         const auto write_receipts{settings.write_receipts};
-        uint64_t last_executed_block{std::numeric_limits<uint64_t>::max()};
+        BlockNum last_executed_block{0};
         int mdbx_error_code{0};
+        SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " start";
         const int status_code{
             silkworm_execute_blocks(handle, &*rw_txn, chain_id, start_block, max_block, batch_size, write_receipts, &last_executed_block, &mdbx_error_code)};
-        SILK_INFO << "Execute blocks status code: " << std::to_string(status_code);
+        SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " done";
+
+        if (status_code != SILKWORM_OK) {
+            SILK_ERROR << "silkworm_execute_blocks failed [code=" << std::to_string(status_code)
+                       << (status_code == SILKWORM_MDBX_ERROR ? " mdbx_error_code=" + std::to_string(mdbx_error_code) : "")
+                       << "]";
+        }
+        SILK_INFO << "Last executed block: " << last_executed_block;
 
         // Finalize Silkworm API library
         const int fini_status_code = silkworm_fini(handle);
         if (fini_status_code != SILKWORM_OK) {
-            SILK_ERROR << "Execute blocks silkworm_fini failed [code=" << std::to_string(fini_status_code) << "]";
+            SILK_ERROR << "silkworm_fini failed [code=" << std::to_string(fini_status_code) << "]";
             return fini_status_code;
         }
 

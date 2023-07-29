@@ -214,7 +214,6 @@ void Buffer::write_history_to_db() {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Logs", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
-        written_size = 0;
     }
 
     batch_history_size_ = 0;
@@ -328,7 +327,6 @@ void Buffer::write_state_to_db() {
         log::Trace("Updated accounts and storage",
                    {"size", human_size(written_size), "in", StopWatch::format(duration)});
     }
-    written_size = 0;
     batch_state_size_ = 0;
 
     auto [time_point, _]{sw.stop()};
@@ -414,7 +412,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-    return db::read_header(txn_, key);
+    return access_layer_.read_header(block_number, block_hash.bytes);
 }
 
 bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& body) const noexcept {
@@ -423,7 +421,7 @@ bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, B
         body = it->second;
         return true;
     }
-    return db::read_body(txn_, key, /*read_senders=*/false, body);
+    return access_layer_.read_body(block_number, block_hash.bytes, /*read_senders=*/false, body);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

@@ -76,14 +76,14 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, ExecuteSettings& 
 
     app.add_option("--from", settings.start_block, "The start block number to execute")
         ->capture_default_str()
-        ->check(CLI::Range{1ull, std::numeric_limits<BlockNum>::max()});
+        ->check(CLI::Range(1ull, std::numeric_limits<BlockNum>::max()));
     app.add_option("--to", settings.max_block, "The maximum block number to execute")
         ->capture_default_str()
-        ->check(CLI::Range{1ull, std::numeric_limits<BlockNum>::max()});
+        ->check(CLI::Range(1ull, std::numeric_limits<BlockNum>::max()));
     ;
     app.add_option("--batch_size", settings.batch_size, "The block batch size to use")
         ->capture_default_str()
-        ->check(CLI::Range{1ull, std::numeric_limits<uint64_t>::max()});
+        ->check(CLI::Range(1ull, std::numeric_limits<uint64_t>::max()));
     ;
     app.add_flag("--write_receipts", settings.write_receipts, "Flag indicating if transaction receipts must be written or not")
         ->capture_default_str();

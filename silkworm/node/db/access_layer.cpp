@@ -1308,6 +1308,29 @@ bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash
     return read_rlp_transactions_from_snapshot(height, transactions);
 }
 
+std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
+    auto block_num = read_tx_lookup_from_db(tx_hash);
+    if (block_num) {
+        return block_num;
+    }
+
+    return read_tx_lookup_from_snapshot(tx_hash);
+}
+
+std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
+    auto cursor = txn_.ro_cursor(table::kTxLookup);
+    auto data{cursor->find(to_slice(tx_hash.bytes), /*throw_notfound = */ false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    auto block_num = endian::load_big_u64(from_slice(data.value).data());
+    return block_num;
+}
+
+std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& /*tx_hash*/) const {
+    throw std::runtime_error("DataModel::read_tx_lookup_from_snapshot: not implemented");
+}
+
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {
     return db::read_total_difficulty(txn_, height, hash);
 }

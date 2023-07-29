@@ -245,6 +245,16 @@ class ROTxnManaged : public ROTxn {
     mdbx::txn_managed managed_txn_;
 };
 
+//! \brief ROTxnUnmanaged wraps an *unmanaged* read-only transaction, which means the underlying transaction
+//! lifecycle is not touched by this class. This implies that this class does not abort the transaction.
+class ROTxnUnmanaged : public ROTxn, protected ::mdbx::txn {
+  public:
+    explicit ROTxnUnmanaged(MDBX_txn* ptr) : ROTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
+    ~ROTxnUnmanaged() override = default;
+
+    void abort() override {}
+};
+
 //! \brief This class wraps a read-write transaction.
 //! It is used in function signatures to clarify that read-write access is required.
 //! It supports explicit disable/enable of commit capabilities.
@@ -304,6 +314,18 @@ class RWTxnManaged : public RWTxn {
     explicit RWTxnManaged(mdbx::txn_managed&& source) : RWTxn{managed_txn_}, managed_txn_{std::move(source)} {}
 
     mdbx::txn_managed managed_txn_;
+};
+
+//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
+//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
+class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
+  public:
+    explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
+    ~RWTxnUnmanaged() override = default;
+
+    void abort() override {}
+    void commit_and_renew() override {}
+    void commit_and_stop() override {}
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access

@@ -68,6 +68,10 @@ class DebugRpcApi {
     awaitable<void> handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream);
     awaitable<void> handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream);
 
+    awaitable<void> handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_get_raw_header(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply);
+
   private:
     boost::asio::io_context& io_context_;
     BlockCache* block_cache_;

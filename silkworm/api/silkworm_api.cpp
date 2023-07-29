@@ -25,32 +25,6 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 
-namespace silkworm::db {
-
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-only transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not abort the transaction.
-class ROTxnUnmanaged : public ROTxn, protected ::mdbx::txn {
-  public:
-    explicit ROTxnUnmanaged(MDBX_txn* ptr) : ROTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~ROTxnUnmanaged() override = default;
-
-    void abort() override {}
-};
-
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
-class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
-  public:
-    explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
-
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
-};
-
-}  // namespace silkworm::db
-
 using namespace silkworm;
 
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {

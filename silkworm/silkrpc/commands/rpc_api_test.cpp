@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
@@ -32,7 +33,6 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/genesis.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
@@ -153,7 +153,7 @@ void populate_blocks(db::RWTxn& txn) {
     std::ifstream file(rlp_path, std::ios::binary);
     if (!file) {
         std::cerr << "Failed to open the file." << std::endl;
-        throw "dupa";
+        throw std::logic_error("Failed to open the file.");
     }
     std::vector<Bytes> rlps;
     std::vector<uint8_t> line;
@@ -167,7 +167,7 @@ void populate_blocks(db::RWTxn& txn) {
         silkworm::Block block;
 
         if (!silkworm::rlp::decode(view, block, silkworm::rlp::Leftover::kAllow)) {
-            throw "Failed to decode RLP file";
+            throw std::logic_error("Failed to decode RLP file");
         }
 
         // store original hashes
@@ -221,7 +221,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table,
                            std::optional<std::string> jwt_secret)
-        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, jwt_secret) {
+        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::move(jwt_secret)) {
     }
 
     boost::asio::awaitable<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
@@ -276,10 +276,10 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
 
             if (!test_stream.is_open()) {
                 std::cerr << "Failed to open the file." << std::endl;
-                throw "dupa";
+                FAIL("Failed to open the file.");
             }
 
-            SECTION("RPC IO test " + group_name + "|" + test_name) {
+            SECTION("RPC IO test " + group_name + " | " + test_name) {
                 auto db = open_db();
                 db::RWTxnManaged txn{*db};
                 db::table::check_or_create_chaindata_tables(txn);
@@ -303,7 +303,14 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
                     http::Reply reply;
                     test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
                     INFO("Request: " << request.dump());
-                    CHECK(nlohmann::json::parse(reply.content) == expected);
+
+                    if (test_name.find("invalid") != std::string::npos) {
+                        INFO("Expected error: " << expected.dump());
+                        INFO("Actual response: " << reply.content);
+                        CHECK(nlohmann::json::parse(reply.content).contains("error"));
+                    } else {
+                        CHECK(nlohmann::json::parse(reply.content) == expected);
+                    }
                 }
 
                 db->close();
@@ -339,7 +346,7 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     }
 
     SECTION("sample test3") {
-        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x0",true]})"_json;
+        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x10F283F",true]})"_json;
         http::Reply reply;
 
         test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);

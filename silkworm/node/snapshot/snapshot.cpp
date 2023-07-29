@@ -43,6 +43,18 @@ Snapshot::Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum blo
     ensure(block_to >= block_from, "Snapshot: invalid block range: block_to less than block_from");
 }
 
+void* Snapshot::memory_file_address() const {
+    const auto memory_file{decoder_.memory_file()};
+    if (!memory_file) return nullptr;
+    return memory_file->address();
+}
+
+std::size_t Snapshot::memory_file_size() const {
+    const auto memory_file{decoder_.memory_file()};
+    if (!memory_file) return 0;
+    return memory_file->length();
+}
+
 void Snapshot::reopen_segment() {
     close_segment();
 

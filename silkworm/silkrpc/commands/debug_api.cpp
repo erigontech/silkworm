@@ -658,4 +658,122 @@ awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatab
     co_return addresses;
 }
 
+awaitable<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+
+    if (params.size() != 1) {
+        auto error_msg = "invalid debug_getRawBlock params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    const auto block_id = params[0].get<std::string>();
+    SILK_DEBUG << "block_id: " << block_id;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, nullptr);
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        silkworm::Block block;
+        if (!(co_await chain_storage->read_canonical_block(block_number, block))) {
+            throw std::invalid_argument("block not found");
+        }
+        Bytes encoded_block;
+        rlp::encode(encoded_block, block);
+        reply = make_json_content(request["id"], silkworm::to_hex(encoded_block, true));
+    } catch (const std::invalid_argument& iv) {
+        SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], -32602, iv.what());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+awaitable<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid debug_getRawHeader params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    const auto block_id = params[0].get<std::string>();
+    SILK_DEBUG << "block_id: " << block_id;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, nullptr);
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
+        auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
+        if (!header) {
+            throw std::invalid_argument("header not found");
+        }
+        Bytes encoded_header;
+        rlp::encode(encoded_header, *header);
+        reply = make_json_content(request["id"], silkworm::to_hex(encoded_header, true));
+    } catch (const std::invalid_argument& iv) {
+        SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], -32602, iv.what());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+awaitable<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid debug_getRawTransaction params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    auto transaction_hash = params[0].get<evmc::bytes32>();
+    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, nullptr)};
+
+        Bytes rlp{};
+        auto success = co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);
+        if (!success) {
+            throw std::invalid_argument("transaction not found");
+        }
+        reply = make_json_content(request["id"], silkworm::to_hex(rlp, true));
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 }  // namespace silkworm::rpc::commands

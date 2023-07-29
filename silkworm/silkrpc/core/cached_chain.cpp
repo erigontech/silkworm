@@ -43,7 +43,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
         co_return cached_block.value();
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
-    const auto block_found = co_await storage.read_block(block_hash, block_with_hash->block);
+    const auto block_found = co_await storage.read_block(block_hash.bytes, block_number, /*read_senders */ true, block_with_hash->block);
     if (!block_found) {
         co_return nullptr;
     }
@@ -76,7 +76,11 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, 
         co_return cached_block.value();
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
-    const auto block_found = co_await storage.read_block(block_hash, block_with_hash->block);
+    const auto block_number = co_await storage.read_block_number(block_hash);
+    if (!block_number) {
+        co_return nullptr;
+    }
+    const auto block_found = co_await storage.read_block(block_hash.bytes, *block_number, /*read_senders */ true, block_with_hash->block);
     if (!block_found) {
         co_return nullptr;
     }

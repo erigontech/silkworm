@@ -32,7 +32,7 @@ class ChainStorage {
     virtual ~ChainStorage() = default;
 
     //! Read the current chain configuration parameters
-    [[nodiscard]] virtual Task<std::optional<ChainConfig>> read_chain_config() const = 0;
+    [[nodiscard]] virtual Task<std::optional<silkworm::ChainConfig>> read_chain_config() const = 0;
 
     //! Read the current chain unique identifier
     [[nodiscard]] virtual Task<std::optional<ChainId>> read_chain_id() const = 0;

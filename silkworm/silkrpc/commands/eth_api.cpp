@@ -200,7 +200,7 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_INFO << "latest_block_number " << latest_block_number;
 
-        BlockProvider block_provider = [this, &tx_database, &chain_storage](uint64_t block_number) {
+        BlockProvider block_provider = [this, &chain_storage](uint64_t block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
 

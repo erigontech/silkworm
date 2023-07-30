@@ -274,7 +274,7 @@ void DebugTracer::write_log(const DebugLog& log) {
 }
 
 boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, database_reader_, block_number);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_number);
     stream.write_field("result");
     stream.open_array();
     co_await execute(stream, block_with_hash->block);

@@ -104,24 +104,24 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details(const nlohm
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-
-        const Block extended_block{*block_with_hash, total_difficulty, false};
-        auto block_size = extended_block.get_block_size();
-
-        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-
-        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
-        auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
-
-        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
-
-        const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
-
-        reply = make_json_content(request["id"], block_details_response);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        if (block_with_hash) {
+            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
+            ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
+            const Block extended_block{*block_with_hash, *total_difficulty, false};
+            const auto block_size = extended_block.get_block_size();
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
+                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto chain_config = co_await chain_storage->read_chain_config();
+            const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
+            const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
+            const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
+            reply = make_json_content(request["id"], block_details_response);
+        } else {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
@@ -149,29 +149,31 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details_by_hash(con
 
     SILK_DEBUG << "block_hash: " << block_hash;
 
+    SILK_LOG << "block_hash: " << block_hash;
+
     auto tx = co_await database_->begin();
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_number = co_await read_header_number(tx_database, block_hash);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-
-        const Block extended_block{*block_with_hash, total_difficulty, false};
-        auto block_size = extended_block.get_block_size();
-
-        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-
-        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
-        auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
-
-        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
-
-        const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
-
-        reply = make_json_content(request["id"], block_details_response);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        if (block_with_hash) {
+            const auto block_number = block_with_hash->block.header.number;
+            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
+            ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
+            const Block extended_block{*block_with_hash, *total_difficulty, false};
+            const auto block_size = extended_block.get_block_size();
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
+                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto chain_config = co_await chain_storage->read_chain_config();
+            const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
+            const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
+            const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
+            reply = make_json_content(request["id"], block_details_response);
+        } else {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
@@ -478,7 +480,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nl
 
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
- 
+
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_found);
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
@@ -844,13 +846,18 @@ boost::asio::awaitable<void> OtsRpcApi::search_trace_block(ethdb::Transaction& t
 
 boost::asio::awaitable<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
     ethdb::TransactionDatabase tx_database{tx};
+    const auto chain_storage = tx.create_storage(tx_database, backend_);
+    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+    if (!block_with_hash) {
+        co_return;
+    }
 
-    const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
-    const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-    const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-    auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
-    const Block extended_block{*block_with_hash, total_difficulty, false};
-    auto block_size = extended_block.get_block_size();
+    const auto block_hash = block_with_hash->hash;
+    const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
+    ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
+    const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+    const Block extended_block{*block_with_hash, *total_difficulty, false};
+    const auto block_size = extended_block.get_block_size();
 
     for (uint64_t i = 0; i < block_with_hash->block.transactions.size(); i++) {
         const auto& transaction = block_with_hash->block.transactions.at(i);
@@ -858,7 +865,8 @@ boost::asio::awaitable<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint
         const auto found = co_await executor.trace_touch_transaction(block_with_hash->block, transaction, search_addr);
 
         if (found) {
-            const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+            const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, *total_difficulty,
+                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
             results.transactions.push_back(transaction);
             results.receipts.push_back(receipts.at(i));
             results.blocks.push_back(block_details);
@@ -867,9 +875,7 @@ boost::asio::awaitable<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint
     co_return;
 }
 
-IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
-    auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
-
+IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block) {
     if (config.protocol_rule_set != protocol::RuleSetType::kEthash) {
         return IssuanceDetails{};
     }
@@ -886,9 +892,7 @@ IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const s
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
-    auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
-
+intx::uint256 OtsRpcApi::get_block_fees(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
         auto txn = block.block.transactions[receipt.tx_index];

@@ -123,8 +123,10 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
 
         // Preload all requested block from storage, i.e. from MDBX database or snapshots
+        const uint64_t num_blocks{max_block - start_block + 1};
+        SILK_INFO << "Prefetching " << num_blocks << " blocks start";
         std::vector<Block> prefetched_blocks;
-        prefetched_blocks.reserve(max_block - start_block);
+        prefetched_blocks.reserve(num_blocks);
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             prefetched_blocks.emplace_back();
             const bool success{access_layer.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
@@ -132,6 +134,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 return SILKWORM_BLOCK_NOT_FOUND;
             }
         }
+        SILK_INFO << "Prefetching " << num_blocks << " blocks done";
 
         size_t gas_history_size{0};
         size_t gas_batch_size{0};

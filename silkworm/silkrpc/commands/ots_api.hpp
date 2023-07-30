@@ -192,7 +192,9 @@ class OtsRpcApi {
           workers_{workers},
           database_(must_use_private_service<ethdb::Database>(io_context_)),
           state_cache_(must_use_shared_service<ethdb::kv::StateCache>(io_context_)),
-          block_cache_(must_use_shared_service<BlockCache>(io_context_)) {}
+          block_cache_(must_use_shared_service<BlockCache>(io_context_)),
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
+   
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -217,6 +219,8 @@ class OtsRpcApi {
     ethdb::Database* database_;
     ethdb::kv::StateCache* state_cache_;
     BlockCache* block_cache_;
+    ethbackend::BackEnd* backend_;
+ 
     friend class silkworm::http::RequestHandler;
 
   private:

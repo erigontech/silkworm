@@ -194,7 +194,7 @@ class OtsRpcApi {
           state_cache_(must_use_shared_service<ethdb::kv::StateCache>(io_context_)),
           block_cache_(must_use_shared_service<BlockCache>(io_context_)),
           backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
-   
+
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -220,7 +220,7 @@ class OtsRpcApi {
     ethdb::kv::StateCache* state_cache_;
     BlockCache* block_cache_;
     ethbackend::BackEnd* backend_;
- 
+
     friend class silkworm::http::RequestHandler;
 
   private:
@@ -233,9 +233,9 @@ class OtsRpcApi {
 
     boost::asio::awaitable<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results);
     boost::asio::awaitable<void> trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results);
-    static IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
-    static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block,
-                                        std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
+    static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
+    static intx::uint256 get_block_fees(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block,
+                                        const std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
 
 }  // namespace silkworm::rpc::commands

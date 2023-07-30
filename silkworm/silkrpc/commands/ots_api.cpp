@@ -336,7 +336,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and
         }
 
         ethdb::TransactionDatabase tx_database{*tx};
-        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, nonce_block);
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, nonce_block);
 
         for (const auto& transaction : block_with_hash->block.transactions) {
             if (transaction.from == sender && transaction.nonce == nonce) {
@@ -476,7 +477,9 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nl
         }
 
         ethdb::TransactionDatabase tx_database{*tx};
-        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_found);
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+ 
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_found);
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
         const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);

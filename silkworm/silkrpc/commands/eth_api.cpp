@@ -201,7 +201,7 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
         SILK_INFO << "latest_block_number " << latest_block_number;
 
         BlockProvider block_provider = [this, &tx_database, &chain_storage](uint64_t block_number) {
-            return core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+            return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
 
         GasPriceOracle gas_price_oracle{block_provider};
@@ -285,7 +285,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::j
         ethdb::TransactionDatabase tx_database{*tx};
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
@@ -365,7 +365,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         uint64_t tx_count{0};
         if (block_with_hash) {
             tx_count = block_with_hash->block.transactions.size();
@@ -459,7 +459,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto ommers = block_with_hash->block.ommers;
 
@@ -546,7 +546,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         const auto ommers = block_with_hash->block.ommers;
 
         reply = make_json_content(request["id"], to_quantity(ommers.size()));
@@ -773,7 +773,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
@@ -820,7 +820,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
@@ -1156,7 +1156,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         ensure(chain_config.has_value(), "cannot read chain config");
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
 
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         silkworm::Transaction txn{call.to_transaction()};
 
         const core::rawdb::DatabaseReader& db_reader =

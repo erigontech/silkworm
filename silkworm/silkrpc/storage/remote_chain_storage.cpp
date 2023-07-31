@@ -175,10 +175,8 @@ Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(con
     co_return co_await core::rawdb::read_total_difficulty(reader_, hash, number);
 }
 
-Task<bool> RemoteChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash, uint64_t& bn) const {
-    auto block_number = co_await backend_->get_block_number_from_txn_hash(transaction_hash.bytes);
-    bn = block_number;
-    co_return true;
+Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+    co_return co_await backend_->get_block_number_from_txn_hash(transaction_hash.bytes);
 }
 
 }  // namespace silkworm::rpc

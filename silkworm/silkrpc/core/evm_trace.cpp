@@ -1599,7 +1599,7 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
         if (block_number == to_block_with_hash->block.header.number) {
             block_with_hash = to_block_with_hash;
         } else {
-            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, database_reader_, block_number);
+            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
         }
     }
 

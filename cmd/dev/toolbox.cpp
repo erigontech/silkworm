@@ -24,8 +24,6 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <absl/container/btree_map.h>
-#include <boost/bind/placeholders.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
@@ -38,7 +36,6 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -51,7 +48,6 @@
 
 namespace fs = std::filesystem;
 using namespace silkworm;
-using namespace boost::placeholders;
 
 class Progress {
   public:
@@ -1470,7 +1466,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
         return;
     }
 
-    log::Info() << "Ok boss ... you say it. Please be patient...";
+    log::Info() << "Ok... you say it. Please be patient...";
 
     auto env{silkworm::db::open_env(config)};
     db::RWTxnManaged txn(env);
@@ -1562,64 +1558,28 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainCodeHash.name}) << " truncating ...";
     source.bind(*txn, db::table::kPlainCodeHash);
     txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << " truncating ...";
+    source.bind(*txn, db::table::kAccountChangeSet);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << " truncating ...";
+    source.bind(*txn, db::table::kStorageChangeSet);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << " truncating ...";
+    source.bind(*txn, db::table::kPlainState);
+    txn->clear_map(source.map());
+    txn.commit_and_renew();
 
     {
-        log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
-            << " reverting from " << db::table::kAccountChangeSet.name << " ...";
-        db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
-        db::PooledCursor plain_state(txn, db::table::kPlainState);
-        absl::btree_map<evmc::address, std::optional<Account>> unique_addresses;
-        auto unique_addresses_it{unique_addresses.end()};
-        auto data{account_changeset.to_first(/*throw_notfound=*/false)};
-        while (data) {
-            auto value_view{db::from_slice(data.value)};
-            auto address{to_evmc_address(value_view)};
-            unique_addresses_it = unique_addresses.find(address);
-            if (unique_addresses_it != unique_addresses.end()) {
-                value_view.remove_prefix(kAddressLength);
-                if (value_view.empty()) {
-                    unique_addresses.emplace(address, std::nullopt);
-                } else {
-                    const auto account{Account::from_encoded_storage(value_view)};
-                    success_or_throw(account);
-                    unique_addresses.emplace(address, *account);
-                }
-            }
-            data = account_changeset.to_next(/*throw_notfound=*/false);
-        }
-        for (const auto& [address, account] : unique_addresses) {
-            if (!account) {
-                plain_state.erase(db::to_slice(address), true);
-            } else {
-                auto new_encoded_account{account->encode_for_storage(false)};
-                plain_state.upsert(db::to_slice(address), db::to_slice(new_encoded_account));
-            }
-        }
-        log::Info(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << " truncating ...";
-        txn->clear_map(account_changeset.map());
-        txn.commit_and_renew();
-    }
-
-    {
-        // TODO: Implement properly when/if initial allocation of contracts is allowed in genesis
-        /*
-         * Clarification !
-         * For simplicity all states related to contracts are simply deleted as we do not support (yet)
-         * initial allocation of contracts in genesis.
-         */
-        log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
-            << " reverting from " << db::table::kStorageChangeSet.name << " ...";
-        db::PooledCursor storage_changeset(txn, db::table::kStorageChangeSet);
-        db::PooledCursor plain_state(txn, db::table::kPlainState);
-        auto data{plain_state.to_first(/*throw_notfound=*/false)};
-        while (data) {
-            if (data.key.size() == db::kPlainStoragePrefixLength) {
-                plain_state.erase(true);
-            }
-            data = plain_state.to_next(/*throw_notfound=*/false);
-        }
-        log::Info(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << " truncating ...";
-        txn->clear_map(storage_changeset.map());
+        log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << " redo genesis allocations ...";
+        // Read chain ID from database
+        const auto chain_config{db::read_chain_config(txn)};
+        ensure(chain_config.has_value(), "cannot read chain configuration from database");
+        // Read genesis data from embedded file
+        std::string source_data{read_genesis_data(chain_config->chain_id)};
+        // Parse genesis JSON data
+        // N.B. = instead of {} initialization due to https://github.com/nlohmann/json/issues/2204
+        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
+        db::initialize_genesis_allocations(txn, genesis_json);
         txn.commit_and_renew();
     }
 

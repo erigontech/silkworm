@@ -41,8 +41,7 @@ Task<BlockNum> RemoteChainStorage::highest_block_number() const {
 }
 
 Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number(const Hash& hash) const {
-    const auto number = co_await core::rawdb::read_header_number(reader_, hash);
-    co_return number;
+    co_return co_await core::rawdb::read_header_number(reader_, hash);
 }
 
 Task<bool> RemoteChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, silkworm::Block& block) const {
@@ -54,7 +53,7 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, sil
 }
 
 Task<bool> RemoteChainStorage::read_block(const Hash& hash, silkworm::Block& block) const {
-    uint64_t block_number = co_await core::rawdb::read_header_number(reader_, hash);
+    const uint64_t block_number = co_await core::rawdb::read_header_number(reader_, hash);
     co_return co_await backend_->get_block(block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 

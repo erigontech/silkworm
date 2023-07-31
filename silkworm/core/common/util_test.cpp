@@ -21,7 +21,6 @@
 namespace silkworm {
 
 TEST_CASE("Hex") {
-
     CHECK(decode_hex_digit('g').has_value() == false);
 
     auto parsed_bytes = from_hex("");

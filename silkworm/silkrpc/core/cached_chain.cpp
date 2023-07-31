@@ -142,12 +142,12 @@ awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCac
     co_return std::nullopt;
 }
 
-awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
+awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
     const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
     if (!block_number) {
         co_return std::nullopt;
     }
-    const auto block_with_hash = co_await read_block_by_number(cache, storage, reader, *block_number);
+    const auto block_with_hash = co_await read_block_by_number(cache, storage, *block_number);
     const silkworm::ByteView tx_hash{transaction_hash.bytes, silkworm::kHashLength};
 
     const auto transactions = block_with_hash->block.transactions;

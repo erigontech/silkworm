@@ -83,7 +83,7 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
         block_number = static_cast<uint64_t>(std::stol(block_id, nullptr, 16));
         check_if_latest = latest_required;
     } else {
-        throw std::invalid_argument("Invalid Block Id");
+        throw std::invalid_argument("get_block_number::Invalid Block Id");
     }
 
     if (check_if_latest) {

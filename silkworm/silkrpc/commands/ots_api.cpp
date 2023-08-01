@@ -221,7 +221,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_transactions(const 
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
-            BlockTransactionsResponse block_transactions{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty, 
+            BlockTransactionsResponse block_transactions{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                                          transaction_count, block_with_hash->block.ommers};
 
             auto page_end = block_with_hash->block.transactions.size() - (page_size * page_number);
@@ -233,18 +233,18 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_transactions(const 
             auto page_start = page_end - page_size;
 
             if (page_start > page_end) {
-               page_start = 0;
+                page_start = 0;
             }
 
             for (auto i = page_start; i < page_end; i++) {
-               block_transactions.receipts.push_back(receipts.at(i));
-               block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
+                block_transactions.receipts.push_back(receipts.at(i));
+                block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
 
             reply = make_json_content(request["id"], block_transactions);
-       } else {
+        } else {
             reply = make_json_content(request["id"], {});
-       }
+        }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});

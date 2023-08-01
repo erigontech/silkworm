@@ -246,7 +246,7 @@ Task<bool> RemoteBackEnd::get_block(uint64_t block_number, const HashAsSpan& has
     co_return true;
 }
 
-Task<uint64_t> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& hash) {
+Task<BlockNum> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncTxnLookup> txn_lookup_rpc{*stub_, grpc_context_};
     ::remote::TxnLookupRequest request;

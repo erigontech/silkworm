@@ -57,6 +57,7 @@ class RemoteBackEnd final : public BackEnd {
     Task<NodeInfos> engine_node_info() override;
     Task<PeerInfos> peers() override;
     Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
+    Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) override;
 
   private:
     static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);

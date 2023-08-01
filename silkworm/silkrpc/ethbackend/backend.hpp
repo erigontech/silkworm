@@ -47,6 +47,7 @@ class BackEnd {
     virtual Task<NodeInfos> engine_node_info() = 0;
     virtual Task<PeerInfos> peers() = 0;
     virtual Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
+    virtual Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) = 0;
 };
 
 }  // namespace silkworm::rpc::ethbackend

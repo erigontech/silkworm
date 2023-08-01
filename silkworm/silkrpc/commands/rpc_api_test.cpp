@@ -163,8 +163,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     auto rlp_path = tests_dir / "chain.rlp";
     std::ifstream file(rlp_path, std::ios::binary);
     if (!file) {
-        std::cerr << "Failed to open the file." << std::endl;
-        throw std::logic_error("Failed to open the file.");
+        throw std::logic_error("Failed to open the file: " + rlp_path.string());
     }
     std::vector<Bytes> rlps;
     std::vector<uint8_t> line;
@@ -278,7 +277,6 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
     auto tests_dir = get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
-            // std::cout << "Running test " << test_file.path() << std::endl;
             auto test_name = test_file.path().filename().string();
             auto group_name = test_file.path().parent_path().filename().string();
 
@@ -289,8 +287,7 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
             std::ifstream test_stream(test_file.path());
 
             if (!test_stream.is_open()) {
-                std::cerr << "Failed to open the file." << std::endl;
-                FAIL("Failed to open the file.");
+                FAIL("Failed to open the file: " + test_file.path().string());
             }
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {

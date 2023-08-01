@@ -32,10 +32,20 @@
 
 #include <gsl/util>
 
+#include "ensure.hpp"
+
 namespace silkworm {
 
-MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, bool read_only) : path_(std::move(path)) {
+MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, bool read_only) : path_(std::move(path)), managed_{true} {
     map_existing(read_only);
+}
+
+MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, uint8_t* address, std::size_t length)
+    : path_{std::move(path)}, address_{address}, length_{length}, managed_{false} {
+    ensure(std::filesystem::exists(path_), "MemoryMappedFile: " + path_.string() + " does not exist");
+    ensure(std::filesystem::is_regular_file(path_), "MemoryMappedFile: " + path_.string() + " is not regular file");
+    ensure(address != nullptr, "MemoryMappedFile: address is null");
+    ensure(length > 0, "MemoryMappedFile: length is zero");
 }
 
 MemoryMappedFile::~MemoryMappedFile() {
@@ -153,7 +163,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
 }
 
 void MemoryMappedFile::unmap() {
-    if (address_ != nullptr) {
+    if (managed_ and address_ != nullptr) {
         const int result = ::munmap(address_, length_);
         if (result == -1) {
             throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + strerror(errno)};

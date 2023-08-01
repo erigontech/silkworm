@@ -71,6 +71,7 @@ using FileDescriptor = int;
 class MemoryMappedFile {
   public:
     explicit MemoryMappedFile(std::filesystem::path path, bool read_only = true);
+    MemoryMappedFile(std::filesystem::path path, uint8_t* address, std::size_t length);
     ~MemoryMappedFile();
 
     [[nodiscard]] std::filesystem::path path() const {
@@ -107,6 +108,9 @@ class MemoryMappedFile {
 
     //! The file size
     std::size_t length_{0};
+
+    //! Flag indicating if memory-mapping is managed internally or not
+    bool managed_;
 
 #ifdef _WIN32
     void cleanup();

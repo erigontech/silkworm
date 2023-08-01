@@ -44,6 +44,8 @@ class TransactionDatabase : public core::rawdb::DatabaseReader {
 
     [[nodiscard]] awaitable<void> for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const override;
 
+    Transaction& get_tx() { return tx_; }
+
   private:
     Transaction& tx_;
 };

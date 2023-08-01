@@ -932,7 +932,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_DEBUG << "chain_id: " << (*chain_config).chain_id << ", latest_block_number: " << latest_block_number;
 
-        const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
+        const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
         rpc::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
@@ -1263,11 +1263,12 @@ awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohma
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_INFO << "latest_block_number " << latest_block_number;
 
-        BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
-            return core::read_block_by_number(*block_cache_, tx_database, block_number);
+        BlockProvider block_provider = [this, &chain_storage](uint64_t block_number) {
+            return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
 
         GasPriceOracle gas_price_oracle{block_provider};
@@ -2101,15 +2102,15 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
-        rpc::fee_history::BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
-            return core::read_block_by_number(*(this->block_cache_), tx_database, block_number);
+        rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
+            return core::read_block_by_number(*(this->block_cache_), *chain_storage, block_number);
         };
         rpc::fee_history::ReceiptsProvider receipts_provider = [&tx_database](const BlockWithHash& block_with_hash) {
             return core::get_receipts(tx_database, block_with_hash);
         };
 
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 

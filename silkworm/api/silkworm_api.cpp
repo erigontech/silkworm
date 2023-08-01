@@ -19,6 +19,8 @@
 #include <memory>
 #include <vector>
 
+#include <boost/circular_buffer.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -122,23 +124,27 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         const size_t gas_max_history_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
         const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
 
-        // Preload all requested block from storage, i.e. from MDBX database or snapshots
-        const uint64_t num_blocks{max_block - start_block + 1};
-        SILK_INFO << "Prefetching " << num_blocks << " blocks start";
-        std::vector<Block> prefetched_blocks;
-        prefetched_blocks.reserve(num_blocks);
-        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
-            prefetched_blocks.emplace_back();
-            const bool success{access_layer.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
-            if (!success) {
-                return SILKWORM_BLOCK_NOT_FOUND;
-            }
-        }
-        SILK_INFO << "Prefetching " << num_blocks << " blocks done";
+        // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
+        static constexpr size_t kMaxPrefetchedBlocks{10240};
+        boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         size_t gas_history_size{0};
         size_t gas_batch_size{0};
-        for (const auto& block : prefetched_blocks) {
+        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
+            if (prefetched_blocks.empty()) {
+                const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+                SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
+                for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+                    prefetched_blocks.push_back();
+                    const bool success{access_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
+                    if (!success) {
+                        return SILKWORM_BLOCK_NOT_FOUND;
+                    }
+                }
+                SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
+            }
+            const Block& block{prefetched_blocks.front()};
+
             std::vector<Receipt> receipts;
             const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
             if (validation_result != ValidationResult::kOk) {
@@ -156,6 +162,8 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             if (block.header.number % 1000 == 0) {
                 SILK_INFO << "Blocks <= " << block.header.number << " executed";
             }
+
+            prefetched_blocks.pop_front();
 
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
             if (gas_batch_size >= gas_max_batch_size) {

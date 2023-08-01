@@ -39,7 +39,7 @@ TEST_CASE("Hex") {
     parsed_bytes = from_hex("0x0");
     CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
 
-    expected_bytes = {0x0a};
+    expected_bytes = Bytes{0x0a};
     parsed_bytes = from_hex("0xa");
     CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
 

@@ -41,7 +41,8 @@ class ParityRpcApi {
   public:
     explicit ParityRpcApi(boost::asio::io_context& io_context)
         : block_cache_{must_use_shared_service<BlockCache>(io_context)},
-          database_{must_use_private_service<ethdb::Database>(io_context)} {}
+          database_{must_use_private_service<ethdb::Database>(io_context)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)} {}
     virtual ~ParityRpcApi() = default;
 
     ParityRpcApi(const ParityRpcApi&) = delete;
@@ -54,6 +55,7 @@ class ParityRpcApi {
   private:
     BlockCache* block_cache_;
     ethdb::Database* database_;
+    ethbackend::BackEnd* backend_;
 
     friend class silkworm::http::RequestHandler;
 };

@@ -149,8 +149,6 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details_by_hash(con
 
     SILK_DEBUG << "block_hash: " << block_hash;
 
-    SILK_LOG << "block_hash: " << block_hash;
-
     auto tx = co_await database_->begin();
 
     try {

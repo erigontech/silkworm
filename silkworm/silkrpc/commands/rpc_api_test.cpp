@@ -45,14 +45,17 @@ namespace silkworm::rpc::commands {
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
 
-std::string create_temporary_directory() {
-    std::string temp_dir{TemporaryDirectory::get_unique_temporary_path()};
-    std::filesystem::create_directories(temp_dir);
-    return temp_dir;
-}
+std::filesystem::path get_tests_dir() {
+    auto working_dir = std::filesystem::current_path();
 
-void clear_directory(const std::string& path) {
-    std::filesystem::remove_all(path);
+    while (!std::filesystem::exists(working_dir / "third_party" / "execution-apis") && working_dir != "/") {
+        working_dir = working_dir.parent_path();
+    }
+
+    INFO("initial working_dir: " << std::filesystem::current_path());
+    REQUIRE(std::filesystem::exists(working_dir / "third_party" / "execution-apis"));
+
+    return working_dir / "third_party" / "execution-apis" / "tests";
 }
 
 std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
@@ -182,13 +185,13 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
         auto block_hash = block.header.hash();
         auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
-        // FIX 2: populate senders table
+        // FIX 3: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        // FIX 3: populate tx lookup table and create receipts
+        // FIX 4: populate tx lookup table and create receipts
         std::vector<silkworm::Receipt> receipts;
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
@@ -199,7 +202,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
         }
         db::write_receipts(txn, receipts, block.header.number);
 
-        // FIX 4: insert system transactions
+        // FIX 5: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
         intx::uint256 max_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_fee_per_gas;
         silkworm::Transaction system_transaction;
@@ -262,19 +265,6 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table;
 };
 
-std::filesystem::path get_tests_dir() {
-    auto working_dir = std::filesystem::current_path();
-    // std::cout << "Current path is " << working_dir << '\n';
-
-    while (!std::filesystem::exists(working_dir / "third_party" / "execution-apis") && working_dir != "/") {
-        working_dir = working_dir.parent_path();
-    }
-
-    REQUIRE(std::filesystem::exists(working_dir / "third_party" / "execution-apis"));
-
-    return working_dir / "third_party" / "execution-apis" / "tests";
-}
-
 // Define the static list of strings
 static const std::vector<std::string> tests_to_ignore = {
     "eth_estimateGas",         // call to oracle fails, needs fixing
@@ -284,7 +274,7 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_sendRawTransaction",  // call to oracle fails, needs fixing or mocking
 };
 
-TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
+TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
     auto tests_dir = get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
@@ -345,7 +335,7 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
     }
 }
 
-TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
+TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
     const auto tests_dir = get_tests_dir();
     const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
     auto db = open_db(db_dir);

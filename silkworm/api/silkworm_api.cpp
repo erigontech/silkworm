@@ -120,6 +120,10 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
 
+        static constexpr size_t kCacheSize{5'000};
+        AnalysisCache analysis_cache{kCacheSize};
+        ObjectPool<evmone::ExecutionState> state_pool;
+
         // Transform batch size limit into gas units (Ggas = Giga gas, Tgas = Tera gas)
         const size_t gas_max_history_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
         const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
@@ -146,7 +150,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             const Block& block{prefetched_blocks.front()};
 
             std::vector<Receipt> receipts;
-            const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
+            const auto validation_result{execute_block(block, analysis_cache, state_pool, state_buffer, *chain_config, receipts)};
             if (validation_result != ValidationResult::kOk) {
                 return SILKWORM_INVALID_BLOCK;
             }

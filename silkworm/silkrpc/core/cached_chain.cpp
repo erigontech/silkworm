@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc::core {
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number) {
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
@@ -36,7 +36,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
     co_return block_with_hash;
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, uint64_t block_number) {
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number) {
     auto block_hash = co_await storage.read_canonical_hash(block_number);
     const auto cached_block = cache.get(*block_hash);
     if (cached_block) {
@@ -120,6 +120,12 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
 awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await rawdb::read_block_number_by_transaction_hash(reader, transaction_hash);
     auto block_by_hash = co_await read_block_by_number(cache, reader, block_number);
+    co_return *block_by_hash;
+}
+
+awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
+    auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
+    auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
     co_return *block_by_hash;
 }
 

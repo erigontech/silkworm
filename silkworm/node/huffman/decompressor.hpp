@@ -237,6 +237,7 @@ class Decompressor {
     using ReadAheadFuncRef = absl::FunctionRef<bool(Iterator)>;
 
     explicit Decompressor(std::filesystem::path compressed_file);
+    Decompressor(std::filesystem::path compressed_file, uint8_t* mapped_file_address, std::size_t mapped_file_length);
     ~Decompressor();
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
@@ -272,6 +273,8 @@ class Decompressor {
 
     //! The path to the compressed file
     std::filesystem::path compressed_path_;
+    uint8_t* mapped_file_address_{nullptr};
+    std::size_t mapped_file_length_{0};
 
     //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;

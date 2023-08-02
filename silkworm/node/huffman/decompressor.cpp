@@ -28,6 +28,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace pb = google::protobuf::io;
@@ -293,12 +294,22 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
 
 Decompressor::Decompressor(std::filesystem::path compressed_path) : compressed_path_(std::move(compressed_path)) {}
 
+Decompressor::Decompressor(std::filesystem::path compressed_path, uint8_t* address, std::size_t length)
+    : compressed_path_(std::move(compressed_path)), mapped_file_address_{address}, mapped_file_length_{length} {
+    ensure(address != nullptr, "Decompressor: compressed file address is null");
+    ensure(length > 0, "Decompressor: compressed file length is zero");
+}
+
 Decompressor::~Decompressor() {
     close();
 }
 
 void Decompressor::open() {
-    compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_);
+    if (mapped_file_address_ and mapped_file_length_) {
+        compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, mapped_file_address_, mapped_file_length_);
+    } else {
+        compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_);
+    }
     if (compressed_file_->length() < kMinimumFileSize) {
         throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_->length()));
     }
@@ -337,9 +348,7 @@ void Decompressor::open() {
 }
 
 bool Decompressor::read_ahead(ReadAheadFuncRef fn) {
-    if (!compressed_file_) {
-        throw std::logic_error{"decompressor closed, call open first"};
-    }
+    ensure(bool(compressed_file_), "decompressor closed, call open first");
     compressed_file_->advise_sequential();
     auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
     Iterator it{this};

@@ -277,7 +277,7 @@ inline constexpr db::MapConfig kPlainState{kPlainStateName, mdbx::key_mode::usua
 //! of the transaction itself
 //! \struct
 //! \verbatim
-//!   key   : block_num (u64 BE)
+//!   key   : block_num_u64 (BE) + block_hash
 //!   value : array of addresses (each 20 bytes)
 //!   The addresses in array are listed in the same order of the transactions of the block
 //! \endverbatim

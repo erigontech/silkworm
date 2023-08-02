@@ -265,7 +265,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction 0x" << transaction_hash << " not found";
@@ -402,8 +403,9 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {
@@ -445,7 +447,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {

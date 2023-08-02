@@ -16,13 +16,13 @@
 
 #include "peer_manager.hpp"
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 #include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
@@ -47,7 +47,7 @@ Task<void> PeerManager::start(
         connect_peer_tasks_.wait() &&
         drop_peer_tasks_.wait() &&
         peer_tasks_.wait();
-    co_await co_spawn(strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(strand_, std::move(start), use_awaitable);
 }
 
 Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
@@ -120,15 +120,15 @@ Task<void> PeerManager::drop_peer(
 }
 
 Task<size_t> PeerManager::count_peers() {
-    co_return (co_await co_spawn(strand_, count_peers_in_strand(), use_awaitable));
+    co_return (co_await concurrency::co_spawn_sw(strand_, count_peers_in_strand(), use_awaitable));
 }
 
 Task<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
-    co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
+    co_await concurrency::co_spawn_sw(strand_, enumerate_peers_in_strand(callback), use_awaitable);
 }
 
 Task<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
-    co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
+    co_await concurrency::co_spawn_sw(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
 }
 
 Task<size_t> PeerManager::count_peers_in_strand() {
@@ -235,7 +235,7 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
 
     try {
         auto& client_context = context_pool_.next_io_context();
-        auto peer1 = co_await co_spawn(client_context, client->connect(peer_url, is_static_peer), use_awaitable);
+        auto peer1 = co_await concurrency::co_spawn_sw(client_context, client->connect(peer_url, is_static_peer), use_awaitable);
         auto peer = std::shared_ptr(std::move(peer1));
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {

@@ -18,7 +18,6 @@
 
 #include <chrono>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
@@ -75,7 +75,7 @@ Task<void> Peer::start(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
     auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
-    co_await co_spawn(peer->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(peer->strand_, std::move(start), use_awaitable);
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -210,7 +210,7 @@ Task<void> Peer::handle() {
 }
 
 Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
-    return co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
+    return concurrency::co_spawn_sw(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
 }
 
 Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {

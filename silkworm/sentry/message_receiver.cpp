@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <memory>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -28,6 +27,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 
 namespace silkworm::sentry {
 
@@ -42,7 +42,7 @@ Task<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerMan
         self->peer_tasks_.wait() &&
         self->unsubscription_tasks_.wait() &&
         self->handle_calls();
-    co_await co_spawn(self->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(self->strand_, std::move(start), use_awaitable);
 }
 
 Task<void> MessageReceiver::handle_calls() {

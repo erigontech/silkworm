@@ -309,8 +309,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, con
     co_return;
 }
 
-boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash) {
-    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, database_reader_, tx_hash);
+boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash) {
+    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, storage, tx_hash);
 
     if (!tx_with_block) {
         std::ostringstream oss;

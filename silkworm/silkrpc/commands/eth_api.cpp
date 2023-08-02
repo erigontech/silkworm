@@ -1417,7 +1417,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 
@@ -1475,6 +1475,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
             bundle_info.bundle_hash = hash_of(hash_data);
             reply = make_json_content(request["id"], bundle_info);
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

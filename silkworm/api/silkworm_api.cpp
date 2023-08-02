@@ -55,8 +55,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) HeaderSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(
-        headers_segment_path->path(), headers_segment_path->block_from(), headers_segment_path->block_to());
+    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path);
     headers_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     headers_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
@@ -67,8 +66,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) BodySnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(
-        bodies_segment_path->path(), bodies_segment_path->block_from(), bodies_segment_path->block_to());
+    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path);
     bodies_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     bodies_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
@@ -79,8 +77,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) TransactionSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(
-        transactions_segment_path->path(), transactions_segment_path->block_from(), transactions_segment_path->block_to());
+    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path);
     transactions_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     transactions_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 

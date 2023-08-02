@@ -186,13 +186,13 @@ void decode_segment(const SnapSettings& settings, int repetitions) {
         for (int i{0}; i < repetitions; ++i) {
             switch (snap_file->type()) {
                 case SnapshotType::headers: {
-                    snapshot = std::make_unique<HeaderSnapshot>(snap_file->path(), snap_file->block_from(), snap_file->block_to());
+                    snapshot = std::make_unique<HeaderSnapshot>(*snap_file);
                 } break;
                 case SnapshotType::bodies: {
-                    snapshot = std::make_unique<BodySnapshot>(snap_file->path(), snap_file->block_from(), snap_file->block_to());
+                    snapshot = std::make_unique<BodySnapshot>(*snap_file);
                 } break;
                 default: {
-                    snapshot = std::make_unique<TransactionSnapshot>(snap_file->path(), snap_file->block_from(), snap_file->block_to());
+                    snapshot = std::make_unique<TransactionSnapshot>(*snap_file);
                 }
             }
             snapshot->reopen_segment();

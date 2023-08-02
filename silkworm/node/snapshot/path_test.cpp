@@ -23,11 +23,11 @@
 
 namespace silkworm::snapshot {
 
-TEST_CASE("SnapshotPath::segment_size", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("SnapshotPath::segment_size", "[silkworm][node][snapshot]") {
     CHECK(SnapshotPath::segment_size() == kDefaultSegmentSize);
 }
 
-TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
         const char* invalid_filenames[]{
             "",
@@ -42,6 +42,7 @@ TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
             "v1--015000-headers.seg",
             "v1-014500015000-headers.seg",
             "v1-014500-1-headers.seg",
+            "v1-014500-010000-headers.seg",
             "v1-014500--headers.seg",
             "v1-014500-01500a-headers.seg",
             "v1-014500-015000-.seg",
@@ -86,6 +87,13 @@ TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
                 CHECK(index_file.type() == filename_expectation.type);
             }
         }
+    }
+}
+
+TEST_CASE("SnapshotPath::from", "[silkworm][node][snapshot]") {
+    SECTION("invalid") {
+        CHECK_THROWS_AS(SnapshotPath::from(std::filesystem::path{}, kSnapshotV1, 1'000, 999, SnapshotType::headers),
+                        std::logic_error);
     }
 }
 

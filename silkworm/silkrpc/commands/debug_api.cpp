@@ -386,7 +386,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        co_await executor.trace_transaction(stream, transaction_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        co_await executor.trace_transaction(stream, *chain_storage, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};

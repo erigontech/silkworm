@@ -42,11 +42,13 @@ using namespace silkworm;
 using namespace silkworm::snapshot;
 using namespace silkworm::cmd::common;
 
-const char* kSilkwormApiLibPath = "../../silkworm/api/libsilkworm_api.dylib";
+const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/api/silkworm_api";
 const char* kSilkwormInitSymbol = "silkworm_init";
 const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
 const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
 const char* kSilkwormFiniSymbol = "silkworm_fini";
+
+const auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
 
 //! Function signature for silkworm_init C API
 using SilkwormInitSig = int(SilkwormHandle**);

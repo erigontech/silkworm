@@ -98,6 +98,20 @@ boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, c
     co_return block_number;
 }
 
+boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader) {
+    if (bnoh.is_tag()) {
+        co_return co_await get_block_number(bnoh.tag(), reader, true);
+    } else if (bnoh.is_number()) {
+        co_return co_await get_block_number(to_hex(bnoh.number(), true), reader, true);
+    } else if (bnoh.is_hash()) {
+        const auto block_number = co_await rawdb::read_header_number(reader, bnoh.hash());
+        const auto latest_block_number = co_await get_latest_block_number(reader);
+        co_return std::make_pair(block_number, block_number == latest_block_number);
+    } else {
+        throw std::invalid_argument("Invalid Block Number or Hash");
+    }
+}
+
 boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader) {
     co_return co_await stages::get_sync_stage_progress(reader, stages::kFinish);
 }

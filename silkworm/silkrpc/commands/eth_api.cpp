@@ -984,8 +984,11 @@ awaitable<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& req
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
-        const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
+
+        const auto bnoh = BlockNumberOrHash{block_id};
+
+        ethdb::kv::CachedDatabase cached_database{bnoh, *tx, *state_cache_};
+        const auto [block_number, is_latest_block] = co_await core::get_block_number(bnoh, tx_database);
 
         StateReader state_reader{
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database)};

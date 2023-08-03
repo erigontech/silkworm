@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -181,6 +182,17 @@ const BodySnapshot* SnapshotRepository::find_body_segment(BlockNum number) const
 
 const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) const {
     return find_segment(tx_segments_, number);
+}
+
+std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
+    for (const auto& tx_segment : std::ranges::reverse_view(tx_segments_)) {
+        const auto& snapshot = tx_segment.second;
+        auto const block_number = snapshot->block_num_by_txn_hash(txn_hash);
+        if (block_number) {
+            return block_number;
+        }
+    }
+    return {};
 }
 
 std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {

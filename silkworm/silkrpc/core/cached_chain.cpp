@@ -125,6 +125,11 @@ awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const
 
 awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
+
+    if (!block_number) {
+        throw std::runtime_error{"block not found"};
+    }
+
     auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
     co_return *block_by_hash;
 }

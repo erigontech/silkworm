@@ -53,6 +53,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
         json["v"] = rpc::to_quantity(uint64_t(transaction.odd_y_parity));
         json["accessList"] = transaction.access_list;  // EIP2930
+        json["yParity"] = rpc::to_quantity(transaction.odd_y_parity);
     } else if (transaction.chain_id) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
         json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));

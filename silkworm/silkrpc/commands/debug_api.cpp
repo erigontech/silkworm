@@ -763,7 +763,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::js
         reply = make_json_content(request["id"], silkworm::to_hex(rlp, true));
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        reply = make_json_error(request["id"], -32602, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

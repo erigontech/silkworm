@@ -684,16 +684,20 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
-        const auto transactions = block_with_hash->block.transactions;
+        if (block_with_hash) {
+            const auto transactions = block_with_hash->block.transactions;
 
-        const auto idx = std::stoul(index, nullptr, 16);
-        if (idx >= transactions.size()) {
-            SILK_WARN << "Transaction not found for index: " << index;
-            reply = make_json_content(request["id"], nullptr);
+            const auto idx = std::stoul(index, nullptr, 16);
+            if (idx >= transactions.size()) {
+                SILK_WARN << "Transaction not found for index: " << index;
+                reply = make_json_content(request["id"], nullptr);
+            } else {
+                const auto block_header = block_with_hash->block.header;
+                rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
+                reply = make_json_content(request["id"], txn);
+            }
         } else {
-            const auto block_header = block_with_hash->block.header;
-            rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
-            reply = make_json_content(request["id"], txn);
+            reply = make_json_content(request["id"], nullptr);
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], nullptr);
@@ -729,15 +733,20 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
-        const auto transactions = block_with_hash->block.transactions;
-        const auto idx = std::stoul(index, nullptr, 16);
-        if (idx >= transactions.size()) {
-            SILK_WARN << "Transaction not found for index: " << index;
-            Rlp rlp{};
-            reply = make_json_content(request["id"], rlp);
+        if (block_with_hash) {
+            const auto transactions = block_with_hash->block.transactions;
+            const auto idx = std::stoul(index, nullptr, 16);
+            if (idx >= transactions.size()) {
+                SILK_WARN << "Transaction not found for index: " << index;
+                Rlp rlp{};
+                reply = make_json_content(request["id"], rlp);
+            } else {
+                Rlp rlp{};
+                silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
+                reply = make_json_content(request["id"], rlp);
+            }
         } else {
             Rlp rlp{};
-            silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
             reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
@@ -776,16 +785,21 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        const auto transactions = block_with_hash->block.transactions;
+        if (block_with_hash) {
+            const auto transactions = block_with_hash->block.transactions;
 
-        const auto idx = std::stoul(index, nullptr, 16);
-        if (idx >= transactions.size()) {
-            SILK_WARN << "Transaction not found for index: " << index;
-            reply = make_json_content(request["id"], nullptr);
+            const auto idx = std::stoul(index, nullptr, 16);
+            if (idx >= transactions.size()) {
+                SILK_WARN << "Transaction not found for index: " << index;
+                reply = make_json_content(request["id"], nullptr);
+            } else {
+                const auto block_header = block_with_hash->block.header;
+                rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
+                reply = make_json_content(request["id"], txn);
+            }
         } else {
-            const auto block_header = block_with_hash->block.header;
-            rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
-            reply = make_json_content(request["id"], txn);
+            Rlp rlp{};
+            reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
         Rlp rlp{};
@@ -823,16 +837,21 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        const auto transactions = block_with_hash->block.transactions;
+        if (block_with_hash) {
+            const auto transactions = block_with_hash->block.transactions;
 
-        const auto idx = std::stoul(index, nullptr, 16);
-        if (idx >= transactions.size()) {
-            SILK_WARN << "Transaction not found for index: " << index;
-            Rlp rlp{};
-            reply = make_json_content(request["id"], rlp);
+            const auto idx = std::stoul(index, nullptr, 16);
+            if (idx >= transactions.size()) {
+                SILK_WARN << "Transaction not found for index: " << index;
+                Rlp rlp{};
+                reply = make_json_content(request["id"], rlp);
+            } else {
+                Rlp rlp{};
+                silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
+                reply = make_json_content(request["id"], rlp);
+            }
         } else {
             Rlp rlp{};
-            silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
             reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
@@ -1240,7 +1259,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        call::CallExecutor executor{*tx, *block_cache_, workers_};
+        call::CallExecutor executor{*tx, *block_cache_, workers_, backend_};
         const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {

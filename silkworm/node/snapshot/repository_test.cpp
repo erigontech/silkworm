@@ -214,8 +214,6 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     test::SampleBodySnapshotFile body_snapshot{tmp_dir};
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
 
-//    REQUIRE_NOTHROW(repository.reopen_folder());
-
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     HeaderIndex header_index{header_snapshot_path};
     REQUIRE_NOTHROW(header_index.build());

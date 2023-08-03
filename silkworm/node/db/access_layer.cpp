@@ -586,13 +586,12 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     target->upsert(to_slice(key), to_slice(data));
 }
 
-void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block) {
+void write_tx_lookup(RWTxn& txn, const Block& block) {
     auto target = txn.rw_cursor(table::kTxLookup);
-    Bytes data;
+    const auto block_number_bytes = db::block_key(block.header.number);
     for (const auto& block_txn : block.transactions) {
         auto tx_key = block_txn.hash();
-        auto tx_data = db::block_key(block_number);
-        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data));
+        target->upsert(to_slice(tx_key.bytes), to_slice(block_number_bytes));
     }
 }
 

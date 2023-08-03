@@ -191,10 +191,10 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
         db::write_senders(txn, block_hash, block.header.number, block);
 
         // FIX 4: populate tx lookup table and create receipts
+        db::write_tx_lookup(txn, block);
         std::vector<silkworm::Receipt> receipts;
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
-            db::write_tx_lookup(txn, block.header.number, block);
             cumulative_gas_used += block_txn.gas_limit;
             silkworm::Receipt receipt{.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
             receipts.emplace_back(receipt);

@@ -68,6 +68,14 @@ class Handshake {
         DisconnectReason reason_;
     };
 
+    class CapabilityMismatchError : public std::runtime_error {
+      public:
+        CapabilityMismatchError(
+            std::string required_capability_desc,
+            std::string peer_capabilities_desc)
+            : std::runtime_error("rlpx::auth::Handshake: no matching required capability " + required_capability_desc + " in " + peer_capabilities_desc) {}
+    };
+
   private:
     Task<AuthKeys> auth(SocketStream& stream);
 

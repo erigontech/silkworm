@@ -189,6 +189,9 @@ Task<void> Peer::handle() {
     } catch (const auth::Handshake::DisconnectError& ex) {
         log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
+    } catch (const auth::Handshake::CapabilityMismatchError& ex) {
+        log::Debug("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
+        disconnect_reason_.set({DisconnectReason::UselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {

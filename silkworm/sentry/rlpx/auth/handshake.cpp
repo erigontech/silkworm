@@ -81,11 +81,14 @@ Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
     }
 
     HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);
+
+    HelloMessage::Capability required_capability{required_capability_};
+    if (!hello_reply_message.contains_capability(required_capability)) {
+        throw CapabilityMismatchError(required_capability.to_string(), hello_reply_message.capabilities_description());
+    }
+
     log::Debug("sentry") << "rlpx::auth::Handshake success: peer Hello: " << hello_reply_message.client_id()
                          << " with " << hello_reply_message.capabilities_description();
-
-    if (!hello_reply_message.contains_capability(HelloMessage::Capability{required_capability_}))
-        throw std::runtime_error("rlpx::auth::Handshake: no matching required capability");
 
     message_stream.enable_compression();
 

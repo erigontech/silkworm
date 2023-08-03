@@ -185,11 +185,11 @@ const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) 
 }
 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (const auto& tx_segment : std::ranges::reverse_view(tx_segments_)) {
-        const auto& snapshot = tx_segment.second;
-        auto const block_number = snapshot->block_num_by_txn_hash(txn_hash);
-        if (block_number) {
-            return block_number;
+    for (auto it = tx_segments_.rbegin(); it != tx_segments_.rend(); ++it) {
+        const auto& snapshot = it->second;
+        auto block = snapshot->block_num_by_txn_hash(txn_hash);
+        if (block) {
+            return block;
         }
     }
     return {};

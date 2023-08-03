@@ -64,6 +64,7 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     SECTION("valid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
             {0, 1},
+            {1'000, 1'000},
             {1'000, 2'000}};
         for (const auto& [block_from, block_to] : block_ranges) {
             Snapshot_ForTest snapshot{block_from, block_to};
@@ -76,8 +77,6 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     }
     SECTION("invalid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
-            {0, 0},
-            {1'000, 1'000},
             {1'000, 999}};
         for (const auto& [block_from, block_to] : block_ranges) {
             CHECK_THROWS_AS(Snapshot_ForTest(block_from, block_to), std::logic_error);
@@ -206,16 +205,13 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     TransactionIndex tx_index{tx_snapshot_path};
     REQUIRE_NOTHROW(tx_index.build());
 
-    TransactionSnapshot tx_snapshot{tx_snapshot_path.path(), tx_snapshot_path.block_from(), tx_snapshot_path.block_to()};
+    TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
 
     auto transaction = tx_snapshot.txn_by_id(7'341'269);  // known txn id in block 1'500'012
     CHECK(transaction.has_value());
     auto block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
-
-    auto a = to_hex(transaction->hash(), true);
-    std::cout << a;
 
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'012);
@@ -225,9 +221,6 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'013);
-
-    a = to_hex(transaction->hash(), true);
-    std::cout << a;
 }
 
 TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {

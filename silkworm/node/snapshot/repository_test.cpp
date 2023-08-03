@@ -214,6 +214,8 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     test::SampleBodySnapshotFile body_snapshot{tmp_dir};
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
 
+//    REQUIRE_NOTHROW(repository.reopen_folder());
+
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     HeaderIndex header_index{header_snapshot_path};
     REQUIRE_NOTHROW(header_index.build());
@@ -238,7 +240,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
 
     // unknown txn hash
     block_number = repository.find_block_number(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
-    // CHECK_FALSE(block_number.has_value()); // needs correct key check in index
+    // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
 }
 
 }  // namespace silkworm::snapshot

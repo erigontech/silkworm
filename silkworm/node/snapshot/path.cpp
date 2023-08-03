@@ -74,7 +74,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const BlockNum block_to{scaled_block_to * kFileNameBlockScaleFactor};
 
     // Expected proper block range: [block_from, block_to)
-    if (block_to <= block_from) {
+    if (block_to < block_from) {
         return std::nullopt;
     }
 
@@ -108,7 +108,7 @@ fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, Bloc
 
 SnapshotPath::SnapshotPath(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
     : path_(std::move(path)), version_(version), block_from_(block_from), block_to_(block_to), type_(type) {
-    ensure(block_to > block_from, "SnapshotPath: block_to less than block_from");
+    ensure(block_to >= block_from, "SnapshotPath: block_to less than block_from");
 }
 
 bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {

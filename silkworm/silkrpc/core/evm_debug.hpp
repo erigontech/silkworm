@@ -138,7 +138,7 @@ class DebugExecutor {
     boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number);
     boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
     boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call);
-    boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
+    boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
     boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
 
   protected:

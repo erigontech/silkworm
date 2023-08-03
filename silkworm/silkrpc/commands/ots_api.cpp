@@ -523,9 +523,10 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohm
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
@@ -569,9 +570,10 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const n
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
@@ -615,9 +617,10 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             reply = make_json_content(request["id"], nlohmann::detail::value_t::null);

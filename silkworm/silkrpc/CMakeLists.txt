@@ -58,6 +58,7 @@ set(SILKRPC_PUBLIC_LIBRARIES
     Boost::container
     Boost::thread
     protobuf::libprotobuf
+    intx::intx
     pico_http_parser
 )
 

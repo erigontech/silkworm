@@ -21,6 +21,7 @@ find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
+find_package(intx REQUIRED)
 
 # Silkrpc library
 file(
@@ -57,7 +58,6 @@ set(SILKRPC_PUBLIC_LIBRARIES
     Boost::container
     Boost::thread
     protobuf::libprotobuf
-    intx::intx
     pico_http_parser
 )
 

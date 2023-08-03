@@ -42,7 +42,7 @@ else()
 endif()
 
 # evmone with dependencies
-add_subdirectory(intx)
+find_package(intx REQUIRED)
 
 option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
 add_subdirectory(ethash)

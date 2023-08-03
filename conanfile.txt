@@ -20,6 +20,7 @@ snappy/1.1.7
 sqlitecpp/3.3.0
 tl-expected/1.1.0
 tomlplusplus/3.3.0
+intx/0.10.1
 
 [generators]
 cmake_find_package

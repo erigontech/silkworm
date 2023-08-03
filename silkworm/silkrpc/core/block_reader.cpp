@@ -16,6 +16,8 @@
 
 #include "block_reader.hpp"
 
+#include <set>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -26,14 +28,45 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
+#include <silkworm/silkrpc/ethdb/cursor.hpp>
 
 namespace silkworm::rpc {
+
+void to_json(nlohmann::json& json, const BalanceChanges&) {
+    json = {{}};
+}
 
 awaitable<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& /*balance_changes*/) const {
     ethdb::TransactionDatabase tx_database{transaction_};
 
-    /*const auto block_with_hash = */ co_await core::read_block_by_number_or_hash(cache, tx_database, bnoh);
-    // const auto block_number = block_with_hash->block.header.number;
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, tx_database, bnoh);
+    const auto block_number = block_with_hash->block.header.number;
+
+    SILK_INFO << "read_balance_changes: block_number: " << block_number;
+
+    // const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    // const auto chain_config_ptr = lookup_chain_config(chain_id);
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    auto state = transaction_.create_state(current_executor, database_reader_, block_number - 1);
+
+    auto ps_cursor = co_await transaction_.cursor(db::table::kAccountChangeSetName);
+
+    std::set<evmc::address> addresses;
+    core::rawdb::Walker walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
+        auto bn = static_cast<uint64_t>(std::stol(silkworm::to_hex(key), nullptr, 16));
+        if (bn <= block_number) {
+            auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
+
+            SILK_INFO << "Walker: processing block " << bn << " address 0x" << silkworm::to_hex(address);
+            addresses.insert(address);
+        }
+        return bn != block_number;
+    };
+
+    const auto key = silkworm::db::block_key(block_number);
+    SILK_INFO << "Ready to walk block " << block_number << ", starting key: " << silkworm::to_hex(key);
+
+    co_await database_reader_.walk(db::table::kAccountChangeSetName, key, 0, walker);
 
     // dump_accounts.root = block_with_hash->block.header.state_root;
 

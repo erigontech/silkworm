@@ -68,21 +68,26 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const n
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
 
-    SILK_DEBUG << "block_number_or_hash: " << block_number_or_hash;
+    SILK_INFO << "block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
     try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
         auto start = std::chrono::system_clock::now();
-        rpc::BlockReader block_reader{*tx};
+        rpc::BlockReader block_reader{tx_database, *tx};
 
         rpc::BalanceChanges balance_changes;
         co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
-        SILK_DEBUG << "balance_changes: elapsed " << elapsed_seconds.count() << " sec";
+        SILK_INFO << "balance_changes: elapsed " << elapsed_seconds.count() << " sec";
 
-        // reply = make_json_content(request["id"], balance_changes);
+        nlohmann::json json;
+        to_json(json, balance_changes);
+
+        reply = make_json_content(request["id"], json);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

@@ -72,7 +72,7 @@ Task<std::unique_ptr<Peer>> Client::connect(
     }
 
     auto remote_endpoint = stream.socket().remote_endpoint();
-    log::Debug("sentry") << "rlpx::Client connected to " << remote_endpoint;
+    log::Trace("sentry") << "rlpx::Client connected to " << remote_endpoint;
 
     co_return std::make_unique<Peer>(
         client_context,

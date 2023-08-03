@@ -43,7 +43,7 @@ Task<AuthKeys> Handshake::auth(SocketStream& stream) {
 
 Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
-    log::Debug("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
+    log::Trace("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
     framing::FramingCipher framing_cipher{
         framing::FramingCipher::KeyMaterial{

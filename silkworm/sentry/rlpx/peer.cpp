@@ -68,7 +68,7 @@ Peer::Peer(
 }
 
 Peer::~Peer() {
-    log::Debug("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
+    log::Trace("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
 Task<void> Peer::start(std::shared_ptr<Peer> peer) {
@@ -101,7 +101,7 @@ Task<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Debug("sentry") << "Peer::handle";
+    log::Trace("sentry") << "Peer::handle";
 
     bool is_handshake_completed = false;
     auto _ = gsl::finally([this, &is_handshake_completed] {

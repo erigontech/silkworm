@@ -18,6 +18,10 @@
 
 #include <chrono>
 
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
@@ -46,7 +50,15 @@ Task<size_t> lookup(
     size_t total_neighbors = 0;
     auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), [&](size_t index) -> Task<void> {
         auto node_id = node_ids[index];
-        total_neighbors += co_await find_neighbors(node_id, std::nullopt, local_node_id, message_sender, on_neighbors_signal, db);
+        try {
+            total_neighbors += co_await find_neighbors(node_id, std::nullopt, local_node_id, message_sender, on_neighbors_signal, db);
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::system::errc::operation_canceled)
+                throw;
+            log::Error("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " system_error: " << ex.what();
+        } catch (const std::exception& ex) {
+            log::Error("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " exception: " << ex.what();
+        }
     });
 
     try {

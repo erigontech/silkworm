@@ -17,6 +17,8 @@
 #include "discovery.hpp"
 
 #include <boost/signals2.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -106,7 +108,15 @@ class DiscoveryImpl : private MessageHandler {
             }
 
             for (auto& node_id : node_ids) {
-                co_await ping::ping_check(node_id, std::nullopt, local_node_url, server_, on_pong_signal_, node_db_);
+                try {
+                    co_await ping::ping_check(node_id, std::nullopt, local_node_url, server_, on_pong_signal_, node_db_);
+                } catch (const boost::system::system_error& ex) {
+                    if (ex.code() == boost::system::errc::operation_canceled)
+                        throw;
+                    log::Error("sentry") << "disc_v4::DiscoveryImpl::periodic_ping_check ping_check node_id=" << node_id.hex() << " system_error: " << ex.what();
+                } catch (const std::exception& ex) {
+                    log::Error("sentry") << "disc_v4::DiscoveryImpl::periodic_ping_check ping_check node_id=" << node_id.hex() << " exception: " << ex.what();
+                }
             }
         }
     }

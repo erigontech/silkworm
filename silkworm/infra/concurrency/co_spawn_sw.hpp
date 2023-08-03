@@ -33,19 +33,113 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/cancellation_state.hpp>
 #include <boost/asio/co_spawn.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/execution_context.hpp>
 #include <boost/asio/executor.hpp>
 #include <boost/asio/is_executor.hpp>
+#include <boost/asio/use_awaitable.hpp>
 
 namespace silkworm::concurrency::detail {
 
+using boost::asio::awaitable;
 using boost::asio::cancellation_state;
+using boost::asio::dispatch;
 using boost::asio::enable_total_cancellation;
 using boost::asio::get_associated_cancellation_slot;
+using boost::asio::post;
 using boost::asio::result_of;
+using boost::asio::use_awaitable_t;
 using boost::asio::detail::awaitable_as_function;
 using boost::asio::detail::awaitable_handler;
-using boost::asio::detail::co_spawn_entry_point;
+using boost::asio::detail::awaitable_thread_entry_point;
+using boost::asio::detail::awaitable_thread_has_context_switched;
+using boost::asio::detail::make_co_spawn_work_guard;
+
+template <typename T, typename Executor, typename F, typename Handler>
+awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
+    awaitable<T, Executor>*,
+    Executor ex,
+    F f,
+    Handler handler) {
+    auto spawn_work = make_co_spawn_work_guard(ex);
+    auto handler_work = make_co_spawn_work_guard(
+        boost::asio::get_associated_executor(handler, ex));
+
+    (void)co_await (dispatch)(
+        use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
+
+    (co_await awaitable_thread_has_context_switched{}) = false;
+    std::exception_ptr e = nullptr;
+    bool done = false;
+    try {
+        T t = co_await f();
+
+        done = true;
+
+        bool switched = (co_await awaitable_thread_has_context_switched{});
+        if (!switched) {
+            (void)co_await (post)(
+                use_awaitable_t<Executor>{__FILE__,
+                                          __LINE__, "co_spawn_entry_point"});
+        }
+
+        (dispatch)(handler_work.get_executor(),
+                   [handler = std::move(handler), t = std::move(t)]() mutable {
+                       std::move(handler)(std::exception_ptr(), std::move(t));
+                   });
+
+        co_return;
+    } catch (...) {
+        if (done)
+            throw;
+
+        e = std::current_exception();
+    }
+
+    bool switched = (co_await awaitable_thread_has_context_switched{});
+    if (!switched) {
+        (void)co_await (post)(
+            use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
+    }
+
+    (dispatch)(handler_work.get_executor(),
+               [handler = std::move(handler), e]() mutable {
+                   std::move(handler)(e, T());
+               });
+}
+
+template <typename Executor, typename F, typename Handler>
+awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
+    awaitable<void, Executor>*,
+    Executor ex,
+    F f,
+    Handler handler) {
+    auto spawn_work = make_co_spawn_work_guard(ex);
+    auto handler_work = make_co_spawn_work_guard(
+        boost::asio::get_associated_executor(handler, ex));
+
+    (void)co_await (dispatch)(
+        use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
+
+    (co_await awaitable_thread_has_context_switched{}) = false;
+    std::exception_ptr e = nullptr;
+    try {
+        co_await f();
+    } catch (...) {
+        e = std::current_exception();
+    }
+
+    bool switched = (co_await awaitable_thread_has_context_switched{});
+    if (!switched) {
+        (void)co_await (post)(
+            use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
+    }
+
+    (dispatch)(handler_work.get_executor(),
+               [handler = std::move(handler), e]() mutable {
+                   std::move(handler)(e);
+               });
+}
 
 template <typename Executor>
 class initiate_co_spawn {

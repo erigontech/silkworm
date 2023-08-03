@@ -242,9 +242,9 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
         if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug("sentry") << "PeerManager::connect_peer cancelled";
         } else {
-            log::Warning("sentry") << "PeerManager::connect_peer failed to connect"
-                                   << " to " << peer_url.to_string()
-                                   << " due to exception: " << ex.what();
+            log::Debug("sentry") << "PeerManager::connect_peer failed to connect"
+                                 << " to " << peer_url.to_string()
+                                 << " due to exception: " << ex.what();
             on_peer_connect_error(peer_url);
             need_peers_notifier_.notify();
         }

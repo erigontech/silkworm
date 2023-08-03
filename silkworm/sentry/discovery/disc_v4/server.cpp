@@ -118,6 +118,8 @@ class ServerImpl {
                     case PacketType::kEnrResponse:
                         break;
                 }
+            } catch (const find::FindNodeMessage::DecodeTargetPublicKeyError& ex) {
+                log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             } catch (const DecodingException& ex) {
                 log::Warning("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             }

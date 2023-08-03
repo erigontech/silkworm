@@ -34,7 +34,7 @@ using namespace boost::asio;
 Task<std::unique_ptr<Peer>> Client::connect(
     EnodeUrl peer_url,
     bool is_static_peer) {
-    log::Debug("sentry") << "rlpx::Client connecting to " << peer_url.to_string();
+    log::Trace("sentry") << "rlpx::Client connecting to " << peer_url.to_string();
 
     auto client_context = co_await boost::asio::this_coro::executor;
 
@@ -60,10 +60,10 @@ Task<std::unique_ptr<Peer>> Client::connect(
                 throw;
             if (attempt_num >= max_retries_)
                 throw;
-            log::Warning("sentry") << "rlpx::Client failed to connect"
-                                   << " to " << peer_url.to_string()
-                                   << " due to exception: " << ex.what()
-                                   << ", reconnecting...";
+            log::Debug("sentry") << "rlpx::Client failed to connect"
+                                 << " to " << peer_url.to_string()
+                                 << " due to exception: " << ex.what()
+                                 << ", reconnecting...";
         }
         if (!is_connected) {
             stream = SocketStream{client_context};

@@ -320,7 +320,7 @@ const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, Bl
 template <ConcreteSnapshot T>
 bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file) {
     if (segments.find(seg_file.path()) == segments.end()) {
-        auto segment = std::make_unique<T>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
+        auto segment = std::make_unique<T>(seg_file);
         segment->reopen_segment();
         if (segment->empty()) return false;
         segments[seg_file.path()] = std::move(segment);

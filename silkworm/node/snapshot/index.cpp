@@ -100,14 +100,14 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
 void TransactionIndex::build() {
     SILK_INFO << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
-    const SnapshotPath bodies_segment = SnapshotPath::from(segment_path_.path().parent_path(),
-                                                           segment_path_.version(),
-                                                           segment_path_.block_from(),
-                                                           segment_path_.block_to(),
-                                                           SnapshotType::bodies);
-    SILK_INFO << "TransactionIndex::build bodies_segment path: " << bodies_segment.path().string();
+    const SnapshotPath bodies_segment_path = SnapshotPath::from(segment_path_.path().parent_path(),
+                                                                segment_path_.version(),
+                                                                segment_path_.block_from(),
+                                                                segment_path_.block_to(),
+                                                                SnapshotType::bodies);
+    SILK_INFO << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
 
-    BodySnapshot bodies_snapshot{bodies_segment.path(), bodies_segment.block_from(), bodies_segment.block_to()};
+    BodySnapshot bodies_snapshot{bodies_segment_path};
     bodies_snapshot.reopen_segment();
     const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
     SILK_INFO << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
@@ -145,7 +145,7 @@ void TransactionIndex::build() {
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
     RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, 1};
 
-    huffman::Decompressor bodies_decoder{bodies_segment.path()};
+    huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
 
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;

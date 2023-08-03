@@ -158,6 +158,8 @@ class TemporarySnapshotFile {
 class HelloWorldSnapshotFile : public TemporarySnapshotFile {
   public:
     explicit HelloWorldSnapshotFile() : TemporarySnapshotFile{kHeader, kBody} {}
+    explicit HelloWorldSnapshotFile(const std::string& filename)
+        : TemporarySnapshotFile{filename, kHeader, kBody} {}
     explicit HelloWorldSnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
         : TemporarySnapshotFile{tmp_dir, filename, kHeader, kBody} {}
 

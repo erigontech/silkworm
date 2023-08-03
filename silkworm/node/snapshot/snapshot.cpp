@@ -38,10 +38,7 @@ inline std::string to_string(DecodingResult result) {
 
 namespace fs = std::filesystem;
 
-Snapshot::Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
-    : path_(std::move(path)), block_from_(block_from), block_to_(block_to), decoder_{path_} {
-    ensure(block_to >= block_from, "Snapshot: invalid block range: block_to less than block_from");
-}
+Snapshot::Snapshot(SnapshotPath path) : path_(std::move(path)), decoder_{path_.path()} {}
 
 void* Snapshot::memory_file_address() const {
     const auto memory_file{decoder_.memory_file()};
@@ -115,10 +112,6 @@ void Snapshot::close_segment() {
     decoder_.close();
 }
 
-SnapshotPath HeaderSnapshot::path() const {
-    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::headers);
-}
-
 bool HeaderSnapshot::for_each_header(const Walker& walker) {
     return for_each_item([this, walker](const WordItem& item) -> bool {
         BlockHeader header;
@@ -166,7 +159,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
-    if (!idx_header_hash_ or block_height < block_from_ or block_height >= block_to_) {
+    if (!idx_header_hash_ or block_height < path_.block_from() or block_height >= path_.block_to()) {
         return {};
     }
 
@@ -190,8 +183,8 @@ bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& 
         return false;
     }
 
-    ensure(header.number >= block_from_,
-           "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(block_from_));
+    ensure(header.number >= path_.block_from(),
+           "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(path_.block_from()));
     return true;
 }
 
@@ -216,15 +209,11 @@ void HeaderSnapshot::close_index() {
     idx_header_hash_.reset();
 }
 
-SnapshotPath BodySnapshot::path() const {
-    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::bodies);
-}
-
 bool BodySnapshot::for_each_body(const Walker& walker) {
     return for_each_item([&](const WordItem& item) -> bool {
         db::detail::BlockBodyForStorage body;
         success_or_throw(decode_body(item, body));
-        const BlockNum number = block_from_ + item.position;
+        const BlockNum number = path_.block_from() + item.position;
         return walker(number, &body);
     });
 }
@@ -233,17 +222,17 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
 
     const bool read_ok = for_each_body([&](BlockNum number, const StoredBlockBody* body) {
-        if (number == block_from_) {
+        if (number == path_.block_from()) {
             first_tx_id = body->base_txn_id;
         }
-        if (number == block_to_ - 1) {
+        if (number == path_.block_to() - 1) {
             last_tx_id = body->base_txn_id;
             last_txs_amount = body->txn_count;
         }
         return true;
     });
-    if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.string()};
-    if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.string()};
+    if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.path().string()};
+    if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.path().string()};
 
     SILK_TRACE << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;
 
@@ -310,10 +299,6 @@ void BodySnapshot::close_index() {
 
 // Skip first byte of tx hash plus sender address length for transaction decoding
 constexpr int kTxRlpDataOffset{1 + kAddressLength};
-
-SnapshotPath TransactionSnapshot::path() const {
-    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::transactions);
-}
 
 [[nodiscard]] std::optional<Transaction> TransactionSnapshot::next_txn(uint64_t offset, std::optional<Hash> hash) const {
     // Get the next data item at specified offset, optionally checking if it starts with txn hash first byte

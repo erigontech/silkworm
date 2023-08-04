@@ -68,7 +68,7 @@ awaitable<void> BlockReader::read_balance_changes(BlockCache& cache, const Block
         }
     }
 
-    SILK_DEBUG << "Balances changed " << balance_changes.size();
+    SILK_DEBUG << "Changed balances " << balance_changes.size();
 
     co_return;
 }

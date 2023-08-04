@@ -23,6 +23,9 @@ namespace silkworm::rpc::core {
 
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number) {
     auto block_hash = co_await storage.read_canonical_hash(block_number);
+    if (!block_hash) {
+        co_return nullptr;
+    }
     const auto cached_block = cache.get(*block_hash);
     if (cached_block) {
         co_return cached_block.value();
@@ -76,10 +79,16 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
     throw std::runtime_error{"invalid block_number_or_hash value"};
 }
 
-awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
+    if (!block_number) {
+        co_return nullptr;
+    }
     auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
-    co_return *block_by_hash;
+    if (!block_by_hash) {
+        co_return nullptr;
+    }
+    co_return block_by_hash;
 }
 
 awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
@@ -88,6 +97,9 @@ awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCac
         co_return std::nullopt;
     }
     const auto block_with_hash = co_await read_block_by_number(cache, storage, *block_number);
+    if (!block_with_hash) {
+        co_return std::nullopt;
+    }
     const silkworm::ByteView tx_hash{transaction_hash.bytes, silkworm::kHashLength};
 
     const auto transactions = block_with_hash->block.transactions;

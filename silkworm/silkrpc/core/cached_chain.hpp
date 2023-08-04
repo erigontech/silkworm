@@ -31,15 +31,10 @@ namespace silkworm::rpc::core {
 
 using boost::asio::awaitable;
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, BlockNum block_number);
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number);
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash);
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash);
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
-awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash);
 awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
-awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash);
 awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
 
 }  // namespace silkworm::rpc::core

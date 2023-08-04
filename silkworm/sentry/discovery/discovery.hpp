@@ -26,6 +26,7 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 namespace silkworm::sentry::discovery {
@@ -35,10 +36,10 @@ class DiscoveryImpl;
 class Discovery {
   public:
     explicit Discovery(
+        std::function<boost::asio::any_io_executor()> executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
-        boost::asio::any_io_executor node_db_executor,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
         uint16_t disc_v4_port);
@@ -54,6 +55,8 @@ class Discovery {
         std::vector<EnodeUrl> exclude_urls);
 
     bool is_static_peer_url(const EnodeUrl& peer_url);
+
+    Task<void> on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless);
 
   private:
     std::unique_ptr<DiscoveryImpl> p_impl_;

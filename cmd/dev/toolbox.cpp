@@ -37,6 +37,7 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -44,6 +45,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 namespace fs = std::filesystem;
@@ -148,6 +150,39 @@ void cursor_for_each(mdbx::cursor& cursor, db::WalkFuncRef walker) {
         walker(db::from_slice(data.key), db::from_slice(data.value));
         data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
     }
+}
+
+static void print_header(const BlockHeader& header) {
+    std::cout << "Header:\nhash=" << to_hex(header.hash()) << "\n"
+              << "parent_hash=" << to_hex(header.parent_hash) << "\n"
+              << "number=" << header.number << "\n"
+              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "ommers_hash=" << to_hex(header.ommers_hash) << "\n"
+              << "state_root=" << to_hex(header.state_root) << "\n"
+              << "transactions_root=" << to_hex(header.transactions_root) << "\n"
+              << "receipts_root=" << to_hex(header.receipts_root) << "\n"
+              << "withdrawals_root=" << (header.withdrawals_root ? to_hex(*header.withdrawals_root) : "") << "\n"
+              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "timestamp=" << header.timestamp << "\n"
+              << "nonce=" << to_hex(header.nonce) << "\n"
+              << "prev_randao=" << to_hex(header.prev_randao) << "\n"
+              << "base_fee_per_gas=" << (header.base_fee_per_gas ? intx::to_string(*header.base_fee_per_gas) : "") << "\n"
+              << "difficulty=" << intx::to_string(header.difficulty) << "\n"
+              << "gas_limit=" << header.gas_limit << "\n"
+              << "gas_used=" << header.gas_used << "\n"
+              << "data_gas_used=" << (header.data_gas_used ? *header.data_gas_used : 0) << "\n"
+              << "excess_data_gas=" << (header.excess_data_gas ? *header.excess_data_gas : 0) << "\n"
+              << "logs_bloom=" << to_hex(header.logs_bloom) << "\n"
+              << "extra_data=" << to_hex(header.extra_data) << "\n"
+              << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
+}
+
+static void print_body(const db::detail::BlockBodyForStorage& body) {
+    std::cout << "Body:\nbase_txn_id=" << body.base_txn_id << "\n"
+              << "txn_count=" << body.txn_count << "\n"
+              << "#ommers=" << body.ommers.size() << "\n"
+              << (body.withdrawals ? "#withdrawals=" + std::to_string(body.withdrawals->size()) + "\n" : "")
+              << "rlp=" << to_hex(body.encode()) << "\n";
 }
 
 bool user_confirmation(const std::string& message = {"Confirm ?"}) {
@@ -469,6 +504,30 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
 
     std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n"
               << std::endl;
+}
+
+void unwind_stage(db::EnvConfig& config, std::string&& stage_name, uint32_t unwind_point) {
+    ensure(config.exclusive, "Function requires exclusive access to database");
+    ensure(db::stages::is_known_stage(stage_name.c_str()), "Stage name " + stage_name + " is unknown");
+    ensure(stage_name == db::stages::kExecutionKey, "Only Execution stage is currently supported");
+
+    config.readonly = false;
+
+    auto env{silkworm::db::open_env(config)};
+    db::RWTxnManaged txn{env};
+    auto chain_config{db::read_chain_config(txn)};
+    ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
+
+    // Just chain configuration and unwind point are needed for Execution unwind, the rest simply don't care
+    NodeSettings settings{
+        .chain_config = chain_config};
+    stagedsync::SyncContext sync_context{};
+    sync_context.unwind_point = unwind_point;
+
+    stagedsync::Execution execution{&settings, &sync_context};
+    const auto execution_result{execution.unwind(txn)};
+    ensure(execution_result == stagedsync::Stage::Result::kSuccess,
+           "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(execution_result)});
 }
 
 void do_tables(db::EnvConfig& config) {
@@ -870,6 +929,62 @@ void do_chainconfig(db::EnvConfig& config) {
               << chain.to_json().dump(/*indent=*/2) << "\n\n";
 }
 
+void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
+    auto env{silkworm::db::open_env(config)};
+    db::ROTxnManaged txn{env};
+
+    // Determine last canonical block number
+    auto canonical_hashes_table{txn.ro_cursor(db::table::kCanonicalHashes)};
+    auto last_data{canonical_hashes_table->to_last(/*throw_notfound=*/false)};
+    ensure(last_data.done, "Table CanonicalHashes is empty");
+    ensure(last_data.key.size() == sizeof(BlockNum), "Table CanonicalHashes has unexpected key size");
+
+    // Use last block as max block if to is missing and perform range checks
+    BlockNum last{db::block_number_from_key(last_data.key)};
+    if (to) {
+        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
+        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+    } else {
+        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        to = last;
+    }
+
+    // Read the range of block headers and bodies from database
+    auto block_headers_table{txn.ro_cursor(db::table::kHeaders)};
+    auto block_bodies_table{txn.ro_cursor(db::table::kBlockBodies)};
+    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+        // Lookup each canonical block hash from each block number
+        auto block_number_key{db::block_key(block_number)};
+        auto ch_data{canonical_hashes_table->find(db::to_slice(block_number_key), /*throw_notfound=*/false)};
+        ensure(ch_data.done, "Table CanonicalHashes does not contain key=" + to_hex(block_number_key));
+        const auto block_hash{to_bytes32(db::from_slice(ch_data.value))};
+
+        // Read and decode each canonical block header
+        auto block_key{db::block_key(block_number, block_hash.bytes)};
+        auto bh_data{block_headers_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
+        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ByteView block_header_data{db::from_slice(bh_data.value)};
+        BlockHeader header;
+        const auto res{rlp::decode(block_header_data, header)};
+        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+
+        // Read and decode each canonical block body
+        auto bb_data{block_bodies_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
+        if (!bb_data.done) {
+            break;
+        }
+        ByteView block_body_data{db::from_slice(bb_data.value)};
+        const auto stored_body{db::detail::decode_stored_block_body(block_body_data)};
+
+        // Print block information to console
+        std::cout << "\nBlock number=" << block_number << "\n\n";
+        print_header(header);
+        std::cout << "\n";
+        print_body(stored_body);
+        std::cout << "\n\n";
+    }
+}
+
 void do_first_byte_analysis(db::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
 
@@ -943,9 +1058,8 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     auto env{silkworm::db::open_env(config)};
     db::ROTxnManaged txn{env};
 
-    // We can store all header hashes into a single byte array given all
-    // hashes are same in length. By consequence we only need to assert
-    // total size of byte array is a multiple of hash length.
+    // We can store all header hashes into a single byte array given all hashes have same length.
+    // We only need to ensure that the total size of the byte array is a multiple of hash length.
     // The process is mostly the same we have in genesistool.cpp
 
     // Open the output file
@@ -1630,14 +1744,12 @@ int main(int argc, char* argv[]) {
     /*
      * Common opts and flags
      */
-
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
 
     /*
      * Subcommands
      */
-
     // List tables and gives info about storage
     auto cmd_tables = app_main.add_subcommand("tables", "List db and tables info");
     auto cmd_tables_scan_opt = cmd_tables->add_flag("--scan", "Scan real data size (long)");
@@ -1684,7 +1796,13 @@ int main(int argc, char* argv[]) {
     auto cmd_stageset = app_main.add_subcommand("stage-set", "Sets a stage to a new height");
     auto cmd_stageset_name_opt = cmd_stageset->add_option("--name", "Name of the stage to set")->required();
     auto cmd_stageset_height_opt =
-        cmd_stageset->add_option("--height", "Name of the stage to set")->required()->check(CLI::Range(0u, UINT32_MAX));
+        cmd_stageset->add_option("--height", "Block height to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
+
+    // Unwind tool
+    auto cmd_stage_unwind = app_main.add_subcommand("stage-unwind", "Unwind a stage to a previous height");
+    auto cmd_stage_unwind_name = cmd_stage_unwind->add_option("--name", "Name of the stage to unwind")->required();
+    auto cmd_stage_unwind_height =
+        cmd_stage_unwind->add_option("--height", "Block height to unwind the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
 
     // Initialize with genesis tool
     auto cmd_initgenesis = app_main.add_subcommand("init-genesis", "Initialize a new db with genesis block");
@@ -1699,6 +1817,17 @@ int main(int argc, char* argv[]) {
 
     // Read chain config held in db (if any)
     auto cmd_chainconfig = app_main.add_subcommand("chain-config", "Prints chain config held in database");
+
+    // Extract a list of blocks in specified range
+    auto cmd_blocks = app_main.add_subcommand("blocks", "Print blocks from database in specified range");
+    auto cmd_blocks_from = cmd_blocks->add_option("--from", "Block height to start with")
+                               ->required()
+                               ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_blocks_to = cmd_blocks->add_option("--to", "Block height to end with")
+                             ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_blocks_step = cmd_blocks->add_option("--step", "Step every this number of blocks")
+                               ->default_val("1")
+                               ->check(CLI::Range(1u, UINT32_MAX));
 
     // Do first byte analytics on deployed contract codes
     auto cmd_first_byte_analysis = app_main.add_subcommand(
@@ -1803,6 +1932,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));
+        } else if (*cmd_stage_unwind) {
+            unwind_stage(src_config, cmd_stage_unwind_name->as<std::string>(), cmd_stage_unwind_height->as<uint32_t>());
         } else if (*cmd_initgenesis) {
             do_init_genesis(data_dir, cmd_initgenesis_json_opt->as<std::string>(),
                             *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u,
@@ -1814,6 +1945,9 @@ int main(int argc, char* argv[]) {
             }
         } else if (*cmd_chainconfig) {
             do_chainconfig(src_config);
+        } else if (*cmd_blocks) {
+            print_blocks(src_config, cmd_blocks_from->as<BlockNum>(), cmd_blocks_to->as<std::optional<BlockNum>>(),
+                         cmd_blocks_step->as<uint64_t>());
         } else if (*cmd_first_byte_analysis) {
             do_first_byte_analysis(src_config);
         } else if (*cmd_extract_headers) {
@@ -1838,11 +1972,9 @@ int main(int argc, char* argv[]) {
         return 0;
 
     } catch (const std::exception& ex) {
-        std::cerr << "\nUnexpected " << typeid(ex).name() << " : " << ex.what() << "\n"
-                  << std::endl;
+        std::cerr << "\nError : " << ex.what() << "\n\n";
     } catch (...) {
-        std::cerr << "\nUnexpected undefined error\n"
-                  << std::endl;
+        std::cerr << "\nUnexpected undefined error\n\n";
     }
 
     return -1;

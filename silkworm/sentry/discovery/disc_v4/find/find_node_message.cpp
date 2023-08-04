@@ -46,8 +46,16 @@ FindNodeMessage FindNodeMessage::rlp_decode(ByteView data) {
         throw DecodingException(result.error(), "Failed to decode FindNodeMessage RLP");
     }
 
+    auto target_public_key = [&target_public_key_data]() -> EccPublicKey {
+        try {
+            return EccPublicKey::deserialize(target_public_key_data);
+        } catch (const std::runtime_error& ex) {
+            throw DecodeTargetPublicKeyError(ex);
+        }
+    }();
+
     return FindNodeMessage{
-        EccPublicKey::deserialize(target_public_key_data),
+        std::move(target_public_key),
         time_point_from_unix_timestamp(expiration_ts),
     };
 }

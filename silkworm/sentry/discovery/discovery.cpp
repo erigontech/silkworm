@@ -16,14 +16,13 @@
 
 #include "discovery.hpp"
 
-#include <algorithm>
-#include <iterator>
+#include <chrono>
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/random.hpp>
 
 #include "disc_v4/discovery.hpp"
+#include "disc_v4/ping/ping_check.hpp"
 #include "node_db/node_db_sqlite.hpp"
 
 namespace silkworm::sentry::discovery {
@@ -33,10 +32,10 @@ using namespace boost::asio;
 class DiscoveryImpl {
   public:
     explicit DiscoveryImpl(
+        std::function<boost::asio::any_io_executor()> executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
-        boost::asio::any_io_executor node_db_executor,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
         uint16_t disc_v4_port);
@@ -52,6 +51,8 @@ class DiscoveryImpl {
 
     bool is_static_peer_url(const EnodeUrl& peer_url);
 
+    Task<void> on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless);
+
   private:
     void setup_node_db();
 
@@ -63,22 +64,32 @@ class DiscoveryImpl {
 };
 
 DiscoveryImpl::DiscoveryImpl(
+    std::function<boost::asio::any_io_executor()> executor_pool,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
-    boost::asio::any_io_executor node_db_executor,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
-      node_db_(std::move(node_db_executor)),
-      disc_v4_discovery_(disc_v4_port, node_key, node_url, node_db_.interface()) {
+      node_db_(executor_pool()),
+      disc_v4_discovery_(executor_pool(), disc_v4_port, node_key, node_url, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
     setup_node_db();
+
+    for (auto& url : peer_urls_) {
+        auto& db = node_db_.interface();
+        co_await db.upsert_node_address(
+            url.public_key(),
+            node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
+        if (!with_dynamic_discovery_) {
+            co_await db.update_last_pong_time(url.public_key(), std::chrono::system_clock::now() + std::chrono::years(1));
+        }
+    }
 
     if (with_dynamic_discovery_) {
         co_await disc_v4_discovery_.run();
@@ -90,25 +101,47 @@ void DiscoveryImpl::setup_node_db() {
     node_db_.setup(data_dir.nodes().path());
 }
 
-template <typename T>
-static std::vector<T> exclude_vector_items(
-    std::vector<T> items,
-    std::vector<T> exclude_items) {
-    std::vector<T> remaining_items;
-    std::sort(items.begin(), items.end());
-    std::sort(exclude_items.begin(), exclude_items.end());
-    std::set_difference(
-        items.begin(), items.end(),
-        exclude_items.begin(), exclude_items.end(),
-        std::inserter(remaining_items, remaining_items.begin()));
-    return remaining_items;
-}
-
 Task<std::vector<EnodeUrl>> DiscoveryImpl::request_peer_urls(
     size_t max_count,
     std::vector<EnodeUrl> exclude_urls) {
-    auto peer_urls = exclude_vector_items(peer_urls_, std::move(exclude_urls));
-    co_return random_vector_items(peer_urls, max_count);
+    using namespace std::chrono_literals;
+
+    std::vector<node_db::NodeId> exclude_ids;
+    for (auto& url : exclude_urls)
+        exclude_ids.push_back(url.public_key());
+
+    auto now = std::chrono::system_clock::now();
+    node_db::NodeDb::FindPeerCandidatesQuery query{
+        /* min_pong_time = */ disc_v4::ping::min_valid_pong_time(now),
+        /* max_peer_disconnected_time = */ now - 60s,
+        /* max_taken_time = */ now - 30s,
+        std::move(exclude_ids),
+        max_count,
+    };
+    auto peer_ids = co_await node_db_.interface().take_peer_candidates(std::move(query), now);
+
+    std::vector<EnodeUrl> peer_urls;
+    for (auto& peer_id : peer_ids) {
+        auto address = co_await node_db_.interface().find_node_address_v4(peer_id);
+        if (!address) {
+            address = co_await node_db_.interface().find_node_address_v6(peer_id);
+        }
+        if (address) {
+            EnodeUrl peer_url{
+                peer_id,
+                address->ip,
+                address->port_disc,
+                address->port_rlpx,
+            };
+            peer_urls.push_back(std::move(peer_url));
+        }
+    }
+
+    if (peer_urls.empty()) {
+        disc_v4_discovery_.discover_more_needed();
+    }
+
+    co_return peer_urls;
 }
 
 bool DiscoveryImpl::is_static_peer_url(const EnodeUrl& peer_url) {
@@ -117,19 +150,27 @@ bool DiscoveryImpl::is_static_peer_url(const EnodeUrl& peer_url) {
     });
 }
 
+Task<void> DiscoveryImpl::on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless) {
+    auto now = std::chrono::system_clock::now();
+    co_await node_db_.interface().update_peer_disconnected_time(peer_public_key, now);
+    if (is_useless) {
+        co_await node_db_.interface().update_peer_is_useless(peer_public_key, is_useless);
+    }
+}
+
 Discovery::Discovery(
+    std::function<boost::asio::any_io_executor()> executor_pool,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
-    boost::asio::any_io_executor node_db_executor,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
+          std::move(executor_pool),
           std::move(peer_urls),
           with_dynamic_discovery,
           data_dir_path,
-          std::move(node_db_executor),
           std::move(node_key),
           std::move(node_url),
           disc_v4_port)) {}
@@ -150,6 +191,10 @@ Task<std::vector<EnodeUrl>> Discovery::request_peer_urls(
 
 bool Discovery::is_static_peer_url(const EnodeUrl& peer_url) {
     return p_impl_->is_static_peer_url(peer_url);
+}
+
+Task<void> Discovery::on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless) {
+    return p_impl_->on_peer_disconnected(std::move(peer_public_key), is_useless);
 }
 
 }  // namespace silkworm::sentry::discovery

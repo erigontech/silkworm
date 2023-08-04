@@ -36,8 +36,26 @@ Bytes DisconnectMessage::rlp_encode() const {
 }
 
 DisconnectMessage DisconnectMessage::rlp_decode(ByteView data) {
+    if (data.empty()) {
+        return DisconnectMessage{};
+    }
+
     std::vector<uint8_t> reason;
-    success_or_throw(rlp::decode(data, reason), "Failed to decode DisconnectMessage RLP");
+    auto result = rlp::decode(data, reason);
+
+    // if RLP is not a list
+    if (!result && (result.error() == DecodingError::kUnexpectedString)) {
+        uint8_t reason_num;
+        result = rlp::decode(data, reason_num);
+        if (result) {
+            reason.push_back(reason_num);
+        }
+    }
+
+    if (!result) {
+        throw DecodingException(result.error(), "Failed to decode DisconnectMessage RLP");
+    }
+
     DisconnectMessage message;
     if (!reason.empty()) {
         message.reason = static_cast<DisconnectReason>(reason.front());

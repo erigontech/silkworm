@@ -14,19 +14,16 @@
    limitations under the License.
 */
 
-#pragma once
+#include "xor.hpp"
 
-#include <cstdint>
+#include <algorithm>
+#include <functional>
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::crypto {
 
-enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    NetworkError = 1,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
-};
+void xor_bytes(Bytes& data1, ByteView data2) {
+    assert(data1.size() <= data2.size());
+    std::transform(data1.cbegin(), data1.cend(), data2.cbegin(), data1.begin(), std::bit_xor<>{});
+}
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::crypto

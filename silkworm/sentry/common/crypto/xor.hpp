@@ -16,17 +16,10 @@
 
 #pragma once
 
-#include <cstdint>
+#include <silkworm/core/common/base.hpp>
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::crypto {
 
-enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    NetworkError = 1,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
-};
+void xor_bytes(Bytes& data1, ByteView data2);
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::crypto

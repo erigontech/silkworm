@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,17 +16,22 @@
 
 #pragma once
 
-#include <cstdint>
+#include <boost/asio/ip/address.hpp>
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::discovery::disc_v4 {
 
-enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    NetworkError = 1,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
+enum class IpAddressType {
+    kRegular,
+    kUnspecified,
+    kLoopback,
+    kMulticast,
+    kBroadcast,
+    kLAN,
+    // https://www.iana.org/assignments/iana-ipv4-special-registry/
+    // https://www.iana.org/assignments/iana-ipv6-special-registry/
+    kSpecial,
 };
 
-}  // namespace silkworm::sentry::rlpx
+IpAddressType ip_classify(const boost::asio::ip::address& ip);
+
+}  // namespace silkworm::sentry::discovery::disc_v4

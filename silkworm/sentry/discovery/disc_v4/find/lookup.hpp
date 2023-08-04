@@ -16,32 +16,22 @@
 
 #pragma once
 
-#include <chrono>
-#include <optional>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/ip/udp.hpp>
 #include <boost/signals2.hpp>
 
 #include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/discovery/node_db/node_db.hpp>
 
 #include "message_sender.hpp"
-#include "pong_message.hpp"
+#include "neighbors_message.hpp"
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
+namespace silkworm::sentry::discovery::disc_v4::find {
 
-Task<bool> ping_check(
-    EccPublicKey node_id,
-    std::optional<boost::asio::ip::udp::endpoint> endpoint_opt,
-    EnodeUrl local_node_url,
+Task<size_t> lookup(
+    EccPublicKey local_node_id,
     MessageSender& message_sender,
-    boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
+    boost::signals2::signal<void(NeighborsMessage, EccPublicKey)>& on_neighbors_signal,
     node_db::NodeDb& db);
 
-std::chrono::time_point<std::chrono::system_clock> min_valid_pong_time(
-    std::chrono::time_point<std::chrono::system_clock> now);
-
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4::find

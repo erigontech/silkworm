@@ -28,15 +28,16 @@ class EnodeUrl {
   public:
     explicit EnodeUrl(const std::string& url_str);
 
-    EnodeUrl(EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port)
+    EnodeUrl(EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port_disc, uint16_t port_rlpx)
         : public_key_(std::move(public_key)),
           ip_(std::move(ip)),
-          port_(port) {}
+          port_disc_(port_disc),
+          port_rlpx_(port_rlpx) {}
 
     [[nodiscard]] const EccPublicKey& public_key() const { return public_key_; }
     [[nodiscard]] const boost::asio::ip::address& ip() const { return ip_; }
-    [[nodiscard]] uint16_t port() const { return port_; }
-    [[nodiscard]] uint16_t port_rlpx() const { return port_; }
+    [[nodiscard]] uint16_t port_disc() const { return port_disc_; }
+    [[nodiscard]] uint16_t port_rlpx() const { return port_rlpx_; }
 
     [[nodiscard]] std::string to_string() const;
 
@@ -46,7 +47,8 @@ class EnodeUrl {
   private:
     EccPublicKey public_key_;
     boost::asio::ip::address ip_;
-    uint16_t port_;
+    uint16_t port_disc_;
+    uint16_t port_rlpx_;
 };
 
 }  // namespace silkworm::sentry

@@ -18,7 +18,10 @@
 
 #include <array>
 #include <exception>
+#include <functional>
 #include <vector>
+
+#include "task.hpp"
 
 namespace silkworm::concurrency {
 
@@ -43,5 +46,12 @@ void rethrow_first_exception_if_any(
 void rethrow_first_exception_if_any(
     const std::vector<std::exception_ptr>& exceptions,
     const std::vector<std::size_t>& order);
+
+/**
+ * Build a ranged `parallel_group` task consisting of `count` subtasks produced by `task_factory`:
+ * [task_factory(0), task_factory(1), ... task_factory(count - 1)].
+ * If one of the subtasks throws, the rest are cancelled and the exception is rethrown.
+ */
+Task<void> generate_parallel_group_task(size_t count, std::function<Task<void>(size_t)> task_factory);
 
 }  // namespace silkworm::concurrency

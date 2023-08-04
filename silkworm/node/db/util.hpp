@@ -93,6 +93,8 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
 // Erigon LogKey
 Bytes log_key(BlockNum block_number, uint32_t transaction_id);
 
+BlockNum block_number_from_key(const mdbx::slice& key);
+
 //! \brief Converts change set (AccountChangeSet/StorageChangeSet) entry to plain state format.
 //! \param [in] key : Change set key.
 //! \param [in] value : Change set value.

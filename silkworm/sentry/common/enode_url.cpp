@@ -46,7 +46,8 @@ EnodeUrl::EnodeUrl(const string& url_str)
 
     public_key_ = EccPublicKey::deserialize_hex(pub_key_hex);
     ip_ = ip;
-    port_ = port;
+    port_disc_ = port;
+    port_rlpx_ = port;
 }
 
 string EnodeUrl::to_string() const {
@@ -54,7 +55,12 @@ string EnodeUrl::to_string() const {
     out << "enode://";
     out << public_key_.hex() << "@";
     out << ip_.to_string();
-    out << ":" << port_;
+    out << ":" << port_rlpx_;
+
+    if (port_disc_ != port_rlpx_) {
+        out << "?discport=" << port_disc_;
+    }
+
     return out.str();
 }
 

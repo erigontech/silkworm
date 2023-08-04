@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <optional>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -39,10 +40,10 @@ class ActiveComponent : public Stoppable {
   public:
     virtual void execution_loop() = 0;
 
-    boost::asio::awaitable<void> async_run() {
+    boost::asio::awaitable<void> async_run(std::optional<std::size_t> stack_size = {}) {
         auto run = [this] { this->execution_loop(); };
         auto stop = [this] { this->stop(); };
-        co_await concurrency::async_thread(std::move(run), std::move(stop));
+        co_await concurrency::async_thread(std::move(run), std::move(stop), stack_size);
     }
 };
 

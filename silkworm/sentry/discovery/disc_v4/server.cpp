@@ -103,16 +103,23 @@ class ServerImpl {
                             std::move(envelope->public_key));
                         break;
                     case PacketType::kFindNode:
-                        co_await handler_.on_find_node(find::FindNodeMessage::rlp_decode(data));
+                        co_await handler_.on_find_node(
+                            find::FindNodeMessage::rlp_decode(data),
+                            std::move(envelope->public_key),
+                            std::move(sender_endpoint));
                         break;
                     case PacketType::kNeighbors:
-                        co_await handler_.on_neighbors(find::NeighborsMessage::rlp_decode(data));
+                        co_await handler_.on_neighbors(
+                            find::NeighborsMessage::rlp_decode(data),
+                            std::move(envelope->public_key));
                         break;
                     case PacketType::kEnrRequest:
                         break;
                     case PacketType::kEnrResponse:
                         break;
                 }
+            } catch (const find::FindNodeMessage::DecodeTargetPublicKeyError& ex) {
+                log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             } catch (const DecodingException& ex) {
                 log::Warning("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             }
@@ -128,7 +135,7 @@ class ServerImpl {
     }
 
   private:
-    ip::udp::endpoint listen_endpoint() const {
+    [[nodiscard]] ip::udp::endpoint listen_endpoint() const {
         return ip::udp::endpoint{ip_, port_};
     }
 

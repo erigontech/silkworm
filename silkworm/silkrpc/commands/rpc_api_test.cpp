@@ -280,7 +280,7 @@ class RpcApiTestBase : public LocalContextTestBase {
 };
 
 // Function to recursively sort JSON arrays
-void sort_array(nlohmann::json& jsonObj) { // NOLINT(*-no-recursion)
+void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
     if (jsonObj.is_array()) {
         // Sort the elements within the array
         std::sort(jsonObj.begin(), jsonObj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
@@ -339,7 +339,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
                 FAIL("Failed to open the file: " + test_file.path().string());
             }
 
-            SECTION("RPC IO test " + group_name + " | " + test_name) { // NOLINT(*-inefficient-string-concatenation)
+            SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
                 auto db = open_db(db_dir);
                 db::RWTxnManaged txn{*db};

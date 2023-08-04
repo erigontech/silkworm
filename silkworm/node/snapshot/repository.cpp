@@ -17,8 +17,6 @@
 #include "repository.hpp"
 
 #include <algorithm>
-#include <memory>
-#include <ranges>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>

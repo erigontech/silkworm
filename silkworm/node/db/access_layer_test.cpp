@@ -84,6 +84,32 @@ static BlockBody sample_block_body() {
     return body;
 }
 
+// https://etherscan.io/block/17035047
+static BlockBody block_body_17035047() {
+    constexpr auto kRecipient1{0x40458B394D1C2A9aA095dd169a6EB43a73949fa3_address};
+    constexpr auto kRecipient2{0xEdA2B3743d37a2a5bD4EB018d515DC47B7802EB4_address};
+    BlockBody body;
+    body.withdrawals = std::vector<Withdrawal>{};
+    body.withdrawals->reserve(16);
+    body.withdrawals->emplace_back(Withdrawal{2733, 157233, kRecipient1, 3148401251});
+    body.withdrawals->emplace_back(Withdrawal{2734, 157234, kRecipient1, 2797715671});
+    body.withdrawals->emplace_back(Withdrawal{2735, 157235, kRecipient1, 2987093215});
+    body.withdrawals->emplace_back(Withdrawal{2736, 157236, kRecipient1, 2917273462});
+    body.withdrawals->emplace_back(Withdrawal{2737, 157237, kRecipient1, 2873029573});
+    body.withdrawals->emplace_back(Withdrawal{2738, 157238, kRecipient1, 0316444461});
+    body.withdrawals->emplace_back(Withdrawal{2739, 157239, kRecipient1, 3076965697});
+    body.withdrawals->emplace_back(Withdrawal{2740, 157240, kRecipient1, 3264826534});
+    body.withdrawals->emplace_back(Withdrawal{2741, 157241, kRecipient1, 2959830042});
+    body.withdrawals->emplace_back(Withdrawal{2742, 157242, kRecipient1, 2858527882});
+    body.withdrawals->emplace_back(Withdrawal{2743, 157243, kRecipient1, 2972530438});
+    body.withdrawals->emplace_back(Withdrawal{2744, 157244, kRecipient1, 2897978772});
+    body.withdrawals->emplace_back(Withdrawal{2745, 157245, kRecipient1, 2946132889});
+    body.withdrawals->emplace_back(Withdrawal{2746, 157246, kRecipient1, 2918951932});
+    body.withdrawals->emplace_back(Withdrawal{2747, 157247, kRecipient1, 2902163625});
+    body.withdrawals->emplace_back(Withdrawal{2748, 157248, kRecipient2, 2846508033});
+    return body;
+}
+
 }  // namespace silkworm
 
 namespace silkworm::db {
@@ -862,6 +888,26 @@ TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]")
         CHECK_NOTHROW(rlp::encode(rlp_tx, body.transactions[i]));
         CHECK(rlp_transactions[i] == rlp_tx);
     }
+}
+
+TEST_CASE("write and read body w/ withdrawals", "[silkworm][node][db][access_layer]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test::Context context;
+    auto& txn{context.rw_txn()};
+
+    BlockHeader header;
+    header.number = 17'035'047;
+    header.beneficiary = 0xe688b84b23f322a994A53dbF8E15FA82CDB71127_address;
+    header.gas_limit = 30'000'000;
+    header.gas_used = 0;
+
+    const auto hash = header.hash();
+
+    BlockBody body_in{block_body_17035047()};
+    CHECK_NOTHROW(write_body(txn, body_in, hash.bytes, header.number));
+    BlockBody body_out{};
+    CHECK_NOTHROW(read_body(txn, header.number, hash.bytes, false, body_out));
+    CHECK(body_out == body_in);
 }
 
 }  // namespace silkworm::db

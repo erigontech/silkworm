@@ -33,6 +33,9 @@ namespace silkworm::node {
 
 constexpr uint64_t kMaxFileDescriptors{10'240};
 
+//! Custom stack size for thread running block execution on EVM
+constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
+
 using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
 class NodeImpl final {
@@ -129,7 +132,8 @@ Task<void> NodeImpl::run_tasks() {
 }
 
 Task<void> NodeImpl::start_execution_server() {
-    return execution_server_.async_run();
+    // Thread running block execution requires custom stack size because of deep EVM call stacks
+    return execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
 }
 
 Task<void> NodeImpl::start_backend_kv_grpc_server() {

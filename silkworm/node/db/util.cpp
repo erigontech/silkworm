@@ -91,6 +91,12 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
     return key;
 }
 
+BlockNum block_number_from_key(const mdbx::slice& key) {
+    SILKWORM_ASSERT(key.size() >= sizeof(BlockNum));
+    ByteView key_view{from_slice(key)};
+    return endian::load_big_u64(key_view.data());
+}
+
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
     if (key.size() == sizeof(BlockNum)) {
         if (value.length() < kAddressLength) {

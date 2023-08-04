@@ -142,6 +142,10 @@ class Peer {
         return hello_message_.get();
     }
 
+    std::optional<DisconnectReason> disconnect_reason() {
+        return disconnect_reason_.get();
+    }
+
   private:
     static Task<void> handle(std::shared_ptr<Peer> peer);
     Task<void> handle();

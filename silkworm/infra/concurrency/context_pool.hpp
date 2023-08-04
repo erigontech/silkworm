@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <ostream>
@@ -114,7 +115,12 @@ class ContextPool {
             context_threads_.create_thread([&, i = i]() {
                 log::set_thread_name(std::string("asio_ctx_s" + std::to_string(i)).c_str());
                 SILK_TRACE << "Thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
-                context.execute_loop();
+                try {
+                    context.execute_loop();
+                } catch (const std::exception& ex) {
+                    SILK_CRIT << "ContextPool context.execute_loop exception: " << ex.what();
+                    std::terminate();
+                }
                 SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
             SILK_TRACE << "ContextPool::start context[" << i << "] started: " << context.io_context();

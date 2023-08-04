@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <string>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
@@ -31,6 +32,11 @@ struct FindNodeMessage {
     [[nodiscard]] static FindNodeMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
+
+    class DecodeTargetPublicKeyError : public std::runtime_error {
+      public:
+        DecodeTargetPublicKeyError(const std::exception& ex) : std::runtime_error(std::string("Failed to decode FindNodeMessage.target_public_key: ") + ex.what()) {}
+    };
 };
 
 }  // namespace silkworm::sentry::discovery::disc_v4::find

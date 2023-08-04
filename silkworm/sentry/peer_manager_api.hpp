@@ -36,6 +36,7 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 
 #include "peer_manager.hpp"
+#include "peer_manager_observer.hpp"
 #include "rlpx/peer.hpp"
 
 namespace silkworm::sentry {
@@ -92,6 +93,7 @@ class PeerManagerApi : public PeerManagerObserver {
     // PeerManagerObserver
     void on_peer_added(std::shared_ptr<rlpx::Peer> peer) override;
     void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) override;
+    void on_peer_connect_error(const EnodeUrl& peer_url) override;
 
     PeerManager& peer_manager_;
 

@@ -16,6 +16,10 @@
 
 #include "ping_handler.hpp"
 
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 
 #include "pong_message.hpp"
@@ -37,7 +41,16 @@ Task<void> PingHandler::handle(
         ping_packet_hash,
         make_message_expiration(),
     };
-    co_await sender.send_pong(std::move(pong), recipient);
+
+    try {
+        co_await sender.send_pong(std::move(pong), recipient);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled)
+            throw;
+        log::Warning("disc_v4") << "PingHandler::handle failed to reply"
+                                << " to " << recipient
+                                << " due to exception: " << ex.what();
+    }
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4::ping

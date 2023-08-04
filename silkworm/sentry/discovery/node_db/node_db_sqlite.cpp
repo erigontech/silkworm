@@ -16,7 +16,9 @@
 
 #include "node_db_sqlite.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -43,16 +45,53 @@ CREATE TABLE IF NOT EXISTS nodes (
     ip_v6_port_disc INTEGER,
     ip_v6_port_rlpx INTEGER,
 
-    last_ping_time INTEGER,
-    last_pong_time INTEGER
+    next_ping_time INTEGER,
+    last_pong_time INTEGER,
+    ping_fails INTEGER NOT NULL DEFAULT 0,
+    lookup_time INTEGER,
+
+    peer_disconnected_time INTEGER,
+    peer_is_useless INTEGER,
+    taken_time INTEGER,
+
+    distance INTEGER NON NULL DEFAULT 256
 );
 
 CREATE INDEX IF NOT EXISTS idx_nodes_ip ON nodes (ip);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_v6 ON nodes (ip_v6);
-CREATE INDEX IF NOT EXISTS idx_last_ping_time ON nodes (last_ping_time);
+CREATE INDEX IF NOT EXISTS idx_next_ping_time ON nodes (next_ping_time);
 CREATE INDEX IF NOT EXISTS idx_last_pong_time ON nodes (last_pong_time);
+CREATE INDEX IF NOT EXISTS idx_lookup_time ON nodes (lookup_time);
+CREATE INDEX IF NOT EXISTS idx_peer_disconnected_time ON nodes (peer_disconnected_time);
+CREATE INDEX IF NOT EXISTS idx_peer_is_useless ON nodes (peer_is_useless);
+CREATE INDEX IF NOT EXISTS idx_taken_time ON nodes (taken_time);
+CREATE INDEX IF NOT EXISTS idx_distance ON nodes (distance);
 
 )sql";
+
+/**
+ * Replaces `placeholder` in `sql` with `count` comma-separated question marks, e.g.: "?,?,?"
+ * If `count` is zero, `placeholder` is replaced with an `empty_value`.
+ */
+static std::string replace_placeholders(
+    const char* sql_template,
+    std::string_view placeholder,
+    size_t count,
+    std::string_view empty_value) {
+    std::string placeholders;
+    if (count > 0) {
+        std::ostringstream placeholders_stream;
+        std::fill_n(std::ostream_iterator<std::string>(placeholders_stream), count, "?,");
+        placeholders = placeholders_stream.str();
+        placeholders.pop_back();  // remove the last comma
+    } else {
+        placeholders = empty_value;
+    }
+
+    std::string sql{sql_template};
+    sql.replace(sql.find(placeholder), placeholder.size(), placeholders);
+    return sql;
+}
 
 class NodeDbSqliteImpl : public NodeDb {
   public:
@@ -173,37 +212,21 @@ class NodeDbSqliteImpl : public NodeDb {
         return find_node_address(id, sql);
     }
 
-    Task<void> update_last_ping_time(NodeId id, Time value) override {
+    Task<void> update_next_ping_time(NodeId id, Time value) override {
         static const char* sql = R"sql(
-            UPDATE nodes SET last_ping_time = ? WHERE id = ?
+            UPDATE nodes SET next_ping_time = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
-        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
-        statement.bind(2, id.hex());
-
-        statement.exec();
+        set_node_property_time(id, sql, value);
         co_return;
     }
 
-    Task<std::optional<Time>> find_last_ping_time(NodeId id) override {
+    Task<std::optional<Time>> find_next_ping_time(NodeId id) override {
         static const char* sql = R"sql(
-            SELECT last_ping_time FROM nodes WHERE id = ?
+            SELECT next_ping_time FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
-        query.bind(1, id.hex());
-
-        if (!query.executeStep()) {
-            co_return std::nullopt;
-        }
-
-        if (query.isColumnNull(0)) {
-            co_return std::nullopt;
-        }
-        int64_t value = query.getColumn(0);
-
-        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+        co_return get_node_property_time(id, sql);
     }
 
     Task<void> update_last_pong_time(NodeId id, Time value) override {
@@ -211,11 +234,7 @@ class NodeDbSqliteImpl : public NodeDb {
             UPDATE nodes SET last_pong_time = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
-        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
-        statement.bind(2, id.hex());
-
-        statement.exec();
+        set_node_property_time(id, sql, value);
         co_return;
     }
 
@@ -224,19 +243,245 @@ class NodeDbSqliteImpl : public NodeDb {
             SELECT last_pong_time FROM nodes WHERE id = ?
         )sql";
 
+        co_return get_node_property_time(id, sql);
+    }
+
+    Task<void> update_ping_fails(NodeId id, size_t value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET ping_fails = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        co_return;
+    }
+
+    Task<std::optional<size_t>> find_ping_fails(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT ping_fails FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return static_cast<size_t>(*value);
+        } else {
+            co_return std::nullopt;
+        }
+    }
+
+    Task<void> update_peer_disconnected_time(NodeId id, Time value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET peer_disconnected_time = ? WHERE id = ?
+        )sql";
+
+        set_node_property_time(id, sql, value);
+        co_return;
+    }
+
+    Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT peer_disconnected_time FROM nodes WHERE id = ?
+        )sql";
+
+        co_return get_node_property_time(id, sql);
+    }
+
+    Task<void> update_peer_is_useless(NodeId id, bool value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET peer_is_useless = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, value ? 1 : 0);
+        co_return;
+    }
+
+    Task<std::optional<bool>> find_peer_is_useless(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT peer_is_useless FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return *value;
+        } else {
+            co_return std::nullopt;
+        }
+    }
+
+    Task<void> update_distance(NodeId id, size_t value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET distance = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        co_return;
+    }
+
+    Task<std::optional<size_t>> find_distance(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT distance FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return static_cast<size_t>(*value);
+        } else {
+            co_return std::nullopt;
+        }
+    }
+
+    Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override {
+        static const char* sql = R"sql(
+            SELECT id FROM nodes
+            WHERE ((next_ping_time IS NULL) OR (next_ping_time < ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+            ORDER BY next_ping_time
+            LIMIT ?
+        )sql";
+
         SQLite::Statement query{*db_, sql};
-        query.bind(1, id.hex());
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
+        query.bind(2, static_cast<int64_t>(limit));
 
-        if (!query.executeStep()) {
-            co_return std::nullopt;
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
         }
 
-        if (query.isColumnNull(0)) {
-            co_return std::nullopt;
-        }
-        int64_t value = query.getColumn(0);
+        co_return ids;
+    }
 
-        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+    Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override {
+        static const char* sql = R"sql(
+            SELECT id FROM nodes
+            WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+            ORDER BY RANDOM()
+            LIMIT ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(min_pong_time)));
+        query.bind(2, static_cast<int64_t>(limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
+    }
+
+    Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query_params) override {
+        static const char* sql = R"sql(
+            SELECT id FROM nodes
+            WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+                AND ((lookup_time IS NULL) OR (lookup_time < ?))
+            ORDER BY distance, lookup_time
+            LIMIT ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
+        query.bind(2, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_lookup_time)));
+        query.bind(3, static_cast<int64_t>(query_params.limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
+    }
+
+    Task<void> mark_taken_lookup_candidates(const std::vector<NodeId>& ids, Time time) override {
+        if (ids.empty())
+            co_return;
+
+        static const char* sql_template = R"sql(
+            UPDATE nodes SET lookup_time = ? WHERE id IN (???)
+        )sql";
+        auto sql = replace_placeholders(sql_template, "???", ids.size(), "NULL");
+
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
+        for (size_t i = 0; i < ids.size(); i++) {
+            statement.bind(static_cast<int>(i + 2), ids[i].hex());
+        }
+        statement.exec();
+        co_return;
+    }
+
+    Task<std::vector<NodeId>> take_lookup_candidates(FindLookupCandidatesQuery query, Time time) override {
+        SQLite::Transaction transaction{*db_};
+        auto candidates = co_await find_lookup_candidates(std::move(query));
+        co_await mark_taken_lookup_candidates(candidates, time);
+        transaction.commit();
+        co_return candidates;
+    }
+
+    Task<std::vector<NodeId>> find_peer_candidates(FindPeerCandidatesQuery query_params) override {
+        static const char* sql_template = R"sql(
+            SELECT id FROM nodes
+            WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
+                AND ((peer_disconnected_time IS NULL) OR (peer_disconnected_time < ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+                AND ((taken_time IS NULL) OR (taken_time < ?))
+                AND (id NOT IN (???))
+            ORDER BY distance, RANDOM()
+            LIMIT :limit
+        )sql";
+        auto sql = replace_placeholders(sql_template, "???", query_params.exclude_ids.size(), "''");
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
+        query.bind(2, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_peer_disconnected_time)));
+        query.bind(3, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_taken_time)));
+        for (size_t i = 0; i < query_params.exclude_ids.size(); i++) {
+            query.bind(static_cast<int>(i + 4), query_params.exclude_ids[i].hex());
+        }
+        query.bind(":limit", static_cast<int64_t>(query_params.limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
+    }
+
+    Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override {
+        if (ids.empty())
+            co_return;
+
+        static const char* sql_template = R"sql(
+            UPDATE nodes SET taken_time = ? WHERE id IN (???)
+        )sql";
+        auto sql = replace_placeholders(sql_template, "???", ids.size(), "NULL");
+
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
+        for (size_t i = 0; i < ids.size(); i++) {
+            statement.bind(static_cast<int>(i + 2), ids[i].hex());
+        }
+        statement.exec();
+        co_return;
+    }
+
+    Task<std::vector<NodeId>> take_peer_candidates(FindPeerCandidatesQuery query, Time time) override {
+        SQLite::Transaction transaction{*db_};
+        auto candidates = co_await find_peer_candidates(std::move(query));
+        co_await mark_taken_peer_candidates(candidates, time);
+        transaction.commit();
+        co_return candidates;
     }
 
     Task<void> delete_node(NodeId id) override {
@@ -251,6 +496,41 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
   private:
+    std::optional<int64_t> get_node_property_int(const NodeId& id, const char* sql) {
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            return std::nullopt;
+        }
+        int64_t value = query.getColumn(0);
+        return {value};
+    }
+
+    void set_node_property_int(const NodeId& id, const char* sql, int64_t value) {
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, value);
+        statement.bind(2, id.hex());
+        statement.exec();
+    }
+
+    std::optional<Time> get_node_property_time(const NodeId& id, const char* sql) {
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            return time_point_from_unix_timestamp(static_cast<uint64_t>(*value));
+        } else {
+            return std::nullopt;
+        }
+    }
+
+    void set_node_property_time(const NodeId& id, const char* sql, Time value) {
+        set_node_property_int(id, sql, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
+    }
+
     std::unique_ptr<SQLite::Database> db_;
 };
 

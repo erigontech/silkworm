@@ -21,6 +21,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)

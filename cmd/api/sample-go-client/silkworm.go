@@ -2,8 +2,8 @@ package main
 
 /*
 //#cgo CXXFLAGS: -std=c++14
-#cgo CFLAGS: -I/mnt/c/Users/miche/WorkingArea/Torquem/silkworm/silkworm/api
-#cgo LDFLAGS: -L/mnt/c/Users/miche/WorkingArea/Torquem/silkworm/cmake-build-debug-vs-conan/cmd/api/Debug -lexecute_cpp -lstdc++ -ldl
+#cgo CFLAGS: -I${SRCDIR}/../../../silkworm/api
+#cgo LDFLAGS: -L${SRCDIR}/../../../build_debug/silkworm/api -lsilkworm_api -lstdc++ -ldl
 
 #include "silkworm_api.h"
 
@@ -13,9 +13,9 @@ int call_silkworm_init_func(void* func_ptr, SilkwormHandle** handle) {
     return ((silkworm_init_func)func_ptr)(handle);
 }
 
-typedef int (*silkworm_fini_func)(SilkwormHandle** handle);
+typedef int (*silkworm_fini_func)(SilkwormHandle* handle);
 
-int call_silkworm_fini_func(void* func_ptr, SilkwormHandle** handle) {
+int call_silkworm_fini_func(void* func_ptr, SilkwormHandle* handle) {
     return ((silkworm_fini_func)func_ptr)(handle);
 }
 
@@ -52,5 +52,5 @@ func (silkworm *Silkworm) Init() {
 }
 
 func (silkworm *Silkworm) Fini() {
-	C.call_silkworm_fini_func(silkworm.finiFunc, &silkworm.instance)
+	C.call_silkworm_fini_func(silkworm.finiFunc, silkworm.instance)
 }

@@ -275,6 +275,9 @@ void DebugTracer::write_log(const DebugLog& log) {
 
 boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number) {
     const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_number);
+    if (!block_with_hash) {
+        co_return;
+    }
     stream.write_field("result");
     stream.open_array();
     co_await execute(stream, block_with_hash->block);
@@ -285,6 +288,9 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
 
 boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash) {
     const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, storage, block_hash);
+    if (!block_with_hash) {
+        co_return;
+    }
 
     stream.write_field("result");
     stream.open_array();
@@ -296,6 +302,9 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
 
 boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call) {
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, bnoh);
+    if (!block_with_hash) {
+        co_return;
+    }
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
@@ -333,6 +342,9 @@ boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stre
 
 boost::asio::awaitable<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, context.block_number);
+    if (!block_with_hash) {
+        co_return;
+    }
     auto transaction_index = context.transaction_index;
     if (transaction_index == -1) {
         transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());

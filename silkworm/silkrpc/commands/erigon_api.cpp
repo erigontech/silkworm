@@ -68,7 +68,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const n
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
 
-    SILK_INFO << "block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -76,13 +76,14 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const n
         ethdb::TransactionDatabase tx_database{*tx};
 
         auto start = std::chrono::system_clock::now();
-        rpc::BlockReader block_reader{tx_database, *tx};
 
+        rpc::BlockReader block_reader{tx_database, *tx};
         rpc::BalanceChanges balance_changes;
         co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
+
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
-        SILK_INFO << "balance_changes: elapsed " << elapsed_seconds.count() << " sec";
+        SILK_DEBUG << "balance_changes: elapsed " << elapsed_seconds.count() << " sec";
 
         nlohmann::json json;
         to_json(json, balance_changes);

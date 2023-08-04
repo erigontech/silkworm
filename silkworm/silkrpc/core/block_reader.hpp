@@ -21,6 +21,9 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
@@ -50,6 +53,8 @@ class BlockReader {
     [[nodiscard]] awaitable<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
 
   private:
+    [[nodiscard]] awaitable<void> load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const;
+
     const core::rawdb::DatabaseReader& database_reader_;
     ethdb::Transaction& transaction_;
 };

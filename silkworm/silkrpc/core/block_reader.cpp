@@ -44,7 +44,7 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
 awaitable<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const {
     ethdb::TransactionDatabase tx_database{transaction_};
 
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, tx_database, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, tx_database, bnoh);
     const auto block_number = block_with_hash->block.header.number;
 
     SILK_INFO << "read_balance_changes: block_number: " << block_number;

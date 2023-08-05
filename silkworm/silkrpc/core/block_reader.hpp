@@ -44,8 +44,8 @@ void to_json(nlohmann::json& json, const BalanceChanges& bc);
 
 class BlockReader {
   public:
-    explicit BlockReader(const core::rawdb::DatabaseReader& database_reader, ethdb::Transaction& transaction)
-        : database_reader_(database_reader), transaction_(transaction) {}
+    explicit BlockReader(const core::rawdb::DatabaseReader& database_reader, const ChainStorage &chain_storage, ethdb::Transaction& transaction)
+        : database_reader_(database_reader), chain_storage_(chain_storage), transaction_(transaction) {}
 
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
@@ -56,6 +56,7 @@ class BlockReader {
     [[nodiscard]] awaitable<void> load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const;
 
     const core::rawdb::DatabaseReader& database_reader_;
+    const ChainStorage& chain_storage_;
     ethdb::Transaction& transaction_;
 };
 

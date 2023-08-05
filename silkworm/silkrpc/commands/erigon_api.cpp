@@ -74,10 +74,11 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const n
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         auto start = std::chrono::system_clock::now();
 
-        rpc::BlockReader block_reader{tx_database, *tx};
+        rpc::BlockReader block_reader{tx_database, *chain_storage, *tx};
         rpc::BalanceChanges balance_changes;
         co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
 

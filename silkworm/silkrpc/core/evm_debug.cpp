@@ -277,7 +277,7 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
     const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_number);
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, block_with_hash->block);
+    co_await execute(stream, storage, block_with_hash->block);
     stream.close_array();
 
     co_return;
@@ -288,7 +288,7 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
 
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, block_with_hash->block);
+    co_await execute(stream, storage, block_with_hash->block);
     stream.close_array();
 
     co_return;
@@ -303,7 +303,7 @@ boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, con
 
     stream.write_field("result");
     stream.open_object();
-    co_await execute(stream, number, block, transaction, -1);
+    co_await execute(stream, storage, number, block, transaction, -1);
     stream.close_object();
 
     co_return;
@@ -324,7 +324,7 @@ boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stre
 
         stream.write_field("result");
         stream.open_object();
-        co_await execute(stream, number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
+        co_await execute(stream, storage, number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
         stream.close_object();
     }
 
@@ -340,20 +340,19 @@ boost::asio::awaitable<void> DebugExecutor::trace_call_many(json::Stream& stream
 
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, *block_with_hash, bundles, transaction_index);
+    co_await execute(stream, storage, *block_with_hash, bundles, transaction_index);
     stream.close_array();
 
     co_return;
 }
 
-awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block) {
+awaitable<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
     SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
@@ -402,13 +401,13 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
     co_return;
 }
 
-awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block, const Call& call) {
+awaitable<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
     rpc::Transaction transaction{call.to_transaction()};
-    co_await execute(stream, block.header.number, block, transaction, -1);
+    co_await execute(stream, storage, block.header.number, block, transaction, -1);
     co_return;
 }
 
-awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_number,
+awaitable<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, uint64_t block_number,
                                        const silkworm::Block& block, const Transaction& transaction, int32_t index) {
     SILK_INFO << "DebugExecutor::execute: "
               << " block_number: " << block_number
@@ -416,8 +415,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
               << " index: " << std::dec << index
               << " config: " << config_;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
@@ -465,6 +463,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
 }
 
 awaitable<void> DebugExecutor::execute(json::Stream& stream,
+                                       const ChainStorage& storage,
                                        const silkworm::BlockWithHash& block_with_hash,
                                        const Bundles& bundles,
                                        int32_t transaction_index) {
@@ -478,8 +477,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream,
               << " transaction_index: " << std::dec << transaction_index
               << " config: " << config_;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await storage.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(

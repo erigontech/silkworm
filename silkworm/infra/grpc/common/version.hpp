@@ -37,7 +37,7 @@ struct ProtocolVersion {
 };
 
 constexpr auto kKvServiceApiVersion = ProtocolVersion{6, 2, 0};
-constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 2, 0};
+constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 3, 0};
 constexpr auto kMiningServiceApiVersion = ProtocolVersion{1, 0, 0};
 constexpr auto kTxPoolServiceApiVersion = ProtocolVersion{1, 0, 0};
 

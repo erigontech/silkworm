@@ -96,26 +96,6 @@ boost::asio::awaitable<intx::uint256> read_total_difficulty(const DatabaseReader
     co_return total_difficulty;
 }
 
-boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
-    const auto block_number = co_await read_header_number(reader, block_hash);
-    co_return co_await read_block(reader, block_hash, block_number);
-}
-
-boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(const DatabaseReader& reader, uint64_t block_number) {
-    const auto block_hash = co_await read_canonical_block_hash(reader, block_number);
-    co_return co_await read_block(reader, block_hash, block_number);
-}
-
-boost::asio::awaitable<uint64_t> read_block_number_by_transaction_hash(const DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
-    const silkworm::ByteView tx_hash{transaction_hash.bytes, silkworm::kHashLength};
-    auto block_number_bytes = co_await reader.get_one(db::table::kTxLookupName, tx_hash);
-    if (block_number_bytes.empty()) {
-        throw std::invalid_argument{"empty block number value in read_block_by_transaction_hash"};
-    }
-    SILK_TRACE << "Block number bytes " << silkworm::to_hex(block_number_bytes) << " for transaction hash " << transaction_hash;
-    co_return std::stoul(silkworm::to_hex(block_number_bytes), nullptr, 16);
-}
-
 boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
     auto block_with_hash_ptr = std::make_shared<silkworm::BlockWithHash>();
     block_with_hash_ptr->block.header = co_await read_header(reader, block_hash, block_number);

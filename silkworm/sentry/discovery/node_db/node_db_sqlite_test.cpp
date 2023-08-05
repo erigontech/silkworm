@@ -25,6 +25,7 @@
 namespace silkworm::sentry::discovery::node_db {
 
 using namespace boost::asio;
+using namespace std::chrono_literals;
 
 bool operator==(const NodeAddress& lhs, const NodeAddress& rhs) {
     return (lhs.ip == rhs.ip) &&
@@ -94,11 +95,11 @@ TEST_CASE("NodeDbSqlite") {
         CHECK_FALSE(address.has_value());
     }
 
-    SECTION("update_and_find_last_ping_time") {
+    SECTION("update_and_find_next_ping_time") {
         runner.run(db.upsert_node_address(test_id, test_address));
         auto expected_value = std::chrono::system_clock::system_clock::now();
-        runner.run(db.update_last_ping_time(test_id, expected_value));
-        auto actual_value = runner.run(db.find_last_ping_time(test_id));
+        runner.run(db.update_next_ping_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_next_ping_time(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
     }
@@ -110,6 +111,321 @@ TEST_CASE("NodeDbSqlite") {
         auto actual_value = runner.run(db.find_last_pong_time(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
+    }
+
+    SECTION("update_and_find_ping_fails") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 5;
+        runner.run(db.update_ping_fails(test_id, expected_value));
+        auto actual_value = runner.run(db.find_ping_fails(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("update_and_find_peer_disconnected_time") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.update_peer_disconnected_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_peer_disconnected_time(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
+    }
+
+    SECTION("update_and_find_peer_is_useless") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto expected_value = true;
+        runner.run(db.update_peer_is_useless(test_id, expected_value));
+        auto actual_value = runner.run(db.find_peer_is_useless(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("update_and_find_distance") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 123;
+        runner.run(db.update_distance(test_id, expected_value));
+        auto actual_value = runner.run(db.find_distance(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("find_ping_candidates.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto results = runner.run(db.find_ping_candidates(now, 1));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_ping_candidates.next_ping_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_next_ping_time(test_id, now));
+
+        auto results = runner.run(db.find_ping_candidates(now - 1h, 1));
+        CHECK(results.empty());
+
+        auto results2 = runner.run(db.find_ping_candidates(now + 1h, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_ping_candidates.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_ping_candidates(now, 1));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_ping_candidates(now, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_useful_nodes.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        auto results = runner.run(db.find_useful_nodes(now - 1h, 1));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_useful_nodes.min_pong_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+
+        auto min_pong_time = now + 1h;
+        auto results = runner.run(db.find_useful_nodes(min_pong_time, 1));
+        CHECK(results.empty());
+
+        auto min_pong_time2 = now - 1h;
+        auto results2 = runner.run(db.find_useful_nodes(min_pong_time2, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_useful_nodes.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_useful_nodes(now - 1h, 1));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_useful_nodes(now - 1h, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+        auto results = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.min_pong_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+
+        query.min_pong_time = now + 1h;
+        auto results = runner.run(db.find_peer_candidates(query));
+        CHECK(results.empty());
+
+        query.min_pong_time = now - 1h;
+        auto results2 = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.max_peer_disconnected_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        runner.run(db.update_peer_disconnected_time(test_id, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+
+        query.max_peer_disconnected_time = now - 1h;
+        auto results = runner.run(db.find_peer_candidates(query));
+        CHECK(results.empty());
+
+        query.max_peer_disconnected_time = now + 1h;
+        auto results2 = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.max_taken_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        runner.run(db.mark_taken_peer_candidates({test_id}, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+
+        query.max_taken_time = now - 1h;
+        auto results = runner.run(db.find_peer_candidates(query));
+        CHECK(results.empty());
+
+        query.max_taken_time = now + 1h;
+        auto results2 = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_peer_candidates(query));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_peer_candidates.exclude_ids") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindPeerCandidatesQuery query;
+        query.limit = 1;
+
+        query.exclude_ids = {test_id};
+        auto results = runner.run(db.find_peer_candidates(query));
+        CHECK(results.empty());
+
+        query.exclude_ids.clear();
+        auto results2 = runner.run(db.find_peer_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("mark_taken_peer_candidates") {
+        NodeId test_id2 = NodeId::deserialize_hex("24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d");
+        NodeAddress test_address2{
+            ip::make_address("10.0.1.17"),
+            30304,
+            30303,
+        };
+
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.upsert_node_address(test_id2, test_address2));
+
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.mark_taken_peer_candidates({test_id, test_id2}, expected_value));
+    }
+
+    SECTION("take_peer_candidates.empty") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        NodeDb::FindPeerCandidatesQuery query;
+        auto results = runner.run(db.take_peer_candidates(query, now));
+        CHECK(results.empty());
+    }
+
+    SECTION("find_lookup_candidates.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.min_pong_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        query.min_pong_time = now + 1h;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        query.min_pong_time = now - 1h;
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.max_lookup_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        runner.run(db.mark_taken_lookup_candidates({test_id}, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        query.max_lookup_time = now - 1h;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        query.max_lookup_time = now + 1h;
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("mark_taken_lookup_candidates") {
+        NodeId test_id2 = NodeId::deserialize_hex("24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d");
+        NodeAddress test_address2{
+            ip::make_address("10.0.1.17"),
+            30304,
+            30303,
+        };
+
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.upsert_node_address(test_id2, test_address2));
+
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.mark_taken_lookup_candidates({test_id, test_id2}, expected_value));
+    }
+
+    SECTION("take_lookup_candidates.empty") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        NodeDb::FindLookupCandidatesQuery query;
+        auto results = runner.run(db.take_lookup_candidates(query, now));
+        CHECK(results.empty());
     }
 }
 

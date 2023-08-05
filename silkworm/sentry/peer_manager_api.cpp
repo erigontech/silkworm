@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -29,6 +28,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 
 namespace silkworm::sentry {
@@ -48,7 +48,7 @@ Task<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
         self->handle_peer_events_calls() &&
         self->events_unsubscription_tasks_.wait() &&
         self->forward_peer_events();
-    co_await co_spawn(self->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(self->strand_, std::move(start), use_awaitable);
 }
 
 Task<void> PeerManagerApi::handle_peer_count_calls() {
@@ -222,6 +222,10 @@ void PeerManagerApi::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
     if (!ok) {
         log::Warning("sentry") << "PeerManagerApi::on_peer_removed too many unprocessed events, ignoring an event";
     }
+}
+
+// PeerManagerObserver
+void PeerManagerApi::on_peer_connect_error(const EnodeUrl& /*peer_url*/) {
 }
 
 }  // namespace silkworm::sentry

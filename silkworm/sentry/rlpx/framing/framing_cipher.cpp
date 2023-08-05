@@ -20,13 +20,14 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/sentry/common/crypto/xor.hpp>
 #include <silkworm/sentry/rlpx/crypto/aes.hpp>
 #include <silkworm/sentry/rlpx/crypto/sha3_hasher.hpp>
-#include <silkworm/sentry/rlpx/crypto/xor.hpp>
 
 namespace silkworm::sentry::rlpx::framing {
 
 using namespace crypto;
+using namespace silkworm::sentry::crypto;
 using KeyMaterial = FramingCipher::KeyMaterial;
 using MACHasher = crypto::Sha3Hasher;
 
@@ -109,7 +110,7 @@ Bytes FramingCipherImpl::header_mac(MACHasher& hasher, ByteView header_cipher_te
 
     auto hash = hasher.hash();
     auto header_mac_seed = mac_seed_cipher_.encrypt(ByteView(hash.data(), kAESBlockSize));
-    crypto::xor_bytes(header_mac_seed, header_cipher_text);
+    xor_bytes(header_mac_seed, header_cipher_text);
     hasher.update(header_mac_seed);
 
     auto header_hash = hasher.hash();
@@ -122,7 +123,7 @@ Bytes FramingCipherImpl::frame_mac(MACHasher& hasher, ByteView frame_cipher_text
 
     auto hash = hasher.hash();
     auto frame_mac_seed = mac_seed_cipher_.encrypt(ByteView(hash.data(), kAESBlockSize));
-    crypto::xor_bytes(frame_mac_seed, hash);
+    xor_bytes(frame_mac_seed, hash);
     hasher.update(frame_mac_seed);
 
     auto header_hash = hasher.hash();

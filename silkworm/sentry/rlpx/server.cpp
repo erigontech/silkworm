@@ -62,7 +62,7 @@ Task<void> Server::start(
     acceptor.bind(endpoint);
     acceptor.listen();
 
-    EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
+    EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_, port_};
     log::Info("sentry") << "rlpx::Server is listening at " << node_url.to_string();
 
     while (acceptor.is_open()) {
@@ -71,8 +71,7 @@ Task<void> Server::start(
         co_await acceptor.async_accept(stream.socket(), use_awaitable);
 
         auto remote_endpoint = stream.socket().remote_endpoint();
-        log::Debug("sentry") << "rlpx::Server client connected from "
-                             << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
+        log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;
 
         auto peer = std::make_shared<Peer>(
             client_context,

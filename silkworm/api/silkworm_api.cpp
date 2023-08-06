@@ -59,8 +59,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     snapshot::MappedHeadersSnapshot mapped_h_snapshot{
         .segment = make_region(hs.segment),
-        .header_hash_index = make_region(hs.header_hash_index)
-    };
+        .header_hash_index = make_region(hs.header_hash_index)};
     auto headers_snapshot = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
     headers_snapshot->reopen_segment();
     headers_snapshot->reopen_index();
@@ -72,8 +71,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     snapshot::MappedBodiesSnapshot mapped_b_snapshot{
         .segment = make_region(bs.segment),
-        .block_num_index = make_region(bs.block_num_index)
-    };
+        .block_num_index = make_region(bs.block_num_index)};
     auto bodies_snapshot = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
     bodies_snapshot->reopen_segment();
     bodies_snapshot->reopen_index();
@@ -86,8 +84,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     snapshot::MappedTransactionsSnapshot mapped_t_snapshot{
         .segment = make_region(ts.segment),
         .tx_hash_index = make_region(ts.tx_hash_index),
-        .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)
-    };
+        .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)};
     auto transactions_snapshot = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
     transactions_snapshot->reopen_segment();
     transactions_snapshot->reopen_index();

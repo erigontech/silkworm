@@ -46,6 +46,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <istream>
+#include <optional>
 #include <streambuf>
 #include <tuple>
 
@@ -68,10 +69,14 @@ using FileDescriptor = HANDLE;
 using FileDescriptor = int;
 #endif
 
+struct MemoryMappedRegion {
+    uint8_t* address{nullptr};
+    std::size_t length{0};
+};
+
 class MemoryMappedFile {
   public:
-    explicit MemoryMappedFile(std::filesystem::path path, bool read_only = true);
-    MemoryMappedFile(std::filesystem::path path, uint8_t* address, std::size_t length);
+    explicit MemoryMappedFile(std::filesystem::path path, std::optional<MemoryMappedRegion> region = {}, bool read_only = true);
     ~MemoryMappedFile();
 
     [[nodiscard]] std::filesystem::path path() const {

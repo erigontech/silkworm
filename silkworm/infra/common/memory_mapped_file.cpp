@@ -36,19 +36,26 @@
 
 namespace silkworm {
 
-MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, bool read_only) : path_(std::move(path)), managed_{true} {
-    map_existing(read_only);
-}
-
-MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, uint8_t* address, std::size_t length)
-    : path_{std::move(path)}, address_{address}, length_{length}, managed_{false} {
+MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, std::optional<MemoryMappedRegion> region, bool read_only)
+    : path_(std::move(path)), managed_{not region.has_value()} {
     ensure(std::filesystem::exists(path_), "MemoryMappedFile: " + path_.string() + " does not exist");
     ensure(std::filesystem::is_regular_file(path_), "MemoryMappedFile: " + path_.string() + " is not regular file");
-    ensure(address != nullptr, "MemoryMappedFile: address is null");
-    ensure(length > 0, "MemoryMappedFile: length is zero");
+
+    if (region) {
+        ensure(region->address != nullptr, "MemoryMappedFile: address is null");
+        ensure(region->length > 0, "MemoryMappedFile: length is zero");
+        address_ = region->address;
+        length_ = region->length;
+    } else {
+        map_existing(read_only);
+    }
 }
 
 MemoryMappedFile::~MemoryMappedFile() {
+    if (not managed_) {
+        return;
+    }
+
     unmap();
 
 #ifdef _WIN32
@@ -163,7 +170,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
 }
 
 void MemoryMappedFile::unmap() {
-    if (managed_ and address_ != nullptr) {
+    if (address_ != nullptr) {
         const int result = ::munmap(address_, length_);
         if (result == -1) {
             throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + strerror(errno)};

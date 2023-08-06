@@ -64,6 +64,7 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     SECTION("valid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
             {0, 1},
+            {1'000, 1'000},
             {1'000, 2'000}};
         for (const auto& [block_from, block_to] : block_ranges) {
             Snapshot_ForTest snapshot{block_from, block_to};
@@ -76,8 +77,6 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     }
     SECTION("invalid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
-            {0, 0},
-            {1'000, 1'000},
             {1'000, 999}};
         for (const auto& [block_from, block_to] : block_ranges) {
             CHECK_THROWS_AS(Snapshot_ForTest(block_from, block_to), std::logic_error);
@@ -196,6 +195,32 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
         CHECK(transaction->from == 0x68795c4aa09d6f4ed3e5deddf8c2ad3049a601da_address);
         CHECK(transaction->to == 0xe9ae6ec1117bbfeb89302ce7e632597bc595efae_address);
     }
+}
+
+// https://etherscan.io/block/1500012
+TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][snapshot][index]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
+    test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
+    TransactionIndex tx_index{tx_snapshot_path};
+    REQUIRE_NOTHROW(tx_index.build());
+
+    TransactionSnapshot tx_snapshot{tx_snapshot_path};
+    tx_snapshot.reopen_segment();
+    tx_snapshot.reopen_index();
+
+    auto transaction = tx_snapshot.txn_by_id(7'341'269);  // known txn id in block 1'500'012
+    CHECK(transaction.has_value());
+    auto block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
+
+    CHECK(block_number.has_value());
+    CHECK(block_number.value() == 1'500'012);
+
+    transaction = tx_snapshot.txn_by_id(7'341'272);  // known txn id in block 1'500'013
+    CHECK(transaction.has_value());
+    block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
+    CHECK(block_number.has_value());
+    CHECK(block_number.value() == 1'500'013);
 }
 
 TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {

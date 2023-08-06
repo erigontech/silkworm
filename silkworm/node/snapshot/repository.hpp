@@ -114,6 +114,8 @@ class SnapshotRepository {
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
     [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
 
+    [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
+
   private:
     bool reopen_header(const SnapshotPath& seg_file);
     bool reopen_body(const SnapshotPath& seg_file);

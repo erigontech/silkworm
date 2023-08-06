@@ -604,6 +604,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohman
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], {});
+    } catch (const boost::system::system_error& se) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

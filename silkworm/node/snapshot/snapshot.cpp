@@ -347,6 +347,20 @@ std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const
     return next_txn(txn_offset);
 }
 
+std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& txn_hash) const {
+    if (!idx_txn_hash_2_block_) {
+        return {};
+    }
+
+    const auto block_number = idx_txn_hash_2_block_->lookup(txn_hash);
+
+    if (block_number == 0) {
+        return {};
+    }
+
+    return block_number;
+}
+
 std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const {
     std::vector<Transaction> transactions;
     transactions.reserve(txn_count);

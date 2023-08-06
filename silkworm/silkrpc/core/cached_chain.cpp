@@ -80,7 +80,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
 }
 
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
+    const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
     if (!block_number) {
         co_return nullptr;
     }

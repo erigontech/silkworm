@@ -224,7 +224,7 @@ TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][huffman][d
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     MemoryMappedFile mmf{tmp_snapshot.path()};
-    Decompressor decoder_from_memory{tmp_snapshot.path(), mmf.address(), mmf.length()};
+    Decompressor decoder_from_memory{tmp_snapshot.path(), MemoryMappedRegion{mmf.address(), mmf.length()}};
     CHECK(!decoder_from_memory.is_open());
     CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.path());
     CHECK(decoder_from_memory.words_count() == 0);

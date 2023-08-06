@@ -29,6 +29,10 @@
 
 using namespace silkworm;
 
+static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
+    return {mmf.memory_address, mmf.memory_length};
+}
+
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -48,46 +52,53 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
 
-    const SilkwormHeadersSnapshot& headers_snapshot = snapshot->headers;
-    const auto headers_segment_path = snapshot::SnapshotPath::parse(headers_snapshot.segment.file_path);
+    const SilkwormHeadersSnapshot& hs = snapshot->headers;
+    const auto headers_segment_path = snapshot::SnapshotPath::parse(hs.segment.file_path);
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    // TODO(canepat) HeaderSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
-    // TODO(canepat) The same holds for its index
-    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path);
-    headers_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
-    headers_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    snapshot::MappedHeadersSnapshot mapped_h_snapshot{
+        .segment = make_region(hs.segment),
+        .header_hash_index = make_region(hs.header_hash_index)
+    };
+    auto headers_snapshot = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
+    headers_snapshot->reopen_segment();
+    headers_snapshot->reopen_index();
 
-    const SilkwormBodiesSnapshot& bodies_snapshot = snapshot->bodies;
-    const auto bodies_segment_path = snapshot::SnapshotPath::parse(bodies_snapshot.segment.file_path);
+    const SilkwormBodiesSnapshot& bs = snapshot->bodies;
+    const auto bodies_segment_path = snapshot::SnapshotPath::parse(bs.segment.file_path);
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    // TODO(canepat) BodySnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
-    // TODO(canepat) The same holds for its index
-    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path);
-    bodies_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
-    bodies_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    snapshot::MappedBodiesSnapshot mapped_b_snapshot{
+        .segment = make_region(bs.segment),
+        .block_num_index = make_region(bs.block_num_index)
+    };
+    auto bodies_snapshot = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
+    bodies_snapshot->reopen_segment();
+    bodies_snapshot->reopen_index();
 
-    const SilkwormTransactionsSnapshot& transactions_snapshot = snapshot->transactions;
-    const auto transactions_segment_path = snapshot::SnapshotPath::parse(transactions_snapshot.segment.file_path);
+    const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
+    const auto transactions_segment_path = snapshot::SnapshotPath::parse(ts.segment.file_path);
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    // TODO(canepat) TransactionSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
-    // TODO(canepat) The same holds for its index
-    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path);
-    transactions_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
-    transactions_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
+    snapshot::MappedTransactionsSnapshot mapped_t_snapshot{
+        .segment = make_region(ts.segment),
+        .tx_hash_index = make_region(ts.tx_hash_index),
+        .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)
+    };
+    auto transactions_snapshot = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
+    transactions_snapshot->reopen_segment();
+    transactions_snapshot->reopen_index();
 
     snapshot::SnapshotBundle bundle{
         .headers_snapshot_path = *headers_segment_path,
-        .headers_snapshot = std::move(headers_segment),
+        .headers_snapshot = std::move(headers_snapshot),
         .bodies_snapshot_path = *bodies_segment_path,
-        .bodies_snapshot = std::move(bodies_segment),
+        .bodies_snapshot = std::move(bodies_snapshot),
         .tx_snapshot_path = *transactions_segment_path,
-        .tx_snapshot = std::move(transactions_segment)};
+        .tx_snapshot = std::move(transactions_snapshot)};
     snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }

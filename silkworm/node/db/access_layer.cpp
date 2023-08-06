@@ -1327,8 +1327,12 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
     return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& /*tx_hash*/) const {
-    throw std::runtime_error("DataModel::read_tx_lookup_from_snapshot: not implemented");
+std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+    if (!repository_) {
+        return {};
+    }
+
+    return repository_->find_block_number(tx_hash);
 }
 
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {

@@ -168,6 +168,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
     CHECK(j1 == R"({
         "nonce":"0x0",
         "chainId":"0x1",
+        "yParity":"0x0",
         "gas":"0x0",
         "to":"0x0715a7794a1dc8e42615f059dd6e406a6594651a",
         "from":"0x007fb8417eb9ad4d958b050fc3720d5b46a2c053",
@@ -216,6 +217,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
         "nonce":"0x0",
         "gasPrice":"0x4a817c80c",
         "chainId":"0x1",
+        "yParity":"0x0",
         "gas":"0x0",
         "to":"0x0715a7794a1dc8e42615f059dd6e406a6594651a",
         "from":"0x007fb8417eb9ad4d958b050fc3720d5b46a2c053",
@@ -265,6 +267,7 @@ TEST_CASE("serialize EIP-1559 transaction (type=2)", "[silkrpc][to_json]") {
     CHECK(j1 == R"({
         "nonce":"0x0",
         "chainId":"0x1",
+        "yParity":"0x1",
         "gas":"0x5208",
         "to":"0x5df9b87991262f6ba471f09758cde1c0fc1de734",
         "from":"0x007fb8417eb9ad4d958b050fc3720d5b46a2c053",

@@ -201,4 +201,44 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     }
 }
 
+TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    SnapshotSettings settings{tmp_dir};
+    SnapshotRepository repository{settings};
+
+    // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
+    // file name format is not sufficient to support them (see checks commented out below)
+    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+
+    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
+    HeaderIndex header_index{header_snapshot_path};
+    REQUIRE_NOTHROW(header_index.build());
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
+    BodyIndex body_index{body_snapshot_path};
+    REQUIRE_NOTHROW(body_index.build());
+    test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
+    TransactionIndex txn_index{txn_snapshot_path};
+    REQUIRE_NOTHROW(txn_index.build());
+
+    REQUIRE_NOTHROW(repository.reopen_folder());
+
+    // known block 1'500'012 txn hash
+    auto block_number = repository.find_block_number(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});
+    CHECK(block_number.has_value());
+    CHECK(block_number.value() == 1'500'012);
+
+    // known block 1'500'012 txn hash
+    block_number = repository.find_block_number(silkworm::Hash{from_hex("0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f").value()});
+    CHECK(block_number.has_value());
+    CHECK(block_number.value() == 1'500'013);
+
+    // unknown txn hash
+    block_number = repository.find_block_number(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
+    // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
+}
+
 }  // namespace silkworm::snapshot

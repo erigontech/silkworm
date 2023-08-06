@@ -303,7 +303,6 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_getTransactionReceipt",  // some tests fail due to incorrect gas calculation, needs fixing
     "eth_estimateGas",            // call to oracle fails, needs fixing
     "debug_getRawReceipts",       // not implemented
-    "eth_getTransactionByHash",   // yParity missing in the output, needs investigating and fixing
     "eth_getProof",               // not implemented
     "eth_feeHistory",             // history not stored, needs fixing
     "eth_sendRawTransaction",     // call to oracle fails, needs fixing or mocking

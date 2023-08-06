@@ -149,6 +149,8 @@ class TransactionSnapshot : public Snapshot {
     [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
     [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const;
 
+    [[nodiscard]] std::optional<BlockNum> block_num_by_txn_hash(const Hash& txn_hash) const;
+
     void reopen_index() override;
 
   protected:

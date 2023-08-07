@@ -350,6 +350,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILK_DEBUG << "chain config: " << chain_config;
@@ -357,7 +358,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
-            const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, tx_database, block_number)};
+            const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number)};
             const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
             if (!cc) {
                 throw std::runtime_error("Invalid chain config");

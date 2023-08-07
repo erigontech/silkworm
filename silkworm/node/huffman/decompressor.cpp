@@ -292,24 +292,15 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
     return out;
 }
 
-Decompressor::Decompressor(std::filesystem::path compressed_path) : compressed_path_(std::move(compressed_path)) {}
-
-Decompressor::Decompressor(std::filesystem::path compressed_path, uint8_t* address, std::size_t length)
-    : compressed_path_(std::move(compressed_path)), mapped_file_address_{address}, mapped_file_length_{length} {
-    ensure(address != nullptr, "Decompressor: compressed file address is null");
-    ensure(length > 0, "Decompressor: compressed file length is zero");
-}
+Decompressor::Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region)
+    : compressed_path_(std::move(compressed_path)), compressed_region_{std::move(compressed_region)} {}
 
 Decompressor::~Decompressor() {
     close();
 }
 
 void Decompressor::open() {
-    if (mapped_file_address_ and mapped_file_length_) {
-        compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, mapped_file_address_, mapped_file_length_);
-    } else {
-        compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_);
-    }
+    compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, compressed_region_);
     if (compressed_file_->length() < kMinimumFileSize) {
         throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_->length()));
     }

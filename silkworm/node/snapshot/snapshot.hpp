@@ -34,11 +34,33 @@
 
 namespace silkworm::snapshot {
 
+struct MappedHeadersSnapshot {
+    MemoryMappedRegion segment;
+    MemoryMappedRegion header_hash_index;
+};
+
+struct MappedBodiesSnapshot {
+    MemoryMappedRegion segment;
+    MemoryMappedRegion block_num_index;
+};
+
+struct MappedTransactionsSnapshot {
+    MemoryMappedRegion segment;
+    MemoryMappedRegion tx_hash_index;
+    MemoryMappedRegion tx_hash_2_block_index;
+};
+
+//! \brief Generic snapshot containing data points for a specific block interval [block_from, block_to).
+//! \warning The snapshot segment can also be externally managed. This means that the memory-mapping can happen
+//! outside of this class and a \code Snapshot instance can be created by specifying the \code MemoryMappedRegion
+//! segment containing the information about the memory region already mapped. This must be taken into account
+//! because we must avoid to memory-map it again.
 class Snapshot {
   public:
     static inline const auto kPageSize{os::page_size()};
 
     explicit Snapshot(SnapshotPath path);
+    Snapshot(SnapshotPath path, MemoryMappedRegion segment_region);
     virtual ~Snapshot() = default;
 
     [[nodiscard]] SnapshotPath path() const { return path_; }
@@ -50,7 +72,7 @@ class Snapshot {
     [[nodiscard]] bool empty() const { return item_count() == 0; }
     [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
 
-    [[nodiscard]] void* memory_file_address() const;
+    [[nodiscard]] uint8_t* memory_file_address() const;
     [[nodiscard]] std::size_t memory_file_size() const;
 
     void reopen_segment();
@@ -75,14 +97,17 @@ class Snapshot {
     void close_segment();
     virtual void close_index() = 0;
 
+    //! The path of the segment file for this snapshot
     SnapshotPath path_;
+
     huffman::Decompressor decoder_;
 };
 
 class HeaderSnapshot : public Snapshot {
   public:
-    explicit HeaderSnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
-    ~HeaderSnapshot() override { close(); }
+    explicit HeaderSnapshot(SnapshotPath path);
+    HeaderSnapshot(SnapshotPath path, MappedHeadersSnapshot mapped);
+    ~HeaderSnapshot() override;
 
     [[nodiscard]] const succinct::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
 
@@ -103,14 +128,18 @@ class HeaderSnapshot : public Snapshot {
   private:
     //! Index header_hash -> headers_segment_offset
     std::unique_ptr<succinct::RecSplitIndex> idx_header_hash_;
+
+    //! The external memory-mapped region for Headers snapshot index
+    std::optional<MemoryMappedRegion> idx_header_hash_region_;
 };
 
 using StoredBlockBody = db::detail::BlockBodyForStorage;
 
 class BodySnapshot : public Snapshot {
   public:
-    explicit BodySnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
-    ~BodySnapshot() override { close(); }
+    explicit BodySnapshot(SnapshotPath path);
+    BodySnapshot(SnapshotPath path, MappedBodiesSnapshot mapped);
+    ~BodySnapshot() override;
 
     [[nodiscard]] const succinct::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
@@ -132,12 +161,16 @@ class BodySnapshot : public Snapshot {
   private:
     //! Index block_num_u64 -> bodies_segment_offset
     std::unique_ptr<succinct::RecSplitIndex> idx_body_number_;
+
+    //! The external memory-mapped region for Bodies snapshot index
+    std::optional<MemoryMappedRegion> idx_body_number_region_;
 };
 
 class TransactionSnapshot : public Snapshot {
   public:
-    explicit TransactionSnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
-    ~TransactionSnapshot() override { close(); }
+    explicit TransactionSnapshot(SnapshotPath path);
+    TransactionSnapshot(SnapshotPath path, MappedTransactionsSnapshot mapped);
+    ~TransactionSnapshot() override;
 
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
@@ -167,6 +200,12 @@ class TransactionSnapshot : public Snapshot {
 
     //! Index transaction_hash -> block_number
     std::unique_ptr<succinct::RecSplitIndex> idx_txn_hash_2_block_;
+
+    //! The external memory-mapped region for Transactions hash->offset index
+    std::optional<MemoryMappedRegion> idx_txn_hash_region_;
+
+    //! The external memory-mapped region for Transactions hash->block_number index
+    std::optional<MemoryMappedRegion> idx_txn_hash_2_block_region_;
 };
 
 }  // namespace silkworm::snapshot

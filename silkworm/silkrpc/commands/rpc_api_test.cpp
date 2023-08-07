@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
@@ -33,8 +34,6 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
@@ -44,9 +43,20 @@ namespace silkworm::rpc::commands {
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
 
-std::shared_ptr<mdbx::env_managed> open_db() {
-    std::string chaindata_dir{TemporaryDirectory::get_unique_temporary_path()};
+std::filesystem::path get_tests_dir() {
+    auto working_dir = std::filesystem::current_path();
 
+    while (!std::filesystem::exists(working_dir / "third_party" / "execution-apis") && working_dir != "/") {
+        working_dir = working_dir.parent_path();
+    }
+
+    INFO("initial working_dir: " << std::filesystem::current_path());
+    REQUIRE(std::filesystem::exists(working_dir / "third_party" / "execution-apis"));
+
+    return working_dir / "third_party" / "execution-apis" / "tests";
+}
+
+std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
     db::EnvConfig chain_conf{
         .path = chaindata_dir,
         .create = true,
@@ -57,8 +67,8 @@ std::shared_ptr<mdbx::env_managed> open_db() {
     return std::make_shared<mdbx::env_managed>(db::open_env(chain_conf));
 }
 
-void populate_genesis(db::RWTxn& txn) {
-    std::string genesis_json_path = "/home/jacek/dev/ethereum-execution-apis/tests/genesis.json";
+void populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
+    auto genesis_json_path = tests_dir / "genesis.json";
     std::ifstream genesis_json_input_file(genesis_json_path);
     nlohmann::json genesis_json;
     genesis_json_input_file >> genesis_json;
@@ -147,12 +157,11 @@ void populate_genesis(db::RWTxn& txn) {
         .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
 }
 
-void populate_blocks(db::RWTxn& txn) {
-    std::string rlp_path = "/home/jacek/dev/ethereum-execution-apis/tests/chain.rlp";
+void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
+    auto rlp_path = tests_dir / "chain.rlp";
     std::ifstream file(rlp_path, std::ios::binary);
     if (!file) {
-        std::cerr << "Failed to open the file." << std::endl;
-        throw "dupa";
+        throw std::logic_error("Failed to open the file: " + rlp_path.string());
     }
     std::vector<Bytes> rlps;
     std::vector<uint8_t> line;
@@ -166,31 +175,31 @@ void populate_blocks(db::RWTxn& txn) {
         silkworm::Block block;
 
         if (!silkworm::rlp::decode(view, block, silkworm::rlp::Leftover::kAllow)) {
-            throw "Failed to decode RLP file";
+            throw std::logic_error("Failed to decode RLP file");
         }
 
         // store original hashes
         auto block_hash = block.header.hash();
         auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
-        // FIX 2: populate senders table
+        // FIX 3: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        // FIX 3: populate tx lookup table and create receipts
+        // FIX 4: populate tx lookup table and create receipts
+        db::write_tx_lookup(txn, block);
         std::vector<silkworm::Receipt> receipts;
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
-            db::write_tx_lookup(txn, block.header.number, block);
             cumulative_gas_used += block_txn.gas_limit;
             silkworm::Receipt receipt{.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
             receipts.emplace_back(receipt);
         }
         db::write_receipts(txn, receipts, block.header.number);
 
-        // FIX 4: insert system transactions
+        // FIX 5: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
         intx::uint256 max_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_fee_per_gas;
         silkworm::Transaction system_transaction;
@@ -220,7 +229,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table,
                            std::optional<std::string> jwt_secret)
-        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, jwt_secret) {
+        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::move(jwt_secret)) {
     }
 
     boost::asio::awaitable<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
@@ -253,37 +262,76 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table;
 };
 
-TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
-    auto workingDir = std::filesystem::current_path();
-    // std::cout << "Current path is " << workingDir << '\n';
+// Function to recursively sort JSON arrays
+void sort_array(nlohmann::json& jsonObj) {
+    if (jsonObj.is_array()) {
+        // Sort the elements within the array
+        std::sort(jsonObj.begin(), jsonObj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
+            return a.dump() < b.dump();
+        });
 
-    while (!std::filesystem::exists(workingDir / "third_party" / "execution-apis") && workingDir != "/") {
-        workingDir = workingDir.parent_path();
+        // Recursively sort nested arrays
+        for (auto& item : jsonObj) {
+            sort_array(item);
+        }
+    } else if (jsonObj.is_object()) {
+        for (auto& item : jsonObj.items()) {
+            sort_array(item.value());
+        }
     }
+}
 
-    REQUIRE(std::filesystem::exists(workingDir / "third_party" / "execution-apis"));
+// Function to compare two JSON objects while ignoring the order of elements in arrays
+bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
+    // Create copies of the JSON objects and sort their arrays
+    nlohmann::json sortedObj1 = obj1;
+    nlohmann::json sortedObj2 = obj2;
+    sort_array(sortedObj1);
+    sort_array(sortedObj2);
 
-    auto testsDir = workingDir / "third_party" / "execution-apis" / "tests";
+    // Serialize the sorted JSON objects to strings
+    std::string str1 = sortedObj1.dump();
+    std::string str2 = sortedObj2.dump();
 
-    for (const auto& test_file : std::filesystem::recursive_directory_iterator(testsDir)) {
+    // Compare the sorted JSON strings
+    return str1 == str2;
+}
+
+static const std::vector<std::string> tests_to_ignore = {
+    "eth_getTransactionReceipt",  // some tests fail due to incorrect gas calculation, needs fixing
+    "eth_estimateGas",            // call to oracle fails, needs fixing
+    "debug_getRawReceipts",       // not implemented
+    "eth_getProof",               // not implemented
+    "eth_feeHistory",             // history not stored, needs fixing
+    "eth_sendRawTransaction",     // call to oracle fails, needs fixing or mocking
+};
+
+// Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
+TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
+    auto tests_dir = get_tests_dir();
+    for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
-            // std::cout << "Running test " << test_file.path() << std::endl;
             auto test_name = test_file.path().filename().string();
             auto group_name = test_file.path().parent_path().filename().string();
+
+            if (std::find(tests_to_ignore.begin(), tests_to_ignore.end(), group_name) != tests_to_ignore.end()) {
+                continue;
+            }
 
             std::ifstream test_stream(test_file.path());
 
             if (!test_stream.is_open()) {
-                std::cerr << "Failed to open the file." << std::endl;
-                throw "dupa";
+                FAIL("Failed to open the file: " + test_file.path().string());
             }
 
-            SECTION("RPC IO test " + group_name + "|" + test_name) {
-                auto db = open_db();
+            SECTION("RPC IO test " + group_name + " | " + test_name) {
+                const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
+                auto db = open_db(db_dir);
                 db::RWTxnManaged txn{*db};
                 db::table::check_or_create_chaindata_tables(txn);
-                populate_genesis(txn);
-                populate_blocks(txn);
+                populate_genesis(txn, tests_dir);
+                populate_blocks(txn, tests_dir);
                 txn.commit_and_stop();
 
                 RpcApiTestBase<RequestHandler_ForTest> test_base{db};
@@ -301,22 +349,32 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
 
                     http::Reply reply;
                     test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-                    INFO("Request: " << request.dump());
-                    CHECK(nlohmann::json::parse(reply.content) == expected);
+                    INFO("Request:           " << request.dump());
+                    INFO("Actual response:   " << reply.content);
+                    INFO("Expected response: " << expected.dump());
+
+                    if (test_name.find("invalid") != std::string::npos) {
+                        CHECK(nlohmann::json::parse(reply.content).contains("error"));
+                    } else {
+                        CHECK(are_equivalent(nlohmann::json::parse(reply.content), expected));
+                    }
                 }
 
                 db->close();
+                std::filesystem::remove_all(db_dir);
             }
         }
     }
 }
 
 TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
-    auto db = open_db();
+    const auto tests_dir = get_tests_dir();
+    const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
+    auto db = open_db(db_dir);
     db::RWTxnManaged txn{*db};
     db::table::check_or_create_chaindata_tables(txn);
-    populate_genesis(txn);
-    populate_blocks(txn);
+    populate_genesis(txn, tests_dir);
+    populate_blocks(txn, tests_dir);
     txn.commit_and_stop();
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
@@ -329,23 +387,9 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
         CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 
-    SECTION("sample test2") {
-        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getTransactionByHash","params":["0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467"]})"_json;
-        http::Reply reply;
-
-        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"blockHash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","blockNumber":"0x2","from":"0x658bdf435d810c91414ec09147daa6db62406379","gas":"0x5208","gasPrice":"0x2db08787","hash":"0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467","input":"0x","nonce":"0x1","to":"0x658bdf435d810c91414ec09147daa6db62406379","transactionIndex":"0x0","value":"0x3e8","type":"0x0","chainId":"0x539","v":"0xa95","r":"0x52a6f622013359249316f4c017a67bc2c659f513dac5efea43a84b6ce4e462b1","s":"0x55ba2a779eaf62efa7d641a32ea329faabf9f097d376e2e400115a5151b9470"}})"_json);
-    }
-
-    SECTION("sample test3") {
-        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x0",true]})"_json;
-        http::Reply reply;
-
-        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"baseFeePerGas":"0x3b9aca00","difficulty":"0x1","extraData":"0x","gasLimit":"0x4c4b40","gasUsed":"0x0","hash":"0x1fc027d65f820d3eef441ebeec139ebe09e471cf98516dce7b5643ccb27f418c","logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","miner":"0x0000000000000000000000000000000000000000","mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000","nonce":"0x0000000000000000","number":"0x0","parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000","receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","size":"0x21f","stateRoot":"0x078dc6061b1d8eaa8493384b59c9c65ceb917201221d08b80c4de6770b6ec7e7","timestamp":"0x0","totalDifficulty":"0x1","transactions":[],"transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","uncles":[],"withdrawals":[],"withdrawalsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}})"_json);
-    }
-
     db->close();
+    std::filesystem::remove_all(db_dir);
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc::commands

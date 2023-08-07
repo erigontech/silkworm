@@ -17,6 +17,7 @@
 #include "blocks.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -78,10 +79,13 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
     } else if (block_id == kLatestExecutedBlockId) {
         block_number = co_await get_latest_executed_block_number(reader);
         is_latest_block = true;
-    } else {
-        block_number = static_cast<uint64_t>(std::stol(block_id, nullptr, 0));
+    } else if (is_valid_hex(block_id)) {
+        block_number = static_cast<uint64_t>(std::stol(block_id, nullptr, 16));
         check_if_latest = latest_required;
+    } else {
+        throw std::invalid_argument("get_block_number::Invalid Block Id");
     }
+
     if (check_if_latest) {
         is_latest_block = co_await is_latest_block_number(block_number, reader);
     }
@@ -92,6 +96,20 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
 boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader) {
     const auto [block_number, _] = co_await get_block_number(block_id, reader, /*latest_required=*/false);
     co_return block_number;
+}
+
+boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader) {
+    if (bnoh.is_tag()) {
+        co_return co_await get_block_number(bnoh.tag(), reader, true);
+    } else if (bnoh.is_number()) {
+        co_return co_await get_block_number(to_hex(bnoh.number(), true), reader, true);
+    } else if (bnoh.is_hash()) {
+        const auto block_number = co_await rawdb::read_header_number(reader, bnoh.hash());
+        const auto latest_block_number = co_await get_latest_block_number(reader);
+        co_return std::make_pair(block_number, block_number == latest_block_number);
+    } else {
+        throw std::invalid_argument("Invalid Block Number or Hash");
+    }
 }
 
 boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader) {

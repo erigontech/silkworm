@@ -193,13 +193,42 @@ TEST_CASE("PositionTable::operator<<", "[silkworm][node][huffman][decompressor]"
     CHECK_NOTHROW(test_util::null_stream() << table);
 }
 
-TEST_CASE("Decompressor::Decompressor", "[silkworm][node][huffman][decompressor]") {
+static test::TemporarySnapshotFile create_snapshot_file(std::vector<test::SnapshotPattern>&& patterns,
+                                                        std::vector<test::SnapshotPosition>&& positions) {
+    test::SnapshotHeader header{
+        .words_count = 0,
+        .empty_words_count = 0,
+        .patterns = std::move(patterns),
+        .positions = std::move(positions)};
+    return test::TemporarySnapshotFile{header};
+}
+
+static test::TemporarySnapshotFile create_empty_snapshot_file() {
+    return create_snapshot_file({}, {});
+}
+
+static test::TemporarySnapshotFile create_nonempty_snapshot_file() {
+    return create_snapshot_file({{0, {}}}, {{0, 1}});
+}
+
+TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][huffman][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
     CHECK(!decoder.is_open());
     CHECK(decoder.compressed_path() == tmp_file_path);
     CHECK(decoder.words_count() == 0);
     CHECK(decoder.empty_words_count() == 0);
+}
+
+TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][huffman][decompressor]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
+    MemoryMappedFile mmf{tmp_snapshot.path()};
+    Decompressor decoder_from_memory{tmp_snapshot.path(), mmf.address(), mmf.length()};
+    CHECK(!decoder_from_memory.is_open());
+    CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.path());
+    CHECK(decoder_from_memory.words_count() == 0);
+    CHECK(decoder_from_memory.empty_words_count() == 0);
 }
 
 TEST_CASE("Decompressor::open invalid files", "[silkworm][node][huffman][decompressor]") {
@@ -273,12 +302,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][huffman][decompres
 
 TEST_CASE("Decompressor::read_ahead", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SnapshotHeader header{
-        .words_count = 0,
-        .empty_words_count = 0,
-        .patterns = std::vector<test::SnapshotPattern>{{0, {}}},
-        .positions = std::vector<test::SnapshotPosition>{{0, 1}}};
-    test::TemporarySnapshotFile tmp_snapshot{header};
+    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 
@@ -296,12 +320,7 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][node][huffman][decompressor]")
 
 TEST_CASE("Decompressor::close", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SnapshotHeader header{
-        .words_count = 0,
-        .empty_words_count = 0,
-        .patterns = std::vector<test::SnapshotPattern>{{0, {}}},
-        .positions = std::vector<test::SnapshotPosition>{{0, 1}}};
-    test::TemporarySnapshotFile tmp_snapshot{header};
+    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
     REQUIRE_NOTHROW(decoder.open());
     REQUIRE(decoder.is_open());
@@ -319,12 +338,7 @@ TEST_CASE("Decompressor::close", "[silkworm][node][huffman][decompressor]") {
 
 TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SnapshotHeader header{
-        .words_count = 0,
-        .empty_words_count = 0,
-        .patterns = std::vector<test::SnapshotPattern>{},
-        .positions = std::vector<test::SnapshotPosition>{}};
-    test::TemporarySnapshotFile tmp_snapshot{header};
+    test::TemporarySnapshotFile tmp_snapshot{create_empty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 

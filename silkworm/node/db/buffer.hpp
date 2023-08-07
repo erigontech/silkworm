@@ -28,6 +28,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
+#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 
@@ -38,7 +39,7 @@ class Buffer : public State {
     // txn must be valid (its handle != nullptr)
     explicit Buffer(RWTxn& txn, BlockNum prune_history_threshold,
                     std::optional<BlockNum> historical_block = std::nullopt)
-        : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
+        : txn_{txn}, access_layer_{txn_}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
 
     /** @name Readers */
     //!@{
@@ -129,6 +130,7 @@ class Buffer : public State {
     void write_state_to_db();
 
     RWTxn& txn_;
+    db::DataModel access_layer_;
     uint64_t prune_history_threshold_;
     std::optional<uint64_t> historical_block_{};
 

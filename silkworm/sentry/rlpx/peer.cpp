@@ -18,7 +18,6 @@
 
 #include <chrono>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
@@ -68,14 +68,14 @@ Peer::Peer(
 }
 
 Peer::~Peer() {
-    log::Debug("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
+    log::Trace("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
 Task<void> Peer::start(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
     auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
-    co_await co_spawn(peer->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(peer->strand_, std::move(start), use_awaitable);
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -101,7 +101,7 @@ Task<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Debug("sentry") << "Peer::handle";
+    log::Trace("sentry") << "Peer::handle";
 
     bool is_handshake_completed = false;
     auto _ = gsl::finally([this, &is_handshake_completed] {
@@ -116,7 +116,12 @@ Task<void> Peer::handle() {
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
-        log::Debug("sentry") << "Peer::handle first_message: " << int(first_message.id);
+        log::Trace("sentry") << "Peer::handle first_message: " << int(first_message.id);
+
+        if (first_message.id == DisconnectMessage::kId) {
+            auto disconnect_message = DisconnectMessage::from_message(first_message);
+            throw auth::Handshake::DisconnectError(disconnect_message.reason);
+        }
 
         bool is_incompatible = false;
         try {
@@ -127,6 +132,7 @@ Task<void> Peer::handle() {
 
         if (is_incompatible) {
             log::Debug("sentry") << "Peer::handle IncompatiblePeerError";
+            disconnect_reason_.set({DisconnectReason::UselessPeer});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::UselessPeer}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
             co_return;
@@ -159,6 +165,7 @@ Task<void> Peer::handle() {
         if (is_disconnecting) {
             log::Debug("sentry") << "Peer::handle disconnecting";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
+            disconnect_reason_.set({reason});
             co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
         }
@@ -166,6 +173,7 @@ Task<void> Peer::handle() {
         if (is_cancelled) {
             log::Debug("sentry") << "Peer::handle cancelled - quitting gracefully";
             co_await boost::asio::this_coro::reset_cancellation_state();
+            disconnect_reason_.set({DisconnectReason::ClientQuitting});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::ClientQuitting}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
             throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
@@ -173,17 +181,24 @@ Task<void> Peer::handle() {
 
         if (is_ping_timed_out) {
             log::Debug("sentry") << "Peer::handle ping timed out";
+            disconnect_reason_.set({DisconnectReason::PingTimeout});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
         }
 
-    } catch (const auth::Handshake::DisconnectError&) {
-        log::Debug("sentry") << "Peer::handle DisconnectError";
+    } catch (const auth::Handshake::DisconnectError& ex) {
+        log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
+        disconnect_reason_.set({ex.reason()});
+    } catch (const auth::Handshake::CapabilityMismatchError& ex) {
+        log::Debug("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
+        disconnect_reason_.set({DisconnectReason::UselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
             log::Debug("sentry") << "Peer::handle network error: " << ex.what();
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::NetworkError);
+            disconnect_reason_.set({reason});
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug("sentry") << "Peer::handle cancelled";
@@ -198,7 +213,7 @@ Task<void> Peer::handle() {
 }
 
 Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
-    return co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
+    return concurrency::co_spawn_sw(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
 }
 
 Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
@@ -213,10 +228,12 @@ Task<void> Peer::drop(DisconnectReason reason) {
 
     try {
         auto message_stream = co_await handshake();
+        disconnect_reason_.set({reason});
         co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                   concurrency::timeout(kPeerDisconnectTimeout));
-    } catch (const auth::Handshake::DisconnectError&) {
-        log::Debug("sentry") << "Peer::drop DisconnectError";
+    } catch (const auth::Handshake::DisconnectError& ex) {
+        log::Debug("sentry") << "Peer::drop DisconnectError reason: " << static_cast<int>(ex.reason());
+        disconnect_reason_.set({ex.reason()});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {
@@ -337,7 +354,8 @@ Task<void> Peer::receive_messages(framing::MessageStream& message_stream) {
         auto message = co_await message_stream.receive();
 
         if (message.id == DisconnectMessage::kId) {
-            throw auth::Handshake::DisconnectError();
+            auto disconnect_message = DisconnectMessage::from_message(message);
+            throw auth::Handshake::DisconnectError(disconnect_message.reason);
         } else if (message.id == PingMessage::kId) {
             co_await message_stream.send(PongMessage{}.to_message());
             continue;

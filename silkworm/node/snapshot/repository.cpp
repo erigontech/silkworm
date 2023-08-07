@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -183,6 +184,17 @@ const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) 
     return find_segment(tx_segments_, number);
 }
 
+std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
+    for (auto it = tx_segments_.rbegin(); it != tx_segments_.rend(); ++it) {
+        const auto& snapshot = it->second;
+        auto block = snapshot->block_num_by_txn_hash(txn_hash);
+        if (block) {
+            return block;
+        }
+    }
+    return {};
+}
+
 std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
     std::vector<std::shared_ptr<Index>> missing_index_list;
@@ -308,7 +320,7 @@ const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, Bl
 template <ConcreteSnapshot T>
 bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file) {
     if (segments.find(seg_file.path()) == segments.end()) {
-        auto segment = std::make_unique<T>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
+        auto segment = std::make_unique<T>(seg_file);
         segment->reopen_segment();
         if (segment->empty()) return false;
         segments[seg_file.path()] = std::move(segment);

@@ -19,37 +19,13 @@
 #include <memory>
 #include <vector>
 
+#include <boost/circular_buffer.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-
-namespace silkworm::db {
-
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-only transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not abort the transaction.
-class ROTxnUnmanaged : public ROTxn, protected ::mdbx::txn {
-  public:
-    explicit ROTxnUnmanaged(MDBX_txn* ptr) : ROTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~ROTxnUnmanaged() override = default;
-
-    void abort() override {}
-};
-
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
-class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
-  public:
-    explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
-
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
-};
-
-}  // namespace silkworm::db
 
 using namespace silkworm;
 
@@ -79,8 +55,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) HeaderSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(
-        headers_segment_path->path(), headers_segment_path->block_from(), headers_segment_path->block_to());
+    auto headers_segment = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path);
     headers_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     headers_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
@@ -91,8 +66,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) BodySnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(
-        bodies_segment_path->path(), bodies_segment_path->block_from(), bodies_segment_path->block_to());
+    auto bodies_segment = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path);
     bodies_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     bodies_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
@@ -103,8 +77,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     }
     // TODO(canepat) TransactionSnapshot must be created w/ segment_address+segment_length because mmap already done by Erigon
     // TODO(canepat) The same holds for its index
-    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(
-        transactions_segment_path->path(), transactions_segment_path->block_from(), transactions_segment_path->block_to());
+    auto transactions_segment = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path);
     transactions_segment->reopen_segment();  // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
     transactions_segment->reopen_index();    // TODO(canepat) must not be called hence throw exception if called when snapshot already mapped
 
@@ -144,26 +117,37 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
 
+        static constexpr size_t kCacheSize{5'000};
+        AnalysisCache analysis_cache{kCacheSize};
+        ObjectPool<evmone::ExecutionState> state_pool;
+
         // Transform batch size limit into gas units (Ggas = Giga gas, Tgas = Tera gas)
         const size_t gas_max_history_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
         const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
 
-        // Preload all requested block from storage, i.e. from MDBX database or snapshots
-        std::vector<Block> prefetched_blocks;
-        prefetched_blocks.reserve(max_block - start_block);
-        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
-            prefetched_blocks.emplace_back();
-            const bool success{access_layer.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
-            if (!success) {
-                return SILKWORM_BLOCK_NOT_FOUND;
-            }
-        }
+        // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
+        static constexpr size_t kMaxPrefetchedBlocks{10240};
+        boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         size_t gas_history_size{0};
         size_t gas_batch_size{0};
-        for (const auto& block : prefetched_blocks) {
+        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
+            if (prefetched_blocks.empty()) {
+                const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+                SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
+                for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+                    prefetched_blocks.push_back();
+                    const bool success{access_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
+                    if (!success) {
+                        return SILKWORM_BLOCK_NOT_FOUND;
+                    }
+                }
+                SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
+            }
+            const Block& block{prefetched_blocks.front()};
+
             std::vector<Receipt> receipts;
-            const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
+            const auto validation_result{execute_block(block, analysis_cache, state_pool, state_buffer, *chain_config, receipts)};
             if (validation_result != ValidationResult::kOk) {
                 return SILKWORM_INVALID_BLOCK;
             }
@@ -179,6 +163,8 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             if (block.header.number % 1000 == 0) {
                 SILK_INFO << "Blocks <= " << block.header.number << " executed";
             }
+
+            prefetched_blocks.pop_front();
 
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
             if (gas_batch_size >= gas_max_batch_size) {

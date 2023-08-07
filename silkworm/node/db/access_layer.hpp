@@ -148,7 +148,7 @@ std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
 
-void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block);
+void write_tx_lookup(RWTxn& txn, const Block& block);
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
 
 // See Erigon ReadTransactions
@@ -311,6 +311,8 @@ class DataModel {
     //! Read the RLP encoded block transactions at specified height
     [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
 
+    [[nodiscard]] std::optional<BlockNum> read_tx_lookup(const evmc::bytes32& tx_hash) const;
+
     //! Read total difficulty at specified height
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
@@ -328,6 +330,8 @@ class DataModel {
     static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
     static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
                                                 bool read_senders, std::vector<Transaction>& txs);
+    [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
+    [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
 
     static inline snapshot::SnapshotRepository* repository_{nullptr};
 

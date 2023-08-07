@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <optional>
 
 #include <silkworm/infra/concurrency/task.hpp>
@@ -39,5 +40,8 @@ Task<bool> ping_check(
     MessageSender& message_sender,
     boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
     node_db::NodeDb& db);
+
+std::chrono::time_point<std::chrono::system_clock> min_valid_pong_time(
+    std::chrono::time_point<std::chrono::system_clock> now);
 
 }  // namespace silkworm::sentry::discovery::disc_v4::ping

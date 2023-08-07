@@ -19,11 +19,12 @@
 #include <set>
 #include <thread>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/node/db/stages.hpp>
 
@@ -63,9 +64,6 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
     // Save progress
     db::write_total_difficulty(tx_, height, hash, td);
-
-    // Save header number
-    // db::write_header_number(tx_, hash.bytes, header.number);  // already done in stage block-hashes
 
     previous_hash_ = hash;
     previous_td_ = td;
@@ -109,7 +107,11 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
 
-        HeaderDataModel header_persistence(tx, current_height_);
+        log::Info(log_prefix_,
+                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                   "from", std::to_string(current_height_),
+                   "to", std::to_string(target_height),
+                   "span", std::to_string(target_height - current_height_)});
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit_and_renew();
@@ -124,9 +126,10 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             return Stage::Result::kSuccess;
         }
 
+        HeaderDataModel header_persistence(tx, current_height_);
+
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);
-        log::Info(log_prefix_) << "Updating headers from=" << height_progress.get();
 
         // header processing
         while (current_height_ < target_height && !is_stopping()) {

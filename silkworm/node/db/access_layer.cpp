@@ -586,13 +586,12 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     target->upsert(to_slice(key), to_slice(data));
 }
 
-void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block) {
+void write_tx_lookup(RWTxn& txn, const Block& block) {
     auto target = txn.rw_cursor(table::kTxLookup);
-    Bytes data;
+    const auto block_number_bytes = db::block_key(block.header.number);
     for (const auto& block_txn : block.transactions) {
         auto tx_key = block_txn.hash();
-        auto tx_data = db::block_key(block_number);
-        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data));
+        target->upsert(to_slice(tx_key.bytes), to_slice(block_number_bytes));
     }
 }
 
@@ -1157,12 +1156,14 @@ void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> 
         return;
     }
 
+    auto block_number_in_snapshots = repository_ ? repository_->max_block_available() : 0;
+
     // We've reached the first header in db but still need to read more from snapshots
-    if (last_read_number_from_db) {
-        ensure(*last_read_number_from_db == repository_->max_block_available() + 1,
+    if (repository_ && last_read_number_from_db) {
+        ensure(*last_read_number_from_db == block_number_in_snapshots + 1,
                "db and snapshot block numbers are not contiguous");
     }
-    auto block_number_in_snapshots = repository_->max_block_available();
+
     while (read_count < n) {
         auto header{read_header_from_snapshot(block_number_in_snapshots)};
         if (!header) return;
@@ -1306,6 +1307,33 @@ bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash
     if (found) return true;
 
     return read_rlp_transactions_from_snapshot(height, transactions);
+}
+
+std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
+    auto block_num = read_tx_lookup_from_db(tx_hash);
+    if (block_num) {
+        return block_num;
+    }
+
+    return read_tx_lookup_from_snapshot(tx_hash);
+}
+
+std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
+    auto cursor = txn_.ro_cursor(table::kTxLookup);
+    auto data{cursor->find(to_slice(tx_hash.bytes), /*throw_notfound = */ false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    auto block_num = endian::load_big_u64(from_slice(data.value).data());
+    return block_num;
+}
+
+std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+    if (!repository_) {
+        return {};
+    }
+
+    return repository_->find_block_number(tx_hash);
 }
 
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {

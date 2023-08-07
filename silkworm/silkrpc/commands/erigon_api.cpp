@@ -98,27 +98,33 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         // Lookup the first and last block headers
-        const auto first_header = co_await core::rawdb::read_header_by_number(tx_database, core::kEarliestBlockNumber);
-        const auto current_header = co_await core::rawdb::read_current_header(tx_database);
-        const uint64_t current_block_number = current_header.number;
+        const auto first_hash = co_await chain_storage->read_canonical_hash(core::kEarliestBlockNumber);
+        const auto first_header = co_await chain_storage->read_header(core::kEarliestBlockNumber, *first_hash);
+        const auto head_header_hash = co_await core::rawdb::read_head_header_hash(tx_database);
+        const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
+        const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
+        const uint64_t current_block_number = current_header->number;
 
         // Find the lowest block header w/ timestamp greater or equal to provided timestamp
         uint64_t block_number;
-        if (current_header.timestamp <= timestamp) {
+        if (current_header->timestamp <= timestamp) {
             block_number = current_block_number;
-        } else if (first_header.timestamp >= timestamp) {
+        } else if (first_header->timestamp >= timestamp) {
             block_number = core::kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
             const auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t i) -> awaitable<bool> {
-                const auto header = co_await core::rawdb::read_header_by_number(tx_database, i);
-                co_return header.timestamp >= timestamp;
+                const auto hash = co_await chain_storage->read_canonical_hash(i);
+                const auto header = co_await chain_storage->read_header(i, *hash);
+                co_return header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
-            const auto matching_header = co_await core::rawdb::read_header_by_number(tx_database, matching_block_number);
-            if (matching_header.timestamp > timestamp) {
+            const auto matching_hash = co_await chain_storage->read_canonical_hash(matching_block_number);
+            const auto matching_header = co_await chain_storage->read_header(matching_block_number, *matching_hash);
+            if (matching_header->timestamp > timestamp) {
                 block_number = matching_block_number - 1;
             } else {
                 block_number = matching_block_number;
@@ -126,9 +132,9 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
         }
 
         // Lookup and return the matching block
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
-        const Block extended_block{*block_with_hash, total_difficulty, full_tx};
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
+        const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
 
         reply = make_json_content(request["id"], extended_block);
     } catch (const std::exception& e) {
@@ -276,8 +282,9 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::jso
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
 
         SILK_DEBUG << "receipts.size(): " << receipts.size();
@@ -343,6 +350,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILK_DEBUG << "chain config: " << chain_config;
@@ -350,7 +358,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
-            const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, tx_database, block_number)};
+            const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number)};
             const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
             if (!cc) {
                 throw std::runtime_error("Invalid chain config");

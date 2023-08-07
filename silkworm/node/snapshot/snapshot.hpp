@@ -26,6 +26,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/infra/common/os.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
 #include <silkworm/node/recsplit/rec_split.hpp>
@@ -35,19 +36,22 @@ namespace silkworm::snapshot {
 
 class Snapshot {
   public:
-    static constexpr uint64_t kPageSize{4096};
+    static inline const auto kPageSize{os::page_size()};
 
-    explicit Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to);
+    explicit Snapshot(SnapshotPath path);
     virtual ~Snapshot() = default;
 
-    [[nodiscard]] virtual SnapshotPath path() const = 0;
-    [[nodiscard]] std::filesystem::path fs_path() const { return path_; }
+    [[nodiscard]] SnapshotPath path() const { return path_; }
+    [[nodiscard]] std::filesystem::path fs_path() const { return path_.path(); }
 
-    [[nodiscard]] BlockNum block_from() const { return block_from_; }
-    [[nodiscard]] BlockNum block_to() const { return block_to_; }
+    [[nodiscard]] BlockNum block_from() const { return path_.block_from(); }
+    [[nodiscard]] BlockNum block_to() const { return path_.block_to(); }
 
     [[nodiscard]] bool empty() const { return item_count() == 0; }
     [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
+
+    [[nodiscard]] void* memory_file_address() const;
+    [[nodiscard]] std::size_t memory_file_size() const;
 
     void reopen_segment();
     virtual void reopen_index() = 0;
@@ -71,19 +75,15 @@ class Snapshot {
     void close_segment();
     virtual void close_index() = 0;
 
-    std::filesystem::path path_;
-    BlockNum block_from_{0};
-    BlockNum block_to_{0};
+    SnapshotPath path_;
     huffman::Decompressor decoder_;
 };
 
 class HeaderSnapshot : public Snapshot {
   public:
-    explicit HeaderSnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
-        : Snapshot(std::move(path), block_from, block_to) {}
+    explicit HeaderSnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
     ~HeaderSnapshot() override { close(); }
 
-    [[nodiscard]] SnapshotPath path() const override;
     [[nodiscard]] const succinct::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
 
     using Walker = std::function<bool(const BlockHeader* header)>;
@@ -109,11 +109,9 @@ using StoredBlockBody = db::detail::BlockBodyForStorage;
 
 class BodySnapshot : public Snapshot {
   public:
-    explicit BodySnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
-        : Snapshot(std::move(path), block_from, block_to) {}
+    explicit BodySnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
     ~BodySnapshot() override { close(); }
 
-    [[nodiscard]] SnapshotPath path() const override;
     [[nodiscard]] const succinct::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
     using Walker = std::function<bool(BlockNum number, const StoredBlockBody* body)>;
@@ -138,11 +136,9 @@ class BodySnapshot : public Snapshot {
 
 class TransactionSnapshot : public Snapshot {
   public:
-    explicit TransactionSnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
-        : Snapshot(std::move(path), block_from, block_to) {}
+    explicit TransactionSnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
     ~TransactionSnapshot() override { close(); }
 
-    [[nodiscard]] SnapshotPath path() const override;
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
     [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
 
@@ -152,6 +148,8 @@ class TransactionSnapshot : public Snapshot {
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
     [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
     [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const;
+
+    [[nodiscard]] std::optional<BlockNum> block_num_by_txn_hash(const Hash& txn_hash) const;
 
     void reopen_index() override;
 

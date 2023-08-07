@@ -17,6 +17,7 @@
 #include "sync.hpp"
 
 #include <chrono>
+#include <exception>
 #include <latch>
 
 #include <magic_enum.hpp>
@@ -153,7 +154,12 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     client_thread_ = std::thread([&]() {
         log::set_thread_name("bit-torrent");
-        client_.execute_loop();
+        try {
+            client_.execute_loop();
+        } catch (const std::exception& ex) {
+            SILK_CRIT << "SnapshotSync: BitTorrentClient execute_loop exception: " << ex.what();
+            std::terminate();
+        }
     });
 
     // Wait for download completion of all snapshots or stop request

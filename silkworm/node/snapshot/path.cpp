@@ -25,6 +25,7 @@
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshot {
@@ -54,7 +55,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     }
 
     // Expected scaled block format: <dddddd>
-    if (scaled_from.size() > 6 || scaled_to.size() > 6) {
+    if (scaled_from.size() != 6 || scaled_to.size() != 6) {
         return std::nullopt;
     }
 
@@ -71,6 +72,11 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
     const BlockNum block_to{scaled_block_to * kFileNameBlockScaleFactor};
+
+    // Expected proper block range: [block_from, block_to)
+    if (block_to < block_from) {
+        return std::nullopt;
+    }
 
     // Expected tag format: headers|bodies|transactions (parsing relies on magic_enum, so SnapshotType items must match exactly)
     std::string_view tag_str{tag.data(), tag.size()};
@@ -101,7 +107,9 @@ fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, Bloc
 }
 
 SnapshotPath::SnapshotPath(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
-    : path_(std::move(path)), version_(version), block_from_(block_from), block_to_(block_to), type_(type) {}
+    : path_(std::move(path)), version_(version), block_from_(block_from), block_to_(block_to), type_(type) {
+    ensure(block_to >= block_from, "SnapshotPath: block_to less than block_from");
+}
 
 bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {
     if (lhs.version_ != rhs.version_) {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,16 +14,20 @@
    limitations under the License.
 */
 
-#include "xor.hpp"
+#pragma once
 
-#include <algorithm>
-#include <functional>
+#include <memory>
 
-namespace silkworm::sentry::rlpx::crypto {
+#include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/rlpx/peer.hpp>
 
-void xor_bytes(Bytes& data1, ByteView data2) {
-    assert(data1.size() <= data2.size());
-    std::transform(data1.cbegin(), data1.cend(), data2.cbegin(), data1.begin(), std::bit_xor<>{});
-}
+namespace silkworm::sentry {
 
-}  // namespace silkworm::sentry::rlpx::crypto
+struct PeerManagerObserver {
+    virtual ~PeerManagerObserver() = default;
+    virtual void on_peer_added(std::shared_ptr<silkworm::sentry::rlpx::Peer> peer) = 0;
+    virtual void on_peer_removed(std::shared_ptr<silkworm::sentry::rlpx::Peer> peer) = 0;
+    virtual void on_peer_connect_error(const EnodeUrl& peer_url) = 0;
+};
+
+}  // namespace silkworm::sentry

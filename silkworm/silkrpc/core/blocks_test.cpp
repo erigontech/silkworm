@@ -139,8 +139,7 @@ TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
     SECTION("number in dec") {
         const std::string BLOCK_ID_DEC = "67890";
         auto result = boost::asio::co_spawn(pool, get_block_number(BLOCK_ID_DEC, db_reader, /*latest_required=*/false), boost::asio::use_future);
-        auto [number, ignore] = result.get();
-        CHECK(number == 67890);
+        REQUIRE_THROWS(result.get());
     }
 
     SECTION("number in hex & latest true") {

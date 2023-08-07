@@ -27,9 +27,47 @@
 
 namespace silkworm {
 
+/**
+ * @brief Execute a given block, write resulting changes into the state and return the transaction receipts.
+ * @attention This \code execute_block overload requires both EVM state_pool and analysis_cache to better performance
+ * @precondition validate_block_header & pre_validate_block_body must return kOk; transaction senders must be already populated.
+ * @warning This method does not verify state root; pre-Byzantium receipt root isn't validated either.
+ * @param block The block to execute.
+ * @param analysis_cache The cache containing the EVM code analysis indexed by code hash.
+ * @param state_pool The pool of EVM execution states to use.
+ * @param state The chain state at the beginning of the block.
+ * @param chain_config The configuration parameters for the chain.
+ * @param receipts The transaction receipts produced by block execution.
+ */
+[[nodiscard]] inline ValidationResult execute_block(const Block& block,
+                                                    AnalysisCache& analysis_cache,
+                                                    ObjectPool<evmone::ExecutionState>& state_pool,
+                                                    State& state,
+                                                    const ChainConfig& chain_config,
+                                                    std::vector<Receipt>& receipts) noexcept {
+    const auto rule_set{protocol::rule_set_factory(chain_config)};
+    if (!rule_set) {
+        return ValidationResult::kUnknownProtocolRuleSet;
+    }
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
+    processor.evm().analysis_cache = &analysis_cache;
+    processor.evm().state_pool = &state_pool;
+    return processor.execute_and_write_block(receipts);
+}
+
+/**
+ * @brief Execute a given block, write resulting changes into the state and return the transaction receipts.
+ * @precondition validate_block_header & pre_validate_block_body must return kOk; transaction senders must be already populated.
+ * @warning This method does not verify state root; pre-Byzantium receipt root isn't validated either.
+ * @warning For better performance use ExecutionProcessor directly and set EVM state_pool and analysis_cache.
+ * @param block The block to execute.
+ * @param state The chain state at the beginning of the block.
+ * @param chain_config The configuration parameters for the chain.
+ * @param receipts The transaction receipts produced by block execution.
+ */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state, const ChainConfig& chain_config,
                                                     std::vector<Receipt>& receipts) noexcept {
-    auto rule_set{protocol::rule_set_factory(chain_config)};
+    const auto rule_set{protocol::rule_set_factory(chain_config)};
     if (!rule_set) {
         return ValidationResult::kUnknownProtocolRuleSet;
     }
@@ -37,18 +75,14 @@ namespace silkworm {
     return processor.execute_and_write_block(receipts);
 }
 
-/** @brief Executes a given block and writes resulting changes into the state.
- *
- * Preconditions:
- *  validate_block_header & pre_validate_block_body must return kOk;
- *  transaction senders must be already populated.
- *
- * Warning: This method does not verify state root;
- * pre-Byzantium receipt root isn't validated either.
- *
- * For better performance use ExecutionProcessor directly and set EVM state_pool & analysis_cache.
- *
- * @param state The Ethereum state at the beginning of the block.
+/**
+ * @brief Execute a given block and write resulting changes into the state.
+ * @precondition validate_block_header & pre_validate_block_body must return kOk; transaction senders must be already populated.
+ * @warning This method does not verify state root; pre-Byzantium receipt root isn't validated either.
+ * @warning For better performance use ExecutionProcessor directly and set EVM state_pool and analysis_cache.
+ * @param block The block to execute.
+ * @param state The chain state at the beginning of the block.
+ * @param chain_config The configuration parameters for the chain.
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& chain_config) noexcept {

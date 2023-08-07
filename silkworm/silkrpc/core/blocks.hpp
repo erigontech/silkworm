@@ -45,6 +45,8 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
 
 boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
+boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
+
 boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader);
 
 boost::asio::awaitable<uint64_t> get_highest_block_number(const rawdb::DatabaseReader& reader);

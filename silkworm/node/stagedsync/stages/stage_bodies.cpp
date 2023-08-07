@@ -18,6 +18,8 @@
 
 #include <thread>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -109,6 +111,21 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
         BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+
+        log::Info(log_prefix_,
+                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                   "from", std::to_string(current_height_),
+                   "to", std::to_string(target_height),
+                   "span", std::to_string(target_height - current_height_)});
+        if (current_height_ == target_height) {
+            // Nothing to process
+            return Stage::Result::kSuccess;
+        } else if (current_height_ > target_height) {
+            // Something bad had happened. Maybe we need to unwind ?
+            throw StageError(Stage::Result::kInvalidProgress,
+                             "Previous progress " + std::to_string(current_height_) +
+                                 " > target progress " + std::to_string(target_height));
+        }
 
         BodyDataModel body_persistence(tx, current_height_, node_settings_->chain_config.value());
         body_persistence.set_preverified_height(PreverifiedHashes::current.height);

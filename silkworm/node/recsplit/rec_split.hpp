@@ -640,6 +640,9 @@ class RecSplit {
         return std::filesystem::last_write_time(index_path_);
     }
 
+    const void* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
+    std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
+
   private:
     static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
 

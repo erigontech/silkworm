@@ -98,6 +98,10 @@ constexpr const char* k_debug_traceCall{"debug_traceCall"};
 constexpr const char* k_debug_traceCallMany{"debug_traceCallMany"};
 constexpr const char* k_debug_traceBlockByNumber{"debug_traceBlockByNumber"};
 constexpr const char* k_debug_traceBlockByHash{"debug_traceBlockByHash"};
+constexpr const char* k_debug_getRawBlock{"debug_getRawBlock"};
+constexpr const char* k_debug_getRawHeader{"debug_getRawHeader"};
+constexpr const char* k_debug_getRawReceipts{"debug_getRawReceipts"};
+constexpr const char* k_debug_getRawTransaction{"debug_getRawTransaction"};
 
 constexpr const char* k_trace_call{"trace_call"};
 constexpr const char* k_trace_callMany{"trace_callMany"};

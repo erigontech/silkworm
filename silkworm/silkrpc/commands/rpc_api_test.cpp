@@ -308,6 +308,8 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_sendRawTransaction",     // call to oracle fails, needs fixing or mocking
 };
 
+// Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
     auto tests_dir = get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
@@ -390,5 +392,6 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     db->close();
     std::filesystem::remove_all(db_dir);
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc::commands

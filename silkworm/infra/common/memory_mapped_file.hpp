@@ -79,6 +79,14 @@ class MemoryMappedFile {
     explicit MemoryMappedFile(std::filesystem::path path, std::optional<MemoryMappedRegion> region = {}, bool read_only = true);
     ~MemoryMappedFile();
 
+    // Not copyable
+    MemoryMappedFile(const MemoryMappedFile&) = delete;
+    MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
+
+    // Only movable
+    MemoryMappedFile(MemoryMappedFile&& source) noexcept;
+    MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept;
+
     [[nodiscard]] std::filesystem::path path() const {
         return path_;
     }

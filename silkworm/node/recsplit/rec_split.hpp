@@ -232,9 +232,8 @@ class RecSplit {
     }
 
     explicit RecSplit(std::filesystem::path index_path, std::optional<MemoryMappedRegion> index_region = {})
-        : RecSplit(MemoryMappedFile{std::move(index_path), std::move(index_region)}) {}
-
-    explicit RecSplit(MemoryMappedFile encoded_file) : index_path_{encoded_file.path()}, encoded_file_{std::move(encoded_file)} {
+        : index_path_{index_path},
+          encoded_file_{std::make_optional<MemoryMappedFile>(std::move(index_path), std::move(index_region))} {
         SILK_DEBUG << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 

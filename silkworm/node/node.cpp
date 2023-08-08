@@ -133,7 +133,7 @@ Task<void> NodeImpl::run_tasks() {
 
 Task<void> NodeImpl::start_execution_server() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
-    return execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
+    return execution_server_.async_run("exec-engine", /*stack_size=*/kExecutionThreadStackSize);
 }
 
 Task<void> NodeImpl::start_backend_kv_grpc_server() {
@@ -144,7 +144,7 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
     auto stop = [this]() {
         backend_kv_rpc_server_->shutdown();
     };
-    co_await concurrency::async_thread(std::move(run), std::move(stop));
+    co_await concurrency::async_thread(std::move(run), std::move(stop), "bekv-server");
 }
 
 Task<void> NodeImpl::start_bittorrent_client() {
@@ -155,7 +155,7 @@ Task<void> NodeImpl::start_bittorrent_client() {
         auto stop = [this]() {
             bittorrent_client_->stop();
         };
-        co_await concurrency::async_thread(std::move(run), std::move(stop));
+        co_await concurrency::async_thread(std::move(run), std::move(stop), "bit-torrent");
     }
 }
 
@@ -169,13 +169,13 @@ Task<void> NodeImpl::start_execution_log_timer() {
     auto asio_guard = std::make_unique<asio_guard_type>(settings_.asio_context.get_executor());
 
     auto run = [this] {
-        log::set_thread_name("asio_ctx_timer");
+        log::set_thread_name("ctx-log-tmr");
         log::Trace("Asio Timers", {"state", "started"});
         settings_.asio_context.run();
         log::Trace("Asio Timers", {"state", "stopped"});
     };
     auto stop = [&asio_guard] { asio_guard.reset(); };
-    co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
+    co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop), "ctx-log-tmr");
 }
 
 Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)

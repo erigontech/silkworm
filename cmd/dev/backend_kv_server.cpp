@@ -243,11 +243,11 @@ int main(int argc, char* argv[]) {
                 auto stop = [&state_changes_timer]() {
                     state_changes_timer.cancel();
                 };
-                co_await concurrency::async_thread(std::move(run), std::move(stop));
+                co_await concurrency::async_thread(std::move(run), std::move(stop), "state-c-sim");
             };
-            tasks = state_changes_simulator() && server.async_run();
+            tasks = state_changes_simulator() && server.async_run("bekv-server");
         } else {
-            tasks = server.async_run();
+            tasks = server.async_run("bekv-server");
         }
 
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};

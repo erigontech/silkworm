@@ -29,21 +29,17 @@
 
 namespace silkworm {
 
-/*
- * Abstract interface for active components
- * i.e. component that have an infinite loop and need a dedicated thread to run the loop (if the application
- * has also other things to do).
- * Here we prefer not to provide a thread facility and let the user provide one more suitable to the context,
- * so perhaps a better name is LongRunningComponent.
- */
+//! Abstract interface for active components i.e. components that have an infinite loop and need a dedicated thread
+//! to run the loop (if the application has also other things to do).
 class ActiveComponent : public Stoppable {
   public:
     virtual void execution_loop() = 0;
 
-    boost::asio::awaitable<void> async_run(std::optional<std::size_t> stack_size = {}) {
+    //! This adapter method makes ActiveComponent suitable to be used as asynchronous task
+    boost::asio::awaitable<void> async_run(const char* thread_name, std::optional<std::size_t> stack_size = {}) {
         auto run = [this] { this->execution_loop(); };
         auto stop = [this] { this->stop(); };
-        co_await concurrency::async_thread(std::move(run), std::move(stop), stack_size);
+        co_await concurrency::async_thread(std::move(run), std::move(stop), thread_name, stack_size);
     }
 };
 

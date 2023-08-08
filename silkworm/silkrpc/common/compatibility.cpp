@@ -21,7 +21,7 @@ namespace silkworm::rpc::compatibility {
 //! Flag indicating if strict compatibility with Erigon RpcDaemon at JSON RPC level is guaranteed
 static bool erigon_json_strict_compatibility_required{false};
 
-bool erigon_json_api_compatibility_required() {
+bool is_erigon_json_api_compatibility_required() {
     return erigon_json_strict_compatibility_required;
 }
 

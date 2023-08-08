@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <silkworm/core/common/singleton.hpp>
-
 namespace silkworm::rpc::compatibility {
 
 bool is_erigon_json_api_compatibility_required();

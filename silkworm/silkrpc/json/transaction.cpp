@@ -16,9 +16,6 @@
 
 #include "transaction.hpp"
 
-#include <cstring>
-#include <utility>
-
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/compatibility.hpp>
 #include <silkworm/silkrpc/common/util.hpp>

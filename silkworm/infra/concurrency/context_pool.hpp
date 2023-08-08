@@ -26,6 +26,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/idle_strategy.hpp>
@@ -75,8 +76,10 @@ std::ostream& operator<<(std::ostream& out, const Context& c);
 //! Pool of \ref Context instances running as separate reactive schedulers.
 template <typename T = Context>
 class ContextPool {
+    using ExceptionHandler = std::function<void(std::exception_ptr)>;
+
   public:
-    explicit ContextPool(std::size_t pool_size) : next_index_{0} {
+    explicit ContextPool(std::size_t pool_size) : next_index_{0}, exception_handler_{termination_handler} {
         if (pool_size == 0) {
             throw std::logic_error("ContextPool::ContextPool pool_size is 0");
         }
@@ -119,7 +122,10 @@ class ContextPool {
                     context.execute_loop();
                 } catch (const std::exception& ex) {
                     SILK_CRIT << "ContextPool context.execute_loop exception: " << ex.what();
-                    std::terminate();
+                    exception_handler_(std::make_exception_ptr(ex));
+                } catch (...) {
+                    SILK_CRIT << "ContextPool context.execute_loop unexpected exception";
+                    exception_handler_(std::current_exception());
                 }
                 SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
@@ -167,6 +173,7 @@ class ContextPool {
 
     //! Use a round-robin scheme to choose the next context to use
     T& next_context() {
+        ensure(contexts_.size() > 0, "ContextPool: no context in pool");
         // Increment the next index first to make sure that different calling threads get different contexts.
         size_t index = next_index_.fetch_add(1) % contexts_.size();
         return contexts_[index];
@@ -177,7 +184,15 @@ class ContextPool {
         return *context.io_context();
     }
 
+    void set_exception_handler(ExceptionHandler exception_handler) {
+        exception_handler_ = exception_handler;
+    }
+
   protected:
+    static void termination_handler(std::exception_ptr) {
+        std::terminate();
+    }
+
     //! The pool of execution contexts.
     std::vector<T> contexts_;
 
@@ -189,6 +204,9 @@ class ContextPool {
 
     //! Flag indicating if pool has been stopped.
     std::atomic_bool stopped_{false};
+
+    //! Exception handler invoked on execution loop abnormal termination
+    ExceptionHandler exception_handler_;
 };
 
 }  // namespace silkworm::concurrency

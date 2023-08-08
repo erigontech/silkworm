@@ -102,6 +102,7 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
     SECTION("next_context") {
         ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);
+        CHECK_THROWS_AS(server_context_pool.next_context(), std::logic_error);
         auto queue_ptr1 = builder.AddCompletionQueue();
         auto queue_raw_ptr1 = queue_ptr1.get();
         auto queue_ptr2 = builder.AddCompletionQueue();
@@ -120,6 +121,7 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
     SECTION("next_io_context") {
         ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);
+        CHECK_THROWS_AS(server_context_pool.next_io_context(), std::logic_error);
         server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         CHECK(server_context_pool.num_contexts() == 2);
@@ -162,6 +164,26 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
         server_context_pool.stop();
         CHECK_NOTHROW(server_context_pool.join());
     }
+}
+
+TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    grpc::ServerBuilder builder;
+
+    ServerContextPool cp{3};
+    cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+    cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+    cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+    std::exception_ptr run_exception;
+    cp.set_exception_handler([&](std::exception_ptr eptr) {
+        run_exception = eptr;
+        // In case of any loop exception in any thread, close down the pool
+        cp.stop();
+    });
+    auto context_pool_thread = std::thread([&]() { cp.run(); });
+    boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
+    CHECK_NOTHROW(context_pool_thread.join());
+    CHECK(bool(run_exception));
 }
 #endif  // SILKWORM_SANITIZE
 

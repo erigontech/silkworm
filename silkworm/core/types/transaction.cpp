@@ -16,9 +16,10 @@
 
 #include "transaction.hpp"
 
+#include <bit>
+
 #include <ethash/keccak.hpp>
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/protocol/param.hpp>
@@ -46,7 +47,7 @@ bool Transaction::set_v(const intx::uint256& v) {
 evmc::bytes32 Transaction::hash() const {
     Bytes rlp;
     rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
-    return bit_cast<evmc_bytes32>(keccak256(rlp));
+    return std::bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
 namespace rlp {

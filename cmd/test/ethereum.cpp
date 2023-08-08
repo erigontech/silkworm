@@ -15,6 +15,7 @@
 */
 
 #include <atomic>
+#include <bit>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -29,7 +30,6 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
@@ -80,7 +80,7 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
         const Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
             account.incarnation = kDefaultIncarnation;
-            account.code_hash = bit_cast<evmc_bytes32>(keccak256(code));
+            account.code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
             state.update_account_code(address, account.incarnation, account.code_hash, code);
         }
 

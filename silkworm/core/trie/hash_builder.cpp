@@ -23,7 +23,6 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
@@ -132,7 +131,7 @@ evmc::bytes32 HashBuilder::root_hash(bool auto_finalize) {
     if (node_ref.length() == kHashLength + 1) {
         std::memcpy(res.bytes, &node_ref[1], kHashLength);
     } else {
-        res = bit_cast<evmc_bytes32>(keccak256(node_ref));
+        res = std::bit_cast<evmc_bytes32>(keccak256(node_ref));
     }
     return res;
 }

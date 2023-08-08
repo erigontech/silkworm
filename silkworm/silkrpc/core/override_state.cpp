@@ -16,6 +16,7 @@
 
 #include "override_state.hpp"
 
+#include <bit>
 #include <future>
 #include <unordered_map>
 #include <utility>
@@ -24,7 +25,6 @@
 #include <boost/asio/use_future.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -47,7 +47,7 @@ OverrideState::OverrideState(silkworm::State& inner_state, const AccountsOverrid
     : inner_state_{inner_state}, accounts_overrides_{accounts_overrides} {
     for (const auto& [key, value] : accounts_overrides_) {
         if (value.code) {
-            evmc::bytes32 code_hash{bit_cast<evmc_bytes32>(keccak256(value.code.value()))};
+            evmc::bytes32 code_hash{std::bit_cast<evmc_bytes32>(keccak256(value.code.value()))};
             code_hash_.emplace(code_hash, value.code.value());
         }
     }

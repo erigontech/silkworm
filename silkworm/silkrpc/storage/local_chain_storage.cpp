@@ -16,7 +16,8 @@
 
 #include "local_chain_storage.hpp"
 
-#include <silkworm/core/common/cast.hpp>
+#include <bit>
+
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
@@ -130,7 +131,7 @@ Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash
         co_return false;
     }
     for (const auto& rlp : rlp_txs) {
-        if (bit_cast<evmc_bytes32>(keccak256(rlp)) == txn_hash) {
+        if (std::bit_cast<evmc_bytes32>(keccak256(rlp)) == txn_hash) {
             rlp_tx = rlp;
             co_return true;
         }

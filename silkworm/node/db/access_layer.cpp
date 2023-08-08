@@ -16,10 +16,10 @@
 
 #include "access_layer.hpp"
 
+#include <bit>
 #include <stdexcept>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -170,7 +170,7 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
 evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
-    auto header_hash = bit_cast<evmc_bytes32>(keccak256(value));  // avoid header.hash() because it re-does rlp encoding
+    auto header_hash = std::bit_cast<evmc_bytes32>(keccak256(value));  // avoid header.hash() because it re-does rlp encoding
     auto key{db::block_key(header.number, header_hash.bytes)};
     auto skey = db::to_slice(key);
     auto svalue = db::to_slice(value);

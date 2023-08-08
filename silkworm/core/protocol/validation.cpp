@@ -16,7 +16,8 @@
 
 #include "validation.hpp"
 
-#include <silkworm/core/common/cast.hpp>
+#include <bit>
+
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -235,7 +236,7 @@ evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
 
     Bytes ommers_rlp;
     rlp::encode(ommers_rlp, body.ommers);
-    return bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
+    return std::bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
 }
 
 }  // namespace silkworm::protocol

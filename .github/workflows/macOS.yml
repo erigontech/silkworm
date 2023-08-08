@@ -27,6 +27,8 @@ concurrency:
 jobs:
   osx:
     runs-on: macos-13
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_14.3.app/Contents/Developer
 
     # Disable on external PRs
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -62,7 +64,6 @@ jobs:
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
       env:
-        DEVELOPER_DIR: /Applications/Xcode_14.3.app/Contents/Developer
         CC: ${{ matrix.config.cc}}
         CXX: ${{ matrix.config.cxx}}
       run: |

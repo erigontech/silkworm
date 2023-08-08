@@ -22,7 +22,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>

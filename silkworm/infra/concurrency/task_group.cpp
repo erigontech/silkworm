@@ -32,7 +32,7 @@ namespace silkworm::concurrency {
 
 using namespace boost::asio;
 
-void TaskGroup::spawn(any_io_executor&& executor, awaitable<void> task) {
+void TaskGroup::spawn(any_io_executor executor, awaitable<void> task) {
     std::scoped_lock lock(mutex_);
 
     if (is_closed_) {

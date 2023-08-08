@@ -24,8 +24,8 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/signals2.hpp>
 
 #include <silkworm/infra/concurrency/task_group.hpp>
@@ -44,7 +44,7 @@ namespace silkworm {
 class SentryClient {
   public:
     explicit SentryClient(
-        boost::asio::io_context& io_context,
+        boost::asio::any_io_executor executor,
         std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client);
 
     SentryClient(const SentryClient&) = delete;
@@ -109,7 +109,7 @@ class SentryClient {
     // notifying registered subscribers
     boost::asio::awaitable<void> publish(const silkworm::sentry::api::MessageFromPeer& message_from_peer);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::any_io_executor executor_;
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client_;
     concurrency::TaskGroup tasks_;
 

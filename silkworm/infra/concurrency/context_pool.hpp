@@ -29,6 +29,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
+#include <silkworm/infra/concurrency/executor_pool.hpp>
 #include <silkworm/infra/concurrency/idle_strategy.hpp>
 
 namespace silkworm::concurrency {
@@ -75,7 +76,7 @@ std::ostream& operator<<(std::ostream& out, const Context& c);
 
 //! Pool of \ref Context instances running as separate reactive schedulers.
 template <typename T = Context>
-class ContextPool {
+class ContextPool : public ExecutorPool {
     using ExceptionHandler = std::function<void(std::exception_ptr)>;
 
   public:
@@ -90,7 +91,7 @@ class ContextPool {
             add_context(T{contexts_.size(), settings.wait_mode});
         }
     }
-    virtual ~ContextPool() {
+    ~ContextPool() override {
         SILK_TRACE << "ContextPool::~ContextPool START " << this;
         stop();
         join();
@@ -182,6 +183,15 @@ class ContextPool {
     boost::asio::io_context& next_io_context() {
         const auto& context = next_context();
         return *context.io_context();
+    }
+
+    // ExecutorPool
+    [[nodiscard]] boost::asio::any_io_executor any_executor() override {
+        return this->next_io_context().get_executor();
+    }
+
+    [[nodiscard]] ExecutorPool& as_executor_pool() {
+        return *this;
     }
 
     void set_exception_handler(ExceptionHandler exception_handler) {

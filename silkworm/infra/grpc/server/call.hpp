@@ -23,9 +23,6 @@
 #include <utility>
 
 #include <agrpc/repeatedly_request.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>

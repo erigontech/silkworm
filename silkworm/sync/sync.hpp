@@ -19,8 +19,8 @@
 #include <memory>
 #include <optional>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -46,7 +46,7 @@ struct EngineRpcSettings {
 
 class Sync {
   public:
-    Sync(boost::asio::io_context& io_context,
+    Sync(boost::asio::any_io_executor executor,
          mdbx::env_managed& chaindata_env,
          execution::Client& execution,
          const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,

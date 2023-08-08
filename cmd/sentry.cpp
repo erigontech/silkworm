@@ -75,9 +75,9 @@ void sentry_main(Settings settings) {
         [] { return std::make_unique<DummyServerCompletionQueue>(); },
     };
 
-    ShutdownSignal shutdown_signal{context_pool.next_io_context()};
+    ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
 
-    Sentry sentry{std::move(settings), context_pool};
+    Sentry sentry{std::move(settings), context_pool.as_executor_pool()};
 
     auto run_future = boost::asio::co_spawn(
         context_pool.next_io_context(),

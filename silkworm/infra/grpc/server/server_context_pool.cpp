@@ -16,6 +16,7 @@
 
 #include "server_context_pool.hpp"
 
+#include <exception>
 #include <thread>
 #include <utility>
 
@@ -75,11 +76,20 @@ void ServerContext::execute_loop_backoff() {
         client_grpc_context_->run_completion_queue();
         SILK_DEBUG << "Client GrpcContext execution loop end [" << std::this_thread::get_id() << "]";
     }};
-    io_context()->run();
+    std::exception_ptr run_exception;
+    try {
+        io_context()->run();
+    } catch (...) {
+        run_exception = std::current_exception();
+    }
 
     client_grpc_context_work_.reset();
     client_grpc_context_->stop();
     client_grpc_context_thread.join();
+
+    if (run_exception) {
+        std::rethrow_exception(run_exception);
+    }
     SILK_DEBUG << "Back-off execution loop end [" << std::this_thread::get_id() << "]";
 }
 
@@ -109,7 +119,12 @@ void ServerContext::execute_loop_multi_threaded() {
         client_grpc_context_->run_completion_queue();
         SILK_TRACE << "Client GrpcContext execution loop end [" << std::this_thread::get_id() << "]";
     }};
-    io_context()->run();
+    std::exception_ptr run_exception;
+    try {
+        io_context()->run();
+    } catch (...) {
+        run_exception = std::current_exception();
+    }
 
     server_grpc_context_work_.reset();
     client_grpc_context_work_.reset();
@@ -117,6 +132,10 @@ void ServerContext::execute_loop_multi_threaded() {
     client_grpc_context_->stop();
     server_grpc_context_thread.join();
     client_grpc_context_thread.join();
+
+    if (run_exception) {
+        std::rethrow_exception(run_exception);
+    }
     SILK_TRACE << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 

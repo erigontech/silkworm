@@ -213,6 +213,39 @@ TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][g
     }
 }
 
+// This custom ClientContextPool is required to test how unhandled exceptions are treated by ClientContextPool
+// because in such case ClientContextPool terminates execution using std::terminate, which is not suitable for tests
+class ClientContextPool_ForTest : public ClientContextPool {
+  public:
+    explicit ClientContextPool_ForTest(std::size_t pool_size) : ClientContextPool(pool_size) {}
+    void start() override {
+        for (std::size_t i{0}; i < contexts_.size(); ++i) {
+            auto& context = contexts_[i];
+            context_threads_.create_thread([&]() {
+                try {
+                    context.execute_loop();
+                } catch (const std::exception& ex) {
+                    loop_exception_caught = true;
+                    // In case of any loop exception in any thread, close down the pool
+                    stop();
+                }
+            });
+        }
+    }
+
+    bool loop_exception_caught{false};
+};
+
+TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+
+    ClientContextPool_ForTest cp{3};
+    auto context_pool_thread = std::thread([&]() { cp.run(); });
+    boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
+    CHECK_NOTHROW(context_pool_thread.join());
+    CHECK(cp.loop_exception_caught);
+}
+
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc

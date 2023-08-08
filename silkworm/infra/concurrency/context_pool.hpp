@@ -26,6 +26,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/idle_strategy.hpp>
@@ -167,6 +168,7 @@ class ContextPool {
 
     //! Use a round-robin scheme to choose the next context to use
     T& next_context() {
+        ensure(contexts_.size() > 0, "ContextPool: no context in pool");
         // Increment the next index first to make sure that different calling threads get different contexts.
         size_t index = next_index_.fetch_add(1) % contexts_.size();
         return contexts_[index];

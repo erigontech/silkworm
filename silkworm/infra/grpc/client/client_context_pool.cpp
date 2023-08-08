@@ -16,6 +16,7 @@
 
 #include "client_context_pool.hpp"
 
+#include <exception>
 #include <thread>
 
 #include <magic_enum.hpp>
@@ -78,11 +79,20 @@ void ClientContext::execute_loop_multi_threaded() {
     std::thread grpc_context_thread{[grpc_context = grpc_context_]() {
         grpc_context->run_completion_queue();
     }};
-    io_context_->run();
+    std::exception_ptr run_exception;
+    try {
+        io_context_->run();
+    } catch (...) {
+        run_exception = std::current_exception();
+    }
 
     grpc_context_work_.reset();
     grpc_context_->stop();
     grpc_context_thread.join();
+
+    if (run_exception) {
+        std::rethrow_exception(run_exception);
+    }
     SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 

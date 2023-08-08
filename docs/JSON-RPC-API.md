@@ -140,7 +140,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | erigon_cumulativeChainTraffic              |     Yes      |                                           |
 | erigon_getHeaderByHash                     |     Yes      |                                           |
 | erigon_getHeaderByNumber                   |     Yes      |                                           |
-| erigon_getBalanceChangesInBlock            |      -       |                       not yet implemented |
+| erigon_getBalanceChangesInBlock            |     Yes      |                                           |
 | erigon_getBlockByTimestamp                 |     Yes      |                                           |
 | erigon_getBlockReceiptsByBlockHash         |      -       |                       not yet implemented |
 | erigon_getLogsByHash                       |     Yes      |                                           |

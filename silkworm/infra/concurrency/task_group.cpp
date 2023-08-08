@@ -56,12 +56,13 @@ void TaskGroup::spawn(any_io_executor executor, Task<void> task) {
 }
 
 Task<void> TaskGroup::wait() {
-    // wait until cancelled
+    // wait until cancelled or a task throws an exception
+    std::exception_ptr ex_ptr;
     try {
-        co_await completions_.receive();
+        ex_ptr = co_await exceptions_.receive();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            close();
+            ex_ptr = std::current_exception();
         } else {
             log::Error() << "TaskGroup::wait system_error: " << ex.what();
             throw;
@@ -69,17 +70,23 @@ Task<void> TaskGroup::wait() {
     }
 
     co_await this_coro::reset_cancellation_state();
+    close();
 
     // wait for all tasks completions
     while (!is_completed()) {
-        auto completed_task_id = co_await completions_.receive();
+        auto [completed_task_id, result_ex_ptr] = co_await completions_.receive();
+
         {
             std::scoped_lock lock(mutex_);
             tasks_.erase(completed_task_id);
         }
+
+        if (result_ex_ptr) {
+            ex_ptr = result_ex_ptr;
+        }
     }
 
-    throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+    std::rethrow_exception(ex_ptr);
 }
 
 void TaskGroup::close() {
@@ -90,30 +97,35 @@ void TaskGroup::close() {
     }
 }
 
-void TaskGroup::on_complete(std::size_t task_id, const std::exception_ptr& ex_ptr) {
-    // rethrow exception unless it is an expected operation_canceled
+static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     try {
-        if (ex_ptr) {
-            std::rethrow_exception(ex_ptr);
-        }
+        std::rethrow_exception(ex_ptr);
     } catch (const boost::system::system_error& e) {
-        if (e.code() != boost::system::errc::operation_canceled) {
-            log::Error() << "TaskGroup::on_complete system_error: " << e.what();
-            throw;
-        }
-    } catch (const std::exception& e) {
-        log::Error() << "TaskGroup::on_complete exception: " << e.what();
-        throw;
+        return (e.code() == boost::system::errc::operation_canceled);
+    } catch (...) {
+        return false;
     }
+}
+
+void TaskGroup::on_complete(std::size_t task_id, const std::exception_ptr& ex_ptr) {
+    bool is_cancelled = ex_ptr && is_operation_cancelled_error(ex_ptr);
 
     std::scoped_lock lock(mutex_);
     if (is_closed_) {
-        bool ok = completions_.try_send(task_id);
+        // if a task threw during cancellation - rethrow from wait()
+        auto result_ex_ptr = (ex_ptr && !is_cancelled) ? ex_ptr : std::exception_ptr{};
+
+        bool ok = completions_.try_send({task_id, result_ex_ptr});
         if (!ok) {
             throw std::runtime_error("TaskGroup::on_complete: completions queue is full, unexpected max_tasks limit breach");
         }
     } else {
         tasks_.erase(task_id);
+
+        // if a task threw - rethrow from wait()
+        if (ex_ptr && !is_cancelled) {
+            exceptions_.try_send(ex_ptr);
+        }
     }
 }
 

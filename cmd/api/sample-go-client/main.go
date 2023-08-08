@@ -6,5 +6,6 @@ func main() {
 	LoadSilkworm(&silkworm, "libsilkworm_api.so")
 
 	silkworm.Init()
+	//silkworm.AddSnapshot()
 	silkworm.Fini()
 }

@@ -208,9 +208,13 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
         auto gas_price = co_await gas_price_oracle.suggested_price(latest_block_number);
 
         const auto block_with_hash = co_await block_provider(latest_block_number);
-        const auto base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);
-        gas_price += base_fee;
-        reply = make_json_content(request["id"], to_quantity(gas_price));
+        if (block_with_hash) {
+            const auto base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);
+            gas_price += base_fee;
+            reply = make_json_content(request["id"], to_quantity(gas_price));
+        } else {
+            reply = make_json_error(request["id"], 100, "invalid block id");
+        }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -327,11 +331,12 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
-        uint64_t tx_count{0};
         if (block_with_hash) {
-            tx_count = block_with_hash->block.transactions.size();
+            const auto tx_count = block_with_hash->block.transactions.size();
+            reply = make_json_content(request["id"], to_quantity(tx_count));
+        } else {
+            reply = make_json_content(request["id"], 0x0);
         }
-        reply = make_json_content(request["id"], to_quantity(tx_count));
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], 0x0);
     } catch (const std::exception& e) {
@@ -366,11 +371,12 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        uint64_t tx_count{0};
         if (block_with_hash) {
-            tx_count = block_with_hash->block.transactions.size();
+            const auto tx_count = block_with_hash->block.transactions.size();
+            reply = make_json_content(request["id"], to_quantity(tx_count));
+        } else {
+            reply = make_json_content(request["id"], 0x0);
         }
-        reply = make_json_content(request["id"], to_quantity(tx_count));
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], 0x0);
     } catch (const std::exception& e) {
@@ -512,9 +518,11 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const n
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
-        const auto ommers = block_with_hash->block.ommers;
-
-        reply = make_json_content(request["id"], to_quantity(ommers.size()));
+        uint64_t ommers = 0;
+        if (block_with_hash) {
+            ommers = block_with_hash->block.ommers.size();
+        }
+        reply = make_json_content(request["id"], to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -547,9 +555,12 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        const auto ommers = block_with_hash->block.ommers;
+        uint64_t ommers = 0;
+        if (block_with_hash) {
+            ommers = block_with_hash->block.ommers.size();
+        }
 
-        reply = make_json_content(request["id"], to_quantity(ommers.size()));
+        reply = make_json_content(request["id"], to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -889,8 +900,13 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_transaction_hash(*block_cache_, *chain_storage, transaction_hash);
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
-        auto transactions = block_with_hash.block.transactions;
+        if (!block_with_hash) {
+            reply = make_json_content(request["id"], {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+        auto transactions = block_with_hash->block.transactions;
         if (receipts.size() != transactions.size()) {
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
         }
@@ -902,7 +918,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
             SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
             if (std::memcmp(transaction_hash.bytes, ethash_hash.bytes, silkworm::kHashLength) == 0) {
                 tx_index = idx;
-                const intx::uint256 base_fee_per_gas{block_with_hash.block.header.base_fee_per_gas.value_or(0)};
+                const intx::uint256 base_fee_per_gas{block_with_hash->block.header.base_fee_per_gas.value_or(0)};
                 const intx::uint256 effective_gas_price{transactions[idx].max_fee_per_gas >= base_fee_per_gas ? transactions[idx].effective_gas_price(base_fee_per_gas)
                                                                                                               : transactions[idx].max_priority_fee_per_gas};
                 receipts[idx].effective_gas_price = effective_gas_price;
@@ -917,7 +933,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_content(request["id"], {});
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
@@ -954,6 +970,11 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         SILK_DEBUG << "chain_id: " << (*chain_config).chain_id << ", latest_block_number: " << latest_block_number;
 
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_number);
+        if (!latest_block_with_hash) {
+            reply = make_json_error(request["id"], 100, "block not found");
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
         rpc::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
@@ -1184,6 +1205,11 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        if (!block_with_hash) {
+            make_glaze_json_error(reply, request["id"], 100, "block not found");
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         silkworm::Transaction txn{call.to_transaction()};
 
         const core::rawdb::DatabaseReader& db_reader =
@@ -1333,6 +1359,11 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
 
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        if (!block_with_hash) {
+            reply = make_json_content(request["id"], {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
 
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
@@ -1442,6 +1473,11 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        if (!block_with_hash) {
+            reply = make_json_content(request["id"], {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 

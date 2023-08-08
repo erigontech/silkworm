@@ -46,7 +46,7 @@ namespace silkworm::rpc::call {
 
 using boost::asio::awaitable;
 
-CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* config,
+CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const silkworm::BlockWithHash& block_with_hash,
                                                   ethdb::TransactionDatabase& tx_database,
                                                   const Bundles& bundles,
@@ -59,7 +59,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* c
     const auto& block_transactions = block.transactions;
     auto state = transaction_.create_state(this_executor, tx_database, block.header.number);
     state::OverrideState override_state{*state, accounts_overrides};
-    EVMExecutor executor{*config, workers_, state};
+    EVMExecutor executor{config, workers_, state};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
@@ -164,8 +164,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
         co_return result;
     }
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage->read_chain_config();
 
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, tx_database, context.block_number);
     auto transaction_index = context.transaction_index;
@@ -177,7 +176,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                result = executes_all_bundles(chain_config_ptr, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
+                result = executes_all_bundles(*chain_config_ptr, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
                 boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
                     self.complete(result);
                 });

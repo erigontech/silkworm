@@ -63,7 +63,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
 
 struct SilkwormMemoryMappedFile {
     const char* file_path;
-    const void* memory_address;
+    uint8_t* memory_address;
     size_t memory_length;
 };
 

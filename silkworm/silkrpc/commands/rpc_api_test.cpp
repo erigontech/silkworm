@@ -34,6 +34,7 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/buffer.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
@@ -50,7 +51,7 @@ std::filesystem::path get_tests_dir() {
         working_dir = working_dir.parent_path();
     }
 
-    INFO("initial working_dir: " << std::filesystem::current_path());
+    INFO("initial working_dir: " << std::filesystem::current_path())
     REQUIRE(std::filesystem::exists(working_dir / "third_party" / "execution-apis"));
 
     return working_dir / "third_party" / "execution-apis" / "tests";
@@ -67,12 +68,12 @@ std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
     return std::make_shared<mdbx::env_managed>(db::open_env(chain_conf));
 }
 
-void populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
+std::unique_ptr<InMemoryState> populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     auto genesis_json_path = tests_dir / "genesis.json";
     std::ifstream genesis_json_input_file(genesis_json_path);
     nlohmann::json genesis_json;
     genesis_json_input_file >> genesis_json;
-    InMemoryState state_buffer{};
+    auto state_buffer = std::make_unique<InMemoryState>();
 
     // Allocate accounts
     if (genesis_json.contains("alloc")) {
@@ -96,16 +97,16 @@ void populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
                 const auto acc_code{from_hex(std::string(account_alloc_json.at("code"))).value()};
                 const auto acc_codehash{std::bit_cast<evmc_bytes32>(keccak256(acc_code))};
                 account.code_hash = acc_codehash;
-                state_buffer.update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
+                state_buffer->update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
             }
 
-            state_buffer.update_account(account_address, std::nullopt, account);
+            state_buffer->update_account(account_address, std::nullopt, account);
 
             if (account_alloc_json.contains("storage")) {
                 for (const auto& storage_json : account_alloc_json.at("storage").items()) {
                     Bytes key{from_hex(storage_json.key()).value()};
                     Bytes value{from_hex(storage_json.value().get<std::string>()).value()};
-                    state_buffer.update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
+                    state_buffer->update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
 
                     // FIX 1: update storage on-fly
                     Bytes prefix{silkworm::db::storage_prefix(account_address, account.incarnation)};
@@ -117,20 +118,20 @@ void populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
         // Write allocations to db - no changes only accounts
         auto state_table{db::open_cursor(txn, db::table::kPlainState)};
         auto code_table{db::open_cursor(txn, db::table::kCode)};
-        for (const auto& [address, account] : state_buffer.accounts()) {
+        for (const auto& [address, account] : state_buffer->accounts()) {
             // Store account plain state
             Bytes encoded{account.encode_for_storage()};
             state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
             // Store code
             if (account.code_hash != kEmptyHash) {
-                auto code = state_buffer.read_code(account.code_hash);
+                auto code = state_buffer->read_code(account.code_hash);
                 code_table.upsert(db::to_slice(account.code_hash), db::to_slice(code));
             }
         }
     }
 
-    BlockHeader header{read_genesis_header(genesis_json, state_buffer.state_root_hash())};
+    BlockHeader header{read_genesis_header(genesis_json, state_buffer->state_root_hash())};
     BlockBody block_body{
         .withdrawals = std::vector<silkworm::Withdrawal>{0},
     };
@@ -155,9 +156,11 @@ void populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     auto config_data{genesis_json["config"].dump()};
     db::open_cursor(txn, db::table::kConfig)
         .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
+
+    return state_buffer;
 }
 
-void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
+void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, std::unique_ptr<InMemoryState>& state_buffer) {
     auto rlp_path = tests_dir / "chain.rlp";
     std::ifstream file(rlp_path, std::ios::binary);
     if (!file) {
@@ -166,15 +169,21 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     std::vector<Bytes> rlps;
     std::vector<uint8_t> line;
 
-    std::basic_string<uint8_t> buffer(std::istreambuf_iterator<char>(file), {});
+    std::basic_string<uint8_t> rlp_buffer(std::istreambuf_iterator<char>(file), {});
     file.close();
+    ByteView rlp_view{rlp_buffer};
 
-    ByteView view{buffer};
+    auto chain_config = db::read_chain_config(txn);
 
-    while (view.length() > 0) {
+    if (!chain_config.has_value()) {
+        throw std::logic_error("Failed to read chain config");
+    }
+    auto ruleSet = protocol::rule_set_factory(*chain_config);
+
+    while (rlp_view.length() > 0) {
         silkworm::Block block;
 
-        if (!silkworm::rlp::decode(view, block, silkworm::rlp::Leftover::kAllow)) {
+        if (!silkworm::rlp::decode(rlp_view, block, silkworm::rlp::Leftover::kAllow)) {
             throw std::logic_error("Failed to decode RLP file");
         }
 
@@ -188,16 +197,21 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        // FIX 4: populate tx lookup table and create receipts
+        // FIX 4a: populate tx lookup table and create receipts
         db::write_tx_lookup(txn, block);
+
+        // FIX 4b: populate receipts and logs table
         std::vector<silkworm::Receipt> receipts;
-        uint64_t cumulative_gas_used = 0;
+        ExecutionProcessor processor{block, *ruleSet, *state_buffer, *chain_config};
+        db::Buffer db_buffer{txn, 0};
         for (auto& block_txn : block.transactions) {
-            cumulative_gas_used += block_txn.gas_limit;
-            silkworm::Receipt receipt{.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
+            silkworm::Receipt receipt{};
+            processor.execute_transaction(block_txn, receipt);
             receipts.emplace_back(receipt);
         }
-        db::write_receipts(txn, receipts, block.header.number);
+        processor.evm().state().write_to_db(block.header.number);
+        db_buffer.insert_receipts(block.header.number, receipts);
+        db_buffer.write_history_to_db();
 
         // FIX 5: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
@@ -263,7 +277,7 @@ class RpcApiTestBase : public LocalContextTestBase {
 };
 
 // Function to recursively sort JSON arrays
-void sort_array(nlohmann::json& jsonObj) {
+void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
     if (jsonObj.is_array()) {
         // Sort the elements within the array
         std::sort(jsonObj.begin(), jsonObj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
@@ -298,12 +312,11 @@ bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
 }
 
 static const std::vector<std::string> tests_to_ignore = {
-    "eth_getTransactionReceipt",  // some tests fail due to incorrect gas calculation, needs fixing
-    "eth_estimateGas",            // call to oracle fails, needs fixing
-    "debug_getRawReceipts",       // not implemented
-    "eth_getProof",               // not implemented
-    "eth_feeHistory",             // history not stored, needs fixing
-    "eth_sendRawTransaction",     // call to oracle fails, needs fixing or mocking
+    "eth_estimateGas",         // call to oracle fails, needs fixing
+    "debug_getRawReceipts",    // not implemented
+    "eth_getProof",            // not implemented
+    "eth_feeHistory",          // history not stored, needs fixing
+    "eth_sendRawTransaction",  // call to oracle fails, needs fixing or mocking
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
@@ -325,13 +338,13 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
                 FAIL("Failed to open the file: " + test_file.path().string());
             }
 
-            SECTION("RPC IO test " + group_name + " | " + test_name) {
+            SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
                 auto db = open_db(db_dir);
                 db::RWTxnManaged txn{*db};
                 db::table::check_or_create_chaindata_tables(txn);
-                populate_genesis(txn, tests_dir);
-                populate_blocks(txn, tests_dir);
+                auto state_buffer = populate_genesis(txn, tests_dir);
+                populate_blocks(txn, tests_dir, state_buffer);
                 txn.commit_and_stop();
 
                 RpcApiTestBase<RequestHandler_ForTest> test_base{db};
@@ -349,9 +362,9 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
 
                     http::Reply reply;
                     test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-                    INFO("Request:           " << request.dump());
-                    INFO("Actual response:   " << reply.content);
-                    INFO("Expected response: " << expected.dump());
+                    INFO("Request:           " << request.dump())
+                    INFO("Actual response:   " << reply.content)
+                    INFO("Expected response: " << expected.dump())
 
                     if (test_name.find("invalid") != std::string::npos) {
                         CHECK(nlohmann::json::parse(reply.content).contains("error"));
@@ -373,8 +386,8 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     auto db = open_db(db_dir);
     db::RWTxnManaged txn{*db};
     db::table::check_or_create_chaindata_tables(txn);
-    populate_genesis(txn, tests_dir);
-    populate_blocks(txn, tests_dir);
+    auto state_buffer = populate_genesis(txn, tests_dir);
+    populate_blocks(txn, tests_dir, state_buffer);
     txn.commit_and_stop();
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};

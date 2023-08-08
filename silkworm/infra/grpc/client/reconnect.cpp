@@ -45,7 +45,7 @@ boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel) {
         is_stopped = true;
     };
 
-    co_await concurrency::async_thread(std::move(run), std::move(stop));
+    co_await concurrency::async_thread(std::move(run), std::move(stop), "channel-rec");
 }
 
 }  // namespace silkworm::rpc

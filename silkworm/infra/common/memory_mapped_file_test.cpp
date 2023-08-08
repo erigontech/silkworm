@@ -30,7 +30,7 @@ using namespace std::chrono_literals;
 
 TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("constructor fails for nonexistent file") {
-        CHECK_THROWS_AS(MemoryMappedFile{"nonexistent.txt"}, std::runtime_error);
+        CHECK_THROWS_AS(MemoryMappedFile{"nonexistent.txt"}, std::logic_error);
     }
 
     SECTION("constructor fails for existent empty file") {
@@ -46,9 +46,9 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
         tmp_stream.write("\x01", 1);
         tmp_stream.close();
         CHECK_NOTHROW(MemoryMappedFile{tmp_file});
-        CHECK_NOTHROW(MemoryMappedFile{tmp_file, false});
+        CHECK_NOTHROW(MemoryMappedFile{tmp_file, {}, false});
         CHECK_NOTHROW(MemoryMappedFile{tmp_file.string()});
-        CHECK_NOTHROW(MemoryMappedFile{tmp_file.string(), false});
+        CHECK_NOTHROW(MemoryMappedFile{tmp_file.string(), {}, false});
     }
 
     const std::string kFileContent{"\x01\x02\x03"};
@@ -100,12 +100,12 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
 
 TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("constructor fails for null address") {
-        CHECK_THROWS_AS(MemoryMappedFile("", nullptr, 100), std::logic_error);
+        CHECK_THROWS_AS(MemoryMappedFile("", MemoryMappedRegion{nullptr, 100}), std::logic_error);
     }
 
     SECTION("constructor fails for zero length") {
         uint8_t u;
-        CHECK_THROWS_AS(MemoryMappedFile("", &u, 0), std::logic_error);
+        CHECK_THROWS_AS(MemoryMappedFile("", MemoryMappedRegion{&u, 0}), std::logic_error);
     }
 
     SECTION("constructor succeeds for existent nonempty file") {
@@ -114,7 +114,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         tmp_stream.write("\x01", 1);
         tmp_stream.close();
         MemoryMappedFile mmf_from_file{tmp_file};
-        CHECK_NOTHROW(MemoryMappedFile(tmp_file, mmf_from_file.address(), mmf_from_file.length()));
+        CHECK_NOTHROW(MemoryMappedFile(tmp_file, MemoryMappedRegion{mmf_from_file.address(), mmf_from_file.length()}));
     }
 
     const std::string kFileContent{"\x01\x02\x03"};
@@ -125,7 +125,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
     MemoryMappedFile mmf_from_file{tmp_file};
     const auto address{mmf_from_file.address()};
     const auto length{mmf_from_file.length()};
-    MemoryMappedFile mmf{tmp_file, mmf_from_file.address(), mmf_from_file.length()};
+    MemoryMappedFile mmf{tmp_file, MemoryMappedRegion{mmf_from_file.address(), mmf_from_file.length()}};
 
     SECTION("has expected memory address and size") {
         CHECK(mmf.address() == address);
@@ -158,7 +158,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         const auto tmp_path = std::filesystem::temp_directory_path() / "example.bin";
         std::ofstream{tmp_path.c_str()}.put('a');
         MemoryMappedFile mmf_from_path{tmp_path};
-        MemoryMappedFile mmf_from_memory{tmp_path, mmf_from_path.address(), mmf_from_path.length()};
+        MemoryMappedFile mmf_from_memory{tmp_path, MemoryMappedRegion{mmf_from_path.address(), mmf_from_path.length()}};
         const auto ftime = mmf_from_memory.last_write_time();
         // Move file write time 1 hour to the future
         std::filesystem::last_write_time(tmp_path, ftime + 1h);

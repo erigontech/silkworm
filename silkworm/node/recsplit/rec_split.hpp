@@ -231,7 +231,9 @@ class RecSplit {
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
-    explicit RecSplit(std::filesystem::path index_path) : index_path_(std::move(index_path)), encoded_file_{index_path_} {
+    explicit RecSplit(std::filesystem::path index_path, std::optional<MemoryMappedRegion> index_region = {})
+        : index_path_{index_path},
+          encoded_file_{std::make_optional<MemoryMappedFile>(std::move(index_path), std::move(index_region))} {
         SILK_DEBUG << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 
@@ -640,7 +642,7 @@ class RecSplit {
         return std::filesystem::last_write_time(index_path_);
     }
 
-    const void* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
+    uint8_t* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
     std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
 
   private:

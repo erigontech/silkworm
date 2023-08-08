@@ -1324,8 +1324,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
     if (!data) {
         return std::nullopt;
     }
-    auto block_num = endian::load_big_u64(from_slice(data.value).data());
-    return block_num;
+    return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
 }
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {

@@ -117,7 +117,7 @@ Server::~Server() {
 }
 
 Task<void> Server::async_run() {
-    return p_impl_->async_run();
+    return p_impl_->async_run("sentry-gsrv");
 }
 
 }  // namespace silkworm::sentry::grpc::server

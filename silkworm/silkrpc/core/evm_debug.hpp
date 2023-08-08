@@ -142,14 +142,14 @@ class DebugExecutor {
     boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
 
   protected:
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
+    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call);
 
   private:
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
-    boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
+    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block);
+    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 
-    boost::asio::awaitable<void> execute(json::Stream& stream,
+    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage,
                                          const silkworm::BlockWithHash& block_with_hash,
                                          const Bundles& bundles,
                                          int32_t transaction_index);

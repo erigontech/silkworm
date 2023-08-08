@@ -90,7 +90,7 @@ boost::asio::awaitable<void> Sync::start_sync_sentry_client() {
 }
 
 boost::asio::awaitable<void> Sync::start_block_exchange() {
-    return block_exchange_.async_run();
+    return block_exchange_.async_run("block-exchg");
 }
 
 boost::asio::awaitable<void> Sync::start_chain_sync() {
@@ -113,7 +113,9 @@ boost::asio::awaitable<void> Sync::start_engine_rpc_server() {
         auto engine_rpc_server_stop = [this]() {
             engine_rpc_server_->stop();
         };
-        co_await concurrency::async_thread(std::move(engine_rpc_server_run), std::move(engine_rpc_server_stop));
+        co_await concurrency::async_thread(std::move(engine_rpc_server_run),
+                                           std::move(engine_rpc_server_stop),
+                                           "eng-api-srv");
     }
 }
 

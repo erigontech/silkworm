@@ -35,7 +35,11 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     if (compatibility::is_erigon_json_api_compatibility_required()) {
         json["to"] = receipt.to.value_or(evmc::address{});
     } else {
-        json["to"] = receipt.to.value_or(nlohmann::json{});
+        if (receipt.to) {
+            json["to"] = *receipt.to;
+        } else {
+            json["to"] = nlohmann::json{};
+        }
     }
     json["type"] = to_quantity(receipt.type ? receipt.type.value() : 0);
     json["gasUsed"] = to_quantity(receipt.gas_used);

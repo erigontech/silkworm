@@ -23,6 +23,7 @@
 #include <boost/system/error_code.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
@@ -45,7 +46,7 @@ StateChangesStream::StateChangesStream(ClientContext& context, remote::KV::StubI
       retry_timer_{scheduler_} {}
 
 std::future<void> StateChangesStream::open() {
-    return boost::asio::co_spawn(scheduler_, run(), boost::asio::use_future);
+    return concurrency::co_spawn_sw(scheduler_, run(), boost::asio::use_future);
 }
 
 void StateChangesStream::close() {

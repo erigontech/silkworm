@@ -21,11 +21,10 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/multiple_exceptions.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
@@ -68,8 +67,8 @@ awaitable<void> simple_timeout() {
 
 awaitable<void> wait_until_cancelled() {
     auto executor = co_await this_coro::executor;
-    deadline_timer timer(executor);
-    timer.expires_from_now(boost::posix_time::hours(1));
+    steady_timer timer(executor);
+    timer.expires_after(1h);
     co_await timer.async_wait(use_awaitable);
 }
 
@@ -81,8 +80,8 @@ class BadCancelException : public std::runtime_error {
 awaitable<void> wait_until_cancelled_bad() {
     try {
         auto executor = co_await this_coro::executor;
-        deadline_timer timer(executor);
-        timer.expires_from_now(boost::posix_time::hours(1));
+        steady_timer timer(executor);
+        timer.expires_after(1h);
         co_await timer.async_wait(use_awaitable);
     } catch (const boost::system::system_error& ex) {
         throw BadCancelException();

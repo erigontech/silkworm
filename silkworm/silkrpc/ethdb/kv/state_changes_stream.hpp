@@ -29,8 +29,8 @@
 #define BOOST_ASIO_HAS_BOOST_DATE_TIME
 #endif
 #include <boost/asio/cancellation_signal.hpp>
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
@@ -51,16 +51,16 @@ inline std::ostream& operator<<(std::ostream& out, const remote::StateChangeBatc
 namespace silkworm::rpc::ethdb::kv {
 
 //! The default registration interval
-constexpr boost::posix_time::milliseconds kDefaultRegistrationInterval{10'000};
+constexpr std::chrono::milliseconds kDefaultRegistrationInterval{10'000};
 
 //! End-point of the stream of state changes coming from the node Core component
 class StateChangesStream {
   public:
     //! Return the retry interval between successive registration attempts
-    static boost::posix_time::milliseconds registration_interval() { return registration_interval_; }
+    static std::chrono::milliseconds registration_interval() { return registration_interval_; }
 
     //! Set the retry interval between successive registration attempts
-    static void set_registration_interval(boost::posix_time::milliseconds registration_interval);
+    static void set_registration_interval(std::chrono::milliseconds registration_interval);
 
     explicit StateChangesStream(ClientContext& context, remote::KV::StubInterface* stub);
 
@@ -75,7 +75,7 @@ class StateChangesStream {
 
   private:
     //! The retry interval between successive registration attempts
-    static boost::posix_time::milliseconds registration_interval_;
+    static std::chrono::milliseconds registration_interval_;
 
     //! Asio execution scheduler running the register-and-receive asynchronous loop
     boost::asio::io_context& scheduler_;
@@ -96,7 +96,7 @@ class StateChangesStream {
     remote::StateChangeRequest request_;
 
     //! The timer to schedule retries for stream opening
-    boost::asio::deadline_timer retry_timer_;
+    boost::asio::steady_timer retry_timer_;
 
     //! The mutual exclusion access to the cancellation signal
     std::mutex cancellation_mutex_;

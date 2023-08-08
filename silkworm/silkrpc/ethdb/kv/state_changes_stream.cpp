@@ -32,9 +32,9 @@ namespace silkworm::rpc::ethdb::kv {
 //! Define Asio coroutine-based completion token using error codes instead of exceptions for errors
 constexpr auto use_nothrow_awaitable = boost::asio::as_tuple(boost::asio::use_awaitable);
 
-boost::posix_time::milliseconds StateChangesStream::registration_interval_{kDefaultRegistrationInterval};
+std::chrono::milliseconds StateChangesStream::registration_interval_{kDefaultRegistrationInterval};
 
-void StateChangesStream::set_registration_interval(boost::posix_time::milliseconds registration_interval) {
+void StateChangesStream::set_registration_interval(std::chrono::milliseconds registration_interval) {
     StateChangesStream::registration_interval_ = registration_interval;
 }
 
@@ -84,7 +84,7 @@ boost::asio::awaitable<void> StateChangesStream::run() {
                 SILK_DEBUG << "State changes stream cancelled immediately after request cancelled";
             } else {
                 SILK_WARN << "State changes stream request error [" << req_ec.message() << "], schedule reopen";
-                retry_timer_.expires_from_now(registration_interval_);
+                retry_timer_.expires_after(registration_interval_);
                 const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                 if (ec == boost::asio::error::operation_aborted) {
                     cancelled = true;
@@ -108,7 +108,7 @@ boost::asio::awaitable<void> StateChangesStream::run() {
                     SILK_DEBUG << "State changes stream cancelled immediately after read cancelled";
                 } else {
                     SILK_WARN << "State changes stream read error [" << read_ec.message() << "], schedule reopen";
-                    retry_timer_.expires_from_now(registration_interval_);
+                    retry_timer_.expires_after(registration_interval_);
                     const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                     if (ec == boost::asio::error::operation_aborted) {
                         cancelled = true;

@@ -19,8 +19,8 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -37,8 +37,8 @@ using namespace std::chrono_literals;
 
 awaitable<void> sleep(std::chrono::milliseconds duration) {
     auto executor = co_await this_coro::executor;
-    basic_waitable_timer<std::chrono::system_clock> timer(executor);
-    timer.expires_from_now(duration);
+    steady_timer timer(executor);
+    timer.expires_after(duration);
     co_await timer.async_wait(use_awaitable);
 }
 

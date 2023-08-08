@@ -166,41 +166,24 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
     }
 }
 
-// This custom ServerContextPool is required to test how unhandled exceptions are treated by ServerContextPool
-// because in such case ServerContextPool terminates execution using std::terminate, which is not suitable for tests
-class ServerContextPool_ForTest : public ServerContextPool {
-  public:
-    explicit ServerContextPool_ForTest(std::size_t pool_size) : ServerContextPool(pool_size) {}
-    void start() override {
-        for (std::size_t i{0}; i < contexts_.size(); ++i) {
-            auto& context = contexts_[i];
-            context_threads_.create_thread([&]() {
-                try {
-                    context.execute_loop();
-                } catch (const std::exception& ex) {
-                    loop_exception_caught = true;
-                    // In case of any loop exception in any thread, close down the pool
-                    stop();
-                }
-            });
-        }
-    }
-
-    bool loop_exception_caught{false};
-};
-
 TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
-    ServerContextPool_ForTest cp{3};
+    ServerContextPool cp{3};
     cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
     cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
     cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+    std::exception_ptr run_exception;
+    cp.set_exception_handler([&](std::exception_ptr eptr) {
+        run_exception = eptr;
+        // In case of any loop exception in any thread, close down the pool
+        cp.stop();
+    });
     auto context_pool_thread = std::thread([&]() { cp.run(); });
     boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
     CHECK_NOTHROW(context_pool_thread.join());
-    CHECK(cp.loop_exception_caught);
+    CHECK(bool(run_exception));
 }
 #endif  // SILKWORM_SANITIZE
 

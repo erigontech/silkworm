@@ -76,8 +76,10 @@ std::ostream& operator<<(std::ostream& out, const Context& c);
 //! Pool of \ref Context instances running as separate reactive schedulers.
 template <typename T = Context>
 class ContextPool {
+    using ExceptionHandler = std::function<void(std::exception_ptr)>;
+
   public:
-    explicit ContextPool(std::size_t pool_size) : next_index_{0} {
+    explicit ContextPool(std::size_t pool_size) : next_index_{0}, exception_handler_{termination_handler} {
         if (pool_size == 0) {
             throw std::logic_error("ContextPool::ContextPool pool_size is 0");
         }
@@ -120,7 +122,10 @@ class ContextPool {
                     context.execute_loop();
                 } catch (const std::exception& ex) {
                     SILK_CRIT << "ContextPool context.execute_loop exception: " << ex.what();
-                    std::terminate();
+                    exception_handler_(std::make_exception_ptr(ex));
+                } catch (...) {
+                    SILK_CRIT << "ContextPool context.execute_loop unexpected exception";
+                    exception_handler_(std::current_exception());
                 }
                 SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
@@ -179,7 +184,15 @@ class ContextPool {
         return *context.io_context();
     }
 
+    void set_exception_handler(ExceptionHandler exception_handler) {
+        exception_handler_ = exception_handler;
+    }
+
   protected:
+    static void termination_handler(std::exception_ptr) {
+        std::terminate();
+    }
+
     //! The pool of execution contexts.
     std::vector<T> contexts_;
 
@@ -191,6 +204,9 @@ class ContextPool {
 
     //! Flag indicating if pool has been stopped.
     std::atomic_bool stopped_{false};
+
+    //! Exception handler invoked on execution loop abnormal termination
+    ExceptionHandler exception_handler_;
 };
 
 }  // namespace silkworm::concurrency

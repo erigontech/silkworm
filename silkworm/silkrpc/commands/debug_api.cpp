@@ -295,8 +295,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
 
         SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
 
-        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-        const auto chain_config_ptr = lookup_chain_config(chain_id);
+        auto chain_config_ptr = co_await chain_storage->read_chain_config();
         auto this_executor = co_await boost::asio::this_coro::executor;
 
         auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(

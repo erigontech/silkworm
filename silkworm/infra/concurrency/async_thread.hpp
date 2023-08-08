@@ -34,10 +34,11 @@ namespace silkworm::concurrency {
  *
  * @param run thread procedure
  * @param stop a callback to signal the thread procedure to exit
+ * @param name the name appearing in log traces for the created thread
  * @param stack_size optional custom stack size for the created thread
  * @return an awaitable that is pending until the thread finishes
  */
 boost::asio::awaitable<void> async_thread(std::function<void()> run, std::function<void()> stop,
-                                          std::optional<std::size_t> stack_size = {});
+                                          const char* name, std::optional<std::size_t> stack_size = {});
 
 }  // namespace silkworm::concurrency

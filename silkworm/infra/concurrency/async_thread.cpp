@@ -29,7 +29,8 @@
 
 namespace silkworm::concurrency {
 
-boost::asio::awaitable<void> async_thread(std::function<void()> run, std::function<void()> stop, std::optional<std::size_t> stack_size) {
+boost::asio::awaitable<void> async_thread(std::function<void()> run, std::function<void()> stop,
+                                          const char* name, std::optional<std::size_t> stack_size) {
     std::exception_ptr run_exception;
 
     auto executor = co_await boost::asio::this_coro::executor;
@@ -39,9 +40,13 @@ boost::asio::awaitable<void> async_thread(std::function<void()> run, std::functi
     if (stack_size) {
         attributes.set_stack_size(*stack_size);
     }
-    boost::thread thread{attributes, [run = std::move(run), &run_exception, &thread_finished_notifier] {
+
+    boost::thread thread{attributes, [run = std::move(run), name = name, &run_exception, &thread_finished_notifier] {
+                             log::set_thread_name(name);
                              try {
+                                 log::Info() << "Async thread [" << name << "] run started";
                                  run();
+                                 log::Info() << "Async thread [" << name << "] run completed";
                              } catch (...) {
                                  run_exception = std::current_exception();
                              }

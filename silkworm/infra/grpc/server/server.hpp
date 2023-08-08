@@ -131,13 +131,13 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
-    boost::asio::awaitable<void> async_run() {
+    boost::asio::awaitable<void> async_run(const char* thread_name) {
         auto run = [this] {
             this->build_and_start();
             this->join();
         };
         auto stop = [this] { this->shutdown(); };
-        co_await concurrency::async_thread(std::move(run), std::move(stop));
+        co_await concurrency::async_thread(std::move(run), std::move(stop), thread_name);
     }
 
     //! Returns the number of server contexts.

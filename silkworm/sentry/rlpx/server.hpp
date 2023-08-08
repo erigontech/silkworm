@@ -41,7 +41,7 @@ class Server final {
         boost::asio::io_context& io_context,
         uint16_t port);
 
-    Task<void> start(
+    Task<void> run(
         silkworm::rpc::ServerContextPool& context_pool,
         EccKeyPair node_key,
         std::string client_id,

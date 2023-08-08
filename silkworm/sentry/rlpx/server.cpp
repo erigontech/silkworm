@@ -39,7 +39,7 @@ ip::tcp::endpoint Server::listen_endpoint() const {
     return ip::tcp::endpoint{ip_, port_};
 }
 
-Task<void> Server::start(
+Task<void> Server::run(
     silkworm::rpc::ServerContextPool& context_pool,
     EccKeyPair node_key,
     std::string client_id,

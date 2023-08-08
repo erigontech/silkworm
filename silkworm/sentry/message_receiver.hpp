@@ -50,7 +50,7 @@ class MessageReceiver : public PeerManagerObserver {
         return message_calls_channel_;
     }
 
-    static Task<void> start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager);
+    static Task<void> run(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager);
 
   private:
     Task<void> handle_calls();

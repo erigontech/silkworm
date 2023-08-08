@@ -59,7 +59,7 @@ class PeerManager {
           connect_peer_tasks_(strand_, max_peers),
           client_peer_channel_(io_context) {}
 
-    Task<void> start(
+    Task<void> run(
         rlpx::Server& server,
         discovery::Discovery& discovery,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
@@ -73,8 +73,8 @@ class PeerManager {
     void add_observer(std::weak_ptr<PeerManagerObserver> observer);
 
   private:
-    Task<void> start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
-    Task<void> start_peer(std::shared_ptr<rlpx::Peer> peer);
+    Task<void> run_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
+    Task<void> run_peer(std::shared_ptr<rlpx::Peer> peer);
     Task<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
     Task<void> drop_peer(
         std::shared_ptr<rlpx::Peer> peer,

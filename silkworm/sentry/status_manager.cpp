@@ -26,7 +26,7 @@ Task<void> StatusManager::wait_for_status() {
     log::Debug("sentry") << "StatusManager received status: network ID = " << status.message.network_id;
 }
 
-Task<void> StatusManager::start() {
+Task<void> StatusManager::run() {
     // loop until wait_for_status() throws a cancelled exception
     while (true) {
         co_await wait_for_status();

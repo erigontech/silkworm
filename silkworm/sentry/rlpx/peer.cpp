@@ -71,11 +71,11 @@ Peer::~Peer() {
     log::Trace("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
-Task<void> Peer::start(std::shared_ptr<Peer> peer) {
+Task<void> Peer::run(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
-    auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
-    co_await concurrency::co_spawn_sw(peer->strand_, std::move(start), use_awaitable);
+    auto run = peer->handle() || peer->send_message_tasks_.wait();
+    co_await concurrency::co_spawn_sw(peer->strand_, std::move(run), use_awaitable);
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -92,10 +92,6 @@ class PingTimeoutError : public std::runtime_error {
   public:
     PingTimeoutError() : std::runtime_error("rlpx::Peer ping timed out") {}
 };
-
-Task<void> Peer::handle(std::shared_ptr<Peer> peer) {
-    co_await peer->handle();
-}
 
 Task<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
@@ -289,10 +285,6 @@ void Peer::close() {
 
 void Peer::post_message(const std::shared_ptr<Peer>& peer, const Message& message) {
     peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
-}
-
-Task<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
-    co_await self->send_message_tasks_.wait();
 }
 
 Task<void> Peer::send_message(std::shared_ptr<Peer> peer, Message message) {

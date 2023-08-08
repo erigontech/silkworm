@@ -32,7 +32,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-Task<void> PeerManager::start(
+Task<void> PeerManager::run(
     rlpx::Server& server,
     discovery::Discovery& discovery,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
@@ -40,17 +40,17 @@ Task<void> PeerManager::start(
 
     need_peers_notifier_.notify();
 
-    auto start =
-        start_in_strand(server.peer_channel()) &&
-        start_in_strand(client_peer_channel_) &&
+    auto run =
+        run_in_strand(server.peer_channel()) &&
+        run_in_strand(client_peer_channel_) &&
         discover_peers(discovery, client_factory) &&
         connect_peer_tasks_.wait() &&
         drop_peer_tasks_.wait() &&
         peer_tasks_.wait();
-    co_await concurrency::co_spawn_sw(strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(strand_, std::move(run), use_awaitable);
 }
 
-Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
+Task<void> PeerManager::run_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto peer = co_await peer_channel.receive();
@@ -60,29 +60,29 @@ Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlp
                 drop_peer_tasks_count_++;
                 drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::TooManyPeers));
             } else {
-                log::Warning("sentry") << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
+                log::Warning("sentry") << "PeerManager::run_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }
             continue;
         }
 
         handshaking_peers_.push_back(peer);
-        peer_tasks_.spawn(strand_, start_peer(peer));
+        peer_tasks_.spawn(strand_, run_peer(peer));
     }
 }
 
-Task<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
+Task<void> PeerManager::run_peer(std::shared_ptr<rlpx::Peer> peer) {
     using namespace concurrency::awaitable_wait_for_all;
 
     try {
-        co_await (rlpx::Peer::start(peer) && wait_for_peer_handshake(peer));
+        co_await (rlpx::Peer::run(peer) && wait_for_peer_handshake(peer));
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::start_peer Peer::start cancelled";
+            log::Debug("sentry") << "PeerManager::run_peer Peer::run cancelled";
         } else {
-            log::Error("sentry") << "PeerManager::start_peer Peer::start system_error: " << ex.what();
+            log::Error("sentry") << "PeerManager::run_peer Peer::run system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "PeerManager::start_peer Peer::start exception: " << ex.what();
+        log::Error("sentry") << "PeerManager::run_peer Peer::run exception: " << ex.what();
     }
 
     handshaking_peers_.remove(peer);

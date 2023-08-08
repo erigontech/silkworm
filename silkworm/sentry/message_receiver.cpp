@@ -33,16 +33,16 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-Task<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
+Task<void> MessageReceiver::run(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
     using namespace concurrency::awaitable_wait_for_all;
 
     peer_manager.add_observer(std::weak_ptr(self));
 
-    auto start =
+    auto run =
         self->peer_tasks_.wait() &&
         self->unsubscription_tasks_.wait() &&
         self->handle_calls();
-    co_await concurrency::co_spawn_sw(self->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(self->strand_, std::move(run), use_awaitable);
 }
 
 Task<void> MessageReceiver::handle_calls() {

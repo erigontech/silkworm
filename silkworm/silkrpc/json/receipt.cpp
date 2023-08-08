@@ -16,11 +16,9 @@
 
 #include "receipt.hpp"
 
-#include <cstring>
-#include <utility>
-
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/silkrpc/common/compatibility.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 #include "types.hpp"
@@ -33,10 +31,11 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     json["transactionHash"] = receipt.tx_hash;
     json["transactionIndex"] = to_quantity(receipt.tx_index);
     json["from"] = receipt.from.value_or(evmc::address{});
-    if (receipt.to) {
+    // Erigon currently at 2.48.1 returns zero address if to field is missing
+    if (compatibility::is_erigon_json_api_compatibility_required()) {
         json["to"] = receipt.to.value_or(evmc::address{});
     } else {
-        json["to"] = nlohmann::json{};
+        json["to"] = receipt.to.value_or(nlohmann::json{});
     }
     json["type"] = to_quantity(receipt.type ? receipt.type.value() : 0);
     json["gasUsed"] = to_quantity(receipt.gas_used);

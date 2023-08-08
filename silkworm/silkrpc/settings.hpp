@@ -36,6 +36,7 @@ struct DaemonSettings {
     uint32_t num_workers{std::thread::hardware_concurrency() / 2};
     std::optional<std::string> jwt_secret_file;
     bool skip_protocol_check{false};
+    bool erigon_json_rpc_compatibility{false};
 };
 
 }  // namespace silkworm::rpc

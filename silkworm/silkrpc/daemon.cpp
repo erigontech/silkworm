@@ -31,6 +31,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/silkrpc/common/compatibility.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
@@ -209,6 +210,9 @@ Daemon::Daemon(DaemonSettings settings, std::shared_ptr<mdbx::env_managed> chain
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
     state_changes_stream_ = std::make_unique<ethdb::kv::StateChangesStream>(context, kv_stub_.get());
+
+    // Set compatibility with Erigon RpcDaemon at JSON RPC level
+    compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 }
 
 void Daemon::add_private_services() {

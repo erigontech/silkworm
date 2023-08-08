@@ -35,12 +35,12 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-Task<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
+Task<void> PeerManagerApi::run(std::shared_ptr<PeerManagerApi> self) {
     using namespace concurrency::awaitable_wait_for_all;
 
     self->peer_manager_.add_observer(std::weak_ptr(self));
 
-    auto start =
+    auto run =
         self->handle_peer_count_calls() &&
         self->handle_peers_calls() &&
         self->handle_peer_calls() &&
@@ -48,7 +48,7 @@ Task<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
         self->handle_peer_events_calls() &&
         self->events_unsubscription_tasks_.wait() &&
         self->forward_peer_events();
-    co_await concurrency::co_spawn_sw(self->strand_, std::move(start), use_awaitable);
+    co_await concurrency::co_spawn_sw(self->strand_, std::move(run), use_awaitable);
 }
 
 Task<void> PeerManagerApi::handle_peer_count_calls() {

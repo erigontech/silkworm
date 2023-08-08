@@ -106,7 +106,7 @@ class Peer {
 
     ~Peer();
 
-    static Task<void> start(std::shared_ptr<Peer> peer);
+    static Task<void> run(std::shared_ptr<Peer> peer);
     static Task<void> drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason);
     void disconnect(DisconnectReason reason);
     static Task<bool> wait_for_handshake(std::shared_ptr<Peer> self);
@@ -147,14 +147,12 @@ class Peer {
     }
 
   private:
-    static Task<void> handle(std::shared_ptr<Peer> peer);
     Task<void> handle();
     static Task<void> drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason);
     Task<void> drop(DisconnectReason reason);
     Task<framing::MessageStream> handshake();
     void close();
 
-    static Task<void> send_message_tasks_wait(std::shared_ptr<Peer> self);
     static Task<void> send_message(std::shared_ptr<Peer> peer, Message message);
     Task<void> send_message(Message message);
     Task<void> send_messages(framing::MessageStream& message_stream);

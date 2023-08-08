@@ -36,7 +36,7 @@ class MessageSender {
         return send_message_channel_;
     }
 
-    Task<void> start(PeerManager& peer_manager);
+    Task<void> run(PeerManager& peer_manager);
 
   private:
     concurrency::Channel<api::router::SendMessageCall> send_message_channel_;

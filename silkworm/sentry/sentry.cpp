@@ -67,15 +67,15 @@ class SentryImpl final {
   private:
     void setup_node_key();
     Task<void> run_tasks();
-    Task<void> start_status_manager();
-    Task<void> start_server();
-    Task<void> start_discovery();
-    Task<void> start_peer_manager();
-    Task<void> start_message_sender();
-    Task<void> start_message_receiver();
-    Task<void> start_peer_manager_api();
+    Task<void> run_status_manager();
+    Task<void> run_server();
+    Task<void> run_discovery();
+    Task<void> run_peer_manager();
+    Task<void> run_message_sender();
+    Task<void> run_message_receiver();
+    Task<void> run_peer_manager_api();
     Task<void> run_peer_discovery_feedback();
-    Task<void> start_grpc_server();
+    Task<void> run_grpc_server();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
@@ -167,7 +167,7 @@ Task<void> SentryImpl::run() {
     public_ip_ = co_await nat::ip_resolver(settings_.nat);
     log::Info("sentry") << "Node URL: " << make_node_url().to_string();
 
-    co_await (run_tasks() && start_grpc_server());
+    co_await (run_tasks() && run_grpc_server());
 }
 
 void SentryImpl::setup_node_key() {
@@ -184,13 +184,13 @@ Task<void> SentryImpl::run_tasks() {
     log::Info("sentry") << "Sentry received initial status message";
 
     co_await (
-        start_status_manager() &&
-        start_server() &&
-        start_discovery() &&
-        start_peer_manager() &&
-        start_message_sender() &&
-        start_message_receiver() &&
-        start_peer_manager_api() &&
+        run_status_manager() &&
+        run_server() &&
+        run_discovery() &&
+        run_peer_manager() &&
+        run_message_sender() &&
+        run_message_receiver() &&
+        run_peer_manager_api() &&
         run_peer_discovery_feedback());
 }
 
@@ -202,12 +202,12 @@ std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() 
     return [this] { return this->make_protocol(); };
 }
 
-Task<void> SentryImpl::start_status_manager() {
-    return status_manager_.start();
+Task<void> SentryImpl::run_status_manager() {
+    return status_manager_.run();
 }
 
-Task<void> SentryImpl::start_server() {
-    return rlpx_server_.start(context_pool_, node_key_.value(), client_id(), protocol_factory());
+Task<void> SentryImpl::run_server() {
+    return rlpx_server_.run(context_pool_, node_key_.value(), client_id(), protocol_factory());
 }
 
 std::unique_ptr<rlpx::Client> SentryImpl::make_client() {
@@ -223,31 +223,31 @@ std::function<std::unique_ptr<rlpx::Client>()> SentryImpl::client_factory() {
     return [this] { return this->make_client(); };
 }
 
-Task<void> SentryImpl::start_discovery() {
+Task<void> SentryImpl::run_discovery() {
     return discovery_.run();
 }
 
-Task<void> SentryImpl::start_peer_manager() {
-    return peer_manager_.start(rlpx_server_, discovery_, client_factory());
+Task<void> SentryImpl::run_peer_manager() {
+    return peer_manager_.run(rlpx_server_, discovery_, client_factory());
 }
 
-Task<void> SentryImpl::start_message_sender() {
-    return message_sender_.start(peer_manager_);
+Task<void> SentryImpl::run_message_sender() {
+    return message_sender_.run(peer_manager_);
 }
 
-Task<void> SentryImpl::start_message_receiver() {
-    return MessageReceiver::start(message_receiver_, peer_manager_);
+Task<void> SentryImpl::run_message_receiver() {
+    return MessageReceiver::run(message_receiver_, peer_manager_);
 }
 
-Task<void> SentryImpl::start_peer_manager_api() {
-    return PeerManagerApi::start(peer_manager_api_);
+Task<void> SentryImpl::run_peer_manager_api() {
+    return PeerManagerApi::run(peer_manager_api_);
 }
 
 Task<void> SentryImpl::run_peer_discovery_feedback() {
     return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
 }
 
-Task<void> SentryImpl::start_grpc_server() {
+Task<void> SentryImpl::run_grpc_server() {
     if (!settings_.api_address.empty()) {
         co_await grpc_server_.async_run();
     }

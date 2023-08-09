@@ -42,8 +42,8 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
-    const auto bnoh = params[0].get<BlockNumberOrHash>();
-    SILK_DEBUG << "bnoh: " << bnoh;
+    const auto block_id = params[0].get<std::string>();
+    SILK_DEBUG << "block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -51,7 +51,7 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
-        const auto [block_number, _] = co_await core::get_block_number(bnoh, tx_database);
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
         SILK_INFO << "#receipts: " << receipts.size();

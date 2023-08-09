@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string_view>
 
@@ -52,12 +53,21 @@ Task<ip::address> stun_ip_resolver() {
 
     auto executor = co_await this_coro::executor;
 
+    ip::udp::endpoint endpoint;
     ip::udp::resolver resolver{executor};
-    auto endpoints = co_await resolver.async_resolve(
-        kStunDefaultServerHost,
-        std::to_string(kStunDefaultServerPort),
-        use_awaitable);
-    const ip::udp::endpoint& endpoint = *endpoints.cbegin();
+    try {
+        auto endpoints = co_await resolver.async_resolve(
+            kStunDefaultServerHost,
+            std::to_string(kStunDefaultServerPort),
+            use_awaitable);
+        endpoint = *endpoints.cbegin();
+    } catch (const boost::system::system_error& ex) {
+        std::ostringstream message;
+        message << "stun_ip_resolver: failed to resolve host '" << kStunDefaultServerHost << "': ";
+        message << ex.what() << ". ";
+        message << "Does your internet connection work?";
+        throw std::runtime_error(message.str());
+    }
 
     ip::udp::socket socket{executor};
     co_await socket.async_connect(endpoint, use_awaitable);

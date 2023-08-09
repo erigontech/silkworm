@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -35,8 +34,6 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
-
 class ParityRpcApi {
   public:
     explicit ParityRpcApi(boost::asio::io_context& io_context)
@@ -49,8 +46,8 @@ class ParityRpcApi {
     ParityRpcApi& operator=(const ParityRpcApi&) = delete;
 
   protected:
-    awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     BlockCache* block_cache_;

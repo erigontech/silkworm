@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>
@@ -27,6 +26,6 @@
 
 namespace silkworm::rpc::core {
 
-boost::asio::awaitable<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
 
 }  // namespace silkworm::rpc::core

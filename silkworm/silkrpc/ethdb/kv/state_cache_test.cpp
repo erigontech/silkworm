@@ -390,7 +390,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
         if (view) {
-            EXPECT_CALL(*mock_cursor, seek_exact(_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            EXPECT_CALL(*mock_cursor, seek_exact(_)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{silkworm::Bytes{}, kTestStorageData2};
             }));
 

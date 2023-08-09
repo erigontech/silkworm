@@ -22,9 +22,8 @@
 #include <variant>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/common/as_range.hpp>

@@ -28,7 +28,7 @@ namespace silkworm::chainsync {
 
 PoWSync::PoWSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
 
-asio::awaitable<void> PoWSync::async_run() {
+Task<void> PoWSync::async_run() {
     return ActiveComponent::async_run("pow-sync-ex");
 }
 

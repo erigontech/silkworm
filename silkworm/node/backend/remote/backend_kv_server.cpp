@@ -16,17 +16,13 @@
 
 #include "backend_kv_server.hpp"
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 
 namespace silkworm::rpc {
-
-using boost::asio::awaitable;
 
 BackEndKvServer::BackEndKvServer(const ServerSettings& settings, const EthereumBackEnd& backend)
     : Server(settings), backend_(backend) {
@@ -56,35 +52,35 @@ void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_co
 
     // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await EtherbaseCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await NetVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await NetPeerCountCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestVersion,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await BackEndVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await ProtocolVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await ClientVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await SubscribeCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await NodeInfoCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     SILK_TRACE << "BackEndService::register_backend_request_calls END";
@@ -101,15 +97,15 @@ void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context
 
     // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await KvVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
-                       [&backend, grpc_context](auto&&... args) -> awaitable<void> {
+                       [&backend, grpc_context](auto&&... args) -> Task<void> {
                            co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
-                       [&backend](auto&&... args) -> awaitable<void> {
+                       [&backend](auto&&... args) -> Task<void> {
                            co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     SILK_TRACE << "BackEndKvServer::register_kv_request_calls END";

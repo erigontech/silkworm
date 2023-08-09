@@ -18,9 +18,8 @@
 
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
@@ -37,50 +36,50 @@ namespace silkworm::rpc::core::rawdb {
 using Addresses = std::vector<evmc::address>;
 using Transactions = std::vector<silkworm::Transaction>;
 
-boost::asio::awaitable<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 
-boost::asio::awaitable<ChainConfig> read_chain_config(const DatabaseReader& reader);
+Task<ChainConfig> read_chain_config(const DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> read_chain_id(const DatabaseReader& reader);
+Task<uint64_t> read_chain_id(const DatabaseReader& reader);
 
-boost::asio::awaitable<evmc::bytes32> read_canonical_block_hash(const DatabaseReader& reader, uint64_t block_number);
+Task<evmc::bytes32> read_canonical_block_hash(const DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<intx::uint256> read_total_difficulty(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<intx::uint256> read_total_difficulty(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 
-boost::asio::awaitable<silkworm::BlockHeader> read_header_by_number(const DatabaseReader& reader, uint64_t block_number);
+Task<silkworm::BlockHeader> read_header_by_number(const DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::BlockHeader> read_current_header(const DatabaseReader& reader);
+Task<silkworm::BlockHeader> read_current_header(const DatabaseReader& reader);
 
-boost::asio::awaitable<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
+Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
 
-boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<silkworm::BlockBody> read_body(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, uint64_t block_number);
+Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<Addresses> read_senders(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+Task<Addresses> read_senders(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number);
+Task<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
 
-boost::asio::awaitable<Transactions> read_canonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
+Task<Transactions> read_canonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
 
-boost::asio::awaitable<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
+Task<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
 
-boost::asio::awaitable<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
+Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
+Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 
-boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
+Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 
 }  // namespace silkworm::rpc::core::rawdb

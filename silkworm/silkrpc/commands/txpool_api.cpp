@@ -25,7 +25,7 @@
 namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#txpool_status
-boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto status = co_await tx_pool_->get_status();
         TxPoolStatusInfo txpool_status{status.base_fee_count, status.pending_count, status.queued_count};
@@ -42,7 +42,7 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::
 }
 
 // https://geth.ethereum.org/docs/rpc/ns-txpool
-boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto txpool_transactions = co_await tx_pool_->get_transactions();
 

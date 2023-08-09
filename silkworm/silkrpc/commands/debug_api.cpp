@@ -52,12 +52,10 @@
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
-
 static constexpr int16_t kAccountRangeMaxResults{256};
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_accountrange
-awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 5) {
         auto error_msg = "invalid debug_accountRange params: " + params.dump();
@@ -108,7 +106,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& re
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_getmodifiedaccountsbynumber
-awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByNumber params: " + params.dump();
@@ -149,7 +147,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const 
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_getmodifiedaccountsbyhash
-awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByHash params: " + params.dump();
@@ -190,7 +188,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nl
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_storagerangeat
-awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 5) {
         auto error_msg = "invalid debug_storageRangeAt params: " + params.dump();
@@ -264,7 +262,7 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debugdebugaccountat
-awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() < 3) {
         auto error_msg = "invalid debug_accountAt params: " + params.dump();
@@ -357,7 +355,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracetransaction
-awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
+Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceTransaction params: " + params.dump();
@@ -404,7 +402,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracecall
-awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream) {
+Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCall params: " + params.dump();
@@ -459,7 +457,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracecallmany
-awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& request, json::Stream& stream) {
+Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& request, json::Stream& stream) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required arguments";
         SILK_ERROR << error_msg << request.dump();
@@ -522,7 +520,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& 
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_traceblockbynumber
-awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream) {
+Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByNumber params: " + params.dump();
@@ -575,7 +573,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_traceblockbyhash
-awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream) {
+Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByHash params: " + params.dump();
@@ -627,7 +625,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
     co_return;
 }
 
-awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
+Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
     const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
@@ -658,7 +656,7 @@ awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatab
     co_return addresses;
 }
 
-awaitable<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
 
     if (params.size() != 1) {
@@ -698,7 +696,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& re
     co_return;
 }
 
-awaitable<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawHeader params: " + params.dump();
@@ -738,7 +736,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& r
     co_return;
 }
 
-awaitable<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawTransaction params: " + params.dump();

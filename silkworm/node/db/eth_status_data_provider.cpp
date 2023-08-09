@@ -109,7 +109,7 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::get_status_data(uint8_t
 }
 
 EthStatusDataProvider::StatusDataProvider EthStatusDataProvider::to_factory_function() {
-    return [provider = *this](uint8_t eth_version) mutable -> boost::asio::awaitable<StatusData> {
+    return [provider = *this](uint8_t eth_version) mutable -> Task<StatusData> {
         co_return provider.get_status_data(eth_version);
     };
 }

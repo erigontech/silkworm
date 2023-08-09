@@ -18,48 +18,32 @@
 
 #include <chrono>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
+
+#include <silkworm/infra/test_util/task_runner.hpp>
 
 namespace silkworm::concurrency {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
 
-template <typename TResult>
-TResult run(io_context& context, awaitable<TResult> awaitable1) {
-    auto task = co_spawn(
-        context,
-        std::move(awaitable1),
-        boost::asio::use_future);
-
-    while (task.wait_for(0s) == std::future_status::timeout) {
-        context.poll_one();
-    }
-
-    return task.get();
-}
-
 TEST_CASE("Channel.close_and_send") {
-    io_context context;
-    Channel<int> channel{context.get_executor()};
+    test_util::TaskRunner runner;
+    Channel<int> channel{runner.executor()};
     channel.close();
     // boost::asio::experimental::error::channel_errors::channel_closed
-    CHECK_THROWS_AS(run(context, channel.send(1)), boost::system::system_error);
+    CHECK_THROWS_AS(runner.run(channel.send(1)), boost::system::system_error);
 }
 
 TEST_CASE("Channel.close_and_receive") {
-    io_context context;
-    Channel<int> channel{context.get_executor()};
+    test_util::TaskRunner runner;
+    Channel<int> channel{runner.executor()};
     channel.close();
     // boost::asio::experimental::error::channel_errors::channel_closed
-    CHECK_THROWS_AS(run(context, channel.receive()), boost::system::system_error);
+    CHECK_THROWS_AS(runner.run(channel.receive()), boost::system::system_error);
 }
 
 }  // namespace silkworm::concurrency

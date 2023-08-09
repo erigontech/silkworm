@@ -44,8 +44,6 @@
 
 namespace silkworm::rpc::call {
 
-using boost::asio::awaitable;
-
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const ChainStorage& storage,
                                                   const silkworm::BlockWithHash& block_with_hash,
@@ -145,9 +143,11 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     return result;
 }
 
-boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
-                                                             const AccountsOverrides& accounts_overrides,
-                                                             std::optional<std::uint64_t> opt_timeout) {
+Task<CallManyResult> CallExecutor::execute(
+    const Bundles& bundles,
+    const SimulationContext& context,
+    const AccountsOverrides& accounts_overrides,
+    std::optional<std::uint64_t> opt_timeout) {
     ethdb::TransactionDatabase tx_database{transaction_};
     const auto chain_storage{transaction_.create_storage(tx_database, backend_)};
 

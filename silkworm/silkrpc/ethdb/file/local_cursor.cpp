@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc::ethdb::file {
 
-boost::asio::awaitable<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
+Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
     // table_name name must be a valid MDBX map name
@@ -34,7 +34,7 @@ boost::asio::awaitable<void> LocalCursor::open_cursor(const std::string& table_n
     co_return;
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::seek(ByteView key) {
+Task<KeyValue> LocalCursor::seek(ByteView key) {
     SILK_DEBUG << "LocalCursor::seek cursor: " << cursor_id_ << " key: " << key;
     mdbx::slice mdbx_key{key};
 
@@ -50,7 +50,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek(ByteView key) {
     }
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(ByteView key) {
+Task<KeyValue> LocalCursor::seek_exact(ByteView key) {
     SILK_DEBUG << "LocalCursor::seek_exact cursor: " << cursor_id_ << " key: " << key;
 
     const bool found = db_cursor_.seek(key);
@@ -67,7 +67,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(ByteView key) {
     co_return KeyValue{};
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::next() {
+Task<KeyValue> LocalCursor::next() {
     SILK_DEBUG << "LocalCursor::next: " << cursor_id_;
 
     const auto result = db_cursor_.to_next(/*throw_notfound=*/false);
@@ -83,7 +83,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::next() {
     co_return KeyValue{};
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::previous() {
+Task<KeyValue> LocalCursor::previous() {
     SILK_DEBUG << "LocalCursor::previous: " << cursor_id_;
 
     const auto result = db_cursor_.to_previous(/*throw_notfound=*/false);
@@ -99,7 +99,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::previous() {
     co_return KeyValue{};
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
+Task<KeyValue> LocalCursor::next_dup() {
     SILK_DEBUG << "LocalCursor::next_dup: " << cursor_id_;
 
     const auto result = db_cursor_.to_current_next_multi(/*throw_notfound=*/false);
@@ -115,7 +115,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
     co_return KeyValue{};
 }
 
-boost::asio::awaitable<Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
+Task<Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
     SILK_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
@@ -128,7 +128,7 @@ boost::asio::awaitable<Bytes> LocalCursor::seek_both(silkworm::ByteView key, sil
     co_return bytes_of_string("");
 }
 
-boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
+Task<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
     SILK_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.find_multivalue(key, value, /*throw_notfound=*/false);
@@ -144,7 +144,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView
     co_return KeyValue{};
 }
 
-boost::asio::awaitable<void> LocalCursor::close_cursor() {
+Task<void> LocalCursor::close_cursor() {
     SILK_DEBUG << "LocalCursor::close_cursor c=" << cursor_id_;
     cursor_id_ = 0;
     co_return;

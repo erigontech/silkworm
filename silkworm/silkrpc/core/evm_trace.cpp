@@ -43,7 +43,6 @@
 
 namespace silkworm::rpc::trace {
 
-using boost::asio::awaitable;
 using evmc::literals::operator""_address;
 
 void from_json(const nlohmann::json& json, TraceConfig& tc) {
@@ -1125,7 +1124,7 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
     }
 }
 
-awaitable<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
+Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
     std::vector<Trace> traces;
 
     const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, {false, true, false});
@@ -1215,7 +1214,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash
     co_return traces;
 }
 
-awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config) {
+Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
@@ -1286,13 +1285,13 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
     co_return call_result;
 }
 
-awaitable<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
+Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
     rpc::Transaction transaction{call.to_transaction()};
     auto result = co_await execute(block.header.number, block, transaction, -1, config);
     co_return result;
 }
 
-awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls) {
+Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls) {
     const auto block_number = block.header.number;
     SILK_DEBUG << "trace_call_many: "
                << " block_number: " << block_number
@@ -1360,7 +1359,7 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
     co_return ret_result;
 }
 
-boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
+Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
@@ -1411,7 +1410,7 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
     co_return deploy_result;
 }
 
-awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
+Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
@@ -1435,7 +1434,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
     co_return traces;
 }
 
-boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
+Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
@@ -1467,7 +1466,7 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
     co_return ret_entry_tracer->result();
 }
 
-boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
+Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
@@ -1500,7 +1499,7 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
     co_return ret_result;
 }
 
-boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
+Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
@@ -1519,7 +1518,7 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
     co_return tracer->result();
 }
 
-boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
+Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
     auto block_number = block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
@@ -1550,7 +1549,7 @@ boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const si
     co_return ret_entry_tracer->found();
 }
 
-awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
+Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
@@ -1599,8 +1598,12 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
     co_return;
 }
 
-awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number, const silkworm::Block& block,
-                                                      const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config) {
+Task<TraceCallResult> TraceCallExecutor::execute(
+    std::uint64_t block_number,
+    const silkworm::Block& block,
+    const rpc::Transaction& transaction,
+    std::int32_t index,
+    const TraceConfig& config) {
     SILK_DEBUG << "execute: "
                << " block_number: " << std::dec << block_number
                << " transaction: {" << transaction << "}"

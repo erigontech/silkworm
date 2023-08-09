@@ -21,7 +21,8 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <gsl/narrow>
@@ -135,24 +136,32 @@ class DebugExecutor {
     DebugExecutor(const DebugExecutor&) = delete;
     DebugExecutor& operator=(const DebugExecutor&) = delete;
 
-    boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number);
-    boost::asio::awaitable<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
-    boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call);
-    boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
-    boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
+    Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number);
+    Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
+    Task<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call);
+    Task<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
+    Task<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
 
   protected:
-    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call);
+    Task<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call);
 
   private:
-    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block);
-    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number,
-                                         const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
+    Task<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block);
 
-    boost::asio::awaitable<void> execute(json::Stream& stream, const ChainStorage& storage,
-                                         const silkworm::BlockWithHash& block_with_hash,
-                                         const Bundles& bundles,
-                                         int32_t transaction_index);
+    Task<void> execute(
+        json::Stream& stream,
+        const ChainStorage& storage,
+        std::uint64_t block_number,
+        const silkworm::Block& block,
+        const Transaction& transaction,
+        int32_t = -1);
+
+    Task<void> execute(
+        json::Stream& stream,
+        const ChainStorage& storage,
+        const silkworm::BlockWithHash& block_with_hash,
+        const Bundles& bundles,
+        int32_t transaction_index);
 
     const core::rawdb::DatabaseReader& database_reader_;
     BlockCache& block_cache_;

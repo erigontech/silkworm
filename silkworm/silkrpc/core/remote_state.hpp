@@ -21,9 +21,8 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
 
@@ -40,25 +39,25 @@ class AsyncRemoteState {
     explicit AsyncRemoteState(const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number)
         : storage_(storage), block_number_(block_number), state_reader_{db_reader} {}
 
-    boost::asio::awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
+    Task<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
 
-    boost::asio::awaitable<silkworm::ByteView> read_code(const evmc::bytes32& code_hash) const noexcept;
+    Task<silkworm::ByteView> read_code(const evmc::bytes32& code_hash) const noexcept;
 
-    boost::asio::awaitable<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept;
+    Task<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept;
 
-    boost::asio::awaitable<uint64_t> previous_incarnation(const evmc::address& address) const noexcept;
+    Task<uint64_t> previous_incarnation(const evmc::address& address) const noexcept;
 
-    boost::asio::awaitable<std::optional<silkworm::BlockHeader>> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+    Task<std::optional<silkworm::BlockHeader>> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
 
-    boost::asio::awaitable<bool> read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept;
+    Task<bool> read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept;
 
-    boost::asio::awaitable<std::optional<intx::uint256>> total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+    Task<std::optional<intx::uint256>> total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
 
-    boost::asio::awaitable<evmc::bytes32> state_root_hash() const;
+    Task<evmc::bytes32> state_root_hash() const;
 
-    boost::asio::awaitable<uint64_t> current_canonical_block() const;
+    Task<uint64_t> current_canonical_block() const;
 
-    boost::asio::awaitable<std::optional<evmc::bytes32>> canonical_hash(uint64_t block_number) const;
+    Task<std::optional<evmc::bytes32>> canonical_hash(uint64_t block_number) const;
 
   private:
     static std::unordered_map<evmc::bytes32, silkworm::Bytes> code_;

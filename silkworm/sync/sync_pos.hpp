@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
@@ -39,17 +37,17 @@ class PoSSync : public ChainSync {
   public:
     PoSSync(BlockExchange&, execution::Client&);
 
-    asio::awaitable<void> async_run() override;
+    Task<void> async_run() override;
 
     // public interface to download blocks
-    auto download_blocks() -> asio::awaitable<void>; /*[[long_running]]*/
+    auto download_blocks() -> Task<void>; /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    auto new_payload(const rpc::ExecutionPayload&) -> asio::awaitable<rpc::PayloadStatus>;
-    auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> asio::awaitable<rpc::ForkChoiceUpdatedReply>;
-    auto get_payload(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayloadAndValue>;
-    auto get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> asio::awaitable<rpc::ExecutionPayloadBodies>;
-    auto get_payload_bodies_by_range(BlockNum start, uint64_t count) -> asio::awaitable<rpc::ExecutionPayloadBodies>;
+    auto new_payload(const rpc::ExecutionPayload&) -> Task<rpc::PayloadStatus>;
+    auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> Task<rpc::ForkChoiceUpdatedReply>;
+    auto get_payload(uint64_t payloadId) -> Task<rpc::ExecutionPayloadAndValue>;
+    auto get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> Task<rpc::ExecutionPayloadBodies>;
+    auto get_payload_bodies_by_range(BlockNum start, uint64_t count) -> Task<rpc::ExecutionPayloadBodies>;
 
   private:
     static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;

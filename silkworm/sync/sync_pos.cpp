@@ -42,12 +42,12 @@ class PayloadValidationError : public std::logic_error {
 
 PoSSync::PoSSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
 
-awaitable<void> PoSSync::async_run() {
+Task<void> PoSSync::async_run() {
     co_await download_blocks();
 }
 
 // Wait for blocks arrival from BlockExchange and insert them into ExecutionEngine
-awaitable<void> PoSSync::download_blocks() {
+Task<void> PoSSync::download_blocks() {
     using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
     ResultQueue& downloading_queue = block_exchange_.result_queue();
@@ -82,8 +82,9 @@ awaitable<void> PoSSync::download_blocks() {
         // wait for a batch of blocks
         bool present = downloading_queue.try_pop(blocks);
         if (!present) {
+            // a trick to avoid busy waiting
             timer.expires_after(100ms);
-            co_await timer.async_wait(asio::use_awaitable);  // a trick to avoid busy waiting, to replace with an awaitable queue
+            co_await timer.async_wait(asio::use_awaitable);
             continue;
         }
 
@@ -172,7 +173,7 @@ auto PoSSync::has_valid_ancestor(const Hash&) -> std::tuple<bool, Hash> {
     return {true, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
-auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitable<rpc::PayloadStatus> {
+auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> Task<rpc::PayloadStatus> {
     // Implementation of engine_new_payloadVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -261,7 +262,7 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
 }
 
 auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
-                                 const std::optional<rpc::PayloadAttributes>& attributes) -> asio::awaitable<rpc::ForkChoiceUpdatedReply> {
+                                 const std::optional<rpc::PayloadAttributes>& attributes) -> Task<rpc::ForkChoiceUpdatedReply> {
     // Implementation of engine_forkchoiceUpdatedVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -370,13 +371,13 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
     }
 }
 
-auto PoSSync::get_payload(uint64_t /*payloadId*/) -> asio::awaitable<rpc::ExecutionPayloadAndValue> {
+auto PoSSync::get_payload(uint64_t /*payloadId*/) -> Task<rpc::ExecutionPayloadAndValue> {
     // Implementation of engine_getPayloadVx method
     ensure_invariant(false, "get_payload not implemented");
     co_return rpc::ExecutionPayloadAndValue{};
 }
 
-auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> asio::awaitable<rpc::ExecutionPayloadBodies> {
+auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> Task<rpc::ExecutionPayloadBodies> {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(block_hashes.size());
     for (const auto& bh : block_hashes) {
@@ -402,7 +403,7 @@ auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) 
     co_return payload_bodies;
 }
 
-auto PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) -> asio::awaitable<rpc::ExecutionPayloadBodies> {
+auto PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) -> Task<rpc::ExecutionPayloadBodies> {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(count);
     for (BlockNum number{start}; number < start + count; ++number) {

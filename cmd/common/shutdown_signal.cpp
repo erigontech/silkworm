@@ -42,7 +42,7 @@ void ShutdownSignal::on_signal(std::function<void(SignalNumber)> callback) {
     });
 }
 
-boost::asio::awaitable<ShutdownSignal::SignalNumber> ShutdownSignal::wait() {
+Task<ShutdownSignal::SignalNumber> ShutdownSignal::wait() {
     int signal_number = co_await signals_.async_wait(boost::asio::use_awaitable);
     log_signal(signal_number);
     co_return signal_number;

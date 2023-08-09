@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -44,8 +43,8 @@ class TxPoolRpcApi {
     TxPoolRpcApi& operator=(const TxPoolRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     ethdb::Database* database_;

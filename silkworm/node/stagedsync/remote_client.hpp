@@ -19,10 +19,9 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/asio_grpc.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
@@ -46,30 +45,30 @@ class RemoteClient : public Client {
     asio::io_context& get_executor() override;
 
     // actions
-    auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> override;
-    auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void> override;
-    auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void> override;
+    auto insert_headers(const BlockVector& blocks) -> Task<void> override;
+    auto insert_bodies(const BlockVector& blocks) -> Task<void> override;
+    auto insert_blocks(const BlockVector& blocks) -> Task<void> override;
 
-    auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> override;
+    auto validate_chain(Hash head_block_hash) -> Task<ValidationResult> override;
 
     auto update_fork_choice(Hash head_block_hash,
-                            std::optional<Hash> finalized_block_hash) -> asio::awaitable<ForkChoiceApplication> override;
+                            std::optional<Hash> finalized_block_hash) -> Task<ForkChoiceApplication> override;
 
     // state
-    auto block_progress() -> asio::awaitable<BlockNum> override;
-    auto last_fork_choice() -> asio::awaitable<BlockId> override;
+    auto block_progress() -> Task<BlockNum> override;
+    auto last_fork_choice() -> Task<BlockId> override;
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> override;
-    auto get_header(BlockNum height, Hash hash) -> asio::awaitable<std::optional<BlockHeader>> override;
-    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>> override;
-    auto get_body(BlockNum block_number) -> asio::awaitable<std::optional<BlockBody>> override;
+    auto get_header(Hash block_hash) -> Task<std::optional<BlockHeader>> override;
+    auto get_header(BlockNum height, Hash hash) -> Task<std::optional<BlockHeader>> override;
+    auto get_body(Hash block_hash) -> Task<std::optional<BlockBody>> override;
+    auto get_body(BlockNum block_number) -> Task<std::optional<BlockBody>> override;
 
-    auto is_canonical(Hash block_hash) -> asio::awaitable<bool> override;
-    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
+    auto is_canonical(Hash block_hash) -> Task<bool> override;
+    auto get_block_num(Hash block_hash) -> Task<std::optional<BlockNum>> override;
 
-    auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
-    auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>> override;
+    auto get_last_headers(BlockNum limit) -> Task<std::vector<BlockHeader>> override;
+    auto get_header_td(Hash, std::optional<BlockNum>) -> Task<std::optional<TotalDifficulty>> override;
 
   private:
     rpc::ClientContext& context_;

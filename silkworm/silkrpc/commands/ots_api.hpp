@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
@@ -60,7 +59,7 @@ class ChunkProvider {
     ChunkProvider() {}
     ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
 
-    boost::asio::awaitable<ChunkProviderResponse> get();
+    Task<ChunkProviderResponse> get();
 };
 
 struct ChunkLocatorResponse {
@@ -78,7 +77,7 @@ class ChunkLocator {
   public:
     ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward);
 
-    boost::asio::awaitable<ChunkLocatorResponse> get(uint64_t min_block);
+    Task<ChunkLocatorResponse> get(uint64_t min_block);
 };
 
 struct BlockProviderResponse {
@@ -90,7 +89,7 @@ struct BlockProviderResponse {
 class BlockProvider {
   public:
     virtual ~BlockProvider() {}
-    virtual boost::asio::awaitable<BlockProviderResponse> get() = 0;
+    virtual Task<BlockProviderResponse> get() = 0;
 };
 
 class ForwardBlockProvider : public BlockProvider {
@@ -126,7 +125,7 @@ class ForwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    boost::asio::awaitable<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get();
 };
 
 class BackwardBlockProvider : public BlockProvider {
@@ -164,7 +163,7 @@ class BackwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    boost::asio::awaitable<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get();
 };
 
 class FromToBlockProvider : public BlockProvider {
@@ -182,7 +181,7 @@ class FromToBlockProvider : public BlockProvider {
   public:
     FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider);
 
-    boost::asio::awaitable<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get();
 };
 
 class OtsRpcApi {
@@ -201,18 +200,18 @@ class OtsRpcApi {
     OtsRpcApi& operator=(const OtsRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;
@@ -224,15 +223,16 @@ class OtsRpcApi {
     friend class silkworm::http::RequestHandler;
 
   private:
-    boost::asio::awaitable<bool> trace_blocks(FromToBlockProvider& from_to_provider,
-                                              ethdb::Transaction& tx,
-                                              evmc::address address,
-                                              uint64_t page_size,
-                                              uint64_t result_count,
-                                              std::vector<TransactionsWithReceipts>& results);
+    Task<bool> trace_blocks(
+        FromToBlockProvider& from_to_provider,
+        ethdb::Transaction& tx,
+        evmc::address address,
+        uint64_t page_size,
+        uint64_t result_count,
+        std::vector<TransactionsWithReceipts>& results);
 
-    boost::asio::awaitable<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results);
-    boost::asio::awaitable<void> trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results);
+    Task<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results);
+    Task<void> trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block,
                                         const std::vector<Receipt>& receipts, silkworm::BlockNum block_number);

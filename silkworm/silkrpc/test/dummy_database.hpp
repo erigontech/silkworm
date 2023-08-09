@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -35,7 +35,7 @@ class DummyDatabase : public ethdb::Database {
     explicit DummyDatabase(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
         : tx_id_(tx_id), cursor_(std::move(cursor)) {}
 
-    boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
+    Task<std::unique_ptr<ethdb::Transaction>> begin() override {
         co_return std::make_unique<DummyTransaction>(tx_id_, cursor_);
     }
 

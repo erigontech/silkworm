@@ -18,7 +18,8 @@
 
 #include <string>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
@@ -30,26 +31,26 @@ namespace silkworm::rpc::test {
 class MockCursor : public ethdb::Cursor {
   public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
-    MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView key));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), previous, ());
-    MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
+    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<KeyValue>), seek, (silkworm::ByteView key));
+    MOCK_METHOD((Task<KeyValue>), seek_exact, (silkworm::ByteView key));
+    MOCK_METHOD((Task<KeyValue>), next, ());
+    MOCK_METHOD((Task<KeyValue>), previous, ());
+    MOCK_METHOD((Task<void>), close_cursor, ());
 };
 
 class MockCursorDupSort : public ethdb::CursorDupSort {
   public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
-    MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView key));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), previous, ());
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), next_dup, ());
-    MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
-    MOCK_METHOD((boost::asio::awaitable<silkworm::Bytes>), seek_both, (silkworm::ByteView, silkworm::ByteView));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_both_exact, (silkworm::ByteView, silkworm::ByteView));
+    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<KeyValue>), seek, (silkworm::ByteView key));
+    MOCK_METHOD((Task<KeyValue>), seek_exact, (silkworm::ByteView key));
+    MOCK_METHOD((Task<KeyValue>), next, ());
+    MOCK_METHOD((Task<KeyValue>), previous, ());
+    MOCK_METHOD((Task<KeyValue>), next_dup, ());
+    MOCK_METHOD((Task<void>), close_cursor, ());
+    MOCK_METHOD((Task<silkworm::Bytes>), seek_both, (silkworm::ByteView, silkworm::ByteView));
+    MOCK_METHOD((Task<KeyValue>), seek_both_exact, (silkworm::ByteView, silkworm::ByteView));
 };
 
 }  // namespace silkworm::rpc::test

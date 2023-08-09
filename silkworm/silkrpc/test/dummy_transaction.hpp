@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/remote_state.hpp>
@@ -37,13 +37,13 @@ class DummyTransaction : public ethdb::Transaction {
 
     [[nodiscard]] uint64_t view_id() const override { return view_id_; }
 
-    boost::asio::awaitable<void> open() override { co_return; }
+    Task<void> open() override { co_return; }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
+    Task<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
         co_return cursor_;
     }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
+    Task<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
         co_return cursor_;
     }
 
@@ -56,7 +56,7 @@ class DummyTransaction : public ethdb::Transaction {
         return nullptr;
     }
 
-    boost::asio::awaitable<void> close() override { co_return; }
+    Task<void> close() override { co_return; }
 
   private:
     uint64_t view_id_;

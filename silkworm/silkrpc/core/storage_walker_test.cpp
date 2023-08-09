@@ -46,7 +46,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_cursor*/) override {
+    Task<void> open_cursor(const std::string& table_name, bool /*is_dup_cursor*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();
@@ -54,12 +54,12 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return;
     }
 
-    boost::asio::awaitable<void> close_cursor() override {
+    Task<void> close_cursor() override {
         table_name_ = "";
         co_return;
     }
 
-    boost::asio::awaitable<KeyValue> seek(silkworm::ByteView key) override {
+    Task<KeyValue> seek(silkworm::ByteView key) override {
         const auto key_ = silkworm::to_hex(key);
 
         KeyValue out;
@@ -80,7 +80,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
-    boost::asio::awaitable<KeyValue> seek_exact(silkworm::ByteView key) override {
+    Task<KeyValue> seek_exact(silkworm::ByteView key) override {
         const nlohmann::json table = json_.value(table_name_, empty);
         const auto& entry = table.value(silkworm::to_hex(key), "");
         auto value{*silkworm::from_hex(entry)};
@@ -90,7 +90,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return kv;
     }
 
-    boost::asio::awaitable<KeyValue> next() override {
+    Task<KeyValue> next() override {
         KeyValue out;
 
         if (++itr_ != table_.end()) {
@@ -102,7 +102,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
-    boost::asio::awaitable<KeyValue> previous() override {
+    Task<KeyValue> previous() override {
         KeyValue out;
 
         if (--itr_ != table_.begin()) {
@@ -114,7 +114,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
-    boost::asio::awaitable<KeyValue> next_dup() override {
+    Task<KeyValue> next_dup() override {
         KeyValue out;
 
         if (++itr_ != table_.end()) {
@@ -126,7 +126,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
-    boost::asio::awaitable<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) override {
+    Task<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) override {
         silkworm::Bytes key_{key};
         key_ += value;
 
@@ -137,7 +137,7 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
-    boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override {
+    Task<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override {
         silkworm::Bytes key_{key};
         key_ += value;
 
@@ -162,18 +162,18 @@ class DummyTransaction : public ethdb::Transaction {
 
     [[nodiscard]] uint64_t view_id() const override { return 0; }
 
-    boost::asio::awaitable<void> open() override {
+    Task<void> open() override {
         co_return;
     }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
+    Task<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    Task<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 
@@ -188,7 +188,7 @@ class DummyTransaction : public ethdb::Transaction {
         return nullptr;
     }
 
-    boost::asio::awaitable<void> close() override {
+    Task<void> close() override {
         co_return;
     }
 
@@ -200,7 +200,7 @@ class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
+    Task<std::unique_ptr<ethdb::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
     }

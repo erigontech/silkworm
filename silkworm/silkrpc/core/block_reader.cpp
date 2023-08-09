@@ -41,7 +41,7 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     }
 }
 
-awaitable<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const {
+Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const {
     ethdb::TransactionDatabase tx_database{transaction_};
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, tx_database, bnoh);
@@ -73,7 +73,7 @@ awaitable<void> BlockReader::read_balance_changes(BlockCache& cache, const Block
     co_return;
 }
 
-awaitable<void> BlockReader::load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const {
+Task<void> BlockReader::load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const {
     auto acs_cursor = co_await transaction_.cursor(db::table::kAccountChangeSetName);
     const auto block_number_key = silkworm::db::block_key(block_number);
 

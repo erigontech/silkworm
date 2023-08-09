@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc::core {
 
-boost::asio::awaitable<Receipts> get_receipts(const core::rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash) {
+Task<Receipts> get_receipts(const core::rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash) {
     const auto cached_receipts = co_await core::rawdb::read_receipts(db_reader, block_with_hash);
     if (!cached_receipts.empty()) {
         co_return cached_receipts;

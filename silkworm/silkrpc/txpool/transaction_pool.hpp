@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/io_context.hpp>
@@ -72,11 +72,11 @@ class TransactionPool final {
 
     ~TransactionPool();
 
-    boost::asio::awaitable<OperationResult> add_transaction(const silkworm::ByteView& rlp_tx);
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get_transaction(const evmc::bytes32& tx_hash);
-    boost::asio::awaitable<std::optional<uint64_t>> nonce(const evmc::address& address);
-    boost::asio::awaitable<StatusInfo> get_status();
-    boost::asio::awaitable<TransactionsInPool> get_transactions();
+    Task<OperationResult> add_transaction(const silkworm::ByteView& rlp_tx);
+    Task<std::optional<silkworm::Bytes>> get_transaction(const evmc::bytes32& tx_hash);
+    Task<std::optional<uint64_t>> nonce(const evmc::address& address);
+    Task<StatusInfo> get_status();
+    Task<TransactionsInPool> get_transactions();
 
   private:
     boost::asio::io_context::executor_type executor_;

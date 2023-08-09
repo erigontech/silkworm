@@ -54,7 +54,7 @@ Connection::~Connection() {
     SILK_DEBUG << "Connection::~Connection socket " << &socket_ << " deleted";
 }
 
-boost::asio::awaitable<void> Connection::read_loop() {
+Task<void> Connection::read_loop() {
     try {
         // Read next request or next chunk (result == RequestParser::indeterminate) until closed or error
         while (true) {
@@ -75,7 +75,7 @@ boost::asio::awaitable<void> Connection::read_loop() {
     }
 }
 
-boost::asio::awaitable<void> Connection::do_read() {
+Task<void> Connection::do_read() {
     SILK_DEBUG << "Connection::do_read going to read...";
     std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
     SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_read;
@@ -97,7 +97,7 @@ boost::asio::awaitable<void> Connection::do_read() {
     }
 }
 
-boost::asio::awaitable<void> Connection::do_write() {
+Task<void> Connection::do_write() {
     SILK_DEBUG << "Connection::do_write reply: " << reply_.content;
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply_.to_buffers(), boost::asio::use_awaitable);
     SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;

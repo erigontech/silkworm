@@ -30,7 +30,7 @@ namespace silkworm::stagedsync {
 //! The number of inserted blocks between two successive commits on db
 constexpr uint64_t kInsertedBlockBatch{1'000};
 
-MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
+MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
       db_access_{dba},

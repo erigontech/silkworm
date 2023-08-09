@@ -30,7 +30,7 @@ class ChainSync {
     ChainSync(const ChainSync&) = delete;
     ChainSync& operator=(const ChainSync&) = delete;
 
-    virtual boost::asio::awaitable<void> async_run() = 0;
+    virtual Task<void> async_run() = 0;
 
   protected:
     BlockExchange& block_exchange_;

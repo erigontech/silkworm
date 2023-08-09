@@ -21,24 +21,24 @@
 
 namespace silkworm::rpc::ethdb::file {
 
-boost::asio::awaitable<void> LocalTransaction::open() {
+Task<void> LocalTransaction::open() {
     co_return;
 }
 
-boost::asio::awaitable<std::shared_ptr<Cursor>> LocalTransaction::cursor(const std::string& table) {
+Task<std::shared_ptr<Cursor>> LocalTransaction::cursor(const std::string& table) {
     co_return co_await get_cursor(table, false);
 }
 
-boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::cursor_dup_sort(const std::string& table) {
+Task<std::shared_ptr<CursorDupSort>> LocalTransaction::cursor_dup_sort(const std::string& table) {
     co_return co_await get_cursor(table, true);
 }
 
-boost::asio::awaitable<void> LocalTransaction::close() {
+Task<void> LocalTransaction::close() {
     cursors_.clear();
     co_return;
 }
 
-boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
+Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
     if (is_cursor_sorted) {
         auto cursor_it = dup_cursors_.find(table);
         if (cursor_it != dup_cursors_.end()) {

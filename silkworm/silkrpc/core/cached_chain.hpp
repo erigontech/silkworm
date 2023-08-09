@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
@@ -29,12 +28,10 @@
 
 namespace silkworm::rpc::core {
 
-using boost::asio::awaitable;
-
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number);
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash);
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
-awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
+Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash);
 
 }  // namespace silkworm::rpc::core

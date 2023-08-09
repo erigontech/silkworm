@@ -19,10 +19,11 @@
 #include <iostream>
 #include <string>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
@@ -217,7 +218,7 @@ int ethbackend_async(const std::string& target) {
     return 0;
 }
 
-boost::asio::awaitable<void> ethbackend_etherbase(ethbackend::BackEnd& backend) {
+Task<void> ethbackend_etherbase(ethbackend::BackEnd& backend) {
     try {
         std::cout << "ETHBACKEND Etherbase ->\n";
         const auto address = co_await backend.etherbase();

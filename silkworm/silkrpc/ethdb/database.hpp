@@ -18,9 +18,8 @@
 
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -35,7 +34,7 @@ class Database {
     Database(const Database&) = delete;
     Database& operator=(const Database&) = delete;
 
-    virtual boost::asio::awaitable<std::unique_ptr<Transaction>> begin() = 0;
+    virtual Task<std::unique_ptr<Transaction>> begin() = 0;
 };
 
 }  // namespace silkworm::rpc::ethdb

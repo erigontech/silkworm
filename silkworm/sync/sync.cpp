@@ -75,25 +75,25 @@ void Sync::force_pow(execution::Client& execution) {
     engine_rpc_server_.reset();
 }
 
-boost::asio::awaitable<void> Sync::async_run() {
+Task<void> Sync::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
     return (run_tasks() && start_engine_rpc_server());
 }
 
-boost::asio::awaitable<void> Sync::run_tasks() {
+Task<void> Sync::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
     co_await (start_sync_sentry_client() && start_block_exchange() && start_chain_sync());
 }
 
-boost::asio::awaitable<void> Sync::start_sync_sentry_client() {
+Task<void> Sync::start_sync_sentry_client() {
     return sync_sentry_client_.async_run();
 }
 
-boost::asio::awaitable<void> Sync::start_block_exchange() {
+Task<void> Sync::start_block_exchange() {
     return block_exchange_.async_run("block-exchg");
 }
 
-boost::asio::awaitable<void> Sync::start_chain_sync() {
+Task<void> Sync::start_chain_sync() {
     if (!engine_rpc_server_) {
         return chain_sync_->async_run();
     }
@@ -104,7 +104,7 @@ boost::asio::awaitable<void> Sync::start_chain_sync() {
     return boost::asio::co_spawn(engine_rpc_ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
 }
 
-boost::asio::awaitable<void> Sync::start_engine_rpc_server() {
+Task<void> Sync::start_engine_rpc_server() {
     if (engine_rpc_server_) {
         auto engine_rpc_server_run = [this]() {
             engine_rpc_server_->start();

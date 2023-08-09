@@ -37,7 +37,7 @@ using namespace boost::asio;
 using namespace std::chrono_literals;
 using namespace concurrency::awaitable_wait_for_all;
 
-static awaitable<void> async_ok() {
+static Task<void> async_ok() {
     co_await this_coro::executor;
 }
 
@@ -46,12 +46,12 @@ class TestException : public std::runtime_error {
     TestException() : std::runtime_error("TestException") {}
 };
 
-static awaitable<void> async_throw() {
+static Task<void> async_throw() {
     co_await this_coro::executor;
     throw TestException();
 }
 
-static awaitable<void> wait_until_cancelled(bool* is_cancelled) {
+static Task<void> wait_until_cancelled(bool* is_cancelled) {
     try {
         auto executor = co_await this_coro::executor;
         steady_timer timer(executor);
@@ -63,7 +63,7 @@ static awaitable<void> wait_until_cancelled(bool* is_cancelled) {
 }
 
 template <typename TResult>
-static TResult run(io_context& context, awaitable<TResult> awaitable1) {
+static TResult run(io_context& context, Task<TResult> awaitable1) {
     auto task = co_spawn(
         context,
         std::move(awaitable1),

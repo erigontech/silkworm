@@ -33,11 +33,11 @@ namespace silkworm::rpc::state {
 
 std::unordered_map<evmc::bytes32, silkworm::Bytes> AsyncRemoteState::code_;
 
-boost::asio::awaitable<std::optional<silkworm::Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
+Task<std::optional<silkworm::Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
     co_return co_await state_reader_.read_account(address, block_number_ + 1);
 }
 
-boost::asio::awaitable<silkworm::ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
+Task<silkworm::ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
     const auto optional_code{co_await state_reader_.read_code(code_hash)};
     if (optional_code) {
         code_[code_hash] = std::move(*optional_code);
@@ -46,36 +46,36 @@ boost::asio::awaitable<silkworm::ByteView> AsyncRemoteState::read_code(const evm
     co_return silkworm::ByteView{};
 }
 
-boost::asio::awaitable<evmc::bytes32> AsyncRemoteState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
+Task<evmc::bytes32> AsyncRemoteState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
     co_return co_await state_reader_.read_storage(address, incarnation, location, block_number_ + 1);
 }
 
-boost::asio::awaitable<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*address*/) const noexcept {
+Task<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*address*/) const noexcept {
     co_return 0;
 }
 
-boost::asio::awaitable<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+Task<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     co_return co_await storage_.read_header(block_number, block_hash);
 }
 
-boost::asio::awaitable<bool> AsyncRemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+Task<bool> AsyncRemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
     co_return co_await storage_.read_body(block_hash, block_number, filled_body);
 }
 
-boost::asio::awaitable<std::optional<intx::uint256>> AsyncRemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+Task<std::optional<intx::uint256>> AsyncRemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     co_return co_await storage_.read_total_difficulty(block_hash, block_number);
 }
 
-boost::asio::awaitable<evmc::bytes32> AsyncRemoteState::state_root_hash() const {
+Task<evmc::bytes32> AsyncRemoteState::state_root_hash() const {
     co_return evmc::bytes32{};
 }
 
-boost::asio::awaitable<uint64_t> AsyncRemoteState::current_canonical_block() const {
+Task<uint64_t> AsyncRemoteState::current_canonical_block() const {
     // This method should not be called by EVM::execute
     co_return 0;
 }
 
-boost::asio::awaitable<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(uint64_t block_number) const {
+Task<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(uint64_t block_number) const {
     // This method should not be called by EVM::execute
     co_return co_await storage_.read_canonical_hash(block_number);
 }

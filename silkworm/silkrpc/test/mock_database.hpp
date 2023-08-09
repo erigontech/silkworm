@@ -18,7 +18,8 @@
 
 #include <memory>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <gmock/gmock.h>
 
 #include <silkworm/silkrpc/ethdb/database.hpp>
@@ -27,7 +28,7 @@ namespace silkworm::rpc::test {
 
 class MockDatabase : public ethdb::Database {
   public:
-    MOCK_METHOD((boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>>), begin, ());
+    MOCK_METHOD((Task<std::unique_ptr<ethdb::Transaction>>), begin, ());
 };
 
 }  // namespace silkworm::rpc::test

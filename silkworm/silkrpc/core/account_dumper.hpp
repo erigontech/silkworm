@@ -20,9 +20,8 @@
 #include <optional>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
@@ -46,12 +45,18 @@ class AccountDumper {
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
 
-    boost::asio::awaitable<DumpAccounts> dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, ethbackend::BackEnd* backend, const evmc::address& start_address, int16_t max_result,
-                                                       bool exclude_code, bool exclude_storage);
+    Task<DumpAccounts> dump_accounts(
+        BlockCache& cache,
+        const BlockNumberOrHash& bnoh,
+        ethbackend::BackEnd* backend,
+        const evmc::address& start_address,
+        int16_t max_result,
+        bool exclude_code,
+        bool exclude_storage);
 
   private:
-    boost::asio::awaitable<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
-    boost::asio::awaitable<void> load_storage(uint64_t block_number, DumpAccounts& dump_accounts);
+    Task<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
+    Task<void> load_storage(uint64_t block_number, DumpAccounts& dump_accounts);
 
     ethdb::Transaction& transaction_;
 };

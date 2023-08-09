@@ -74,7 +74,7 @@ void Server::start() {
     });
 }
 
-boost::asio::awaitable<void> Server::run() {
+Task<void> Server::run() {
     acceptor_.listen();
 
     try {
@@ -91,7 +91,7 @@ boost::asio::awaitable<void> Server::run() {
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
             SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
-            auto connection_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
+            auto connection_loop = [=]() -> Task<void> { co_await new_connection->read_loop(); };
 
             boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
                 if (eptr) std::rethrow_exception(eptr);

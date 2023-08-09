@@ -20,9 +20,8 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/commands/rpc_api.hpp>
@@ -32,9 +31,9 @@ namespace silkworm::rpc::commands {
 
 class RpcApiTable {
   public:
-    using HandleMethod = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, nlohmann::json&);
-    using HandleMethodGlaze = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, std::string&);
-    using HandleStream = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, json::Stream&);
+    using HandleMethod = Task<void> (RpcApi::*)(const nlohmann::json&, nlohmann::json&);
+    using HandleMethodGlaze = Task<void> (RpcApi::*)(const nlohmann::json&, std::string&);
+    using HandleStream = Task<void> (RpcApi::*)(const nlohmann::json&, json::Stream&);
 
     explicit RpcApiTable(const std::string& api_spec);
 

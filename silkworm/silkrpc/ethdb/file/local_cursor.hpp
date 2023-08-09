@@ -20,9 +20,8 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
@@ -42,23 +41,23 @@ class LocalCursor : public CursorDupSort {
 
     [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
+    Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
 
-    boost::asio::awaitable<KeyValue> seek(silkworm::ByteView key) override;
+    Task<KeyValue> seek(silkworm::ByteView key) override;
 
-    boost::asio::awaitable<KeyValue> seek_exact(silkworm::ByteView key) override;
+    Task<KeyValue> seek_exact(silkworm::ByteView key) override;
 
-    boost::asio::awaitable<KeyValue> next() override;
+    Task<KeyValue> next() override;
 
-    boost::asio::awaitable<KeyValue> previous() override;
+    Task<KeyValue> previous() override;
 
-    boost::asio::awaitable<KeyValue> next_dup() override;
+    Task<KeyValue> next_dup() override;
 
-    boost::asio::awaitable<void> close_cursor() override;
+    Task<void> close_cursor() override;
 
-    boost::asio::awaitable<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) override;
+    Task<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) override;
 
-    boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override;
+    Task<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override;
 
   private:
     uint32_t cursor_id_;

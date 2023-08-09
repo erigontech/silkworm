@@ -18,9 +18,8 @@
 
 #include <optional>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/this_coro.hpp>
@@ -36,8 +35,6 @@
 
 namespace silkworm::rpc {
 
-using boost::asio::awaitable;
-
 using BalanceChanges = std::map<evmc::address, intx::uint256>;
 
 void to_json(nlohmann::json& json, const BalanceChanges& bc);
@@ -50,10 +47,10 @@ class BlockReader {
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
 
-    [[nodiscard]] awaitable<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
+    [[nodiscard]] Task<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
 
   private:
-    [[nodiscard]] awaitable<void> load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const;
+    [[nodiscard]] Task<void> load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const;
 
     const core::rawdb::DatabaseReader& database_reader_;
     const ChainStorage& chain_storage_;

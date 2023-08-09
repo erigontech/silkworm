@@ -22,7 +22,7 @@
 #include <variant>
 #include <vector>
 
-#include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
@@ -36,14 +36,12 @@
 
 namespace silkworm::stagedsync {
 
-namespace asio = boost::asio;
-
 class Fork;
 class ExtendingFork;
 
 class MainChain {
   public:
-    explicit MainChain(asio::io_context&, NodeSettings&, db::RWAccess);
+    explicit MainChain(boost::asio::io_context&, NodeSettings&, db::RWAccess);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -94,7 +92,7 @@ class MainChain {
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
-    asio::io_context& io_context_;
+    boost::asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;

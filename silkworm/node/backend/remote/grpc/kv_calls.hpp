@@ -24,9 +24,8 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
@@ -65,7 +64,7 @@ class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::V
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static types::VersionReply response_;
@@ -78,7 +77,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     static void set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_duration);
 
-    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()(const EthereumBackEnd& backend);
 
   private:
     struct TxCursor {
@@ -155,7 +154,7 @@ class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeR
   public:
     using Base::ServerStreamingCall;
 
-    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()(const EthereumBackEnd& backend);
 };
 
 }  // namespace silkworm::rpc

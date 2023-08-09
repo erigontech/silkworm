@@ -152,7 +152,7 @@ TEST_CASE("awaitable future") {
 
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 promise.set_value(42);
                 co_return;
             },
@@ -169,7 +169,7 @@ TEST_CASE("awaitable future") {
 
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 auto future = promise.get_future();
                 value = co_await future.get_async();
                 io.stop();
@@ -188,7 +188,7 @@ TEST_CASE("awaitable future") {
         int value;
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 value = co_await future.get_async();
                 io.stop();
             },
@@ -204,7 +204,7 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        auto lambda = [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {
+        auto lambda = [&](AwaitableFuture<int>&& moved_future) -> Task<void> {
             value = co_await moved_future.get_async();
             io.stop();
         };
@@ -222,7 +222,7 @@ TEST_CASE("awaitable future") {
 
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 auto future = promise.get_future();
                 value = co_await future.get_async();
                 io.stop();
@@ -231,7 +231,7 @@ TEST_CASE("awaitable future") {
 
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 promise.set_value(42);
                 co_return;
             },
@@ -249,7 +249,7 @@ TEST_CASE("awaitable future") {
         boost::asio::cancellation_signal cancellation_signal;
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 auto future = promise.get_future();
                 try {
                     value = co_await future.get_async();
@@ -262,7 +262,7 @@ TEST_CASE("awaitable future") {
 
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {
+            [&]() -> Task<void> {
                 cancellation_signal.emit(boost::asio::cancellation_type::all);
                 co_return;
             },

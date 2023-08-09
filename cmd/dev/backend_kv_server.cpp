@@ -224,10 +224,10 @@ int main(int argc, char* argv[]) {
         constexpr silkworm::BlockNum kStartBlock{100'000'000};
         constexpr uint64_t kGasLimit{30'000'000};
 
-        boost::asio::awaitable<void> tasks;
+        Task<void> tasks;
         if (settings.simulate_state_changes) {
             using namespace boost::asio::experimental::awaitable_operators;
-            auto state_changes_simulator = [&]() -> boost::asio::awaitable<void> {
+            auto state_changes_simulator = [&]() -> Task<void> {
                 auto run = [&]() {
                     boost::system::error_code ec;
                     while (ec != boost::asio::error::operation_aborted) {

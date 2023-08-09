@@ -16,8 +16,7 @@
 
 #include "fork.hpp"
 
-#include <atomic>
-#include <iostream>
+#include <thread>
 
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>

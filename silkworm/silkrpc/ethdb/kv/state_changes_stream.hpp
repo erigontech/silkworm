@@ -22,9 +22,7 @@
 #include <memory>
 #include <mutex>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 #ifndef BOOST_ASIO_HAS_BOOST_DATE_TIME
 #define BOOST_ASIO_HAS_BOOST_DATE_TIME
 #endif
@@ -71,7 +69,7 @@ class StateChangesStream {
     void close();
 
     //! The register-and-receive asynchronous loop
-    boost::asio::awaitable<void> run();
+    Task<void> run();
 
   private:
     //! The retry interval between successive registration attempts

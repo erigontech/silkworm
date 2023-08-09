@@ -71,7 +71,7 @@ static std::unique_ptr<InboundMessage> decode_inbound_message(const silkworm::se
 
 static constexpr std::string_view kLogTitle{"sync::SentryClient"};
 
-boost::asio::awaitable<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& message_from_peer) {
+Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& message_from_peer) {
     using sentry::eth::MessageId;
     const auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
 
@@ -132,7 +132,7 @@ static silkworm::sentry::api::MessageIdSet make_message_id_filter() {
 }
 
 template <typename T>
-static awaitable<void> resolve_promise_with_awaitable_result(std::promise<T>& promise, awaitable<T> task) {
+static Task<void> resolve_promise_with_awaitable_result(std::promise<T>& promise, Task<T> task) {
     try {
         promise.set_value(co_await std::move(task));
     } catch (...) {
@@ -141,7 +141,7 @@ static awaitable<void> resolve_promise_with_awaitable_result(std::promise<T>& pr
 }
 
 template <>
-awaitable<void> resolve_promise_with_awaitable_result(std::promise<void>& promise, awaitable<void> task) {
+Task<void> resolve_promise_with_awaitable_result(std::promise<void>& promise, Task<void> task) {
     try {
         co_await std::move(task);
         promise.set_value();
@@ -151,7 +151,7 @@ awaitable<void> resolve_promise_with_awaitable_result(std::promise<void>& promis
 }
 
 template <typename T>
-static T sync_spawn(concurrency::TaskGroup& tasks, any_io_executor executor, awaitable<T> task) {
+static T sync_spawn(concurrency::TaskGroup& tasks, any_io_executor executor, Task<T> task) {
     std::promise<T> promise;
     tasks.spawn(std::move(executor), resolve_promise_with_awaitable_result(promise, std::move(task)));
     return promise.get_future().get();
@@ -172,7 +172,7 @@ static SentryClient::PeerIds peer_ids_from_peer_keys(const silkworm::sentry::api
     return peer_ids;
 }
 
-awaitable<SentryClient::PeerIds> SentryClient::send_message_by_id_async(const OutboundMessage& outbound_message, const PeerId& peer_id) {
+Task<SentryClient::PeerIds> SentryClient::send_message_by_id_async(const OutboundMessage& outbound_message, const PeerId& peer_id) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto peer_public_key = sentry::EccPublicKey::deserialize(peer_id);
     auto service = co_await sentry_client_->service();
@@ -184,7 +184,7 @@ SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& ou
     return sync_spawn(tasks_, executor_, send_message_by_id_async(outbound_message, peer_id));
 }
 
-awaitable<SentryClient::PeerIds> SentryClient::send_message_to_random_peers_async(const OutboundMessage& outbound_message, size_t max_peers) {
+Task<SentryClient::PeerIds> SentryClient::send_message_to_random_peers_async(const OutboundMessage& outbound_message, size_t max_peers) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto service = co_await sentry_client_->service();
     auto peer_keys = co_await service->send_message_to_random_peers(std::move(message), max_peers);
@@ -195,7 +195,7 @@ SentryClient::PeerIds SentryClient::send_message_to_random_peers(const OutboundM
     return sync_spawn(tasks_, executor_, send_message_to_random_peers_async(outbound_message, max_peers));
 }
 
-awaitable<SentryClient::PeerIds> SentryClient::send_message_to_all_async(const OutboundMessage& outbound_message) {
+Task<SentryClient::PeerIds> SentryClient::send_message_to_all_async(const OutboundMessage& outbound_message) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto service = co_await sentry_client_->service();
     auto peer_keys = co_await service->send_message_to_all(std::move(message));
@@ -206,7 +206,7 @@ SentryClient::PeerIds SentryClient::send_message_to_all(const OutboundMessage& o
     return sync_spawn(tasks_, executor_, send_message_to_all_async(outbound_message));
 }
 
-awaitable<SentryClient::PeerIds> SentryClient::send_message_by_min_block_async(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
+Task<SentryClient::PeerIds> SentryClient::send_message_by_min_block_async(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto service = co_await sentry_client_->service();
     auto peer_keys = co_await service->send_message_by_min_block(std::move(message), max_peers);
@@ -217,7 +217,7 @@ SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMess
     return sync_spawn(tasks_, executor_, send_message_by_min_block_async(outbound_message, min_block, max_peers));
 }
 
-awaitable<void> SentryClient::peer_min_block_async(const PeerId& peer_id, BlockNum /*min_block*/) {
+Task<void> SentryClient::peer_min_block_async(const PeerId& peer_id, BlockNum /*min_block*/) {
     auto peer_public_key = sentry::EccPublicKey::deserialize(peer_id);
     auto service = co_await sentry_client_->service();
     co_await service->peer_min_block(std::move(peer_public_key));
@@ -227,14 +227,14 @@ void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
     sync_spawn(tasks_, executor_, peer_min_block_async(peer_id, min_block));
 }
 
-boost::asio::awaitable<void> SentryClient::async_run() {
+Task<void> SentryClient::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
 
     co_await (receive_messages() && receive_peer_events() && tasks_.wait());
 }
 
-boost::asio::awaitable<void> SentryClient::receive_messages() {
-    std::function<awaitable<void>(silkworm::sentry::api::MessageFromPeer)> consumer = [this](auto message_from_peer) -> awaitable<void> {
+Task<void> SentryClient::receive_messages() {
+    std::function<Task<void>(silkworm::sentry::api::MessageFromPeer)> consumer = [this](auto message_from_peer) -> Task<void> {
         co_await this->publish(message_from_peer);
     };
 
@@ -274,12 +274,12 @@ static std::string describe_peer_event(
     return out.str();
 }
 
-boost::asio::awaitable<void> SentryClient::receive_peer_events() {
+Task<void> SentryClient::receive_peer_events() {
     // Get the current active peers count.
     // This initial value is later updated by on_peer_event.
     log::Info(kLogTitle) << (co_await count_active_peers_async()) << " active peers";
 
-    std::function<awaitable<void>(silkworm::sentry::api::PeerEvent)> consumer = [this](auto event) -> awaitable<void> {
+    std::function<Task<void>(silkworm::sentry::api::PeerEvent)> consumer = [this](auto event) -> Task<void> {
         co_await count_active_peers_async();
 
         auto service = co_await sentry_client_->service();
@@ -292,7 +292,7 @@ boost::asio::awaitable<void> SentryClient::receive_peer_events() {
     co_await service->peer_events(std::move(consumer));
 }
 
-awaitable<uint64_t> SentryClient::count_active_peers_async() {
+Task<uint64_t> SentryClient::count_active_peers_async() {
     auto service = co_await sentry_client_->service();
     size_t peer_count = co_await service->peer_count();
     active_peers_.store(peer_count);
@@ -303,7 +303,7 @@ uint64_t SentryClient::count_active_peers() {
     return sync_spawn(tasks_, executor_, count_active_peers_async());
 }
 
-boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId peer_id) {
+Task<std::string> SentryClient::request_peer_info_async(PeerId peer_id) {
     auto peer_public_key = sentry::EccPublicKey::deserialize(peer_id);
     auto service = co_await sentry_client_->service();
     auto peer_info_opt = co_await service->peer_by_id(std::move(peer_public_key));
@@ -314,7 +314,7 @@ std::string SentryClient::request_peer_info(PeerId peer_id) {
     return sync_spawn(tasks_, executor_, this->request_peer_info_async(std::move(peer_id)));
 }
 
-boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
+Task<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
     if (penalty == Penalty::NoPenalty) {
         co_return;
     }

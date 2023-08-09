@@ -21,9 +21,7 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -41,8 +39,8 @@ namespace silkworm::rpc {
 const std::uint64_t kTxGas = 21'000;
 const std::uint64_t kGasCap = 25'000'000;
 
-using BlockHeaderProvider = std::function<boost::asio::awaitable<silkworm::BlockHeader>(uint64_t)>;
-using AccountReader = std::function<boost::asio::awaitable<std::optional<silkworm::Account>>(const evmc::address&, uint64_t)>;
+using BlockHeaderProvider = std::function<Task<silkworm::BlockHeader>(uint64_t)>;
+using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const evmc::address&, uint64_t)>;
 
 struct EstimateGasException : public std::exception {
   public:
@@ -86,7 +84,7 @@ class EstimateGasOracle {
     EstimateGasOracle(const EstimateGasOracle&) = delete;
     EstimateGasOracle& operator=(const EstimateGasOracle&) = delete;
 
-    boost::asio::awaitable<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block);
+    Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block);
 
   protected:
     virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& _block, const silkworm::Transaction& transaction);

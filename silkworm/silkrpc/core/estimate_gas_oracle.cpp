@@ -27,7 +27,7 @@
 
 namespace silkworm::rpc {
 
-boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
     auto block_number = block.header.number;

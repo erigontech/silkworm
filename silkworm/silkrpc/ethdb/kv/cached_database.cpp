@@ -26,11 +26,11 @@ namespace silkworm::rpc::ethdb::kv {
 CachedDatabase::CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache)
     : block_id_(block_id), txn_(txn), state_cache_{state_cache}, txn_database_{txn_} {}
 
-boost::asio::awaitable<KeyValue> CachedDatabase::get(const std::string& table, silkworm::ByteView key) const {
+Task<KeyValue> CachedDatabase::get(const std::string& table, silkworm::ByteView key) const {
     co_return co_await txn_database_.get(table, key);
 }
 
-boost::asio::awaitable<silkworm::Bytes> CachedDatabase::get_one(const std::string& table, silkworm::ByteView key) const {
+Task<silkworm::Bytes> CachedDatabase::get_one(const std::string& table, silkworm::ByteView key) const {
     // Just PlainState and Code tables are present in state cache
     if (table == db::table::kPlainStateName) {
         std::shared_ptr<kv::StateView> view = state_cache_.get_view(txn_);
@@ -52,19 +52,25 @@ boost::asio::awaitable<silkworm::Bytes> CachedDatabase::get_one(const std::strin
     co_return co_await txn_database_.get_one(table, key);
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> CachedDatabase::get_both_range(const std::string& table,
-                                                                                      silkworm::ByteView key,
-                                                                                      silkworm::ByteView subkey) const {
+Task<std::optional<silkworm::Bytes>> CachedDatabase::get_both_range(
+    const std::string& table,
+    silkworm::ByteView key,
+    silkworm::ByteView subkey) const {
     co_return co_await txn_database_.get_both_range(table, key, subkey);
 }
 
-boost::asio::awaitable<void> CachedDatabase::walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits,
-                                                  core::rawdb::Walker w) const {
+Task<void> CachedDatabase::walk(
+    const std::string& table,
+    silkworm::ByteView start_key,
+    uint32_t fixed_bits,
+    core::rawdb::Walker w) const {
     co_await txn_database_.walk(table, start_key, fixed_bits, w);
 }
 
-boost::asio::awaitable<void> CachedDatabase::for_prefix(const std::string& table, silkworm::ByteView prefix,
-                                                        core::rawdb::Walker w) const {
+Task<void> CachedDatabase::for_prefix(
+    const std::string& table,
+    silkworm::ByteView prefix,
+    core::rawdb::Walker w) const {
     co_await txn_database_.for_prefix(table, prefix, w);
 }
 

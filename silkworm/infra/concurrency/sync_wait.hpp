@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio.hpp>
-#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 
 namespace silkworm {
 
-namespace asio = boost::asio;
 /**
  * Do a synchronous wait of a coroutine on the specified io_context
  *
@@ -35,7 +35,7 @@ namespace asio = boost::asio;
  * Rationale: doing an asynchronous wait of a coroutine is easy:
  *    auto result = co_await task();
  * Doing a synchronous wait of a coroutine is more verbose:
- *    auto result = asio::co_spawn(io_context, task(), asio::use_future).get();
+ *    auto result = co_spawn(io_context, task(), use_future).get();
  * also this exposes implementation details.
  * Using sync_wait the call becomes:
  *   auto result = sync_wait(io_context, task());
@@ -44,14 +44,14 @@ namespace asio = boost::asio;
  *
  */
 template <typename T>
-T sync_wait(asio::io_context& io_context, const asio::awaitable<T>& task) {
-    auto future_result = asio::co_spawn(io_context, task, asio::use_future);
+T sync_wait(boost::asio::io_context& io_context, const Task<T>& task) {
+    auto future_result = boost::asio::co_spawn(io_context, task, boost::asio::use_future);
     return future_result.get();
 }
 
 template <typename T>
-T sync_wait(asio::io_context& io_context, asio::awaitable<T>&& task) {
-    auto future_result = asio::co_spawn(io_context, std::move(task), asio::use_future);
+T sync_wait(boost::asio::io_context& io_context, Task<T>&& task) {
+    auto future_result = boost::asio::co_spawn(io_context, std::move(task), boost::asio::use_future);
     return future_result.get();
 }
 
@@ -69,7 +69,7 @@ T sync_wait(asio::io_context& io_context, asio::awaitable<T>&& task) {
  */
 
 template <typename C>
-asio::io_context& in(C& context) {
+boost::asio::io_context& in(C& context) {
     return context.get_executor();
 }
 

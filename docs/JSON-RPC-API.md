@@ -142,7 +142,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | erigon_getHeaderByNumber                   |     Yes      |                                           |
 | erigon_getBalanceChangesInBlock            |     Yes      |                                           |
 | erigon_getBlockByTimestamp                 |     Yes      |                                           |
-| erigon_getBlockReceiptsByBlockHash         |      -       |                       not yet implemented |
+| erigon_getBlockReceiptsByBlockHash         |      -       |           same as parity_getBlockReceipts |
 | erigon_getLogsByHash                       |     Yes      |                                           |
 | erigon_forks                               |     Yes      |                                           |
 | erigon_watchTheBurn                        |     Yes      |                                           |

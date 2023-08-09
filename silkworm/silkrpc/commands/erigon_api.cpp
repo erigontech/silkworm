@@ -177,26 +177,6 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
     co_return;
 }
 
-// https://eth.wiki/json-rpc/API#erigon_getblockreceiptsbyblockhash
-awaitable<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
-
-    try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        reply = make_json_content(request["id"], to_quantity(0));
-    } catch (const std::exception& e) {
-        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
-    } catch (...) {
-        SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
-    }
-
-    co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
-}
-
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByHash
 awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];

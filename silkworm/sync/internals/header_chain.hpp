@@ -77,10 +77,10 @@ class HeaderChain {
     const Download_Statistics& statistics() const;
 
     // core functionalities: requesting new headers
-    auto request_headers(time_point_t) -> std::shared_ptr<OutboundMessage>;
+    std::shared_ptr<OutboundMessage> request_headers(time_point_t);
 
     // core functionalities: add a new header
-    auto add_header(const BlockHeader& anchor, time_point_t) -> std::shared_ptr<OutboundMessage>;
+    std::shared_ptr<OutboundMessage> add_header(const BlockHeader& anchor, time_point_t);
 
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
@@ -88,13 +88,13 @@ class HeaderChain {
     // core functionalities: process receiving headers
     // when a remote peer satisfy our request we receive one or more headers that will be processed
     using RequestMoreHeaders = bool;
-    auto accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
+    std::tuple<Penalty, RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&);
 
     // core functionalities: process header announcement
     std::optional<GetBlockHeadersPacket66> save_external_announce(Hash hash);
 
     // core functionalities: persist new headers that have persisted parent
-    auto withdraw_stable_headers() -> Headers;
+    Headers withdraw_stable_headers();
 
     // minor functionalities
     bool has_link(Hash hash);
@@ -113,21 +113,21 @@ class HeaderChain {
     static constexpr seconds_t extension_req_timeout{30};
 
     // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
-    auto anchor_skeleton_request(time_point_t) -> std::shared_ptr<OutboundMessage>;
+    std::shared_ptr<OutboundMessage> anchor_skeleton_request(time_point_t);
 
     // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
-    auto anchor_extension_request(time_point_t) -> std::shared_ptr<OutboundMessage>;
+    std::shared_ptr<OutboundMessage> anchor_extension_request(time_point_t);
 
     // process a segment of headers
-    auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
+    RequestMoreHeaders process_segment(const Segment&, bool is_a_new_block, const PeerId&);
 
     using Start = size_t;
     using End = size_t;
-    auto find_anchor(const Segment&) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start>;
-    auto find_link(const Segment&, size_t start) const -> std::tuple<std::optional<std::shared_ptr<Link>>, End>;
-    auto get_link(const Hash& hash) const -> std::optional<std::shared_ptr<Link>>;
+    std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> find_anchor(const Segment&) const;
+    std::tuple<std::optional<std::shared_ptr<Link>>, End> find_link(const Segment&, size_t start) const;
+    std::optional<std::shared_ptr<Link>> get_link(const Hash& hash) const;
     using DeepLink = std::shared_ptr<Link>;
-    auto find_anchor(std::shared_ptr<Link> link) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink>;
+    std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink> find_anchor(std::shared_ptr<Link> link) const;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
@@ -136,9 +136,8 @@ class HeaderChain {
     void invalidate(std::shared_ptr<Anchor>);
     void remove(std::shared_ptr<Anchor>);
     bool find_bad_header(const std::vector<BlockHeader>&);
-    auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
-    auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
-        -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
+    std::shared_ptr<Link> add_header_as_link(const BlockHeader& header, bool persisted);
+    std::tuple<std::shared_ptr<Anchor>, Pre_Existing> add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits);
     void mark_as_preverified(std::shared_ptr<Link>);
     void compute_last_preverified_hash();
     size_t anchors_within_range(BlockNum max);
@@ -155,9 +154,9 @@ class HeaderChain {
     VerificationResult verify(const Link& link);
 
     void connect(std::shared_ptr<Link>, Segment::Slice, std::shared_ptr<Anchor>);
-    auto extend_down(Segment::Slice, std::shared_ptr<Anchor>) -> RequestMoreHeaders;
+    RequestMoreHeaders extend_down(Segment::Slice, std::shared_ptr<Anchor>);
     void extend_up(std::shared_ptr<Link>, Segment::Slice);
-    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
+    RequestMoreHeaders new_anchor(Segment::Slice, PeerId);
 
     OldestFirstAnchorQueue anchor_queue_;      // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                            // Links by header hash

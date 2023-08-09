@@ -48,13 +48,11 @@ class ExtendingFork {
     void extend_with(Hash head_hash, const Block& head);
 
     // verification
-    auto verify_chain()
-        -> concurrency::AwaitableFuture<VerificationResult>;
-    auto fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
-        -> concurrency::AwaitableFuture<bool>;
+    concurrency::AwaitableFuture<VerificationResult> verify_chain();
+    concurrency::AwaitableFuture<bool> fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() const -> BlockId;
+    BlockId current_head() const;
 
   protected:
     friend MainChain;
@@ -79,11 +77,9 @@ class ExtendingFork {
 using ForkContainer = std::vector<std::unique_ptr<ExtendingFork>>;
 
 // find the fork with the specified head
-auto find_fork_by_head(ForkContainer& forks, const Hash& requested_head_hash)
-    -> ForkContainer::iterator;
+ForkContainer::iterator find_fork_by_head(ForkContainer& forks, const Hash& requested_head_hash);
 
 // find the fork with the head to extend
-auto find_fork_to_extend(ForkContainer& forks, const BlockHeader& header)
-    -> ForkContainer::iterator;
+ForkContainer::iterator find_fork_to_extend(ForkContainer& forks, const BlockHeader& header);
 
 }  // namespace silkworm::stagedsync

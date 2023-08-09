@@ -47,23 +47,24 @@ class Fork {
     void reduce_down_to(BlockId new_head);  // remove blocks & state down to the specified head
 
     // verification
-    auto verify_chain() -> VerificationResult;  // verify chain up to current head
-    bool fork_choice(Hash head_block_hash,      // accept the current chain up to head_block_hash
-                     std::optional<Hash> finalized_block_hash = std::nullopt);
+    // verify chain up to current head
+    VerificationResult verify_chain();
+    // accept the current chain up to head_block_hash
+    bool fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() const -> BlockId;
-    auto head_status() const -> std::optional<VerificationResult>;
-    auto finalized_head() const -> BlockId;
+    BlockId current_head() const;
+    std::optional<VerificationResult> head_status() const;
+    BlockId finalized_head() const;
 
     // checks
     bool extends_head(const BlockHeader&) const;
-    auto find_block(Hash header_hash) const -> std::optional<BlockNum>;
-    auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
+    std::optional<BlockNum> find_block(Hash header_hash) const;
+    std::optional<BlockId> find_attachment_point(const BlockHeader& header) const;
     BlockNum distance_from_root(const BlockId&) const;
 
     // header/body retrieval
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    std::optional<BlockHeader> get_header(Hash) const;
 
   protected:
     Hash insert_header(const BlockHeader&);
@@ -85,11 +86,9 @@ class Fork {
 };
 
 // find the fork with the specified head
-auto find_fork_by_head(const std::vector<Fork>& forks, const Hash& requested_head_hash)
-    -> std::vector<Fork>::iterator;
+std::vector<Fork>::iterator find_fork_by_head(const std::vector<Fork>& forks, const Hash& requested_head_hash);
 
 // find the fork with the head to extend
-auto find_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
-    -> std::vector<Fork>::iterator;
+std::vector<Fork>::iterator find_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header);
 
 }  // namespace silkworm::stagedsync

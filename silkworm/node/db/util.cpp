@@ -48,7 +48,7 @@ Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> has
     return key;
 }
 
-auto split_block_key(ByteView key) -> std::tuple<BlockNum, evmc::bytes32> {
+std::tuple<BlockNum, evmc::bytes32> split_block_key(ByteView key) {
     SILKWORM_ASSERT(key.size() == sizeof(BlockNum) + kHashLength);
 
     ByteView block_num_part = key.substr(0, sizeof(BlockNum));

@@ -32,7 +32,7 @@ Task<void> PoWSync::async_run() {
     return ActiveComponent::async_run("pow-sync-ex");
 }
 
-auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left off
+PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left off
     BlockId head{};
 
     // BlockExchange need a bunch of previous headers to attach the new ones
@@ -66,7 +66,7 @@ auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left of
     return head;
 }
 
-auto PoWSync::forward_and_insert_blocks() -> NewHeight {
+PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
     using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
 
@@ -195,7 +195,7 @@ void PoWSync::execution_loop() {
     }
 };
 
-auto PoWSync::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+std::shared_ptr<InternalMessage<void>> PoWSync::update_bad_headers(std::set<Hash> bad_headers) {
     auto message = std::make_shared<InternalMessage<void>>(
         [bads = std::move(bad_headers)](HeaderChain& hc, BodySequence&) { hc.add_bad_headers(bads); });
 

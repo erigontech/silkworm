@@ -44,10 +44,10 @@ class PoWSync : public ChainSync, ActiveComponent {
     using NewHeight = BlockId;
     using UnwindPoint = BlockId;
 
-    auto resume() -> NewHeight;
-    auto forward_and_insert_blocks() -> NewHeight;
+    NewHeight resume();
+    NewHeight forward_and_insert_blocks();
     void unwind(UnwindPoint, std::optional<Hash> bad_block);
-    auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
+    std::shared_ptr<InternalMessage<void>> update_bad_headers(std::set<Hash>);
 
     void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();

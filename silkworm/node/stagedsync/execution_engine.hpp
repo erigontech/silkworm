@@ -62,26 +62,26 @@ class ExecutionEngine : public Stoppable {
     void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
     bool insert_block(std::shared_ptr<Block> block);
 
-    auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
+    concurrency::AwaitableFuture<VerificationResult> verify_chain(Hash head_block_hash);
 
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto block_progress() const -> BlockNum;
-    auto last_finalized_block() const -> BlockId;
-    auto last_fork_choice() const -> BlockId;
+    BlockNum block_progress() const;
+    BlockId last_finalized_block() const;
+    BlockId last_fork_choice() const;
 
     // header/body retrieval
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
-    auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
-    auto get_canonical_header(BlockNum) const -> std::optional<BlockHeader>;
-    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
-    auto get_body(Hash) const -> std::optional<BlockBody>;
-    auto get_canonical_body(BlockNum) const -> std::optional<BlockBody>;
+    std::optional<BlockHeader> get_header(Hash) const;
+    std::optional<BlockHeader> get_header(BlockNum, Hash) const;
+    std::optional<BlockHeader> get_canonical_header(BlockNum) const;
+    std::optional<Hash> get_canonical_hash(BlockNum) const;
+    std::optional<BlockBody> get_body(Hash) const;
+    std::optional<BlockBody> get_canonical_body(BlockNum) const;
     bool is_canonical(Hash) const;
-    auto get_block_number(Hash) const -> std::optional<BlockNum>;
-    auto get_last_headers(uint64_t limit) const -> std::vector<BlockHeader>;
-    auto get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const -> std::optional<TotalDifficulty>;
+    std::optional<BlockNum> get_block_number(Hash) const;
+    std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
+    std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const;
 
   protected:
     struct ForkingPath {
@@ -89,7 +89,7 @@ class ExecutionEngine : public Stoppable {
         std::list<std::shared_ptr<Block>> blocks;  // blocks in reverse order
     };
 
-    auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
+    std::optional<ForkingPath> find_forking_point(const BlockHeader& header) const;
     void discard_all_forks();
 
     asio::io_context& io_context_;

@@ -63,7 +63,7 @@ class BodySequence {
     void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
-    auto request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMessage>;
+    std::shared_ptr<OutboundMessage> request_bodies(time_point_t tp);
 
     //! it needs to know if the request issued was not delivered
     void request_nack(const GetBlockBodiesPacket66&);
@@ -96,8 +96,7 @@ class BodySequence {
 
   protected:
     using MinBlock = BlockNum;
-    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout)
-        -> std::vector<PeerPenalization>;
+    std::vector<PeerPenalization> renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout);
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);

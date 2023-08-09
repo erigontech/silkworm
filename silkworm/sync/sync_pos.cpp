@@ -169,11 +169,11 @@ void PoSSync::do_sanity_checks(const BlockHeader&, /*const BlockHeader& parent,*
     //  here Geth return last_valid = fcu head
 }
 
-auto PoSSync::has_valid_ancestor(const Hash&) -> std::tuple<bool, Hash> {
+std::tuple<bool, Hash> PoSSync::has_valid_ancestor(const Hash&) {
     return {true, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
-auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> Task<rpc::PayloadStatus> {
+Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& payload) {
     // Implementation of engine_new_payloadVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -261,8 +261,9 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> Task<rpc::Pay
     }
 }
 
-auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
-                                 const std::optional<rpc::PayloadAttributes>& attributes) -> Task<rpc::ForkChoiceUpdatedReply> {
+Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(
+    const rpc::ForkChoiceState& state,
+    const std::optional<rpc::PayloadAttributes>& attributes) {
     // Implementation of engine_forkchoiceUpdatedVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -371,13 +372,13 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
     }
 }
 
-auto PoSSync::get_payload(uint64_t /*payloadId*/) -> Task<rpc::ExecutionPayloadAndValue> {
+Task<rpc::ExecutionPayloadAndValue> PoSSync::get_payload(uint64_t /*payloadId*/) {
     // Implementation of engine_getPayloadVx method
     ensure_invariant(false, "get_payload not implemented");
     co_return rpc::ExecutionPayloadAndValue{};
 }
 
-auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> Task<rpc::ExecutionPayloadBodies> {
+Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(block_hashes.size());
     for (const auto& bh : block_hashes) {
@@ -403,7 +404,7 @@ auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) 
     co_return payload_bodies;
 }
 
-auto PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) -> Task<rpc::ExecutionPayloadBodies> {
+Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(count);
     for (BlockNum number{start}; number < start + count; ++number) {

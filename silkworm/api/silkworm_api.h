@@ -19,13 +19,9 @@
 
 // C API exported by Silkworm to be used in Erigon.
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <mdbx.h>
-#pragma GCC diagnostic pop
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)
@@ -42,6 +38,8 @@
 #if __cplusplus
 extern "C" {
 #endif
+
+typedef struct MDBX_txn MDBX_txn;
 
 #define SILKWORM_OK                  0 /* Successful result */
 #define SILKWORM_INTERNAL_ERROR      1
@@ -68,28 +66,28 @@ struct SilkwormMemoryMappedFile {
 };
 
 struct SilkwormHeadersSnapshot {
-    SilkwormMemoryMappedFile segment;
-    SilkwormMemoryMappedFile header_hash_index;
+    struct SilkwormMemoryMappedFile segment;
+    struct SilkwormMemoryMappedFile header_hash_index;
 };
 
 struct SilkwormBodiesSnapshot {
-    SilkwormMemoryMappedFile segment;
-    SilkwormMemoryMappedFile block_num_index;
+    struct SilkwormMemoryMappedFile segment;
+    struct SilkwormMemoryMappedFile block_num_index;
 };
 
 struct SilkwormTransactionsSnapshot {
-    SilkwormMemoryMappedFile segment;
-    SilkwormMemoryMappedFile tx_hash_index;
-    SilkwormMemoryMappedFile tx_hash_2_block_index;
+    struct SilkwormMemoryMappedFile segment;
+    struct SilkwormMemoryMappedFile tx_hash_index;
+    struct SilkwormMemoryMappedFile tx_hash_2_block_index;
 };
 
 struct SilkwormChainSnapshot {
-    SilkwormHeadersSnapshot headers;
-    SilkwormBodiesSnapshot bodies;
-    SilkwormTransactionsSnapshot transactions;
+    struct SilkwormHeadersSnapshot headers;
+    struct SilkwormBodiesSnapshot bodies;
+    struct SilkwormTransactionsSnapshot transactions;
 };
 
-SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
 /** \brief Execute a batch of blocks and write resulting changes into the database.
  *

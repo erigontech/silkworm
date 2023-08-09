@@ -177,7 +177,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
     co_return;
 }
 
-// https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
+// https://eth.wiki/json-rpc/API#erigon_getBlockReceiptsByBlockHash
 awaitable<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {

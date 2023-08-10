@@ -29,7 +29,6 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
-#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
@@ -66,7 +65,6 @@ using silkworm::lookup_known_chain;
 using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
-using silkworm::StopWatch;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_node_options;
@@ -219,8 +217,11 @@ using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 using SentryServerPtr = std::shared_ptr<sentry::Sentry>;
 using SentryPtrPair = std::tuple<SentryClientPtr, SentryServerPtr>;
 
-static SentryPtrPair make_sentry(sentry::Settings sentry_settings, NodeSettings& node_settings,
-                                 rpc::ServerContextPool& context_pool, db::ROAccess db_access) {
+static SentryPtrPair make_sentry(
+    sentry::Settings sentry_settings,
+    NodeSettings& node_settings,
+    rpc::ServerContextPool& context_pool,
+    db::ROAccess db_access) {
     SentryServerPtr sentry_server;
     SentryClientPtr sentry_client;
 
@@ -232,7 +233,7 @@ static SentryPtrPair make_sentry(sentry::Settings sentry_settings, NodeSettings&
         sentry_settings.api_address = "";
 
         // Create embedded server
-        sentry_server = std::make_shared<sentry::Sentry>(std::move(sentry_settings), context_pool);
+        sentry_server = std::make_shared<sentry::Sentry>(std::move(sentry_settings), context_pool.as_executor_pool());
 
         // Wrap direct client i.e. server in a session client
         sentry_client = std::make_shared<sentry::SessionSentryClient>(
@@ -348,7 +349,7 @@ int main(int argc, char* argv[]) {
             .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
         };
         chainsync::Sync chain_sync_process{
-            context_pool.next_io_context(),
+            context_pool.next_io_context().get_executor(),
             chaindata_db,
             execution_client,
             sentry_client,
@@ -365,7 +366,7 @@ int main(int argc, char* argv[]) {
             chain_sync_process.async_run();
 
         // Trap OS signals
-        ShutdownSignal shutdown_signal{context_pool.next_io_context()};
+        ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
 
         // Go!
         auto run_future = boost::asio::co_spawn(

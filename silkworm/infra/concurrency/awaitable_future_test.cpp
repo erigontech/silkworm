@@ -22,6 +22,7 @@
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
 #include "active_component.hpp"
@@ -32,8 +33,8 @@ namespace asio = boost::asio;
 using concurrency::AwaitableFuture;
 using concurrency::AwaitablePromise;
 
-auto create_promise_and_set_value(asio::io_context& io, int value) {
-    concurrency::AwaitablePromise<int> promise{io};
+auto create_promise_and_set_value(asio::any_io_executor executor, int value) {
+    concurrency::AwaitablePromise<int> promise{std::move(executor)};
     promise.set_value(value);
     return promise.get_future();
 }
@@ -46,10 +47,9 @@ class TestException : public std::runtime_error {
 TEST_CASE("awaitable future") {
     asio::io_context io;
     asio::io_context::work work{io};
+    AwaitablePromise<int> promise{io.get_executor()};
 
     SECTION("trivial use") {
-        AwaitablePromise<int> promise{io};
-
         auto future = promise.get_future();
 
         promise.set_value(42);
@@ -59,7 +59,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("variation of the trivial use") {
-        AwaitablePromise<int> promise{io};
         promise.set_value(42);
 
         auto future = promise.get_future();
@@ -69,7 +68,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("setting exception instead of value") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         promise.set_exception(std::make_exception_ptr(TestException()));
@@ -78,7 +76,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("variation of setting exception instead of value") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         try {
@@ -91,23 +88,19 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("setting value two times fails") {
-        AwaitablePromise<int> promise{io};
-
         promise.set_value(42);
 
         CHECK_THROWS(promise.set_value(43));
     }
 
     SECTION("setting exception two times fails") {
-        AwaitablePromise<int> promise{io};
-
         promise.set_exception(std::make_exception_ptr(TestException()));
 
         CHECK_THROWS(promise.set_exception(std::make_exception_ptr(TestException())));
     }
 
     SECTION("returning the future from a function") {
-        auto future = create_promise_and_set_value(io, 42);
+        auto future = create_promise_and_set_value(io.get_executor(), 42);
 
         auto value = future.get();
 
@@ -115,10 +108,10 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("returning the future from a function (variation)") {
-        auto returned_future = [&]() {
-            concurrency::AwaitablePromise<int> promise{io};
-            auto future = promise.get_future();
-            promise.set_value(42);
+        auto returned_future = [executor = io.get_executor()]() {
+            concurrency::AwaitablePromise<int> promise1{executor};
+            auto future = promise1.get_future();
+            promise1.set_value(42);
             return future;
         }();
 
@@ -128,7 +121,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("writing and reading from different threads") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         int value;
@@ -148,7 +140,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("writing and reading from different threads") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         int value;
@@ -174,7 +165,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("using coroutines in read in the same io_context, write before read") {
-        AwaitablePromise<int> promise{io};
         int value;
 
         asio::co_spawn(
@@ -193,7 +183,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("variation of using coroutines in the same io_context, write before read") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         int value;
@@ -212,7 +201,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("moving AwaitableFuture") {
-        AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
         int value;
@@ -230,7 +218,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("using coroutine for both read and write, read before write") {
-        AwaitablePromise<int> promise{io};
         int value;
 
         asio::co_spawn(
@@ -256,7 +243,6 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("cancellation after read") {
-        AwaitablePromise<int> promise{io};
         int value;
         boost::system::error_code code;
 

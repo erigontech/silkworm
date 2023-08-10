@@ -234,8 +234,7 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
     auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {
-        auto& client_context = context_pool_.next_io_context();
-        auto peer1 = co_await concurrency::co_spawn_sw(client_context, client->connect(peer_url, is_static_peer), use_awaitable);
+        auto peer1 = co_await concurrency::co_spawn_sw(executor_pool_.any_executor(), client->connect(peer_url, is_static_peer), use_awaitable);
         auto peer = std::shared_ptr(std::move(peer1));
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {

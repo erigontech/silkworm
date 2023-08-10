@@ -32,7 +32,7 @@ using namespace boost::asio;
 class DiscoveryImpl {
   public:
     explicit DiscoveryImpl(
-        std::function<boost::asio::any_io_executor()> executor_pool,
+        concurrency::ExecutorPool& executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
@@ -64,7 +64,7 @@ class DiscoveryImpl {
 };
 
 DiscoveryImpl::DiscoveryImpl(
-    std::function<boost::asio::any_io_executor()> executor_pool,
+    concurrency::ExecutorPool& executor_pool,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
@@ -74,8 +74,8 @@ DiscoveryImpl::DiscoveryImpl(
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
-      node_db_(executor_pool()),
-      disc_v4_discovery_(executor_pool(), disc_v4_port, node_key, node_url, node_db_.interface()) {
+      node_db_(executor_pool.any_executor()),
+      disc_v4_discovery_(executor_pool.any_executor(), disc_v4_port, node_key, node_url, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
@@ -159,7 +159,7 @@ Task<void> DiscoveryImpl::on_peer_disconnected(EccPublicKey peer_public_key, boo
 }
 
 Discovery::Discovery(
-    std::function<boost::asio::any_io_executor()> executor_pool,
+    concurrency::ExecutorPool& executor_pool,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
@@ -167,7 +167,7 @@ Discovery::Discovery(
     std::function<EnodeUrl()> node_url,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
-          std::move(executor_pool),
+          executor_pool,
           std::move(peer_urls),
           with_dynamic_discovery,
           data_dir_path,

@@ -21,7 +21,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
@@ -38,9 +38,9 @@ namespace silkworm::sentry {
 
 class MessageReceiver : public PeerManagerObserver {
   public:
-    MessageReceiver(boost::asio::io_context& io_context, size_t max_peers)
-        : message_calls_channel_(io_context),
-          strand_(boost::asio::make_strand(io_context)),
+    MessageReceiver(boost::asio::any_io_executor executor, size_t max_peers)
+        : message_calls_channel_(executor),
+          strand_(boost::asio::make_strand(executor)),
           peer_tasks_(strand_, max_peers),
           unsubscription_tasks_(strand_, 1000) {}
 
@@ -64,7 +64,7 @@ class MessageReceiver : public PeerManagerObserver {
     Task<void> on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer);
 
     concurrency::Channel<api::router::MessagesCall> message_calls_channel_;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::strand<boost::asio::any_io_executor> strand_;
     concurrency::TaskGroup peer_tasks_;
     concurrency::TaskGroup unsubscription_tasks_;
 

@@ -48,7 +48,7 @@ TResult run(io_context& context, awaitable<TResult> awaitable1) {
 
 TEST_CASE("Channel.close_and_send") {
     io_context context;
-    Channel<int> channel{context};
+    Channel<int> channel{context.get_executor()};
     channel.close();
     // boost::asio::experimental::error::channel_errors::channel_closed
     CHECK_THROWS_AS(run(context, channel.send(1)), boost::system::system_error);
@@ -56,7 +56,7 @@ TEST_CASE("Channel.close_and_send") {
 
 TEST_CASE("Channel.close_and_receive") {
     io_context context;
-    Channel<int> channel{context};
+    Channel<int> channel{context.get_executor()};
     channel.close();
     // boost::asio::experimental::error::channel_errors::channel_closed
     CHECK_THROWS_AS(run(context, channel.receive()), boost::system::system_error);

@@ -23,7 +23,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -47,7 +46,7 @@ namespace silkworm::sentry::rlpx {
 class Peer {
   public:
     Peer(
-        boost::asio::any_io_executor&& executor,
+        boost::asio::any_io_executor executor,
         SocketStream stream,
         EccKeyPair node_key,
         std::string client_id,
@@ -57,52 +56,6 @@ class Peer {
         std::optional<EccPublicKey> peer_public_key,
         bool is_inbound,
         bool is_static);
-
-    Peer(
-        boost::asio::any_io_executor& executor,
-        SocketStream stream,
-        EccKeyPair node_key,
-        std::string client_id,
-        uint16_t node_listen_port,
-        std::unique_ptr<Protocol> protocol,
-        std::optional<EnodeUrl> url,
-        std::optional<EccPublicKey> peer_public_key,
-        bool is_inbound,
-        bool is_static)
-        : Peer(
-              boost::asio::any_io_executor{executor},
-              std::move(stream),
-              std::move(node_key),
-              std::move(client_id),
-              node_listen_port,
-              std::move(protocol),
-              std::move(url),
-              std::move(peer_public_key),
-              is_inbound,
-              is_static) {}
-
-    Peer(
-        boost::asio::io_context& io_context,
-        SocketStream stream,
-        EccKeyPair node_key,
-        std::string client_id,
-        uint16_t node_listen_port,
-        std::unique_ptr<Protocol> protocol,
-        std::optional<EnodeUrl> url,
-        std::optional<EccPublicKey> peer_public_key,
-        bool is_inbound,
-        bool is_static)
-        : Peer(
-              boost::asio::any_io_executor{io_context.get_executor()},
-              std::move(stream),
-              std::move(node_key),
-              std::move(client_id),
-              node_listen_port,
-              std::move(protocol),
-              std::move(url),
-              std::move(peer_public_key),
-              is_inbound,
-              is_static) {}
 
     ~Peer();
 

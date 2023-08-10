@@ -29,18 +29,18 @@ namespace silkworm::sentry::rlpx {
 using namespace boost::asio;
 
 Server::Server(
-    io_context& io_context,
+    any_io_executor executor,
     uint16_t port)
     : ip_(ip::address{ip::address_v4::any()}),
       port_(port),
-      peer_channel_(io_context) {}
+      peer_channel_(std::move(executor)) {}
 
 ip::tcp::endpoint Server::listen_endpoint() const {
     return ip::tcp::endpoint{ip_, port_};
 }
 
 Task<void> Server::run(
-    silkworm::rpc::ServerContextPool& context_pool,
+    concurrency::ExecutorPool& executor_pool,
     EccKeyPair node_key,
     std::string client_id,
     std::function<std::unique_ptr<Protocol>()> protocol_factory) {
@@ -66,15 +66,15 @@ Task<void> Server::run(
     log::Info("sentry") << "rlpx::Server is listening at " << node_url.to_string();
 
     while (acceptor.is_open()) {
-        auto& client_context = context_pool.next_io_context();
-        SocketStream stream{client_context};
+        auto client_executor = executor_pool.any_executor();
+        SocketStream stream{client_executor};
         co_await acceptor.async_accept(stream.socket(), use_awaitable);
 
         auto remote_endpoint = stream.socket().remote_endpoint();
         log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;
 
         auto peer = std::make_shared<Peer>(
-            client_context,
+            client_executor,
             std::move(stream),
             node_key,
             client_id,

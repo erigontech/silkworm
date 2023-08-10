@@ -39,11 +39,11 @@ namespace silkworm {
 using namespace boost::asio;
 
 SentryClient::SentryClient(
-    boost::asio::io_context& io_context,
+    boost::asio::any_io_executor executor,
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client)
-    : io_context_{io_context},
+    : executor_{executor},
       sentry_client_{std::move(sentry_client)},
-      tasks_{io_context, 1000} {
+      tasks_{executor, 1000} {
 }
 
 static std::unique_ptr<InboundMessage> decode_inbound_message(const silkworm::sentry::api::MessageFromPeer& message_from_peer) {
@@ -151,9 +151,9 @@ awaitable<void> resolve_promise_with_awaitable_result(std::promise<void>& promis
 }
 
 template <typename T>
-static T sync_spawn(concurrency::TaskGroup& tasks, io_context& io_context, awaitable<T> task) {
+static T sync_spawn(concurrency::TaskGroup& tasks, any_io_executor executor, awaitable<T> task) {
     std::promise<T> promise;
-    tasks.spawn(io_context, resolve_promise_with_awaitable_result(promise, std::move(task)));
+    tasks.spawn(std::move(executor), resolve_promise_with_awaitable_result(promise, std::move(task)));
     return promise.get_future().get();
 }
 
@@ -181,7 +181,7 @@ awaitable<SentryClient::PeerIds> SentryClient::send_message_by_id_async(const Ou
 }
 
 SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& outbound_message, const PeerId& peer_id) {
-    return sync_spawn(tasks_, io_context_, send_message_by_id_async(outbound_message, peer_id));
+    return sync_spawn(tasks_, executor_, send_message_by_id_async(outbound_message, peer_id));
 }
 
 awaitable<SentryClient::PeerIds> SentryClient::send_message_to_random_peers_async(const OutboundMessage& outbound_message, size_t max_peers) {
@@ -192,7 +192,7 @@ awaitable<SentryClient::PeerIds> SentryClient::send_message_to_random_peers_asyn
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_random_peers(const OutboundMessage& outbound_message, size_t max_peers) {
-    return sync_spawn(tasks_, io_context_, send_message_to_random_peers_async(outbound_message, max_peers));
+    return sync_spawn(tasks_, executor_, send_message_to_random_peers_async(outbound_message, max_peers));
 }
 
 awaitable<SentryClient::PeerIds> SentryClient::send_message_to_all_async(const OutboundMessage& outbound_message) {
@@ -203,7 +203,7 @@ awaitable<SentryClient::PeerIds> SentryClient::send_message_to_all_async(const O
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_all(const OutboundMessage& outbound_message) {
-    return sync_spawn(tasks_, io_context_, send_message_to_all_async(outbound_message));
+    return sync_spawn(tasks_, executor_, send_message_to_all_async(outbound_message));
 }
 
 awaitable<SentryClient::PeerIds> SentryClient::send_message_by_min_block_async(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
@@ -214,7 +214,7 @@ awaitable<SentryClient::PeerIds> SentryClient::send_message_by_min_block_async(c
 }
 
 SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMessage& outbound_message, BlockNum min_block, size_t max_peers) {
-    return sync_spawn(tasks_, io_context_, send_message_by_min_block_async(outbound_message, min_block, max_peers));
+    return sync_spawn(tasks_, executor_, send_message_by_min_block_async(outbound_message, min_block, max_peers));
 }
 
 awaitable<void> SentryClient::peer_min_block_async(const PeerId& peer_id, BlockNum /*min_block*/) {
@@ -224,7 +224,7 @@ awaitable<void> SentryClient::peer_min_block_async(const PeerId& peer_id, BlockN
 }
 
 void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
-    sync_spawn(tasks_, io_context_, peer_min_block_async(peer_id, min_block));
+    sync_spawn(tasks_, executor_, peer_min_block_async(peer_id, min_block));
 }
 
 boost::asio::awaitable<void> SentryClient::async_run() {
@@ -300,7 +300,7 @@ awaitable<uint64_t> SentryClient::count_active_peers_async() {
 }
 
 uint64_t SentryClient::count_active_peers() {
-    return sync_spawn(tasks_, io_context_, count_active_peers_async());
+    return sync_spawn(tasks_, executor_, count_active_peers_async());
 }
 
 boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId peer_id) {
@@ -311,7 +311,7 @@ boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId
 }
 
 std::string SentryClient::request_peer_info(PeerId peer_id) {
-    return sync_spawn(tasks_, io_context_, this->request_peer_info_async(std::move(peer_id)));
+    return sync_spawn(tasks_, executor_, this->request_peer_info_async(std::move(peer_id)));
 }
 
 boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
@@ -324,7 +324,7 @@ boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, P
 }
 
 void SentryClient::penalize_peer(PeerId peer_id, Penalty penalty) {
-    sync_spawn(tasks_, io_context_, this->penalize_peer_async(std::move(peer_id), penalty));
+    sync_spawn(tasks_, executor_, this->penalize_peer_async(std::move(peer_id), penalty));
 }
 
 uint64_t SentryClient::active_peers() {

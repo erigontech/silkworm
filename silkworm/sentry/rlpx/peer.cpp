@@ -40,7 +40,7 @@ using namespace std::chrono_literals;
 using namespace boost::asio;
 
 Peer::Peer(
-    any_io_executor&& executor,
+    any_io_executor executor,
     SocketStream stream,
     EccKeyPair node_key,
     std::string client_id,

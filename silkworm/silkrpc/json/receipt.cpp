@@ -18,7 +18,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/silkrpc/common/compatibility.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 #include "types.hpp"

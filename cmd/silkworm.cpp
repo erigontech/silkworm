@@ -229,6 +229,7 @@ static SentryPtrPair make_sentry(
 
     if (node_settings.remote_sentry_addresses.empty()) {
         sentry_settings.data_dir_path = node_settings.data_directory->path();
+        sentry_settings.network_id = node_settings.network_id;
         // Disable gRPC in the embedded sentry
         sentry_settings.api_address = "";
 

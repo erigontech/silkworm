@@ -39,8 +39,10 @@ class Discovery {
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
+        uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::vector<EnodeUrl> bootnodes,
         uint16_t disc_v4_port);
     ~Discovery();
 

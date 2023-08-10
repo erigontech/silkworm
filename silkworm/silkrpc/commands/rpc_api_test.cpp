@@ -34,6 +34,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
@@ -324,6 +325,7 @@ static const std::vector<std::string> tests_to_ignore = {
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     auto tests_dir = get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
@@ -383,6 +385,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
 }
 
 TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const auto tests_dir = get_tests_dir();
     const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
     auto db = open_db(db_dir);

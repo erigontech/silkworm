@@ -420,11 +420,11 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(con
                 reply = make_json_content(request["id"], nullptr);
             } else {
                 const auto block_number = block_with_hash->block.header.number;
-                const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
+                const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_hash, block_number);
                 const auto& uncle = ommers[idx];
 
                 silkworm::BlockWithHash uncle_block_with_hash{{{}, uncle}, uncle.hash()};
-                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, total_difficulty};
+                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
                 reply = make_json_content(request["id"], uncle_block_with_hash_and_td);
             }
@@ -474,11 +474,11 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
                 SILK_WARN << "invalid_argument: index not found processing request: " << request.dump();
                 reply = make_json_content(request["id"], nullptr);
             } else {
-                const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
+                const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
                 const auto& uncle = ommers[idx];
 
                 silkworm::BlockWithHash uncle_block_with_hash{{{}, uncle}, uncle.hash()};
-                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, total_difficulty};
+                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
                 reply = make_json_content(request["id"], uncle_block_with_hash_and_td);
             }

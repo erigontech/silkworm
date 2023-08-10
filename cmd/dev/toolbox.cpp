@@ -45,6 +45,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
@@ -506,10 +507,8 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
               << std::endl;
 }
 
-void unwind_stage(db::EnvConfig& config, std::string&& stage_name, uint32_t unwind_point) {
+void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     ensure(config.exclusive, "Function requires exclusive access to database");
-    ensure(db::stages::is_known_stage(stage_name.c_str()), "Stage name " + stage_name + " is unknown");
-    ensure(stage_name == db::stages::kExecutionKey, "Only Execution stage is currently supported");
 
     config.readonly = false;
 
@@ -518,16 +517,60 @@ void unwind_stage(db::EnvConfig& config, std::string&& stage_name, uint32_t unwi
     auto chain_config{db::read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
-    // Just chain configuration and unwind point are needed for Execution unwind, the rest simply don't care
     NodeSettings settings{
+        .data_directory = std::make_unique<DataDirectory>(),
+        .chaindata_env_config = config,
         .chain_config = chain_config};
-    stagedsync::SyncContext sync_context{};
-    sync_context.unwind_point = unwind_point;
 
-    stagedsync::Execution execution{&settings, &sync_context};
-    const auto execution_result{execution.unwind(txn)};
-    ensure(execution_result == stagedsync::Stage::Result::kSuccess,
-           "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(execution_result)});
+    stagedsync::ExecutionPipeline stage_pipeline{&settings};
+    const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
+
+    ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
+           "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)});
+
+    std::cout << "\n Staged pipeline unwind up to block: " << unwind_point << " completed\n";
+
+    // In consensus-separated Sync/Execution design block headers and bodies are stored by the Sync component
+    // not by the Execution component: hence, ExecutionPipeline will not remove them during unwind phase
+    if (remove_blocks) {
+        std::cout << " Removing also block headers and bodies up to block: " << unwind_point << "\n";
+
+        // Remove the block bodies up to the unwind point
+        const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
+        const auto start_key{db::block_key(unwind_point)};
+        std::size_t erased_bodies{0};
+        auto body_data{body_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        while (body_data) {
+            body_cursor->erase();
+            ++erased_bodies;
+            body_data = body_cursor->to_next(/*throw_notfound=*/false);
+        }
+        std::cout << " Removed block bodies erased: " << erased_bodies << "\n";
+
+        // Remove the block headers up to the unwind point
+        const auto header_cursor{txn.rw_cursor(db::table::kHeaders)};
+        std::size_t erased_headers{0};
+        auto header_data{header_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        while (header_data) {
+            header_cursor->erase();
+            ++erased_headers;
+            header_data = header_cursor->to_next(/*throw_notfound=*/false);
+        }
+        std::cout << " Removed block headers erased: " << erased_headers << "\n";
+
+        // Remove the canonical hashes up to the unwind point
+        const auto canonical_cursor{txn.rw_cursor(db::table::kCanonicalHashes)};
+        std::size_t erased_hashes{0};
+        auto hash_data{canonical_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        while (hash_data) {
+            canonical_cursor->erase();
+            ++erased_hashes;
+            hash_data = canonical_cursor->to_next(/*throw_notfound=*/false);
+        }
+        std::cout << " Removed canonical hashes erased: " << erased_hashes << "\n";
+
+        txn.commit_and_stop();
+    }
 }
 
 void do_tables(db::EnvConfig& config) {
@@ -929,7 +972,7 @@ void do_chainconfig(db::EnvConfig& config) {
               << chain.to_json().dump(/*indent=*/2) << "\n\n";
 }
 
-void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
+void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
     auto env{silkworm::db::open_env(config)};
     db::ROTxnManaged txn{env};
 
@@ -970,6 +1013,55 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
 
         // Read and decode each canonical block body
         auto bb_data{block_bodies_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
+        if (!bb_data.done) {
+            break;
+        }
+        ByteView block_body_data{db::from_slice(bb_data.value)};
+        const auto stored_body{db::detail::decode_stored_block_body(block_body_data)};
+
+        // Print block information to console
+        std::cout << "\nBlock number=" << block_number << "\n\n";
+        print_header(header);
+        std::cout << "\n";
+        print_body(stored_body);
+        std::cout << "\n\n";
+    }
+}
+
+void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
+    auto env{silkworm::db::open_env(config)};
+    db::ROTxnManaged txn{env};
+
+    // Determine last block header number
+    auto block_headers_table{txn.ro_cursor(db::table::kHeaders)};
+    auto last_data{block_headers_table->to_last(/*throw_notfound=*/false)};
+    ensure(last_data.done, "Table Headers is empty");
+    ensure(last_data.key.size() == sizeof(BlockNum) + kHashLength, "Table Headers has unexpected key size");
+
+    // Use last block as max block if to is missing and perform range checks
+    BlockNum last{db::block_number_from_key(last_data.key)};
+    if (to) {
+        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
+        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+    } else {
+        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        to = last;
+    }
+
+    // Read the range of block headers and bodies from database
+    auto block_bodies_table{txn.ro_cursor(db::table::kBlockBodies)};
+    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+        // Read and decode each block header
+        auto block_key{db::block_key(block_number)};
+        auto bh_data{block_headers_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
+        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ByteView block_header_data{db::from_slice(bh_data.value)};
+        BlockHeader header;
+        const auto res{rlp::decode(block_header_data, header)};
+        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+
+        // Read and decode each block body
+        auto bb_data{block_bodies_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
         if (!bb_data.done) {
             break;
         }
@@ -1799,10 +1891,14 @@ int main(int argc, char* argv[]) {
         cmd_stageset->add_option("--height", "Block height to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
 
     // Unwind tool
-    auto cmd_stage_unwind = app_main.add_subcommand("stage-unwind", "Unwind a stage to a previous height");
-    auto cmd_stage_unwind_name = cmd_stage_unwind->add_option("--name", "Name of the stage to unwind")->required();
-    auto cmd_stage_unwind_height =
-        cmd_stage_unwind->add_option("--height", "Block height to unwind the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_staged_unwind = app_main.add_subcommand("unwind", "Unwind staged sync to a previous height");
+    auto cmd_staged_unwind_height =
+        cmd_staged_unwind->add_option("--height", "Block height to unwind the staged sync to")
+            ->required()
+            ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_staged_unwind_remove_blocks =
+        cmd_staged_unwind->add_flag("--remove_blocks", "Remove block headers and bodies up to unwind point")
+            ->capture_default_str();
 
     // Initialize with genesis tool
     auto cmd_initgenesis = app_main.add_subcommand("init-genesis", "Initialize a new db with genesis block");
@@ -1818,7 +1914,19 @@ int main(int argc, char* argv[]) {
     // Read chain config held in db (if any)
     auto cmd_chainconfig = app_main.add_subcommand("chain-config", "Prints chain config held in database");
 
-    // Extract a list of blocks in specified range
+    // Print the list of canonical blocks in specified range
+    auto cmd_canonical_blocks =
+        app_main.add_subcommand("canonical_blocks", "Print canonical blocks from database in specified range");
+    auto cmd_canonical_blocks_from = cmd_canonical_blocks->add_option("--from", "Block height to start with")
+                                         ->required()
+                                         ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_canonical_blocks_to = cmd_canonical_blocks->add_option("--to", "Block height to end with")
+                                       ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_canonical_blocks_step = cmd_canonical_blocks->add_option("--step", "Step every this number of blocks")
+                                         ->default_val("1")
+                                         ->check(CLI::Range(1u, UINT32_MAX));
+
+    // Print the list of saved blocks in specified range
     auto cmd_blocks = app_main.add_subcommand("blocks", "Print blocks from database in specified range");
     auto cmd_blocks_from = cmd_blocks->add_option("--from", "Block height to start with")
                                ->required()
@@ -1932,8 +2040,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));
-        } else if (*cmd_stage_unwind) {
-            unwind_stage(src_config, cmd_stage_unwind_name->as<std::string>(), cmd_stage_unwind_height->as<uint32_t>());
+        } else if (*cmd_staged_unwind) {
+            unwind(src_config, cmd_staged_unwind_height->as<uint32_t>(), static_cast<bool>(*cmd_staged_unwind_remove_blocks));
         } else if (*cmd_initgenesis) {
             do_init_genesis(data_dir, cmd_initgenesis_json_opt->as<std::string>(),
                             *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u,
@@ -1945,6 +2053,11 @@ int main(int argc, char* argv[]) {
             }
         } else if (*cmd_chainconfig) {
             do_chainconfig(src_config);
+        } else if (*cmd_canonical_blocks) {
+            print_canonical_blocks(src_config,
+                                   cmd_canonical_blocks_from->as<BlockNum>(),
+                                   cmd_canonical_blocks_to->as<std::optional<BlockNum>>(),
+                                   cmd_canonical_blocks_step->as<uint64_t>());
         } else if (*cmd_blocks) {
             print_blocks(src_config, cmd_blocks_from->as<BlockNum>(), cmd_blocks_to->as<std::optional<BlockNum>>(),
                          cmd_blocks_step->as<uint64_t>());

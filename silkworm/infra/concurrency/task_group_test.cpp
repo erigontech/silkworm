@@ -78,33 +78,37 @@ static TResult run(io_context& context, awaitable<TResult> awaitable1) {
 
 TEST_CASE("TaskGroup.0") {
     io_context context;
-    TaskGroup group{context, 0};
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 0};
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
 }
 
 TEST_CASE("TaskGroup.1") {
     io_context context;
-    TaskGroup group{context, 1};
-    group.spawn(context, async_ok());
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 1};
+    group.spawn(executor, async_ok());
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
 }
 
 TEST_CASE("TaskGroup.1.wait_until_cancelled") {
     io_context context;
-    TaskGroup group{context, 1};
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 1};
     bool is_cancelled = false;
-    group.spawn(context, wait_until_cancelled(&is_cancelled));
+    group.spawn(executor, wait_until_cancelled(&is_cancelled));
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
     CHECK(is_cancelled);
 }
 
 TEST_CASE("TaskGroup.some.wait_until_cancelled") {
     io_context context;
-    TaskGroup group{context, 3};
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 3};
     std::array<bool, 3> is_cancelled{};
-    group.spawn(context, wait_until_cancelled(&is_cancelled[0]));
-    group.spawn(context, wait_until_cancelled(&is_cancelled[1]));
-    group.spawn(context, wait_until_cancelled(&is_cancelled[2]));
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[0]));
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
@@ -113,14 +117,15 @@ TEST_CASE("TaskGroup.some.wait_until_cancelled") {
 
 TEST_CASE("TaskGroup.some.mix") {
     io_context context;
-    TaskGroup group{context, 6};
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 6};
     std::array<bool, 3> is_cancelled{};
-    group.spawn(context, async_ok());
-    group.spawn(context, wait_until_cancelled(&is_cancelled[0]));
-    group.spawn(context, async_ok());
-    group.spawn(context, wait_until_cancelled(&is_cancelled[1]));
-    group.spawn(context, async_ok());
-    group.spawn(context, wait_until_cancelled(&is_cancelled[2]));
+    group.spawn(executor, async_ok());
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[0]));
+    group.spawn(executor, async_ok());
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
+    group.spawn(executor, async_ok());
+    group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
@@ -129,9 +134,10 @@ TEST_CASE("TaskGroup.some.mix") {
 
 TEST_CASE("TaskGroup.spawn_after_close") {
     io_context context;
-    TaskGroup group{context, 1};
+    auto executor = context.get_executor();
+    TaskGroup group{executor, 1};
     CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
-    CHECK_THROWS_AS(group.spawn(context, async_ok()), TaskGroup::SpawnAfterCloseError);
+    CHECK_THROWS_AS(group.spawn(executor, async_ok()), TaskGroup::SpawnAfterCloseError);
 }
 
 }  // namespace silkworm::concurrency

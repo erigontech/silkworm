@@ -52,7 +52,6 @@
 
 namespace silkworm::sentry::grpc::server {
 
-using boost::asio::io_context;
 namespace protobuf = google::protobuf;
 namespace proto = ::sentry;
 namespace proto_types = ::types;

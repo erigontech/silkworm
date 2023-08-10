@@ -18,7 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/sentry/api/router/send_message_call.hpp>
@@ -29,8 +29,8 @@ namespace silkworm::sentry {
 
 class MessageSender {
   public:
-    explicit MessageSender(boost::asio::io_context& io_context)
-        : send_message_channel_(io_context) {}
+    explicit MessageSender(boost::asio::any_io_executor executor)
+        : send_message_channel_(std::move(executor)) {}
 
     concurrency::Channel<api::router::SendMessageCall>& send_message_channel() {
         return send_message_channel_;

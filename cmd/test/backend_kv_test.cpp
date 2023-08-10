@@ -1025,7 +1025,7 @@ int main(int argc, char* argv[]) {
         }};
 
         boost::asio::io_context scheduler;
-        silkworm::cmd::common::ShutdownSignal shutdown_signal{scheduler};
+        silkworm::cmd::common::ShutdownSignal shutdown_signal{scheduler.get_executor()};
         shutdown_signal.on_signal([&](silkworm::cmd::common::ShutdownSignal::SignalNumber /*num*/) {
             pump_stop = true;
             completion_stop = true;

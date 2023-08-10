@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
             tasks = server.async_run("bekv-server");
         }
 
-        ShutdownSignal shutdown_signal{context_pool.next_io_context()};
+        ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
 
         // Go!
         auto run_future = boost::asio::co_spawn(

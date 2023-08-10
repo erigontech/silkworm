@@ -23,8 +23,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/any_io_executor.hpp>
-
+#include <silkworm/infra/concurrency/executor_pool.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
@@ -36,7 +35,7 @@ class DiscoveryImpl;
 class Discovery {
   public:
     explicit Discovery(
-        std::function<boost::asio::any_io_executor()> executor_pool,
+        concurrency::ExecutorPool& executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,

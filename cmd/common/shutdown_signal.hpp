@@ -20,16 +20,16 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
 
 namespace silkworm::cmd::common {
 
 class ShutdownSignal {
   public:
-    explicit ShutdownSignal(boost::asio::io_context& io_context)
-        : signals_(io_context, SIGINT, SIGTERM) {}
+    explicit ShutdownSignal(boost::asio::any_io_executor executor)
+        : signals_(executor, SIGINT, SIGTERM) {}
 
     using SignalNumber = int;
 

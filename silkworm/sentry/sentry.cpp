@@ -55,7 +55,7 @@ using namespace boost;
 
 class SentryImpl final {
   public:
-    explicit SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
+    explicit SentryImpl(Settings settings, concurrency::ExecutorPool& executor_pool);
 
     SentryImpl(const SentryImpl&) = delete;
     SentryImpl& operator=(const SentryImpl&) = delete;
@@ -90,7 +90,7 @@ class SentryImpl final {
     Settings settings_;
     std::optional<NodeKey> node_key_;
     std::optional<boost::asio::ip::address> public_ip_;
-    silkworm::rpc::ServerContextPool& context_pool_;
+    concurrency::ExecutorPool& executor_pool_;
 
     StatusManager status_manager_;
 
@@ -136,24 +136,24 @@ static api::router::ServiceRouter make_service_router(
     };
 }
 
-SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& context_pool)
+SentryImpl::SentryImpl(Settings settings, concurrency::ExecutorPool& executor_pool)
     : settings_(std::move(settings)),
-      context_pool_(context_pool),
-      status_manager_(context_pool_.next_io_context()),
-      rlpx_server_(context_pool_.next_io_context(), settings_.port),
+      executor_pool_(executor_pool),
+      status_manager_(executor_pool.any_executor()),
+      rlpx_server_(executor_pool.any_executor(), settings_.port),
       discovery_(
-          [this] { return boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()); },
+          executor_pool,
           settings_.static_peers,
           !settings_.no_discover,
           settings_.data_dir_path,
           node_key_provider(),
           node_url_provider(),
           settings_.port),
-      peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
-      message_sender_(context_pool_.next_io_context()),
-      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
-      peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
-      peer_discovery_feedback_(std::make_shared<PeerDiscoveryFeedback>(boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()), settings_.max_peers)),
+      peer_manager_(executor_pool.any_executor(), settings_.max_peers, executor_pool_),
+      message_sender_(executor_pool.any_executor()),
+      message_receiver_(std::make_shared<MessageReceiver>(executor_pool.any_executor(), settings_.max_peers)),
+      peer_manager_api_(std::make_shared<PeerManagerApi>(executor_pool.any_executor(), peer_manager_)),
+      peer_discovery_feedback_(std::make_shared<PeerDiscoveryFeedback>(executor_pool.any_executor(), settings_.max_peers)),
       service_router_(make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())),
       direct_service_(std::make_shared<api::router::DirectService>(service_router_)),
       grpc_server_(make_server_config(settings_), service_router_) {
@@ -207,7 +207,7 @@ Task<void> SentryImpl::run_status_manager() {
 }
 
 Task<void> SentryImpl::run_server() {
-    return rlpx_server_.run(context_pool_, node_key_.value(), client_id(), protocol_factory());
+    return rlpx_server_.run(executor_pool_, node_key_.value(), client_id(), protocol_factory());
 }
 
 std::unique_ptr<rlpx::Client> SentryImpl::make_client() {
@@ -301,8 +301,8 @@ std::function<EnodeUrl()> SentryImpl::node_url_provider() const {
     return [this] { return this->make_node_url(); };
 }
 
-Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool)
-    : p_impl_(std::make_unique<SentryImpl>(std::move(settings), context_pool)) {
+Sentry::Sentry(Settings settings, concurrency::ExecutorPool& executor_pool)
+    : p_impl_(std::make_unique<SentryImpl>(std::move(settings), executor_pool)) {
 }
 
 Sentry::~Sentry() {

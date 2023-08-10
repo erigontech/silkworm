@@ -25,7 +25,8 @@
 // otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
 #define _DARWIN_C_SOURCE
 #endif
-#include <boost/asio/io_context.hpp>
+
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 #include <silkworm/core/common/assert.hpp>
@@ -38,13 +39,18 @@ using namespace std::chrono_literals;
 //! \brief Implementation of an asynchronous timer relying on boost:asio
 class Timer {
   public:
-    //! \param asio_context [in] : boost's asio context
+    //! \param executor [in] : executor
     //! \param interval [in] : length of wait interval (in milliseconds)
     //! \param call_back [in] : the call back function to be called
     //! \param auto_start [in] : whether to start the timer immediately
-    explicit Timer(boost::asio::io_context& asio_context, uint32_t interval, std::function<bool()> call_back,
-                   bool auto_start = false)
-        : interval_(interval), timer_(asio_context), call_back_(std::move(call_back)) {
+    explicit Timer(
+        boost::asio::any_io_executor executor,
+        uint32_t interval,
+        std::function<bool()> call_back,
+        bool auto_start = false)
+        : interval_(interval),
+          timer_(std::move(executor)),
+          call_back_(std::move(call_back)) {
         SILKWORM_ASSERT(interval > 0);
         if (auto_start) {
             start();

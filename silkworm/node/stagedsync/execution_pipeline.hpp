@@ -21,8 +21,6 @@
 #include <vector>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/infra/common/asio_timer.hpp>
-#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -64,4 +62,5 @@ class ExecutionPipeline : public Stoppable {
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
     class LogTimer;                      // Timer for async log scheduling
 };
+
 }  // namespace silkworm::stagedsync

@@ -19,7 +19,9 @@
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
@@ -46,7 +48,7 @@ class ExecutionPipeline::LogTimer : public Timer {
   public:
     LogTimer(ExecutionPipeline* pipeline)
         : Timer{
-              pipeline->node_settings_->asio_context,
+              pipeline->node_settings_->asio_context.get_executor(),
               pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
               [this] { return execute(); },
               true},

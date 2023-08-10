@@ -21,12 +21,10 @@
 #include <mutex>
 #include <stdexcept>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include "task.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/cancellation_signal.hpp>
-#include <boost/asio/io_context.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
 
@@ -47,17 +45,17 @@ namespace silkworm::concurrency {
  *
  * \code
  *
- * TaskGroup task_group{io_context, 10};
+ * TaskGroup task_group{executor, 10};
  *
- * awaitable<void> run_server() {
+ * Task<void> run_server() {
  *     co_await (accept_connections() && task_group.wait());
  * }
  *
- * awaitable<void> accept_connections() {
+ * Task<void> accept_connections() {
  *     auto connection = accept();
  *     if (num_clients < 10) {
  *         num_clients++;
- *         task_group.spawn(io_context, handle_connection(std::move(connection)));
+ *         task_group.spawn(executor, handle_connection(std::move(connection)));
  *     }
  * }
  *
@@ -67,12 +65,8 @@ namespace silkworm::concurrency {
  */
 class TaskGroup {
   public:
-    TaskGroup(boost::asio::any_io_executor&& executor, std::size_t max_tasks)
-        : completions_(executor, max_tasks) {}
-    TaskGroup(boost::asio::any_io_executor& executor, std::size_t max_tasks)
-        : completions_(executor, max_tasks) {}
-    TaskGroup(boost::asio::io_context& io_context, std::size_t max_tasks)
-        : completions_(io_context, max_tasks) {}
+    TaskGroup(boost::asio::any_io_executor executor, std::size_t max_tasks)
+        : completions_(std::move(executor), max_tasks) {}
 
     TaskGroup(const TaskGroup&) = delete;
     TaskGroup& operator=(const TaskGroup&) = delete;
@@ -83,20 +77,10 @@ class TaskGroup {
     };
 
     //! Similar to co_spawn, but also adds the task to this group until it completes.
-    void spawn(boost::asio::any_io_executor&& executor, boost::asio::awaitable<void> task);
-
-    //! Similar to co_spawn, but also adds the task to this group until it completes.
-    void spawn(boost::asio::any_io_executor& executor, boost::asio::awaitable<void> task) {
-        spawn(boost::asio::any_io_executor{executor}, std::move(task));
-    }
-
-    //! Similar to co_spawn, but also adds the task to this group until it completes.
-    void spawn(boost::asio::io_context& io_context, boost::asio::awaitable<void> task) {
-        spawn(boost::asio::any_io_executor{io_context.get_executor()}, std::move(task));
-    }
+    void spawn(boost::asio::any_io_executor executor, Task<void> task);
 
     //! Waits until a cancellation signal. then cancels all pending tasks, and waits for them to complete.
-    boost::asio::awaitable<void> wait();
+    Task<void> wait();
 
   private:
     void close();

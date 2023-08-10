@@ -18,6 +18,11 @@ IncludeCategories:
   - Regex:           '<silkworm/infra/concurrency/task\.hpp>'
     Priority:        30
 
+  # coroutine.hpp has to go before the boost headers,
+  # otherwise boost::asio fails to compile on GCC 12
+  - Regex:           '"task\.hpp"'
+    Priority:        30
+
   # Silkworm headers
   - Regex:           '<silkworm.*'
     Priority:        50

@@ -26,13 +26,13 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/executor_pool.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
@@ -47,17 +47,17 @@ struct PeerManagerObserver;
 class PeerManager {
   public:
     PeerManager(
-        boost::asio::io_context& io_context,
+        boost::asio::any_io_executor executor,
         size_t max_peers,
-        silkworm::rpc::ServerContextPool& context_pool)
+        concurrency::ExecutorPool& executor_pool)
         : max_peers_(max_peers),
-          strand_(boost::asio::make_strand(io_context)),
+          strand_(boost::asio::make_strand(executor)),
           peer_tasks_(strand_, max_peers),
           drop_peer_tasks_(strand_, PeerManager::kMaxSimultaneousDropPeerTasks),
-          context_pool_(context_pool),
-          need_peers_notifier_(io_context),
+          executor_pool_(executor_pool),
+          need_peers_notifier_(executor),
           connect_peer_tasks_(strand_, max_peers),
-          client_peer_channel_(io_context) {}
+          client_peer_channel_(executor) {}
 
     Task<void> run(
         rlpx::Server& server,
@@ -103,13 +103,13 @@ class PeerManager {
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     std::list<std::shared_ptr<rlpx::Peer>> handshaking_peers_;
     size_t max_peers_;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::strand<boost::asio::any_io_executor> strand_;
     concurrency::TaskGroup peer_tasks_;
     concurrency::TaskGroup drop_peer_tasks_;
     size_t drop_peer_tasks_count_{0};
 
     std::set<EnodeUrl> connecting_peer_urls_;
-    silkworm::rpc::ServerContextPool& context_pool_;
+    concurrency::ExecutorPool& executor_pool_;
     concurrency::EventNotifier need_peers_notifier_;
     concurrency::TaskGroup connect_peer_tasks_;
     concurrency::Channel<std::shared_ptr<rlpx::Peer>> client_peer_channel_;

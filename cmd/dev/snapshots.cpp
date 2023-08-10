@@ -311,7 +311,7 @@ void download(const BitTorrentSettings& settings) {
     BitTorrentClient client{settings};
 
     boost::asio::io_context scheduler;
-    ShutdownSignal shutdown_signal{scheduler};
+    ShutdownSignal shutdown_signal{scheduler.get_executor()};
     shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
         client.stop();
         SILK_DEBUG << "Torrent client stopped";

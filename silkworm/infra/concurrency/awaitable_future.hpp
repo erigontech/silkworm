@@ -19,18 +19,14 @@
 #include <optional>
 #include <stdexcept>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include "task.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/experimental/concurrent_channel.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 
 namespace silkworm::concurrency {
-
-namespace asio = boost::asio;
 
 // An awaitable-friendly future/promise
 // See also: https://docs.rs/tokio/1.25.0/tokio/sync/oneshot/index.html
@@ -47,9 +43,9 @@ class AwaitableFuture {
     AwaitableFuture(AwaitableFuture&&) noexcept = default;
     AwaitableFuture& operator=(AwaitableFuture&&) noexcept = default;
 
-    asio::awaitable<T> get_async() {
+    Task<T> get_async() {
         try {
-            std::optional<T> result = co_await channel_->async_receive(asio::use_awaitable);
+            std::optional<T> result = co_await channel_->async_receive(boost::asio::use_awaitable);
             co_return std::move(result.value());
         } catch (const boost::system::system_error& ex) {
             close_and_throw_if_cancelled(ex);
@@ -59,7 +55,7 @@ class AwaitableFuture {
 
     T get() {
         try {
-            std::optional<T> result = channel_->async_receive(asio::use_future).get();
+            std::optional<T> result = channel_->async_receive(boost::asio::use_future).get();
             return std::move(result.value());
         } catch (const boost::system::system_error& ex) {
             close_and_throw_if_cancelled(ex);
@@ -70,7 +66,7 @@ class AwaitableFuture {
   private:
     friend class AwaitablePromise<T>;
 
-    using AsyncChannel = asio::experimental::concurrent_channel<void(std::exception_ptr, std::optional<T>)>;
+    using AsyncChannel = boost::asio::experimental::concurrent_channel<void(std::exception_ptr, std::optional<T>)>;
 
     explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(channel) {}
 
@@ -88,13 +84,11 @@ class AwaitableFuture {
 
 template <typename T>
 class AwaitablePromise {
-    constexpr static size_t one_shot_channel = 1;
     using AsyncChannel = typename AwaitableFuture<T>::AsyncChannel;
 
   public:
-    explicit AwaitablePromise(asio::any_io_executor&& executor) : channel_(std::make_shared<AsyncChannel>(executor, one_shot_channel)) {}
-    explicit AwaitablePromise(asio::any_io_executor& executor) : channel_(std::make_shared<AsyncChannel>(executor, one_shot_channel)) {}
-    explicit AwaitablePromise(asio::io_context& io_context) : channel_(std::make_shared<AsyncChannel>(io_context, one_shot_channel)) {}
+    explicit AwaitablePromise(boost::asio::any_io_executor executor)
+        : channel_(std::make_shared<AsyncChannel>(std::move(executor), 1)) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise& operator=(const AwaitablePromise&) = delete;

@@ -22,12 +22,11 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/concurrency/executor_pool.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 #include "peer.hpp"
@@ -38,11 +37,11 @@ namespace silkworm::sentry::rlpx {
 class Server final {
   public:
     Server(
-        boost::asio::io_context& io_context,
+        boost::asio::any_io_executor executor,
         uint16_t port);
 
     Task<void> run(
-        silkworm::rpc::ServerContextPool& context_pool,
+        concurrency::ExecutorPool& executor_pool,
         EccKeyPair node_key,
         std::string client_id,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);

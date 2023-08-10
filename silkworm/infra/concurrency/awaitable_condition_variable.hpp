@@ -19,11 +19,7 @@
 #include <functional>
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/io_context.hpp>
+#include "task.hpp"
 
 namespace silkworm::concurrency {
 
@@ -57,7 +53,7 @@ class AwaitableConditionVariable {
     AwaitableConditionVariable();
     virtual ~AwaitableConditionVariable();
 
-    using Waiter = std::function<boost::asio::awaitable<void>()>;
+    using Waiter = std::function<Task<void>()>;
 
     Waiter waiter();
     void notify_all();

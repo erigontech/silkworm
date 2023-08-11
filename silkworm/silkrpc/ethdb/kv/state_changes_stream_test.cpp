@@ -16,6 +16,7 @@
 
 #include "state_changes_stream.hpp"
 
+#include <chrono>
 #include <future>
 #include <system_error>
 
@@ -33,14 +34,14 @@ using testing::Return;
 
 class RegistrationIntervalGuard {
   public:
-    explicit RegistrationIntervalGuard(boost::posix_time::milliseconds new_registration_interval)
+    explicit RegistrationIntervalGuard(std::chrono::milliseconds new_registration_interval)
         : registration_interval_(StateChangesStream::registration_interval()) {
         StateChangesStream::set_registration_interval(new_registration_interval);
     }
     ~RegistrationIntervalGuard() { StateChangesStream::set_registration_interval(registration_interval_); }
 
   private:
-    boost::posix_time::milliseconds registration_interval_;
+    std::chrono::milliseconds registration_interval_;
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -50,7 +51,7 @@ TEST_CASE("StateChangeBatch::operator<<", "[silkrpc][ethdb][kv][state_changes_st
 
 TEST_CASE("StateChangesStream::set_registration_interval", "[silkrpc][ethdb][kv][state_changes_stream]") {
     CHECK(StateChangesStream::registration_interval() == kDefaultRegistrationInterval);
-    constexpr boost::posix_time::milliseconds new_registration_interval{5'000};
+    constexpr std::chrono::milliseconds new_registration_interval{5'000};
     CHECK_NOTHROW(StateChangesStream::set_registration_interval(new_registration_interval));
     CHECK(StateChangesStream::registration_interval() == new_registration_interval);
     CHECK_NOTHROW(StateChangesStream::set_registration_interval(kDefaultRegistrationInterval));
@@ -72,7 +73,7 @@ static remote::StateChangeBatch make_batch() {
 }
 
 TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::open", "[silkrpc][ethdb][kv][state_changes_stream]") {
-    RegistrationIntervalGuard guard{boost::posix_time::milliseconds{10}};
+    RegistrationIntervalGuard guard{std::chrono::milliseconds{10}};
     // Set the call expectations:
     // 1. remote::KV::StubInterface::PrepareAsyncStateChangesRaw call succeeds
     expect_request_async_statechanges(/*.ok=*/false);
@@ -86,7 +87,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::open", "[silkrpc][
 }
 
 TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[silkrpc][ethdb][kv][state_changes_stream]") {
-    RegistrationIntervalGuard guard{boost::posix_time::milliseconds{10}};
+    RegistrationIntervalGuard guard{std::chrono::milliseconds{10}};
 
     SECTION("stream closed-by-peer/reopened/cancelled") {
         // Set the call expectations:
@@ -167,7 +168,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[silkrpc][e
 }
 
 TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[silkrpc][ethdb][kv][state_changes_stream]") {
-    RegistrationIntervalGuard guard{boost::posix_time::milliseconds{10}};
+    RegistrationIntervalGuard guard{std::chrono::milliseconds{10}};
 
     SECTION("while requesting w/ error every 10ms") {
         // Set the call expectations:

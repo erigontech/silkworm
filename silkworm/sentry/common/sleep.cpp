@@ -16,10 +16,9 @@
 
 #include "sleep.hpp"
 
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 namespace silkworm::sentry {
 
@@ -27,8 +26,8 @@ using namespace boost::asio;
 
 Task<void> sleep(std::chrono::milliseconds duration) {
     auto executor = co_await this_coro::executor;
-    deadline_timer timer(executor);
-    timer.expires_from_now(boost::posix_time::milliseconds(duration.count()));
+    steady_timer timer(executor);
+    timer.expires_after(duration);
     co_await timer.async_wait(use_awaitable);
 }
 

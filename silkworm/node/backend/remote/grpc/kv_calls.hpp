@@ -27,7 +27,6 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/deadline_timer.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>

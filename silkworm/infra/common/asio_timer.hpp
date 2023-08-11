@@ -25,8 +25,9 @@
 // otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
 #define _DARWIN_C_SOURCE
 #endif
+
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -81,7 +82,7 @@ class Timer {
   private:
     //! \brief Launches async timer
     void launch() {
-        timer_.expires_from_now(boost::posix_time::milliseconds(interval_));
+        timer_.expires_after(std::chrono::milliseconds(interval_));
         (void)timer_.async_wait([&, this](const boost::system::error_code& ec) {
             if (!ec && call_back_) {
                 call_back_();
@@ -94,7 +95,7 @@ class Timer {
 
     std::atomic_bool is_running{false};
     const uint32_t interval_;
-    boost::asio::deadline_timer timer_;
+    boost::asio::steady_timer timer_;
     std::function<bool()> call_back_;
 };
 

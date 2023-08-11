@@ -39,6 +39,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
+#include <silkworm/silkrpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc {
 
@@ -78,8 +79,9 @@ using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
 class EVMExecutor {
   public:
-    using StateFactory = std::function<std::shared_ptr<silkworm::State>(boost::asio::any_io_executor&, BlockNum)>;
+    using StateFactory = std::function<std::shared_ptr<silkworm::State>(boost::asio::any_io_executor&, BlockNum, const ChainStorage& chain_storage)>;
     static awaitable<ExecutionResult> call(const silkworm::ChainConfig& config,
+                                           const ChainStorage& storage,
                                            boost::asio::thread_pool& workers,
                                            const silkworm::Block& block,
                                            const silkworm::Transaction& txn,

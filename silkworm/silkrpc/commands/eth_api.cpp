@@ -985,7 +985,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
             return state_reader.read_account(address, block_number + 1);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, *chain_config, workers_, *tx, tx_database};
+        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, *chain_config, workers_, *tx, tx_database, *chain_storage};
 
         auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block);
 
@@ -1215,8 +1215,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         const auto execution_result = co_await EVMExecutor::call(
-            *chain_config, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num) {
-                return tx->create_state(io_executor, db_reader, block_num);
+            *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
+                return tx->create_state(io_executor, db_reader, storage, block_num);
             });
 
         if (execution_result.success()) {
@@ -1405,8 +1405,8 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
             tracer->reset_access_list();
 
             const auto execution_result = co_await EVMExecutor::call(
-                *chain_config, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num) {
-                    return tx->create_state(io_executor, db_reader, block_num);
+                *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
+                    return tx->create_state(io_executor, db_reader, storage, block_num);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
 
@@ -1503,8 +1503,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
             }
 
             const auto execution_result = co_await EVMExecutor::call(
-                *chain_config, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num) {
-                    return tx->create_state(io_executor, db_reader, block_num);
+                *chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num, auto& storage) {
+                    return tx->create_state(io_executor, db_reader, storage, block_num);
                 });
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());

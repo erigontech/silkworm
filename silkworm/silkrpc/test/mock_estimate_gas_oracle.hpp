@@ -31,8 +31,8 @@ namespace silkworm::rpc {
 class MockEstimateGasOracle : public EstimateGasOracle {
   public:
     explicit MockEstimateGasOracle(const BlockHeaderProvider& block_header_provider, const AccountReader& account_reader,
-                                   const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database)
-        : EstimateGasOracle(block_header_provider, account_reader, config, workers, tx, tx_database) {}
+                                   const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database, const ChainStorage& storage)
+        : EstimateGasOracle(block_header_provider, account_reader, config, workers, tx, tx_database, storage) {}
 
     MOCK_METHOD((ExecutionResult), try_execution, (EVMExecutor&, const silkworm::Block&, const silkworm::Transaction&), (override));
 };

@@ -81,7 +81,7 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
     auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = transaction_.create_state(this_executor, tx_database_, block_number);
+                auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
                 EVMExecutor executor{config_, workers_, state};
 
                 ExecutionResult result{evmc_status_code::EVMC_SUCCESS};

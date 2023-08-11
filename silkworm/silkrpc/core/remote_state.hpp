@@ -31,13 +31,14 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
+#include <silkworm/silkrpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc::state {
 
 class AsyncRemoteState {
   public:
-    explicit AsyncRemoteState(const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
-        : db_reader_(db_reader), block_number_(block_number), state_reader_{db_reader} {}
+    explicit AsyncRemoteState(const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number)
+        : storage_(storage), block_number_(block_number), state_reader_{db_reader} {}
 
     boost::asio::awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -62,15 +63,15 @@ class AsyncRemoteState {
   private:
     static std::unordered_map<evmc::bytes32, silkworm::Bytes> code_;
 
-    const core::rawdb::DatabaseReader& db_reader_;
+    const ChainStorage& storage_;
     uint64_t block_number_;
     StateReader state_reader_;
 };
 
 class RemoteState : public silkworm::State {
   public:
-    explicit RemoteState(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
-        : executor_(executor), async_state_{db_reader, block_number} {}
+    explicit RemoteState(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number)
+        : executor_(executor), async_state_{db_reader, storage, block_number} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 

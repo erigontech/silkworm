@@ -47,8 +47,9 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor_;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override {
-        return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage,
+                                                  uint64_t block_number) override {
+        return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, storage, block_number);
     }
 
     std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {

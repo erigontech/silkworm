@@ -49,7 +49,7 @@ class ChainStorage {
     virtual Task<bool> read_block(const Hash& hash, silkworm::Block& block) const = 0;
 
     //! Read canonical block by number returning true on success and false on missing block
-    virtual Task<bool> read_block(BlockNum number, bool read_senders, Block& block) const = 0;
+    virtual Task<bool> read_block(BlockNum number, bool read_senders, silkworm::Block& block) const = 0;
 
     //! Read block header with the specified key (block number, hash)
     [[nodiscard]] virtual Task<std::optional<BlockHeader>> read_header(BlockNum number, HashAsArray hash) const = 0;
@@ -64,9 +64,9 @@ class ChainStorage {
     [[nodiscard]] virtual Task<std::vector<BlockHeader>> read_sibling_headers(BlockNum number) const = 0;
 
     //! Read block body in output parameter returning true on success and false on missing block
-    virtual Task<bool> read_body(BlockNum number, HashAsArray hash, bool read_senders, BlockBody& body) const = 0;
-    virtual Task<bool> read_body(const Hash& hash, BlockNum number, BlockBody& body) const = 0;
-    virtual Task<bool> read_body(const Hash& hash, BlockBody& body) const = 0;
+    virtual Task<bool> read_body(BlockNum number, HashAsArray hash, bool read_senders, silkworm::BlockBody& body) const = 0;
+    virtual Task<bool> read_body(const Hash& hash, BlockNum number, silkworm::BlockBody& body) const = 0;
+    virtual Task<bool> read_body(const Hash& hash, silkworm::BlockBody& body) const = 0;
 
     //! Read the canonical block hash at specified height
     [[nodiscard]] virtual Task<std::optional<Hash>> read_canonical_hash(BlockNum number) const = 0;

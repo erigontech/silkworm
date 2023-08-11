@@ -370,7 +370,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage&
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, storage, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
@@ -433,7 +433,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage&
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number);
+                auto state = tx_.create_state(current_executor, database_reader_, storage, block_number);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (auto idx{0}; idx < index; idx++) {
@@ -495,7 +495,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream,
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block.header.number);
+                auto state = tx_.create_state(current_executor, database_reader_, storage, block.header.number);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (auto idx{0}; idx < transaction_index; idx++) {

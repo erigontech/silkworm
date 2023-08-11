@@ -63,8 +63,8 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cu
     co_return cursor;
 }
 
-std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, uint64_t block_number) {
-    return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
+std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, storage, block_number);
 }
 
 std::shared_ptr<ChainStorage> RemoteTransaction::create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) {

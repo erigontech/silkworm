@@ -1233,13 +1233,13 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
     const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::vector<TraceCallResult>)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 IntraBlockState initial_ibs{*state};
 
                 StateAddresses state_addresses(initial_ibs);
                 std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
                 std::vector<TraceCallResult> trace_call_result(transactions.size());
@@ -1310,11 +1310,11 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 silkworm::IntraBlockState initial_ibs{*state};
                 StateAddresses state_addresses(initial_ibs);
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
@@ -1380,10 +1380,10 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
     const auto deploy_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceDeployResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
                 TraceDeployResult result;
@@ -1453,10 +1453,10 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
     const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::EntryTracer>)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
                 auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
@@ -1486,10 +1486,10 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::string)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
                 Tracers tracers{};
 
@@ -1516,10 +1516,10 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
     silkworm::IntraBlockState initial_ibs{*state};
 
-    auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
     EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
     auto tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
     Tracers tracers{tracer};
@@ -1540,10 +1540,10 @@ boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const si
     const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::TouchTracer>)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
                 auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
@@ -1626,7 +1626,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
     const auto trace_call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceCallResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, block_number);
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 silkworm::IntraBlockState initial_ibs{*state};
 
                 Tracers tracers;
@@ -1634,7 +1634,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
                 std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
                 tracers.push_back(tracer);
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
                 for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
                     silkworm::Transaction txn{block.transactions[idx]};

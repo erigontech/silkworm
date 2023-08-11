@@ -24,11 +24,13 @@
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
+#include <gmock/gmock.h>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -38,6 +40,24 @@ namespace silkworm::rpc {
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
+
+class BackEndMock : public ethbackend::BackEnd {  // NOLINT
+  public:
+    MOCK_METHOD((Task<evmc::address>), etherbase, ());
+    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_version, ());
+    MOCK_METHOD((Task<std::string>), client_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
+    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
+    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
+    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
+    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
+    MOCK_METHOD((Task<PeerInfos>), peers, ());
+    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
+    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
+};
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("EVMExecutor") {
@@ -79,7 +99,10 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {});
         my_pool.stop();
@@ -108,7 +131,9 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {});
         my_pool.stop();
@@ -138,7 +163,9 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {});
         my_pool.stop();
@@ -168,7 +195,9 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {});
         my_pool.stop();
@@ -198,7 +227,9 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {}, false, /* gasBailout */ true);
         executor.reset();
@@ -236,7 +267,9 @@ TEST_CASE("EVMExecutor") {
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        auto state = tx.create_state(current_executor, tx_database, block_number);
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage storage{tx_database, backend};
+        auto state = tx.create_state(current_executor, tx_database, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers, state};
         auto result = executor.call(block, txn, {}, true, /* gasBailout */ true);
         my_pool.stop();

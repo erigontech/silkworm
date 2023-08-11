@@ -182,8 +182,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         boost::asio::any_io_executor current_executor = io_context.get_executor();
         rpc::test::MockChainStorage chain_storage;
-        EXPECT_CALL(chain_storage, read_header(block_number, block_hash.bytes)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> { 
-                               co_return std::nullopt; }));
+        EXPECT_CALL(chain_storage, read_header(block_number, block_hash.bytes)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
         RemoteState remote_state(current_executor, db_reader, chain_storage, block_number);
 
         auto header = remote_state.read_header(block_number, block_hash);

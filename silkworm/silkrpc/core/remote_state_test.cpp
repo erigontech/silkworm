@@ -39,8 +39,11 @@ using evmc::literals::operator""_bytes32;
 using evmc::literals::operator""_address;
 using Catch::Matchers::Message;
 using testing::_;
+using testing::DoAll;
+using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Return;
+using testing::Unused;
 
 class BackEndMock : public ethbackend::BackEnd {  // NOLINT
   public:
@@ -171,7 +174,6 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         io_context_thread.join();
     }
 
-#ifdef notdef
     SECTION("read_header with empty response from db") {
         boost::asio::io_context io_context;
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
@@ -182,10 +184,9 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         boost::asio::any_io_executor current_executor = io_context.get_executor();
         rpc::test::MockChainStorage chain_storage;
-        EXPECT_CALL(chain_storage, read_header(block_number, block_hash.bytes)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> { 
-                               co_return std::nullopt; }));
         RemoteState remote_state(current_executor, db_reader, chain_storage, block_number);
-
+        silkworm::Hash hash{block_hash};
+        EXPECT_CALL(chain_storage, read_header(block_number, hash)).WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
         auto header = remote_state.read_header(block_number, block_hash);
         CHECK(header == std::nullopt);
         io_context.stop();
@@ -199,11 +200,15 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
 
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
+        const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         silkworm::BlockBody body;
         boost::asio::any_io_executor current_executor = io_context.get_executor();
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
-        RemoteState remote_state(current_executor, db_reader, storage, block_number);
+        rpc::test::MockChainStorage chain_storage;
+        RemoteState remote_state(current_executor, db_reader, chain_storage, block_number);
+        silkworm::Hash hash{block_hash};
+        EXPECT_CALL(chain_storage, read_body(hash, block_number, body)).WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
+        auto valid = remote_state.read_body(block_number, block_hash, body);
+        CHECK(valid == true);
         CHECK(body == silkworm::BlockBody{});
         io_context.stop();
         io_context_thread.join();
@@ -218,11 +223,12 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         boost::asio::any_io_executor current_executor = io_context.get_executor();
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
-        RemoteState remote_state(current_executor, db_reader, storage, block_number);
-        auto header = remote_state.total_difficulty(block_number, block_hash);
-        CHECK(header == std::nullopt);
+        rpc::test::MockChainStorage chain_storage;
+        silkworm::Hash hash{block_hash};
+        RemoteState remote_state(current_executor, db_reader, chain_storage, block_number);
+        EXPECT_CALL(chain_storage, read_total_difficulty(hash, block_number)).WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<intx::uint256>> { co_return std::nullopt; }));
+        auto total_difficulty = remote_state.total_difficulty(block_number, block_hash);
+        CHECK(total_difficulty == std::nullopt);
         io_context.stop();
         io_context_thread.join();
     }
@@ -440,31 +446,31 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         CHECK_THROWS_AS(future_code.get(), std::exception);
     }
 
-    SECTION("AsyncRemoteState::read_header returns exceptions") {
+    SECTION("AsyncRemoteState::read_header") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
-        AsyncRemoteState state{db_reader, storage, block_number};
+        rpc::test::MockChainStorage chain_storage;
+        silkworm::Hash hash{block_hash};
+        AsyncRemoteState state{db_reader, chain_storage, block_number};
+        EXPECT_CALL(chain_storage, read_header(block_number, hash)).WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
         auto future_code{boost::asio::co_spawn(io_context, state.read_header(block_number, block_hash), boost::asio::use_future)};
         io_context.run();
-        CHECK_THROWS_AS(future_code.get(), std::exception);
     }
 
-    SECTION("AsyncRemoteState::read_body returns exceptions") {
+    SECTION("AsyncRemoteState::read_body") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
-        AsyncRemoteState state{db_reader, storage, block_number};
+        rpc::test::MockChainStorage chain_storage;
+        silkworm::Hash hash{block_hash};
+        AsyncRemoteState state{db_reader, chain_storage, block_number};
         silkworm::BlockBody body;
+        EXPECT_CALL(chain_storage, read_body(hash, block_number, body)).WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
         auto future_code{boost::asio::co_spawn(io_context, state.read_body(block_number, block_hash, body), boost::asio::use_future)};
         io_context.run();
-        CHECK_THROWS_AS(future_code.get(), std::exception);
     }
 
     SECTION("AsyncRemoteState::canonical_hash returns exceptions") {
@@ -478,7 +484,6 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         io_context.run();
         CHECK_THROWS_AS(future_code.get(), std::exception);
     }
-#endif
 }
 
 struct RemoteStateTest : public test::ContextTestBase {

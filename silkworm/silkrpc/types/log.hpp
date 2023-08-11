@@ -42,6 +42,7 @@ struct Log {
     evmc::bytes32 block_hash;
     uint32_t index{0};
     bool removed{false};
+    uint64_t timestamp{0};
 };
 
 typedef std::vector<Log> Logs;

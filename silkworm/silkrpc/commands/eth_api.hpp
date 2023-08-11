@@ -66,15 +66,6 @@ class EthereumRpcApi {
     EthereumRpcApi& operator=(const EthereumRpcApi&) = delete;
 
   protected:
-    static void filter_logs(std::vector<Log>&& logs, FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& filtered_logs);
-
-    Task<void> get_logs(
-        ethdb::TransactionDatabase& tx_database,
-        BlockNum start, BlockNum end,
-        FilterAddresses& addresss,
-        FilterTopics& topics,
-        std::vector<Log>& logs);
-
     Task<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);

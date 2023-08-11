@@ -114,9 +114,27 @@ TEST_CASE("write filter to ostream", "[silkrpc][types][filter]") {
     std::ostringstream oss;
     oss << filter;
     CHECK(oss.str() ==
-          "from_block: 0 to_block: 10000000 address: "
-          "[0x6090a6e47849629b7245dfa1ca21d94cd15878ef] topics: [[0x0000000000000000000000000000000000000000000000000000000000000000] "
-          "[0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c]] block_hash: null");
+          "from_block: 0, to_block: 10000000, addresses: "
+          "[0x6090a6e47849629b7245dfa1ca21d94cd15878ef], topics: [[0x0000000000000000000000000000000000000000000000000000000000000000] "
+          "[0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c]], block_hash: null");
+}
+
+TEST_CASE("LogFilterOptions", "[silkrpc][types][options]") {
+    SECTION("default to ostream") {
+        LogFilterOptions options;
+
+        std::ostringstream oss;
+        oss << options;
+        CHECK(oss.str() ==
+              "add_timestamp: false, logCount: 0, blockCount: 0, ignore_topics_order: false");
+    }
+    SECTION("option to ostream") {
+        LogFilterOptions options{true};
+        std::ostringstream oss;
+        oss << options;
+        CHECK(oss.str() ==
+              "add_timestamp: true, logCount: 0, blockCount: 0, ignore_topics_order: false");
+    }
 }
 
 }  // namespace silkworm::rpc

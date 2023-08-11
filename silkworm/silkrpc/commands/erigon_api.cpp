@@ -16,6 +16,8 @@
 
 #include "erigon_api.hpp"
 
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -29,6 +31,7 @@
 #include <silkworm/silkrpc/core/block_reader.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/logs_walker.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
@@ -294,12 +297,72 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
 
 // https://eth.wiki/json-rpc/API#erigon_getlatestlogs
 Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    auto params = request["params"];
+    if (params.size() > 2) {
+        auto error_msg = "too many arguments, want at most 2";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    auto filter = params[0].get<Filter>();
+    if (filter.block_hash && (filter.from_block || filter.to_block)) {
+        auto error_msg = "invalid argument 0: cannot specify both BlockHash and FromBlock/ToBlock, choose one or the other";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request["id"], -32602, error_msg);
+        co_return;
+    }
+
+    LogFilterOptions options{true};
+    if (params.size() > 1) {
+        options = params[1].get<LogFilterOptions>();
+        options.add_timestamp = true;
+    }
+
+    if (options.log_count != 0 && options.block_count != 0) {
+        auto error_msg = "logs count & block count are ambigious";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request["id"], -32000, error_msg);
+        co_return;
+    }
+
+    if (options.log_count == 0 && options.block_count == 0) {
+        options.block_count = 1;
+    }
+    SILK_LOG << "filter: {" << filter << "}, options: {" << options << "}";
+
     auto tx = co_await database_->begin();
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        reply = make_json_content(request["id"], to_quantity(0));
+        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
+        if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
+            auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request["id"], 100, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        } else if (end < start) {
+            std::ostringstream oss;
+            oss << "end (" << end << ") < begin (" << start << ")";
+            SILK_ERROR << oss.str();
+            reply = make_json_error(request["id"], -32000, oss.str());
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+
+        std::vector<Log> logs;
+        co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, options, true, logs);
+
+        reply = make_json_content(request["id"], logs);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

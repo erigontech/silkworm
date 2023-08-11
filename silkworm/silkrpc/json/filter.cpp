@@ -90,4 +90,18 @@ void from_json(const nlohmann::json& json, Filter& filter) {
     }
 }
 
+void from_json(const nlohmann::json& json, LogFilterOptions& filter_options) {
+    if (json.count("logCount") != 0) {
+        const auto& value = json.at("logCount");
+        filter_options.log_count = value.get<std::uint64_t>();
+    }
+    if (json.count("blockCount") != 0) {
+        const auto& value = json.at("blockCount");
+        filter_options.block_count = value.get<std::uint64_t>();
+    }
+    if (json.count("ignoreTopicsOrder") != 0) {
+        const auto& value = json.at("ignoreTopicsOrder");
+        filter_options.ignore_topics_order = value.get<bool>();
+    }
+}
 }  // namespace silkworm::rpc

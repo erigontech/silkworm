@@ -37,6 +37,9 @@ void to_json(nlohmann::json& json, const Log& log) {
     json["transactionIndex"] = to_quantity(log.tx_index);
     json["logIndex"] = to_quantity(log.index);
     json["removed"] = log.removed;
+    if (log.timestamp != 0) {
+        json["timestamp"] = to_quantity(log.timestamp);
+    }
 }
 
 void from_json(const nlohmann::json& json, Log& log) {
@@ -83,6 +86,7 @@ struct GlazeJsonLogItem {
     char index[int64Size];
     char data[dataSize];
     bool removed;
+    char timestamp[int64Size];
     std::vector<std::string> topics;
 
     struct glaze {
@@ -96,7 +100,8 @@ struct GlazeJsonLogItem {
             "logIndex", &T::index,
             "data", &T::data,
             "removed", &T::removed,
-            "topics", &T::topics);
+            "topics", &T::topics,
+            "timestamp", &T::timestamp);
     };
 };
 
@@ -129,6 +134,9 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
         to_quantity(std::span(item.index), l.index);
         item.removed = l.removed;
         to_hex(item.data, l.data);
+        if (l.timestamp != 0) {
+            to_quantity(std::span(item.timestamp), l.timestamp);
+        }
         for (const auto& t : l.topics) {
             item.topics.push_back("0x" + silkworm::to_hex(t));
         }

@@ -25,8 +25,6 @@
 #include <string>
 #include <utility>
 
-#include <evmc/evmc.hpp>
-
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
@@ -35,8 +33,6 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -47,55 +43,14 @@
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/fee_history_oracle.hpp>
 #include <silkworm/silkrpc/core/gas_price_oracle.hpp>
+#include <silkworm/silkrpc/core/logs_walker.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
-#include <silkworm/silkrpc/ethdb/bitmap.hpp>
-#include <silkworm/silkrpc/ethdb/cbor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/silkrpc/ethdb/kv/remote_transaction.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/json/call.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
-#include <silkworm/silkrpc/types/block.hpp>
-#include <silkworm/silkrpc/types/call.hpp>
-#include <silkworm/silkrpc/types/filter.hpp>
-#include <silkworm/silkrpc/types/syncing_data.hpp>
-#include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc::commands {
-
-Task<std::pair<BlockNum, BlockNum>> get_block_numbers(const Filter& filter, const core::rawdb::DatabaseReader& reader) {
-    BlockNum start{}, end{};
-    if (filter.block_hash.has_value()) {
-        auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
-        if (!block_hash_bytes.has_value()) {
-            start = end = std::numeric_limits<BlockNum>::max();
-        } else {
-            auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
-            auto block_number = co_await core::rawdb::read_header_number(reader, block_hash);
-            start = end = block_number;
-        }
-    } else {
-        BlockNum last_executed_block_number = std::numeric_limits<BlockNum>::max();
-        if (filter.from_block.has_value()) {
-            start = co_await core::get_block_number(filter.from_block.value(), reader);
-        } else {
-            last_executed_block_number = co_await core::get_latest_executed_block_number(reader);
-            start = last_executed_block_number;
-        }
-        if (filter.to_block.has_value()) {
-            end = co_await core::get_block_number(filter.to_block.value(), reader);
-        } else {
-            if (last_executed_block_number == std::numeric_limits<BlockNum>::max()) {
-                last_executed_block_number = co_await core::get_latest_executed_block_number(reader);
-            }
-            end = last_executed_block_number;
-        }
-    }
-    co_return std::make_pair(start, end);
-}
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber
 Task<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
@@ -1570,7 +1525,8 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto [start, end] = co_await get_block_numbers(filter, tx_database);
+        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
         filter.start = start;
         filter.end = end;
 
@@ -1662,13 +1618,14 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto [start, end] = co_await get_block_numbers(filter, tx_database);
+        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
 
         if (filter.start != start && filter.end != end) {
             filter.logs.clear();
-            co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, filter.logs);
+            co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, filter.logs);
         } else {
-            co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, filter.logs);
+            co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, filter.logs);
         }
         filter.start = start;
         filter.end = end;
@@ -1714,14 +1671,15 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto [start, end] = co_await get_block_numbers(filter, tx_database);
+        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
 
         std::vector<Log> logs;
         if (filter.start == start && filter.end != end) {
-            co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, logs);
+            co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, logs);
             filter.logs.insert(filter.logs.end(), logs.begin(), logs.end());
         } else if (filter.start != start && filter.end != end) {
-            co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, logs);
+            co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, logs);
             filter.logs.clear();
             filter.logs.insert(filter.logs.end(), logs.begin(), logs.end());
         }
@@ -1786,7 +1744,8 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto [start, end] = co_await get_block_numbers(filter, tx_database);
+        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
             SILK_ERROR << error_msg;
@@ -1796,7 +1755,7 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
         }
 
         std::vector<Log> logs;
-        co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, logs);
+        co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, logs);
 
         make_glaze_json_content(reply, request["id"], logs);
     } catch (const std::invalid_argument& iv) {
@@ -2194,144 +2153,6 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
 
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
-}
-
-Task<void> EthereumRpcApi::get_logs(
-    ethdb::TransactionDatabase& tx_database,
-    BlockNum start,
-    BlockNum end,
-    FilterAddresses& addresses,
-    FilterTopics& topics,
-    std::vector<Log>& logs) {
-    SILK_INFO << "start block: " << start << " end block: " << end;
-
-    const auto chain_storage{tx_database.get_tx().create_storage(tx_database, backend_)};
-    roaring::Roaring block_numbers;
-    block_numbers.addRange(start, end + 1);  // [min, max)
-
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
-
-    if (!topics.empty()) {
-        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_database, db::table::kLogTopicIndexName, topics, start, end);
-        SILK_TRACE << "topics_bitmap: " << topics_bitmap.toString();
-        if (topics_bitmap.isEmpty()) {
-            block_numbers = topics_bitmap;
-        } else {
-            block_numbers &= topics_bitmap;
-        }
-    }
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
-    SILK_TRACE << "block_numbers: " << block_numbers.toString();
-
-    if (!addresses.empty()) {
-        auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_database, db::table::kLogAddressIndexName, addresses, start, end);
-        if (addresses_bitmap.isEmpty()) {
-            block_numbers = addresses_bitmap;
-        } else {
-            block_numbers &= addresses_bitmap;
-        }
-    }
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
-    SILK_TRACE << "block_numbers: " << block_numbers.toString();
-
-    if (block_numbers.cardinality() == 0) {
-        co_return;
-    }
-
-    Logs chunk_logs;
-    Logs filtered_chunk_logs;
-    Logs filtered_block_logs{};
-    chunk_logs.reserve(512);
-    filtered_chunk_logs.reserve(64);
-    filtered_block_logs.reserve(256);
-
-    for (const auto& block_to_match : block_numbers) {
-        uint32_t log_index{0};
-
-        filtered_block_logs.clear();
-        const auto block_key = silkworm::db::block_key(block_to_match);
-        SILK_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
-        co_await tx_database.for_prefix(db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-            chunk_logs.clear();
-            const bool decoding_ok{cbor_decode(v, chunk_logs)};
-            if (!decoding_ok) {
-                return false;
-            }
-            for (auto& log : chunk_logs) {
-                log.index = log_index++;
-            }
-            SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
-            filtered_chunk_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
-            SILK_DEBUG << "filtered_chunk_logs.size(): " << filtered_chunk_logs.size();
-            if (!filtered_chunk_logs.empty()) {
-                const auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
-                SILK_DEBUG << "tx_id: " << tx_id;
-                for (auto& log : filtered_chunk_logs) {
-                    log.tx_index = tx_id;
-                }
-                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
-            }
-            return true;
-        });
-        SILK_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size();
-
-        if (!filtered_block_logs.empty()) {
-            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_to_match);
-            SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_with_hash->hash);
-            for (auto& log : filtered_block_logs) {
-                const auto tx_hash{hash_of_transaction(block_with_hash->block.transactions[log.tx_index])};
-                log.block_number = block_to_match;
-                log.block_hash = block_with_hash->hash;
-                log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
-            }
-            logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
-        }
-    }
-    SILK_INFO << "logs.size(): " << logs.size();
-
-    co_return;
-}
-
-void EthereumRpcApi::filter_logs(std::vector<Log>&& logs, FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& filtered_logs) {
-    SILK_DEBUG << "addresses: " << addresses;
-    for (auto& log : logs) {
-        SILK_DEBUG << "log: " << log;
-        if (!addresses.empty() && std::find(addresses.begin(), addresses.end(), log.address) == addresses.end()) {
-            SILK_DEBUG << "skipped log for address: 0x" << silkworm::to_hex(log.address);
-            continue;
-        }
-        auto matches = true;
-        if (!topics.empty()) {
-            if (topics.size() > log.topics.size()) {
-                SILK_DEBUG << "#topics: " << topics.size() << " #log.topics: " << log.topics.size();
-                continue;
-            }
-            for (size_t i{0}; i < topics.size(); i++) {
-                SILK_DEBUG << "log.topics[i]: " << log.topics[i];
-                auto subtopics = topics[i];
-                auto matches_subtopics = subtopics.empty();  // empty rule set == wildcard
-                SILK_TRACE << "matches_subtopics: " << std::boolalpha << matches_subtopics;
-                for (auto& topic : subtopics) {
-                    SILK_DEBUG << "topic: " << topic;
-                    if (log.topics[i] == topic) {
-                        matches_subtopics = true;
-                        SILK_TRACE << "matches_subtopics: " << matches_subtopics;
-                        break;
-                    }
-                }
-                if (!matches_subtopics) {
-                    SILK_TRACE << "No subtopic matches";
-                    matches = false;
-                    break;
-                }
-            }
-        }
-        SILK_DEBUG << "matches: " << matches;
-        if (matches) {
-            filtered_logs.push_back(std::move(log));
-        }
-    }
 }
 
 }  // namespace silkworm::rpc::commands

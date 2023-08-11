@@ -91,4 +91,55 @@ TEST_CASE("deserialize filter with topic null", "[silkworm::json][from_json]") {
     CHECK(f.block_hash == std::nullopt);
 }
 
+TEST_CASE("deserialize LogFilterOptions", "[silkworm::json][from_json]") {
+    SECTION("default values") {
+        auto j = R"({
+            "logCount": 0,
+            "blockCount": 0,
+            "ignoreTopicsOrder": false
+        })"_json;
+        auto options = j.get<LogFilterOptions>();
+
+        CHECK(options.log_count == 0);
+        CHECK(options.block_count == 0);
+        CHECK(options.ignore_topics_order == false);
+    }
+    SECTION("log_count != 0") {
+        auto j = R"({
+            "logCount": 100,
+            "blockCount": 0,
+            "ignoreTopicsOrder": false
+        })"_json;
+        auto options = j.get<LogFilterOptions>();
+
+        CHECK(options.log_count == 100);
+        CHECK(options.block_count == 0);
+        CHECK(options.ignore_topics_order == false);
+    }
+    SECTION("block_count != 0") {
+        auto j = R"({
+            "logCount": 0,
+            "blockCount": 100,
+            "ignoreTopicsOrder": false
+        })"_json;
+        auto options = j.get<LogFilterOptions>();
+
+        CHECK(options.log_count == 0);
+        CHECK(options.block_count == 100);
+        CHECK(options.ignore_topics_order == false);
+    }
+    SECTION("ignore_topics_order == true") {
+        auto j = R"({
+            "logCount": 0,
+            "blockCount": 0,
+            "ignoreTopicsOrder": true
+        })"_json;
+        auto options = j.get<LogFilterOptions>();
+
+        CHECK(options.log_count == 0);
+        CHECK(options.block_count == 0);
+        CHECK(options.ignore_topics_order == true);
+    }
+}
+
 }  // namespace silkworm::rpc

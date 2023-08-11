@@ -55,16 +55,15 @@ boost::asio::awaitable<uint64_t> AsyncRemoteState::previous_incarnation(const ev
 }
 
 boost::asio::awaitable<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    co_return co_await core::rawdb::read_header(db_reader_, block_hash, block_number);
+    co_return co_await storage_.read_header(block_number, block_hash);
 }
 
 boost::asio::awaitable<bool> AsyncRemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
-    filled_body = co_await core::rawdb::read_body(db_reader_, block_hash, block_number);
-    co_return true;
+    co_return co_await storage_.read_body(block_hash, block_number, filled_body);
 }
 
 boost::asio::awaitable<std::optional<intx::uint256>> AsyncRemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    co_return co_await core::rawdb::read_total_difficulty(db_reader_, block_hash, block_number);
+    co_return co_await storage_.read_total_difficulty(block_hash, block_number);
 }
 
 boost::asio::awaitable<evmc::bytes32> AsyncRemoteState::state_root_hash() const {
@@ -78,7 +77,7 @@ boost::asio::awaitable<uint64_t> AsyncRemoteState::current_canonical_block() con
 
 boost::asio::awaitable<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(uint64_t block_number) const {
     // This method should not be called by EVM::execute
-    co_return co_await core::rawdb::read_canonical_block_hash(db_reader_, block_number);
+    co_return co_await storage_.read_canonical_hash(block_number);
 }
 
 std::optional<silkworm::Account> RemoteState::read_account(const evmc::address& address) const noexcept {

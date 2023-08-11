@@ -79,8 +79,8 @@ struct EstimateGasException : public std::exception {
 class EstimateGasOracle {
   public:
     explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider, const AccountReader& account_reader,
-                               const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database)
-        : block_header_provider_(block_header_provider), account_reader_{account_reader}, config_{config}, workers_{workers}, transaction_{tx}, tx_database_{tx_database} {}
+                               const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database, const ChainStorage& chain_storage)
+        : block_header_provider_(block_header_provider), account_reader_{account_reader}, config_{config}, workers_{workers}, transaction_{tx}, tx_database_{tx_database}, storage_{chain_storage} {}
     virtual ~EstimateGasOracle() {}
 
     EstimateGasOracle(const EstimateGasOracle&) = delete;
@@ -100,6 +100,7 @@ class EstimateGasOracle {
     boost::asio::thread_pool& workers_;
     ethdb::Transaction& transaction_;
     ethdb::TransactionDatabase& tx_database_;
+    const ChainStorage& storage_;
 };
 
 }  // namespace silkworm::rpc

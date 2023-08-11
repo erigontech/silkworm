@@ -61,7 +61,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*block_cache_, db_reader, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, db_reader, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
 
         if (result.pre_check_error) {
@@ -106,7 +106,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
 
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*block_cache_, db_reader, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, db_reader, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
 
         if (result.pre_check_error) {
@@ -191,7 +191,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
@@ -232,7 +232,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
@@ -272,7 +272,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
             oss << "transaction 0x" << transaction_hash << " not found";
             reply = make_json_error(request["id"], -32000, oss.str());
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash.block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
@@ -313,7 +313,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter);
         reply = make_json_content(request["id"], result);
@@ -354,7 +354,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
 
         co_await executor.trace_filter(trace_filter, *chain_storage, &stream);
     } catch (const std::exception& e) {
@@ -409,7 +409,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
 
             uint16_t index = indices[0] + 1;  // Erigon RpcDaemon compatibility
@@ -452,7 +452,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
             reply = make_json_content(request["id"], result);
         }

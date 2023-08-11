@@ -47,6 +47,7 @@ namespace silkworm::rpc::call {
 using boost::asio::awaitable;
 
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
+                                                  const ChainStorage& storage,
                                                   const silkworm::BlockWithHash& block_with_hash,
                                                   ethdb::TransactionDatabase& tx_database,
                                                   const Bundles& bundles,
@@ -57,7 +58,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     CallManyResult result;
     const auto& block = block_with_hash.block;
     const auto& block_transactions = block.transactions;
-    auto state = transaction_.create_state(this_executor, tx_database, block.header.number);
+    auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
     state::OverrideState override_state{*state, accounts_overrides};
     EVMExecutor executor{config, workers_, state};
 
@@ -176,7 +177,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                result = executes_all_bundles(*chain_config_ptr, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
+                result = executes_all_bundles(*chain_config_ptr, *chain_storage, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
                 boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
                     self.complete(result);
                 });

@@ -63,6 +63,7 @@ class CallExecutor {
     boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, const AccountsOverrides& accounts_overrides, std::optional<std::uint64_t> timeout);
 
     CallManyResult executes_all_bundles(const silkworm::ChainConfig& config,
+                                        const ChainStorage& storage,
                                         const silkworm::BlockWithHash& block,
                                         ethdb::TransactionDatabase& tx_database,
                                         const Bundles& bundles,

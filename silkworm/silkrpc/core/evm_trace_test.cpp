@@ -30,6 +30,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
@@ -37,6 +38,24 @@
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc::trace {
+
+class BackEndMock : public ethbackend::BackEnd {  // NOLINT
+  public:
+    MOCK_METHOD((Task<evmc::address>), etherbase, ());
+    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_version, ());
+    MOCK_METHOD((Task<std::string>), client_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
+    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
+    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
+    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
+    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
+    MOCK_METHOD((Task<PeerInfos>), peers, ());
+    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
+    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
+};
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
@@ -124,7 +143,10 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(!result.pre_check_error);
@@ -296,7 +318,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -351,7 +375,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -535,7 +561,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -656,7 +684,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -823,7 +853,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -963,7 +995,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -1158,7 +1192,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
@@ -1407,7 +1443,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     BlockCache block_cache;
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
-    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+    const auto backend = new BackEndMock;
+    const RemoteChainStorage chain_storage{db_reader, backend};
+    TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
     const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
     CHECK(result.pre_check_error.has_value() == false);
@@ -1628,7 +1666,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -1686,7 +1726,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        const RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -1995,7 +2037,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     BlockCache block_cache;
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
-    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+    const auto backend = new BackEndMock;
+    RemoteChainStorage chain_storage{db_reader, backend};
+    TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
     const auto result = spawn_and_wait(executor.trace_block_transactions(block, config));
 
     CHECK(nlohmann::json(result) == R"([
@@ -2539,7 +2583,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     BlockCache block_cache;
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
-    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+    const auto backend = new BackEndMock;
+    RemoteChainStorage chain_storage{db_reader, backend};
+    TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
     Filter filter;
     const auto result = spawn_and_wait(executor.trace_block(block_with_hash, filter));
@@ -2756,7 +2802,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3074,7 +3122,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3106,7 +3156,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3161,7 +3213,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
         TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3707,7 +3761,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     BlockCache block_cache;
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
-    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+    const auto backend = new BackEndMock;
+    RemoteChainStorage chain_storage{db_reader, backend};
+    TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
     const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, transaction));
 
     CHECK(nlohmann::json(result) == R"([
@@ -5254,7 +5310,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5315,7 +5373,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5399,7 +5459,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5457,7 +5519,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5479,7 +5543,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5501,7 +5567,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5572,7 +5640,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5656,7 +5726,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         BlockCache block_cache;
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
+        const auto backend = new BackEndMock;
+        RemoteChainStorage chain_storage{db_reader, backend};
+        TraceCallExecutor executor{block_cache, db_reader, chain_storage, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));

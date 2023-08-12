@@ -48,7 +48,7 @@ using testing::Unused;
 
 TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    const auto backend = std::make_unique<BackEndMock>();
+    const auto backend = std::make_unique<test::BackEndMock>();
 
     class MockDatabaseReader : public core::rawdb::DatabaseReader {
       public:

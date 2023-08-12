@@ -33,30 +33,13 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
+#include <silkworm/silkrpc/test/mock_back_end.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
 namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
-
-class BackEndMock : public ethbackend::BackEnd {  // NOLINT
-  public:
-    MOCK_METHOD((Task<evmc::address>), etherbase, ());
-    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_version, ());
-    MOCK_METHOD((Task<std::string>), client_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
-    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
-    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
-    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
-    MOCK_METHOD((Task<PeerInfos>), peers, ());
-    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
-    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
-};
 
 namespace {
     //! This dummy transaction just gives you the same cursor over and over again.
@@ -231,7 +214,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock;
+    auto* backend = new test::BackEndMock;
     EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> Task<ExecutionPayloadAndValue> {
         co_return ExecutionPayloadAndValue{ExecutionPayload{.number = 1}, 0};
     }));
@@ -301,7 +284,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
-    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new test::BackEndMock);
     std::unique_ptr<ethdb::Database> database;
     EngineRpcApi_ForTest rpc(database.get(), backend_ptr.get());
 
@@ -331,7 +314,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload status", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock;
+    auto* backend = new test::BackEndMock;
     EXPECT_CALL(*backend, engine_new_payload(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<PayloadStatus> {
         co_return PayloadStatus{
             .status = "INVALID",
@@ -408,7 +391,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
-    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new test::BackEndMock);
     std::unique_ptr<ethdb::Database> database;
     EngineRpcApi_ForTest rpc(database.get(), backend_ptr.get());
 
@@ -438,7 +421,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock;
+    auto* backend = new test::BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -496,7 +479,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock;
+    auto* backend = new test::BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -559,7 +542,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock;
+    auto* backend = new test::BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -629,7 +612,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
-    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr(new test::BackEndMock);
     std::unique_ptr<ethdb::Database> database;
     EngineRpcApi_ForTest rpc(database.get(), backend_ptr.get());
 
@@ -659,7 +642,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock();
+    auto* backend = new test::BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -705,7 +688,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkworm][rpc][commands][engine_api]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto* backend = new BackEndMock();
+    auto* backend = new test::BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",

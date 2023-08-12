@@ -32,6 +32,7 @@
 #include <silkworm/silkrpc/ethdb/kv/remote_transaction.hpp>
 #include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
+#include <silkworm/silkrpc/test/mock_back_end.hpp>
 #include <silkworm/silkrpc/test/mock_estimate_gas_oracle.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
@@ -42,24 +43,6 @@ struct RemoteDatabaseTest : test::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
     ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
-};
-
-class BackEndMock : public ethbackend::BackEnd {  // NOLINT
-  public:
-    MOCK_METHOD((Task<evmc::address>), etherbase, ());
-    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_version, ());
-    MOCK_METHOD((Task<std::string>), client_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
-    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
-    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
-    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
-    MOCK_METHOD((Task<PeerInfos>), peers, ());
-    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
-    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
 };
 
 using Catch::Matchers::Message;
@@ -116,7 +99,7 @@ TEST_CASE("estimate gas") {
     RemoteDatabaseTest remote_db_test;
     auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_);
     ethdb::TransactionDatabase tx_database{*tx};
-    const auto backend = new BackEndMock;
+    const auto backend = new test::BackEndMock;
     const RemoteChainStorage storage{tx_database, backend};
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, tx_database, storage};
 

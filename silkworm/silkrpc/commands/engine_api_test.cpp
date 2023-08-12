@@ -32,6 +32,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
@@ -80,8 +81,8 @@ namespace {
             return nullptr;
         }
 
-        std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
-            return nullptr;
+        std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader& db_reader, ethbackend::BackEnd* backend) override {
+            return std::make_shared<RemoteChainStorage>(db_reader, backend);
         }
 
         Task<void> close() override { co_return; }

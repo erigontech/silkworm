@@ -453,7 +453,7 @@ struct RemoteStateTest : public test::ContextTestBase {
     test::MockDatabaseReader database_reader_;
     boost::asio::io_context io_context;
     boost::asio::any_io_executor current_executor{io_context.get_executor()};
-    std::unique_ptr<BackEndMock> backend{std::make_unique<BackEndMock>()};
+    std::unique_ptr<test::BackEndMock> backend{std::make_unique<test::BackEndMock>()};
     RemoteChainStorage storage{database_reader_, backend.get()};
     RemoteState remote_state_{current_executor, database_reader_, storage, 0};
 };

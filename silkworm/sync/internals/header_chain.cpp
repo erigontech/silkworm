@@ -232,7 +232,7 @@ auto HeaderChain::verify(const Link& link) -> VerificationResult {
     }
 
     bool with_future_timestamp_check = true;
-    auto result = rule_set_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
+    const auto result = rule_set_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
 
     if (result != ValidationResult::kOk) {
         if (result == ValidationResult::kUnknownParent) {
@@ -559,7 +559,9 @@ auto HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bo
             log::Warning("HeaderStage") << "received malformed header: " << header.number;
             return true;
         }
-        if (header.difficulty == 0) {
+        // TODO(canepat) IMHO we should remove the following check entirely, alternatively check must be based on TD
+        // Quick-and-dirty validity check based on header difficulty and hard-coded Ethereum PoS merge block
+        if (header.difficulty == 0 and header.number < 15'537'393) {
             log::Warning("HeaderStage") << "received header w/ zero difficulty, block num=" << header.number;
             return true;
         }

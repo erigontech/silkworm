@@ -1188,12 +1188,8 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash
     }
 
     if (filter.count > 0 && filter.after == 0) {
-        const rpc::ChainConfig chain_config{co_await core::rawdb::read_chain_config(database_reader_)};
-        const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
-        if (!cc) {
-            throw std::runtime_error("Invalid chain config");
-        }
-        const auto block_rewards = protocol::EthashRuleSet::compute_reward(*cc, block_with_hash.block);
+        const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+        const auto block_rewards = protocol::EthashRuleSet::compute_reward(*chain_config_ptr, block_with_hash.block);
 
         RewardAction action;
         action.author = block_with_hash.block.header.beneficiary;
@@ -1225,8 +1221,7 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
 
     SILK_INFO << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1303,8 +1298,7 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
                << " block_number: " << block_number
                << " #trace_calls: " << calls.size();
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
@@ -1372,8 +1366,7 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
 
     SILK_INFO << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1445,8 +1438,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
 boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1478,8 +1470,7 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
 boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1512,8 +1503,7 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
 boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
@@ -1532,8 +1522,7 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
 boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
     auto block_number = block.header.number;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1618,8 +1607,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
                << " index: " << std::dec << index
                << " config: " << config;
 
-    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 

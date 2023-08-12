@@ -116,8 +116,8 @@ TEST_CASE("estimate gas") {
     RemoteDatabaseTest remote_db_test;
     auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_);
     ethdb::TransactionDatabase tx_database{*tx};
-    const auto backend = new BackEndMock;
-    const RemoteChainStorage storage{tx_database, backend};
+    const auto backend = std::make_unique<BackEndMock>();
+    const RemoteChainStorage storage{tx_database, backend.get()};
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, tx_database, storage};
 
     SECTION("Call empty, always fails but success in last step") {

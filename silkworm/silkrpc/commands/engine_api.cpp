@@ -258,9 +258,8 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json&
     try {
 #endif
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
-        const auto config = silkworm::ChainConfig::from_json(chain_config.config);
-
+        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto config{co_await storage->read_chain_config()};
         ensure(config.has_value(), "execution layer has invalid configuration");
         ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
@@ -378,10 +377,10 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann
             const auto attributes = params[1].get<PayloadAttributes>();
 
             auto tx = co_await database_->begin();
-            const auto chain_config{co_await core::rawdb::read_chain_config(ethdb::TransactionDatabase{*tx})};
+            ethdb::TransactionDatabase tx_database{*tx};
+            const auto storage{tx->create_storage(tx_database, backend_)};
+            const auto config{co_await storage->read_chain_config()};
             co_await tx->close();
-            const auto config = silkworm::ChainConfig::from_json(chain_config.config);
-
             ensure(config.has_value(), "execution layer has invalid configuration");
             ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
@@ -433,9 +432,8 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
     try {
 #endif
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
-        SILK_DEBUG << "chain config: " << chain_config;
-        const auto config = silkworm::ChainConfig::from_json(chain_config.config);
+        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto config{co_await storage->read_chain_config()};
         ensure(config.has_value(), "execution layer has invalid configuration");
         ensure(config->terminal_total_difficulty.has_value(), "execution layer does not have terminal total difficulty");
 

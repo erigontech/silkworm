@@ -26,10 +26,10 @@ namespace silkworm {
 // A Chain_State implementation tied to WorkingChain needs
 
 class CustomHeaderOnlyChainState : public BlockState {
-    OldestFirstLinkMap& persistedLinkQueue_;  // not nice
+    OldestFirstLinkMap& persisted_link_queue_;  // not nice
 
   public:
-    CustomHeaderOnlyChainState(OldestFirstLinkMap& persistedLinkQueue);
+    CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue);
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;

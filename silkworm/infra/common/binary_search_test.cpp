@@ -23,14 +23,12 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/as_range.hpp>
-
 namespace silkworm {
 
 static void check_binary_find_if(const std::vector<int>& vec, const int value) {
     assert(std::is_sorted(vec.begin(), vec.end()));
     const auto res1{std::upper_bound(vec.begin(), vec.end(), value)};
-    const auto res2{as_range::find_if(vec, [&](int x) { return x > value; })};
+    const auto res2{std::ranges::find_if(vec, [&](int x) { return x > value; })};
     CHECK(res1 == res2);
     const auto res3{binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value; })};
     CHECK(std::cmp_equal(res1 - vec.begin(), res3));

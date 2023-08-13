@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <algorithm>
 #include <bit>
 #include <bitset>
 #include <filesystem>
@@ -29,7 +30,6 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
@@ -797,7 +797,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         // Is this table present in the list user has provided ?
         if (!names.empty()) {
-            auto it = as_range::find(names, src_table.name);
+            auto it = std::ranges::find(names, src_table.name);
             if (it == names.end()) {
                 std::cout << "Skipped (no match --tables)" << std::flush;
                 continue;
@@ -806,7 +806,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         // Is this table present in the list user has excluded ?
         if (!xnames.empty()) {
-            auto it = as_range::find(xnames, src_table.name);
+            auto it = std::ranges::find(xnames, src_table.name);
             if (it != xnames.end()) {
                 std::cout << "Skipped (match --xtables)" << std::flush;
                 continue;
@@ -823,7 +823,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
         bool exists_on_target{false};
         bool populated_on_target{false};
         if (!tgt_tableInfo.tables.empty()) {
-            auto it = as_range::find_if(
+            auto it = std::ranges::find_if(
                 tgt_tableInfo.tables, [&src_table](dbTableEntry& item) -> bool { return item.name == src_table.name; });
             if (it != tgt_tableInfo.tables.end()) {
                 exists_on_target = true;

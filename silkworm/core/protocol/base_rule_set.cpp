@@ -16,7 +16,8 @@
 
 #include "base_rule_set.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
+#include <algorithm>
+
 #include <silkworm/core/trie/vector_root.hpp>
 
 #include "param.hpp"
@@ -103,7 +104,7 @@ ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockSta
             return ValidationResult::kNotAnOmmer;
         }
 
-        if (as_range::find(old_ommers, ommer) != old_ommers.end()) {
+        if (std::ranges::find(old_ommers, ommer) != old_ommers.end()) {
             return ValidationResult::kDuplicateOmmer;
         }
     }

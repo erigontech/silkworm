@@ -20,8 +20,6 @@
 #include <functional>
 #include <set>
 
-#include <silkworm/core/common/as_range.hpp>
-
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
@@ -219,7 +217,7 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out
 
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const uint64_t chain_id) noexcept {
     auto it{
-        as_range::find_if(kKnownChainConfigs, [&chain_id](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+        std::ranges::find_if(kKnownChainConfigs, [&chain_id](const std::pair<std::string, const ChainConfig*>& x) -> bool {
             return x.second->chain_id == chain_id;
         })};
 
@@ -231,7 +229,7 @@ std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_cha
 
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const std::string_view identifier) noexcept {
     auto it{
-        as_range::find_if(kKnownChainConfigs, [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+        std::ranges::find_if(kKnownChainConfigs, [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
             return iequals(x.first, identifier);
         })};
 
@@ -243,7 +241,7 @@ std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_cha
 
 std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     std::map<std::string, uint64_t> ret;
-    as_range::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
+    std::ranges::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
         ret[x.first] = x.second->chain_id;
     });
     return ret;

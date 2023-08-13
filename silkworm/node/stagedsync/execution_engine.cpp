@@ -18,7 +18,6 @@
 
 #include <set>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>

@@ -16,13 +16,13 @@
 
 #include "sync_pos.hpp"
 
+#include <algorithm>
 #include <iterator>
 
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
@@ -88,7 +88,7 @@ awaitable<void> PoSSync::download_blocks() {
         }
 
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [&, this](const auto& block) {
+        std::ranges::for_each(blocks, [&, this](const auto& block) {
             block->td = chain_fork_view_.add(block->header);
             block_progress = std::max(block_progress, block->header.number);
         });

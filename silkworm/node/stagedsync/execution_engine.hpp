@@ -27,7 +27,6 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>

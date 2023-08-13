@@ -16,9 +16,10 @@
 
 #include "header_chain.hpp"
 
+#include <algorithm>
+
 #include <gsl/util>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/environment.hpp>
@@ -392,7 +393,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::share
 
 size_t HeaderChain::anchors_within_range(BlockNum max) {
     return static_cast<size_t>(
-        as_range::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
+        std::ranges::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 std::optional<BlockNum> HeaderChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
@@ -629,7 +630,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
  */
 auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penalty> {
     std::vector<Header_Ref> headers = to_ref();
-    as_range::sort(headers, [](auto& h1, auto& h2) {
+    std::ranges::sort(headers, [](auto& h1, auto& h2) {
         return h1->number > h2->number;
     });  // sort headers from the highest block height to the lowest
 
@@ -857,7 +858,7 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
     // Extend_down
 
     bool anchor_preverified =
-        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
     prev_link->next = anchor->links;
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
@@ -880,7 +881,7 @@ auto HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anch
 
     // Remove old anchor
     bool anchor_preverified =
-        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
     remove(anchor);
 
     // Iterate over headers backwards (from parents towards children)
@@ -904,7 +905,7 @@ auto HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anch
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
     bool newanchor_preverified =
-        as_range::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        std::ranges::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
     log::Trace() << "[INFO] HeaderChain, segment op: " << new_anchor->blockHeight
                  << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->blockHeight << " <-extend down "
@@ -980,7 +981,7 @@ auto HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Req
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
 
     bool anchor_preverified =
-        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
     log::Trace() << "[INFO] HeaderChain, segment op: new anchor " << anchor->blockHeight << " --- "
                  << anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");

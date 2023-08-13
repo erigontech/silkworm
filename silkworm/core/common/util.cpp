@@ -16,10 +16,10 @@
 
 #include "util.hpp"
 
+#include <algorithm>
 #include <cstdio>
+#include <iterator>
 #include <regex>
-
-#include <silkworm/core/common/as_range.hpp>
 
 namespace silkworm {
 
@@ -77,7 +77,7 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 
 ByteView zeroless_view(ByteView data) {
     return data.substr(static_cast<size_t>(
-        std::distance(data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
+        std::distance(data.begin(), std::ranges::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
 }
 
 std::string to_hex(ByteView bytes, bool with_prefix) {

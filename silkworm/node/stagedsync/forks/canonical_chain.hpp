@@ -22,7 +22,6 @@
 #include <variant>
 #include <vector>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/access_layer.hpp>

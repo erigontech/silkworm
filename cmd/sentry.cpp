@@ -46,6 +46,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
 
     add_logging_options(cli, settings.log_settings);
     add_option_data_dir(cli, settings.data_dir_path);
+    add_option_chain(cli, settings.network_id);
     add_context_pool_options(cli, settings.context_pool_settings);
     add_sentry_options(cli, settings);
 

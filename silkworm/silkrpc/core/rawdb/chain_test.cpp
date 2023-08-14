@@ -110,23 +110,6 @@ static void check_expected_block_body(const silkworm::BlockBody& body) {
     CHECK(body.ommers.empty());
 }
 
-static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
-    CHECK(bwh.block.header.parent_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);
-    CHECK(bwh.block.header.ommers_hash == 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32);
-    CHECK(bwh.block.header.beneficiary == silkworm::to_evmc_address(*silkworm::from_hex("0000000000000000000000000000000000000000")));
-    CHECK(bwh.block.header.state_root == 0xe7536c5b61ed0e0ab7f3ce7f085806d40f716689c0c086676757de401b595658_bytes32);
-    CHECK(bwh.block.header.transactions_root == 0x40be247314d834a319556d1dcf458e8707cc1aa4a416b6118474ce0c96fccb1a_bytes32);
-    CHECK(bwh.block.header.receipts_root == 0x7862fe11d10a9b237ffe9cb660f31e4bc4be66836c9bfc17310d47c60d75671f_bytes32);
-    CHECK(bwh.block.header.number == 4000000);
-    CHECK(bwh.block.header.gas_limit == 8000000);
-    CHECK(bwh.block.header.gas_used == 1996875);
-    CHECK(bwh.block.header.timestamp == 1609072811);
-    CHECK(bwh.block.header.extra_data == *silkworm::from_hex("d88301091a846765746888676f312e31352e36856c696e757800000000000000be009d0049d6f0ee8ca6764a1d3e"
-                                                             "b519bd4d046e167ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01"));
-    CHECK(bwh.block.header.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
-    CHECK(bwh.hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-}
-
 TEST_CASE("read_header_number") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
@@ -292,80 +275,6 @@ TEST_CASE("read_total_difficulty") {
         auto result = boost::asio::co_spawn(pool, read_total_difficulty(db_reader, block_hash, block_number), boost::asio::use_future);
         const auto total_difficulty = result.get();
         CHECK(total_difficulty == 6'342'604 /*0x60c7cc*/);
-    }
-}
-
-TEST_CASE("read_block") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
-
-    SECTION("block header not found") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
-        CHECK_THROWS_AS(result.get(), std::runtime_error);
-#else
-        CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
-#endif  // SILKWORM_SANITIZE
-    }
-
-    SECTION("invalid block header") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
-        CHECK_THROWS_AS(result.get(), std::runtime_error);
-#else
-        CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
-#endif  // SILKWORM_SANITIZE
-    }
-
-    SECTION("block body not found") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
-        CHECK_THROWS_AS(result.get(), std::runtime_error);
-#else
-        CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
-#endif  // SILKWORM_SANITIZE
-    }
-
-    SECTION("invalid block body") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-        CHECK_THROWS_AS(result.get(), std::runtime_error);
-    }
-
-    SECTION("empty block") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("c68369000003c0"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
-        CHECK(bwh->block.transactions.empty());
-    }
-
-    SECTION("block found and matching") {
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBody; }));
-        EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
-        auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
-        check_expected_block_with_hash(*bwh);
     }
 }
 

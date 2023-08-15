@@ -40,8 +40,12 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
         hi = call.gas.value();
     } else {
         const auto header = co_await block_header_provider_(block_number);
-        hi = header.gas_limit;
-        SILK_DEBUG << "Evaluate HI with gas in block " << header.gas_limit;
+        if (!header) {
+            throw EstimateGasException{-1, "invalid header"};
+        }
+
+        hi = header->gas_limit;
+        SILK_DEBUG << "Evaluate HI with gas in block " << header->gas_limit;
     }
 
     intx::uint256 gas_price = call.gas_price.value_or(0);

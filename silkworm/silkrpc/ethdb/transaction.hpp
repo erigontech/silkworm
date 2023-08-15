@@ -19,9 +19,7 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
@@ -46,17 +44,17 @@ class Transaction {
 
     [[nodiscard]] virtual uint64_t view_id() const = 0;
 
-    virtual boost::asio::awaitable<void> open() = 0;
+    virtual Task<void> open() = 0;
 
-    virtual boost::asio::awaitable<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;
+    virtual Task<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;
 
-    virtual boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
+    virtual Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
 
     virtual std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number) = 0;
 
     virtual std::shared_ptr<ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) = 0;
 
-    virtual boost::asio::awaitable<void> close() = 0;
+    virtual Task<void> close() = 0;
 };
 
 }  // namespace silkworm::rpc::ethdb

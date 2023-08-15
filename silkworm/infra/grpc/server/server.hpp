@@ -21,9 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
@@ -131,7 +130,7 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
-    boost::asio::awaitable<void> async_run(const char* thread_name) {
+    Task<void> async_run(const char* thread_name) {
         auto run = [this] {
             this->build_and_start();
             this->join();

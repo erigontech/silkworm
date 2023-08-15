@@ -29,7 +29,7 @@ bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel) {
            ((code == grpc::StatusCode::DEADLINE_EXCEEDED) && (channel.GetState(false) != GRPC_CHANNEL_READY) && (channel.GetState(false) != GRPC_CHANNEL_SHUTDOWN));
 }
 
-boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel) {
+Task<void> reconnect_channel(grpc::Channel& channel) {
     bool is_stopped = false;
 
     std::function<void()> run = [&] {

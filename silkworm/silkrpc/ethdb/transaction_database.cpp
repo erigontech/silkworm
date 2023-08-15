@@ -24,21 +24,21 @@
 
 namespace silkworm::rpc::ethdb {
 
-awaitable<KeyValue> TransactionDatabase::get(const std::string& table, ByteView key) const {
+Task<KeyValue> TransactionDatabase::get(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
     SILK_TRACE << "TransactionDatabase::get cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek(key);
     co_return kv_pair;
 }
 
-awaitable<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table, ByteView key) const {
+Task<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
     SILK_TRACE << "TransactionDatabase::get_one cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek_exact(key);
     co_return kv_pair.value;
 }
 
-awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::string& table, ByteView key, ByteView subkey) const {
+Task<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::string& table, ByteView key, ByteView subkey) const {
     const auto cursor = co_await tx_.cursor_dup_sort(table);
     SILK_TRACE << "TransactionDatabase::get_both_range cursor_id: " << cursor->cursor_id();
     const auto value{co_await cursor->seek_both(key, subkey)};
@@ -50,7 +50,7 @@ awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::s
     co_return value.substr(subkey.length());
 }
 
-awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const {
+Task<void> TransactionDatabase::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
     SILK_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
     const auto shift_bits = fixed_bits & 7;
@@ -82,7 +82,7 @@ awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView sta
     co_return;
 }
 
-awaitable<void> TransactionDatabase::for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const {
+Task<void> TransactionDatabase::for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const {
     const auto cursor = co_await tx_.cursor(table);
     SILK_TRACE << "TransactionDatabase::for_prefix cursor_id: " << cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
     auto kv_pair = co_await cursor->seek(prefix);

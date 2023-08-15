@@ -37,7 +37,7 @@
 namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#erigon_cachecheck
-awaitable<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -57,7 +57,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& re
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getbalancechangesinblock
-awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() < 1) {
         auto error_msg = "invalid erigon_getBalanceChangesInBlock params: " + params.dump();
@@ -103,7 +103,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const n
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
-awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
     // Decode request parameters
     const auto& params = request["params"];
     if (params.size() != 2) {
@@ -175,7 +175,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockReceiptsByBlockHash
-awaitable<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getBlockReceiptsByBlockHash params: " + params.dump();
@@ -218,7 +218,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(con
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByHash
-awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByHash params: " + params.dump();
@@ -251,7 +251,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::j
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByNumber
-awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByNumber params: " + params.dump();
@@ -293,7 +293,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann:
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getlatestlogs
-awaitable<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -313,7 +313,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getlogsbyhash
-awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getLogsByHash params: " + params.dump();
@@ -356,7 +356,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::jso
 }
 
 // https://eth.wiki/json-rpc/API#erigon_forks
-awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -381,7 +381,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request,
 }
 
 // https://eth.wiki/json-rpc/API#erigon_WatchTheBurn
-awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_watchTheBurn params: " + params.dump();
@@ -456,7 +456,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
 }
 
 // https://eth.wiki/json-rpc/API#erigon_blockNumber
-awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     std::string block_id;
     if (params.empty()) {
@@ -490,7 +490,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& r
 }
 
 // https://eth.wiki/json-rpc/API#erigon_cumulativeChainTraffic
-awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_cumulativeChainTraffic params: " + params.dump();
@@ -527,7 +527,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohm
 }
 
 // https://eth.wiki/json-rpc/API#erigon_nodeInfo
-awaitable<void> ErigonRpcApi::handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto node_info_data = co_await backend_->engine_node_info();
 

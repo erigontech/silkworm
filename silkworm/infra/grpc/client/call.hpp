@@ -23,12 +23,11 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/detail/rpc.hpp>
 #include <agrpc/grpc_context.hpp>
 #include <agrpc/rpc.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>
@@ -54,7 +53,7 @@ class GrpcStatusError : public std::runtime_error {
 };
 
 template <class Stub, class Request, class Response>
-boost::asio::awaitable<Response> unary_rpc(
+Task<Response> unary_rpc(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
@@ -78,12 +77,12 @@ boost::asio::awaitable<Response> unary_rpc(
 }
 
 template <class Stub, class Request, class Response>
-boost::asio::awaitable<void> streaming_rpc(
+Task<void> streaming_rpc(
     agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<boost::asio::awaitable<void>(Response)> consumer,
+    std::function<Task<void>(Response)> consumer,
     const std::string& error_message = "") {
     grpc::ClientContext client_context;
 
@@ -113,12 +112,12 @@ boost::asio::awaitable<void> streaming_rpc(
 }
 
 template <class Stub, class Request, class Response>
-boost::asio::awaitable<Response> unary_rpc_with_retries(
+Task<Response> unary_rpc_with_retries(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<boost::asio::awaitable<void>()>& on_disconnect,
+    std::function<Task<void>()>& on_disconnect,
     grpc::Channel& channel) {
     // loop until a successful return or cancellation
     while (true) {
@@ -140,14 +139,14 @@ boost::asio::awaitable<Response> unary_rpc_with_retries(
 }
 
 template <class Stub, class Request, class Response>
-boost::asio::awaitable<void> streaming_rpc_with_retries(
+Task<void> streaming_rpc_with_retries(
     agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<boost::asio::awaitable<void>()>& on_disconnect,
+    std::function<Task<void>()>& on_disconnect,
     grpc::Channel& channel,
-    std::function<boost::asio::awaitable<void>(Response)> consumer) {
+    std::function<Task<void>(Response)> consumer) {
     // loop until a successful return or cancellation
     while (true) {
         try {

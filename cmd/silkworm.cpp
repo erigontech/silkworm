@@ -229,6 +229,7 @@ static SentryPtrPair make_sentry(
 
     if (node_settings.remote_sentry_addresses.empty()) {
         sentry_settings.data_dir_path = node_settings.data_directory->path();
+        sentry_settings.network_id = node_settings.network_id;
         // Disable gRPC in the embedded sentry
         sentry_settings.api_address = "";
 
@@ -327,7 +328,7 @@ int main(int argc, char* argv[]) {
         // Sentry: the peer-2-peer proxy server
         auto [sentry_client, sentry_server] = make_sentry(
             std::move(settings.sentry_settings), settings.node_settings, context_pool, db::ROAccess{chaindata_db});
-        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> boost::asio::awaitable<void> {
+        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> Task<void> {
             if (sentry_server) {
                 co_await sentry_server->run();
             }

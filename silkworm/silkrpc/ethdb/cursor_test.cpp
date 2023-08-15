@@ -51,7 +51,7 @@ TEST_CASE("split cursor dup sort") {
         SplitCursorDupSort sc(csdp, key, location, 0, silkworm::kAddressLength, 0);
 
         EXPECT_CALL(csdp, seek_both(_, _))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
                 co_return silkworm::Bytes{};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
@@ -68,7 +68,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
                 co_return silkworm::Bytes{};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
@@ -85,7 +85,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
                 co_return silkworm::Bytes{};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
@@ -102,7 +102,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
                 co_return value;
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
@@ -119,7 +119,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{short_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
@@ -136,7 +136,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{empty_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
@@ -153,7 +153,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{wrong_key_last_byte, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
@@ -170,7 +170,7 @@ TEST_CASE("split cursor dup sort") {
                               silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{wrong_key_first_byte, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
@@ -191,7 +191,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 0, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{correct_key, {}};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
@@ -207,7 +207,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{short_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
@@ -223,7 +223,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 131, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{short_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
@@ -239,7 +239,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{correct_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
@@ -255,7 +255,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{short_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
@@ -271,7 +271,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{empty_key, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
@@ -286,7 +286,7 @@ TEST_CASE("split cursor") {
     SECTION("evmc:.address maching bits: next, key exists wrong key last byte") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
         EXPECT_CALL(csdp, next())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{wrong_key_last_byte, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
@@ -302,7 +302,7 @@ TEST_CASE("split cursor") {
         SplitCursor sc(csdp, key, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
-            .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{wrong_key_first_byte, value};
             }));
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);

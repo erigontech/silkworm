@@ -18,8 +18,6 @@
 
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/dispatch.hpp>

@@ -19,7 +19,8 @@
 #include <string>
 #include <utility>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>

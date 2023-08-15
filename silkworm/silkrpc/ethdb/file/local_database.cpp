@@ -32,7 +32,7 @@ LocalDatabase::~LocalDatabase() {
     SILK_TRACE << "LocalDatabase::dtor " << this;
 }
 
-boost::asio::awaitable<std::unique_ptr<Transaction>> LocalDatabase::begin() {
+Task<std::unique_ptr<Transaction>> LocalDatabase::begin() {
     SILK_TRACE << "LocalDatabase::begin " << this << " start";
     auto txn = std::make_unique<LocalTransaction>(chaindata_env_);
     co_await txn->open();

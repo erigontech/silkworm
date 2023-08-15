@@ -24,7 +24,7 @@
 
 namespace silkworm::concurrency {
 
-boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration) {
+Task<void> timeout(std::chrono::milliseconds duration) {
     auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::steady_timer timer(executor);
     timer.expires_after(duration);

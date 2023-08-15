@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -30,6 +28,6 @@ const silkworm::Bytes kHeaders = silkworm::bytes_of_string(silkworm::db::stages:
 const silkworm::Bytes kExecution = silkworm::bytes_of_string(silkworm::db::stages::kExecutionKey);
 const silkworm::Bytes kFinish = silkworm::bytes_of_string(silkworm::db::stages::kFinishKey);
 
-boost::asio::awaitable<uint64_t> get_sync_stage_progress(const core::rawdb::DatabaseReader& database, const silkworm::Bytes& stake_key);
+Task<uint64_t> get_sync_stage_progress(const core::rawdb::DatabaseReader& database, const silkworm::Bytes& stake_key);
 
 }  // namespace silkworm::rpc::stages

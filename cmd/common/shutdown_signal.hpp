@@ -18,10 +18,9 @@
 
 #include <functional>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/signal_set.hpp>
 
 namespace silkworm::cmd::common {
@@ -35,7 +34,7 @@ class ShutdownSignal {
 
     void on_signal(std::function<void(SignalNumber)> callback);
 
-    boost::asio::awaitable<SignalNumber> wait();
+    Task<SignalNumber> wait();
 
   private:
     boost::asio::signal_set signals_;

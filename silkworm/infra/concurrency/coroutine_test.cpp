@@ -16,7 +16,8 @@
 
 #include "coroutine.hpp"
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
@@ -26,7 +27,7 @@ namespace silkworm::concurrency {
 
 using namespace boost::asio;
 
-awaitable<int> coroutine_return_123() {
+Task<int> coroutine_return_123() {
     co_return 123;
 }
 

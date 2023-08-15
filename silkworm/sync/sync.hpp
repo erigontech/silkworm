@@ -19,8 +19,9 @@
 #include <memory>
 #include <optional>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -60,14 +61,14 @@ class Sync {
     // TODO(canepat) remove when PoS sync works
     void force_pow(execution::Client& execution);
 
-    boost::asio::awaitable<void> async_run();
+    Task<void> async_run();
 
   private:
-    boost::asio::awaitable<void> run_tasks();
-    boost::asio::awaitable<void> start_sync_sentry_client();
-    boost::asio::awaitable<void> start_block_exchange();
-    boost::asio::awaitable<void> start_chain_sync();
-    boost::asio::awaitable<void> start_engine_rpc_server();
+    Task<void> run_tasks();
+    Task<void> start_sync_sentry_client();
+    Task<void> start_block_exchange();
+    Task<void> start_chain_sync();
+    Task<void> start_engine_rpc_server();
 
     //! The Sentry synchronous (i.e. blocking) client used by BlockExchange
     SentryClient sync_sentry_client_;

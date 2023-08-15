@@ -32,7 +32,7 @@ namespace silkworm::concurrency {
 
 using namespace boost::asio;
 
-void TaskGroup::spawn(any_io_executor executor, awaitable<void> task) {
+void TaskGroup::spawn(any_io_executor executor, Task<void> task) {
     std::scoped_lock lock(mutex_);
 
     if (is_closed_) {
@@ -55,7 +55,7 @@ void TaskGroup::spawn(any_io_executor executor, awaitable<void> task) {
     co_spawn(executor, std::move(task), bind_cancellation_slot(cancellation_slot, completion));
 }
 
-awaitable<void> TaskGroup::wait() {
+Task<void> TaskGroup::wait() {
     // wait until cancelled
     try {
         co_await completions_.receive();

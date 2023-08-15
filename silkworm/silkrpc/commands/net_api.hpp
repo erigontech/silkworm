@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -33,8 +32,6 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
-
 class NetRpcApi {
   public:
     explicit NetRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
@@ -46,9 +43,9 @@ class NetRpcApi {
     NetRpcApi& operator=(const NetRpcApi&) = delete;
 
   protected:
-    awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     friend class silkworm::http::RequestHandler;

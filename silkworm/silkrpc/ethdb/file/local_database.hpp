@@ -35,7 +35,7 @@ class LocalDatabase : public Database {
     LocalDatabase(const LocalDatabase&) = delete;
     LocalDatabase& operator=(const LocalDatabase&) = delete;
 
-    boost::asio::awaitable<std::unique_ptr<Transaction>> begin() override;
+    Task<std::unique_ptr<Transaction>> begin() override;
 
   private:
     std::shared_ptr<mdbx::env_managed> chaindata_env_;

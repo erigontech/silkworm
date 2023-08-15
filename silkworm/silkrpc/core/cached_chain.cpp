@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc::core {
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number) {
     auto block_hash = co_await storage.read_canonical_hash(block_number);
     if (!block_hash) {
         co_return nullptr;
@@ -44,7 +44,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
     co_return block_with_hash;
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash) {
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
         co_return cached_block.value();
@@ -67,7 +67,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, 
     co_return block_with_hash;
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {
     if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, storage, bnoh.number());
     } else if (bnoh.is_hash()) {
@@ -79,7 +79,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
     throw std::runtime_error{"invalid block_number_or_hash value"};
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
     const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
     if (!block_number) {
         co_return nullptr;
@@ -91,7 +91,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCa
     co_return block_by_hash;
 }
 
-awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
+Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& transaction_hash) {
     const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
     if (!block_number) {
         co_return std::nullopt;

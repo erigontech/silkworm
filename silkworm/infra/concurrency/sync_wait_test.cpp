@@ -18,14 +18,19 @@
 
 #include <chrono>
 
-#include <boost/asio.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <catch2/catch.hpp>
 
 namespace silkworm {
 
 namespace asio = boost::asio;
 
-asio::awaitable<void> dummy_task() {
+Task<void> dummy_task() {
     auto executor = co_await asio::this_coro::executor;
 
     asio::steady_timer timer{executor};
@@ -40,7 +45,7 @@ class DummyEngine {
   public:
     DummyEngine(asio::io_context& io) : io_{io} {}
 
-    asio::awaitable<int> do_work() {
+    Task<int> do_work() {
         co_return 42;
     }
 

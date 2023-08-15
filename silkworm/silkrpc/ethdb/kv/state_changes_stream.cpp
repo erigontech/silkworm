@@ -56,7 +56,7 @@ void StateChangesStream::close() {
     SILK_DEBUG << "Close state changes stream: cancellation emitted";
 }
 
-boost::asio::awaitable<void> StateChangesStream::run() {
+Task<void> StateChangesStream::run() {
     SILK_TRACE << "StateChangesStream::run state stream START";
 
     auto cancellation_slot = cancellation_signal_.slot();

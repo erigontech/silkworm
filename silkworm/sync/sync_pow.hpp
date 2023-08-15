@@ -36,7 +36,7 @@ class PoWSync : public ChainSync, ActiveComponent {
   public:
     PoWSync(BlockExchange&, execution::Client&);
 
-    asio::awaitable<void> async_run() override;
+    Task<void> async_run() override;
 
     void execution_loop() final; /*[[long_running]]*/
 

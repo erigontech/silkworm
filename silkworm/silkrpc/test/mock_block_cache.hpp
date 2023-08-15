@@ -20,7 +20,8 @@
 #include <memory>
 #include <optional>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>

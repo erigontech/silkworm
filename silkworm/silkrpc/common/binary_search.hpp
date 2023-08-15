@@ -18,15 +18,14 @@
 
 #include <cstddef>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <absl/functional/function_ref.h>
-#include <boost/asio/awaitable.hpp>
 
 namespace silkworm::rpc {
 
-using BinaryPredicate = absl::FunctionRef<boost::asio::awaitable<bool>(std::size_t)>;
+using BinaryPredicate = absl::FunctionRef<Task<bool>(std::size_t)>;
 
-boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate pred);
+Task<std::size_t> binary_search(std::size_t n, BinaryPredicate pred);
 
 }  // namespace silkworm::rpc

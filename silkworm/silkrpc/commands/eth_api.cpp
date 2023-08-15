@@ -66,7 +66,7 @@
 
 namespace silkworm::rpc::commands {
 
-awaitable<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter, const core::rawdb::DatabaseReader& reader) {
+Task<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter, const core::rawdb::DatabaseReader& reader) {
     uint64_t start{}, end{};
     if (filter.block_hash.has_value()) {
         auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
@@ -98,7 +98,7 @@ awaitable<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter,
 }
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber
-awaitable<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -118,7 +118,7 @@ awaitable<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& re
 }
 
 // https://eth.wiki/json-rpc/API#eth_chainid
-awaitable<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -140,7 +140,7 @@ awaitable<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_protocolversion
-awaitable<void> EthereumRpcApi::handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto protocol_version = co_await backend_->protocol_version();
         reply = make_json_content(request["id"], to_quantity(protocol_version));
@@ -156,7 +156,7 @@ awaitable<void> EthereumRpcApi::handle_eth_protocol_version(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#eth_syncing
-awaitable<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -191,7 +191,7 @@ awaitable<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request
 }
 
 // https://eth.wiki/json-rpc/API#eth_gasprice
-awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -228,7 +228,7 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbyhash
-awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByHash params: " + params.dump();
@@ -271,7 +271,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::jso
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbynumber
-awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByNumber params: " + params.dump();
@@ -314,7 +314,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::j
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash
-awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByHash params: " + params.dump();
@@ -352,7 +352,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber
-awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByNumber params: " + params.dump();
@@ -392,7 +392,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockHashAndIndex params: " + params.dump();
@@ -446,7 +446,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(con
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockNumberAndIndex params: " + params.dump();
@@ -500,7 +500,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblockhash
-awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockHash params: " + params.dump();
@@ -536,7 +536,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const n
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblocknumber
-awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockNumber params: " + params.dump();
@@ -574,7 +574,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyhash
-awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionByHash params: " + params.dump();
@@ -630,7 +630,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohman
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyhash
-awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getRawTransactionByHash params: " + params.dump();
@@ -678,7 +678,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlo
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblockhashandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockHashAndIndex params: " + params.dump();
@@ -727,7 +727,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblockhashandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockHashAndIndex params: " + params.dump();
@@ -778,7 +778,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblocknumberandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockNumberAndIndex params: " + params.dump();
@@ -830,7 +830,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblocknumberandindex
-awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockNumberAndIndex params: " + params.dump();
@@ -883,7 +883,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionreceipt
-awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionReceipt params: " + params.dump();
@@ -944,7 +944,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
 }
 
 // https://eth.wiki/json-rpc/API#eth_estimategas
-awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
@@ -1010,7 +1010,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
 }
 
 // https://eth.wiki/json-rpc/API#eth_getbalance
-awaitable<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBalance params: " + params.dump();
@@ -1050,7 +1050,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& req
 }
 
 // https://eth.wiki/json-rpc/API#eth_getcode
-awaitable<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getCode params: " + params.dump();
@@ -1092,7 +1092,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactioncount
-awaitable<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionCount params: " + params.dump();
@@ -1133,7 +1133,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann:
 }
 
 // https://eth.wiki/json-rpc/API#eth_getstorageat
-awaitable<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 3 || !is_valid_address(params[0].get<std::string>()) || !is_valid_hash(params[1].get<std::string>())) {
         auto error_msg = "invalid eth_getStorageAt params: " + params.dump();
@@ -1175,7 +1175,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& 
 }
 
 // https://eth.wiki/json-rpc/API#eth_call
-awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::string& reply) {
+Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::string& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -1242,7 +1242,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
 }
 
 // https://eth.wiki/json-rpc/API#eth_callMany
-awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required arguments";
         SILK_ERROR << error_msg << request.dump();
@@ -1308,7 +1308,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 }
 
 // https://eth.wiki/json-rpc/API#eth_maxpriorityfeepergas
-awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1338,7 +1338,7 @@ awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohma
 }
 
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
-awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
@@ -1443,7 +1443,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
 }
 
 // https://docs.flashbots.net/flashbots-auction/miners/mev-geth-spec/v06-rpc/eth_callBundle
-awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid eth_callBundle params: " + params.dump();
@@ -1550,7 +1550,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
 }
 
 // https://eth.wiki/json-rpc/API#eth_newfilter
-awaitable<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_newFilter params: " + params.dump();
@@ -1600,7 +1600,7 @@ awaitable<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& requ
 }
 
 // https://eth.wiki/json-rpc/API#eth_newblockfilter
-awaitable<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1620,7 +1620,7 @@ awaitable<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#eth_newpendingtransactionfilter
-awaitable<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1640,7 +1640,7 @@ awaitable<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const 
 }
 
 // https://eth.wiki/json-rpc/API#eth_getfilterlogs
-awaitable<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterLogs params: " + params.dump();
@@ -1692,7 +1692,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json&
 }
 
 // https://eth.wiki/json-rpc/API#eth_getfilterchanges
-awaitable<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterChanges params: " + params.dump();
@@ -1744,7 +1744,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::js
 }
 
 // https://eth.wiki/json-rpc/API#eth_uninstallfilter
-awaitable<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_uninstallFilter params: " + params.dump();
@@ -1765,7 +1765,7 @@ awaitable<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#eth_getlogs
-awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, std::string& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, std::string& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -1817,7 +1817,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_sendrawtransaction
-awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_sendRawTransaction params: " + params.dump();
@@ -1891,7 +1891,7 @@ awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::
 }
 
 // https://eth.wiki/json-rpc/API#eth_sendtransaction
-awaitable<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1911,7 +1911,7 @@ awaitable<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#eth_signtransaction
-awaitable<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1931,7 +1931,7 @@ awaitable<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json
 }
 
 // https://eth.wiki/json-rpc/API#eth_getproof
-awaitable<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -1951,7 +1951,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& reque
 }
 
 // https://eth.wiki/json-rpc/API#eth_mining
-awaitable<void> EthereumRpcApi::handle_eth_mining(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_mining(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto mining_result = co_await miner_->get_mining();
         reply = make_json_content(request["id"], mining_result.enabled && mining_result.running);
@@ -1970,7 +1970,7 @@ awaitable<void> EthereumRpcApi::handle_eth_mining(const nlohmann::json& request,
 }
 
 // https://eth.wiki/json-rpc/API#eth_coinbase
-awaitable<void> EthereumRpcApi::handle_eth_coinbase(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_coinbase(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto coinbase_address = co_await backend_->etherbase();
         reply = make_json_content(request["id"], coinbase_address);
@@ -1989,7 +1989,7 @@ awaitable<void> EthereumRpcApi::handle_eth_coinbase(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_hashrate
-awaitable<void> EthereumRpcApi::handle_eth_hashrate(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_hashrate(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto hash_rate = co_await miner_->get_hash_rate();
         reply = make_json_content(request["id"], to_quantity(hash_rate));
@@ -2008,7 +2008,7 @@ awaitable<void> EthereumRpcApi::handle_eth_hashrate(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_submithashrate
-awaitable<void> EthereumRpcApi::handle_eth_submit_hashrate(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_submit_hashrate(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         const auto error_msg = "invalid eth_submitHashrate params: " + params.dump();
@@ -2037,7 +2037,7 @@ awaitable<void> EthereumRpcApi::handle_eth_submit_hashrate(const nlohmann::json&
 }
 
 // https://eth.wiki/json-rpc/API#eth_getwork
-awaitable<void> EthereumRpcApi::handle_eth_get_work(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_work(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto work = co_await miner_->get_work();
         const std::vector<std::string> current_work{
@@ -2061,7 +2061,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_work(const nlohmann::json& reques
 }
 
 // https://eth.wiki/json-rpc/API#eth_submitwork
-awaitable<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid eth_submitWork params: " + params.dump();
@@ -2097,7 +2097,7 @@ awaitable<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& req
 }
 
 // https://eth.wiki/json-rpc/API#eth_subscribe
-awaitable<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -2117,7 +2117,7 @@ awaitable<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& reque
 }
 
 // https://eth.wiki/json-rpc/API#eth_unsubscribe
-awaitable<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
 
     try {
@@ -2137,7 +2137,7 @@ awaitable<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& req
 }
 
 // https://eth.wiki/json-rpc/API#eth_feehistory
-awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid eth_feeHistory params: " + params.dump();
@@ -2198,8 +2198,13 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
     co_return;
 }
 
-awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
-                                         FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs) {
+Task<void> EthereumRpcApi::get_logs(
+    ethdb::TransactionDatabase& tx_database,
+    std::uint64_t start,
+    std::uint64_t end,
+    FilterAddresses& addresses,
+    FilterTopics& topics,
+    std::vector<Log>& logs) {
     SILK_INFO << "start block: " << start << " end block: " << end;
 
     const auto chain_storage{tx_database.get_tx().create_storage(tx_database, backend_)};

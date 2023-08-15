@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -33,8 +32,6 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
-
 class AdminRpcApi {
   public:
     explicit AdminRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
@@ -46,8 +43,8 @@ class AdminRpcApi {
     AdminRpcApi& operator=(const AdminRpcApi&) = delete;
 
   protected:
-    awaitable<void> handle_admin_node_info(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_admin_peers(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_admin_node_info(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_admin_peers(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     ethbackend::BackEnd* backend_;

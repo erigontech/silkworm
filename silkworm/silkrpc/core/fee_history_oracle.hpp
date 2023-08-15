@@ -22,9 +22,7 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -34,8 +32,8 @@
 
 namespace silkworm::rpc::fee_history {
 
-using BlockProvider = std::function<boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)>;
-using ReceiptsProvider = std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)>;
+using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)>;
+using ReceiptsProvider = std::function<Task<rpc::Receipts>(const BlockWithHash&)>;
 
 using Rewards = std::vector<intx::uint256>;
 
@@ -75,15 +73,15 @@ class FeeHistoryOracle {
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
     FeeHistoryOracle& operator=(const FeeHistoryOracle&) = delete;
 
-    boost::asio::awaitable<FeeHistory> fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile);
+    Task<FeeHistory> fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile);
 
   private:
     static inline const std::uint32_t kDefaultMaxFeeHistory = 1024;
     static inline const std::uint32_t kDefaultMaxHeaderHistory = 300;
     static inline const std::uint32_t kDefaultMaxBlockHistory = 5;
 
-    boost::asio::awaitable<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
-    boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);
+    Task<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
+    Task<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);
 
     const silkworm::ChainConfig& config_;
     const BlockProvider& block_provider_;

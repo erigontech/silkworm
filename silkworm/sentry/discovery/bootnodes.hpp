@@ -16,19 +16,12 @@
 
 #pragma once
 
-#include <memory>
+#include <span>
 
-#include <silkworm/infra/concurrency/task.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
 
-#include <gmock/gmock.h>
+namespace silkworm::sentry::discovery {
 
-#include <silkworm/silkrpc/ethdb/database.hpp>
+std::span<EnodeUrl> bootnodes(uint64_t network_id);
 
-namespace silkworm::rpc::test {
-
-class MockDatabase : public ethdb::Database {
-  public:
-    MOCK_METHOD((Task<std::unique_ptr<ethdb::Transaction>>), begin, ());
-};
-
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::sentry::discovery

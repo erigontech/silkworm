@@ -32,7 +32,7 @@ using namespace silkworm;
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-boost::asio::awaitable<void> run(sentry::api::SentryClient& client) {
+Task<void> run(sentry::api::SentryClient& client) {
     auto service = co_await client.service();
     try {
         auto eth_version = co_await service->handshake();

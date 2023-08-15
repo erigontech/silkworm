@@ -106,7 +106,7 @@ TEST_CASE("estimate gas") {
         co_return kBlockHeader;
     };
 
-    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, uint64_t /*block_number*/) -> boost::asio::awaitable<std::optional<silkworm::Account>> {
+    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, uint64_t /*block_number*/) -> Task<std::optional<silkworm::Account>> {
         co_return kAccount;
     };
 

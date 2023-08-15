@@ -19,9 +19,7 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -38,26 +36,26 @@ class Cursor {
 
     [[nodiscard]] virtual uint32_t cursor_id() const = 0;
 
-    virtual boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) = 0;
+    virtual Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) = 0;
 
-    virtual boost::asio::awaitable<KeyValue> seek(silkworm::ByteView key) = 0;
+    virtual Task<KeyValue> seek(silkworm::ByteView key) = 0;
 
-    virtual boost::asio::awaitable<KeyValue> seek_exact(silkworm::ByteView key) = 0;
+    virtual Task<KeyValue> seek_exact(silkworm::ByteView key) = 0;
 
-    virtual boost::asio::awaitable<KeyValue> next() = 0;
+    virtual Task<KeyValue> next() = 0;
 
-    virtual boost::asio::awaitable<KeyValue> previous() = 0;
+    virtual Task<KeyValue> previous() = 0;
 
-    virtual boost::asio::awaitable<void> close_cursor() = 0;
+    virtual Task<void> close_cursor() = 0;
 };
 
 class CursorDupSort : public Cursor {
   public:
-    virtual boost::asio::awaitable<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) = 0;
+    virtual Task<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) = 0;
 
-    virtual boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) = 0;
+    virtual Task<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) = 0;
 
-    virtual boost::asio::awaitable<KeyValue> next_dup() = 0;
+    virtual Task<KeyValue> next_dup() = 0;
 };
 
 struct SplittedKeyValue {
@@ -72,9 +70,9 @@ class SplitCursor {
     SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t match_bits, uint64_t part1_end, uint64_t part2_start, uint64_t part3_start);
     SplitCursor& operator=(const SplitCursor&) = delete;
 
-    boost::asio::awaitable<SplittedKeyValue> seek();
+    Task<SplittedKeyValue> seek();
 
-    boost::asio::awaitable<SplittedKeyValue> next();
+    Task<SplittedKeyValue> next();
 
   private:
     Cursor& inner_cursor_;
@@ -96,9 +94,9 @@ class SplitCursorDupSort {
     SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::ByteView key, silkworm::ByteView subkey, uint64_t match_bits, uint64_t part1_end, uint64_t value_offset);
     SplitCursorDupSort& operator=(const SplitCursorDupSort&) = delete;
 
-    boost::asio::awaitable<SplittedKeyValue> seek_both();
+    Task<SplittedKeyValue> seek_both();
 
-    boost::asio::awaitable<SplittedKeyValue> next_dup();
+    Task<SplittedKeyValue> next_dup();
 
   private:
     CursorDupSort& inner_cursor_;

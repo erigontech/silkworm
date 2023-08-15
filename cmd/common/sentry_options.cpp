@@ -19,6 +19,7 @@
 #include <climits>
 #include <exception>
 #include <filesystem>
+#include <vector>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -27,6 +28,24 @@
 #include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
+
+template <class TItem>
+void add_list_option(CLI::App& cli, const std::string& name, std::vector<TItem> target_list, const std::string& description) {
+    auto option = cli.add_option(name, [&](const CLI::results_t& results) {
+        try {
+            for (auto& result : results) {
+                if (result.empty()) continue;
+                target_list.emplace_back(result);
+            }
+        } catch (const std::exception& e) {
+            log::Error() << e.what();
+            return false;
+        }
+        return true;
+    });
+    option->description(description);
+    option->type_size(1, INT_MAX);
+}
 
 void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
     add_option_ip_endpoint(cli, "--sentry.api.addr", settings.api_address, "GRPC API endpoint");
@@ -66,20 +85,8 @@ void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
     });
     node_key_hex_option->description("P2P node key as a hex string");
 
-    auto static_peers_option = cli.add_option("--staticpeers", [&settings](const CLI::results_t& results) {
-        try {
-            for (auto& result : results) {
-                if (result.empty()) continue;
-                settings.static_peers.emplace_back(result);
-            }
-        } catch (const std::exception& e) {
-            log::Error() << e.what();
-            return false;
-        }
-        return true;
-    });
-    static_peers_option->description("Peers enode URLs to connect to without discovery");
-    static_peers_option->type_size(1, INT_MAX);
+    add_list_option(cli, "--staticpeers", settings.static_peers, "Peers enode URLs to connect to without discovery");
+    add_list_option(cli, "--bootnodes", settings.bootnodes, "Peers enode URLs for P2P discovery bootstrap");
 
     cli.add_flag("--nodiscover", settings.no_discover)
         ->description("Disables automatic peer discovery");

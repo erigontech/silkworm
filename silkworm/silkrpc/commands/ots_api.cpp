@@ -38,12 +38,12 @@ namespace silkworm::rpc::commands {
 
 constexpr int kCurrentApiLevel{8};
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request["id"], kCurrentApiLevel);
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_hasCode params: " + params.dump();
@@ -86,7 +86,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
@@ -137,7 +137,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details(const nlohm
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
@@ -187,7 +187,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details_by_hash(con
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
@@ -258,7 +258,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_transactions(const 
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_getTransactionBySenderAndNonce params: " + params.dump();
@@ -370,7 +370,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getContractCreator params: " + params.dump();
@@ -506,7 +506,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nl
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_traceTransaction params: " + params.dump();
@@ -553,7 +553,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohm
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getTransactionError params: " + params.dump();
@@ -600,7 +600,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const n
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getInternalOperations params: " + params.dump();
@@ -647,7 +647,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid ots_search_transactions_before params: " + params.dump();
@@ -731,7 +731,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_before(co
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid handle_ots_search_transactions_after params: " + params.dump();
@@ -813,12 +813,13 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_after(con
     co_return;
 }
 
-boost::asio::awaitable<bool> OtsRpcApi::trace_blocks(FromToBlockProvider& from_to_provider,
-                                                     ethdb::Transaction& tx,
-                                                     evmc::address address,
-                                                     uint64_t page_size,
-                                                     uint64_t result_count,
-                                                     std::vector<TransactionsWithReceipts>& results) {
+Task<bool> OtsRpcApi::trace_blocks(
+    FromToBlockProvider& from_to_provider,
+    ethdb::Transaction& tx,
+    evmc::address address,
+    uint64_t page_size,
+    uint64_t result_count,
+    std::vector<TransactionsWithReceipts>& results) {
     uint64_t est_blocks_to_trace = page_size - result_count;
     uint64_t total_blocks_traced = 0;
     bool has_more = true;
@@ -843,14 +844,14 @@ boost::asio::awaitable<bool> OtsRpcApi::trace_blocks(FromToBlockProvider& from_t
     co_return has_more;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results) {
+Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results) {
     TransactionsWithReceipts transactions_with_receipts;
     co_await trace_block(tx, block_number, address, transactions_with_receipts);
     results[index] = transactions_with_receipts;
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
     ethdb::TransactionDatabase tx_database{tx};
     const auto chain_storage = tx.create_storage(tx_database, backend_);
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
@@ -919,7 +920,7 @@ intx::uint256 OtsRpcApi::get_block_fees(const silkworm::ChainConfig& config, con
     return fees;
 }
 
-boost::asio::awaitable<ChunkProviderResponse> ChunkProvider::get() {
+Task<ChunkProviderResponse> ChunkProvider::get() {
     if (error_) {
         co_return ChunkProviderResponse{Bytes{0}, false, true};
     }
@@ -965,7 +966,7 @@ ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address
     first_seek_key_value_ = first_seek_key_value;
 }
 
-boost::asio::awaitable<ChunkLocatorResponse> ChunkLocator::get(uint64_t min_block) {
+Task<ChunkLocatorResponse> ChunkLocator::get(uint64_t min_block) {
     KeyValue key_value;
     try {
         key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
@@ -987,7 +988,7 @@ ChunkLocator::ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address a
     navigate_forward_ = navigate_forward;
 }
 
-boost::asio::awaitable<BlockProviderResponse> ForwardBlockProvider::get() {
+Task<BlockProviderResponse> ForwardBlockProvider::get() {
     if (finished_) {
         co_return BlockProviderResponse{0, false, false};
     }
@@ -1097,7 +1098,7 @@ void ForwardBlockProvider::advance_if_needed(uint64_t min_block) {
     }
 }
 
-boost::asio::awaitable<BlockProviderResponse> BackwardBlockProvider::get() {
+Task<BlockProviderResponse> BackwardBlockProvider::get() {
     if (finished_) {
         co_return BlockProviderResponse{0, false, false};
     }
@@ -1214,7 +1215,7 @@ void BackwardBlockProvider::reverse_iterator(roaring::Roaring64Map& bitmap) {
     bitmap_index_ = 0;
 }
 
-boost::asio::awaitable<BlockProviderResponse> FromToBlockProvider::get() {
+Task<BlockProviderResponse> FromToBlockProvider::get() {
     if (!initialized_) {
         initialized_ = true;
 

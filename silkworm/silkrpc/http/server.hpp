@@ -26,9 +26,8 @@
 #include <tuple>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -59,7 +58,7 @@ class Server {
   private:
     static std::tuple<std::string, std::string> parse_endpoint(const std::string& tcp_end_point);
 
-    boost::asio::awaitable<void> run();
+    Task<void> run();
 
     //! The JSON RPC API implementation
     commands::RpcApi rpc_api_;

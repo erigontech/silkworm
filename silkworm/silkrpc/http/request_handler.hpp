@@ -21,9 +21,8 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -49,21 +48,27 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    boost::asio::awaitable<void> handle(const http::Request& request);
+    Task<void> handle(const http::Request& request);
 
   protected:
-    boost::asio::awaitable<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
+    Task<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
 
   private:
-    boost::asio::awaitable<std::optional<std::string>> is_request_authorized(const http::Request& request);
+    Task<std::optional<std::string>> is_request_authorized(const http::Request& request);
 
-    boost::asio::awaitable<void> handle_request(uint32_t request_id,
-                                                commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(uint32_t request_id,
-                                                commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
-    boost::asio::awaitable<void> do_write(http::Reply& reply);
-    boost::asio::awaitable<void> write_headers();
+    Task<void> handle_request(
+        uint32_t request_id,
+        commands::RpcApiTable::HandleMethod handler,
+        const nlohmann::json& request_json,
+        http::Reply& reply);
+    Task<void> handle_request(
+        uint32_t request_id,
+        commands::RpcApiTable::HandleMethodGlaze handler,
+        const nlohmann::json& request_json,
+        http::Reply& reply);
+    Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
+    Task<void> do_write(http::Reply& reply);
+    Task<void> write_headers();
 
     commands::RpcApi& rpc_api_;
 

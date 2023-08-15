@@ -19,8 +19,6 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/silkrpc/test/context_test_base.hpp>

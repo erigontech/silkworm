@@ -21,6 +21,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "bootnodes.hpp"
 #include "disc_v4/discovery.hpp"
 #include "disc_v4/ping/ping_check.hpp"
 #include "node_db/node_db_sqlite.hpp"
@@ -36,8 +37,10 @@ class DiscoveryImpl {
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
+        uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::vector<EnodeUrl> bootnodes,
         uint16_t disc_v4_port);
 
     DiscoveryImpl(const DiscoveryImpl&) = delete;
@@ -59,7 +62,9 @@ class DiscoveryImpl {
     const std::vector<EnodeUrl> peer_urls_;
     bool with_dynamic_discovery_;
     std::filesystem::path data_dir_path_;
+    uint64_t network_id_;
     node_db::NodeDbSqlite node_db_;
+    std::vector<EnodeUrl> bootnodes_;
     disc_v4::Discovery disc_v4_discovery_;
 };
 
@@ -68,13 +73,17 @@ DiscoveryImpl::DiscoveryImpl(
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
+    uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
+      network_id_(network_id),
       node_db_(executor_pool.any_executor()),
+      bootnodes_(std::move(bootnodes)),
       disc_v4_discovery_(executor_pool.any_executor(), disc_v4_port, node_key, node_url, node_db_.interface()) {
 }
 
@@ -88,6 +97,20 @@ Task<void> DiscoveryImpl::run() {
             node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
         if (!with_dynamic_discovery_) {
             co_await db.update_last_pong_time(url.public_key(), std::chrono::system_clock::now() + std::chrono::years(1));
+        }
+    }
+
+    if (with_dynamic_discovery_) {
+        std::span<EnodeUrl> bootnode_urls{bootnodes_.data(), bootnodes_.size()};
+        if (bootnode_urls.empty()) {
+            bootnode_urls = bootnodes(network_id_);
+        }
+
+        for (auto& url : bootnode_urls) {
+            auto& db = node_db_.interface();
+            co_await db.upsert_node_address(
+                url.public_key(),
+                node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
         }
     }
 
@@ -163,16 +186,20 @@ Discovery::Discovery(
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
+    uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
           executor_pool,
           std::move(peer_urls),
           with_dynamic_discovery,
           data_dir_path,
+          network_id,
           std::move(node_key),
           std::move(node_url),
+          std::move(bootnodes),
           disc_v4_port)) {}
 
 Discovery::~Discovery() {

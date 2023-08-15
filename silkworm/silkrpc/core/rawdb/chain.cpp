@@ -96,19 +96,6 @@ Task<intx::uint256> read_total_difficulty(const DatabaseReader& reader, const ev
     co_return total_difficulty;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
-    auto block_with_hash_ptr = std::make_shared<silkworm::BlockWithHash>();
-    block_with_hash_ptr->block.header = co_await read_header(reader, block_hash, block_number);
-    SILK_TRACE << "header: number=" << block_with_hash_ptr->block.header.number;
-    auto body = co_await read_body(reader, block_hash, block_number);
-    SILK_TRACE << "body: #txn=" << body.transactions.size() << " #ommers=" << body.ommers.size();
-    block_with_hash_ptr->block.transactions = std::move(body.transactions);
-    block_with_hash_ptr->block.ommers = std::move(body.ommers),
-    block_with_hash_ptr->block.withdrawals = std::move(body.withdrawals),
-    block_with_hash_ptr->hash = block_hash;
-    co_return block_with_hash_ptr;
-}
-
 Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const auto block_number = co_await read_header_number(reader, block_hash);
     co_return co_await read_header(reader, block_hash, block_number);

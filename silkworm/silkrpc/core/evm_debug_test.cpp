@@ -146,7 +146,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -297,7 +297,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -360,7 +360,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -471,7 +471,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -573,7 +573,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -680,7 +680,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -788,7 +788,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -883,7 +883,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -1090,7 +1090,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const std::unique_ptr<test::BackEndMock> backend;
+        const auto backend = std::make_unique<test::BackEndMock>();
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
@@ -1247,7 +1247,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
     TestDebugExecutor executor{db_reader, cache, workers, tx};
-    const std::unique_ptr<test::BackEndMock> backend;
+    const auto backend = std::make_unique<test::BackEndMock>();
     const RemoteChainStorage storage{db_reader, backend.get()};
 
     stream.open_object();

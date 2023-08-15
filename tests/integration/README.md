@@ -50,71 +50,128 @@ Launch an automated test sequence on Silkworm RpcDaemon (aka Silkrpc) or Erigon 
 -H host where the RpcDaemon is located (e.g. 10.10.2.3)
 ```
 
-# Integration test (04/08/23)
-# erigon/rpcdaemon version 2.42 
+# Integration test (11/08/23)
+# erigon/rpcdaemon version 2.48.1 
 
 ### To run integration tests comparing results with json file: ./run_tests.py -c -k jwt.hex
-### (in case Erigon without snapshot & KV access to DB)
+### (in case Erigon without snapshot & KV access to DB & Rpcdaemon embedded)
 
 ```
-119. eth_callBundle/test_9.json                                   Failed
-259. ots_getInternalOperations/test_1.json                        Skipped
-260. ots_getInternalOperations/test_2.json                        Skipped
+Test time-elapsed (secs):     77
+Number of executed tests:     448/450
+Number of NOT executed tests: 0
+Number of success tests:      448
+Number of failed tests:       0
+```
+
+
+### To run integration tests comparing results with RPCdaemon response (KV) : ./run_tests.py -f -d -c -k jwt.hex
+### (in case Erigon without snapshot & KV access to DB comparing results with RPCDaemon KV, Rpcdaemon embedded)
+```
+091. erigon_forks/test_1.json                                     Failed
+287. trace_block/test_01.tar                                      Failed
+288. trace_block/test_02.tar                                      Failed
+289. trace_block/test_03.tar                                      Failed
+290. trace_block/test_04.tar                                      Failed
+291. trace_block/test_05.tar                                      Failed
+292. trace_block/test_06.tar                                      Failed
+293. trace_block/test_07.tar                                      Failed
+294. trace_block/test_08.json                                     Failed
+295. trace_block/test_09.tar                                      Failed
+296. trace_block/test_10.json                                     Failed
+297. trace_block/test_11.json                                     Failed
+298. trace_block/test_12.json                                     Failed
+299. trace_block/test_13.json                                     Failed
+300. trace_block/test_14.json                                     Failed
+335. trace_filter/test_1.tar                                      Failed
+336. trace_filter/test_2.tar                                      Failed
+339. trace_filter/test_5.tar                                      Failed
+340. trace_filter/test_6.tar                                      Failed
+341. trace_filter/test_7.tar                                      Failed
                                                                                     
-Test time-elapsed (secs):     78
-Number of executed tests:     437/439
-Number of NOT executed tests: 2
-Number of success tests:      436
-Number of failed tests:       1
-```
+Test time-elapsed (secs):     109
+Number of executed tests:     420/450
+Number of NOT executed tests: 0
+Number of success tests:      400
+Number of failed tests:       20
 
-
-### To run integration tests comparing results with RPCdaemon response (KV) : ./run_tests.py -f -d -c -k jwt.hex
-### (in case Erigon without snapshot & KV access to DB comparing results with RPCDaemon KV)
-```
-119. eth_callBundle/test_9.json                                   Failed
-
-Test time-elapsed (secs):     123
-Number of executed tests:     437/439
-Number of NOT executed tests: 2
-Number of success tests:      436
-Number of failed tests:       1
 ```
 
 ### To run integration tests comparing results with RPCdaemon response (KV) : ./run_tests.py -f -d -c -k jwt.hex
-### (in case Erigon with snapshot & KV access to DB comparing results with RPCDaemon KV)
+### (in case Erigon with snapshot & KV access to DB comparing results with RPCDaemon KV & Rpcdaemon embedded)
 ```
-004. debug_accountRange/test_1.json                               Failed
-088. erigon_cumulativeChainTraffic/test_1.json                    Failed
-111. eth_callBundle/test_1.json                                   Failed
-112. eth_callBundle/test_2.json                                   Failed
-113. eth_callBundle/test_3.json                                   Failed
-114. eth_callBundle/test_4.json                                   Failed
-115. eth_callBundle/test_5.json                                   Failed
-116. eth_callBundle/test_6.json                                   Failed
-117. eth_callBundle/test_7.json                                   Failed
-138. eth_createAccessList/test_4.json                             Failed
-153. eth_getBlockByHash/test_4.json                               Failed
-164. eth_getBlockByNumber/test_11.json                            Failed
+091. erigon_forks/test_1.json                                     Failed
+122. eth_callBundle/test_1.json                                   Failed
+123. eth_callBundle/test_2.json                                   Failed
+124. eth_callBundle/test_3.json                                   Failed
+125. eth_callBundle/test_4.json                                   Failed
+126. eth_callBundle/test_5.json                                   Failed
+127. eth_callBundle/test_6.json                                   Failed
+128. eth_callBundle/test_7.json                                   Failed
+287. trace_block/test_01.tar                                      Failed
+288. trace_block/test_02.tar                                      Failed
+289. trace_block/test_03.tar                                      Failed
+290. trace_block/test_04.tar                                      Failed
+291. trace_block/test_05.tar                                      Failed
+292. trace_block/test_06.tar                                      Failed
+293. trace_block/test_07.tar                                      Failed
+294. trace_block/test_08.json                                     Failed
+295. trace_block/test_09.tar                                      Failed
+296. trace_block/test_10.json                                     Failed
+297. trace_block/test_11.json                                     Failed
+298. trace_block/test_12.json                                     Failed
+299. trace_block/test_13.json                                     Failed
+300. trace_block/test_14.json                                     Failed
+335. trace_filter/test_1.tar                                      Failed
+336. trace_filter/test_2.tar                                      Failed
+339. trace_filter/test_5.tar                                      Failed
+340. trace_filter/test_6.tar                                      Failed
+341. trace_filter/test_7.tar                                      Failed
+                                                                                    
+Test time-elapsed (secs):     117
+Number of executed tests:     420/450
+Number of NOT executed tests: 0
+Number of success tests:      393
+Number of failed tests:       27
 
-Test time-elapsed (secs):     247
-Number of executed tests:     437/439
-Number of NOT executed tests: 2
-Number of success tests:      425
-Number of failed tests:       12
 ```
 
 
 ### To run integration tests comparing results with local DB: ./run_tests.py -f -d -c -k jwt.hex
 ### (in case Erigon without snapshot & local access to DB comparing results with RPCDaemon)
 ```
-119. eth_callBundle/test_9.json                                   Failed
+091. erigon_forks/test_1.json                                     Failed
+287. trace_block/test_01.tar                                      Failed
+288. trace_block/test_02.tar                                      Failed
+289. trace_block/test_03.tar                                      Failed
+290. trace_block/test_04.tar                                      Failed
+291. trace_block/test_05.tar                                      Failed
+292. trace_block/test_06.tar                                      Failed
+293. trace_block/test_07.tar                                      Failed
+294. trace_block/test_08.json                                     Failed
+295. trace_block/test_09.tar                                      Failed
+296. trace_block/test_10.json                                     Failed
+297. trace_block/test_11.json                                     Failed
+298. trace_block/test_12.json                                     Failed
+299. trace_block/test_13.json                                     Failed
+300. trace_block/test_14.json                                     Failed
+335. trace_filter/test_1.tar                                      Failed
+336. trace_filter/test_2.tar                                      Failed
+339. trace_filter/test_5.tar                                      Failed
+340. trace_filter/test_6.tar                                      Failed
+341. trace_filter/test_7.tar                                      Failed
+                                                                                    
+Test time-elapsed (secs):     103
+Number of executed tests:     420/450
+Number of NOT executed tests: 0
+Number of success tests:      400
+Number of failed tests:       20
 
-Test time-elapsed (secs):     109
-Number of executed tests:     437/439
-Number of NOT executed tests: 2
-Number of success tests:      436
-Number of failed tests:       1
 ```
 
 
+### To run integration tests comparing results with local DB: ./run_tests.py -f -d -c -k jwt.hex
+### (in case Erigon with snapshot & local access to DB comparing results with RPCDaemon)
+```
+To be done
+```

@@ -44,7 +44,6 @@
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
 using Catch::Matchers::Message;
 
 std::filesystem::path get_tests_dir() {
@@ -249,7 +248,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
         : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::move(jwt_secret)) {
     }
 
-    boost::asio::awaitable<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
+    Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
     }
 };

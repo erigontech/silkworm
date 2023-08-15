@@ -18,9 +18,8 @@
 
 #include <functional>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -50,7 +49,7 @@ class EthStatusDataProvider {
     using StatusData = silkworm::sentry::eth::StatusData;
     [[nodiscard]] StatusData get_status_data(uint8_t eth_version);
 
-    using StatusDataProvider = std::function<boost::asio::awaitable<StatusData>(uint8_t eth_version)>;
+    using StatusDataProvider = std::function<Task<StatusData>(uint8_t eth_version)>;
     [[nodiscard]] StatusDataProvider to_factory_function();
 
   private:

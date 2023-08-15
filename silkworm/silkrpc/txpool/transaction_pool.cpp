@@ -38,7 +38,7 @@ TransactionPool::~TransactionPool() {
     SILK_TRACE << "TransactionPool::dtor " << this;
 }
 
-boost::asio::awaitable<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView& rlp_tx) {
+Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView& rlp_tx) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::add_transaction rlp_tx=" << silkworm::to_hex(rlp_tx);
     ::txpool::AddRequest request;
@@ -74,7 +74,7 @@ boost::asio::awaitable<OperationResult> TransactionPool::add_transaction(const s
     co_return result;
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc::bytes32& tx_hash) {
+Task<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc::bytes32& tx_hash) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::get_transaction tx_hash=" << tx_hash;
     auto hi = new ::types::H128{};
@@ -102,7 +102,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionPool::get_tran
     }
 }
 
-boost::asio::awaitable<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& address) {
+Task<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& address) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::nonce address=" << address;
     ::txpool::NonceRequest request;
@@ -113,7 +113,7 @@ boost::asio::awaitable<std::optional<uint64_t>> TransactionPool::nonce(const evm
     co_return reply.found() ? std::optional<uint64_t>{reply.nonce()} : std::nullopt;
 }
 
-boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
+Task<StatusInfo> TransactionPool::get_status() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::get_status";
     ::txpool::StatusRequest request;
@@ -127,7 +127,7 @@ boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
     co_return status_info;
 }
 
-boost::asio::awaitable<TransactionsInPool> TransactionPool::get_transactions() {
+Task<TransactionsInPool> TransactionPool::get_transactions() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::get_transactions";
     ::txpool::AllRequest request;

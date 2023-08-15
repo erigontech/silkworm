@@ -314,15 +314,16 @@ ExecutionResult EVMExecutor::call(
     return exec_result;
 }
 
-awaitable<ExecutionResult> EVMExecutor::call(const silkworm::ChainConfig& config,
-                                             const ChainStorage& chain_storage,
-                                             boost::asio::thread_pool& workers,
-                                             const silkworm::Block& block,
-                                             const silkworm::Transaction& txn,
-                                             StateFactory state_factory,
-                                             Tracers tracers,
-                                             bool refund,
-                                             bool gas_bailout) {
+Task<ExecutionResult> EVMExecutor::call(
+    const silkworm::ChainConfig& config,
+    const ChainStorage& chain_storage,
+    boost::asio::thread_pool& workers,
+    const silkworm::Block& block,
+    const silkworm::Transaction& txn,
+    StateFactory state_factory,
+    Tracers tracers,
+    bool refund,
+    bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [&](auto&& self) {

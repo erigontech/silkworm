@@ -18,8 +18,6 @@
 
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <agrpc/test.hpp>
 
 #include <silkworm/interfaces/remote/kv_mock.grpc.pb.h>

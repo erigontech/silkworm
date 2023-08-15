@@ -36,12 +36,12 @@ SplitCursor::SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t 
     }
 }
 
-boost::asio::awaitable<SplittedKeyValue> SplitCursor::seek() {
+Task<SplittedKeyValue> SplitCursor::seek() {
     KeyValue kv = co_await inner_cursor_.seek(key_);
     co_return split_key_value(kv);
 }
 
-boost::asio::awaitable<SplittedKeyValue> SplitCursor::next() {
+Task<SplittedKeyValue> SplitCursor::next() {
     KeyValue kv = co_await inner_cursor_.next();
     co_return split_key_value(kv);
 }
@@ -104,12 +104,12 @@ SplitCursorDupSort::SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::By
     }
 }
 
-boost::asio::awaitable<SplittedKeyValue> SplitCursorDupSort::seek_both() {
+Task<SplittedKeyValue> SplitCursorDupSort::seek_both() {
     auto value = co_await inner_cursor_.seek_both(key_, subkey_);
     co_return split_key_value(KeyValue{key_, value});
 }
 
-boost::asio::awaitable<SplittedKeyValue> SplitCursorDupSort::next_dup() {
+Task<SplittedKeyValue> SplitCursorDupSort::next_dup() {
     KeyValue kv = co_await inner_cursor_.next_dup();
     co_return split_key_value(kv);
 }

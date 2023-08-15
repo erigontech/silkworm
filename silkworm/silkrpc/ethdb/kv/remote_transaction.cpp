@@ -23,25 +23,25 @@
 
 namespace silkworm::rpc::ethdb::kv {
 
-boost::asio::awaitable<void> RemoteTransaction::open() {
+Task<void> RemoteTransaction::open() {
     view_id_ = (co_await tx_rpc_.request_and_read()).view_id();
 }
 
-boost::asio::awaitable<std::shared_ptr<Cursor>> RemoteTransaction::cursor(const std::string& table) {
+Task<std::shared_ptr<Cursor>> RemoteTransaction::cursor(const std::string& table) {
     co_return co_await get_cursor(table, false);
 }
 
-boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::cursor_dup_sort(const std::string& table) {
+Task<std::shared_ptr<CursorDupSort>> RemoteTransaction::cursor_dup_sort(const std::string& table) {
     co_return co_await get_cursor(table, true);
 }
 
-boost::asio::awaitable<void> RemoteTransaction::close() {
+Task<void> RemoteTransaction::close() {
     co_await tx_rpc_.writes_done_and_finish();
     cursors_.clear();
     view_id_ = 0;
 }
 
-boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
+Task<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
     if (is_cursor_sorted) {
         auto cursor_it = dup_cursors_.find(table);
         if (cursor_it != dup_cursors_.end()) {

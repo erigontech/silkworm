@@ -50,8 +50,12 @@ static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& in
     return ans;
 }
 
-awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string& table, silkworm::Bytes& key,
-                       uint32_t from_block, uint32_t to_block) {
+Task<Roaring> get(
+    core::rawdb::DatabaseReader& db_reader,
+    const std::string& table,
+    silkworm::Bytes& key,
+    uint32_t from_block,
+    uint32_t to_block) {
     std::vector<std::unique_ptr<Roaring>> chunks;
 
     silkworm::Bytes from_key{key.begin(), key.end()};
@@ -74,8 +78,12 @@ awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string
     co_return result;
 }
 
-awaitable<Roaring> from_topics(core::rawdb::DatabaseReader& db_reader, const std::string& table, const FilterTopics& topics,
-                               uint64_t start, uint64_t end) {
+Task<Roaring> from_topics(
+    core::rawdb::DatabaseReader& db_reader,
+    const std::string& table,
+    const FilterTopics& topics,
+    uint64_t start,
+    uint64_t end) {
     SILK_DEBUG << "#topics: " << topics.size() << " start: " << start << " end: " << end;
     roaring::Roaring result_bitmap;
     for (const auto& subtopics : topics) {
@@ -101,8 +109,12 @@ awaitable<Roaring> from_topics(core::rawdb::DatabaseReader& db_reader, const std
     co_return result_bitmap;
 }
 
-awaitable<Roaring> from_addresses(core::rawdb::DatabaseReader& db_reader, const std::string& table, const FilterAddresses& addresses,
-                                  uint64_t start, uint64_t end) {
+Task<Roaring> from_addresses(
+    core::rawdb::DatabaseReader& db_reader,
+    const std::string& table,
+    const FilterAddresses& addresses,
+    uint64_t start,
+    uint64_t end) {
     SILK_TRACE << "#addresses: " << addresses.size() << " start: " << start << " end: " << end;
     roaring::Roaring result_bitmap;
     for (auto address : addresses) {

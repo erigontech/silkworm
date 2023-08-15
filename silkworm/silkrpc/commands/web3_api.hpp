@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -45,8 +44,8 @@ class Web3RpcApi {
     Web3RpcApi& operator=(const Web3RpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     ethdb::Database* database_;

@@ -20,9 +20,7 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -45,7 +43,7 @@ const std::uint8_t kSamples = 3;
 const std::uint8_t kMaxSamples = kCheckBlocks * kSamples;
 const std::uint8_t kPercentile = 60;
 
-typedef std::function<boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)> BlockProvider;
+typedef std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)> BlockProvider;
 
 class GasPriceOracle {
   public:
@@ -55,10 +53,10 @@ class GasPriceOracle {
     GasPriceOracle(const GasPriceOracle&) = delete;
     GasPriceOracle& operator=(const GasPriceOracle&) = delete;
 
-    boost::asio::awaitable<intx::uint256> suggested_price(uint64_t block_number);
+    Task<intx::uint256> suggested_price(uint64_t block_number);
 
   private:
-    boost::asio::awaitable<void> load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
+    Task<void> load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
 
     const BlockProvider& block_provider_;
 };

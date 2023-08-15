@@ -21,6 +21,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
@@ -59,6 +60,7 @@ class TaskRunner {
     }
 
     [[nodiscard]] boost::asio::io_context& context() { return context_; }
+    [[nodiscard]] boost::asio::any_io_executor executor() { return context_.get_executor(); }
 
   private:
     boost::asio::io_context context_;

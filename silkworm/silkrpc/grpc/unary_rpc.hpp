@@ -20,8 +20,6 @@
 #include <system_error>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <agrpc/rpc.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/compose.hpp>

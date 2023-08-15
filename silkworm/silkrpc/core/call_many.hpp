@@ -21,7 +21,8 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
@@ -60,7 +61,11 @@ class CallExecutor {
     CallExecutor(const CallExecutor&) = delete;
     CallExecutor& operator=(const CallExecutor&) = delete;
 
-    boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, const AccountsOverrides& accounts_overrides, std::optional<std::uint64_t> timeout);
+    Task<CallManyResult> execute(
+        const Bundles& bundles,
+        const SimulationContext& context,
+        const AccountsOverrides& accounts_overrides,
+        std::optional<std::uint64_t> timeout);
 
     CallManyResult executes_all_bundles(const silkworm::ChainConfig& config,
                                         const ChainStorage& storage,

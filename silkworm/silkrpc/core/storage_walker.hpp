@@ -19,9 +19,8 @@
 #include <map>
 #include <optional>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
@@ -48,11 +47,19 @@ class StorageWalker {
     StorageWalker(const StorageWalker&) = delete;
     StorageWalker& operator=(const StorageWalker&) = delete;
 
-    boost::asio::awaitable<void> walk_of_storages(uint64_t block_number, const evmc::address& start_address,
-                                                  const evmc::bytes32& start_location, uint64_t incarnation, AccountCollector& collector);
+    Task<void> walk_of_storages(
+        uint64_t block_number,
+        const evmc::address& start_address,
+        const evmc::bytes32& start_location,
+        uint64_t incarnation,
+        AccountCollector& collector);
 
-    boost::asio::awaitable<void> storage_range_at(uint64_t block_number, const evmc::address& start_address,
-                                                  const evmc::bytes32& start_location, size_t max_result, StorageCollector& collector);
+    Task<void> storage_range_at(
+        uint64_t block_number,
+        const evmc::address& start_address,
+        const evmc::bytes32& start_location,
+        size_t max_result,
+        StorageCollector& collector);
 
   private:
     ethdb::Transaction& transaction_;

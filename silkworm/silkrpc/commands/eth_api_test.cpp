@@ -27,7 +27,6 @@
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
 using Catch::Matchers::Message;
 
 //! Utility class to expose handle hooks publicly just for tests
@@ -37,10 +36,10 @@ class EthereumRpcApi_ForTest : public EthereumRpcApi {
         : EthereumRpcApi{ioc, workers} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
-    awaitable<void> eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
         co_await EthereumRpcApi::handle_eth_block_number(request, reply);
     }
-    awaitable<void> eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
         co_await EthereumRpcApi::handle_eth_send_raw_transaction(request, reply);
     }
 };

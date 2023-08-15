@@ -328,7 +328,7 @@ int main(int argc, char* argv[]) {
         // Sentry: the peer-2-peer proxy server
         auto [sentry_client, sentry_server] = make_sentry(
             std::move(settings.sentry_settings), settings.node_settings, context_pool, db::ROAccess{chaindata_db});
-        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> boost::asio::awaitable<void> {
+        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> Task<void> {
             if (sentry_server) {
                 co_await sentry_server->run();
             }

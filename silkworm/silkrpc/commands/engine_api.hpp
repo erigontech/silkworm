@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
@@ -32,8 +33,6 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
-using boost::asio::awaitable;
-
 class EngineRpcApi {
   public:
     EngineRpcApi(ethdb::Database* database, ethbackend::BackEnd* backend)
@@ -48,16 +47,16 @@ class EngineRpcApi {
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
 
   protected:
-    awaitable<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     ethdb::Database* database_;

@@ -19,13 +19,11 @@
 #include <chrono>
 #include <stdexcept>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 namespace silkworm::concurrency {
 
-boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration);
+Task<void> timeout(std::chrono::milliseconds duration);
 
 class TimeoutExpiredError : public std::runtime_error {
   public:

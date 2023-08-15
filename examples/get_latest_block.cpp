@@ -42,7 +42,7 @@ using namespace silkworm::rpc;
 ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "server location as string <address>:<port>");
 // ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
-boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
+Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
     std::optional<uint64_t> block_height;
 
     const auto db_transaction = co_await db.begin();
@@ -62,7 +62,7 @@ boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db
 std::optional<uint64_t> get_latest_block(boost::asio::io_context& io_context, ethdb::Database& db) {
     auto result = boost::asio::co_spawn(
         io_context,
-        [&]() -> boost::asio::awaitable<std::optional<uint64_t>> {
+        [&]() -> Task<std::optional<uint64_t>> {
             const auto block_number = co_await latest_block(db);
             io_context.stop();
             co_return block_number;

@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector) {
+Task<void> AccountWalker::walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector) {
     auto ps_cursor = co_await transaction_.cursor(db::table::kPlainStateName);
 
     auto start_key = full_view(start_address);
@@ -79,7 +79,7 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
     }
 }
 
-boost::asio::awaitable<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint64_t len) {
+Task<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint64_t len) {
     auto kv = co_await cursor.next();
     while (!kv.key.empty() && kv.key.size() > len) {
         kv = co_await cursor.next();
@@ -87,7 +87,7 @@ boost::asio::awaitable<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint
     co_return kv;
 }
 
-boost::asio::awaitable<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
+Task<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
     auto kv = co_await cursor.seek(key);
     if (kv.key.size() > len) {
         co_return co_await next(cursor, len);
@@ -95,7 +95,7 @@ boost::asio::awaitable<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silk
     co_return kv;
 }
 
-boost::asio::awaitable<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr) {
+Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr) {
     ethdb::SplittedKeyValue skv;
     auto tmp_addr = addr;
     while (!addr.empty() && (tmp_addr == addr || block < number)) {
@@ -110,7 +110,7 @@ boost::asio::awaitable<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::Split
     co_return skv;
 }
 
-boost::asio::awaitable<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, uint64_t number) {
+Task<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, uint64_t number) {
     auto kv = co_await cursor.seek();
     if (kv.key1.empty()) {
         co_return kv;

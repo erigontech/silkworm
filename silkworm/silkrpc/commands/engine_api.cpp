@@ -35,7 +35,7 @@ using evmc::literals::operator""_bytes32;
 constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
-awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readability-convert-member-functions-to-static)
+Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readability-convert-member-functions-to-static)
     const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
@@ -63,7 +63,7 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(re
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_getpayloadv1
-awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV1 params: " + params.dump();
@@ -96,7 +96,7 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadv2
-awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -131,7 +131,7 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json&
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1
-awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -169,7 +169,7 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const 
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyrangev1
-awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -213,7 +213,7 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_newpayloadv1
-awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV1 params: " + params.dump();
@@ -243,7 +243,7 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json&
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_newpayloadv2
-awaitable<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV2 params: " + params.dump();
@@ -298,7 +298,7 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json&
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_forkchoiceupdatedv1
-awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV1 params: " + params.dump();
@@ -347,7 +347,7 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_forkchoiceupdatedv2
-awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV2 params: " + params.dump();
@@ -417,7 +417,7 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann
 // Checks if the transition configurations of the Execution Layer is equal to the ones in the Consensus Layer
 // Format for params is a JSON list of TransitionConfiguration, i.e. [TransitionConfiguration]
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#TransitionConfigurationV1
-awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_exchangeTransitionConfigurationV1 params: " + params.dump();

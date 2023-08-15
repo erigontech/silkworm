@@ -57,7 +57,7 @@ bool operator<(const StorageItem& k1, const StorageItem& k2) {
     return k1.key < k2.key;
 }
 
-boost::asio::awaitable<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number) {
+Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number) {
     auto kv = co_await cursor.next();
     if (kv.key2.empty()) {
         co_return kv;
@@ -73,7 +73,7 @@ boost::asio::awaitable<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor,
     co_return kv;
 }
 
-boost::asio::awaitable<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes loc) {
+Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes loc) {
     ethdb::SplittedKeyValue skv;
     auto tmp_loc = loc;
     while (!loc.empty() && (tmp_loc == loc || block < number)) {
@@ -88,8 +88,12 @@ boost::asio::awaitable<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor,
     co_return skv;
 }
 
-boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_number, const evmc::address& address,
-                                                             const evmc::bytes32& location_hash, uint64_t incarnation, AccountCollector& collector) {
+Task<void> StorageWalker::walk_of_storages(
+    uint64_t block_number,
+    const evmc::address& address,
+    const evmc::bytes32& location_hash,
+    uint64_t incarnation,
+    AccountCollector& collector) {
     SILK_TRACE << "block_number=" << block_number << " address=" << address << " START";
 
     auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStateName);
@@ -172,8 +176,12 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
     co_return;
 }
 
-boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_number, const evmc::address& address,
-                                                             const evmc::bytes32& start_location, size_t max_result, StorageCollector& collector) {
+Task<void> StorageWalker::storage_range_at(
+    uint64_t block_number,
+    const evmc::address& address,
+    const evmc::bytes32& start_location,
+    size_t max_result,
+    StorageCollector& collector) {
     ethdb::TransactionDatabase tx_database{transaction_};
     auto account_data = co_await tx_database.get_one(db::table::kPlainStateName, full_view(address));
 

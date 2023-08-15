@@ -26,7 +26,7 @@
 namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#web3_clientversion
-boost::asio::awaitable<void> Web3RpcApi::handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> Web3RpcApi::handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto client_version = co_await backend_->client_version();
         reply = make_json_content(request["id"], client_version);
@@ -41,7 +41,7 @@ boost::asio::awaitable<void> Web3RpcApi::handle_web3_client_version(const nlohma
 }
 
 // https://eth.wiki/json-rpc/API#web3_sha3
-boost::asio::awaitable<void> Web3RpcApi::handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> Web3RpcApi::handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid web3_sha3 params: " + params.dump();

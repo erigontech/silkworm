@@ -23,10 +23,9 @@
 #include <optional>
 #include <shared_mutex>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <absl/container/btree_set.h>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
@@ -39,9 +38,9 @@ class StateView {
   public:
     virtual ~StateView() = default;
 
-    virtual boost::asio::awaitable<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) = 0;
+    virtual Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) = 0;
 
-    virtual boost::asio::awaitable<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) = 0;
+    virtual Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) = 0;
 };
 
 class StateCache {
@@ -94,9 +93,9 @@ class CoherentStateView : public StateView {
     CoherentStateView(const CoherentStateView&) = delete;
     CoherentStateView& operator=(const CoherentStateView&) = delete;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) override;
+    Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) override;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) override;
+    Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) override;
 
   private:
     Transaction& txn_;
@@ -135,8 +134,8 @@ class CoherentStateCache : public StateCache {
     void process_storage_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
     bool add(KeyValue kv, CoherentStateRoot* root, StateViewId view_id);
     bool add_code(KeyValue kv, CoherentStateRoot* root, StateViewId view_id);
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key, Transaction& txn);
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key, Transaction& txn);
+    Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key, Transaction& txn);
+    Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key, Transaction& txn);
     CoherentStateRoot* get_root(StateViewId view_id);
     CoherentStateRoot* advance_root(StateViewId view_id);
     void evict_roots(StateViewId next_view_id);

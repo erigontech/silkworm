@@ -34,7 +34,7 @@ Miner::~Miner() {
     SILK_TRACE << "Miner::dtor " << this;
 }
 
-boost::asio::awaitable<WorkResult> Miner::get_work() {
+Task<WorkResult> Miner::get_work() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::get_work";
     UnaryRpc<&::txpool::Mining::StubInterface::AsyncGetWork> get_work_rpc{*stub_, grpc_context_};
@@ -52,7 +52,7 @@ boost::asio::awaitable<WorkResult> Miner::get_work() {
     co_return result;
 }
 
-boost::asio::awaitable<bool> Miner::submit_work(const silkworm::Bytes& block_nonce, const evmc::bytes32& pow_hash, const evmc::bytes32& digest) {
+Task<bool> Miner::submit_work(const silkworm::Bytes& block_nonce, const evmc::bytes32& pow_hash, const evmc::bytes32& digest) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::submit_work block_nonce=" << block_nonce << " pow_hash=" << pow_hash << " digest=" << digest;
     ::txpool::SubmitWorkRequest submit_work_request;
@@ -66,7 +66,7 @@ boost::asio::awaitable<bool> Miner::submit_work(const silkworm::Bytes& block_non
     co_return ok;
 }
 
-boost::asio::awaitable<bool> Miner::submit_hash_rate(const intx::uint256& rate, const evmc::bytes32& id) {
+Task<bool> Miner::submit_hash_rate(const intx::uint256& rate, const evmc::bytes32& id) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::submit_hash_rate rate=" << rate << " id=" << id;
     ::txpool::SubmitHashRateRequest submit_hash_rate_request;
@@ -79,7 +79,7 @@ boost::asio::awaitable<bool> Miner::submit_hash_rate(const intx::uint256& rate, 
     co_return ok;
 }
 
-boost::asio::awaitable<uint64_t> Miner::get_hash_rate() {
+Task<uint64_t> Miner::get_hash_rate() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::hash_rate";
     UnaryRpc<&::txpool::Mining::StubInterface::AsyncHashRate> get_hash_rate_rpc{*stub_, grpc_context_};
@@ -89,7 +89,7 @@ boost::asio::awaitable<uint64_t> Miner::get_hash_rate() {
     co_return hash_rate;
 }
 
-boost::asio::awaitable<MiningResult> Miner::get_mining() {
+Task<MiningResult> Miner::get_mining() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::get_mining";
     UnaryRpc<&::txpool::Mining::StubInterface::AsyncMining> get_mining_rpc{*stub_, grpc_context_};

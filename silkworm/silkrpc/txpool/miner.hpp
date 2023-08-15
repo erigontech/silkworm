@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/io_context.hpp>
@@ -55,15 +55,15 @@ class Miner final {
 
     ~Miner();
 
-    boost::asio::awaitable<WorkResult> get_work();
+    Task<WorkResult> get_work();
 
-    boost::asio::awaitable<bool> submit_work(const silkworm::Bytes& block_nonce, const evmc::bytes32& pow_hash, const evmc::bytes32& digest);
+    Task<bool> submit_work(const silkworm::Bytes& block_nonce, const evmc::bytes32& pow_hash, const evmc::bytes32& digest);
 
-    boost::asio::awaitable<bool> submit_hash_rate(const intx::uint256& rate, const evmc::bytes32& id);
+    Task<bool> submit_hash_rate(const intx::uint256& rate, const evmc::bytes32& id);
 
-    boost::asio::awaitable<uint64_t> get_hash_rate();
+    Task<uint64_t> get_hash_rate();
 
-    boost::asio::awaitable<MiningResult> get_mining();
+    Task<MiningResult> get_mining();
 
   private:
     boost::asio::io_context::executor_type executor_;

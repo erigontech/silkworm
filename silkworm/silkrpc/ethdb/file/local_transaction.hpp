@@ -22,9 +22,7 @@
 #include <type_traits>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -43,20 +41,20 @@ class LocalTransaction : public Transaction {
 
     [[nodiscard]] uint64_t view_id() const override { return txn_.id(); }
 
-    boost::asio::awaitable<void> open() override;
+    Task<void> open() override;
 
-    boost::asio::awaitable<std::shared_ptr<Cursor>> cursor(const std::string& table) override;
+    Task<std::shared_ptr<Cursor>> cursor(const std::string& table) override;
 
-    boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
+    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
     std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number) override;
 
     std::shared_ptr<ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) override;
 
-    boost::asio::awaitable<void> close() override;
+    Task<void> close() override;
 
   private:
-    boost::asio::awaitable<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
+    Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;

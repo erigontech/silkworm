@@ -16,8 +16,9 @@
 
 #include "server.hpp"
 
-#include <boost/asio.hpp>
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/use_awaitable.hpp>
 
 namespace silkworm::execution {
 
@@ -52,37 +53,37 @@ void Server::handle_exception(const std::exception_ptr& e) {
     }
 }
 
-auto Server::block_progress() -> asio::awaitable<BlockNum> {
-    auto lambda = [](Server* me) -> asio::awaitable<BlockNum> {
+auto Server::block_progress() -> Task<BlockNum> {
+    auto lambda = [](Server* me) -> Task<BlockNum> {
         co_return me->exec_engine_.block_progress();
     };
-    return co_spawn(io_context_, lambda(this), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
-auto Server::last_fork_choice() -> asio::awaitable<BlockId> {
-    auto lambda = [](Server* me) -> asio::awaitable<BlockId> {
+auto Server::last_fork_choice() -> Task<BlockId> {
+    auto lambda = [](Server* me) -> Task<BlockId> {
         co_return me->exec_engine_.last_fork_choice();
     };
-    return co_spawn(io_context_, lambda(this), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
-asio::awaitable<void> Server::insert_headers(const BlockVector& /*blocks*/) {
+Task<void> Server::insert_headers(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_headers not implemented"};
 }
 
-asio::awaitable<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
+Task<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
 }
 
-asio::awaitable<void> Server::insert_blocks(const BlockVector& blocks) {
-    auto lambda = [](Server* me, const BlockVector& b) -> asio::awaitable<void> {
+Task<void> Server::insert_blocks(const BlockVector& blocks) {
+    auto lambda = [](Server* me, const BlockVector& b) -> Task<void> {
         co_return me->exec_engine_.insert_blocks(b);
     };
-    return co_spawn(io_context_, lambda(this, blocks), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, blocks), asio::use_awaitable);
 }
 
-asio::awaitable<ValidationResult> Server::validate_chain(Hash head_block_hash) {
-    auto lambda = [](Server* me, Hash h) -> asio::awaitable<ValidationResult> {
+Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
+    auto lambda = [](Server* me, Hash h) -> Task<ValidationResult> {
         auto future_result = me->exec_engine_.verify_chain(h);
         auto verification = co_await future_result.get_async();
 
@@ -105,11 +106,11 @@ asio::awaitable<ValidationResult> Server::validate_chain(Hash head_block_hash) {
         }
         co_return validation;
     };
-    return co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
 }
 
-asio::awaitable<ForkChoiceApplication> Server::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    auto lambda = [](Server* me, Hash h, std::optional<Hash> f) -> asio::awaitable<ForkChoiceApplication> {
+Task<ForkChoiceApplication> Server::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    auto lambda = [](Server* me, Hash h, std::optional<Hash> f) -> Task<ForkChoiceApplication> {
         bool updated = me->exec_engine_.notify_fork_choice_update(h, f);  // BLOCKING, will block the entire io_context thread
 
         auto last_fc = me->exec_engine_.last_fork_choice();
@@ -119,63 +120,63 @@ asio::awaitable<ForkChoiceApplication> Server::update_fork_choice(Hash head_bloc
             .current_height = last_fc.number};
         co_return application;
     };
-    return co_spawn(io_context_, lambda(this, head_block_hash, finalized_block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, head_block_hash, finalized_block_hash), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<BlockHeader>> Server::get_header(Hash block_hash) {
-    auto lambda = [](Server* me, Hash h) -> asio::awaitable<std::optional<BlockHeader>> {
+Task<std::optional<BlockHeader>> Server::get_header(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> Task<std::optional<BlockHeader>> {
         co_return me->exec_engine_.get_header(h);
     };
-    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<BlockHeader>> Server::get_header(BlockNum height, Hash hash) {
-    auto lambda = [](Server* me, BlockNum bn, Hash h) -> asio::awaitable<std::optional<BlockHeader>> {
+Task<std::optional<BlockHeader>> Server::get_header(BlockNum height, Hash hash) {
+    auto lambda = [](Server* me, BlockNum bn, Hash h) -> Task<std::optional<BlockHeader>> {
         co_return me->exec_engine_.get_header(bn, h);
     };
-    return co_spawn(io_context_, lambda(this, height, hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, height, hash), asio::use_awaitable);
 }
 
-asio::awaitable<std::vector<BlockHeader>> Server::get_last_headers(BlockNum limit) {
-    auto lambda = [](Server* me, BlockNum l) -> asio::awaitable<std::vector<BlockHeader>> {
+Task<std::vector<BlockHeader>> Server::get_last_headers(BlockNum limit) {
+    auto lambda = [](Server* me, BlockNum l) -> Task<std::vector<BlockHeader>> {
         co_return me->exec_engine_.get_last_headers(l);
     };
-    return co_spawn(io_context_, lambda(this, limit), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, limit), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<TotalDifficulty>> Server::get_header_td(Hash hash, std::optional<BlockNum> num) {
-    auto lambda = [](Server* me, Hash h, std::optional<BlockNum> bn) -> asio::awaitable<std::optional<TotalDifficulty>> {
+Task<std::optional<TotalDifficulty>> Server::get_header_td(Hash hash, std::optional<BlockNum> num) {
+    auto lambda = [](Server* me, Hash h, std::optional<BlockNum> bn) -> Task<std::optional<TotalDifficulty>> {
         co_return me->exec_engine_.get_header_td(h, bn);
     };
-    return co_spawn(io_context_, lambda(this, hash, num), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, hash, num), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
-    auto lambda = [](Server* me, Hash h) -> asio::awaitable<std::optional<BlockBody>> {
+Task<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> Task<std::optional<BlockBody>> {
         co_return me->exec_engine_.get_body(h);
     };
-    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<BlockBody>> Server::get_body(BlockNum block_number) {
-    auto lambda = [](Server* me, BlockNum n) -> asio::awaitable<std::optional<BlockBody>> {
+Task<std::optional<BlockBody>> Server::get_body(BlockNum block_number) {
+    auto lambda = [](Server* me, BlockNum n) -> Task<std::optional<BlockBody>> {
         co_return me->exec_engine_.get_canonical_body(n);
     };
-    return co_spawn(io_context_, lambda(this, block_number), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, block_number), asio::use_awaitable);
 }
 
-asio::awaitable<bool> Server::is_canonical(Hash block_hash) {
-    auto lambda = [](Server* me, Hash h) -> asio::awaitable<bool> {
+Task<bool> Server::is_canonical(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> Task<bool> {
         co_return me->exec_engine_.is_canonical(h);
     };
-    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
-asio::awaitable<std::optional<BlockNum>> Server::get_block_num(Hash block_hash) {
-    auto lambda = [](Server* me, Hash h) -> asio::awaitable<std::optional<BlockNum>> {
+Task<std::optional<BlockNum>> Server::get_block_num(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> Task<std::optional<BlockNum>> {
         co_return me->exec_engine_.get_block_number(h);
     };
-    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
 }  // namespace silkworm::execution

@@ -27,7 +27,8 @@
 #include <variant>
 #include <vector>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/thread_pool.hpp>
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
@@ -494,24 +495,28 @@ class TraceCallExecutor {
     TraceCallExecutor(const TraceCallExecutor&) = delete;
     TraceCallExecutor& operator=(const TraceCallExecutor&) = delete;
 
-    boost::asio::awaitable<std::vector<Trace>> trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream = nullptr);
-    boost::asio::awaitable<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config);
-    boost::asio::awaitable<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config);
-    boost::asio::awaitable<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls);
-    boost::asio::awaitable<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
+    Task<std::vector<Trace>> trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream = nullptr);
+    Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config);
+    Task<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config);
+    Task<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls);
+    Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
         return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
     }
-    boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
-    boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
-    boost::asio::awaitable<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
-    boost::asio::awaitable<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
-    boost::asio::awaitable<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
-    boost::asio::awaitable<bool> trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address);
-    boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream);
+    Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
+    Task<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
+    Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
+    Task<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
+    Task<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
+    Task<bool> trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address);
+    Task<void> trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream);
 
   private:
-    boost::asio::awaitable<TraceCallResult> execute(std::uint64_t block_number, const silkworm::Block& block,
-                                                    const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config);
+    Task<TraceCallResult> execute(
+        std::uint64_t block_number,
+        const silkworm::Block& block,
+        const rpc::Transaction& transaction,
+        std::int32_t index,
+        const TraceConfig& config);
 
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;

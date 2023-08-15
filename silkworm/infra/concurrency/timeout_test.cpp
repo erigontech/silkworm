@@ -43,29 +43,29 @@ class TestException : public std::runtime_error {
 };
 
 template <typename T>
-awaitable<T> async_value(T value) {
+Task<T> async_value(T value) {
     co_await this_coro::executor;
     co_return value;
 }
 
-awaitable<bool> async_ok() {
+Task<bool> async_ok() {
     return async_value(true);
 }
 
-awaitable<void> async_throw() {
+Task<void> async_throw() {
     co_await this_coro::executor;
     throw TestException();
 }
 
-awaitable<void> short_timeout() {
+Task<void> short_timeout() {
     co_await timeout(1ms);
 }
 
-awaitable<void> simple_timeout() {
+Task<void> simple_timeout() {
     co_await timeout(1h);
 }
 
-awaitable<void> wait_until_cancelled() {
+Task<void> wait_until_cancelled() {
     auto executor = co_await this_coro::executor;
     steady_timer timer(executor);
     timer.expires_after(1h);
@@ -77,7 +77,7 @@ class BadCancelException : public std::runtime_error {
     BadCancelException() : std::runtime_error("BadCancelException") {}
 };
 
-awaitable<void> wait_until_cancelled_bad() {
+Task<void> wait_until_cancelled_bad() {
     try {
         auto executor = co_await this_coro::executor;
         steady_timer timer(executor);
@@ -89,9 +89,9 @@ awaitable<void> wait_until_cancelled_bad() {
 }
 
 template <typename TResult>
-TResult run(awaitable<TResult> awaitable1) {
+TResult run(Task<TResult> task) {
     test_util::TaskRunner runner;
-    return runner.run(std::move(awaitable1));
+    return runner.run(std::move(task));
 }
 
 TEST_CASE("Timeout.value") {

@@ -32,7 +32,7 @@ struct PriceComparator {
     }
 };
 
-boost::asio::awaitable<intx::uint256> GasPriceOracle::suggested_price(uint64_t block_number) {
+Task<intx::uint256> GasPriceOracle::suggested_price(uint64_t block_number) {
     SILK_TRACE << "GasPriceOracle::suggested_price starting block: " << block_number;
     std::vector<intx::uint256> tx_prices;
     tx_prices.reserve(kMaxSamples);
@@ -64,7 +64,7 @@ boost::asio::awaitable<intx::uint256> GasPriceOracle::suggested_price(uint64_t b
     co_return price;
 }
 
-boost::asio::awaitable<void> GasPriceOracle::load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices) {
+Task<void> GasPriceOracle::load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices) {
     SILK_TRACE << "GasPriceOracle::load_block_prices processing block: " << block_number;
 
     const auto block_with_hash = co_await block_provider_(block_number);

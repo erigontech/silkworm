@@ -37,7 +37,6 @@
 
 namespace silkworm::rpc {
 
-using boost::asio::awaitable;
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
@@ -64,19 +63,19 @@ TEST_CASE("EVMExecutor") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     class StubDatabase : public core::rawdb::DatabaseReader {
-        [[nodiscard]] awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
+        [[nodiscard]] Task<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return KeyValue{};
         }
-        [[nodiscard]] awaitable<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
+        [[nodiscard]] Task<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return silkworm::Bytes{};
         }
-        [[nodiscard]] awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
+        [[nodiscard]] Task<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
             co_return silkworm::Bytes{};
         }
-        [[nodiscard]] awaitable<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
+        [[nodiscard]] Task<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-        [[nodiscard]] awaitable<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
+        [[nodiscard]] Task<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
     };

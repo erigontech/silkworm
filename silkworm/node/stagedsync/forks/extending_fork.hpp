@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio.hpp>
-#include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 
@@ -27,8 +26,6 @@
 #include "silkworm/node/db/memory_mutation.hpp"
 
 namespace silkworm::stagedsync {
-
-namespace asio = boost::asio;
 
 // ExtendingFork is a composition of a Fork, an in-memory database and an io_context.
 // It executes the fork operations on the private io_context, so we can:
@@ -38,7 +35,7 @@ namespace asio = boost::asio;
 
 class ExtendingFork {
   public:
-    explicit ExtendingFork(BlockId forking_point, MainChain&, asio::io_context&);
+    explicit ExtendingFork(BlockId forking_point, MainChain&, boost::asio::io_context&);
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) = delete;  // not movable, it schedules methods execution in another thread
     ~ExtendingFork();
@@ -67,13 +64,13 @@ class ExtendingFork {
     void save_exception(std::exception_ptr);
     void propagate_exception_if_any();
 
-    BlockId forking_point_;                       // starting point
-    MainChain& main_chain_;                       // main chain
-    asio::io_context& io_context_;                // for io
-    std::unique_ptr<Fork> fork_;                  // for domain logic
-    std::unique_ptr<asio::io_context> executor_;  // for pipeline execution
-    std::thread thread_;                          // for executor
-    std::exception_ptr exception_{};              // last exception
+    BlockId forking_point_;                              // starting point
+    MainChain& main_chain_;                              // main chain
+    boost::asio::io_context& io_context_;                // for io
+    std::unique_ptr<Fork> fork_;                         // for domain logic
+    std::unique_ptr<boost::asio::io_context> executor_;  // for pipeline execution
+    std::thread thread_;                                 // for executor
+    std::exception_ptr exception_{};                     // last exception
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

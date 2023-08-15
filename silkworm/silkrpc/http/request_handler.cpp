@@ -38,7 +38,7 @@
 
 namespace silkworm::rpc::http {
 
-boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request) {
+Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
     http::Reply reply;
@@ -100,7 +100,7 @@ boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
+Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
     const auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
@@ -141,7 +141,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
+Task<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
         std::string reply_json;
         reply_json.reserve(2048);
@@ -161,7 +161,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
+Task<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
         nlohmann::json reply_json;
         co_await (rpc_api_.*handler)(request_json, reply_json);
@@ -182,7 +182,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         SocketWriter socket_writer(socket_);
         ChunksWriter chunks_writer(socket_writer);
@@ -201,7 +201,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTabl
     co_return;
 }
 
-boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_authorized(const http::Request& request) {
+Task<std::optional<std::string>> RequestHandler::is_request_authorized(const http::Request& request) {
     if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
         co_return std::nullopt;
     }
@@ -245,7 +245,7 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
     co_return std::nullopt;
 }
 
-boost::asio::awaitable<void> RequestHandler::do_write(Reply& reply) {
+Task<void> RequestHandler::do_write(Reply& reply) {
     try {
         SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
 
@@ -262,7 +262,7 @@ boost::asio::awaitable<void> RequestHandler::do_write(Reply& reply) {
     }
 }
 
-boost::asio::awaitable<void> RequestHandler::write_headers() {
+Task<void> RequestHandler::write_headers() {
     try {
         std::vector<http::Header> headers;
         headers.reserve(2);

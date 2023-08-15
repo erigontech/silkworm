@@ -72,19 +72,19 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader() = default;
         explicit MockDatabaseReader(silkworm::Bytes value) : value_(std::move(value)) {}
 
-        [[nodiscard]] boost::asio::awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
+        [[nodiscard]] Task<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return KeyValue{};
         }
-        [[nodiscard]] boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
+        [[nodiscard]] Task<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return value_;
         }
-        [[nodiscard]] boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
+        [[nodiscard]] Task<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
             co_return silkworm::Bytes{};
         }
-        [[nodiscard]] boost::asio::awaitable<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
+        [[nodiscard]] Task<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-        [[nodiscard]] boost::asio::awaitable<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
+        [[nodiscard]] Task<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
 

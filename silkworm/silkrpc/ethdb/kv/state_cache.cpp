@@ -33,11 +33,11 @@ namespace silkworm::rpc::ethdb::kv {
 
 CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateView::get(const silkworm::Bytes& key) {
+Task<std::optional<silkworm::Bytes>> CoherentStateView::get(const silkworm::Bytes& key) {
     co_return co_await cache_->get(key, txn_);
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateView::get_code(const silkworm::Bytes& key) {
+Task<std::optional<silkworm::Bytes>> CoherentStateView::get_code(const silkworm::Bytes& key) {
     co_return co_await cache_->get_code(key, txn_);
 }
 
@@ -217,7 +217,7 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
     return inserted;
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& txn) {
+Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& txn) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = txn.view_id();
@@ -259,7 +259,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(c
     co_return value;
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& txn) {
+Task<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& txn) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = txn.view_id();

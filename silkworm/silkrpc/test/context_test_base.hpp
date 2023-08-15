@@ -20,8 +20,6 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>

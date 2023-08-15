@@ -20,31 +20,28 @@
 #include <optional>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 
-using boost::asio::awaitable;
 using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
 
 class DatabaseReader {
   public:
     virtual ~DatabaseReader() = default;
 
-    [[nodiscard]] virtual awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const = 0;
+    [[nodiscard]] virtual Task<KeyValue> get(const std::string& table, silkworm::ByteView key) const = 0;
 
-    [[nodiscard]] virtual awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const = 0;
+    [[nodiscard]] virtual Task<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const = 0;
 
-    [[nodiscard]] virtual awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const = 0;
+    [[nodiscard]] virtual Task<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const = 0;
 
-    [[nodiscard]] virtual awaitable<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Walker w) const = 0;
+    [[nodiscard]] virtual Task<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Walker w) const = 0;
 
-    [[nodiscard]] virtual awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
+    [[nodiscard]] virtual Task<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
 };
 
 }  // namespace silkworm::rpc::core::rawdb

@@ -16,14 +16,13 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc {
 
 bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel);
-boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel);
+Task<void> reconnect_channel(grpc::Channel& channel);
 
 }  // namespace silkworm::rpc

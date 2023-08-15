@@ -31,31 +31,31 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
     explicit ErigonRpcApi_ForTest(boost::asio::io_context& io_context) : ErigonRpcApi{io_context} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
-    awaitable<void> erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_get_block_by_timestamp(request, reply);
     }
-    awaitable<void> erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_get_header_by_hash(request, reply);
     }
-    awaitable<void> erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_get_header_by_number(request, reply);
     }
-    awaitable<void> erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_get_logs_by_hash(request, reply);
     }
-    awaitable<void> erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_forks(request, reply);
     }
-    awaitable<void> erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_watch_the_burn(request, reply);
     }
-    awaitable<void> erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_block_number(request, reply);
     }
-    awaitable<void> erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_cumulative_chain_traffic(request, reply);
     }
-    awaitable<void> erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_node_info(request, reply);
     }
 };

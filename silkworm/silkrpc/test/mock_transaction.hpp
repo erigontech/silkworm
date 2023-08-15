@@ -19,7 +19,8 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
@@ -32,14 +33,14 @@ namespace silkworm::rpc::test {
 class MockTransaction : public ethdb::Transaction {
   public:
     MOCK_METHOD(uint64_t, view_id, (), (const));
-    MOCK_METHOD((boost::asio::awaitable<void>), open, ());
-    MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));
-    MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&));
+    MOCK_METHOD((Task<void>), open, ());
+    MOCK_METHOD((Task<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));
+    MOCK_METHOD((Task<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&));
     MOCK_METHOD((std::shared_ptr<silkworm::State>), create_state,
                 (boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, uint64_t));
     MOCK_METHOD((std::shared_ptr<ChainStorage>), create_storage,
                 (const core::rawdb::DatabaseReader&, ethbackend::BackEnd*));
-    MOCK_METHOD((boost::asio::awaitable<void>), close, ());
+    MOCK_METHOD((Task<void>), close, ());
 };
 
 }  // namespace silkworm::rpc::test

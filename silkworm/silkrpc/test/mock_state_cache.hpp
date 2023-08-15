@@ -20,7 +20,8 @@
 #include <memory>
 #include <optional>
 
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
@@ -32,8 +33,8 @@ namespace silkworm::rpc::test {
 
 class MockStateView : public ethdb::kv::StateView {
   public:
-    MOCK_METHOD((boost::asio::awaitable<std::optional<silkworm::Bytes>>), get, (const silkworm::Bytes&));
-    MOCK_METHOD((boost::asio::awaitable<std::optional<silkworm::Bytes>>), get_code, (const silkworm::Bytes&));
+    MOCK_METHOD((Task<std::optional<silkworm::Bytes>>), get, (const silkworm::Bytes&));
+    MOCK_METHOD((Task<std::optional<silkworm::Bytes>>), get_code, (const silkworm::Bytes&));
 };
 
 class MockStateCache : public ethdb::kv::StateCache {

@@ -28,30 +28,13 @@
 #include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
+#include <silkworm/silkrpc/test/mock_back_end.hpp>
 #include <silkworm/silkrpc/test/mock_block_cache.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc::debug {
-
-class BackEndMock : public ethbackend::BackEnd {  // NOLINT
-  public:
-    MOCK_METHOD((Task<evmc::address>), etherbase, ());
-    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_version, ());
-    MOCK_METHOD((Task<std::string>), client_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
-    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
-    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
-    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
-    MOCK_METHOD((Task<PeerInfos>), peers, ());
-    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
-    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
-};
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
@@ -163,8 +146,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -314,8 +297,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -377,8 +360,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -488,8 +471,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -590,8 +573,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -697,8 +680,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -805,8 +788,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -900,8 +883,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx, config};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -1107,8 +1090,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
         TestDebugExecutor executor{db_reader, cache, workers, tx};
-        const auto backend = new BackEndMock;
-        const RemoteChainStorage storage{db_reader, backend};
+        const auto backend = std::make_unique<test::BackEndMock>();
+        const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
@@ -1264,8 +1247,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
     TestDebugExecutor executor{db_reader, cache, workers, tx};
-    const auto backend = new BackEndMock;
-    const RemoteChainStorage storage{db_reader, backend};
+    const auto backend = std::make_unique<test::BackEndMock>();
+    const RemoteChainStorage storage{db_reader, backend.get()};
 
     stream.open_object();
     spawn_and_wait(executor.execute(stream, storage, block, call));

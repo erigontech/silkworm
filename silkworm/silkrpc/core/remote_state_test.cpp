@@ -29,6 +29,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
+#include <silkworm/silkrpc/test/mock_back_end.hpp>
 #include <silkworm/silkrpc/test/mock_chain_storage.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
@@ -45,27 +46,9 @@ using testing::InvokeWithoutArgs;
 using testing::Return;
 using testing::Unused;
 
-class BackEndMock : public ethbackend::BackEnd {  // NOLINT
-  public:
-    MOCK_METHOD((Task<evmc::address>), etherbase, ());
-    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_version, ());
-    MOCK_METHOD((Task<std::string>), client_version, ());
-    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
-    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
-    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
-    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
-    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
-    MOCK_METHOD((Task<PeerInfos>), peers, ());
-    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
-    MOCK_METHOD((Task<uint64_t>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
-};
-
 TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    const auto backend = std::make_unique<BackEndMock>();
+    const auto backend = std::make_unique<test::BackEndMock>();
 
     class MockDatabaseReader : public core::rawdb::DatabaseReader {
       public:
@@ -470,7 +453,7 @@ struct RemoteStateTest : public test::ContextTestBase {
     test::MockDatabaseReader database_reader_;
     boost::asio::io_context io_context;
     boost::asio::any_io_executor current_executor{io_context.get_executor()};
-    std::unique_ptr<BackEndMock> backend{std::make_unique<BackEndMock>()};
+    std::unique_ptr<test::BackEndMock> backend{std::make_unique<test::BackEndMock>()};
     RemoteChainStorage storage{database_reader_, backend.get()};
     RemoteState remote_state_{current_executor, database_reader_, storage, 0};
 };

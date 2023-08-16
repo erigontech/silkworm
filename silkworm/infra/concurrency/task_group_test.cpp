@@ -18,24 +18,24 @@
 
 #include <array>
 #include <chrono>
-#include <future>
 #include <stdexcept>
+#include <string_view>
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_future.hpp>
+#include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 
 namespace silkworm::concurrency {
 
 using namespace boost::asio;
 using namespace std::chrono_literals;
-using namespace concurrency::awaitable_wait_for_all;
+using namespace awaitable_wait_for_all;
 
 static Task<void> async_ok() {
     co_await this_coro::executor;
@@ -62,62 +62,55 @@ static Task<void> wait_until_cancelled(bool* is_cancelled) {
     }
 }
 
-template <typename TResult>
-static TResult run(io_context& context, Task<TResult> awaitable1) {
-    auto task = co_spawn(
-        context,
-        std::move(awaitable1),
-        use_future);
-
-    while (task.wait_for(0s) == std::future_status::timeout) {
-        context.poll_one();
-    }
-
-    return task.get();
+static Task<void> sleep(std::chrono::milliseconds duration) {
+    auto executor = co_await this_coro::executor;
+    steady_timer timer(executor);
+    timer.expires_after(duration);
+    co_await timer.async_wait(use_awaitable);
 }
 
 TEST_CASE("TaskGroup.0") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 0};
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
 }
 
 TEST_CASE("TaskGroup.1") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 1};
     group.spawn(executor, async_ok());
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
 }
 
 TEST_CASE("TaskGroup.1.wait_until_cancelled") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 1};
     bool is_cancelled = false;
     group.spawn(executor, wait_until_cancelled(&is_cancelled));
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled);
 }
 
 TEST_CASE("TaskGroup.some.wait_until_cancelled") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 3};
     std::array<bool, 3> is_cancelled{};
     group.spawn(executor, wait_until_cancelled(&is_cancelled[0]));
     group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
     group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
     CHECK(is_cancelled[2]);
 }
 
 TEST_CASE("TaskGroup.some.mix") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 6};
     std::array<bool, 3> is_cancelled{};
     group.spawn(executor, async_ok());
@@ -126,18 +119,79 @@ TEST_CASE("TaskGroup.some.mix") {
     group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
     group.spawn(executor, async_ok());
     group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
     CHECK(is_cancelled[2]);
 }
 
 TEST_CASE("TaskGroup.spawn_after_close") {
-    io_context context;
-    auto executor = context.get_executor();
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
     TaskGroup group{executor, 1};
-    CHECK_THROWS_AS(run(context, group.wait() && async_throw()), TestException);
+    CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK_THROWS_AS(group.spawn(executor, async_ok()), TaskGroup::SpawnAfterCloseError);
+}
+
+TEST_CASE("TaskGroup.task_exception_is_rethrown") {
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
+    TaskGroup group{executor, 1};
+    group.spawn(executor, async_throw());
+
+    auto test = [&]() -> Task<bool> {
+        try {
+            co_await group.wait();
+            co_return false;
+        } catch (const TestException&) {
+            co_return true;
+        }
+    };
+    CHECK(runner.run(test()));
+}
+
+TEST_CASE("TaskGroup.task_cancelled_exception_is_ignored") {
+    using namespace awaitable_wait_for_one;
+
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
+    TaskGroup group{executor, 1};
+
+    auto task = [&]() -> Task<void> {
+        co_await boost::asio::this_coro::executor;
+        throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+    };
+    group.spawn(executor, task());
+
+    CHECK_NOTHROW(runner.run(group.wait() || sleep(1ms)));
+}
+
+TEST_CASE("TaskGroup.task_exception_during_cancellation_is_rethrown") {
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
+    TaskGroup group{executor, 1};
+
+    auto task = [&]() -> Task<void> {
+        bool is_cancelled = false;
+        co_await wait_until_cancelled(&is_cancelled);
+        if (is_cancelled) {
+            throw std::runtime_error("exception_during_cancellation");
+        }
+    };
+    group.spawn(executor, task());
+    group.spawn(executor, async_throw());
+
+    auto test = [&]() -> Task<bool> {
+        try {
+            co_await group.wait();
+            co_return false;
+        } catch (const TestException&) {
+            co_return false;
+        } catch (const std::runtime_error& ex) {
+            co_return (ex.what() == std::string_view{"exception_during_cancellation"});
+        }
+    };
+    CHECK(runner.run(test()));
 }
 
 }  // namespace silkworm::concurrency

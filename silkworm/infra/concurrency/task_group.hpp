@@ -20,6 +20,7 @@
 #include <map>
 #include <mutex>
 #include <stdexcept>
+#include <utility>
 
 #include "task.hpp"
 
@@ -66,7 +67,8 @@ namespace silkworm::concurrency {
 class TaskGroup {
   public:
     TaskGroup(boost::asio::any_io_executor executor, std::size_t max_tasks)
-        : completions_(std::move(executor), max_tasks) {}
+        : completions_(executor, max_tasks),
+          exceptions_(executor, 1) {}
 
     TaskGroup(const TaskGroup&) = delete;
     TaskGroup& operator=(const TaskGroup&) = delete;
@@ -91,7 +93,8 @@ class TaskGroup {
     bool is_closed_{false};
     std::size_t last_task_id_{0};
     std::map<std::size_t, boost::asio::cancellation_signal> tasks_;
-    concurrency::Channel<std::size_t> completions_;
+    concurrency::Channel<std::pair<std::size_t, std::exception_ptr>> completions_;
+    concurrency::Channel<std::exception_ptr> exceptions_;
 };
 
 }  // namespace silkworm::concurrency

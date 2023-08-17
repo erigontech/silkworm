@@ -31,30 +31,29 @@ class LocalClient : public Client {
     asio::io_context& get_executor() override;
 
     // actions
-    auto insert_headers(const BlockVector& blocks) -> Task<void> override;
-    auto insert_bodies(const BlockVector& blocks) -> Task<void> override;
-    auto insert_blocks(const BlockVector& blocks) -> Task<void> override;
+    Task<void> insert_headers(const BlockVector& blocks) override;
+    Task<void> insert_bodies(const BlockVector& blocks) override;
+    Task<void> insert_blocks(const BlockVector& blocks) override;
 
-    auto validate_chain(Hash head_block_hash) -> Task<ValidationResult> override;
+    Task<ValidationResult> validate_chain(Hash head_block_hash) override;
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
-        -> Task<ForkChoiceApplication> override;
+    Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) override;
 
     // state
-    auto block_progress() -> Task<BlockNum> override;
-    auto last_fork_choice() -> Task<BlockId> override;
+    Task<BlockNum> block_progress() override;
+    Task<BlockId> last_fork_choice() override;
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> Task<std::optional<BlockHeader>> override;
-    auto get_header(BlockNum height, Hash hash) -> Task<std::optional<BlockHeader>> override;
-    auto get_body(Hash block_hash) -> Task<std::optional<BlockBody>> override;
-    auto get_body(BlockNum block_number) -> Task<std::optional<BlockBody>> override;
+    Task<std::optional<BlockHeader>> get_header(Hash block_hash) override;
+    Task<std::optional<BlockHeader>> get_header(BlockNum height, Hash hash) override;
+    Task<std::optional<BlockBody>> get_body(Hash block_hash) override;
+    Task<std::optional<BlockBody>> get_body(BlockNum block_number) override;
 
-    auto is_canonical(Hash block_hash) -> Task<bool> override;
-    auto get_block_num(Hash block_hash) -> Task<std::optional<BlockNum>> override;
+    Task<bool> is_canonical(Hash block_hash) override;
+    Task<std::optional<BlockNum>> get_block_num(Hash block_hash) override;
 
-    auto get_last_headers(BlockNum limit) -> Task<std::vector<BlockHeader>> override;
-    auto get_header_td(Hash, std::optional<BlockNum>) -> Task<std::optional<TotalDifficulty>> override;
+    Task<std::vector<BlockHeader>> get_last_headers(BlockNum limit) override;
+    Task<std::optional<TotalDifficulty>> get_header_td(Hash, std::optional<BlockNum>) override;
 
   private:
     Server& local_server_;

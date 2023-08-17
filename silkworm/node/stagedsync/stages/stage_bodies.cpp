@@ -205,7 +205,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     return result;
 }
 
-auto BodiesStage::prune(db::RWTxn&) -> Stage::Result {
+Stage::Result BodiesStage::prune(db::RWTxn&) {
     return Stage::Result::kSuccess;
 }
 

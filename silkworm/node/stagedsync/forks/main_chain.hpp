@@ -50,36 +50,37 @@ class MainChain {
     void insert_block(const Block&);
 
     // branching
-    auto fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork>;  // fort at the current head
-    void reintegrate_fork(ExtendingFork&);                               // reintegrate fork into the main chain
-    auto find_forking_point(const BlockHeader& header, const Hash& header_hash) const -> std::optional<BlockId>;
-    auto find_forking_point(const Hash& header_hash) const -> std::optional<BlockId>;
-    auto is_canonical(BlockId block) const -> bool;
+    std::unique_ptr<ExtendingFork> fork(BlockId forking_point);  // fort at the current head
+    void reintegrate_fork(ExtendingFork&);                       // reintegrate fork into the main chain
+    std::optional<BlockId> find_forking_point(const BlockHeader& header, const Hash& header_hash) const;
+    std::optional<BlockId> find_forking_point(const Hash& header_hash) const;
+    bool is_canonical(BlockId block) const;
 
     // verification
-    auto verify_chain(Hash head_block_hash) -> VerificationResult;  // verify chain up to head_block_hash
-    bool notify_fork_choice_update(Hash head_block_hash,            // accept the current chain up to head_block_hash
-                                   std::optional<Hash> finalized_block_hash = std::nullopt);
+    // verify chain up to head_block_hash
+    VerificationResult verify_chain(Hash head_block_hash);
+    // accept the current chain up to head_block_hash
+    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto last_chosen_head() const -> BlockId;  // set by notify_fork_choice_update(), is always valid
-    auto last_finalized_head() const -> BlockId;
+    BlockId last_chosen_head() const;  // set by notify_fork_choice_update(), is always valid
+    BlockId last_finalized_head() const;
 
     // header/body retrieval
-    auto get_block_progress() const -> BlockNum;
-    auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
-    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
-    auto get_last_headers(uint64_t limit) const -> std::vector<BlockHeader>;
-    auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
-    auto extends(BlockId block, BlockId supposed_parent) const -> bool;
-    auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
-    auto is_canonical(Hash) const -> bool;
+    BlockNum get_block_progress() const;
+    std::optional<BlockHeader> get_header(BlockNum, Hash) const;
+    std::optional<Hash> get_canonical_hash(BlockNum) const;
+    std::optional<TotalDifficulty> get_header_td(BlockNum, Hash) const;
+    std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
+    bool extends_last_fork_choice(BlockNum, Hash) const;
+    bool extends(BlockId block, BlockId supposed_parent) const;
+    bool is_ancestor(BlockId supposed_parent, BlockId block) const;
+    bool is_canonical(Hash) const;
     // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
-    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
-    auto get_body(Hash) const -> std::optional<BlockBody>;
-    auto get_block_number(Hash) const -> std::optional<BlockNum>;
+    std::optional<BlockHeader> get_header(Hash) const;
+    std::optional<TotalDifficulty> get_header_td(Hash) const;
+    std::optional<BlockBody> get_body(Hash) const;
+    std::optional<BlockNum> get_block_number(Hash) const;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
@@ -88,7 +89,7 @@ class MainChain {
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
-    auto current_head() const -> BlockId;  // private state, it is implementation dependent, this head can be invalid
+    BlockId current_head() const;  // private state, it is implementation dependent, this head can be invalid
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

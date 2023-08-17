@@ -94,7 +94,7 @@ HeadersStage::HeadersStage(NodeSettings* ns, SyncContext* sc)
     }
 }
 
-auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
+Stage::Result HeadersStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -164,7 +164,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     return result;
 }
 
-auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
+Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
@@ -200,7 +200,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
     return result;
 }
 
-auto HeadersStage::prune(db::RWTxn&) -> Stage::Result {
+Stage::Result HeadersStage::prune(db::RWTxn&) {
     return Stage::Result::kSuccess;
 }
 

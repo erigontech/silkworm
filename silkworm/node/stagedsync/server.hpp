@@ -35,30 +35,29 @@ class Server : public ActiveComponent {
     Server(NodeSettings&, db::RWAccess);
 
     // actions
-    auto insert_headers(const BlockVector& blocks) -> Task<void>;  // [[thorax-compliant]]
-    auto insert_bodies(const BlockVector& blocks) -> Task<void>;   // [[thorax-compliant]]
-    auto insert_blocks(const BlockVector& blocks) -> Task<void>;
+    Task<void> insert_headers(const BlockVector& blocks);  // [[thorax-compliant]]
+    Task<void> insert_bodies(const BlockVector& blocks);   // [[thorax-compliant]]
+    Task<void> insert_blocks(const BlockVector& blocks);
 
-    auto validate_chain(Hash head_block_hash) -> Task<execution::ValidationResult>;  // [[thorax-compliant]]
+    Task<execution::ValidationResult> validate_chain(Hash head_block_hash);  // [[thorax-compliant]]
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
-        -> Task<ForkChoiceApplication>;  // [[thorax-compliant]]
+    Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);  // [[thorax-compliant]]
 
     // state
-    auto block_progress() -> Task<BlockNum>;
-    auto last_fork_choice() -> Task<BlockId>;
+    Task<BlockNum> block_progress();
+    Task<BlockId> last_fork_choice();
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> Task<std::optional<BlockHeader>>;             // [[thorax-compliant]]
-    auto get_header(BlockNum height, Hash hash) -> Task<std::optional<BlockHeader>>;  // [[thorax-compliant]]
-    auto get_body(Hash block_hash) -> Task<std::optional<BlockBody>>;                 // [[thorax-compliant]]
-    auto get_body(BlockNum block_number) -> Task<std::optional<BlockBody>>;           // [[thorax-compliant]]
+    Task<std::optional<BlockHeader>> get_header(Hash block_hash);             // [[thorax-compliant]]
+    Task<std::optional<BlockHeader>> get_header(BlockNum height, Hash hash);  // [[thorax-compliant]]
+    Task<std::optional<BlockBody>> get_body(Hash block_hash);                 // [[thorax-compliant]]
+    Task<std::optional<BlockBody>> get_body(BlockNum block_number);           // [[thorax-compliant]]
 
-    auto is_canonical(Hash block_hash) -> Task<bool>;                      // [[thorax-compliant]]
-    auto get_block_num(Hash block_hash) -> Task<std::optional<BlockNum>>;  // [[thorax-compliant]]
+    Task<bool> is_canonical(Hash block_hash);                      // [[thorax-compliant]]
+    Task<std::optional<BlockNum>> get_block_num(Hash block_hash);  // [[thorax-compliant]]
 
-    auto get_last_headers(BlockNum limit) -> Task<std::vector<BlockHeader>>;
-    auto get_header_td(Hash, std::optional<BlockNum>) -> Task<std::optional<TotalDifficulty>>;  // to remove
+    Task<std::vector<BlockHeader>> get_last_headers(BlockNum limit);
+    Task<std::optional<TotalDifficulty>> get_header_td(Hash, std::optional<BlockNum>);  // to remove
 
     asio::io_context& get_executor() { return io_context_; }
 

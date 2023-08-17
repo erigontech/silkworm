@@ -222,7 +222,7 @@ Headers HeaderChain::withdraw_stable_headers() {
     return stable_headers;  // RVO
 }
 
-auto HeaderChain::verify(const Link& link) -> VerificationResult {
+HeaderChain::VerificationResult HeaderChain::verify(const Link& link) {
     if (link.preverified) return Preverified;
 
     // todo: Erigon here searches in the db to see if the link is already present and in this case Skips it
@@ -267,7 +267,7 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
 /*
  * Add a ready header to the chain, if it becomes a new anchor then try to extend it if there are no other anchors
  */
-auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std::shared_ptr<OutboundMessage> {
+std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) {
     SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << anchor.hash();
 
     statistics_.received_items += 1;
@@ -296,7 +296,7 @@ auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std:
 /*
  * Advance the chain requesting new headers
  */
-auto HeaderChain::request_headers(time_point_t tp) -> std::shared_ptr<OutboundMessage> {
+std::shared_ptr<OutboundMessage> HeaderChain::request_headers(time_point_t tp) {
     auto skeleton_req = anchor_skeleton_request(tp);
     if (skeleton_req) return skeleton_req;
 
@@ -310,7 +310,7 @@ auto HeaderChain::request_headers(time_point_t tp) -> std::shared_ptr<OutboundMe
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
-auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
+std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point_t time_point) {
     using namespace std::chrono_literals;
 
     // if last skeleton request was too recent, do not request another one
@@ -428,7 +428,7 @@ std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
  * and all its descendants get deleted from consideration (invalidate_anchor function). This would happen if anchor
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
-auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
+std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_point_t time_point) {
     using std::nullopt;
     auto prev_condition = extension_condition_;
 
@@ -505,7 +505,7 @@ void HeaderChain::invalidate(std::shared_ptr<Anchor> anchor) {
 }
 
 // SaveExternalAnnounce - does mark hash as seen in external announcement, only such hashes will broadcast further after
-auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHeadersPacket66> {
+std::optional<GetBlockHeadersPacket66> HeaderChain::save_external_announce(Hash hash) {
     if (target_block_.has_value()) return std::nullopt;  // with stop_at_block we do not use announcements
 
     seen_announces_.put(hash, 0);  // we ignore the value in the map (zero here), we only need the key
@@ -553,7 +553,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
 
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
-auto HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
+bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
     for (auto& header : headers) {
         if (is_zero(header.parent_hash) && header.number != 0) {
             log::Warning("HeaderStage") << "received malformed header: " << header.number;
@@ -574,8 +574,7 @@ auto HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bo
     return false;
 }
 
-auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t requestId, const PeerId& peer_id)
-    -> std::tuple<Penalty, RequestMoreHeaders> {
+std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t requestId, const PeerId& peer_id) {
     bool request_more_headers = false;
 
     if (headers.empty()) {
@@ -627,7 +626,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
  *    - whatever part of the chain that becomes canonical it is not necessary to redo the process of division into
  * segments
  */
-auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penalty> {
+std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
     std::vector<Header_Ref> headers = to_ref();
     as_range::sort(headers, [](auto& h1, auto& h2) {
         return h1->number > h2->number;
@@ -673,8 +672,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
     return {segments, Penalty::NoPenalty};
 }
 
-auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId)
-    -> RequestMoreHeaders {
+HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId) {
     if (segment.empty()) return false;
     auto [anchor, start] = find_anchor(segment);
     auto [tip, end] = find_link(segment, start);
@@ -759,7 +757,7 @@ void HeaderChain::reduce_links_to(size_t limit) {
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
-auto HeaderChain::find_anchor(const Segment& segment) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
+std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::Start> HeaderChain::find_anchor(const Segment& segment) const {
     for (size_t i = 0; i < segment.size(); i++) {
         auto a = anchors_.find(segment[i]->hash());
         if (a != anchors_.end()) {  // segment[i]->hash() == anchor.parent_hash
@@ -771,7 +769,7 @@ auto HeaderChain::find_anchor(const Segment& segment) const -> std::tuple<std::o
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto HeaderChain::find_link(const Segment& segment, size_t start) const -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
+std::tuple<std::optional<std::shared_ptr<Link>>, HeaderChain::End> HeaderChain::find_link(const Segment& segment, size_t start) const {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
 
@@ -783,7 +781,7 @@ auto HeaderChain::find_link(const Segment& segment, size_t start) const -> std::
     return {std::nullopt, segment.size()};
 }
 
-auto HeaderChain::get_link(const Hash& hash) const -> std::optional<std::shared_ptr<Link>> {
+std::optional<std::shared_ptr<Link>> HeaderChain::get_link(const Hash& hash) const {
     if (auto it = links_.find(hash); it != links_.end()) {
         return it->second;
     }
@@ -791,8 +789,7 @@ auto HeaderChain::get_link(const Hash& hash) const -> std::optional<std::shared_
 }
 
 // find_anchors find the anchor the link is anchored to
-auto HeaderChain::find_anchor(std::shared_ptr<Link> link) const
-    -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink> {
+std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> HeaderChain::find_anchor(std::shared_ptr<Link> link) const {
     auto parent_link = link;
     decltype(links_.begin()) it;
     do {
@@ -872,7 +869,7 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
                  << (anchor_preverified ? " (V)" : "");
 }
 
-auto HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) -> RequestMoreHeaders {
+HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) {
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
@@ -955,7 +952,7 @@ void HeaderChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slic
                  << (segment_slice.rend() - 1)->operator*().number;
 }
 
-auto HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> RequestMoreHeaders {
+HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) {
     using std::to_string;
 
     // Add or find anchor
@@ -988,8 +985,7 @@ auto HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Req
     return !pre_existing;
 }
 
-auto HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, PeerId peerId, bool check_limits)
-    -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing> {
+std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, PeerId peerId, bool check_limits) {
     using std::to_string;
 
     auto a = anchors_.find(anchor_header.parent_hash);
@@ -1018,7 +1014,7 @@ auto HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, Pe
     return {anchor, pre_existing};
 }
 
-auto HeaderChain::add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link> {
+std::shared_ptr<Link> HeaderChain::add_header_as_link(const BlockHeader& header, bool persisted) {
     auto link = std::make_shared<Link>(header, persisted);
     links_[link->hash] = link;
     if (persisted) {

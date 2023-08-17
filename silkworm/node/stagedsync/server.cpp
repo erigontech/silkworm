@@ -53,14 +53,14 @@ void Server::handle_exception(const std::exception_ptr& e) {
     }
 }
 
-auto Server::block_progress() -> Task<BlockNum> {
+Task<BlockNum> Server::block_progress() {
     auto lambda = [](Server* me) -> Task<BlockNum> {
         co_return me->exec_engine_.block_progress();
     };
     return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
-auto Server::last_fork_choice() -> Task<BlockId> {
+Task<BlockId> Server::last_fork_choice() {
     auto lambda = [](Server* me) -> Task<BlockId> {
         co_return me->exec_engine_.last_fork_choice();
     };

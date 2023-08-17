@@ -95,7 +95,7 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
     });
 }
 
-auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationResult> {
+concurrency::AwaitableFuture<VerificationResult> ExtendingFork::verify_chain() {
     propagate_exception_if_any();
 
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};  // note: promise uses an external io_context
@@ -115,8 +115,7 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
     return awaitable_future;
 }
 
-auto ExtendingFork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
-    -> concurrency::AwaitableFuture<bool> {
+concurrency::AwaitableFuture<bool> ExtendingFork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
     propagate_exception_if_any();
 
     concurrency::AwaitablePromise<bool> promise{io_context_.get_executor()};  // note: promise uses an external io_context

@@ -206,7 +206,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
         return std::shared_ptr<HeaderList>(new HeaderList(headers));
     }
 
-    auto split_into_segments() -> std::tuple<std::vector<Segment>, Penalty>;  // the core functionality of HeaderList
+    std::tuple<std::vector<Segment>, Penalty> split_into_segments();  // the core functionality of HeaderList
 
     std::vector<BlockHeader>& headers() { return headers_; }
 
@@ -222,12 +222,12 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
         return refs;
     }
 
-    static auto childParentValidity(Header_Ref child, Header_Ref parent) -> std::tuple<bool, Penalty> {
+    static std::tuple<bool, Penalty> childParentValidity(Header_Ref child, Header_Ref parent) {
         if (parent->number + 1 != child->number) return {false, Penalty::WrongChildBlockHeightPenalty};
         return {true, NoPenalty};
     }
 
-    static auto childrenParentValidity(const std::vector<Header_Ref>& children, Header_Ref parent) -> std::tuple<bool, Penalty> {
+    static std::tuple<bool, Penalty> childrenParentValidity(const std::vector<Header_Ref>& children, Header_Ref parent) {
         for (auto& child : children) {
             auto [valid, penalty] = childParentValidity(child, parent);
             if (!valid) return {false, penalty};

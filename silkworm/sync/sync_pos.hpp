@@ -40,19 +40,19 @@ class PoSSync : public ChainSync {
     Task<void> async_run() override;
 
     // public interface to download blocks
-    auto download_blocks() -> Task<void>; /*[[long_running]]*/
+    Task<void> download_blocks(); /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    auto new_payload(const rpc::ExecutionPayload&) -> Task<rpc::PayloadStatus>;
-    auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> Task<rpc::ForkChoiceUpdatedReply>;
-    auto get_payload(uint64_t payloadId) -> Task<rpc::ExecutionPayloadAndValue>;
-    auto get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> Task<rpc::ExecutionPayloadBodies>;
-    auto get_payload_bodies_by_range(BlockNum start, uint64_t count) -> Task<rpc::ExecutionPayloadBodies>;
+    Task<rpc::PayloadStatus> new_payload(const rpc::ExecutionPayload&);
+    Task<rpc::ForkChoiceUpdatedReply> fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&);
+    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId);
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes);
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count);
 
   private:
-    static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;
+    static std::shared_ptr<Block> make_execution_block(const rpc::ExecutionPayload& payload);
     void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
-    auto has_valid_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
+    std::tuple<bool, Hash> has_valid_ancestor(const Hash& block_hash);
 };
 
 }  // namespace silkworm::chainsync

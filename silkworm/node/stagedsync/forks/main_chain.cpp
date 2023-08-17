@@ -69,7 +69,7 @@ void MainChain::close() {
     tx_.abort();
 }
 
-auto MainChain::node_settings() -> NodeSettings& {
+NodeSettings& MainChain::node_settings() {
     return node_settings_;
 }
 
@@ -77,15 +77,15 @@ db::RWTxn& MainChain::tx() {
     return tx_;
 }
 
-auto MainChain::current_head() const -> BlockId {
+BlockId MainChain::current_head() const {
     return canonical_chain_.current_head();
 }
 
-auto MainChain::last_chosen_head() const -> BlockId {
+BlockId MainChain::last_chosen_head() const {
     return last_fork_choice_;
 }
 
-auto MainChain::last_finalized_head() const -> BlockId {
+BlockId MainChain::last_finalized_head() const {
     return last_finalized_head_;
 }
 
@@ -99,7 +99,7 @@ std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) co
     return find_forking_point(*header, header_hash);
 }
 
-auto MainChain::is_canonical(BlockId block) const -> bool {
+bool MainChain::is_canonical(BlockId block) const {
     if (block.number > last_fork_choice_.number) return false;
     return (canonical_chain_.get_hash(block.number) == block.hash);
 }
@@ -139,7 +139,7 @@ void MainChain::insert_block(const Block& block) {
     }
 }
 
-auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
+VerificationResult MainChain::verify_chain(Hash head_block_hash) {
     SILK_TRACE << "MainChain: verifying chain head=" << head_block_hash.to_hex();
 
     // retrieve the head header
@@ -277,7 +277,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
-auto MainChain::fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork> {
+std::unique_ptr<ExtendingFork> MainChain::fork(BlockId forking_point) {
     ensure(std::holds_alternative<ValidChain>(canonical_head_status_), "forking is allowed from a valid state");
     return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
 }
@@ -298,7 +298,7 @@ void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
     last_finalized_head_ = fork->finalized_head();
 }
 
-auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {
+std::optional<BlockHeader> MainChain::get_header(Hash header_hash) const {
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
@@ -307,7 +307,7 @@ auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader>
     return header;
 }
 
-auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> std::optional<BlockHeader> {
+std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash header_hash) const {
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
@@ -316,33 +316,33 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> st
     return header;
 }
 
-auto MainChain::get_canonical_hash(BlockNum height) const -> std::optional<Hash> {
+std::optional<Hash> MainChain::get_canonical_hash(BlockNum height) const {
     if (height > last_fork_choice_.number) return {};
     return canonical_chain_.get_hash(height);
 }
 
-auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const -> std::optional<TotalDifficulty> {
+std::optional<TotalDifficulty> MainChain::get_header_td(BlockNum header_height, Hash header_hash) const {
     return db::read_total_difficulty(tx_, header_height, header_hash);
 }
 
-auto MainChain::get_header_td(Hash header_hash) const -> std::optional<TotalDifficulty> {
+std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const {
     auto header = get_header(header_hash);
     if (!header) return {};
     return db::read_total_difficulty(tx_, header->number, header_hash);
 }
 
-auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
+std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
     BlockBody body;
     bool found = data_model_.read_body(header_hash, body);
     if (!found) return {};
     return body;
 }
 
-auto MainChain::get_block_progress() const -> BlockNum {
+BlockNum MainChain::get_block_progress() const {
     return data_model_.highest_block_number();
 }
 
-auto MainChain::get_last_headers(uint64_t limit) const -> std::vector<BlockHeader> {
+std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
     std::vector<BlockHeader> headers;
 
     data_model_.for_last_n_headers(limit, [&headers](BlockHeader&& header) {
@@ -352,19 +352,19 @@ auto MainChain::get_last_headers(uint64_t limit) const -> std::vector<BlockHeade
     return headers;
 }
 
-auto MainChain::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
+std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
     return data_model_.read_block_number(header_hash);
 }
 
-auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {
+bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {
     return extends(block, supposed_parent);
 }
 
-auto MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const -> bool {
+bool MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const {
     return extends({height, hash}, last_fork_choice_);
 }
 
-auto MainChain::extends(BlockId block, BlockId supposed_parent) const -> bool {
+bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
     while (block.number > supposed_parent.number) {
         auto header = get_header(block.number, block.hash);
         if (!header) return false;
@@ -377,7 +377,7 @@ auto MainChain::extends(BlockId block, BlockId supposed_parent) const -> bool {
     return false;
 }
 
-auto MainChain::is_canonical(Hash block_hash) const -> bool {
+bool MainChain::is_canonical(Hash block_hash) const {
     auto header = get_header(block_hash);
     if (!header) return false;
     if (header->number > last_fork_choice_.number) return false;
@@ -386,7 +386,7 @@ auto MainChain::is_canonical(Hash block_hash) const -> bool {
 }
 
 /*
-auto MainChain::get_canonical_head_from_db() -> ChainHead {
+ChainHead MainChain::get_canonical_head_from_db() {
     auto [height, hash] = db::read_canonical_head(tx_);
 
     std::optional<TotalDifficulty> td = db::read_total_difficulty(tx_, height, hash);

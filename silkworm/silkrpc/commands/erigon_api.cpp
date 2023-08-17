@@ -128,8 +128,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         // Lookup the first and last block headers
-        const auto first_hash = co_await chain_storage->read_canonical_hash(core::kEarliestBlockNumber);
-        const auto first_header = co_await chain_storage->read_header(core::kEarliestBlockNumber, *first_hash);
+        const auto first_header = co_await chain_storage->read_canonical_header(core::kEarliestBlockNumber);
         const auto head_header_hash = co_await core::rawdb::read_head_header_hash(tx_database);
         const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
         const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
@@ -144,13 +143,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
             const auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t i) -> Task<bool> {
-                const auto hash = co_await chain_storage->read_canonical_hash(i);
-                const auto header = co_await chain_storage->read_header(i, *hash);
+                const auto header = co_await chain_storage->read_canonical_header(i);
                 co_return header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
-            const auto matching_hash = co_await chain_storage->read_canonical_hash(matching_block_number);
-            const auto matching_header = co_await chain_storage->read_header(matching_block_number, *matching_hash);
+            const auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
             if (matching_header->timestamp > timestamp) {
                 block_number = matching_block_number - 1;
             } else {
@@ -280,8 +277,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
-        const auto header{co_await chain_storage->read_header(block_number, *block_hash)};
+        const auto header{co_await chain_storage->read_canonical_header(block_number)};
 
         reply = make_json_content(request["id"], *header);
     } catch (const std::exception& e) {

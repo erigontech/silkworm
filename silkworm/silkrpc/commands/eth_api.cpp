@@ -977,8 +977,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         }
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-        rpc::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
-            return core::rawdb::read_header_by_number(cached_database, block_number);
+        rpc::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_number) {
+            return chain_storage->read_canonical_header(block_number);
         };
 
         rpc::AccountReader account_reader = [&state_reader](const evmc::address& address, uint64_t block_number) {

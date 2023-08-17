@@ -60,7 +60,7 @@ Task<Roaring> get(
 
     silkworm::Bytes from_key{key.begin(), key.end()};
     from_key.resize(key.size() + sizeof(uint32_t));
-    boost::endian::store_big_u32(&from_key[key.size()], from_block);
+    endian::store_big_u32(&from_key[key.size()], from_block);
     SILK_DEBUG << "table: " << table << " key: " << key << " from_key: " << from_key;
 
     core::rawdb::Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
@@ -68,7 +68,7 @@ Task<Roaring> get(
         auto chunk = std::make_unique<Roaring>(Roaring::readSafe(reinterpret_cast<const char*>(v.data()), v.size()));
         SILK_TRACE << "chunk: " << chunk->toString();
         chunks.push_back(std::move(chunk));
-        auto block = boost::endian::load_big_u32(&k[k.size() - sizeof(uint32_t)]);
+        auto block = endian::load_big_u32(&k[k.size() - sizeof(uint32_t)]);
         return block < to_block;
     };
     co_await db_reader.walk(table, from_key, gsl::narrow<uint32_t>(key.size() * CHAR_BIT), walker);

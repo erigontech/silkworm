@@ -140,7 +140,7 @@ uint64_t from_quantity(const std::string& hex_quantity) {
 
 std::string to_hex_no_leading_zeros(uint64_t number) {
     silkworm::Bytes number_bytes(8, '\0');
-    boost::endian::store_big_u64(&number_bytes[0], number);
+    endian::store_big_u64(&number_bytes[0], number);
     return to_hex_no_leading_zeros(number_bytes);
 }
 

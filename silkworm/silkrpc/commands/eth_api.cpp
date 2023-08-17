@@ -25,11 +25,11 @@
 #include <string>
 #include <utility>
 
-#include <boost/endian/conversion.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/transaction.hpp>
@@ -2267,7 +2267,7 @@ Task<void> EthereumRpcApi::get_logs(
             filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
             SILK_DEBUG << "filtered_chunk_logs.size(): " << filtered_chunk_logs.size();
             if (!filtered_chunk_logs.empty()) {
-                const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
+                const auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
                 SILK_DEBUG << "tx_id: " << tx_id;
                 for (auto& log : filtered_chunk_logs) {
                     log.tx_index = tx_id;

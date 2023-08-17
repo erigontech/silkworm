@@ -19,8 +19,7 @@
 #include <string>
 #include <utility>
 
-#include <boost/endian/conversion.hpp>
-
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/decode.hpp>
@@ -42,7 +41,7 @@ Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::byte
     if (value.empty()) {
         throw std::invalid_argument{"empty block number value in read_header_number"};
     }
-    co_return boost::endian::load_big_u64(value.data());
+    co_return endian::load_big_u64(value.data());
 }
 
 Task<ChainConfig> read_chain_config(const DatabaseReader& reader) {
@@ -235,7 +234,7 @@ Task<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_nu
         if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
             return false;
         }
-        auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
+        auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
         const bool decode_ok{cbor_decode(v, receipts[tx_id].logs)};
         if (!decode_ok) {
             SILK_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_number;
@@ -311,7 +310,7 @@ Task<Transactions> read_canonical_transactions(const DatabaseReader& reader, uin
     txns.reserve(txn_count);
 
     silkworm::Bytes txn_id_key(8, '\0');
-    boost::endian::store_big_u64(txn_id_key.data(), base_txn_id);
+    endian::store_big_u64(txn_id_key.data(), base_txn_id);
     SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
     size_t i{0};
     Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {
@@ -343,7 +342,7 @@ Task<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, 
     }
     txns.reserve(txn_count);
     silkworm::Bytes txn_id_key(8, '\0');
-    boost::endian::store_big_u64(txn_id_key.data(), base_txn_id);
+    endian::store_big_u64(txn_id_key.data(), base_txn_id);
     SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
     size_t i{0};
     Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {

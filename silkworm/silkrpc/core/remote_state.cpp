@@ -54,15 +54,15 @@ Task<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*add
     co_return 0;
 }
 
-Task<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+Task<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     co_return co_await storage_.read_header(block_number, block_hash);
 }
 
-Task<bool> AsyncRemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+Task<bool> AsyncRemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
     co_return co_await storage_.read_body(block_hash, block_number, filled_body);
 }
 
-Task<std::optional<intx::uint256>> AsyncRemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+Task<std::optional<intx::uint256>> AsyncRemoteState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     co_return co_await storage_.read_total_difficulty(block_hash, block_number);
 }
 
@@ -70,12 +70,12 @@ Task<evmc::bytes32> AsyncRemoteState::state_root_hash() const {
     co_return evmc::bytes32{};
 }
 
-Task<uint64_t> AsyncRemoteState::current_canonical_block() const {
+Task<BlockNum> AsyncRemoteState::current_canonical_block() const {
     // This method should not be called by EVM::execute
     co_return 0;
 }
 
-Task<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(uint64_t block_number) const {
+Task<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(BlockNum block_number) const {
     // This method should not be called by EVM::execute
     co_return co_await storage_.read_canonical_hash(block_number);
 }
@@ -136,7 +136,7 @@ std::optional<silkworm::BlockHeader> RemoteState::read_header(uint64_t block_num
     }
 }
 
-bool RemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+bool RemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
     SILK_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << block_hash;
     try {
         auto result{boost::asio::co_spawn(executor_, async_state_.read_body(block_number, block_hash, filled_body), boost::asio::use_future)};
@@ -148,7 +148,7 @@ bool RemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_ha
     }
 }
 
-std::optional<intx::uint256> RemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<intx::uint256> RemoteState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     SILK_DEBUG << "RemoteState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
     try {
         std::future<std::optional<intx::uint256>> result{boost::asio::co_spawn(executor_, async_state_.total_difficulty(block_number, block_hash), boost::asio::use_future)};
@@ -165,11 +165,11 @@ evmc::bytes32 RemoteState::state_root_hash() const {
     throw std::logic_error{"RemoteState::state_root_hash not yet implemented"};
 }
 
-uint64_t RemoteState::current_canonical_block() const {
+BlockNum RemoteState::current_canonical_block() const {
     throw std::logic_error{"RemoteState::current_canonical_block not yet implemented"};
 }
 
-std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t /*block_number*/) const {
+std::optional<evmc::bytes32> RemoteState::canonical_hash(BlockNum /*block_number*/) const {
     throw std::logic_error{"RemoteState::canonical_hash not yet implemented"};
 }
 

@@ -85,11 +85,11 @@ TEST_CASE("estimate gas") {
 
     silkworm::Account kAccount{0, kBalance};
 
-    BlockHeaderProvider block_header_provider = [&kBlockHeader](uint64_t /*block_number*/) -> Task<silkworm::BlockHeader> {
+    BlockHeaderProvider block_header_provider = [&kBlockHeader](BlockNum /*block_number*/) -> Task<silkworm::BlockHeader> {
         co_return kBlockHeader;
     };
 
-    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, uint64_t /*block_number*/) -> Task<std::optional<silkworm::Account>> {
+    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, BlockNum /*block_number*/) -> Task<std::optional<silkworm::Account>> {
         co_return kAccount;
     };
 

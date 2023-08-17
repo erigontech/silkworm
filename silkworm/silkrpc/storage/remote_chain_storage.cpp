@@ -53,7 +53,7 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, sil
 }
 
 Task<bool> RemoteChainStorage::read_block(const Hash& hash, silkworm::Block& block) const {
-    const uint64_t block_number = co_await core::rawdb::read_header_number(reader_, hash);
+    const BlockNum block_number = co_await core::rawdb::read_header_number(reader_, hash);
     co_return co_await backend_->get_block(block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 

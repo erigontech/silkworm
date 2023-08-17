@@ -279,9 +279,9 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto sender_byte_view = full_view(sender);
         auto key_value = co_await account_history_cursor->seek(sender_byte_view);
 
-        std::vector<uint64_t> account_block_numbers;
+        std::vector<BlockNum> account_block_numbers;
 
-        uint64_t max_block_prev_chunk = 0;
+        BlockNum max_block_prev_chunk = 0;
         roaring::Roaring64Map bitmap;
 
         while (true) {
@@ -408,9 +408,9 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
         auto key_value = co_await account_history_cursor->seek(db::account_history_key(contract_address, 0));
 
-        std::vector<uint64_t> account_block_numbers;
+        std::vector<BlockNum> account_block_numbers;
 
-        uint64_t max_block_prev_chunk = 0;
+        BlockNum max_block_prev_chunk = 0;
         roaring::Roaring64Map bitmap;
 
         while (true) {
@@ -657,7 +657,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<uint64_t>();
+    auto block_number = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
     SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
@@ -741,7 +741,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<uint64_t>();
+    auto block_number = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
     SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
@@ -844,14 +844,14 @@ Task<bool> OtsRpcApi::trace_blocks(
     co_return has_more;
 }
 
-Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results) {
+Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results) {
     TransactionsWithReceipts transactions_with_receipts;
     co_await trace_block(tx, block_number, address, transactions_with_receipts);
     results[index] = transactions_with_receipts;
     co_return;
 }
 
-Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
     ethdb::TransactionDatabase tx_database{tx};
     const auto chain_storage = tx.create_storage(tx_database, backend_);
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
@@ -966,7 +966,7 @@ ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address
     first_seek_key_value_ = first_seek_key_value;
 }
 
-Task<ChunkLocatorResponse> ChunkLocator::get(uint64_t min_block) {
+Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
     KeyValue key_value;
     try {
         key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
@@ -1043,7 +1043,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
         }
     }
 
-    uint64_t next_block = next();
+    BlockNum next_block = next();
     bool has_next_ = has_next();
 
     if (!has_next_) {
@@ -1089,7 +1089,7 @@ void ForwardBlockProvider::iterator(roaring::Roaring64Map& bitmap) {
     bitmap_index_ = 0;
 }
 
-void ForwardBlockProvider::advance_if_needed(uint64_t min_block) {
+void ForwardBlockProvider::advance_if_needed(BlockNum min_block) {
     for (uint64_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
         if (bitmap_vector_.at(i) >= min_block) {
             bitmap_index_ = i;
@@ -1168,7 +1168,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
         }
     }
 
-    uint64_t next_block = next();
+    BlockNum next_block = next();
     bool has_next_ = has_next();
 
     if (!has_next_) {
@@ -1240,7 +1240,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         co_return BlockProviderResponse{0, false, true};
     }
 
-    uint64_t block_num{0};
+    BlockNum block_num{0};
 
     if (!has_more_from_) {
         block_num = next_to_;

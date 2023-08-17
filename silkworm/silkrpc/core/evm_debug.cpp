@@ -271,7 +271,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_json(json);
 }
 
-Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number) {
+Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_number) {
     const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_number);
     if (!block_with_hash) {
         co_return;
@@ -420,7 +420,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 Task<void> DebugExecutor::execute(
     json::Stream& stream,
     const ChainStorage& storage,
-    uint64_t block_number,
+    BlockNum block_number,
     const silkworm::Block& block,
     const Transaction& transaction,
     int32_t index) {

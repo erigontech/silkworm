@@ -73,7 +73,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
     co_return;
 }
 
-Task<void> BlockReader::load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const {
+Task<void> BlockReader::load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const {
     auto acs_cursor = co_await transaction_.cursor(db::table::kAccountChangeSetName);
     const auto block_number_key = silkworm::db::block_key(block_number);
 
@@ -94,7 +94,7 @@ Task<void> BlockReader::load_addresses(uint64_t block_number, BalanceChanges& ba
         kv = co_await acs_cursor->next();
         pair = decode(kv.value);
         balance_changes.emplace(pair.first, pair.second);
-        number = static_cast<uint64_t>(std::stol(silkworm::to_hex(kv.key), nullptr, 16));
+        number = static_cast<BlockNum>(std::stol(silkworm::to_hex(kv.key), nullptr, 16));
     }
 }
 

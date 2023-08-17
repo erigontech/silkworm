@@ -35,8 +35,6 @@
 #include <roaring/roaring64map.hh>
 #pragma GCC diagnostic pop
 
-#include <boost/functional/hash.hpp>
-
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/etl/collector.hpp>

@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/endian/conversion.hpp>
 #include <gsl/narrow>
 
 #include <silkworm/infra/common/log.hpp>

@@ -20,7 +20,6 @@
 #include <span>
 #include <utility>
 
-#include <boost/endian/conversion.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/endian.hpp>

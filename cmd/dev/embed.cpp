@@ -20,7 +20,6 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string.hpp>
 
 namespace fs = std::filesystem;
 

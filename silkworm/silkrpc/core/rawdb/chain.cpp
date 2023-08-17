@@ -37,8 +37,8 @@
 namespace silkworm::rpc::core::rawdb {
 
 /* Local Routines */
-static boost::asio::awaitable<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
-static boost::asio::awaitable<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+static Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+static Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
 Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};

@@ -1077,7 +1077,7 @@ bool ForwardBlockProvider::has_next() {
     return bitmap_index_ < bitmap_vector_.size();
 }
 
-uint64_t ForwardBlockProvider::next() {
+BlockNum ForwardBlockProvider::next() {
     uint64_t result = bitmap_vector_.at(bitmap_index_);
     bitmap_index_++;
     return result;

@@ -38,9 +38,9 @@ namespace silkworm::rpc::core::rawdb {
 
 /* Local Routines */
 static Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
-static Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
-static Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
-static Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+static Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+static Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+static Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
 
 Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};
@@ -107,7 +107,7 @@ Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, co
     co_return co_await read_header(reader, block_hash, block_number);
 }
 
-Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     auto data = co_await read_header_rlp(reader, block_hash, block_number);
     if (data.empty()) {
         throw std::runtime_error{"empty block header RLP in read_header"};
@@ -158,17 +158,17 @@ Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, u
     }
 }
 
-Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
     co_return co_await reader.get_one(db::table::kHeadersName, block_key);
 }
 
-Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
     co_return co_await reader.get_one(db::table::kBlockBodiesName, block_key);
 }
 
-Task<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number) {
+Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
@@ -255,7 +255,7 @@ Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::Block
     co_return receipts;
 }
 
-Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto value = co_await reader.get_one(db::table::kIssuanceName, block_key);
     intx::uint256 total_issued = 0;
@@ -266,7 +266,7 @@ Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader,
     co_return total_issued;
 }
 
-Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const std::string kBurnt{"burnt"};
     silkworm::Bytes key{kBurnt.begin(), kBurnt.end()};
@@ -280,7 +280,7 @@ Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, 
     co_return total_burnt;
 }
 
-Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto value = co_await reader.get_one(db::table::kCumulativeGasIndexName, block_key);
     intx::uint256 cumulative_gas_index = 0;

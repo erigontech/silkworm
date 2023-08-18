@@ -80,6 +80,6 @@ class DebugRpcApi {
     friend class silkworm::http::RequestHandler;
 };
 
-Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number);
+Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, BlockNum start_block_number, BlockNum end_block_number);
 
 }  // namespace silkworm::rpc::commands

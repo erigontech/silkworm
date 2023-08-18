@@ -50,7 +50,7 @@ class BlockReader {
     [[nodiscard]] Task<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
 
   private:
-    [[nodiscard]] Task<void> load_addresses(uint64_t block_number, BalanceChanges& balance_changes) const;
+    [[nodiscard]] Task<void> load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const;
 
     const core::rawdb::DatabaseReader& database_reader_;
     const ChainStorage& chain_storage_;

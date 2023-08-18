@@ -39,6 +39,8 @@ namespace silkworm::rpc::core::rawdb {
 /* Local Routines */
 static Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 static Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+static Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+static Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
 Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};
@@ -251,70 +253,6 @@ Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::Block
     }
 
     co_return receipts;
-}
-
-Task<Transactions> read_canonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count) {
-    Transactions txns{};
-    if (txn_count == 0) {
-        SILK_DEBUG << "txn_count: 0 #txns: 0";
-        co_return txns;
-    }
-
-    txns.reserve(txn_count);
-
-    silkworm::Bytes txn_id_key(8, '\0');
-    boost::endian::store_big_u64(txn_id_key.data(), base_txn_id);
-    SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
-    size_t i{0};
-    Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {
-        SILK_TRACE << "v: " << silkworm::to_hex(v);
-        silkworm::ByteView value{v};
-        silkworm::Transaction tx{};
-        const auto error = silkworm::rlp::decode(value, tx);
-        if (!error) {
-            SILK_ERROR << "invalid RLP decoding for transaction index " << i;
-            return false;
-        }
-        SILK_TRACE << "index: " << i << " tx_hash: " << silkworm::to_hex({hash_of(v).bytes, silkworm::kHashLength});
-        txns.emplace(txns.end(), std::move(tx));
-        i++;
-        return i < txn_count;
-    };
-    co_await reader.walk(db::table::kBlockTransactionsName, txn_id_key, 0, walker);
-
-    SILK_DEBUG << "#txns: " << txns.size();
-
-    co_return txns;
-}
-
-Task<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count) {
-    Transactions txns{};
-    if (txn_count == 0) {
-        SILK_DEBUG << "txn_count: 0 #txns: 0";
-        co_return txns;
-    }
-    txns.reserve(txn_count);
-    silkworm::Bytes txn_id_key(8, '\0');
-    boost::endian::store_big_u64(txn_id_key.data(), base_txn_id);
-    SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
-    size_t i{0};
-    Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {
-        SILK_TRACE << "v: " << silkworm::to_hex(v);
-        silkworm::ByteView value{v};
-        silkworm::Transaction tx{};
-        const auto error = silkworm::rlp::decode(value, tx);
-        if (!error) {
-            SILK_ERROR << "invalid RLP decoding for transaction index " << i;
-            return false;
-        }
-        SILK_TRACE << "index: " << i << " tx_hash: " << silkworm::to_hex({hash_of(v).bytes, silkworm::kHashLength});
-        txns.emplace(txns.end(), std::move(tx));
-        i++;
-        return i < txn_count;
-    };
-    co_await reader.walk(db::table::kNonCanonicalTransactionsName, txn_id_key, 0, walker);
-    SILK_DEBUG << "#txns: " << txns.size();
-    co_return txns;
 }
 
 Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {

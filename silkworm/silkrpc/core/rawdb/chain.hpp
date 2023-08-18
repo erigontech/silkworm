@@ -52,17 +52,9 @@ Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
 
 Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, uint64_t block_number);
 
-Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
-
-Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
-
 Task<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number);
 
 Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
-
-Task<Transactions> read_canonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
-
-Task<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count);
 
 Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 

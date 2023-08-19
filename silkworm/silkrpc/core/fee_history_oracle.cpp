@@ -52,7 +52,7 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     }
 }
 
-Task<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile) {
+Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block, BlockNum block_count, const std::vector<std::int8_t>& reward_percentile) {
     FeeHistory fee_history;
     if (block_count < 1) {
         co_return fee_history;
@@ -119,7 +119,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest_block, uint64_t b
     co_return fee_history;
 }
 
-Task<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t last_block, uint64_t block_count, uint64_t max_history) {
+Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum last_block, uint64_t block_count, uint64_t max_history) {
     const auto block_with_hash = co_await block_provider_(last_block);
     const auto receipts = co_await receipts_provider_(*block_with_hash);
 

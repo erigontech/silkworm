@@ -132,10 +132,10 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto head_header_hash = co_await core::rawdb::read_head_header_hash(tx_database);
         const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
         const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
-        const uint64_t current_block_number = current_header->number;
+        const BlockNum current_block_number = current_header->number;
 
         // Find the lowest block header w/ timestamp greater or equal to provided timestamp
-        uint64_t block_number;
+        BlockNum block_number;
         if (current_header->timestamp <= timestamp) {
             block_number = current_block_number;
         } else if (first_header->timestamp >= timestamp) {

@@ -136,7 +136,7 @@ class DebugExecutor {
     DebugExecutor(const DebugExecutor&) = delete;
     DebugExecutor& operator=(const DebugExecutor&) = delete;
 
-    Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number);
+    Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_number);
     Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
     Task<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call);
     Task<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
@@ -151,7 +151,7 @@ class DebugExecutor {
     Task<void> execute(
         json::Stream& stream,
         const ChainStorage& storage,
-        std::uint64_t block_number,
+        BlockNum block_number,
         const silkworm::Block& block,
         const Transaction& transaction,
         int32_t = -1);

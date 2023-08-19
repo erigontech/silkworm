@@ -66,19 +66,19 @@
 
 namespace silkworm::rpc::commands {
 
-Task<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter, const core::rawdb::DatabaseReader& reader) {
-    uint64_t start{}, end{};
+Task<std::pair<BlockNum, BlockNum>> get_block_numbers(const Filter& filter, const core::rawdb::DatabaseReader& reader) {
+    BlockNum start{}, end{};
     if (filter.block_hash.has_value()) {
         auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
         if (!block_hash_bytes.has_value()) {
-            start = end = std::numeric_limits<uint64_t>::max();
+            start = end = std::numeric_limits<BlockNum>::max();
         } else {
             auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
             auto block_number = co_await core::rawdb::read_header_number(reader, block_hash);
             start = end = block_number;
         }
     } else {
-        uint64_t last_executed_block_number = std::numeric_limits<uint64_t>::max();
+        BlockNum last_executed_block_number = std::numeric_limits<BlockNum>::max();
         if (filter.from_block.has_value()) {
             start = co_await core::get_block_number(filter.from_block.value(), reader);
         } else {
@@ -88,7 +88,7 @@ Task<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter, cons
         if (filter.to_block.has_value()) {
             end = co_await core::get_block_number(filter.to_block.value(), reader);
         } else {
-            if (last_executed_block_number == std::numeric_limits<uint64_t>::max()) {
+            if (last_executed_block_number == std::numeric_limits<BlockNum>::max()) {
                 last_executed_block_number = co_await core::get_latest_executed_block_number(reader);
             }
             end = last_executed_block_number;
@@ -200,7 +200,7 @@ Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, n
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_INFO << "latest_block_number " << latest_block_number;
 
-        BlockProvider block_provider = [this, &chain_storage](uint64_t block_number) {
+        BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
 
@@ -981,7 +981,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             return chain_storage->read_canonical_header(block_number);
         };
 
-        rpc::AccountReader account_reader = [&state_reader](const evmc::address& address, uint64_t block_number) {
+        rpc::AccountReader account_reader = [&state_reader](const evmc::address& address, BlockNum block_number) {
             return state_reader.read_account(address, block_number + 1);
         };
 
@@ -1317,7 +1317,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_INFO << "latest_block_number " << latest_block_number;
 
-        BlockProvider block_provider = [this, &chain_storage](uint64_t block_number) {
+        BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
 
@@ -2200,8 +2200,8 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
 
 Task<void> EthereumRpcApi::get_logs(
     ethdb::TransactionDatabase& tx_database,
-    std::uint64_t start,
-    std::uint64_t end,
+    BlockNum start,
+    BlockNum end,
     FilterAddresses& addresses,
     FilterTopics& topics,
     std::vector<Log>& logs) {

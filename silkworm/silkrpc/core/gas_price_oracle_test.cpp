@@ -51,7 +51,7 @@ struct VariableBlockData {
     int delta_max_fee_per_gas;
 };
 
-static silkworm::BlockWithHash allocate_block(uint64_t block_number,
+static silkworm::BlockWithHash allocate_block(BlockNum block_number,
                                               const evmc::address& beneficiary, const FixedBlockData& block_data) {
     silkworm::BlockWithHash block_with_hash;
 
@@ -109,7 +109,7 @@ TEST_CASE("suggested price") {
 
     std::vector<silkworm::BlockWithHash> blocks;
 
-    BlockProvider block_provider = [&](uint64_t block_number) -> Task<std::shared_ptr<silkworm::BlockWithHash>> {
+    BlockProvider block_provider = [&](BlockNum block_number) -> Task<std::shared_ptr<silkworm::BlockWithHash>> {
         auto block_with_hash = std::make_shared<silkworm::BlockWithHash>();
         *block_with_hash = blocks[block_number];
         co_return block_with_hash;

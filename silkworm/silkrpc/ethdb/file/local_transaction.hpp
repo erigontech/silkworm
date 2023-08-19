@@ -47,7 +47,7 @@ class LocalTransaction : public Transaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, uint64_t block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number) override;
 
     std::shared_ptr<ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) override;
 

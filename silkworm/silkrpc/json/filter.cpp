@@ -53,7 +53,7 @@ void from_json(const nlohmann::json& json, Filter& filter) {
         if (json_from_block.is_string()) {
             filter.from_block = json_from_block.get<std::string>();
         } else {
-            filter.from_block = to_quantity(json_from_block.get<uint64_t>());
+            filter.from_block = to_quantity(json_from_block.get<BlockNum>());
         }
     }
     if (json.count("toBlock") != 0) {
@@ -61,7 +61,7 @@ void from_json(const nlohmann::json& json, Filter& filter) {
         if (json_to_block.is_string()) {
             filter.to_block = json_to_block.get<std::string>();
         } else {
-            filter.to_block = to_quantity(json_to_block.get<uint64_t>());
+            filter.to_block = to_quantity(json_to_block.get<BlockNum>());
         }
     }
     if (json.count("address") != 0) {

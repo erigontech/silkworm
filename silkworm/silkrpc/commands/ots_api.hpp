@@ -77,11 +77,11 @@ class ChunkLocator {
   public:
     ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward);
 
-    Task<ChunkLocatorResponse> get(uint64_t min_block);
+    Task<ChunkLocatorResponse> get(BlockNum min_block);
 };
 
 struct BlockProviderResponse {
-    uint64_t block_number;
+    BlockNum block_number;
     bool has_more;
     bool error;
 };
@@ -96,7 +96,7 @@ class ForwardBlockProvider : public BlockProvider {
   private:
     silkworm::rpc::ethdb::Cursor* cursor_;
     evmc::address address_;
-    uint64_t min_block_;
+    BlockNum min_block_;
     ChunkLocator chunk_locator_;
 
     bool is_first_;
@@ -109,14 +109,14 @@ class ForwardBlockProvider : public BlockProvider {
 
     bool has_next();
 
-    uint64_t next();
+    BlockNum next();
 
     void iterator(roaring::Roaring64Map& bitmap);
 
-    void advance_if_needed(uint64_t min_block);
+    void advance_if_needed(BlockNum min_block);
 
   public:
-    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, uint64_t min_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
+    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum min_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         min_block_ = min_block;
@@ -132,7 +132,7 @@ class BackwardBlockProvider : public BlockProvider {
   private:
     silkworm::rpc::ethdb::Cursor* cursor_;
     evmc::address address_;
-    uint64_t max_block_;
+    BlockNum max_block_;
     ChunkLocator chunk_locator_;
 
     bool is_first_;
@@ -150,13 +150,13 @@ class BackwardBlockProvider : public BlockProvider {
     void reverse_iterator(roaring::Roaring64Map& bitmap);
 
   public:
-    BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, uint64_t max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
+    BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         max_block_ = max_block;
 
         if (max_block_ == 0) {
-            max_block_ = std::numeric_limits<uint64_t>::max();
+            max_block_ = std::numeric_limits<BlockNum>::max();
         }
 
         is_first_ = true;
@@ -231,8 +231,8 @@ class OtsRpcApi {
         uint64_t result_count,
         std::vector<TransactionsWithReceipts>& results);
 
-    Task<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results);
-    Task<void> trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results);
+    Task<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results);
+    Task<void> trace_block(ethdb::Transaction& tx, BlockNum block_number, evmc::address search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block,
                                         const std::vector<Receipt>& receipts, silkworm::BlockNum block_number);

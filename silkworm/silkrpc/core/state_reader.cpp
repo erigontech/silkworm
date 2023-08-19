@@ -28,7 +28,7 @@
 
 namespace silkworm::rpc {
 
-Task<std::optional<silkworm::Account>> StateReader::read_account(const evmc::address& address, uint64_t block_number) const {
+Task<std::optional<silkworm::Account>> StateReader::read_account(const evmc::address& address, BlockNum block_number) const {
     std::optional<silkworm::Bytes> encoded{co_await read_historical_account(address, block_number)};
     if (!encoded) {
         encoded = co_await db_reader_.get_one(db::table::kPlainStateName, full_view(address));
@@ -57,7 +57,7 @@ Task<evmc::bytes32> StateReader::read_storage(
     const evmc::address& address,
     uint64_t incarnation,
     const evmc::bytes32& location_hash,
-    uint64_t block_number) const {
+    BlockNum block_number) const {
     std::optional<silkworm::Bytes> value{co_await read_historical_storage(address, incarnation, location_hash, block_number)};
     if (!value) {
         auto composite_key{silkworm::composite_storage_key_without_hash_lookup(address, incarnation)};
@@ -81,7 +81,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_code(const evmc::bytes32&
     co_return co_await db_reader_.get_one(db::table::kCodeName, full_view(code_hash));
 }
 
-Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const evmc::address& address, uint64_t block_number) const {
+Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const evmc::address& address, BlockNum block_number) const {
     const auto account_history_key{silkworm::db::account_history_key(address, block_number)};
     SILK_DEBUG << "StateReader::read_historical_account account_history_key: " << account_history_key;
     const auto kv_pair{co_await db_reader_.get(db::table::kAccountHistoryName, account_history_key)};
@@ -115,7 +115,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const 
 }
 
 Task<std::optional<silkworm::Bytes>> StateReader::read_historical_storage(const evmc::address& address, uint64_t incarnation,
-                                                                          const evmc::bytes32& location_hash, uint64_t block_number) const {
+                                                                          const evmc::bytes32& location_hash, BlockNum block_number) const {
     const auto storage_history_key{silkworm::db::storage_history_key(address, location_hash, block_number)};
     SILK_DEBUG << "StateReader::read_historical_storage storage_history_key: " << storage_history_key;
     const auto kv_pair{co_await db_reader_.get(db::table::kStorageHistoryName, storage_history_key)};

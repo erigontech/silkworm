@@ -35,7 +35,7 @@ namespace silkworm::rpc::state {
 
 class LocalState : public silkworm::State {
   public:
-    explicit LocalState(uint64_t block_number, std::shared_ptr<mdbx::env_managed> chaindata_env)
+    explicit LocalState(BlockNum block_number, std::shared_ptr<mdbx::env_managed> chaindata_env)
         : block_number_{block_number}, chaindata_env_{chaindata_env}, txn_{*chaindata_env} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
@@ -46,27 +46,27 @@ class LocalState : public silkworm::State {
 
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<silkworm::BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<silkworm::BlockHeader> read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    bool read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept override;
+    bool read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
-    uint64_t current_canonical_block() const override;
+    BlockNum current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
 
     void insert_block(const silkworm::Block& /*block*/, const evmc::bytes32& /*hash*/) override {}
 
-    void canonize_block(uint64_t /*block_number*/, const evmc::bytes32& /*block_hash*/) override {}
+    void canonize_block(BlockNum /*block_number*/, const evmc::bytes32& /*block_hash*/) override {}
 
-    void decanonize_block(uint64_t /*block_number*/) override {}
+    void decanonize_block(BlockNum /*block_number*/) override {}
 
-    void insert_receipts(uint64_t /*block_number*/, const std::vector<silkworm::Receipt>& /*receipts*/) override {}
+    void insert_receipts(BlockNum /*block_number*/, const std::vector<silkworm::Receipt>& /*receipts*/) override {}
 
-    void begin_block(uint64_t /*block_number*/) override {}
+    void begin_block(BlockNum /*block_number*/) override {}
 
     void update_account(
         const evmc::address& /*address*/,
@@ -86,10 +86,10 @@ class LocalState : public silkworm::State {
         const evmc::bytes32& /*initial*/,
         const evmc::bytes32& /*current*/) override {}
 
-    void unwind_state_changes(uint64_t /*block_number*/) override {}
+    void unwind_state_changes(BlockNum /*block_number*/) override {}
 
   private:
-    uint64_t block_number_;
+    BlockNum block_number_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
     mutable db::ROTxnManaged txn_;
 };

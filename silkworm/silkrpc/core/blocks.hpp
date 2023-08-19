@@ -33,29 +33,29 @@ constexpr const char* kFinalizedBlockId{"finalized"};
 constexpr const char* kSafeBlockId{"safe"};
 constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
-constexpr uint64_t kEarliestBlockNumber{0ul};
+constexpr BlockNum kEarliestBlockNumber{0ul};
 
-Task<bool> is_latest_block_number(uint64_t block_number, const rawdb::DatabaseReader& db_reader);
+Task<bool> is_latest_block_number(BlockNum block_number, const rawdb::DatabaseReader& db_reader);
 
-Task<uint64_t> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
-Task<std::pair<uint64_t, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_is_required);
+Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_is_required);
 
-Task<uint64_t> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
-Task<std::pair<uint64_t, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
+Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_current_block_number(const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_highest_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_highest_block_number(const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_latest_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_latest_block_number(const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_latest_executed_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_latest_executed_block_number(const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader);
 
-Task<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader);
 
 Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
 

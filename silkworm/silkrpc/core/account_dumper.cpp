@@ -115,7 +115,7 @@ Task<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
     co_return;
 }
 
-Task<void> AccountDumper::load_storage(uint64_t block_number, DumpAccounts& dump_accounts) {
+Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump_accounts) {
     SILK_TRACE << "block_number " << block_number << " START";
     StorageWalker storage_walker{transaction_};
     evmc::bytes32 start_location{};

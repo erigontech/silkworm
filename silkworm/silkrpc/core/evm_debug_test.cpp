@@ -1227,7 +1227,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
             co_return Bytes{};
         }));
 
-    uint64_t block_number = 5'405'095;  // 0x5279A7
+    BlockNum block_number = 5'405'095;  // 0x5279A7
 
     Call call;
     call.from = 0x578f0a154b23be77fc2033197fbc775637648ad4_address;

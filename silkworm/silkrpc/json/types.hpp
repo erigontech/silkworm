@@ -30,6 +30,7 @@
 #include <silkworm/silkrpc/json/access_list_entry.hpp>
 #include <silkworm/silkrpc/json/block.hpp>
 #include <silkworm/silkrpc/json/call.hpp>
+#include <silkworm/silkrpc/json/call_bundle.hpp>
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
@@ -42,6 +43,7 @@
 #include <silkworm/silkrpc/json/withdrawal.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
+#include <silkworm/silkrpc/types/call_bundle.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
 #include <silkworm/silkrpc/types/chain_traffic.hpp>
 #include <silkworm/silkrpc/types/error.hpp>
@@ -93,10 +95,6 @@ void to_json(nlohmann::json& json, const struct ChainTraffic& chain_traffic);
 void to_json(nlohmann::json& json, const struct TxPoolStatusInfo& status_info);
 
 void to_json(nlohmann::json& json, const AccessListResult& access_list_result);
-
-void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info);
-
-void to_json(nlohmann::json& json, const struct CallBundleInfo& bundle_info);
 
 void to_json(nlohmann::json& json, const SyncingData& syncing_data);
 

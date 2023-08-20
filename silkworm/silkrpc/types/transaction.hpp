@@ -64,18 +64,6 @@ struct TxPoolStatusInfo {
     unsigned int queued;
 };
 
-struct CallBundleTxInfo {
-    ethash_hash256 hash;
-    uint64_t gas_used;
-    evmc::bytes32 value;
-    std::string error_message;
-};
-
-struct CallBundleInfo {
-    ethash_hash256 bundle_hash;
-    std::vector<CallBundleTxInfo> txs_info;
-};
-
 using TransactionContent = std::map<std::string, std::map<std::string, std::map<std::string, Transaction>>>;
 
 std::ostream& operator<<(std::ostream& out, const Transaction& t);

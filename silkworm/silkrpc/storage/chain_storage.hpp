@@ -98,7 +98,7 @@ class ChainStorage {
 
     // Task<evmc::bytes32> read_head_header_hash();
 
-    // Task<uint64_t> read_cumulative_transaction_count(uint64_t block_number);
+    // Task<uint64_t> read_cumulative_transaction_count(BlockNum block_number);
 
     // Task<silkworm::Bytes> read_header_rlp(const evmc::bytes32& block_hash, BlockNum block_number);
 

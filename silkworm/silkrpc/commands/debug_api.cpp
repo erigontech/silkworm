@@ -529,7 +529,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    const auto block_number = params[0].get<std::uint64_t>();
+    const auto block_number = params[0].get<BlockNum>();
 
     debug::DebugConfig config;
     if (params.size() > 1) {
@@ -625,7 +625,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_return;
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
+Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, BlockNum start_block_number, BlockNum end_block_number) {
     const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
@@ -637,7 +637,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& 
         throw std::invalid_argument(msg.str());
     } else if (start_block_number <= end_block_number) {
         core::rawdb::Walker walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
-            auto block_number = static_cast<uint64_t>(std::stol(silkworm::to_hex(key), nullptr, 16));
+            auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {
                 auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
 

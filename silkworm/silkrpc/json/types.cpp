@@ -81,7 +81,7 @@ void to_quantity(std::span<char> quantity_hex_bytes, silkworm::ByteView bytes) {
     to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
 }
 
-void to_quantity(std::span<char> quantity_hex_bytes, uint64_t number) {
+void to_quantity(std::span<char> quantity_hex_bytes, BlockNum number) {
     silkworm::Bytes number_bytes(8, '\0');
     silkworm::endian::store_big_u64(number_bytes.data(), number);
     to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
@@ -262,20 +262,6 @@ void to_json(nlohmann::json& json, const PeerInfo& info) {
     json["network"]["static"] = info.is_connection_static;
     json["network"]["trusted"] = info.is_connection_trusted;
     json["protocols"] = nullptr;
-}
-
-void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {
-    json["gasUsed"] = tx_info.gas_used;
-    json["txHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});
-    if (!tx_info.error_message.empty())
-        json["error"] = tx_info.error_message;
-    else
-        json["value"] = silkworm::to_bytes32({tx_info.value.bytes, silkworm::kHashLength});
-}
-
-void to_json(nlohmann::json& json, const struct CallBundleInfo& bundle_info) {
-    json["bundleHash"] = silkworm::to_bytes32({bundle_info.bundle_hash.bytes, silkworm::kHashLength});
-    json["results"] = bundle_info.txs_info;
 }
 
 void to_json(nlohmann::json& json, const AccessListResult& access_list_result) {

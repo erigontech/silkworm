@@ -98,15 +98,15 @@ class ChainStorage {
 
     // Task<evmc::bytes32> read_head_header_hash();
 
-    // Task<uint64_t> read_cumulative_transaction_count(uint64_t block_number);
+    // Task<uint64_t> read_cumulative_transaction_count(BlockNum block_number);
 
-    // Task<silkworm::Bytes> read_header_rlp(const evmc::bytes32& block_hash, uint64_t block_number);
+    // Task<silkworm::Bytes> read_header_rlp(const evmc::bytes32& block_hash, BlockNum block_number);
 
-    // Task<silkworm::Bytes> read_body_rlp(const evmc::bytes32& block_hash, uint64_t block_number);
+    // Task<silkworm::Bytes> read_body_rlp(const evmc::bytes32& block_hash, BlockNum block_number);
 
-    // Task<Addresses> read_senders(const evmc::bytes32& block_hash, uint64_t block_number);
+    // Task<Addresses> read_senders(const evmc::bytes32& block_hash, BlockNum block_number);
 
-    // Task<Receipts> read_raw_receipts(uint64_t block_number);
+    // Task<Receipts> read_raw_receipts(BlockNum block_number);
 
     // Task<Receipts> read_receipts(const silkworm::BlockWithHash& block_with_hash);
 
@@ -114,11 +114,11 @@ class ChainStorage {
 
     // Task<Transactions> read_noncanonical_transactions(uint64_t base_txn_id, uint64_t txn_count);
 
-    // Task<intx::uint256> read_total_issued(uint64_t block_number);
+    // Task<intx::uint256> read_total_issued(BlockNum block_number);
 
-    // Task<intx::uint256> read_total_burnt(uint64_t block_number);
+    // Task<intx::uint256> read_total_burnt(BlockNum block_number);
 
-    // Task<intx::uint256> read_cumulative_gas_used(uint64_t block_number);
+    // Task<intx::uint256> read_cumulative_gas_used(BlockNum block_number);
 };
 
 }  // namespace silkworm::rpc

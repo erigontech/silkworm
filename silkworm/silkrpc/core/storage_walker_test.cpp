@@ -180,7 +180,7 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, uint64_t) override {
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum) override {
         return nullptr;
     }
 
@@ -241,7 +241,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
     auto tx = result.get();
     StorageWalker walker{*tx};
 
-    const uint64_t block_number{0x52a0b3};
+    const BlockNum block_number{0x52a0b3};
     const evmc::bytes32 start_location{};
 
     nlohmann::json storage({});
@@ -353,7 +353,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     auto tx = result.get();
     StorageWalker walker{*tx};
 
-    const uint64_t block_number{0x52a0b3};
+    const BlockNum block_number{0x52a0b3};
     const evmc::bytes32 start_location{};
 
     nlohmann::json storage({});

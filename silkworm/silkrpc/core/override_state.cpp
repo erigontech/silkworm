@@ -84,26 +84,26 @@ evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t
     return storage_value;
 }
 
-std::optional<silkworm::BlockHeader> OverrideState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<silkworm::BlockHeader> OverrideState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     SILK_DEBUG << "OverrideState::read_header block_number=" << block_number << " block_hash=" << block_hash;
     auto optional_header = inner_state_.read_header(block_number, block_hash);
     return optional_header;
 }
 
-bool OverrideState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+bool OverrideState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
     SILK_DEBUG << "OverrideState::read_body block_number=" << block_number << " block_hash=" << block_hash;
     auto result = inner_state_.read_body(block_number, block_hash, filled_body);
     return result;
 }
 
-std::optional<intx::uint256> OverrideState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<intx::uint256> OverrideState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     SILK_DEBUG << "OverrideState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
     auto optional_total_difficulty = inner_state_.total_difficulty(block_number, block_hash);
     SILK_DEBUG << "OverrideState::total_difficulty optional_total_difficulty=" << optional_total_difficulty.value_or(intx::uint256{});
     return optional_total_difficulty;
 }
 
-std::optional<evmc::bytes32> OverrideState::canonical_hash(uint64_t block_number) const {
+std::optional<evmc::bytes32> OverrideState::canonical_hash(BlockNum block_number) const {
     SILK_DEBUG << "OverrideState::canonical_hash block_number=" << block_number;
     auto optional_canonical_hash = inner_state_.canonical_hash(block_number);
     SILK_DEBUG << "OverrideState::canonical_hash optional_canonical_hash=" << optional_canonical_hash.value_or(evmc::bytes32{});

@@ -1405,7 +1405,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
             co_return Bytes{};
         }));
 
-    uint64_t block_number = 5'405'095;  // 0x5279A7
+    BlockNum block_number = 5'405'095;  // 0x5279A7
 
     Call call;
     call.from = 0x578f0a154b23be77fc2033197fbc775637648ad4_address;
@@ -1994,7 +1994,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
             co_return kAccountChangeSetValue3;
         }));
 
-    uint64_t block_number = 1'024'165;  // 0xFA0A5
+    BlockNum block_number = 1'024'165;  // 0xFA0A5
 
     silkworm::Block block{};
     block.header.number = block_number;
@@ -2540,7 +2540,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
             co_return kAccountChangeSetValue3;
         }));
 
-    uint64_t block_number = 1'024'165;  // 0xFA0A5
+    BlockNum block_number = 1'024'165;  // 0xFA0A5
 
     silkworm::BlockWithHash block_with_hash;
     block_with_hash.block.header.number = block_number;
@@ -2755,7 +2755,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
             co_return kAccountChangeSetValue3;
         }));
 
-    uint64_t block_number = 1'024'165;  // 0xFA0A5
+    BlockNum block_number = 1'024'165;  // 0xFA0A5
 
     silkworm::BlockWithHash block_with_hash;
     block_with_hash.block.header.number = block_number;
@@ -3715,7 +3715,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
             co_return kAccountChangeSetValue3;
         }));
 
-    uint64_t block_number = 1'024'165;  // 0xFA0A5
+    BlockNum block_number = 1'024'165;  // 0xFA0A5
 
     silkworm::BlockWithHash block_with_hash;
     block_with_hash.block.header.number = block_number;

@@ -43,13 +43,13 @@ class AccountWalker {
     AccountWalker(const AccountWalker&) = delete;
     AccountWalker& operator=(const AccountWalker&) = delete;
 
-    Task<void> walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector);
+    Task<void> walk_of_accounts(BlockNum block_number, const evmc::address& start_address, Collector& collector);
 
   private:
     Task<KeyValue> next(ethdb::Cursor& cursor, uint64_t len);
     Task<KeyValue> seek(ethdb::Cursor& cursor, const ByteView key, uint64_t len);
-    Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, Bytes addr);
-    Task<ethdb::SplittedKeyValue> seek(ethdb::SplitCursor& cursor, uint64_t number);
+    Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, Bytes addr);
+    Task<ethdb::SplittedKeyValue> seek(ethdb::SplitCursor& cursor, BlockNum number);
 
     ethdb::Transaction& transaction_;
 };

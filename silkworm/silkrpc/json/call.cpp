@@ -163,7 +163,7 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
         if (jbn.is_string()) {
             bo.block_number = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.block_number = jbn.get<uint64_t>();
+            bo.block_number = jbn.get<BlockNum>();
         }
     }
     if (json.contains("coinbase")) {

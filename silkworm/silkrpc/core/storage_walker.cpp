@@ -55,12 +55,12 @@ bool operator<(const StorageItem& k1, const StorageItem& k2) {
     return k1.key < k2.key;
 }
 
-Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number) {
+Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number) {
     auto kv = co_await cursor.next();
     if (kv.key2.empty()) {
         co_return kv;
     }
-    uint64_t block = silkworm::endian::load_big_u64(kv.key3.data());
+    BlockNum block = silkworm::endian::load_big_u64(kv.key3.data());
     while (block < number) {
         kv = co_await cursor.next();
         if (kv.key2.empty()) {
@@ -71,7 +71,7 @@ Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number) 
     co_return kv;
 }
 
-Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes loc) {
+Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, silkworm::Bytes loc) {
     ethdb::SplittedKeyValue skv;
     auto tmp_loc = loc;
     while (!loc.empty() && (tmp_loc == loc || block < number)) {
@@ -87,7 +87,7 @@ Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, uint64_t number, 
 }
 
 Task<void> StorageWalker::walk_of_storages(
-    uint64_t block_number,
+    BlockNum block_number,
     const evmc::address& address,
     const evmc::bytes32& location_hash,
     uint64_t incarnation,
@@ -116,7 +116,7 @@ Task<void> StorageWalker::walk_of_storages(
     auto sh_skv = co_await sh_split_cursor.seek();
     auto h_loc = sh_skv.key2;
 
-    uint64_t block = silkworm::endian::load_big_u64(sh_skv.key3.data());
+    BlockNum block = silkworm::endian::load_big_u64(sh_skv.key3.data());
     auto cs_cursor = co_await transaction_.cursor_dup_sort(db::table::kStorageChangeSetName);
 
     if (block < block_number) {
@@ -175,7 +175,7 @@ Task<void> StorageWalker::walk_of_storages(
 }
 
 Task<void> StorageWalker::storage_range_at(
-    uint64_t block_number,
+    BlockNum block_number,
     const evmc::address& address,
     const evmc::bytes32& start_location,
     size_t max_result,

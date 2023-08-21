@@ -33,7 +33,7 @@ namespace silkworm::rpc {
 
 struct Transaction : public silkworm::Transaction {
     evmc::bytes32 block_hash;
-    uint64_t block_number{0};
+    BlockNum block_number{0};
     std::optional<intx::uint256> block_base_fee_per_gas{std::nullopt};
     uint64_t transaction_index{0};
     bool queued_in_pool{false};
@@ -62,18 +62,6 @@ struct TxPoolStatusInfo {
     unsigned int base_fee;
     unsigned int pending;
     unsigned int queued;
-};
-
-struct CallBundleTxInfo {
-    ethash_hash256 hash;
-    uint64_t gas_used;
-    evmc::bytes32 value;
-    std::string error_message;
-};
-
-struct CallBundleInfo {
-    ethash_hash256 bundle_hash;
-    std::vector<CallBundleTxInfo> txs_info;
 };
 
 using TransactionContent = std::map<std::string, std::map<std::string, std::map<std::string, Transaction>>>;

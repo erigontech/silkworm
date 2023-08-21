@@ -181,7 +181,7 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, uint64_t) override {
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum) override {
         return nullptr;
     }
 
@@ -235,7 +235,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     auto tx = result.get();
     AccountWalker walker{*tx};
 
-    const uint64_t block_number{0x52a0b3};
+    const BlockNum block_number{0x52a0b3};
     const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
     uint64_t max_result = 1;

@@ -46,7 +46,7 @@ class BackEnd {
     virtual Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) = 0;
     virtual Task<NodeInfos> engine_node_info() = 0;
     virtual Task<PeerInfos> peers() = 0;
-    virtual Task<bool> get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
+    virtual Task<bool> get_block(BlockNum block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
     virtual Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) = 0;
 };
 

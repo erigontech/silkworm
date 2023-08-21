@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-Task<void> AccountWalker::walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector) {
+Task<void> AccountWalker::walk_of_accounts(BlockNum block_number, const evmc::address& start_address, Collector& collector) {
     auto ps_cursor = co_await transaction_.cursor(db::table::kPlainStateName);
 
     auto start_key = full_view(start_address);
@@ -95,7 +95,7 @@ Task<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silkworm::ByteView key
     co_return kv;
 }
 
-Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr) {
+Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, silkworm::Bytes addr) {
     ethdb::SplittedKeyValue skv;
     auto tmp_addr = addr;
     while (!addr.empty() && (tmp_addr == addr || block < number)) {
@@ -110,13 +110,13 @@ Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, ui
     co_return skv;
 }
 
-Task<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, uint64_t number) {
+Task<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, BlockNum number) {
     auto kv = co_await cursor.seek();
     if (kv.key1.empty()) {
         co_return kv;
     }
 
-    uint64_t block = silkworm::endian::load_big_u64(kv.key2.data());
+    BlockNum block = silkworm::endian::load_big_u64(kv.key2.data());
     while (block < number) {
         kv = co_await cursor.next();
         if (kv.key2.empty()) {

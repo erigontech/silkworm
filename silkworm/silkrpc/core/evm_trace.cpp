@@ -1599,7 +1599,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
 }
 
 Task<TraceCallResult> TraceCallExecutor::execute(
-    std::uint64_t block_number,
+    BlockNum block_number,
     const silkworm::Block& block,
     const rpc::Transaction& transaction,
     std::int32_t index,

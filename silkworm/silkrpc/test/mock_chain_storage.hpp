@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/awaitable.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 

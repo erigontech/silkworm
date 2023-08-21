@@ -63,7 +63,7 @@ struct StateChangesStreamTest : test::KVTestBase {
 };
 
 static remote::StateChangeBatch make_batch() {
-    static uint64_t block_height{14'000'010};
+    static BlockNum block_height{14'000'010};
 
     remote::StateChangeBatch state_changes{};
     remote::StateChange* latest_change = state_changes.add_change_batch();

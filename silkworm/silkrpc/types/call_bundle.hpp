@@ -16,42 +16,33 @@
 
 #pragma once
 
+#include <iostream>
+#include <map>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/core/types/bloom.hpp>
-#include <silkworm/silkrpc/types/log.hpp>
-#include <silkworm/silkrpc/types/transaction.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
 
-struct Receipt {
-    /* raw fields */
-    bool success{false};
-    uint64_t cumulative_gas_used{0};
-    silkworm::Bloom bloom{};
-    Logs logs;
-
-    /* derived fields */
-    evmc::bytes32 tx_hash;
-    evmc::address contract_address;
+struct CallBundleTxInfo {
+    ethash_hash256 hash;
     uint64_t gas_used;
-    evmc::bytes32 block_hash;
-    BlockNum block_number;
-    uint32_t tx_index;
-    std::optional<evmc::address> from;
-    std::optional<evmc::address> to;
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
-    intx::uint256 effective_gas_price{0};
+    evmc::bytes32 value;
+    std::string error_message;
 };
 
-std::ostream& operator<<(std::ostream& out, const Receipt& r);
-
-silkworm::Bloom bloom_from_logs(const Logs& logs);
-
-typedef std::vector<Receipt> Receipts;
+struct CallBundleInfo {
+    ethash_hash256 bundle_hash;
+    std::vector<CallBundleTxInfo> txs_info;
+};
 
 }  // namespace silkworm::rpc

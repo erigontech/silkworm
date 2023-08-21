@@ -35,6 +35,12 @@
 
 namespace silkworm::rpc::core::rawdb {
 
+/* Local Routines */
+static Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+static Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+static Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+static Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+
 Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};
     const auto value{co_await reader.get_one(db::table::kHeaderNumbersName, block_hash_bytes)};
@@ -100,12 +106,7 @@ Task<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, co
     co_return co_await read_header(reader, block_hash, block_number);
 }
 
-Task<silkworm::BlockHeader> read_header_by_number(const DatabaseReader& reader, uint64_t block_number) {
-    const auto block_hash = co_await read_canonical_block_hash(reader, block_number);
-    co_return co_await read_header(reader, block_hash, block_number);
-}
-
-Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::BlockHeader> read_header(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     auto data = co_await read_header_rlp(reader, block_hash, block_number);
     if (data.empty()) {
         throw std::runtime_error{"empty block header RLP in read_header"};
@@ -156,64 +157,17 @@ Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, u
     }
 }
 
-Task<silkworm::BlockBody> read_body(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
-    const auto data = co_await read_body_rlp(reader, block_hash, block_number);
-    if (data.empty()) {
-        throw std::runtime_error{"empty block body RLP in read_body"};
-    }
-    SILK_TRACE << "RLP data for block body #" << block_number << ": " << silkworm::to_hex(data);
-
-    try {
-        silkworm::ByteView data_view{data};
-        auto stored_body{silkworm::db::detail::decode_stored_block_body(data_view)};
-        // If block contains no txn, we're done
-        if (stored_body.txn_count == 0) {
-            co_return BlockBody{{}, std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
-        }
-        // 1 system txn at the beginning of block and 1 at the end
-        SILK_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2;
-        auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id + 1, stored_body.txn_count - 2);
-        if (!transactions.empty()) {
-            const auto senders = co_await read_senders(reader, block_hash, block_number);
-            if (senders.size() == transactions.size()) {
-                // Fill sender in transactions
-                for (size_t i{0}; i < transactions.size(); i++) {
-                    transactions[i].from = senders[i];
-                }
-            } else {
-                // Transaction sender will be recovered on-the-fly (performance penalty)
-                SILK_WARN << "#senders: " << senders.size() << " and #txns " << transactions.size() << " do not match";
-            }
-        }
-        co_return BlockBody{std::move(transactions), std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
-    } catch (const silkworm::DecodingException& error) {
-        SILK_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]";
-        throw std::runtime_error{"RLP decoding error for block body [" + std::string(error.what()) + "]"};
-    }
-}
-
-Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::Bytes> read_header_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
     co_return co_await reader.get_one(db::table::kHeadersName, block_key);
 }
 
-Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
     co_return co_await reader.get_one(db::table::kBlockBodiesName, block_key);
 }
 
-Task<Addresses> read_senders(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
-    const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
-    const auto data = co_await reader.get_one(db::table::kSendersName, block_key);
-    SILK_TRACE << "read_senders data: " << silkworm::to_hex(data);
-    Addresses senders{data.size() / silkworm::kAddressLength};
-    for (size_t i{0}; i < senders.size(); i++) {
-        senders[i] = silkworm::to_evmc_address(silkworm::ByteView{&data[i * silkworm::kAddressLength], silkworm::kAddressLength});
-    }
-    co_return senders;
-}
-
-Task<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number) {
+Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
@@ -300,71 +254,7 @@ Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::Block
     co_return receipts;
 }
 
-Task<Transactions> read_canonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count) {
-    Transactions txns{};
-    if (txn_count == 0) {
-        SILK_DEBUG << "txn_count: 0 #txns: 0";
-        co_return txns;
-    }
-
-    txns.reserve(txn_count);
-
-    silkworm::Bytes txn_id_key(8, '\0');
-    endian::store_big_u64(txn_id_key.data(), base_txn_id);
-    SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
-    size_t i{0};
-    Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {
-        SILK_TRACE << "v: " << silkworm::to_hex(v);
-        silkworm::ByteView value{v};
-        silkworm::Transaction tx{};
-        const auto error = silkworm::rlp::decode(value, tx);
-        if (!error) {
-            SILK_ERROR << "invalid RLP decoding for transaction index " << i;
-            return false;
-        }
-        SILK_TRACE << "index: " << i << " tx_hash: " << silkworm::to_hex({hash_of(v).bytes, silkworm::kHashLength});
-        txns.emplace(txns.end(), std::move(tx));
-        i++;
-        return i < txn_count;
-    };
-    co_await reader.walk(db::table::kBlockTransactionsName, txn_id_key, 0, walker);
-
-    SILK_DEBUG << "#txns: " << txns.size();
-
-    co_return txns;
-}
-
-Task<Transactions> read_noncanonical_transactions(const DatabaseReader& reader, uint64_t base_txn_id, uint64_t txn_count) {
-    Transactions txns{};
-    if (txn_count == 0) {
-        SILK_DEBUG << "txn_count: 0 #txns: 0";
-        co_return txns;
-    }
-    txns.reserve(txn_count);
-    silkworm::Bytes txn_id_key(8, '\0');
-    endian::store_big_u64(txn_id_key.data(), base_txn_id);
-    SILK_DEBUG << "txn_count: " << txn_count << " txn_id_key: " << silkworm::to_hex(txn_id_key);
-    size_t i{0};
-    Walker walker = [&](const silkworm::Bytes&, const silkworm::Bytes& v) {
-        SILK_TRACE << "v: " << silkworm::to_hex(v);
-        silkworm::ByteView value{v};
-        silkworm::Transaction tx{};
-        const auto error = silkworm::rlp::decode(value, tx);
-        if (!error) {
-            SILK_ERROR << "invalid RLP decoding for transaction index " << i;
-            return false;
-        }
-        SILK_TRACE << "index: " << i << " tx_hash: " << silkworm::to_hex({hash_of(v).bytes, silkworm::kHashLength});
-        txns.emplace(txns.end(), std::move(tx));
-        i++;
-        return i < txn_count;
-    };
-    co_await reader.walk(db::table::kNonCanonicalTransactionsName, txn_id_key, 0, walker);
-    SILK_DEBUG << "#txns: " << txns.size();
-    co_return txns;
-}
-
-Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto value = co_await reader.get_one(db::table::kIssuanceName, block_key);
     intx::uint256 total_issued = 0;
@@ -375,7 +265,7 @@ Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader,
     co_return total_issued;
 }
 
-Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const std::string kBurnt{"burnt"};
     silkworm::Bytes key{kBurnt.begin(), kBurnt.end()};
@@ -389,7 +279,7 @@ Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, 
     co_return total_burnt;
 }
 
-Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number) {
+Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto value = co_await reader.get_one(db::table::kCumulativeGasIndexName, block_key);
     intx::uint256 cumulative_gas_index = 0;

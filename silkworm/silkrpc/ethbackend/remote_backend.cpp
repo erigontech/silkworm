@@ -64,7 +64,7 @@ Task<uint64_t> RemoteBackEnd::protocol_version() {
     co_return pv;
 }
 
-Task<uint64_t> RemoteBackEnd::net_version() {
+Task<BlockNum> RemoteBackEnd::net_version() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetVersion> nv_rpc{*stub_, grpc_context_};
     const auto reply = co_await nv_rpc.finish_on(executor_, ::remote::NetVersionRequest{});
@@ -220,7 +220,7 @@ Task<PeerInfos> RemoteBackEnd::peers() {
     co_return peer_infos;
 }
 
-Task<bool> RemoteBackEnd::get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) {
+Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncBlock> get_block_rpc{*stub_, grpc_context_};
     ::remote::BlockRequest request;

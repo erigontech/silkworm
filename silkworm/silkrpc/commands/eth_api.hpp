@@ -70,8 +70,8 @@ class EthereumRpcApi {
 
     Task<void> get_logs(
         ethdb::TransactionDatabase& tx_database,
-        std::uint64_t start, std::uint64_t end,
-        FilterAddresses& addresses,
+        BlockNum start, BlockNum end,
+        FilterAddresses& addresss,
         FilterTopics& topics,
         std::vector<Log>& logs);
 

@@ -43,7 +43,7 @@ const std::uint8_t kSamples = 3;
 const std::uint8_t kMaxSamples = kCheckBlocks * kSamples;
 const std::uint8_t kPercentile = 60;
 
-typedef std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)> BlockProvider;
+typedef std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)> BlockProvider;
 
 class GasPriceOracle {
   public:
@@ -53,10 +53,10 @@ class GasPriceOracle {
     GasPriceOracle(const GasPriceOracle&) = delete;
     GasPriceOracle& operator=(const GasPriceOracle&) = delete;
 
-    Task<intx::uint256> suggested_price(uint64_t block_number);
+    Task<intx::uint256> suggested_price(BlockNum block_number);
 
   private:
-    Task<void> load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
+    Task<void> load_block_prices(BlockNum block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
 
     const BlockProvider& block_provider_;
 };

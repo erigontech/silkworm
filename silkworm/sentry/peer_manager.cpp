@@ -104,7 +104,7 @@ Task<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer
 Task<void> PeerManager::drop_peer(
     std::shared_ptr<rlpx::Peer> peer,
     rlpx::DisconnectReason reason) {
-    auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
+    [[maybe_unused]] auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
 
     try {
         co_await rlpx::Peer::drop(peer, reason);
@@ -231,7 +231,7 @@ Task<void> PeerManager::discover_peers(
 }
 
 Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
-    auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
+    [[maybe_unused]] auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {
         auto peer1 = co_await concurrency::co_spawn_sw(executor_pool_.any_executor(), client->connect(peer_url, is_static_peer), use_awaitable);

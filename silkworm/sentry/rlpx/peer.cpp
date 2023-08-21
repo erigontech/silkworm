@@ -100,7 +100,7 @@ Task<void> Peer::handle() {
     log::Trace("sentry") << "Peer::handle";
 
     bool is_handshake_completed = false;
-    auto _ = gsl::finally([this, &is_handshake_completed] {
+    [[maybe_unused]] auto _ = gsl::finally([this, &is_handshake_completed] {
         if (!is_handshake_completed) {
             this->handshake_promise_.set_value(false);
         }
@@ -220,7 +220,7 @@ Task<void> Peer::drop(DisconnectReason reason) {
     using namespace concurrency::awaitable_wait_for_one;
 
     log::Debug("sentry") << "Peer::drop reason " << static_cast<int>(reason);
-    auto _ = gsl::finally([this] { this->close(); });
+    [[maybe_unused]] auto _ = gsl::finally([this] { this->close(); });
 
     try {
         auto message_stream = co_await handshake();

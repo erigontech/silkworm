@@ -324,7 +324,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     // BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = target_block_ ? std::min(top_seen_height_, *target_block_) : top_seen_height_;
 
-    auto at_exit = gsl::finally([&] {
+    [[maybe_unused]] auto _ = gsl::finally([&] {
         SILK_TRACE << "HeaderChain, skeleton request, condition = " << skeleton_condition_
                    << ", anchors = " << anchors_.size()
                    << ", target = " << top

@@ -27,7 +27,7 @@ Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
     assert(key.size() == 32);
 
     HMAC_CTX* ctx = HMAC_CTX_new();
-    auto _ = gsl::finally([ctx] { HMAC_CTX_free(ctx); });
+    [[maybe_unused]] auto _ = gsl::finally([ctx] { HMAC_CTX_free(ctx); });
 
     int ok = HMAC_Init_ex(ctx, key.data(), static_cast<int>(key.size()), EVP_sha256(), nullptr);
     if (!ok)

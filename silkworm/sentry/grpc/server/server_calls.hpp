@@ -196,7 +196,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
         };
 
         auto unsubscribe_signal = call.unsubscribe_signal();
-        auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+        [[maybe_unused]] auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
         co_await router.message_calls_channel.send(call);
         auto messages_channel = co_await call.result();
@@ -300,7 +300,7 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
         auto call_future = call.result_promise->get_future();
 
         auto unsubscribe_signal = call.unsubscribe_signal;
-        auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+        [[maybe_unused]] auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
         co_await router.peer_events_calls_channel.send(call);
         auto events_channel = co_await call_future.get_async();

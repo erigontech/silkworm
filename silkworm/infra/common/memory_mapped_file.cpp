@@ -92,7 +92,7 @@ void MemoryMappedFile::map_existing(bool read_only) {
         throw std::runtime_error{"Failed to create existing file: " + path_.string() + " error: " + std::to_string(GetLastError())};
     }
 
-    auto _ = gsl::finally([fd]() { if (INVALID_HANDLE_VALUE != fd) ::CloseHandle(fd); });
+    [[maybe_unused]] auto _ = gsl::finally([fd]() { if (INVALID_HANDLE_VALUE != fd) ::CloseHandle(fd); });
 
     length_ = std::filesystem::file_size(path_);
 
@@ -150,7 +150,7 @@ void MemoryMappedFile::map_existing(bool read_only) {
     if (fd == -1) {
         throw std::runtime_error{"open failed for: " + path_.string() + " error: " + strerror(errno)};
     }
-    auto _ = gsl::finally([fd]() { ::close(fd); });
+    [[maybe_unused]] auto _ = gsl::finally([fd]() { ::close(fd); });
 
     length_ = std::filesystem::file_size(path_);
 

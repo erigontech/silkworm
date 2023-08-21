@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
         repository.reopen_folder();
 
         auto all_chain_snapshots{collect_all_snapshots(repository)};
-        auto _ = gsl::finally([&]() {
+        [[maybe_unused]] auto _ = gsl::finally([&]() {
             for (auto& chain_snapshot : all_chain_snapshots) {
                 delete[] chain_snapshot.headers.segment.file_path;
                 delete[] chain_snapshot.headers.header_hash_index.file_path;

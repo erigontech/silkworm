@@ -21,8 +21,8 @@
 #include <string_view>
 #include <utility>
 
+#include <absl/strings/str_format.h>
 #include <absl/strings/str_split.h>
-#include <boost/format.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/infra/common/ensure.hpp>
@@ -94,15 +94,12 @@ SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum b
 }
 
 fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
-    std::string filename{"v"};
-    filename.append(std::to_string(version));
-    filename.append("-");
-    filename.append((boost::format("%06d") % (block_from / kFileNameBlockScaleFactor)).str());
-    filename.append("-");
-    filename.append((boost::format("%06d") % (block_to / kFileNameBlockScaleFactor)).str());
-    filename.append("-");
-    filename.append(magic_enum::enum_name(type));
-    filename.append(kSegmentExtension);
+    std::string filename{absl::StrFormat("v%d-%06d-%06d-%s%s",
+                                         version,
+                                         block_from / kFileNameBlockScaleFactor,
+                                         block_to / kFileNameBlockScaleFactor,
+                                         magic_enum::enum_name(type),
+                                         kSegmentExtension)};
     return fs::path{filename};
 }
 

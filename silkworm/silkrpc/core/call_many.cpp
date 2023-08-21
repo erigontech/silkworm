@@ -23,7 +23,6 @@
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/format.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>

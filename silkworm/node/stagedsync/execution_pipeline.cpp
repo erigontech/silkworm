@@ -16,7 +16,7 @@
 
 #include "execution_pipeline.hpp"
 
-#include <boost/format.hpp>
+#include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
 #include <silkworm/infra/common/asio_timer.hpp>
@@ -360,11 +360,10 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
 }
 
 std::string ExecutionPipeline::get_log_prefix() const {
-    static std::string log_prefix_fmt{"[%u/%u %s]"};
-    return boost::str(boost::format(log_prefix_fmt) %
-                      current_stage_number_ %
-                      current_stages_count_ %
-                      current_stage_->first);
+    return absl::StrFormat("[%u/%u %s]",
+                           current_stage_number_,
+                           current_stages_count_,
+                           current_stage_->first);
 }
 
 }  // namespace silkworm::stagedsync

@@ -550,7 +550,7 @@ ByteView Decompressor::Iterator::data() const {
         }
         post_loop_offset += position_diff;
     }
-    SILK_TRACE << "Iterator::has_prefix word_offset_=" << word_offset_;
+    SILK_TRACE << "Iterator::has_prefix word_offset_=" << word_offset_ << "; post_loop_offset=" << post_loop_offset;
     return true;
 }
 

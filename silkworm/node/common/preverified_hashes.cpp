@@ -33,6 +33,7 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
 
     auto data_ptr = reinterpret_cast<const evmc::bytes32*>(preverified_hashes_data());
     auto num_elements{data_size / sizeof(evmc::bytes32)};
+    if (num_elements < 2) return;
 
     for (uint64_t i = 0; i < num_elements; ++i) {
         destination.hashes.insert(data_ptr[i]);

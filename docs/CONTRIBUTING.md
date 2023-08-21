@@ -23,7 +23,7 @@ We adhere to [Google's C++ Style Guide][cpp-google-style-guide] with the followi
 * Use `#pragma once` in the headers instead of the classic `#ifndef` guards.
 
 
-In addition to the Boost libraries permitted in the style guide, we allow:
+In addition to the [Boost libraries permitted in the style guide](https://google.github.io/styleguide/cppguide.html#Boost), we allow:
 * Algorithm
 * Asio
 * Circular Buffer

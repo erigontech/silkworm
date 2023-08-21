@@ -123,7 +123,7 @@ uint64_t RemoteState::previous_incarnation(const evmc::address& address) const n
     return 0;
 }
 
-std::optional<silkworm::BlockHeader> RemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<silkworm::BlockHeader> RemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash;
     try {
         std::future<std::optional<silkworm::BlockHeader>> result{boost::asio::co_spawn(executor_, async_state_.read_header(block_number, block_hash), boost::asio::use_future)};

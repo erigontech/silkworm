@@ -19,8 +19,9 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
-#include <boost/lexical_cast.hpp>
+#include <gsl/narrow>
 
 namespace silkworm::sentry {
 
@@ -42,7 +43,7 @@ EnodeUrl::EnodeUrl(const string& url_str)
 
     auto ip = boost::asio::ip::make_address(ip_str);
 
-    auto port = boost::lexical_cast<uint16_t>(port_str);
+    auto port = gsl::narrow<uint16_t>(std::stoul(port_str));
 
     public_key_ = EccPublicKey::deserialize_hex(pub_key_hex);
     ip_ = ip;

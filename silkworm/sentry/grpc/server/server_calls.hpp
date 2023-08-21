@@ -28,7 +28,6 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
-#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/sentry/api/common/message_id_set.hpp>
 #include <silkworm/sentry/api/common/node_info.hpp>

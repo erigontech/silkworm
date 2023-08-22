@@ -21,7 +21,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/interfaces/execution/execution.grpc.pb.h>
 
 namespace silkworm::execution {
@@ -307,6 +306,10 @@ Task<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_hash) {
 
 Task<std::optional<TotalDifficulty>> RemoteClient::get_header_td(Hash, std::optional<BlockNum>) {
     throw std::runtime_error{"RemoteClient::get_header_td not implemented"};
+}
+
+static Hash hash_from_H256(const types::H256& orig) {
+    return Hash{rpc::bytes32_from_H256(orig)};
 }
 
 Task<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {

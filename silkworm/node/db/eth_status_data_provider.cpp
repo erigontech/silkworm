@@ -100,7 +100,7 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::get_status_data(uint8_t
     }
 
     auto txn = db_access_.start_ro_tx();
-    auto _ = gsl::finally([&txn] { txn.abort(); });
+    [[maybe_unused]] auto _ = gsl::finally([&txn] { txn.abort(); });
 
     auto head_info = read_head_info(txn);
     head_info.debug_log();

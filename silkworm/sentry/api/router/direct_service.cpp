@@ -84,7 +84,7 @@ Task<void> DirectService::messages(
     MessagesCall call{std::move(message_id_filter), executor};
 
     auto unsubscribe_signal = call.unsubscribe_signal();
-    auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+    [[maybe_unused]] auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
     co_await router_.message_calls_channel.send(call);
     auto channel = co_await call.result();
@@ -131,7 +131,7 @@ Task<void> DirectService::peer_events(
     auto call_future = call.result_promise->get_future();
 
     auto unsubscribe_signal = call.unsubscribe_signal;
-    auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+    [[maybe_unused]] auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
     co_await router_.peer_events_calls_channel.send(call);
     auto channel = co_await call_future.get_async();

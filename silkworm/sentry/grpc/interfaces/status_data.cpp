@@ -20,15 +20,16 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/infra/grpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
+using namespace silkworm::rpc;
 
 eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t eth_version) {
-    Bytes genesis_hash{hash_from_H256(data.fork_data().genesis())};
+    Bytes genesis_hash = bytes_from_H256(data.fork_data().genesis());
 
     const auto& height_forks = data.fork_data().height_forks();
     std::vector<BlockNum> fork_block_numbers;
@@ -50,7 +51,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
         eth_version,
         data.network_id(),
         uint256_from_H256(data.total_difficulty()),
-        Bytes{hash_from_H256(data.best_hash())},
+        bytes_from_H256(data.best_hash()),
         genesis_hash,
         eth::ForkId{genesis_hash, fork_block_numbers, fork_block_times, data.max_block_height()},
     };
@@ -83,7 +84,7 @@ proto::StatusData proto_status_data_from_status_data(const eth::StatusData& data
     proto::StatusData result;
     result.set_network_id(data.message.network_id);
     result.mutable_total_difficulty()->CopyFrom(*H256_from_uint256(data.message.total_difficulty));
-    result.mutable_best_hash()->CopyFrom(*H256_from_hash(Hash{data.message.best_block_hash}));
+    result.mutable_best_hash()->CopyFrom(*H256_from_bytes(data.message.best_block_hash));
     result.mutable_fork_data()->CopyFrom(make_proto_forks(data.message.genesis_hash, data.fork_block_numbers, data.fork_block_times));
     result.set_max_block_height(data.head_block_num);
 

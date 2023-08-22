@@ -23,7 +23,7 @@ namespace silkworm::sentry::grpc::interfaces {
 namespace proto = ::sentry;
 
 api::PeerEvent peer_event_from_proto_peer_event(const proto::PeerEvent& event) {
-    api::PeerEventId event_id;
+    api::PeerEventId event_id{api::PeerEventId::kRemoved};
     switch (event.event_id()) {
         case proto::PeerEvent_PeerEventId_Connect:
             event_id = api::PeerEventId::kAdded;
@@ -32,7 +32,6 @@ api::PeerEvent peer_event_from_proto_peer_event(const proto::PeerEvent& event) {
             event_id = api::PeerEventId::kRemoved;
             break;
         default:
-            event_id = api::PeerEventId::kRemoved;  // Avoid -Wsometimes-uninitialized
             assert(false);
     }
 

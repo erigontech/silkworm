@@ -400,7 +400,6 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
 
     if (bitmaps_size) {
         db::bitmap::IndexLoader::flush_bitmaps_to_etl(bitmaps, collector_.get(), flush_count++);
-        bitmaps_size = 0;
     }
 }
 

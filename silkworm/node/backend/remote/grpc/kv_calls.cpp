@@ -683,7 +683,7 @@ Task<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
     }
 
     // Unregister subscription whatever it happens
-    auto _ = gsl::finally([&]() { source->unsubscribe(*token); });
+    [[maybe_unused]] auto _ = gsl::finally([&]() { source->unsubscribe(*token); });
 
     bool done{false};
     while (!done) {

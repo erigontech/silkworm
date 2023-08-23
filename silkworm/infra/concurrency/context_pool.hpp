@@ -149,7 +149,7 @@ class ContextPool : public ExecutorPool {
     }
 
     //! Stop all execution threads. This does *NOT* wait for termination: use \ref join() for that.
-    virtual void stop() {
+    void stop() {
         SILK_TRACE << "ContextPool::stop START";
 
         if (!stopped_.exchange(true)) {

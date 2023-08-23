@@ -341,7 +341,7 @@ void Decompressor::open() {
 bool Decompressor::read_ahead(ReadAheadFuncRef fn) {
     ensure(bool(compressed_file_), "decompressor closed, call open first");
     compressed_file_->advise_sequential();
-    auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
+    [[maybe_unused]] auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
     Iterator it{this};
     return fn(it);
 }
@@ -479,7 +479,7 @@ ByteView Decompressor::Iterator::data() const {
     const auto prefix_size{prefix.size()};
 
     const auto start_offset = word_offset_;
-    auto _ = gsl::finally([&]() { word_offset_ = start_offset; bit_position_ = 0; });
+    [[maybe_unused]] auto _ = gsl::finally([&]() { word_offset_ = start_offset; bit_position_ = 0; });
 
     uint64_t next_data_position = next_position(true);
     if (next_data_position == 0) {
@@ -550,7 +550,7 @@ ByteView Decompressor::Iterator::data() const {
         }
         post_loop_offset += position_diff;
     }
-    SILK_TRACE << "Iterator::has_prefix word_offset_=" << word_offset_;
+    SILK_TRACE << "Iterator::has_prefix word_offset_=" << word_offset_ << "; post_loop_offset=" << post_loop_offset;
     return true;
 }
 

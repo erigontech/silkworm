@@ -1399,8 +1399,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         auto tracer = std::make_shared<AccessListTracer>(*call.from, to);
 
         Tracers tracers{tracer};
-        bool access_lists_match{false};
-        do {
+        while (true) {
             const auto txn = call.to_transaction();
             tracer->reset_access_list();
 
@@ -1416,7 +1415,6 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             }
             const AccessList& current_access_list = tracer->get_access_list();
             if (call.access_list == current_access_list) {
-                access_lists_match = true;
                 AccessListResult access_list_result;
                 access_list_result.access_list = current_access_list;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
@@ -1427,7 +1425,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 break;
             }
             call.set_access_list(current_access_list);
-        } while (!access_lists_match);
+        }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {

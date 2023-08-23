@@ -22,8 +22,6 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/write.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/thread/thread.hpp>
 
 namespace silkworm::rpc {
 

@@ -18,7 +18,6 @@
 
 #include <algorithm>
 
-#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -36,7 +35,7 @@ struct EliasFanoList32Test {
 
 static std::string le_hex(uint64_t value) {
     uint8_t full_be[sizeof(uint64_t)];
-    boost::endian::store_little_u64(full_be, value);
+    endian::store_little_u64(full_be, value);
     return to_hex(full_be);
 }
 

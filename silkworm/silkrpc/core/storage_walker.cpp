@@ -19,8 +19,6 @@
 #include <set>
 #include <sstream>
 
-#include <boost/endian/conversion.hpp>
-
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -43,7 +41,7 @@ silkworm::Bytes make_key(const evmc::address& address, const evmc::bytes32& loca
 silkworm::Bytes make_key(const evmc::address& address, uint64_t incarnation) {
     silkworm::Bytes res(silkworm::kAddressLength + 8, '\0');
     std::memcpy(&res[0], address.bytes, silkworm::kAddressLength);
-    boost::endian::store_big_u64(&res[silkworm::kAddressLength], incarnation);
+    endian::store_big_u64(&res[silkworm::kAddressLength], incarnation);
     return res;
 }
 

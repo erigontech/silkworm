@@ -21,7 +21,19 @@ We adhere to [Google's C++ Style Guide][cpp-google-style-guide] with the followi
 * Maximum line length is 120, indentation is 4 spaces. Use `make fmt` to reformat according to the code style.
 * Add Apache copyright banners. Use `make lint` to check the proper banner style.
 * Use `#pragma once` in the headers instead of the classic `#ifndef` guards.
-* [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) runs on CI. The report is attached to the "ARTIFACTS" section of the linux-clang-tidy job that can be found [here](https://app.circleci.com/pipelines/github/torquem-ch/silkworm?branch=master).
+
+
+In addition to the [Boost libraries permitted in the style guide](https://google.github.io/styleguide/cppguide.html#Boost), we allow:
+* Algorithm
+* Asio
+* Circular Buffer
+* DLL
+* Process
+* Signals2
+* System
+* Thread
+
+[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) runs on CI. The report is attached to the "ARTIFACTS" section of the linux-clang-tidy job that can be found [here](https://app.circleci.com/pipelines/github/torquem-ch/silkworm?branch=master).
 
 
 ## Code Structure

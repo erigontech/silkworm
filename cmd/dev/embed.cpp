@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
+#include <cassert>
 #include <filesystem>
 #include <iostream>
 #include <regex>
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string.hpp>
 
 namespace fs = std::filesystem;
 

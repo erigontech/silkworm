@@ -70,4 +70,12 @@ AccountAccessDelta::AccountAccessDelta(const evmc::address& address) noexcept : 
 
 void AccountAccessDelta::revert(IntraBlockState& state) noexcept { state.accessed_addresses_.erase(address_); }
 
+TransientStorageChangeDelta::TransientStorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
+                                                         const evmc::bytes32& previous) noexcept
+    : address_{address}, key_{key}, previous_{previous} {}
+
+void TransientStorageChangeDelta::revert(IntraBlockState& state) noexcept {
+    state.transient_storage_[address_][key_] = previous_;
+}
+
 }  // namespace silkworm::state

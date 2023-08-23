@@ -304,7 +304,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     EvmHost host{*this};
     gsl::owner<evmone::ExecutionState*> state{acquire_state()};
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code, {});
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     evmc_result res{evmone::baseline::execute(*vm, msg.gas, *state, *analysis)};

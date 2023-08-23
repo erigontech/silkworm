@@ -521,4 +521,12 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
     evm_.state().add_log(log);
 }
 
+evmc::bytes32 EvmHost::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept {
+    return evm_.state().get_transient_storage(addr, key);
+}
+
+void EvmHost::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) noexcept {
+    evm_.state().set_transient_storage(addr, key, value);
+}
+
 }  // namespace silkworm

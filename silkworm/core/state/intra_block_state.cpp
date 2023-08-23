@@ -371,8 +371,18 @@ void IntraBlockState::clear_journal_and_substate() {
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();
+
+    transient_storage_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }
+
+evmc::bytes32 IntraBlockState::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) {
+    return transient_storage_[addr][key];
+}
+
+void IntraBlockState::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) {
+    transient_storage_[addr][key] = value;
+}
 
 }  // namespace silkworm

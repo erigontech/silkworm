@@ -157,6 +157,10 @@ class EvmHost : public evmc::Host {
     void emit_log(const evmc::address& address, const uint8_t* data, size_t data_size, const evmc::bytes32 topics[],
                   size_t num_topics) noexcept override;
 
+    [[nodiscard]] evmc::bytes32 get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override;
+
+    void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) noexcept override;
+
   private:
     EVM& evm_;
 };

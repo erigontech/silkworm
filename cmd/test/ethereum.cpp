@@ -233,7 +233,7 @@ struct [[nodiscard]] RunResults {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 RunResults blockchain_test(const nlohmann::json& json_test) {
-    const std::string network{json_test["network"].get<std::string>()};
+    const auto network{json_test["network"].get<std::string>()};
     const auto config_it{silkworm::test::kNetworkConfig.find(network)};
     if (config_it == silkworm::test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;

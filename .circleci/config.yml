@@ -123,6 +123,10 @@ commands:
                 working_directory: ~/build
                 no_output_timeout: 30m
                 command: cmd/test/ethereum --threads 8
+      - run:
+          name: "Execution Spec Tests"
+          working_directory: ~/build
+          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec --threads 8
 
 jobs:
   lint:

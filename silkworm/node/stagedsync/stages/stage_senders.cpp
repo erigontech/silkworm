@@ -43,6 +43,8 @@ Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
 Stage::Result Senders::forward(db::RWTxn& txn) {
     std::unique_lock log_lock(sl_mutex_);
     operation_ = OperationType::Forward;
+    total_processed_blocks_ = 0;
+    total_collected_transactions_ = 0;
     log_lock.unlock();
 
     const auto res{parallel_recover(txn)};
@@ -238,6 +240,12 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
 Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
+
+    collected_senders_ = 0;
+    collector_.clear();
+    batch_->clear();
+    results_.clear();
+
     try {
         db::DataModel data_model{txn};
 

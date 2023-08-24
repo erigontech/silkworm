@@ -233,6 +233,13 @@ struct [[nodiscard]] RunResults {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 RunResults blockchain_test(const nlohmann::json& json_test) {
+    const std::string network{json_test["network"].get<std::string>()};
+    const auto config_it{silkworm::test::kNetworkConfig.find(network)};
+    if (config_it == silkworm::test::kNetworkConfig.end()) {
+        std::cout << "unknown network " << network << std::endl;
+        return Status::kSkipped;
+    }
+
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
@@ -241,12 +248,6 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
         return Status::kFailed;
     }
 
-    std::string network{json_test["network"].get<std::string>()};
-    const auto config_it{silkworm::test::kNetworkConfig.find(network)};
-    if (config_it == silkworm::test::kNetworkConfig.end()) {
-        std::cout << "unknown network " << network << std::endl;
-        return Status::kFailed;
-    }
     const ChainConfig& config{config_it->second};
 
     InMemoryState state;
@@ -516,10 +517,14 @@ int main(int argc, char* argv[]) {
     };
 
     for (const auto& entry : kTestTypes) {
-        const fs::path& dir{entry.first};
+        const fs::path& dir{root_dir / entry.first};
         const RunnerFunc runner{entry.second};
 
-        for (auto i = fs::recursive_directory_iterator(root_dir / dir); i != fs::recursive_directory_iterator{}; ++i) {
+        if (!fs::exists(dir)) {
+            continue;
+        }
+
+        for (auto i = fs::recursive_directory_iterator(dir); i != fs::recursive_directory_iterator{}; ++i) {
             if (exclude_test(*i, root_dir, include_slow_tests)) {
                 ++total_skipped;
                 i.disable_recursion_pending();

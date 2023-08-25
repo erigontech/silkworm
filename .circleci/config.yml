@@ -122,7 +122,11 @@ commands:
                 name: "Ethereum EL tests"
                 working_directory: ~/build
                 no_output_timeout: 30m
-                command: cmd/test/ethereum --threads 16
+                command: cmd/test/ethereum
+      - run:
+          name: "Execution spec tests"
+          working_directory: ~/build
+          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec
 
 jobs:
   lint:
@@ -234,6 +238,9 @@ jobs:
           name: "Ethereum EL tests"
           no_output_timeout: 30m
           command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
+      - run:
+          name: "Execution spec tests"
+          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/tests/execution-spec
       - run:
           name: "Coverage"
           command: |

@@ -399,17 +399,8 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
     transactions.reserve(txn_count);
 
     for_each_txn(base_txn_id, txn_count, [&transactions, read_senders](uint64_t i, ByteView senders_data, ByteView tx_rlp) -> bool {
-        ByteView tx_envelope{tx_rlp};
+        ByteView tx_payload = slice_tx_payload(tx_rlp);
 
-        rlp::Header tx_header;
-        TransactionType tx_type;
-        const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope, tx_header, tx_type);
-        ensure(envelope_result.has_value(),
-               "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " i: " + std::to_string(i) +
-                   " error: " + to_string(envelope_result));
-        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_rlp.length() - tx_header.payload_length);
-
-        ByteView tx_payload{tx_rlp.substr(tx_payload_offset)};
         Transaction transaction;
         const auto payload_result = rlp::decode_transaction(tx_payload, transaction, rlp::Eip2718Wrapping::kBoth);
         ensure(payload_result.has_value(),
@@ -431,30 +422,19 @@ std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t base_txn_id, uint
     std::vector<Bytes> rlp_txs;
     rlp_txs.reserve(txn_count);
 
-    for_each_txn(base_txn_id, txn_count, [&rlp_txs](uint64_t i, ByteView /*senders_data*/, ByteView tx_rlp) -> bool {
-        ByteView tx_envelope{tx_rlp};
-
-        rlp::Header tx_header;
-        TransactionType tx_type;
-        const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope, tx_header, tx_type);
-        ensure(envelope_result.has_value(),
-               "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " i: " + std::to_string(i) +
-                   " error: " + std::string(magic_enum::enum_name(envelope_result.error())));
-        const std::size_t tx_payload_offset =
-            tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
-
-        rlp_txs.emplace_back(tx_rlp.substr(tx_payload_offset));
+    for_each_txn(base_txn_id, txn_count, [&rlp_txs](uint64_t /*i*/, ByteView /*senders_data*/, ByteView tx_rlp) -> bool {
+        ByteView tx_payload = slice_tx_payload(tx_rlp);
+        rlp_txs.emplace_back(tx_payload);
         return true;
     });
 
     return rlp_txs;
 }
 
-//! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
-DecodingResult TransactionSnapshot::decode_txn(const Snapshot::WordItem& item, Transaction& tx) {
+std::pair<ByteView, ByteView> TransactionSnapshot::slice_tx_data(const WordItem& item) {
     const auto& buffer{item.value};
     const auto buffer_size{buffer.size()};
-    SILK_TRACE << "decode_txn offset: " << item.offset << " buffer: " << to_hex(buffer);
+    SILK_TRACE << "slice_tx_data offset: " << item.offset << " buffer: " << to_hex(buffer);
 
     ensure(buffer_size >= kTxRlpDataOffset, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
 
@@ -462,11 +442,34 @@ DecodingResult TransactionSnapshot::decode_txn(const Snapshot::WordItem& item, T
     ByteView senders_data{buffer.data() + 1, kAddressLength};
     ByteView tx_rlp{buffer.data() + kTxRlpDataOffset, buffer_size - kTxRlpDataOffset};
 
-    SILK_TRACE << "decode_txn offset: " << item.offset << " tx_hash_first_byte: " << to_hex(buffer[0])
+    SILK_TRACE << "slice_tx_data offset: " << item.offset << " tx_hash_first_byte: " << to_hex(buffer[0])
                << " senders_data: " << to_hex(senders_data) << " tx_rlp: " << to_hex(tx_rlp);
+
+    return {senders_data, tx_rlp};
+}
+
+ByteView TransactionSnapshot::slice_tx_payload(ByteView tx_rlp) {
+    ByteView tx_envelope{tx_rlp};
+
+    rlp::Header tx_header;
+    TransactionType tx_type;
+    const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope, tx_header, tx_type);
+    ensure(envelope_result.has_value(),
+           "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " error: " + to_string(envelope_result));
+
+    const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_rlp.length() - tx_header.payload_length);
+    ByteView tx_payload{tx_rlp.substr(tx_payload_offset)};
+
+    return tx_payload;
+}
+
+//! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
+DecodingResult TransactionSnapshot::decode_txn(const WordItem& item, Transaction& tx) {
+    auto [senders_data, tx_rlp] = slice_tx_data(item);
+
     const auto result = rlp::decode(tx_rlp, tx);
     tx.from = to_evmc_address(senders_data);  // Must happen after rlp::decode because it resets sender
-    SILK_TRACE << "decode_txn offset: " << item.offset;
+
     return result;
 }
 
@@ -478,25 +481,18 @@ void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count,
     ensure(base_txn_id >= idx_txn_hash_->base_data_id(),
            path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(base_txn_id));
 
-    // First, calculate the first transaction ordinal position relative to the first block height within snapshot
+    // First, calculate the first transaction ordinal position relative to the base transaction within snapshot
     const auto first_txn_position = base_txn_id - idx_txn_hash_->base_data_id();
 
     // Then, get the first transaction offset in snapshot by using ordinal lookup
     const auto first_txn_offset = idx_txn_hash_->ordinal_lookup(first_txn_position);
 
-    // Iterate over each encoded transaction item
+    // Finally, iterate over each encoded transaction item
     for (uint64_t i{0}, offset{first_txn_offset}; i < txn_count; ++i) {
         const auto item = next_item(offset);
         ensure(item.has_value(), "TransactionSnapshot: record not found at offset=" + std::to_string(offset));
 
-        const auto& buffer{item->value};
-        const auto buffer_size{buffer.size()};
-
-        ensure(buffer_size >= kTxRlpDataOffset, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
-
-        // Skip first byte in data as it is first byte of transaction hash
-        ByteView senders_data{buffer.data() + 1, kAddressLength};
-        ByteView tx_rlp{buffer.data() + kTxRlpDataOffset, buffer_size - kTxRlpDataOffset};
+        auto [senders_data, tx_rlp] = slice_tx_data(*item);
 
         const bool go_on{walker(i, senders_data, tx_rlp)};
         if (!go_on) return;

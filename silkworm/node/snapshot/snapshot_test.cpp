@@ -53,6 +53,13 @@ class Snapshot_ForTest : public Snapshot {
     void close_index() override {}
 };
 
+class TransactionSnapshot_ForTest : public TransactionSnapshot {
+  public:
+    using TransactionSnapshot::slice_tx_data;
+    using TransactionSnapshot::slice_tx_payload;
+    using TransactionSnapshot::decode_txn;
+};
+
 template <class Rep, class Period>
 static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
     const auto ftime = std::filesystem::last_write_time(p);
@@ -223,6 +230,180 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     CHECK(block_number.value() == 1'500'013);
 }
 
+// https://etherscan.io/block/1500012
+TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
+    test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
+    TransactionIndex tx_index{tx_snapshot_path};
+    REQUIRE_NOTHROW(tx_index.build());
+
+    TransactionSnapshot tx_snapshot{tx_snapshot_path};
+    tx_snapshot.reopen_segment();
+    tx_snapshot.reopen_index();
+
+    // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
+    SECTION("1'500'012 OK") {
+        CHECK(tx_snapshot.txn_range(7'341'263, 0, /*read_senders=*/true).empty());
+        CHECK(tx_snapshot.txn_range(7'341'263, 7, /*read_senders=*/true).size() == 7);
+    }
+    SECTION("1'500'012 KO") {
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'262, 7, /*read_senders=*/true));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'264, 7, /*read_senders=*/true));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'263, 8, /*read_senders=*/true));  // invalid txn_count
+    }
+
+    // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
+    SECTION("1'500'013 OK") {
+        CHECK(tx_snapshot.txn_range(7'341'272, 0, /*read_senders=*/true).empty());
+        CHECK(tx_snapshot.txn_range(7'341'272, 1, /*read_senders=*/true).size() == 1);
+    }
+    SECTION("1'500'013 KO") {
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'271, 1, /*read_senders=*/true));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'273, 1, /*read_senders=*/true));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'272, 2, /*read_senders=*/true));  // invalid txn_count
+    }
+}
+
+TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
+    test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
+    TransactionIndex tx_index{tx_snapshot_path};
+    REQUIRE_NOTHROW(tx_index.build());
+
+    TransactionSnapshot tx_snapshot{tx_snapshot_path};
+    tx_snapshot.reopen_segment();
+    tx_snapshot.reopen_index();
+
+    // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
+    SECTION("1'500'012 OK") {
+        CHECK(tx_snapshot.txn_rlp_range(7'341'263, 0).empty());
+        CHECK(tx_snapshot.txn_rlp_range(7'341'263, 7).size() == 7);
+    }
+    SECTION("1'500'012 KO") {
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'262, 7));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'264, 7));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'263, 8));  // invalid txn_count
+    }
+
+    // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
+    SECTION("1'500'013 OK") {
+        CHECK(tx_snapshot.txn_rlp_range(7'341'272, 0).empty());
+        CHECK(tx_snapshot.txn_rlp_range(7'341'272, 1).size() == 1);
+    }
+    SECTION("1'500'013 KO") {
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'271, 1));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'273, 1));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'272, 2));  // invalid txn_count
+    }
+}
+
+TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    const std::vector<AccessListEntry> access_list{
+        {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
+         {
+             0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
+             0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
+         }},
+        {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
+    };
+
+    SECTION("TransactionType: kLegacy") {
+        Transaction txn{
+            {.type = TransactionType::kLegacy,
+             .chain_id = 1,
+             .nonce = 12,
+             .max_priority_fee_per_gas = 20000000000,
+             .max_fee_per_gas = 20000000000,
+             .gas_limit = 21000,
+             .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
+             .value = 10 * kEther,
+             .data = *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
+                               "00015af1d78b58c4000")},
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),  // r
+            intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),  // s
+        };
+        Bytes encoded{};
+        rlp::encode(encoded, txn);
+        Bytes decoded{};
+        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK(decoded == encoded);  // no envelope for legacy tx
+    }
+    SECTION("TransactionType: kAccessList") {
+        Transaction txn{
+            {.type = TransactionType::kAccessList,
+             .chain_id = 5,
+             .nonce = 7,
+             .max_priority_fee_per_gas = 30000000000,
+             .max_fee_per_gas = 30000000000,
+             .gas_limit = 5748100,
+             .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+             .value = 2 * kEther,
+             .data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),
+             .access_list = access_list},
+            false,                                                                                                   // odd_y_parity
+            intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+            intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+        };
+        Bytes encoded{};
+        rlp::encode(encoded, txn);
+        Bytes decoded{};
+        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK(decoded == encoded.substr(2));  // 2-byte envelope for this access-list tx
+    }
+    SECTION("TransactionType: kDynamicFee") {
+        Transaction txn{
+            {.type = TransactionType::kDynamicFee,
+             .chain_id = 5,
+             .nonce = 7,
+             .max_priority_fee_per_gas = 10000000000,
+             .max_fee_per_gas = 30000000000,
+             .gas_limit = 5748100,
+             .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+             .value = 2 * kEther,
+             .data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),
+             .access_list = access_list},
+            false,                                                                                                   // odd_y_parity
+            intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+            intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+        };
+        Bytes encoded{};
+        rlp::encode(encoded, txn);
+        Bytes decoded{};
+        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK(decoded == encoded.substr(2));  // 2-byte envelope for this dynamic-fee tx
+    }
+    SECTION("TransactionType: kBlob") {
+        Transaction txn{
+            {.type = TransactionType::kBlob,
+             .chain_id = 5,
+             .nonce = 7,
+             .max_priority_fee_per_gas = 10000000000,
+             .max_fee_per_gas = 30000000000,
+             .gas_limit = 5748100,
+             .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+             .data = *from_hex("04f7"),
+             .access_list = access_list,
+             .max_fee_per_data_gas = 123,
+             .blob_versioned_hashes = {
+                 0xc6bdd1de713471bd6cfa62dd8b5a5b42969ed09e26212d3377f3f8426d8ec210_bytes32,
+                 0x8aaeccaf3873d07cef005aca28c39f8a9f8bdb1ec8d79ffc25afc0a4fa2ab736_bytes32,
+             }},
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+            intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+        };
+        Bytes encoded{};
+        rlp::encode(encoded, txn);
+        Bytes decoded{};
+        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK(decoded == encoded.substr(3));  // 3-byte envelope for this blob tx
+    }
+}
+
 TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile sample_header_snapshot{};
@@ -270,11 +451,11 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
-    test::SampleTransactionSnapshotPath tx_snapshot_path1{sample_tx_snapshot.path()};
-    TransactionIndex tx_index{tx_snapshot_path1};
+    test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
+    TransactionIndex tx_index{tx_snapshot_path};
     REQUIRE_NOTHROW(tx_index.build());
 
-    TransactionSnapshot tx_snapshot{tx_snapshot_path1};
+    TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));

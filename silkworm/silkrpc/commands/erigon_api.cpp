@@ -335,7 +335,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     if (options.log_count == 0 && options.block_count == 0) {
         options.block_count = 1;
     }
-    SILK_LOG << "filter: {" << filter << "}, options: {" << options << "}";
+    SILK_DEBUG << "filter: {" << filter << "}, options: {" << options << "}";
 
     auto tx = co_await database_->begin();
 

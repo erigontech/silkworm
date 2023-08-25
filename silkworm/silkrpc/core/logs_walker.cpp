@@ -61,13 +61,11 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& 
 
 Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                 const FilterAddresses& addresses, const FilterTopics& topics, const LogFilterOptions& options, bool desc_order, std::vector<Log>& logs) {
-    SILK_INFO << "start block: " << start << " end block: " << end;
+    SILK_DEBUG << "start block: " << start << " end block: " << end;
 
     const auto chain_storage{tx_database_.get_tx().create_storage(tx_database_, backend_)};
     roaring::Roaring block_numbers;
     block_numbers.addRange(start, end + 1);  // [min, max)
-
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
 
     if (!topics.empty()) {
         auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_database_, db::table::kLogTopicIndexName, topics, start, end);
@@ -78,8 +76,6 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             block_numbers &= topics_bitmap;
         }
     }
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
-    SILK_TRACE << "block_numbers: " << block_numbers.toString();
 
     if (!addresses.empty()) {
         auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_database_, db::table::kLogAddressIndexName, addresses, start, end);
@@ -117,7 +113,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
 
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);
-        SILK_LOG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
+        SILK_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
         co_await tx_database_.for_prefix(db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
             chunk_logs.clear();
             const bool decoding_ok{cbor_decode(v, chunk_logs)};
@@ -127,29 +123,29 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             for (auto& log : chunk_logs) {
                 log.index = log_index++;
             }
-            SILK_LOG << "chunk_logs.size(): " << chunk_logs.size();
+            SILK_TRACE << "chunk_logs.size(): " << chunk_logs.size();
+
             filtered_chunk_logs.clear();
             filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
-            SILK_LOG << "filtered_chunk_logs.size(): " << filtered_chunk_logs.size();
+
             if (!filtered_chunk_logs.empty()) {
                 const auto tx_index = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
-                SILK_LOG << "tx_index: " << tx_index;
+                SILK_TRACE << "Transaction index: " << tx_index;
                 for (auto& log : filtered_chunk_logs) {
                     log.tx_index = tx_index;
                 }
                 logCount += filtered_chunk_logs.size();
-                SILK_LOG << "logCount: " << logCount;
+                SILK_TRACE << "logCount: " << logCount;
                 filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.rbegin(), filtered_chunk_logs.rend());
             }
             return options.log_count == 0 || options.log_count > logCount;
         });
-        SILK_LOG << "filtered_block_logs.size(): " << filtered_block_logs.size();
+        SILK_TRACE << "filtered_block_logs.size(): " << filtered_block_logs.size();
 
         if (!filtered_block_logs.empty()) {
             const auto block_with_hash = co_await core::read_block_by_number(block_cache_, *chain_storage, block_to_match);
-            SILK_LOG << "block_hash: " << silkworm::to_hex(block_with_hash->hash);
+            SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
             for (auto& log : filtered_block_logs) {
-                SILK_LOG << "log index: " << log.tx_index;
                 const auto tx_hash{hash_of_transaction(block_with_hash->block.transactions[log.tx_index])};
                 log.block_number = block_to_match;
                 log.block_hash = block_with_hash->hash;
@@ -168,7 +164,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             break;
         }
     }
-    SILK_INFO << "logs.size(): " << logs.size();
+    SILK_DEBUG << "resulting logs size: " << logs.size();
 
     co_return;
 }

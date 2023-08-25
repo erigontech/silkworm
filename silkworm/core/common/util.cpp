@@ -76,8 +76,9 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 }
 
 ByteView zeroless_view(ByteView data) {
-    return data.substr(static_cast<size_t>(
-        std::distance(data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
+    const auto is_zero_byte = [](const auto& b) { return b == 0x0; };
+    const auto first_nonzero_byte_it{as_range::find_if_not(data, is_zero_byte)};
+    return data.substr(static_cast<size_t>(std::distance(data.begin(), first_nonzero_byte_it)));
 }
 
 std::string to_hex(ByteView bytes, bool with_prefix) {

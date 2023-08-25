@@ -55,9 +55,9 @@ class Snapshot_ForTest : public Snapshot {
 
 class TransactionSnapshot_ForTest : public TransactionSnapshot {
   public:
+    using TransactionSnapshot::decode_txn;
     using TransactionSnapshot::slice_tx_data;
     using TransactionSnapshot::slice_tx_payload;
-    using TransactionSnapshot::decode_txn;
 };
 
 template <class Rep, class Period>

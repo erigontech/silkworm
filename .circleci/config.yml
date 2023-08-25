@@ -66,7 +66,7 @@ commands:
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
+          command: cmake --build ~/build -j16 # each compiler job requires 4GB of RAM
 
   build_using_conan:
     parameters:
@@ -122,11 +122,11 @@ commands:
                 name: "Ethereum EL tests"
                 working_directory: ~/build
                 no_output_timeout: 30m
-                command: cmd/test/ethereum --threads 8
+                command: cmd/test/ethereum --threads 16
       - run:
           name: "Execution Spec Tests"
           working_directory: ~/build
-          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec --threads 8
+          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec --threads 16
 
 jobs:
   lint:
@@ -173,7 +173,7 @@ jobs:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules
       - build_using_conan:
@@ -193,7 +193,7 @@ jobs:
         default: true
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules:
           ethereum_tests: <<parameters.ethereum_tests>>
@@ -210,7 +210,7 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules
       - build_using_conan:
@@ -224,7 +224,7 @@ jobs:
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules
       - build_using_conan:
@@ -255,7 +255,7 @@ jobs:
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_TIDY=ON
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - run:
           name: "Install clang-tidy"

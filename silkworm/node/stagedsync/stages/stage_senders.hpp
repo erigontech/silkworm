@@ -66,9 +66,6 @@ class Senders final : public Stage {
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(std::size_t delta);
 
-    //! The canonical hashes of the current block range
-    // std::vector<evmc::bytes32> canonical_hashes_;
-
     //! The size of recovery batches
     std::size_t max_batch_size_;
 

@@ -31,6 +31,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/silkrpc/common/compatibility.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
@@ -41,9 +42,6 @@ namespace silkworm::rpc {
 
 //! The maximum receive message in bytes for gRPC channels.
 constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
-
-//! The path to 'chaindata' folder relative to Silkworm data directory.
-static constexpr const char kChaindataRelativePath[]{"/chaindata"};
 
 //! The maximum number of concurrent readers allowed for MDBX datastore.
 static constexpr const int kDatabaseMaxReaders{32000};
@@ -174,7 +172,9 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(DaemonSettings settings, std::shared_ptr<mdbx::env_managed> chaindata_env)
+Daemon::Daemon(DaemonSettings settings,
+               std::shared_ptr<mdbx::env_managed> chaindata_env,
+               std::shared_ptr<snapshot::SnapshotRepository> snapshot_repository)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
@@ -188,19 +188,38 @@ Daemon::Daemon(DaemonSettings settings, std::shared_ptr<mdbx::env_managed> chain
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
     }
 
-    // Activate the local chaindata access (if required)
+    // Activate the local chaindata and snapshot access (if required)
     if (settings_.datadir) {
+        DataDirectory data_folder{*settings_.datadir};
+
         // Create a new local chaindata environment
         chaindata_env_ = std::make_shared<mdbx::env_managed>();
         silkworm::db::EnvConfig db_config{
-            .path = settings_.datadir->string() + kChaindataRelativePath,
+            .path = data_folder.chaindata().path(),
             .in_memory = true,
             .shared = true,
             .max_readers = kDatabaseMaxReaders};
         *chaindata_env_ = silkworm::db::open_env(db_config);
-    } else if (chaindata_env) {
-        // Use the existing chaindata environment
-        chaindata_env_ = std::move(chaindata_env);
+
+        // Create a new snapshot repository
+        snapshot::SnapshotSettings snapshot_settings{
+            .repository_dir = data_folder.snapshots().path(),
+        };
+        snapshot_repository_ = std::make_shared<snapshot::SnapshotRepository>(std::move(snapshot_settings));
+    } else {
+        if (chaindata_env) {
+            // Use the existing chaindata environment
+            chaindata_env_ = std::move(chaindata_env);
+        }
+        if (snapshot_repository) {
+            // Use the existing snapshot repository
+            snapshot_repository_ = std::move(snapshot_repository);
+        }
+    }
+
+    if (snapshot_repository_) {
+        snapshot_repository_->reopen_folder();
+        db::DataModel::set_snapshot_repository(snapshot_repository_.get());
     }
 
     // Create private and shared state in execution contexts

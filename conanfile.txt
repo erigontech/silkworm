@@ -10,7 +10,7 @@ grpc/1.48.0
 gtest/1.12.1
 jwt-cpp/0.6.0
 magic_enum/0.8.2
-mimalloc/2.0.9
+mimalloc/2.1.2
 ms-gsl/4.0.0
 nlohmann_json/3.11.2
 openssl/1.1.1s # grpc dependency
@@ -26,3 +26,4 @@ cmake_find_package
 
 [options]
 asio-grpc:local_allocator=boost_container
+mimalloc:override=True

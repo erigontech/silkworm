@@ -30,7 +30,7 @@
 namespace silkworm::cmd::common {
 
 template <class TItem>
-void add_list_option(CLI::App& cli, const std::string& name, std::vector<TItem> target_list, const std::string& description) {
+void add_list_option(CLI::App& cli, const std::string& name, std::vector<TItem>& target_list, const std::string& description) {
     auto option = cli.add_option(name, [&](const CLI::results_t& results) {
         try {
             for (auto& result : results) {

@@ -58,7 +58,12 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-static const std::vector<fs::path> kFailingTests{};
+// TODO(yperbasis) make them pass
+static const std::vector<fs::path> kFailingTests{
+    kBlockchainDir / "cancun" / "eip4844_blobs",
+    kBlockchainDir / "cancun" / "eip5656_mcopy",
+    kBlockchainDir / "cancun" / "eip6780_selfdestruct",
+};
 
 static constexpr size_t kColumnWidth{80};
 

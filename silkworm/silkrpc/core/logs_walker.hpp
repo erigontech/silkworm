@@ -42,7 +42,7 @@ class LogsWalker {
     Task<void> get_logs(std::uint64_t start, std::uint64_t end,
                         const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& logs) {
         LogFilterOptions options;
-        return get_logs(start, end, addresses, topics, options, true, logs);
+        co_return co_await get_logs(start, end, addresses, topics, options, true, logs);
     }
     Task<void> get_logs(std::uint64_t start, std::uint64_t end,
                         const FilterAddresses& addresses, const FilterTopics& topics,

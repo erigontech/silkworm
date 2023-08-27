@@ -190,7 +190,7 @@ TEST_CASE("EIP-1559 Header RLP") {
     CHECK(decoded == h);
 }
 
-TEST_CASE("EIP-4844 Header RLP") {
+TEST_CASE("Cancun Header RLP") {
     BlockHeader h{
         .ommers_hash = kEmptyListHash,
         .number = 17'000'000,
@@ -199,6 +199,7 @@ TEST_CASE("EIP-4844 Header RLP") {
         .withdrawals_root = 0xbac9348581b0ee244d6eb61076b63c4e4afa70430c804ab0e6a0ab69d9a9d323_bytes32,
         .data_gas_used = 456,
         .excess_data_gas = 789633,
+        .parent_beacon_block_root = 0x22_bytes32,
     };
 
     Bytes rlp;

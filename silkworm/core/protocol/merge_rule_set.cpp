@@ -19,6 +19,8 @@
 #include <optional>
 #include <utility>
 
+#include "param.hpp"
+
 namespace silkworm::protocol {
 
 MergeRuleSet::MergeRuleSet(RuleSetPtr pre_merge_rule_set, const ChainConfig& chain_config)
@@ -68,6 +70,23 @@ ValidationResult MergeRuleSet::validate_seal(const BlockHeader& header) {
         return pre_merge_rule_set_->validate_seal(header);
     }
     return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
+}
+
+void MergeRuleSet::initialize(EVM& evm) {
+    if (evm.revision() >= EVMC_CANCUN) {
+        // EIP-4788: Beacon block root in the EVM
+        const std::optional<evmc::bytes32>& parent_beacon_block_root{evm.block().header.parent_beacon_block_root};
+        SILKWORM_ASSERT(parent_beacon_block_root);
+
+        const evmc_message sys_message{
+            .gas = kSystemCallGasLimit,
+            .recipient = kBeaconRootsAddress,
+            .sender = kSystemAddress,
+            .input_data = parent_beacon_block_root->bytes,
+            .input_size = kHashLength,
+        };
+        evm.call(sys_message);
+    }
 }
 
 void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {

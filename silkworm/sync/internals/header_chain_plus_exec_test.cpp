@@ -60,6 +60,8 @@ class DummyRuleSet : public protocol::IRuleSet {
 
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
+    void initialize(EVM&) override {}
+
     void finalize(IntraBlockState&, const Block&) override {}
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }

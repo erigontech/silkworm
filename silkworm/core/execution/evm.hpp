@@ -70,8 +70,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config)
-    noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
 
     ~EVM();
 
@@ -84,6 +83,8 @@ class EVM {
 
     // Precondition: txn.from must be recovered
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
+
+    evmc::Result call(const evmc_message& message) noexcept;
 
     [[nodiscard]] evmc_revision revision() const noexcept;
 
@@ -101,8 +102,6 @@ class EVM {
     friend class EvmHost;
 
     evmc::Result create(const evmc_message& message) noexcept;
-
-    evmc::Result call(const evmc_message& message) noexcept;
 
     evmc_result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 

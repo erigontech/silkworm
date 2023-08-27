@@ -16,6 +16,7 @@
 
 #include "ethash_rule_set.hpp"
 
+#include <silkworm/core/chain/dao.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 #include "param.hpp"
@@ -44,6 +45,12 @@ intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHe
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     return difficulty(header.number, header.timestamp, parent.difficulty,
                       parent.timestamp, parent_has_uncles, chain_config_);
+}
+
+void EthashRuleSet::initialize(EVM& evm) {
+    if (evm.block().header.number == evm.config().dao_block) {
+        dao::transfer_balances(evm.state());
+    }
 }
 
 void EthashRuleSet::finalize(IntraBlockState& state, const Block& block) {

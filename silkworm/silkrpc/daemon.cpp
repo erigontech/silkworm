@@ -195,7 +195,7 @@ Daemon::Daemon(DaemonSettings settings,
         // Create a new local chaindata environment
         chaindata_env_ = std::make_shared<mdbx::env_managed>();
         silkworm::db::EnvConfig db_config{
-            .path = data_folder.chaindata().path(),
+            .path = data_folder.chaindata().path().string(),
             .in_memory = true,
             .shared = true,
             .max_readers = kDatabaseMaxReaders};

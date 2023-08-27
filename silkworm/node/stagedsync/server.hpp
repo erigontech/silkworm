@@ -35,11 +35,9 @@ class Server : public ActiveComponent {
     Server(NodeSettings&, db::RWAccess);
 
     // actions
-    Task<void> insert_headers(const BlockVector& blocks);  // [[thorax-compliant]]
-    Task<void> insert_bodies(const BlockVector& blocks);   // [[thorax-compliant]]
     Task<void> insert_blocks(const BlockVector& blocks);
 
-    Task<execution::ValidationResult> validate_chain(Hash head_block_hash);  // [[thorax-compliant]]
+    Task<execution::ValidationResult> validate_chain(const BlockId& head_block);  // [[thorax-compliant]]
 
     Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);  // [[thorax-compliant]]
 

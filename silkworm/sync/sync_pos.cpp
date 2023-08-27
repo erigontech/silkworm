@@ -185,17 +185,18 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         auto block = make_execution_block(payload);  // as per the EngineAPI spec
 
         Hash block_hash = block->header.hash();
+        BlockNum block_num{block->header.number};
         if (payload.block_hash != block_hash) co_return rpc::PayloadStatus::InvalidBlockHash;
-        log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block_num;
 
         auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};
 
         // find attaching point using chain_fork_view_ first to avoid remote access to execution
-        auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
+        auto parent_td = chain_fork_view_.get_total_difficulty(block_num - 1, block->header.parent_hash);
         if (!parent_td) {
             // if not found, try to get it from the execution engine
-            auto parent = co_await exec_engine_.get_header(block->header.number - 1, block->header.parent_hash);
+            auto parent = co_await exec_engine_.get_header(block_num - 1, block->header.parent_hash);
             if (!parent) {
                 log::Trace() << "PoSSync: new_payload parent=" << to_hex(block->header.parent_hash) << " NOT found, extend the chain";
                 // send payload to the block exchange to extend the chain up to it
@@ -204,7 +205,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
             }
             log::Trace() << "PoSSync: new_payload parent=" << to_hex(block->header.parent_hash) << " found, add to chain fork";
             // if found, add it to the chain_fork_view_ and calc total difficulty
-            parent_td = co_await exec_engine_.get_header_td(block->header.parent_hash, block->header.number - 1);
+            parent_td = co_await exec_engine_.get_header_td(block->header.parent_hash, block_num - 1);
             // TODO(canepat) either remove caching here or use a distinct cache (the same ChainForkView eats on itself)
             // chain_fork_view_.add(*parent, *parent_td);
         }  // maybe we can simplify the code above returning Syncing if parent_td is not found on  chain_fork_view
@@ -225,7 +226,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         log::Trace() << "PoSSync: new_payload block_number=" << *inserted << " inserted";
 
         // NOTE: from here the method execution can be cancelled
-        auto verification = co_await exec_engine_.validate_chain(block_hash);
+        auto verification = co_await exec_engine_.validate_chain(BlockId{block_num, block_hash});
 
         if (std::holds_alternative<ValidChain>(verification)) {
             // VALID
@@ -306,7 +307,8 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(
         do_sanity_checks(*head_header, /**parent,*/ *parent_td);
 
         // NOTE: from here the method execution can be cancelled
-        auto verification = co_await exec_engine_.validate_chain(head_header_hash);  // does nothing if previously validated
+        BlockId head_id{head_header->number, head_header_hash};
+        auto verification = co_await exec_engine_.validate_chain(head_id);  // does nothing if previously validated
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID

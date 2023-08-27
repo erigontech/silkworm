@@ -36,20 +36,12 @@ Task<BlockId> LocalClient::last_fork_choice() {
     co_return co_await local_server_.last_fork_choice();
 }
 
-Task<void> LocalClient::insert_headers(const BlockVector& blocks) {
-    co_await local_server_.insert_headers(blocks);
-}
-
-Task<void> LocalClient::insert_bodies(const BlockVector& blocks) {
-    co_await local_server_.insert_bodies(blocks);
-}
-
 Task<void> LocalClient::insert_blocks(const BlockVector& blocks) {
     co_await local_server_.insert_blocks(blocks);
 }
 
-Task<ValidationResult> LocalClient::validate_chain(Hash head_block_hash) {
-    co_return co_await local_server_.validate_chain(head_block_hash);
+Task<ValidationResult> LocalClient::validate_chain(const BlockId& head_block) {
+    co_return co_await local_server_.validate_chain(head_block);
 }
 
 Task<ForkChoiceApplication> LocalClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {

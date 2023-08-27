@@ -34,11 +34,9 @@ class Client {
     virtual asio::io_context& get_executor() = 0;
 
     // actions
-    virtual Task<void> insert_headers(const BlockVector& blocks) = 0;
-    virtual Task<void> insert_bodies(const BlockVector& blocks) = 0;
     virtual Task<void> insert_blocks(const BlockVector& blocks) = 0;
 
-    virtual Task<ValidationResult> validate_chain(Hash head_block_hash) = 0;
+    virtual Task<ValidationResult> validate_chain(const BlockId& head_block) = 0;
 
     virtual Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) = 0;
 

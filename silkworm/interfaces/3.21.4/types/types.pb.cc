@@ -139,8 +139,8 @@ PROTOBUF_CONSTEXPR ExecutionPayload::ExecutionPayload(
   , /*decltype(_impl_.gas_limit_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_used_)*/uint64_t{0u}
   , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
-  , /*decltype(_impl_.data_gas_used_)*/uint64_t{0u}
-  , /*decltype(_impl_.excess_data_gas_)*/uint64_t{0u}
+  , /*decltype(_impl_.blob_gas_used_)*/uint64_t{0u}
+  , /*decltype(_impl_.excess_blob_gas_)*/uint64_t{0u}
   , /*decltype(_impl_.version_)*/0u} {}
 struct ExecutionPayloadDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ExecutionPayloadDefaultTypeInternal()
@@ -336,8 +336,8 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.block_hash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.transactions_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.withdrawals_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.data_gas_used_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excess_data_gas_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.blob_gas_used_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excess_blob_gas_),
   ~0u,
   ~0u,
   ~0u,
@@ -478,9 +478,9 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "_data\030\014 \001(\014\022%\n\020base_fee_per_gas\030\r \001(\0132\013."
   "types.H256\022\037\n\nblock_hash\030\016 \001(\0132\013.types.H"
   "256\022\024\n\014transactions\030\017 \003(\014\022&\n\013withdrawals"
-  "\030\020 \003(\0132\021.types.Withdrawal\022\032\n\rdata_gas_us"
-  "ed\030\021 \001(\004H\000\210\001\001\022\034\n\017excess_data_gas\030\022 \001(\004H\001"
-  "\210\001\001B\020\n\016_data_gas_usedB\022\n\020_excess_data_ga"
+  "\030\020 \003(\0132\021.types.Withdrawal\022\032\n\rblob_gas_us"
+  "ed\030\021 \001(\004H\000\210\001\001\022\034\n\017excess_blob_gas\030\022 \001(\004H\001"
+  "\210\001\001B\020\n\016_blob_gas_usedB\022\n\020_excess_blob_ga"
   "s\"b\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\027\n\017valida"
   "tor_index\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013.types"
   ".H160\022\016\n\006amount\030\004 \001(\004\"C\n\rBlobsBundleV1\022\023"
@@ -2164,10 +2164,10 @@ class ExecutionPayload::_Internal {
   static const ::types::H256& prev_randao(const ExecutionPayload* msg);
   static const ::types::H256& base_fee_per_gas(const ExecutionPayload* msg);
   static const ::types::H256& block_hash(const ExecutionPayload* msg);
-  static void set_has_data_gas_used(HasBits* has_bits) {
+  static void set_has_blob_gas_used(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static void set_has_excess_data_gas(HasBits* has_bits) {
+  static void set_has_excess_blob_gas(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
 };
@@ -2231,8 +2231,8 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
     , decltype(_impl_.gas_limit_){}
     , decltype(_impl_.gas_used_){}
     , decltype(_impl_.timestamp_){}
-    , decltype(_impl_.data_gas_used_){}
-    , decltype(_impl_.excess_data_gas_){}
+    , decltype(_impl_.blob_gas_used_){}
+    , decltype(_impl_.excess_blob_gas_){}
     , decltype(_impl_.version_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2296,8 +2296,8 @@ inline void ExecutionPayload::SharedCtor(
     , decltype(_impl_.gas_limit_){uint64_t{0u}}
     , decltype(_impl_.gas_used_){uint64_t{0u}}
     , decltype(_impl_.timestamp_){uint64_t{0u}}
-    , decltype(_impl_.data_gas_used_){uint64_t{0u}}
-    , decltype(_impl_.excess_data_gas_){uint64_t{0u}}
+    , decltype(_impl_.blob_gas_used_){uint64_t{0u}}
+    , decltype(_impl_.excess_blob_gas_){uint64_t{0u}}
     , decltype(_impl_.version_){0u}
   };
   _impl_.extra_data_.InitDefault();
@@ -2380,9 +2380,9 @@ void ExecutionPayload::Clear() {
       reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.timestamp_));
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
-    ::memset(&_impl_.data_gas_used_, 0, static_cast<size_t>(
-        reinterpret_cast<char*>(&_impl_.excess_data_gas_) -
-        reinterpret_cast<char*>(&_impl_.data_gas_used_)) + sizeof(_impl_.excess_data_gas_));
+    ::memset(&_impl_.blob_gas_used_, 0, static_cast<size_t>(
+        reinterpret_cast<char*>(&_impl_.excess_blob_gas_) -
+        reinterpret_cast<char*>(&_impl_.blob_gas_used_)) + sizeof(_impl_.excess_blob_gas_));
   }
   _impl_.version_ = 0u;
   _impl_._has_bits_.Clear();
@@ -2536,20 +2536,20 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 data_gas_used = 17;
+      // optional uint64 blob_gas_used = 17;
       case 17:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 136)) {
-          _Internal::set_has_data_gas_used(&has_bits);
-          _impl_.data_gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _Internal::set_has_blob_gas_used(&has_bits);
+          _impl_.blob_gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 excess_data_gas = 18;
+      // optional uint64 excess_blob_gas = 18;
       case 18:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 144)) {
-          _Internal::set_has_excess_data_gas(&has_bits);
-          _impl_.excess_data_gas_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _Internal::set_has_excess_blob_gas(&has_bits);
+          _impl_.excess_blob_gas_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2690,16 +2690,16 @@ uint8_t* ExecutionPayload::_InternalSerialize(
         InternalWriteMessage(16, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // optional uint64 data_gas_used = 17;
-  if (_internal_has_data_gas_used()) {
+  // optional uint64 blob_gas_used = 17;
+  if (_internal_has_blob_gas_used()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(17, this->_internal_data_gas_used(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(17, this->_internal_blob_gas_used(), target);
   }
 
-  // optional uint64 excess_data_gas = 18;
-  if (_internal_has_excess_data_gas()) {
+  // optional uint64 excess_blob_gas = 18;
+  if (_internal_has_excess_blob_gas()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(18, this->_internal_excess_data_gas(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(18, this->_internal_excess_blob_gas(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2818,18 +2818,18 @@ size_t ExecutionPayload::ByteSizeLong() const {
 
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
-    // optional uint64 data_gas_used = 17;
+    // optional uint64 blob_gas_used = 17;
     if (cached_has_bits & 0x00000001u) {
       total_size += 2 +
         ::_pbi::WireFormatLite::UInt64Size(
-          this->_internal_data_gas_used());
+          this->_internal_blob_gas_used());
     }
 
-    // optional uint64 excess_data_gas = 18;
+    // optional uint64 excess_blob_gas = 18;
     if (cached_has_bits & 0x00000002u) {
       total_size += 2 +
         ::_pbi::WireFormatLite::UInt64Size(
-          this->_internal_excess_data_gas());
+          this->_internal_excess_blob_gas());
     }
 
   }
@@ -2908,10 +2908,10 @@ void ExecutionPayload::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
-      _this->_impl_.data_gas_used_ = from._impl_.data_gas_used_;
+      _this->_impl_.blob_gas_used_ = from._impl_.blob_gas_used_;
     }
     if (cached_has_bits & 0x00000002u) {
-      _this->_impl_.excess_data_gas_ = from._impl_.excess_data_gas_;
+      _this->_impl_.excess_blob_gas_ = from._impl_.excess_blob_gas_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
   }

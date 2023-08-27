@@ -45,11 +45,9 @@ class RemoteClient : public Client {
     asio::io_context& get_executor() override;
 
     // actions
-    Task<void> insert_headers(const BlockVector& blocks) override;
-    Task<void> insert_bodies(const BlockVector& blocks) override;
     Task<void> insert_blocks(const BlockVector& blocks) override;
 
-    Task<ValidationResult> validate_chain(Hash head_block_hash) override;
+    Task<ValidationResult> validate_chain(const BlockId& head_block) override;
 
     Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) override;
 

@@ -67,14 +67,6 @@ Task<BlockId> Server::last_fork_choice() {
     return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
-Task<void> Server::insert_headers(const BlockVector& /*blocks*/) {
-    throw std::runtime_error{"Server::insert_headers not implemented"};
-}
-
-Task<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
-    throw std::runtime_error{"Server::insert_bodies not implemented"};
-}
-
 Task<void> Server::insert_blocks(const BlockVector& blocks) {
     auto lambda = [](Server* me, const BlockVector& b) -> Task<void> {
         co_return me->exec_engine_.insert_blocks(b);
@@ -82,9 +74,9 @@ Task<void> Server::insert_blocks(const BlockVector& blocks) {
     return asio::co_spawn(io_context_, lambda(this, blocks), asio::use_awaitable);
 }
 
-Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
-    auto lambda = [](Server* me, Hash h) -> Task<ValidationResult> {
-        auto future_result = me->exec_engine_.verify_chain(h);
+Task<ValidationResult> Server::validate_chain(const BlockId& head_block) {
+    auto lambda = [](Server* me, BlockId id) -> Task<ValidationResult> {
+        auto future_result = me->exec_engine_.verify_chain(id.hash);
         auto verification = co_await future_result.get_async();
 
         ValidationResult validation;
@@ -106,7 +98,7 @@ Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
         }
         co_return validation;
     };
-    return asio::co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
+    return asio::co_spawn(io_context_, lambda(this, head_block), asio::use_awaitable);
 }
 
 Task<ForkChoiceApplication> Server::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {

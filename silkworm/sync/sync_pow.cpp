@@ -145,7 +145,7 @@ void PoWSync::execution_loop() {
 
         // verify the new section of the chain
         log::Info("Sync") << "Verifying chain, head= (" << new_height.number << ", " << to_hex(new_height.hash) << ")";
-        auto verification = sync_wait(in(exec_engine_), exec_engine_.validate_chain(new_height.hash));  // BLOCKING
+        auto verification = sync_wait(in(exec_engine_), exec_engine_.validate_chain(new_height));  // BLOCKING
 
         if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);

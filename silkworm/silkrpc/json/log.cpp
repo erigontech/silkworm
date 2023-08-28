@@ -37,8 +37,8 @@ void to_json(nlohmann::json& json, const Log& log) {
     json["transactionIndex"] = to_quantity(log.tx_index);
     json["logIndex"] = to_quantity(log.index);
     json["removed"] = log.removed;
-    if (log.timestamp != 0) {
-        json["timestamp"] = to_quantity(log.timestamp);
+    if (log.timestamp) {
+        json["timestamp"] = to_quantity(*(log.timestamp));
     }
 }
 
@@ -134,8 +134,8 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
         to_quantity(std::span(item.index), l.index);
         item.removed = l.removed;
         to_hex(item.data, l.data);
-        if (item.timestamp) {
-            item.timestamp = to_quantity(l.timestamp);
+        if (l.timestamp) {
+            item.timestamp = to_quantity(*(l.timestamp));
         }
         for (const auto& t : l.topics) {
             item.topics.push_back("0x" + silkworm::to_hex(t));

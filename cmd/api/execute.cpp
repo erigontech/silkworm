@@ -149,7 +149,7 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                         .memory_address = idx_txn_hash->memory_file_address(),
                         .memory_length = idx_txn_hash->memory_file_size()},
                     .tx_hash_2_block_index{
-                        .file_path = make_path(segment_file.index_file_for_type(SnapshotType::transactions2block)),
+                        .file_path = make_path(segment_file.index_file_for_type(SnapshotType::transactions_to_block)),
                         .memory_address = idx_txn_hash_2_block->memory_file_address(),
                         .memory_length = idx_txn_hash_2_block->memory_file_size()}};
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);

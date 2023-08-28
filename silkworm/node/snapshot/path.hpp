@@ -42,13 +42,14 @@ constexpr const char* kSegmentExtension{".seg"};
 constexpr const char* kIdxExtension{".idx"};
 constexpr const char* kTmpExtension{".tmp"};
 
-//! The snapshot category
-//! @remark item names do NOT follow Google style just to make magic_enum work
+//! The snapshot category corresponding to the snapshot file type
+//! @remark item names do NOT follow Google style to obtain the tag used in file names from magic_enum::enum_name
+//! @see SnapshotPath#build_filename
 enum SnapshotType {
     headers = 0,
     bodies = 1,
     transactions = 2,
-    transactions2block = 3,
+    transactions_to_block = 3,
 };
 
 //! The snapshot version 1 aka v1

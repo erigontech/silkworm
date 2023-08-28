@@ -37,7 +37,15 @@ struct Filter {
     std::optional<std::string> block_hash;
 };
 
+struct LogFilterOptions {
+    bool add_timestamp{false};
+    std::uint64_t log_count{0};
+    std::uint64_t block_count{0};
+    bool ignore_topics_order{false};
+};
+
 std::ostream& operator<<(std::ostream& out, const Filter& filter);
+std::ostream& operator<<(std::ostream& out, const LogFilterOptions& filter_options);
 
 }  // namespace silkworm::rpc
 

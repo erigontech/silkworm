@@ -7,3 +7,5 @@ xcode
 .vs
 CMakeFiles
 cmake-build-*
+tests/integration/goerly/results
+

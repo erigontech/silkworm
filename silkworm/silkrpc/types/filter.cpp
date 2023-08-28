@@ -67,11 +67,19 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Filter& filter) {
-    out << "from_block: " << filter.from_block.value_or("null") << " ";
-    out << "to_block: " << filter.to_block.value_or("null") << " ";
-    out << "address: " << filter.addresses << " ";
-    out << "topics: " << filter.topics << " ";
-    out << "block_hash: " << filter.block_hash.value_or("null");
+    out << "from_block: " << filter.from_block.value_or("null");
+    out << ", to_block: " << filter.to_block.value_or("null");
+    out << ", addresses: " << filter.addresses;
+    out << ", topics: " << filter.topics;
+    out << ", block_hash: " << filter.block_hash.value_or("null");
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const LogFilterOptions& filter_options) {
+    out << "add_timestamp: " << std::boolalpha << filter_options.add_timestamp;
+    out << ", logCount: " << filter_options.log_count;
+    out << ", blockCount: " << filter_options.block_count;
+    out << ", ignore_topics_order: " << std::boolalpha << filter_options.ignore_topics_order;
     return out;
 }
 

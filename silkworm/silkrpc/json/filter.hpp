@@ -25,4 +25,6 @@ namespace silkworm::rpc {
 void to_json(nlohmann::json& json, const Filter& filter);
 void from_json(const nlohmann::json& json, Filter& filter);
 
+void from_json(const nlohmann::json& json, LogFilterOptions& filter_options);
+
 }  // namespace silkworm::rpc

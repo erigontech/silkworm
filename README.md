@@ -2,9 +2,9 @@
 
 C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
 
-[![Linux](https://circleci.com/gh/torquem-ch/silkworm.svg?style=shield)](https://circleci.com/gh/torquem-ch/silkworm)
-[![macOS](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml)
-[![Windows](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml)
+[![Linux](https://circleci.com/gh/erigontech/silkworm.svg?style=shield)](https://circleci.com/gh/erigontech/silkworm)
+[![macOS](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml)
+[![Windows](https://github.com/erigontech/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/windows.yml)
 
 ## Table of Contents
 
@@ -36,7 +36,7 @@ Hence, there have been no releases so far.
 
 To obtain Silkworm source code for the first time:
 ```
-git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git
+git clone --recurse-submodules https://github.com/erigontech/silkworm.git
 cd silkworm
 ```
 
@@ -101,12 +101,16 @@ small amount of RAM. To work around this, either specify `-jn` where `n` is the 
 remove `-j` completely. Typically, for Silkworm each compiler job requires 4GB of RAM. So, if your total RAM is 16GB, for example,
 then `-j4` should be OK, while `-j8` is probably not. It also means that you need a machine with at least 4GB RAM to compile Silkworm._
 
-Now you can run the unit tests. There's one for core and one for node.
+Now you can run the unit tests
 ```
 cmd/test/core_test
+cmd/test/infra_test
 cmd/test/node_test
+cmd/test/rpcdaemon_test
+cmd/test/sentry_test
+cmd/test/sync_test
 ```
-or [Ethereum EL Tests]
+or the [Ethereum EL Tests]
 ```
 cmd/test/ethereum
 ```

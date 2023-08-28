@@ -51,7 +51,7 @@ TEST_CASE("Proof-of-Stake RuleSet") {
 
     MergeRuleSet rule_set{std::make_unique<EthashRuleSet>(config), config};
 
-    header.base_fee_per_gas = expected_base_fee_per_gas(parent.header, EVMC_LONDON);
+    header.base_fee_per_gas = expected_base_fee_per_gas(parent.header);
 
     InMemoryState state;
     state.insert_block(parent, header.parent_hash);

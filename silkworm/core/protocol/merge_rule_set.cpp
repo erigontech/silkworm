@@ -78,13 +78,11 @@ void MergeRuleSet::initialize(EVM& evm) {
     }
 
     // EIP-4788: Beacon block root in the EVM
-    const BlockHeader& header{evm.block().header};
-    const std::optional<evmc::bytes32>& parent_beacon_block_root{header.parent_beacon_block_root};
+    const std::optional<evmc::bytes32>& parent_beacon_block_root{evm.block().header.parent_beacon_block_root};
     SILKWORM_ASSERT(parent_beacon_block_root);
 
     Transaction system_txn{{
-        .max_priority_fee_per_gas = *header.base_fee_per_gas,
-        .max_fee_per_gas = *header.base_fee_per_gas,
+        .type = TransactionType::kSystem,
         .to = kBeaconRootsAddress,
         .data = Bytes{ByteView{*parent_beacon_block_root}},
     }};

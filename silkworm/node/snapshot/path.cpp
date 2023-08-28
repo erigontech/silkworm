@@ -22,6 +22,7 @@
 #include <utility>
 
 #include <absl/strings/str_format.h>
+#include <absl/strings/str_replace.h>
 #include <absl/strings/str_split.h>
 #include <magic_enum.hpp>
 
@@ -94,11 +95,12 @@ SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum b
 }
 
 fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+    std::string snapshot_type_name{magic_enum::enum_name(type)};
     std::string filename{absl::StrFormat("v%d-%06d-%06d-%s%s",
                                          version,
                                          block_from / kFileNameBlockScaleFactor,
                                          block_to / kFileNameBlockScaleFactor,
-                                         magic_enum::enum_name(type),
+                                         absl::StrReplaceAll(snapshot_type_name, {{"_", "-"}}),
                                          kSegmentExtension)};
     return fs::path{filename};
 }

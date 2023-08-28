@@ -517,7 +517,7 @@ void TransactionSnapshot::reopen_index() {
         }
     }
 
-    const auto tx_hash_2_block_index_path = path().index_file_for_type(SnapshotType::transactions2block);
+    const auto tx_hash_2_block_index_path = path().index_file_for_type(SnapshotType::transactions_to_block);
     if (tx_hash_2_block_index_path.exists()) {
         idx_txn_hash_2_block_ = std::make_unique<succinct::RecSplitIndex>(tx_hash_2_block_index_path.path(), idx_txn_hash_2_block_region_);
         if (idx_txn_hash_2_block_->last_write_time() < decoder_.last_write_time()) {

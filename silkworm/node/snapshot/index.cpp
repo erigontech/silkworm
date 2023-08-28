@@ -134,7 +134,7 @@ void TransactionIndex::build() {
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
     RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
 
-    const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions2block);
+    const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
     SILK_INFO << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
     RecSplitSettings tx_hash_to_block_rs_settings{
         .keys_count = txs_decoder.words_count(),

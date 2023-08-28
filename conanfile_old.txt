@@ -26,4 +26,4 @@ cmake_find_package
 
 [options]
 asio-grpc:local_allocator=boost_container
-mimalloc:override=False
+mimalloc:override=True

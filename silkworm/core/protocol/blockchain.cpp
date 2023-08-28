@@ -27,7 +27,7 @@ Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& gen
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    ValidationResult err{rule_set_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)};
+    ValidationResult err{rule_set_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/false)};
     if (err != ValidationResult::kOk) {
         return err;
     }

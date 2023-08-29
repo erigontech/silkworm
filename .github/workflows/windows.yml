@@ -43,10 +43,6 @@ jobs:
         submodules: recursive
         fetch-depth: "0"
 
-    - name: Run VsDevCmd
-      run: |
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-
     - name: Install Conan
       id: conan
       uses: turtlebrowser/get-conan@main
@@ -60,7 +56,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: C:\build
-      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -DCONAN_PROFILE=experimental/windows_msvc_17_release -G "Visual Studio 17 2022"
 
     - name: Build unit tests
       working-directory: C:\build

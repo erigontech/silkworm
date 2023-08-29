@@ -102,7 +102,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
 
 SILKWORM_EXPORT
 int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-                            uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+                            uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
+                            uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -111,6 +112,9 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     }
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
+    }
+    if (write_change_sets || write_call_traces) {
+        return SILKWORM_NOT_IMPLEMENTED_ERROR;  // Flags for writing state changes and call traces not yet supported
     }
     const auto chain_info = lookup_known_chain(chain_id);
     if (!chain_info) {

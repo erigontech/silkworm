@@ -41,19 +41,20 @@ extern "C" {
 
 typedef struct MDBX_txn MDBX_txn;
 
-#define SILKWORM_OK                  0 /* Successful result */
-#define SILKWORM_INTERNAL_ERROR      1
-#define SILKWORM_UNKNOWN_ERROR       2
-#define SILKWORM_INVALID_HANDLE      3
-#define SILKWORM_INVALID_PATH        4
-#define SILKWORM_INVALID_SNAPSHOT    5
-#define SILKWORM_INVALID_MDBX_TXN    6
-#define SILKWORM_INVALID_BLOCK_RANGE 7
-#define SILKWORM_BLOCK_NOT_FOUND     8
-#define SILKWORM_UNKNOWN_CHAIN_ID    9
-#define SILKWORM_MDBX_ERROR          10
-#define SILKWORM_INVALID_BLOCK       11
-#define SILKWORM_DECODING_ERROR      12
+#define SILKWORM_OK                    0 /* Successful result */
+#define SILKWORM_INTERNAL_ERROR        1
+#define SILKWORM_UNKNOWN_ERROR         2
+#define SILKWORM_INVALID_HANDLE        3
+#define SILKWORM_INVALID_PATH          4
+#define SILKWORM_INVALID_SNAPSHOT      5
+#define SILKWORM_INVALID_MDBX_TXN      6
+#define SILKWORM_INVALID_BLOCK_RANGE   7
+#define SILKWORM_BLOCK_NOT_FOUND       8
+#define SILKWORM_UNKNOWN_CHAIN_ID      9
+#define SILKWORM_MDBX_ERROR            10
+#define SILKWORM_INVALID_BLOCK         11
+#define SILKWORM_DECODING_ERROR        12
+#define SILKWORM_NOT_IMPLEMENTED_ERROR 13
 
 typedef struct SilkwormHandle SilkwormHandle;
 
@@ -100,7 +101,9 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct Silkwor
  * max_block may be executed, or the execution may stop earlier if the batch is full.
  * \param[in] batch_size The size of DB changes to accumulate before returning from this method.
  * Pass 0 if you want to execute just 1 block.
+ * \param[in] write_change_sets Whether to write state changes into the DB.
  * \param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
+ * \param[in] write_call_traces Whether to write call traces into the DB.
  *
  * \param[out] last_executed_block The height of the last successfully executed block.
  * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
@@ -113,7 +116,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct Silkwor
  */
 SILKWORM_EXPORT int silkworm_execute_blocks(
     SilkwormHandle* handle, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-    uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
+    uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
+    uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
 

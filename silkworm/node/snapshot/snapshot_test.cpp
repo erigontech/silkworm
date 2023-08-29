@@ -216,6 +216,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
 
+    // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     auto transaction = tx_snapshot.txn_by_id(7'341'269);  // known txn id in block 1'500'012
     CHECK(transaction.has_value());
     auto block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
@@ -223,11 +224,16 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'012);
 
+    // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
     transaction = tx_snapshot.txn_by_id(7'341'272);  // known txn id in block 1'500'013
     CHECK(transaction.has_value());
     block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'013);
+
+    // transaction hash not present in snapshot (first txn hash in block 1'500'014)
+    block_number = tx_snapshot.block_num_by_txn_hash(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
+    CHECK(not block_number.has_value());
 }
 
 // https://etherscan.io/block/1500012

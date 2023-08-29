@@ -385,13 +385,14 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
         return {};
     }
 
-    const auto block_number = idx_txn_hash_2_block_->lookup(txn_hash);
-
-    if (block_number == 0) {
+    // First, lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
+    const auto transaction{txn_by_hash(txn_hash)};
+    if (!transaction) {
         return {};
     }
 
-    return block_number;
+    // Finally, get the block number using dedicated MPHF index
+    return idx_txn_hash_2_block_->lookup(txn_hash);
 }
 
 std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const {

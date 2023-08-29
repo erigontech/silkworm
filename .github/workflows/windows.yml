@@ -45,7 +45,7 @@ jobs:
 
     - name: Run VsDevCmd
       run: |
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
 
     - name: Install Conan
       id: conan

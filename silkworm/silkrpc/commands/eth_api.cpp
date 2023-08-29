@@ -653,14 +653,14 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            const auto transactions = block_with_hash->block.transactions;
+            const auto& transactions = block_with_hash->block.transactions;
 
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= transactions.size()) {
                 SILK_WARN << "Transaction not found for index: " << index;
                 reply = make_json_content(request["id"], nullptr);
             } else {
-                const auto block_header = block_with_hash->block.header;
+                const auto& block_header = block_with_hash->block.header;
                 rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
                 reply = make_json_content(request["id"], txn);
             }
@@ -702,7 +702,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            const auto transactions = block_with_hash->block.transactions;
+            const auto& transactions = block_with_hash->block.transactions;
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= transactions.size()) {
                 SILK_WARN << "Transaction not found for index: " << index;
@@ -754,7 +754,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const auto transactions = block_with_hash->block.transactions;
+            const auto& transactions = block_with_hash->block.transactions;
 
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= transactions.size()) {
@@ -806,7 +806,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_in
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const auto transactions = block_with_hash->block.transactions;
+            const auto& transactions = block_with_hash->block.transactions;
 
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= transactions.size()) {
@@ -861,7 +861,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_return;
         }
         auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
-        auto transactions = block_with_hash->block.transactions;
+        const auto& transactions = block_with_hash->block.transactions;
         if (receipts.size() != transactions.size()) {
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
         }

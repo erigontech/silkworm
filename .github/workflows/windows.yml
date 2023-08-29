@@ -43,6 +43,10 @@ jobs:
         submodules: recursive
         fetch-depth: "0"
 
+    - name: Run VsDevCmd
+      run: |
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+
     - name: Install Conan
       id: conan
       uses: turtlebrowser/get-conan@main

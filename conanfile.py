@@ -35,8 +35,9 @@ class SilkwormConan(ConanFile):
     }
 
     def configure(self):
-        if self.settings.os == "Windows":
-            self.options["mimalloc"].override = False
+        pass
+        #if self.settings.os == "Windows":
+        #    self.options["mimalloc"].override = False
             
     #def build(self):
     #    cmake = CMake(self)

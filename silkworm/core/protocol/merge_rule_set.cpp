@@ -73,21 +73,24 @@ ValidationResult MergeRuleSet::validate_seal(const BlockHeader& header) {
 }
 
 void MergeRuleSet::initialize(EVM& evm) {
+    const BlockHeader& header{evm.block().header};
+    if (header.difficulty != 0) {
+        pre_merge_rule_set_->initialize(evm);
+        return;
+    }
+
     if (evm.revision() < EVMC_CANCUN) {
         return;
     }
 
     // EIP-4788: Beacon block root in the EVM
-    const std::optional<evmc::bytes32>& parent_beacon_block_root{evm.block().header.parent_beacon_block_root};
-    SILKWORM_ASSERT(parent_beacon_block_root);
-
+    SILKWORM_ASSERT(header.parent_beacon_block_root);
     Transaction system_txn{{
         .type = TransactionType::kSystem,
         .to = kBeaconRootsAddress,
-        .data = Bytes{ByteView{*parent_beacon_block_root}},
+        .data = Bytes{ByteView{*header.parent_beacon_block_root}},
     }};
     system_txn.from = kSystemAddress;
-
     evm.execute(system_txn, kSystemCallGasLimit);
 }
 

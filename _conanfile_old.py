@@ -35,9 +35,11 @@ class SilkwormConan(ConanFile):
     }
 
     def configure(self):
-        pass
-        #if self.settings.os == "Windows":
-        #    self.options["mimalloc"].override = False
+        if self.settings.os == "Windows":
+            # currently conan center has only vs 16 packets, also it has mimalloc with override=False;
+            # to build mimalloc with override=True we need to switch to vs 17 compiler but this will
+            # trigger the build of all dependencies with vs 17 vasting time so we prefer to turn off override
+            self.options["mimalloc"].override = False
             
     #def build(self):
     #    cmake = CMake(self)

@@ -56,7 +56,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: C:\build
-      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -G "Visual Studio 17 2022"
+      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
     - name: Build unit tests
       working-directory: C:\build

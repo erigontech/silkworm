@@ -57,8 +57,9 @@ conan_cmake_install(
   INSTALL_FOLDER "${CONAN_BINARY_DIR}"
   BUILD missing
   PROFILE "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}"
+  OPTIONS ${CMAKE_CONAN_OPTIONS}
 )
 
-if(DEFINED CMAKE_CONAN_OPTIONS)
-  conan_cmake_configure(OPTIONS ${CMAKE_CONAN_OPTIONS})
-endif()
+#if(DEFINED CMAKE_CONAN_OPTIONS)
+#  conan_cmake_configure(OPTIONS ${CMAKE_CONAN_OPTIONS})
+#endif()

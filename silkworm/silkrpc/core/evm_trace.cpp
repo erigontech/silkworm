@@ -1505,17 +1505,30 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-    silkworm::IntraBlockState initial_ibs{*state};
 
-    auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-    EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
-    auto tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
-    Tracers tracers{tracer};
+    const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::OperationTracer>)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+                silkworm::IntraBlockState initial_ibs{*state};
 
-    auto execution_result = executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-    co_return tracer->result();
+                auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+
+                Tracers tracers{entry_tracer};
+
+                executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+                boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
+                    self.complete(entry_tracer);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
+    co_return ret_entry_tracer->result();
 }
 
 Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {

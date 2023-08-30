@@ -343,18 +343,20 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, nonce_block);
-
-        for (const auto& transaction : block_with_hash->block.transactions) {
-            if (transaction.from == sender && transaction.nonce == nonce) {
-                auto const transaction_hash{hash_of_transaction(transaction)};
-                auto result = to_bytes32({transaction_hash.bytes, kHashLength});
-                reply = make_json_content(request["id"], result);
-                co_await tx->close();
-                co_return;
+        if (block_with_hash) {
+            for (const auto& transaction : block_with_hash->block.transactions) {
+                if (transaction.from == sender && transaction.nonce == nonce) {
+                    auto const transaction_hash{hash_of_transaction(transaction)};
+                    auto result = to_bytes32({transaction_hash.bytes, kHashLength});
+                    reply = make_json_content(request["id"], result);
+                    co_await tx->close();
+                    co_return;
+                }
             }
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        } else {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
         }
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
-
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
@@ -485,12 +487,13 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_found);
-
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
-        const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
-
-        reply = make_json_content(request["id"], result);
-
+        if (block_with_hash) {
+            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
+            reply = make_json_content(request["id"], result);
+        } else {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], nlohmann::detail::value_t::null);

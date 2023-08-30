@@ -216,6 +216,14 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        if (!block_with_hash) {
+            const std::string error_msg = "block not found ";
+            SILK_ERROR << "debug_storage_range_at: core::read_block_by_hash: " << error_msg << request.dump();
+            reply = make_json_error(request["id"], -32000, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+
         auto block_number = block_with_hash->block.header.number - 1;
 
         nlohmann::json storage({});
@@ -286,6 +294,13 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        if (!block_with_hash) {
+            const std::string error_msg = "block not found ";
+            SILK_ERROR << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
+            reply = make_json_error(request["id"], -32000, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
 
         const auto& block = block_with_hash->block;
         auto block_number = block.header.number - 1;

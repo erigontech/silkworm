@@ -45,6 +45,10 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
     ethdb::TransactionDatabase tx_database{transaction_};
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, tx_database, bnoh);
+    if (!block_with_hash) {
+        SILK_ERROR << "read_balance_changes: core::read_block_by_number_or_hash block not found";
+        co_return;
+    }
     const auto block_number = block_with_hash->block.header.number;
 
     SILK_INFO << "read_balance_changes: block_number: " << block_number;

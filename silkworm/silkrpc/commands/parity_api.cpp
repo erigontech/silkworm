@@ -53,15 +53,18 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
-        SILK_INFO << "#receipts: " << receipts.size();
+        if (block_with_hash) {
+            auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+            SILK_INFO << "#receipts: " << receipts.size();
 
-        const auto block{block_with_hash->block};
-        for (size_t i{0}; i < block.transactions.size(); i++) {
-            receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+            const auto block{block_with_hash->block};
+            for (size_t i{0}; i < block.transactions.size(); i++) {
+                receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+            }
+            reply = make_json_content(request["id"], receipts);
+        } else {
+            reply = make_json_content(request["id"], {});
         }
-
-        reply = make_json_content(request["id"], receipts);
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});

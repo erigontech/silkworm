@@ -253,6 +253,8 @@ Task<void> RequestHandler::do_write(Reply& reply) {
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
         reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
 
+        set_cors(reply.headers);
+
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply.to_buffers(), boost::asio::use_awaitable);
         SILK_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
@@ -269,6 +271,8 @@ Task<void> RequestHandler::write_headers() {
         headers.emplace_back(http::Header{"Content-Type", "application/json"});
         headers.emplace_back(http::Header{"Transfer-Encoding", "chunked"});
 
+        set_cors(headers);
+
         auto buffers = http::to_buffers(StatusType::ok, headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
@@ -278,6 +282,25 @@ Task<void> RequestHandler::write_headers() {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
         std::rethrow_exception(std::make_exception_ptr(e));
+    }
+}
+
+void RequestHandler::set_cors(std::vector<Header>& headers) {
+    if (allowed_origins_.size() > 0) {
+        if (allowed_origins_.at(0) == "*") {
+            headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
+        } else {
+            std::string allowed_origins;
+            for (auto& origin : allowed_origins_) {
+                allowed_origins += origin + ",";
+            }
+            allowed_origins.pop_back();
+            headers.emplace_back(http::Header{"Access-Control-Allow-Origin", allowed_origins});
+        }
+
+        headers.emplace_back(http::Header{"Access-Control-Allow-Methods", "GET, POST"});
+        headers.emplace_back(http::Header{"Access-Control-Allow-Headers", "*"});
+        headers.emplace_back(http::Header{"Access-Control-Max-Age", "600"});
     }
 }
 

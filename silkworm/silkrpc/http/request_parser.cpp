@@ -108,11 +108,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         }
     }
 
-    if (!content_length_present) {
-        return ResultType::bad;
-    }
-
-    if (req.content_length == 0) {
+    if (!content_length_present || req.content_length == 0) {
         return ResultType::good;
     }
 

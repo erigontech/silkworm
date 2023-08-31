@@ -29,6 +29,14 @@ int call_silkworm_add_snapshot_func(void* func_ptr, SilkwormHandle* handle, stru
     return ((silkworm_add_snapshot_func)func_ptr)(handle, snapshot);
 }
 
+typedef int (*silkworm_build_recsplit_indexes_func)(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[],
+                                                    char* snapshot_index_paths[], int len);
+
+int call_silkworm_build_recsplit_indexes_func(void* func_ptr, SilkwormHandle* handle,
+                                              struct SilkwormMemoryMappedFile* snapshots[], char* snapshot_index_paths[], int len) {
+    return ((silkworm_build_recsplit_indexes_func)func_ptr)(handle, snapshots, snapshot_index_paths, len);
+}
+
 */
 import "C"
 import (
@@ -37,11 +45,12 @@ import (
 )
 
 type Silkworm struct {
-	libHandle   unsafe.Pointer
-	instance    *C.SilkwormHandle
-	initFunc    unsafe.Pointer
-	finiFunc    unsafe.Pointer
-	addSnapshot unsafe.Pointer
+	libHandle    unsafe.Pointer
+	instance     *C.SilkwormHandle
+	initFunc     unsafe.Pointer
+	finiFunc     unsafe.Pointer
+	addSnapshot  unsafe.Pointer
+	buildIndexes unsafe.Pointer
 }
 
 func LoadSilkworm(silkworm *Silkworm, dllPath string) {
@@ -53,9 +62,13 @@ func LoadSilkworm(silkworm *Silkworm, dllPath string) {
 	silkworm.initFunc, _ = LoadFunction(silkworm.libHandle, "silkworm_init")
 	silkworm.finiFunc, _ = LoadFunction(silkworm.libHandle, "silkworm_fini")
 	silkworm.addSnapshot, _ = LoadFunction(silkworm.libHandle, "silkworm_add_snapshot")
+	silkworm.buildIndexes, _ = LoadFunction(silkworm.libHandle, "silkworm_build_recsplit_indexes")
 
-	if silkworm.initFunc == nil || silkworm.finiFunc == nil {
-		panic(fmt.Errorf("failed to find all silkworm functions"))
+	if silkworm.initFunc == nil ||
+		silkworm.finiFunc == nil ||
+		silkworm.addSnapshot == nil ||
+		silkworm.buildIndexes == nil {
+		panic(fmt.Errorf("failed to find one or all silkworm functions"))
 	}
 }
 
@@ -70,3 +83,52 @@ func (silkworm *Silkworm) Fini() {
 func (silkworm *Silkworm) AddSnapshot(snapshot *C.struct_SilkwormChainSnapshot) {
 	C.call_silkworm_add_snapshot_func(silkworm.addSnapshot, silkworm.instance, snapshot)
 }
+
+func (silkworm *Silkworm) BuildRecsplitIndexes(snapshots []*C.struct_SilkwormMemoryMappedFile, snapshotIndexPaths []string) int {
+	// convert the Go string array to C string array
+	cSnapshotIndexPaths := make([]*C.char, len(snapshotIndexPaths))
+	for i, s := range snapshotIndexPaths {
+		cSnapshotIndexPaths[i] = C.CString(s)
+		defer C.free(unsafe.Pointer(cSnapshotIndexPaths[i]))
+	}
+
+	// get the start pointer of the C struct arrays
+	cSnapshots_begin := (**C.struct_SilkwormMemoryMappedFile)(unsafe.Pointer(&snapshots[0]))
+	cSnapshots_len := C.int(len(snapshots))
+	cSnapshotIndexPaths_begin := (**C.char)(unsafe.Pointer(&cSnapshotIndexPaths[0]))
+
+	// call the C function
+	result := C.call_silkworm_build_recsplit_indexes_func(silkworm.buildIndexes, silkworm.instance, cSnapshots_begin, cSnapshotIndexPaths_begin, cSnapshots_len)
+
+	return int(result)
+}
+
+/*
+func (silkworm *Silkworm) BuildRecsplitIndexes(snapshotPaths []string, snapshotIndexes []string) {
+	// convert the Go string array to C string array
+	cSnapshotPaths := make([]*C.char, len(snapshotPaths))
+	for i, s := range snapshotPaths {
+		cSnapshotPaths[i] = C.CString(s)
+		defer C.free(unsafe.Pointer(cSnapshotPaths[i]))
+	}
+
+	// convert the C string array to C string array pointer
+	cSnapshotPaths_begin := (**C.char)(unsafe.Pointer(&cSnapshotPaths[0]))
+	cSnapshotPaths_len := C.int(len(cSnapshotPaths))
+	var cIndexPaths_begin **C.char
+
+	// call the C function
+	C.call_silkworm_build_recsplit_indexes_func(silkworm.buildIndexes, silkworm.instance, cSnapshotPaths_begin, cSnapshotPaths_len, &cIndexPaths_begin)
+
+	// convert the C string array pointer to C string array
+	for i := 0; i < cSnapshotPaths_len; i++ {
+		// point to a string in the array
+		cIndexPaths_current := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cIndexPaths_begin)) + uintptr(i)*unsafe.Sizeof(cIndexPaths_begin)))
+		// convert the C string in Go string
+		snapshotIndexes[i] = C.GoString(*(cIndexPaths_current))
+	}
+
+	// free the C string array
+	C.call_silkworm_free_strings_func(cIndexPaths_begin, cSnapshotPaths_len)
+}
+*/

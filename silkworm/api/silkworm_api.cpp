@@ -43,6 +43,58 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     return SILKWORM_OK;
 }
 
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
+                                                    struct SilkwormMemoryMappedFile* snapshots[], const char* indexPaths[],
+                                                    int len) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    for(int i = 0; i < len; i++) {
+        struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
+        if (!snapshot) {
+            return SILKWORM_INVALID_SNAPSHOT;
+        }
+        //const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
+        const char* index = indexPaths[i];
+        if (!index) {
+            return SILKWORM_INVALID_PATH;
+        }
+        /*
+        const auto snapshot_path = snapshot::SnapshotPath::parse(indexPaths[i]);
+        if (!snapshot_path) {
+            return SILKWORM_INVALID_PATH;
+        }
+        snapshot::SnapshotIndex index{*snapshot_path};
+        index.build();
+        snapshot_repository->add_index(std::move(index));
+        */
+    }
+    /*
+    // see void SnapshotSync::build_missing_indexes()
+    ThreadPool workers;
+
+    // Determine the missing indexes and build them in parallel
+    const auto missing_indexes = repository_->missing_indexes();
+    for (const auto& index : missing_indexes) {
+        workers.push_task([=]() {
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+            index->build();
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+        });
+    }
+
+    // Wait for all missing indexes to be built or stop request
+    while (workers.get_tasks_total() and not is_stopping()) {
+        std::this_thread::sleep_for(kCheckCompletionInterval);
+    }
+    // Wait for any already-started-but-unfinished work in case of stop request
+    workers.pause();
+    workers.wait_for_tasks();
+    */
+    return SILKWORM_OK;
+}
+
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;

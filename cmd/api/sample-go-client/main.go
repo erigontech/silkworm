@@ -3,7 +3,7 @@ package main
 func main() {
 	var silkworm Silkworm
 
-	LoadSilkworm(&silkworm, "libsilkworm_api.so")
+	LoadSilkworm(&silkworm, "libsilkworm_api.dylib")
 
 	silkworm.Init()
 	//silkworm.AddSnapshot()

@@ -286,12 +286,12 @@ Task<void> RequestHandler::write_headers() {
 }
 
 void RequestHandler::set_cors(std::vector<Header>& headers) {
-    if (allowed_origins_.size() > 0) {
-        if (allowed_origins_.at(0) == "*") {
+    if (allowed_origins_.has_value() && allowed_origins_.value().size() > 0) {
+        if (allowed_origins_.value().at(0) == "*") {
             headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
         } else {
             std::string allowed_origins;
-            for (auto& origin : allowed_origins_) {
+            for (auto& origin : allowed_origins_.value()) {
                 allowed_origins += origin + ",";
             }
             allowed_origins.pop_back();

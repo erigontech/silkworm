@@ -50,12 +50,12 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
         return SILKWORM_INVALID_HANDLE;
     }
 
-    for(int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
-        //const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
+        // const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
         const char* index = indexPaths[i];
         if (!index) {
             return SILKWORM_INVALID_PATH;

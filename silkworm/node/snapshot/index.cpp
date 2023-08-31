@@ -35,7 +35,7 @@ using RecSplit8 = succinct::RecSplit8;
 void Index::build() {
     SILK_INFO << "Index::build path: " << segment_path_.path().string() << " start";
 
-    huffman::Decompressor decoder{segment_path_.path()};
+    huffman::Decompressor decoder{segment_path_.path(), segment_region_};
     decoder.open();
 
     const SnapshotPath index_file = segment_path_.index_file();
@@ -112,7 +112,7 @@ void TransactionIndex::build() {
     const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
     SILK_INFO << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
-    huffman::Decompressor txs_decoder{segment_path_.path()};
+    huffman::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
 
     const auto tx_count = txs_decoder.words_count();

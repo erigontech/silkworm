@@ -24,8 +24,10 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 
 using namespace silkworm;
 
@@ -50,33 +52,48 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
         return SILKWORM_INVALID_HANDLE;
     }
 
+    std::vector<std::shared_ptr<snapshot::Index>> index_to_build;
     for (int i = 0; i < len; i++) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
         // const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
-        const char* index = indexPaths[i];
-        if (!index) {
+        const char* index_path = indexPaths[i];  // todo: use index_path
+        if (!index_path) {
             return SILKWORM_INVALID_PATH;
         }
-        /*
-        const auto snapshot_path = snapshot::SnapshotPath::parse(indexPaths[i]);
+
+        const auto snapshot_path = snapshot::SnapshotPath::parse(snapshot->file_path);
         if (!snapshot_path) {
             return SILKWORM_INVALID_PATH;
         }
-        snapshot::SnapshotIndex index{*snapshot_path};
-        index.build();
-        snapshot_repository->add_index(std::move(index));
-        */
+
+        std::shared_ptr<snapshot::Index> index;
+        switch (snapshot_path->type()) {
+            case snapshot::SnapshotType::headers: {
+                index = std::make_shared<snapshot::HeaderIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                break;
+            }
+            case snapshot::SnapshotType::bodies: {
+                index = std::make_shared<snapshot::BodyIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                break;
+            }
+            case snapshot::SnapshotType::transactions: {
+                index = std::make_shared<snapshot::TransactionIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                break;
+            }
+            default: {
+                SILKWORM_ASSERT(false);
+            }
+        }
+        index_to_build.push_back(index);
     }
-    /*
-    // see void SnapshotSync::build_missing_indexes()
+
     ThreadPool workers;
 
-    // Determine the missing indexes and build them in parallel
-    const auto missing_indexes = repository_->missing_indexes();
-    for (const auto& index : missing_indexes) {
+    // Create worker tasks for missing indexes
+    for (const auto& index : index_to_build) {
         workers.push_task([=]() {
             SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
             index->build();
@@ -85,13 +102,14 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
     }
 
     // Wait for all missing indexes to be built or stop request
-    while (workers.get_tasks_total() and not is_stopping()) {
-        std::this_thread::sleep_for(kCheckCompletionInterval);
+    while (workers.get_tasks_total()) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+
     // Wait for any already-started-but-unfinished work in case of stop request
     workers.pause();
     workers.wait_for_tasks();
-    */
+
     return SILKWORM_OK;
 }
 

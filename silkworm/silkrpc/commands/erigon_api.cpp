@@ -262,7 +262,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
-    const auto block_id = params[0].get<std::string>();
+    const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
     SILK_DEBUG << "block_id: " << block_id;
 
     if (block_id == core::kPendingBlockId) {

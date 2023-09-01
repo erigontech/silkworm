@@ -25,7 +25,7 @@
 
 namespace silkworm::db::bitmap {
 
-template<typename BlockUpperBound>
+template <typename BlockUpperBound>
 Bytes upper_bound_suffix(BlockUpperBound value) {
     // Cannot use db::block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes shard_suffix(sizeof(BlockUpperBound), '\0');

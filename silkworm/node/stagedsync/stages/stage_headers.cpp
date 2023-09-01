@@ -107,23 +107,24 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
         auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
 
-        log::Info(log_prefix_,
-                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                   "from", std::to_string(current_height_),
-                   "to", std::to_string(target_height),
-                   "span", std::to_string(target_height - current_height_)});
-
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit_and_renew();
             log::Info(log_prefix_) << "End, forward skipped due to 'stop-at-block', current block= "
                                    << current_height_.load() << ")";
             return Stage::Result::kSuccess;
         }
-
         if (current_height_ >= target_height) {
             tx.commit_and_renew();
             log::Info(log_prefix_) << "End, forward skipped, we are already at the target block (" << target_height << ")";
             return Stage::Result::kSuccess;
+        }
+        const BlockNum segment_width{target_height - current_height_};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(current_height_),
+                       "to", std::to_string(target_height),
+                       "span", std::to_string(segment_width)});
         }
 
         HeaderDataModel header_persistence(tx, current_height_);
@@ -150,8 +151,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
         result = Stage::Result::kSuccess;  // no reason to raise unwind
 
         auto headers_processed = current_height_ - initial_height;
-        log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
-                               << " last=" << current_height_;
+        log::Trace(log_prefix_) << "Update completed wrote " << headers_processed << " headers last=" << current_height_;
 
         tx.commit_and_renew();
 
@@ -173,8 +173,18 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
     if (current_height_ <= new_height) return Stage::Result::kSuccess;
 
-    Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
+
+    const BlockNum segment_width{current_height_ - new_height};
+    if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        log::Info(log_prefix_,
+                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                   "from", std::to_string(current_height_),
+                   "to", std::to_string(new_height),
+                   "span", std::to_string(segment_width)});
+    }
+
+    Stage::Result result{Stage::Result::kSuccess};
 
     try {
         // std::optional<Hash> bad_block = sync_context_->bad_block_hash;

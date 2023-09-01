@@ -147,7 +147,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         if (!filtered_block_logs.empty()) {
             const auto block_with_hash = co_await core::read_block_by_number(block_cache_, *chain_storage, block_to_match);
             if (!block_with_hash) {
-                throw std::invalid_argument("read_block_by_number: invalid block " + std::to_string(block_to_match));
+                throw std::invalid_argument("read_block_by_number: block not found " + std::to_string(block_to_match));
             }
             SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
             for (auto& log : filtered_block_logs) {

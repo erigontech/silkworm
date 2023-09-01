@@ -160,6 +160,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
 
         // Lookup and return the matching block
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        if (!block_with_hash) {
+            const std::string error_msg = "block not found ";
+            SILK_ERROR << "erigon_get_block_by_timestamè: core::read_block_by_number: " << error_msg << request.dump();
+            reply = make_json_error(request["id"], 100, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
         const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
 
@@ -196,6 +203,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        if (!block_with_hash) {
+            const std::string error_msg = "block not found ";
+            SILK_ERROR << "erigon_get_block_receipts_by_block_hash: core::read_block_by_hash: " << error_msg << request.dump();
+            reply = make_json_content(request["id"], {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
         SILK_INFO << "#receipts: " << receipts.size();
 
@@ -239,8 +253,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto header{co_await chain_storage->read_header(block_hash)};
-
-        reply = make_json_content(request["id"], *header);
+        if (!header) {
+            reply = make_json_error(request["id"], 100, "block not found");
+        } else {
+            reply = make_json_content(request["id"], *header);
+        }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -282,7 +299,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto header{co_await chain_storage->read_canonical_header(block_number)};
 
-        reply = make_json_content(request["id"], *header);
+        if (!header) {
+            reply = make_json_error(request["id"], 100, "block not found");
+        } else {
+            reply = make_json_content(request["id"], *header);
+        }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -394,8 +415,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        if (!block_with_hash) {
+            const std::string error_msg = "block not found ";
+            SILK_ERROR << "erigon_get_logs_by_hash: core::read_block_by_hash: " << error_msg << request.dump();
+            reply = make_json_error(request["id"], 100, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
         const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
-
         SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
@@ -468,6 +495,13 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
             const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number)};
+            if (!block_with_hash) {
+                const std::string error_msg = "block not found ";
+                SILK_ERROR << "erigon_watch_the_burn: core::read_block_by_number: " << error_msg << request.dump();
+                reply = make_json_error(request["id"], 100, error_msg);
+                co_await tx->close();  // RAII not (yet) available with coroutines
+                co_return;
+            }
             const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
             if (!cc) {
                 throw std::runtime_error("Invalid chain config");

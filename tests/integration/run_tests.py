@@ -257,7 +257,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             if verbose:
                 print("OK")
             return 0
-        if "any" in expected_response and expected_response["any"] is None:
+        if "error" not in expected_response and "result" not in expected_response:
             # response and expected_response are different but don't care
             if verbose:
                 print("OK")

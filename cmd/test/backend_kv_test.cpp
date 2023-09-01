@@ -31,7 +31,6 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
@@ -971,9 +970,6 @@ int main(int argc, char* argv[]) {
     log_settings.log_threads = true;
     log_settings.log_verbosity = log_level;
     silkworm::log::init(log_settings);
-
-    // TODO(canepat): this could be an option in Silkworm logging facility
-    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     try {
         std::vector<std::shared_ptr<grpc::Channel>> channels;

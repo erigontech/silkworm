@@ -44,6 +44,7 @@ struct Settings {
     Level log_verbosity{Level::kInfo};  // Log verbosity level
     std::string log_file;               // Log to file
     char log_thousands_sep{'\''};       // Thousands separator
+    bool log_grpc{true};                // Include GRPC library internal logs
 };
 
 //! \brief Initializes logging facilities

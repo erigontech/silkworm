@@ -679,6 +679,7 @@ int main(int argc, char* argv[]) {
         parse_command_line(argc, argv, app, settings);
 
         // Initialize logging with custom settings
+        settings.log_settings.log_grpc = false;
         log::init(settings.log_settings);
 
         const auto pid = boost::this_process::get_id();

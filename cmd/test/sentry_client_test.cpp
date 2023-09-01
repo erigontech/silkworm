@@ -21,7 +21,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -52,8 +51,6 @@ int main() {
     log_settings.log_verbosity = log::Level::kDebug;
     log::init(log_settings);
     log::set_thread_name("main");
-    // TODO(canepat): this could be an option in Silkworm logging facility
-    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     sentry::Settings sentry_settings;
 

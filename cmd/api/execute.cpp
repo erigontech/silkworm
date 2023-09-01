@@ -182,6 +182,7 @@ int main(int argc, char* argv[]) {
         ExecuteSettings settings;
         parse_command_line(argc, argv, app, settings);
 
+        settings.log_settings.log_grpc = false;
         log::init(settings.log_settings);
 
         const auto pid = boost::this_process::get_id();

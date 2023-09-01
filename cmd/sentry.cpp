@@ -25,8 +25,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
@@ -60,9 +60,6 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     return settings;
 }
 
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
-
 void sentry_main(Settings settings) {
     using namespace concurrency::awaitable_wait_for_one;
 
@@ -71,17 +68,16 @@ void sentry_main(Settings settings) {
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
-    silkworm::rpc::ServerContextPool context_pool{
+    silkworm::rpc::ClientContextPool context_pool{
         settings.context_pool_settings,
-        [] { return std::make_unique<DummyServerCompletionQueue>(); },
     };
 
-    ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
+    ShutdownSignal shutdown_signal{context_pool.any_executor()};
 
     Sentry sentry{std::move(settings), context_pool.as_executor_pool()};
 
     auto run_future = boost::asio::co_spawn(
-        context_pool.next_io_context(),
+        context_pool.any_executor(),
         sentry.run() || shutdown_signal.wait(),
         boost::asio::use_future);
 

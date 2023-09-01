@@ -28,6 +28,7 @@
 
 #include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
+#include <silkworm/infra/grpc/common/grpc_context_pool.hpp>
 
 namespace silkworm::rpc {
 
@@ -65,7 +66,7 @@ std::ostream& operator<<(std::ostream& out, const ClientContext& c);
 
 //! Pool of \ref ClientContext instances running as separate reactive schedulers.
 //! \warning currently cannot start/stop more than once because ::grpc::CompletionQueue cannot be used after shutdown
-class ClientContextPool : public concurrency::ContextPool<ClientContext> {
+class ClientContextPool : public concurrency::ContextPool<ClientContext>, public GrpcContextPool {
   public:
     explicit ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
     explicit ClientContextPool(concurrency::ContextPoolSettings settings);
@@ -77,6 +78,8 @@ class ClientContextPool : public concurrency::ContextPool<ClientContext> {
 
     //! Add a new \ref ClientContext to the pool.
     void add_context(concurrency::WaitMode wait_mode);
+
+    [[nodiscard]] agrpc::GrpcContext& any_grpc_context() override;
 };
 
 }  // namespace silkworm::rpc

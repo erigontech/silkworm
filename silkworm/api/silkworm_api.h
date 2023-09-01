@@ -98,9 +98,7 @@ struct SilkwormChainSnapshot {
  *
  * \return A non-zero error value on failure on some or all indexes and SILKWORM_OK (=0) on success.
  */
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
-                                                    struct SilkwormMemoryMappedFile* snapshots[], const char* indexPaths[],
-                                                    int len) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT;
 
 /** \brief Notifies Silkworm about a new snapshot to use.
  *

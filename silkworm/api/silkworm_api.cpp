@@ -45,9 +45,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
-                                                    struct SilkwormMemoryMappedFile* snapshots[], const char* indexPaths[],
-                                                    int len) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -59,12 +57,6 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
             return SILKWORM_INVALID_SNAPSHOT;
         }
         auto snapshot_region = make_region(*snapshot);
-
-        // const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
-        const char* index_path = indexPaths[i];  // todo: use index_path
-        if (!index_path) {
-            return SILKWORM_INVALID_PATH;
-        }
 
         const auto snapshot_path = snapshot::SnapshotPath::parse(snapshot->file_path);
         if (!snapshot_path) {

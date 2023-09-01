@@ -44,14 +44,18 @@ using namespace silkworm::cmd::common;
 
 const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/api/silkworm_api";
 const char* kSilkwormInitSymbol = "silkworm_init";
+const char* kSilkwormBuildRecSplitIndexes = "silkworm_build_recsplit_indexes";
 const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
 const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
 const char* kSilkwormFiniSymbol = "silkworm_fini";
 
-const auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
+auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
 
 //! Function signature for silkworm_init C API
 using SilkwormInitSig = int(SilkwormHandle**);
+
+//! Function signature for silkworm_build_recsplit_indexes C API
+using SilkwormBuildRecSplitIndexes = int(SilkwormHandle*, SilkwormMemoryMappedFile*[], int len);
 
 //! Function signature for silkworm_add_snapshot C API
 using SilkwormAddSnapshotSig = int(SilkwormHandle*, SilkwormChainSnapshot*);
@@ -63,34 +67,63 @@ using SilkwormExecuteBlocksSig =
 //! Function signature for silkworm_fini C API
 using SilkwormFiniSig = int(SilkwormHandle*);
 
-struct ExecuteSettings {
-    log::Settings log_settings;
+struct ExecuteBlocksSettings {
+    bool present;
     BlockNum start_block{1};
     BlockNum max_block{1};
     uint64_t batch_size{1};
     bool write_receipts{false};
 };
 
-void parse_command_line(int argc, char* argv[], CLI::App& app, ExecuteSettings& settings) {
-    auto& log_settings = settings.log_settings;
+struct BuildIdxesSettings {
+    bool present;
+    std::string snapshot_repo;
+    std::string snapshot_path;
+};
 
+void parse_command_line(int argc, char* argv[], CLI::App& app,
+                        log::Settings& log_settings,
+                        std::string& silkworm_api_lib_path,
+                        std::string& data_dir,
+                        ExecuteBlocksSettings& exec_blocks_settings,
+                        BuildIdxesSettings& build_idxes_settings) {
+    app.require_subcommand(1);  // At least 1 subcommand is required
+
+    // logging
     add_logging_options(app, log_settings);
 
-    app.add_option("--from", settings.start_block, "The start block number to execute")
+    // repository
+    app.add_option("--lib_path", silkworm_api_lib_path, "Path to silkworm_lib");
+    app.add_option("--data_dir", data_dir, "Path to data directory");
+
+    // execute sub-command
+    auto cmd_execute = app.add_subcommand("execute", "Execute blocks");
+
+    cmd_execute->add_option("--from", exec_blocks_settings.start_block, "The start block number to execute")
         ->capture_default_str()
         ->check(CLI::Range(uint64_t(1), std::numeric_limits<BlockNum>::max()));
-    app.add_option("--to", settings.max_block, "The maximum block number to execute")
+    cmd_execute->add_option("--to", exec_blocks_settings.max_block, "The maximum block number to execute")
         ->capture_default_str()
         ->check(CLI::Range(uint64_t(1), std::numeric_limits<BlockNum>::max()));
-    ;
-    app.add_option("--batch_size", settings.batch_size, "The block batch size to use")
+
+    cmd_execute->add_option("--batch_size", exec_blocks_settings.batch_size, "The block batch size to use")
         ->capture_default_str()
         ->check(CLI::Range(uint64_t(1), std::numeric_limits<uint64_t>::max()));
-    ;
-    app.add_flag("--write_receipts", settings.write_receipts, "Flag indicating if transaction receipts must be written or not")
+
+    cmd_execute->add_flag("--write_receipts", exec_blocks_settings.write_receipts, "Flag indicating if transaction receipts must be written or not")
         ->capture_default_str();
 
+    // build-indexes sub-command
+    auto cmd_build_idxes = app.add_subcommand("build_idxes", "Build indexes");
+
+    cmd_build_idxes->add_option("--snapshot_path", build_idxes_settings.snapshot_path, "Snapshot to index")->required();
+
+    // parte
     app.parse(argc, argv);
+
+    // check subcommand presence
+    exec_blocks_settings.present = app.got_subcommand(cmd_execute);
+    build_idxes_settings.present = app.got_subcommand(cmd_build_idxes);
 }
 
 const char* make_path(const snapshot::SnapshotPath& p) {
@@ -176,20 +209,33 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
 }
 
 int main(int argc, char* argv[]) {
-    CLI::App app{"Execute blocks"};
+    CLI::App app{"Execute"};
 
     try {
-        ExecuteSettings settings;
-        parse_command_line(argc, argv, app, settings);
+        log::Settings log_settings;
+        std::string silkworm_api_lib_path;
+        std::string data_dir_path;
+        ExecuteBlocksSettings exec_cmd;
+        BuildIdxesSettings idxes_cmd;
+        parse_command_line(argc, argv, app, log_settings, silkworm_api_lib_path, data_dir_path, exec_cmd, idxes_cmd);
 
-        log::init(settings.log_settings);
+        log::init(log_settings);
 
         const auto pid = boost::this_process::get_id();
-        SILK_INFO << "Execute blocks starting [pid=" << std::to_string(pid) << "]";
+        SILK_INFO << "Execute starting [pid=" << std::to_string(pid) << "]";
+
+        if (not silkworm_api_lib_path.empty())
+            kSilkwormApiLibPath = silkworm_api_lib_path;
+
+        silkworm::DataDirectory data_dir{data_dir_path.empty() ? DataDirectory::get_default_storage_path() : data_dir_path};
 
         // Import the silkworm_init symbol from Silkworm API library
         const auto silkworm_init{
             boost::dll::import_symbol<SilkwormInitSig>(kSilkwormApiLibPath, kSilkwormInitSymbol)};
+
+        // Import the silkworm_build_recsplit_indexes symbol from Silkworm API library
+        const auto silkworm_build_recsplit_indexes{
+            boost::dll::import_symbol<SilkwormBuildRecSplitIndexes>(kSilkwormApiLibPath, kSilkwormBuildRecSplitIndexes)};
 
         // Import the silkworm_add_snapshot symbol from Silkworm API library
         const auto silkworm_add_snapshot{
@@ -212,10 +258,12 @@ int main(int argc, char* argv[]) {
         }
 
         // Add snapshots to Silkworm API library
-        SnapshotRepository repository;
+        SnapshotSettings settings = {};
+        settings.repository_dir = data_dir.snapshots().path();
+        SnapshotRepository repository{settings};
         repository.reopen_folder();
 
-        auto all_chain_snapshots{collect_all_snapshots(repository)};
+        auto all_chain_snapshots{collect_all_snapshots(repository)};  // todo(mriccobene): develop a collect_all_snapshots that doesn't requires the presence of all indexes
         [[maybe_unused]] auto _ = gsl::finally([&]() {
             for (auto& chain_snapshot : all_chain_snapshots) {
                 delete[] chain_snapshot.headers.segment.file_path;
@@ -236,7 +284,6 @@ int main(int argc, char* argv[]) {
         }
 
         // Execute specified block range using Silkworm API library
-        silkworm::DataDirectory data_dir{};
         silkworm::db::EnvConfig config{
             .path = data_dir.chaindata().path().string(),
             .readonly = false,
@@ -249,23 +296,52 @@ int main(int argc, char* argv[]) {
         ensure(chain_config.has_value(), "no chain configuration in database");
         const auto chain_id{chain_config->chain_id};
 
-        const auto start_block{settings.start_block};
-        const auto max_block{settings.max_block};
-        const auto batch_size{settings.batch_size};
-        const auto write_receipts{settings.write_receipts};
-        BlockNum last_executed_block{0};
-        int mdbx_error_code{0};
-        SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " start";
-        const int status_code{
-            silkworm_execute_blocks(handle, &*rw_txn, chain_id, start_block, max_block, batch_size, write_receipts, &last_executed_block, &mdbx_error_code)};
-        SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " done";
+        int status_code = -1;
+        if (exec_cmd.present) {
+            const auto start_block{exec_cmd.start_block};
+            const auto max_block{exec_cmd.max_block};
+            const auto batch_size{exec_cmd.batch_size};
+            const auto write_receipts{exec_cmd.write_receipts};
+            BlockNum last_executed_block{0};
+            int mdbx_error_code{0};
+            SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " start";
+            status_code = silkworm_execute_blocks(handle, &*rw_txn, chain_id, start_block, max_block, batch_size, write_receipts, &last_executed_block, &mdbx_error_code);
+            SILK_INFO << "Execute blocks count=" << (max_block - start_block + 1) << " batch_size=" << batch_size << " done";
 
-        if (status_code != SILKWORM_OK) {
-            SILK_ERROR << "silkworm_execute_blocks failed [code=" << std::to_string(status_code)
-                       << (status_code == SILKWORM_MDBX_ERROR ? " mdbx_error_code=" + std::to_string(mdbx_error_code) : "")
-                       << "]";
+            if (status_code != SILKWORM_OK) {
+                SILK_ERROR << "silkworm_execute_blocks failed [code=" << std::to_string(status_code)
+                           << (status_code == SILKWORM_MDBX_ERROR ? " mdbx_error_code=" + std::to_string(mdbx_error_code) : "")
+                           << "]";
+            }
+            SILK_INFO << "Last executed block: " << last_executed_block;
         }
-        SILK_INFO << "Last executed block: " << last_executed_block;
+        else if (idxes_cmd.present) {
+            const int size = 1;
+
+            auto snapshot_path = SnapshotPath::parse(idxes_cmd.snapshot_path);
+            if (!snapshot_path.has_value())
+                throw std::runtime_error("Invalid snapshot path");
+
+            const Snapshot* snapshot = repository.get_header_segment(*snapshot_path);
+            if (!snapshot)
+                snapshot = repository.get_body_segment(*snapshot_path);
+            if (!snapshot)
+                snapshot = repository.get_tx_segment(*snapshot_path);
+            if (!snapshot)
+                throw std::runtime_error("Snapshot not found in the repository");
+
+            SilkwormMemoryMappedFile* snapshots[size];
+            snapshots[0] = new SilkwormMemoryMappedFile();
+            snapshots[0]->file_path = idxes_cmd.snapshot_path.c_str();
+            snapshots[0]->memory_address = snapshot->memory_file_address();
+            snapshots[0]->memory_length = snapshot->memory_file_size();
+
+            SILK_INFO << "Building index for snapshot: " << idxes_cmd.snapshot_path;
+            status_code = silkworm_build_recsplit_indexes(handle, &snapshots[0], size);
+        }
+        else {
+            SILK_ERROR << "No sub-command chosen";
+        }
 
         // Finalize Silkworm API library
         const int fini_status_code = silkworm_fini(handle);
@@ -276,15 +352,15 @@ int main(int argc, char* argv[]) {
 
         rw_txn.abort();  // We do *not* want to commit anything
 
-        SILK_INFO << "Execute blocks exiting [pid=" << std::to_string(pid) << "]";
+        SILK_INFO << "Exiting [pid=" << std::to_string(pid) << "]";
         return status_code;
     } catch (const CLI::ParseError& pe) {
         return app.exit(pe);
     } catch (const std::exception& e) {
-        SILK_CRIT << "Execute blocks exiting due to exception: " << e.what();
+        SILK_CRIT << "Exiting due to exception: " << e.what();
         return -2;
     } catch (...) {
-        SILK_CRIT << "Execute blocks exiting due to unexpected exception";
+        SILK_CRIT << "Exiting due to unexpected exception";
         return -3;
     }
 }

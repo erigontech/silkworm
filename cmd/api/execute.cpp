@@ -314,8 +314,7 @@ int main(int argc, char* argv[]) {
                            << "]";
             }
             SILK_INFO << "Last executed block: " << last_executed_block;
-        }
-        else if (idxes_cmd.present) {
+        } else if (idxes_cmd.present) {
             const int size = 1;
 
             auto snapshot_path = SnapshotPath::parse(idxes_cmd.snapshot_path);
@@ -338,8 +337,7 @@ int main(int argc, char* argv[]) {
 
             SILK_INFO << "Building index for snapshot: " << idxes_cmd.snapshot_path;
             status_code = silkworm_build_recsplit_indexes(handle, &snapshots[0], size);
-        }
-        else {
+        } else {
             SILK_ERROR << "No sub-command chosen";
         }
 

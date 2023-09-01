@@ -58,6 +58,8 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
+        auto snapshot_region = make_region(*snapshot);
+
         // const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
         const char* index_path = indexPaths[i];  // todo: use index_path
         if (!index_path) {
@@ -72,15 +74,15 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle,
         std::shared_ptr<snapshot::Index> index;
         switch (snapshot_path->type()) {
             case snapshot::SnapshotType::headers: {
-                index = std::make_shared<snapshot::HeaderIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                index = std::make_shared<snapshot::HeaderIndex>(*snapshot_path, snapshot_region);
                 break;
             }
             case snapshot::SnapshotType::bodies: {
-                index = std::make_shared<snapshot::BodyIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                index = std::make_shared<snapshot::BodyIndex>(*snapshot_path, snapshot_region);
                 break;
             }
             case snapshot::SnapshotType::transactions: {
-                index = std::make_shared<snapshot::TransactionIndex>(*snapshot_path);  // todo: use snapshot memory_address & memory_length
+                index = std::make_shared<snapshot::TransactionIndex>(*snapshot_path, snapshot_region);
                 break;
             }
             default: {

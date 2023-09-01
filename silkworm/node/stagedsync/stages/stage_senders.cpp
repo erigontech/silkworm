@@ -31,6 +31,8 @@
 
 namespace silkworm::stagedsync {
 
+using namespace std::chrono_literals;
+
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
       max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
@@ -325,7 +327,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         // Wait for all senders to be recovered and collected in ETL
         while (collected_senders_ != total_collected_senders) {
             collect_senders();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(1ms);
         }
 
         ensure(collector_.size() + total_empty_blocks == block_span,
@@ -418,7 +420,7 @@ void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context)
     // Wait until total unfinished tasks in worker pool falls below 2 * num workers
     static const auto kMaxUnfinishedTasks{2 * worker_pool.get_thread_count()};
     while (worker_pool.get_tasks_total() >= kMaxUnfinishedTasks) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(1ms);
     }
 
     // Swap the waiting batch w/ an empty one and submit a new recovery task to the worker pool

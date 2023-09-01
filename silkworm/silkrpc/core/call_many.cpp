@@ -168,7 +168,7 @@ Task<CallManyResult> CallExecutor::execute(
 
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, tx_database, context.block_number);
     if (!block_with_hash) {
-        throw std::invalid_argument("read_block_by_number_or_hash: block not found " + std::to_string(context.block_number));
+        throw std::invalid_argument("read_block_by_number_or_hash: block not found");
     }
     auto transaction_index = context.transaction_index;
     if (transaction_index == -1) {

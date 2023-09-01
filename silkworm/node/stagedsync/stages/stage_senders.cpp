@@ -258,12 +258,14 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         auto target_block_num{std::min(block_hashes_progress, block_bodies_progress)};
         // note: it would be better to use sync_context_->target_height instead of target_block
 
-        const auto block_span{target_block_num - previous_progress};
-        log::Info(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                                "from", std::to_string(previous_progress),
-                                "to", std::to_string(target_block_num),
-                                "span", std::to_string(block_span),
-                                "max_batch_size", std::to_string(max_batch_size_)});
+        const BlockNum segment_width{target_block_num - previous_progress};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                    "from", std::to_string(previous_progress),
+                                    "to", std::to_string(target_block_num),
+                                    "span", std::to_string(segment_width),
+                                    "max_batch_size", std::to_string(max_batch_size_)});
+        }
 
         if (previous_progress == target_block_num) {
             // Nothing to process
@@ -330,8 +332,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             std::this_thread::sleep_for(1ms);
         }
 
-        ensure(collector_.size() + total_empty_blocks == block_span,
-               "Senders: invalid number of ETL keys expected=" + std::to_string(block_span) +
+        ensure(collector_.size() + total_empty_blocks == segment_width,
+               "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
                    "got=" + std::to_string(collector_.size() + total_empty_blocks));
 
         // Store all recovered senders into db

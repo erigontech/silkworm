@@ -16,8 +16,9 @@
 
 #include "stage_finish.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/infra/common/environment.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
@@ -30,10 +31,18 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+        const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress >= execution_stage_progress) {
             // Nothing to process
             return ret;
+        }
+        const BlockNum segment_width{execution_stage_progress - previous_progress};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(execution_stage_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         throw_if_stopping();
@@ -67,6 +76,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
     operation_ = OperationType::None;
     return ret;
 }
+
 Stage::Result Finish::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     if (!sync_context_->unwind_point.has_value()) return ret;
@@ -76,6 +86,15 @@ Stage::Result Finish::unwind(db::RWTxn& txn) {
         throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(txn, stage_name_)};
         if (to >= previous_progress) return ret;
+        const BlockNum segment_width{previous_progress - to};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
+        }
+
         throw_if_stopping();
         update_progress(txn, to);
         txn.commit_and_renew();
@@ -101,4 +120,5 @@ Stage::Result Finish::unwind(db::RWTxn& txn) {
     operation_ = OperationType::None;
     return ret;
 }
+
 }  // namespace silkworm::stagedsync

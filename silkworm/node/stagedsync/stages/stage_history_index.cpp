@@ -106,7 +106,7 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
 

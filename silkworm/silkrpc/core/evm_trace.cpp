@@ -1573,7 +1573,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     }
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.to_block);
     if (!to_block_with_hash) {
-        const Error error{-32000, "invalid parameters: fromBlock not found"};
+        const Error error{-32000, "invalid parameters: toBlock not found"};
         stream->write_field("error", error);
         co_return;
     }

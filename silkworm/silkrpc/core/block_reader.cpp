@@ -46,8 +46,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, tx_database, bnoh);
     if (!block_with_hash) {
-        SILK_ERROR << "read_balance_changes: core::read_block_by_number_or_hash block not found";
-        co_return;
+        throw std::invalid_argument("read_block_by_number_or_hash::Invalid Block Id");
     }
     const auto block_number = block_with_hash->block.header.number;
 

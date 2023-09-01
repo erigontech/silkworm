@@ -50,8 +50,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, tx_database, bnoh);
     if (!block_with_hash) {
-        SILK_ERROR << "dump_accounts:  core::read_block_by_number_or_hash  block not found\n";
-        co_return dump_accounts;
+        throw std::invalid_argument("read_block_by_number_or_hash::Invalid Block Id");
     }
     const auto block_number = block_with_hash->block.header.number;
 

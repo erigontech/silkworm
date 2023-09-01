@@ -16,6 +16,7 @@
 
 #include "stage_log_index.hpp"
 
+#include <gsl/narrow>
 #include <magic_enum.hpp>
 
 namespace silkworm::stagedsync {
@@ -239,7 +240,7 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
     log_lck.unlock();
 
-    index_loader_->merge_bitmaps(txn, kAddressLength, addresses_collector_.get());
+    index_loader_->merge_bitmaps32(txn, kAddressLength, addresses_collector_.get());
 
     log_lck.lock();
     current_key_.clear();
@@ -247,7 +248,7 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
     log_lck.unlock();
 
-    index_loader_->merge_bitmaps(txn, kHashLength, topics_collector_.get());
+    index_loader_->merge_bitmaps32(txn, kHashLength, topics_collector_.get());
 
     log_lck.lock();
     loading_ = false;
@@ -275,14 +276,14 @@ void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
     log_lck.unlock();
 
-    index_loader_->unwind_bitmaps(txn, to, addresses_keys);
+    index_loader_->unwind_bitmaps32(txn, to, addresses_keys);
 
     log_lck.lock();
     current_target_ = db::table::kLogTopicIndex.name;
     index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
     log_lck.unlock();
 
-    index_loader_->unwind_bitmaps(txn, to, topics_keys);
+    index_loader_->unwind_bitmaps32(txn, to, topics_keys);
 
     log_lck.lock();
     index_loader_.reset();
@@ -301,8 +302,8 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
     const BlockNum max_block_number{to};
     BlockNum reached_block_number{0};
 
-    absl::btree_map<Bytes, roaring::Roaring64Map> topics_bitmaps;
-    absl::btree_map<Bytes, roaring::Roaring64Map> addresses_bitmaps;
+    absl::btree_map<Bytes, roaring::Roaring> topics_bitmaps;
+    absl::btree_map<Bytes, roaring::Roaring> addresses_bitmaps;
     size_t topics_bitmaps_size{0};
     size_t addresses_bitmaps_size{0};
     uint16_t topics_flush_count{0};
@@ -322,18 +323,18 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
         if (key.size() == kHashLength) {
             auto it{topics_bitmaps.find(key)};
             if (it == topics_bitmaps.end()) {
-                it = topics_bitmaps.emplace(key, roaring::Roaring64Map()).first;
-                topics_bitmaps_size += key.size() + sizeof(BlockNum);
+                it = topics_bitmaps.emplace(key, roaring::Roaring()).first;
+                topics_bitmaps_size += key.size() + sizeof(uint32_t);
             }
-            it->second.add(reached_block_number);
+            it->second.add(gsl::narrow<uint32_t>(reached_block_number));
             topics_bitmaps_size += sizeof(uint32_t);
         } else {
             auto it{addresses_bitmaps.find(key)};
             if (it == addresses_bitmaps.end()) {
-                it = addresses_bitmaps.emplace(key, roaring::Roaring64Map()).first;
-                addresses_bitmaps_size += key.size() + sizeof(BlockNum);
+                it = addresses_bitmaps.emplace(key, roaring::Roaring()).first;
+                addresses_bitmaps_size += key.size() + sizeof(uint32_t);
             }
-            it->second.add(reached_block_number);
+            it->second.add(gsl::narrow<uint32_t>(reached_block_number));
             addresses_bitmaps_size += sizeof(uint32_t);
         }
     }};
@@ -361,7 +362,7 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
         cbor::decoder decoder(input, listener);
         decoder.run();
 
-        // Flushes
+        // Flush bitmaps batch by batch
         if (topics_bitmaps_size > node_settings_->batch_size) {
             db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps,
                                                           topics_collector_.get(),
@@ -378,6 +379,10 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
 
         source_data = source->to_next(/*throw_notfound=*/false);
     }
+
+    // Flush remaining portion of bitmaps (if any)
+    db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps, topics_collector_.get(), topics_flush_count);
+    db::bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps, addresses_collector_.get(), addresses_flush_count);
 }
 
 void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
@@ -443,7 +448,7 @@ void LogIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfi
     index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target);
     log_lck.unlock();
 
-    index_loader_->prune_bitmaps(txn, threshold);
+    index_loader_->prune_bitmaps32(txn, threshold);
 
     log_lck.lock();
     index_loader_.reset();
@@ -496,6 +501,7 @@ std::vector<std::string> LogIndex::get_log_progress() {
     }
     return ret;
 }
+
 void LogIndex::reset_log_progress() {
     std::unique_lock log_lck(sl_mutex_);
     loading_ = false;
@@ -503,4 +509,5 @@ void LogIndex::reset_log_progress() {
     current_target_.clear();
     current_key_.clear();
 }
+
 }  // namespace silkworm::stagedsync

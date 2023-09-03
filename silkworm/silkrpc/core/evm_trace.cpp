@@ -1209,6 +1209,25 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
                 traces.push_back(trace);
             }
         }
+
+        for (auto& ommer_reward: block_rewards.ommers) {
+            RewardAction action;
+            action.author = block_with_hash.block.header.beneficiary; /* to be fix */
+            action.reward_type = "block";
+            action.value = ommer_reward;
+
+            Trace trace;
+            trace.block_number = block_with_hash.block.header.number;
+            trace.block_hash = block_with_hash.hash;
+            trace.type = "reward";
+            trace.action = action;
+
+            if (stream != nullptr) {
+                stream->write_json(trace);
+            } else {
+                traces.push_back(trace);
+            }
+        }
         filter.count--;
     } else if (filter.after > 0) {
         filter.after--;

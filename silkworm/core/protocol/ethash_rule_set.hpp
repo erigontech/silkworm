@@ -24,11 +24,6 @@
 
 namespace silkworm::protocol {
 
-struct BlockReward {
-    intx::uint256 miner;
-    std::vector<intx::uint256> ommers;
-};
-
 // Proof of Work implementation
 class EthashRuleSet : public BaseRuleSet {
   public:
@@ -42,7 +37,7 @@ class EthashRuleSet : public BaseRuleSet {
     //! \param [in] block: current block to apply rewards for.
     void finalize(IntraBlockState& state, const Block& block) override;
 
-    static BlockReward compute_reward(const ChainConfig& config, const Block& block);
+    BlockReward compute_reward(const Block& block) override;
 
     // Canonical difficulty of a Proof-of-Work block header.
     // See Section 4.3.4 "Block Header Validity" of the Yellow Paper and also

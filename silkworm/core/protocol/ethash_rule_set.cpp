@@ -47,7 +47,7 @@ intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHe
 }
 
 void EthashRuleSet::finalize(IntraBlockState& state, const Block& block) {
-    const BlockReward reward{compute_reward(chain_config_, block)};
+    const BlockReward reward{compute_reward(block)};
     state.add_to_balance(get_beneficiary(block.header), reward.miner);
     for (size_t i{0}; i < block.ommers.size(); ++i) {
         state.add_to_balance(block.ommers[i].beneficiary, reward.ommers[i]);
@@ -63,9 +63,9 @@ static intx::uint256 block_reward_base(const evmc_revision rev) {
     return kBlockRewardFrontier;
 }
 
-BlockReward EthashRuleSet::compute_reward(const ChainConfig& config, const Block& block) {
+BlockReward EthashRuleSet::compute_reward(const Block& block) {
     const BlockNum block_number{block.header.number};
-    const evmc_revision rev{config.revision(block_number, block.header.timestamp)};
+    const evmc_revision rev{chain_config_.revision(block_number, block.header.timestamp)};
     const intx::uint256 base{block_reward_base(rev)};
 
     intx::uint256 miner_reward{base};
@@ -78,7 +78,8 @@ BlockReward EthashRuleSet::compute_reward(const ChainConfig& config, const Block
         miner_reward += base >> 5;  // div 32
     }
 
-    return {miner_reward, ommer_rewards};
+    const BlockReward block_reward{miner_reward, ommer_rewards};
+    return block_reward;
 }
 
 intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t block_timestamp,

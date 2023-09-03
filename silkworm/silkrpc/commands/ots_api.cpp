@@ -883,11 +883,8 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
 }
 
 IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block) {
-    if (config.protocol_rule_set != protocol::RuleSetType::kEthash) {
-        return IssuanceDetails{};
-    }
-
-    auto block_reward = protocol::EthashRuleSet::compute_reward(config, block.block);
+    const auto rule_set_factory = protocol::rule_set_factory(config);
+    const auto block_reward{rule_set_factory->compute_reward(block.block)};
 
     intx::uint256 ommers_reward = std::accumulate(block_reward.ommers.begin(), block_reward.ommers.end(), intx::uint256{0});
 

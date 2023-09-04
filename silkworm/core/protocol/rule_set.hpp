@@ -28,6 +28,11 @@
 
 namespace silkworm::protocol {
 
+struct BlockReward {
+    intx::uint256 miner;
+    std::vector<intx::uint256> ommers;
+};
+
 class IRuleSet {
   public:
     virtual ~IRuleSet() = default;
@@ -71,6 +76,8 @@ class IRuleSet {
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
+
+    virtual BlockReward compute_reward(const Block& block) = 0;
 };
 
 using RuleSetPtr = std::unique_ptr<IRuleSet>;

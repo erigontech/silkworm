@@ -32,19 +32,6 @@
           "transactionHash": "0xf1b3306dd4bfa2a86f7f1b3c22bf0b6b4da50f5d37f2fed89d1221cb3690c700",
           "transactionPosition": 0,
           "type": "call"
-        },
-        {
-          "action": {
-            "author": "0x9d525e28fe5830ee92d7aa799c4d21590567b595",
-            "rewardType": "block",
-            "value": "0x1bc16d674ec80000"
-          },
-          "blockHash": "0x3d6663dd9f4cf7c130ba1fb97cc5d3f54921d4a1f8c413b9d7b8148d238ec7f5",
-          "blockNumber": 1000004,
-          "result": null,
-          "subtraces": 0,
-          "traceAddress": [],
-          "type": "reward"
         }
       ]
     }

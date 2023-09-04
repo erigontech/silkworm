@@ -252,4 +252,8 @@ bool BaseRuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& ma
 
 evmc::address BaseRuleSet::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
+BlockReward BaseRuleSet::compute_reward(const Block&) {
+    return {0, {}};
+}
+
 }  // namespace silkworm::protocol

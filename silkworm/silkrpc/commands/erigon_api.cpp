@@ -506,7 +506,8 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
             if (!cc) {
                 throw std::runtime_error("Invalid chain config");
             }
-            const auto block_reward{protocol::EthashRuleSet::compute_reward(*cc, block_with_hash->block)};
+            const auto rule_set_factory = protocol::rule_set_factory(*cc);
+            const auto block_reward{rule_set_factory->compute_reward(block_with_hash->block)};
             intx::uint256 total_ommer_reward = 0;
             for (const auto ommer_reward : block_reward.ommers) {
                 total_ommer_reward += ommer_reward;

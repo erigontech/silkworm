@@ -53,6 +53,8 @@ class BaseRuleSet : public IRuleSet {
     //! \brief Returns parent header (if any) of provided header
     static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
+    BlockReward compute_reward(const Block& block) override;
+
   protected:
     const ChainConfig& chain_config_;
     bool prohibit_ommers_{false};

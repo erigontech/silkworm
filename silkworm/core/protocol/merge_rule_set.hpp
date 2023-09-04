@@ -41,7 +41,7 @@ class MergeRuleSet : public BaseRuleSet {
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
-     BlockReward compute_reward(const Block& block) override;
+    BlockReward compute_reward(const Block& block) override;
 
   protected:
     intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;

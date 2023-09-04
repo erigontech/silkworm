@@ -31,9 +31,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -175,7 +173,6 @@ int main(int argc, char* argv[]) {
         // Initialize logging with custom settings
         log::init(log_settings);
         log::set_thread_name("bekv_server");
-        rpc::Grpc2SilkwormLogGuard log_guard;
 
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "BackEndKvServer build info: " << node_name;

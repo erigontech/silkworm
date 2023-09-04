@@ -26,7 +26,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
@@ -65,8 +64,6 @@ void sentry_main(Settings settings) {
 
     log::init(settings.log_settings);
     log::set_thread_name("main");
-    // TODO(canepat): this could be an option in Silkworm logging facility
-    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     silkworm::rpc::ClientContextPool context_pool{
         settings.context_pool_settings,

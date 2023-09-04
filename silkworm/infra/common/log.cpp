@@ -26,6 +26,8 @@
 
 #include <absl/time/clock.h>
 
+#include <silkworm/infra/grpc/common/util.hpp>
+
 namespace silkworm::log {
 
 //! The fixed size for thread name in log traces
@@ -40,6 +42,9 @@ void init(Settings& settings) {
     settings_ = settings;
     if (!settings_.log_file.empty()) {
         tee_file(std::filesystem::path(settings.log_file));
+    }
+    if (settings.log_grpc) {
+        gpr_set_log_function(gpr_silkworm_log);
     }
     init_terminal();
 }

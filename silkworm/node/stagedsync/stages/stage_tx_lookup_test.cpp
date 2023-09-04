@@ -37,7 +37,6 @@ TEST_CASE("Stage Transaction Lookups") {
     txn.disable_commit();
     log::Settings log_settings;
     log_settings.log_std_out = true;
-    log_settings.log_grpc = false;
     log::init(log_settings);
 
     db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);

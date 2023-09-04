@@ -52,7 +52,6 @@ int main(int argc, char* argv[]) {
         ->capture_default_str()
         ->check(CLI::NonNegativeNumber);
     log::Settings log_settings{};
-    log_settings.log_grpc = false;
     add_logging_options(app, log_settings);
 
     CLI11_PARSE(app, argc, argv)

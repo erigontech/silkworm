@@ -29,12 +29,10 @@ int call_silkworm_add_snapshot_func(void* func_ptr, SilkwormHandle* handle, stru
     return ((silkworm_add_snapshot_func)func_ptr)(handle, snapshot);
 }
 
-typedef int (*silkworm_build_recsplit_indexes_func)(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[],
-                                                    char* snapshot_index_paths[], int len);
+typedef int (*silkworm_build_recsplit_indexes_func)(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len);
 
-int call_silkworm_build_recsplit_indexes_func(void* func_ptr, SilkwormHandle* handle,
-                                              struct SilkwormMemoryMappedFile* snapshots[], char* snapshot_index_paths[], int len) {
-    return ((silkworm_build_recsplit_indexes_func)func_ptr)(handle, snapshots, snapshot_index_paths, len);
+int call_silkworm_build_recsplit_indexes_func(void* func_ptr, SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) {
+    return ((silkworm_build_recsplit_indexes_func)func_ptr)(handle, snapshots, len);
 }
 
 */
@@ -84,21 +82,13 @@ func (silkworm *Silkworm) AddSnapshot(snapshot *C.struct_SilkwormChainSnapshot) 
 	C.call_silkworm_add_snapshot_func(silkworm.addSnapshot, silkworm.instance, snapshot)
 }
 
-func (silkworm *Silkworm) BuildRecsplitIndexes(snapshots []*C.struct_SilkwormMemoryMappedFile, snapshotIndexPaths []string) int {
-	// convert the Go string array to C string array
-	cSnapshotIndexPaths := make([]*C.char, len(snapshotIndexPaths))
-	for i, s := range snapshotIndexPaths {
-		cSnapshotIndexPaths[i] = C.CString(s)
-		defer C.free(unsafe.Pointer(cSnapshotIndexPaths[i]))
-	}
-
+func (silkworm *Silkworm) BuildRecsplitIndexes(snapshots []*C.struct_SilkwormMemoryMappedFile) int {
 	// get the start pointer of the C struct arrays
 	cSnapshots_begin := (**C.struct_SilkwormMemoryMappedFile)(unsafe.Pointer(&snapshots[0]))
 	cSnapshots_len := C.int(len(snapshots))
-	cSnapshotIndexPaths_begin := (**C.char)(unsafe.Pointer(&cSnapshotIndexPaths[0]))
 
 	// call the C function
-	result := C.call_silkworm_build_recsplit_indexes_func(silkworm.buildIndexes, silkworm.instance, cSnapshots_begin, cSnapshotIndexPaths_begin, cSnapshots_len)
+	result := C.call_silkworm_build_recsplit_indexes_func(silkworm.buildIndexes, silkworm.instance, cSnapshots_begin, cSnapshots_len)
 
 	return int(result)
 }

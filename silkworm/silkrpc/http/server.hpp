@@ -49,7 +49,7 @@ class Server {
                     const std::string& api_spec,
                     boost::asio::io_context& io_context,
                     boost::asio::thread_pool& workers,
-                    std::vector<std::string>& allowed_origins,
+                    std::vector<std::string> allowed_origins,
                     std::optional<std::string> jwt_secret);
 
     void start();
@@ -74,7 +74,7 @@ class Server {
     boost::asio::ip::tcp::acceptor acceptor_;
 
     //! The list of allowed origins for CORS
-    std::vector<std::string>& allowed_origins_;
+    std::vector<std::string> allowed_origins_;
 
     //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;

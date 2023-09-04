@@ -245,7 +245,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table,
                            std::optional<std::string> jwt_secret)
-        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::nullopt, std::move(jwt_secret)) {
+        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::vector<std::string>{}, std::move(jwt_secret)) {
     }
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {

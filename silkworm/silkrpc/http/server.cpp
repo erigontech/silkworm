@@ -51,7 +51,7 @@ Server::Server(const std::string& end_point,
                const std::string& api_spec,
                boost::asio::io_context& io_context,
                boost::asio::thread_pool& workers,
-               std::vector<std::string>& allowed_origins,
+               std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret)
     : rpc_api_{io_context, workers},
       handler_table_{api_spec},

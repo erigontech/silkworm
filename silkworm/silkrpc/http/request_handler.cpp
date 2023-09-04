@@ -286,22 +286,20 @@ Task<void> RequestHandler::write_headers() {
 }
 
 void RequestHandler::set_cors(std::vector<Header>& headers) {
-    if (allowed_origins_.has_value() && allowed_origins_.value().size() > 0) {
-        if (allowed_origins_.value().at(0) == "*") {
-            headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
-        } else {
-            std::string allowed_origins;
-            for (auto& origin : allowed_origins_.value()) {
-                allowed_origins += origin + ",";
-            }
-            allowed_origins.pop_back();
-            headers.emplace_back(http::Header{"Access-Control-Allow-Origin", allowed_origins});
+    if (allowed_origins_.at(0) == "*") {
+        headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
+    } else {
+        std::string allowed_origins;
+        for (auto& origin : allowed_origins_) {
+            allowed_origins += origin + ",";
         }
-
-        headers.emplace_back(http::Header{"Access-Control-Allow-Methods", "GET, POST"});
-        headers.emplace_back(http::Header{"Access-Control-Allow-Headers", "*"});
-        headers.emplace_back(http::Header{"Access-Control-Max-Age", "600"});
+        allowed_origins.pop_back();
+        headers.emplace_back(http::Header{"Access-Control-Allow-Origin", allowed_origins});
     }
+
+    headers.emplace_back(http::Header{"Access-Control-Allow-Methods", "GET, POST"});
+    headers.emplace_back(http::Header{"Access-Control-Allow-Headers", "*"});
+    headers.emplace_back(http::Header{"Access-Control-Max-Age", "600"});
 }
 
 }  // namespace silkworm::rpc::http

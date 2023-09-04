@@ -38,7 +38,7 @@ namespace silkworm::rpc::http {
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
-                       std::vector<std::string>& allowed_origins,
+                       const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
       request_handler_{socket_, api, handler_table, allowed_origins, std::move(jwt_secret)},

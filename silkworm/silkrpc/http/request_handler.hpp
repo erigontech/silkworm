@@ -39,7 +39,7 @@ class RequestHandler {
     RequestHandler(boost::asio::ip::tcp::socket& socket,
                    commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table,
-                   std::optional<std::vector<std::string>> allowed_origins,
+                   const std::vector<std::string>& allowed_origins,
                    std::optional<std::string> jwt_secret)
         : rpc_api_{rpc_api},
           socket_{socket},
@@ -81,7 +81,7 @@ class RequestHandler {
 
     const std::optional<std::string> jwt_secret_;
 
-    std::optional<std::vector<std::string>> allowed_origins_;
+    const std::vector<std::string>& allowed_origins_;
 };
 
 }  // namespace silkworm::rpc::http

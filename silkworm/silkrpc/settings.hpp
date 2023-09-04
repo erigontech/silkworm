@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>

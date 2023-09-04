@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <optional>
-#include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -31,14 +30,10 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/node.hpp>
-#include <silkworm/sentry/api/common/sentry_client.hpp>
-#include <silkworm/sentry/grpc/client/sentry_client.hpp>
-#include <silkworm/sentry/multi_sentry_client.hpp>
-#include <silkworm/sentry/sentry.hpp>
-#include <silkworm/sentry/session_sentry_client.hpp>
+#include <silkworm/sentry/sentry_client_factory.hpp>
 #include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
@@ -209,67 +204,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
 
-// TODO(canepat) remove by migrating Sentry from ServerContextPool to ClientContextPool
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
-
-using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
-using SentryServerPtr = std::shared_ptr<sentry::Sentry>;
-using SentryPtrPair = std::tuple<SentryClientPtr, SentryServerPtr>;
-
-static SentryPtrPair make_sentry(
-    sentry::Settings sentry_settings,
-    NodeSettings& node_settings,
-    rpc::ServerContextPool& context_pool,
-    db::ROAccess db_access) {
-    SentryServerPtr sentry_server;
-    SentryClientPtr sentry_client;
-
-    db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
-
-    if (node_settings.remote_sentry_addresses.empty()) {
-        sentry_settings.data_dir_path = node_settings.data_directory->path();
-        sentry_settings.network_id = node_settings.network_id;
-        // Disable gRPC in the embedded sentry
-        sentry_settings.api_address = "";
-
-        // Create embedded server
-        sentry_server = std::make_shared<sentry::Sentry>(std::move(sentry_settings), context_pool.as_executor_pool());
-
-        // Wrap direct client i.e. server in a session client
-        sentry_client = std::make_shared<sentry::SessionSentryClient>(
-            sentry_server,
-            eth_status_data_provider.to_factory_function());
-    } else if (node_settings.remote_sentry_addresses.size() == 1) {
-        // Create remote client
-        auto remote_sentry_client = std::make_shared<sentry::grpc::client::SentryClient>(
-            node_settings.remote_sentry_addresses[0],
-            *context_pool.next_context().client_grpc_context());
-        // Wrap remote client in a session client
-        sentry_client = std::make_shared<sentry::SessionSentryClient>(
-            remote_sentry_client,
-            eth_status_data_provider.to_factory_function());
-    } else {
-        std::vector<SentryClientPtr> clients;
-
-        for (const auto& address_uri : node_settings.remote_sentry_addresses) {
-            // Create remote client
-            auto remote_sentry_client = std::make_shared<sentry::grpc::client::SentryClient>(
-                address_uri,
-                *context_pool.next_context().client_grpc_context());
-            // Wrap remote client in a session client
-            auto session_sentry_client = std::make_shared<sentry::SessionSentryClient>(
-                remote_sentry_client,
-                eth_status_data_provider.to_factory_function());
-            clients.push_back(session_sentry_client);
-        }
-
-        sentry_client = std::make_shared<sentry::MultiSentryClient>(std::move(clients));
-    }
-
-    return {sentry_client, sentry_server};
-}
-
 // main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
@@ -320,17 +254,23 @@ int main(int argc, char* argv[]) {
 
         auto chaindata_db{db::open_env(node_settings.chaindata_env_config)};
 
-        silkworm::rpc::ServerContextPool context_pool{
+        silkworm::rpc::ClientContextPool context_pool{
             settings.node_settings.server_settings.context_pool_settings,
-            [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
         // Sentry: the peer-2-peer proxy server
-        auto [sentry_client, sentry_server] = make_sentry(
-            std::move(settings.sentry_settings), settings.node_settings, context_pool, db::ROAccess{chaindata_db});
-        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> Task<void> {
-            if (sentry_server) {
-                co_await sentry_server->run();
+        settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
+        settings.sentry_settings.network_id = node_settings.network_id;
+        db::EthStatusDataProvider eth_status_data_provider{db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
+        auto [sentry_client, sentry_server] = sentry::SentryClientFactory::make_sentry(
+            std::move(settings.sentry_settings),
+            settings.node_settings.remote_sentry_addresses,
+            context_pool.as_executor_pool(),
+            context_pool,
+            eth_status_data_provider.to_factory_function());
+        auto embedded_sentry_run_if_needed = [server = sentry_server]() -> Task<void> {
+            if (server) {
+                co_await server->run();
             }
         };
 
@@ -350,7 +290,7 @@ int main(int argc, char* argv[]) {
             .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
         };
         chainsync::Sync chain_sync_process{
-            context_pool.next_io_context().get_executor(),
+            context_pool.any_executor(),
             chaindata_db,
             execution_client,
             sentry_client,
@@ -367,11 +307,11 @@ int main(int argc, char* argv[]) {
             chain_sync_process.async_run();
 
         // Trap OS signals
-        ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
+        ShutdownSignal shutdown_signal{context_pool.any_executor()};
 
         // Go!
         auto run_future = boost::asio::co_spawn(
-            context_pool.next_io_context(),
+            context_pool.any_executor(),
             std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();

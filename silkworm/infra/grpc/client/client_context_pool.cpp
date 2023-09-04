@@ -122,4 +122,8 @@ void ClientContextPool::add_context(concurrency::WaitMode wait_mode) {
     SILK_TRACE << "ClientContextPool::add_context context[" << context_count << "] " << client_context;
 }
 
+agrpc::GrpcContext& ClientContextPool::any_grpc_context() {
+    return *next_context().grpc_context();
+}
+
 }  // namespace silkworm::rpc

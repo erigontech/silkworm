@@ -20,7 +20,7 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>
-#include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
+#include <silkworm/sentry/discovery/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/packet_type.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {

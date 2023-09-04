@@ -23,8 +23,8 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/sentry/discovery/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
-#include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
 #include <silkworm/sentry/discovery/disc_v4/ping/ping_check.hpp>
 

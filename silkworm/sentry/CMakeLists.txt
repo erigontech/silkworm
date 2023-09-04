@@ -44,6 +44,9 @@ add_subdirectory(common)
 # node DB
 add_subdirectory(discovery/node_db)
 
+# discovery common
+add_subdirectory(discovery/common)
+
 # disc v4
 add_subdirectory(discovery/disc_v4)
 

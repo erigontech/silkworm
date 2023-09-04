@@ -105,4 +105,11 @@ intx::uint256 MergeRuleSet::difficulty(const BlockHeader&, const BlockHeader&) {
     return 0;
 }
 
+BlockReward MergeRuleSet::compute_reward(const Block& block) {
+    if (block.header.difficulty != 0) {
+        return pre_merge_rule_set_->compute_reward(block);
+    }
+    return BaseRuleSet::compute_reward(block);
+}
+
 }  // namespace silkworm::protocol

@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
         if (not silkworm_api_lib_path.empty())
             kSilkwormApiLibPath = silkworm_api_lib_path;
 
-        silkworm::DataDirectory data_dir{data_dir_path.empty() ? DataDirectory::get_default_storage_path() : data_dir_path};
+        silkworm::DataDirectory data_dir{data_dir_path.empty() ? DataDirectory::get_default_storage_path() : std::filesystem::path(data_dir_path)};
 
         // Import the silkworm_init symbol from Silkworm API library
         const auto silkworm_init{
@@ -263,41 +263,43 @@ int main(int argc, char* argv[]) {
         SnapshotRepository repository{settings};
         repository.reopen_folder();
 
-        auto all_chain_snapshots{collect_all_snapshots(repository)};  // todo(mriccobene): develop a collect_all_snapshots that doesn't requires the presence of all indexes
-        [[maybe_unused]] auto _ = gsl::finally([&]() {
-            for (auto& chain_snapshot : all_chain_snapshots) {
-                delete[] chain_snapshot.headers.segment.file_path;
-                delete[] chain_snapshot.headers.header_hash_index.file_path;
-                delete[] chain_snapshot.bodies.segment.file_path;
-                delete[] chain_snapshot.bodies.block_num_index.file_path;
-                delete[] chain_snapshot.transactions.segment.file_path;
-                delete[] chain_snapshot.transactions.tx_hash_index.file_path;
-                delete[] chain_snapshot.transactions.tx_hash_2_block_index.file_path;
-            }
-        });
-        for (auto& chain_snapshot : all_chain_snapshots) {
-            const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
-            if (add_snapshot_status_code != SILKWORM_OK) {
-                SILK_ERROR << "silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
-                return add_snapshot_status_code;
-            }
-        }
-
-        // Execute specified block range using Silkworm API library
-        silkworm::db::EnvConfig config{
-            .path = data_dir.chaindata().path().string(),
-            .readonly = false,
-            .exclusive = true};
-        ::mdbx::env_managed env{silkworm::db::open_env(config)};
-        ::mdbx::txn_managed rw_txn{env.start_write()};
-
-        db::ROTxnUnmanaged ro_txn{rw_txn};
-        const auto chain_config{db::read_chain_config(ro_txn)};
-        ensure(chain_config.has_value(), "no chain configuration in database");
-        const auto chain_id{chain_config->chain_id};
-
         int status_code = -1;
-        if (exec_cmd.present) {
+        if (exec_cmd.present) {  // Execute specified block range using Silkworm API library
+            // Open chain database
+            silkworm::db::EnvConfig config{
+                .path = data_dir.chaindata().path().string(),
+                .readonly = false,
+                .exclusive = true};
+            ::mdbx::env_managed env{silkworm::db::open_env(config)};
+            ::mdbx::txn_managed rw_txn{env.start_write()};
+
+            db::ROTxnUnmanaged ro_txn{rw_txn};
+            const auto chain_config{db::read_chain_config(ro_txn)};
+            ensure(chain_config.has_value(), "no chain configuration in database");
+            const auto chain_id{chain_config->chain_id};
+
+            // Collect all snapshots
+            auto all_chain_snapshots{collect_all_snapshots(repository)};
+            [[maybe_unused]] auto _ = gsl::finally([&]() {
+                for (auto& chain_snapshot : all_chain_snapshots) {
+                    delete[] chain_snapshot.headers.segment.file_path;
+                    delete[] chain_snapshot.headers.header_hash_index.file_path;
+                    delete[] chain_snapshot.bodies.segment.file_path;
+                    delete[] chain_snapshot.bodies.block_num_index.file_path;
+                    delete[] chain_snapshot.transactions.segment.file_path;
+                    delete[] chain_snapshot.transactions.tx_hash_index.file_path;
+                    delete[] chain_snapshot.transactions.tx_hash_2_block_index.file_path;
+                }
+            });
+            for (auto& chain_snapshot : all_chain_snapshots) {
+                const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
+                if (add_snapshot_status_code != SILKWORM_OK) {
+                    SILK_ERROR << "silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
+                    return add_snapshot_status_code;
+                }
+            }
+
+            // Execute blocks
             const auto start_block{exec_cmd.start_block};
             const auto max_block{exec_cmd.max_block};
             const auto batch_size{exec_cmd.batch_size};
@@ -314,18 +316,32 @@ int main(int argc, char* argv[]) {
                            << "]";
             }
             SILK_INFO << "Last executed block: " << last_executed_block;
-        } else if (idxes_cmd.present) {
+
+            rw_txn.abort();  // We do *not* want to commit anything
+
+        } else if (idxes_cmd.present) {  // Build index for a specific snapshot using Silkworm API library
             const int size = 1;
 
             auto snapshot_path = SnapshotPath::parse(idxes_cmd.snapshot_path);
             if (!snapshot_path.has_value())
                 throw std::runtime_error("Invalid snapshot path");
 
-            const Snapshot* snapshot = repository.get_header_segment(*snapshot_path);
-            if (!snapshot)
-                snapshot = repository.get_body_segment(*snapshot_path);
-            if (!snapshot)
-                snapshot = repository.get_tx_segment(*snapshot_path);
+            const Snapshot* snapshot = nullptr;
+            switch (snapshot_path->type()) {
+                case headers:
+                    snapshot = repository.get_header_segment(*snapshot_path);
+                    break;
+                case bodies:
+                    snapshot = repository.get_body_segment(*snapshot_path);
+                    break;
+                case transactions:
+                case transactions_to_block:
+                    snapshot = repository.get_tx_segment(*snapshot_path);
+                    break;
+                default:
+                    throw std::runtime_error("Invalid snapshot type");
+            }
+
             if (!snapshot)
                 throw std::runtime_error("Snapshot not found in the repository");
 
@@ -336,7 +352,12 @@ int main(int argc, char* argv[]) {
             snapshots[0]->memory_length = snapshot->memory_file_size();
 
             SILK_INFO << "Building index for snapshot: " << idxes_cmd.snapshot_path;
+
+            const auto start_time{std::chrono::high_resolution_clock::now()};
             status_code = silkworm_build_recsplit_indexes(handle, &snapshots[0], size);
+            auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+            SILK_INFO << "Building index for snapshot " << idxes_cmd.snapshot_path << " done in "
+                      << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
         } else {
             SILK_ERROR << "No sub-command chosen";
         }
@@ -347,8 +368,6 @@ int main(int argc, char* argv[]) {
             SILK_ERROR << "silkworm_fini failed [code=" << std::to_string(fini_status_code) << "]";
             return fini_status_code;
         }
-
-        rw_txn.abort();  // We do *not* want to commit anything
 
         SILK_INFO << "Exiting [pid=" << std::to_string(pid) << "]";
         return status_code;

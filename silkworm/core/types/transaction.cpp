@@ -430,6 +430,9 @@ intx::uint256 UnsignedTransaction::priority_fee_per_gas(const intx::uint256& bas
 }
 
 intx::uint256 UnsignedTransaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
+    if (type == TransactionType::kSystem) {
+        return 0;
+    }
     return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
 }
 

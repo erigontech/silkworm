@@ -70,12 +70,16 @@ struct BlockHeader {
     evmc::bytes32 prev_randao{};  // mix hash prior to EIP-4399
     NonceType nonce{};
 
+    // Added in London
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
+
+    // Added in Shanghai
     std::optional<evmc::bytes32> withdrawals_root{std::nullopt};  // EIP-4895
 
-    // EIP-4844: Shard Blob Transactions
-    std::optional<uint64_t> data_gas_used{std::nullopt};
-    std::optional<uint64_t> excess_data_gas{std::nullopt};
+    // Added in Cancun
+    std::optional<uint64_t> data_gas_used{std::nullopt};                  // EIP-4844
+    std::optional<uint64_t> excess_data_gas{std::nullopt};                // EIP-4844
+    std::optional<evmc::bytes32> parent_beacon_block_root{std::nullopt};  // EIP-4788
 
     [[nodiscard]] evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
 

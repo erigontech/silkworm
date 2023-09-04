@@ -42,6 +42,10 @@ enum class TransactionType : uint8_t {
     kAccessList = 1,  // EIP-2930
     kDynamicFee = 2,  // EIP-1559
     kBlob = 3,        // EIP-4844
+
+    // System transactions are used for internal protocol operations like storing parent beacon root (EIP-4788).
+    // They do not pay the base fee.
+    kSystem = 0xff,
 };
 
 struct UnsignedTransaction {

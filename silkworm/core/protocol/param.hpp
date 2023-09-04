@@ -67,4 +67,9 @@ inline constexpr uint64_t kDataGasPerBlob{1u << 17};
 inline constexpr uint64_t kMinDataGasPrice{1};
 inline constexpr uint64_t kDataGasPriceUpdateFraction{2225652};
 
+// EIP-4788: Beacon block root in the EVM
+inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
+inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
+inline constexpr auto kBeaconRootsAddress{0x0b_address};  // TODO(yperbasis) change to the proper one
+
 }  // namespace silkworm::protocol

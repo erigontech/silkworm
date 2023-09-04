@@ -16,16 +16,18 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/bytes.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <string>
+#include <string_view>
 
-namespace silkworm::sentry::crypto::ecdsa_signature {
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 
-Bytes sign_recoverable(ByteView data_hash, ByteView private_key);
-EccPublicKey verify_and_recover(ByteView data_hash, ByteView signature_and_recovery_id);
+#include "enr_record.hpp"
 
-Bytes sign(ByteView data_hash, ByteView private_key);
-bool verify(ByteView data_hash, ByteView signature_data, const EccPublicKey& public_key);
+namespace silkworm::sentry::discovery::enr {
 
-}  // namespace silkworm::sentry::crypto::ecdsa_signature
+struct EnrUrl {
+    static EnrRecord parse(std::string_view url_str);
+    static std::string make(const EnrRecord& record, const EccKeyPair& key_pair);
+};
+
+}  // namespace silkworm::sentry::discovery::enr

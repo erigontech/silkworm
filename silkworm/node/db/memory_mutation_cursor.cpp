@@ -370,15 +370,51 @@ CursorResult MemoryMutationCursor::lower_bound(const Slice& key) {
 }
 
 CursorResult MemoryMutationCursor::lower_bound(const Slice& key, bool throw_notfound) {
-    return CursorResult{key, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->lower_bound(key, throw_notfound);
+    }
+
+    const auto memory_result = memory_cursor_->lower_bound(key, false);
+
+    auto db_result = cursor_->lower_bound(key, false);
+    if (db_result.key && is_entry_deleted(db_result.key)) {
+        db_result = next_on_db(MoveType::kNext, throw_notfound);
+    }
+
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
+    if (!result.done && throw_notfound) throw_error_notfound();
+    return result;
 }
 
-MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, bool throw_notfound) {
-    return MoveResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation operation, bool throw_notfound) {
+    if (operation != MoveOperation::next and operation != MoveOperation::previous) {
+        throw std::runtime_error{"MemoryMutationCursor::move not implemented for operation=" + std::to_string(operation)};
+    }
+
+    if (is_table_cleared()) {
+        return memory_cursor_->move(operation, throw_notfound);
+    }
+
+    const auto memory_result = memory_cursor_->move(operation, false);
+
+    auto db_result = cursor_->move(operation, false);
+    if (db_result.key && is_entry_deleted(db_result.key)) {
+        auto result = operation == MoveOperation::next ? next_on_db(MoveType::kNext, throw_notfound) : previous_on_db(MoveType::kPrevious, throw_notfound);
+        std::tie(db_result.done, db_result.key, db_result.value) = std::tuple{result.done, result.key, result.value};
+    }
+
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
+    if (!result.done && throw_notfound) throw_error_notfound();
+
+    MoveResult move_result = db_result;
+    move_result.done = result.done;
+    move_result.key = result.key;
+    move_result.value = result.value;
+    return move_result;
 }
 
-MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, bool throw_notfound) {
-    return MoveResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, bool /*throw_notfound*/) {
+    throw std::runtime_error{"MemoryMutationCursor::move(MoveOperation,const Slice&,bool) not implemented"};
 }
 
 bool MemoryMutationCursor::seek(const Slice& key) {
@@ -387,13 +423,13 @@ bool MemoryMutationCursor::seek(const Slice& key) {
     }
 
     const auto found_in_memory = memory_cursor_->seek(key);
-    CursorResult memory_result{key, {}, found_in_memory};
+    CursorResult memory_result{key, found_in_memory ? memory_cursor_->current().value : mdbx::slice{}, found_in_memory};
 
     bool found_in_db = cursor_->seek(key);
     if (is_entry_deleted(key)) {
         found_in_db = next_on_db(MoveType::kNext, /*throw_notfound=*/false);
     }
-    CursorResult db_result{key, {}, found_in_db};
+    CursorResult db_result{key, found_in_db ? cursor_->current().value : mdbx::slice{}, found_in_db};
 
     const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
     return result.done;
@@ -577,8 +613,8 @@ CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, cons
     return result;
 }
 
-MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
-    return MoveResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, const Slice& /*value*/, bool /*throw_notfound*/) {
+    throw std::runtime_error{"MemoryMutationCursor::move(MoveOperation,const Slice&,const Slice&,bool) not implemented"};
 }
 
 std::size_t MemoryMutationCursor::count_multivalue() const {

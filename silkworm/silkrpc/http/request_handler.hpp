@@ -26,6 +26,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <tl/expected.hpp>
 
 #include <silkworm/silkrpc/commands/rpc_api.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
@@ -54,7 +55,9 @@ class RequestHandler {
     Task<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
 
   private:
-    Task<std::optional<std::string>> is_request_authorized(const http::Request& request);
+    using AuthorizationError = std::string;
+    using AuthorizationResult = tl::expected<void, AuthorizationError>;
+    AuthorizationResult is_request_authorized(const http::Request& request);
 
     Task<void> handle_request(
         uint32_t request_id,

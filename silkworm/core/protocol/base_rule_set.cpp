@@ -37,10 +37,10 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
     }
 
     if (rev < EVMC_SHANGHAI && block.withdrawals) {
-        return ValidationResult::kUnexpectedWithdrawals;
+        return ValidationResult::kFieldBeforeFork;
     }
     if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
-        return ValidationResult::kMissingWithdrawals;
+        return ValidationResult::kMissingField;
     }
 
     const std::optional<evmc::bytes32> withdrawals_root{compute_withdrawals_root(block)};
@@ -177,19 +177,40 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
 
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
-    if (header.base_fee_per_gas != expected_base_fee_per_gas(*parent, rev)) {
-        return ValidationResult::kWrongBaseFee;
+    if (rev < EVMC_LONDON) {
+        if (header.base_fee_per_gas) {
+            return ValidationResult::kFieldBeforeFork;
+        }
+    } else {
+        if (!header.base_fee_per_gas) {
+            return ValidationResult::kMissingField;
+        }
+        if (header.base_fee_per_gas != expected_base_fee_per_gas(*parent)) {
+            return ValidationResult::kWrongBaseFee;
+        }
     }
 
-    if (rev < EVMC_SHANGHAI && header.withdrawals_root) {
-        return ValidationResult::kUnexpectedWithdrawals;
-    }
-    if (rev >= EVMC_SHANGHAI && !header.withdrawals_root) {
-        return ValidationResult::kMissingWithdrawals;
+    if (rev < EVMC_SHANGHAI) {
+        if (header.withdrawals_root) {
+            return ValidationResult::kFieldBeforeFork;
+        }
+    } else {
+        if (!header.withdrawals_root) {
+            return ValidationResult::kMissingField;
+        }
     }
 
-    if (header.excess_data_gas != calc_excess_data_gas(*parent, rev)) {
-        return ValidationResult::kWrongExcessDataGas;
+    if (rev < EVMC_CANCUN) {
+        if (header.data_gas_used || header.excess_data_gas || header.parent_beacon_block_root) {
+            return ValidationResult::kFieldBeforeFork;
+        }
+    } else {
+        if (!header.data_gas_used || !header.excess_data_gas || !header.parent_beacon_block_root) {
+            return ValidationResult::kMissingField;
+        }
+        if (header.excess_data_gas != calc_excess_data_gas(*parent)) {
+            return ValidationResult::kWrongExcessDataGas;
+        }
     }
 
     return validate_seal(header);
@@ -230,5 +251,9 @@ bool BaseRuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& ma
 }
 
 evmc::address BaseRuleSet::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+
+BlockReward BaseRuleSet::compute_reward(const Block&) {
+    return {0, {}};
+}
 
 }  // namespace silkworm::protocol

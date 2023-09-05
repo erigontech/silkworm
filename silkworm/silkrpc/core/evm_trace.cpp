@@ -1188,23 +1188,45 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
 
     if (filter.count > 0 && filter.after == 0) {
         const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-        const auto block_rewards = protocol::EthashRuleSet::compute_reward(*chain_config_ptr, block_with_hash.block);
+        const auto rule_set_factory = protocol::rule_set_factory(*chain_config_ptr);
+        const auto block_rewards = rule_set_factory->compute_reward(block_with_hash.block);
 
-        RewardAction action;
-        action.author = block_with_hash.block.header.beneficiary;
-        action.reward_type = "block";
-        action.value = block_rewards.miner;
+        if (block_rewards.miner) {
+            RewardAction action;
+            action.author = block_with_hash.block.header.beneficiary;
+            action.reward_type = "block";
+            action.value = block_rewards.miner;
 
-        Trace trace;
-        trace.block_number = block_with_hash.block.header.number;
-        trace.block_hash = block_with_hash.hash;
-        trace.type = "reward";
-        trace.action = action;
+            Trace trace;
+            trace.block_number = block_with_hash.block.header.number;
+            trace.block_hash = block_with_hash.hash;
+            trace.type = "reward";
+            trace.action = action;
 
-        if (stream != nullptr) {
-            stream->write_json(trace);
-        } else {
-            traces.push_back(trace);
+            if (stream != nullptr) {
+                stream->write_json(trace);
+            } else {
+                traces.push_back(trace);
+            }
+        }
+
+        for (auto& ommer_reward : block_rewards.ommers) {
+            RewardAction action;
+            action.author = block_with_hash.block.header.beneficiary; /* to be fix */
+            action.reward_type = "block";
+            action.value = ommer_reward;
+
+            Trace trace;
+            trace.block_number = block_with_hash.block.header.number;
+            trace.block_hash = block_with_hash.hash;
+            trace.type = "reward";
+            trace.action = action;
+
+            if (stream != nullptr) {
+                stream->write_json(trace);
+            } else {
+                traces.push_back(trace);
+            }
         }
         filter.count--;
     } else if (filter.after > 0) {
@@ -1566,7 +1588,17 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
+    if (!from_block_with_hash) {
+        const Error error{-32000, "invalid parameters: fromBlock not found"};
+        stream->write_field("error", error);
+        co_return;
+    }
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.to_block);
+    if (!to_block_with_hash) {
+        const Error error{-32000, "invalid parameters: toBlock not found"};
+        stream->write_field("error", error);
+        co_return;
+    }
 
     if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};

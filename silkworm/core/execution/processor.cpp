@@ -18,7 +18,6 @@
 
 #include <cassert>
 
-#include <silkworm/core/chain/dao.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -118,14 +117,12 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
-    const Block& block{evm_.block()};
-
-    if (block.header.number == evm_.config().dao_block) {
-        dao::transfer_balances(state_);
-    }
+    rule_set_.initialize(evm_);
+    state_.finalize_transaction();
 
     cumulative_gas_used_ = 0;
 
+    const Block& block{evm_.block()};
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
     for (const auto& txn : block.transactions) {

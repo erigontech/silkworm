@@ -111,11 +111,6 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
         BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
-        log::Info(log_prefix_,
-                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                   "from", std::to_string(current_height_),
-                   "to", std::to_string(target_height),
-                   "span", std::to_string(target_height - current_height_)});
         if (current_height_ == target_height) {
             // Nothing to process
             return Stage::Result::kSuccess;
@@ -124,6 +119,14 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
             throw StageError(Stage::Result::kInvalidProgress,
                              "Previous progress " + std::to_string(current_height_) +
                                  " > target progress " + std::to_string(target_height));
+        }
+        const BlockNum segment_width{target_height - current_height_};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(current_height_),
+                       "to", std::to_string(target_height),
+                       "span", std::to_string(target_height - current_height_)});
         }
 
         BodyDataModel body_persistence(tx, current_height_, node_settings_->chain_config.value());
@@ -181,8 +184,18 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
     if (current_height_ <= new_height) return Stage::Result::kSuccess;
 
-    Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
+
+    const BlockNum segment_width{current_height_ - new_height};
+    if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        log::Info(log_prefix_,
+                  {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                   "from", std::to_string(current_height_),
+                   "to", std::to_string(new_height),
+                   "span", std::to_string(segment_width)});
+    }
+
+    Stage::Result result{Stage::Result::kSuccess};
 
     try {
         BodyDataModel::remove_bodies(new_height, sync_context_->bad_block_hash, tx);

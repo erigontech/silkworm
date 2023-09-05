@@ -54,8 +54,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
                              "InterHashes progress " + std::to_string(previous_progress) +
                                  " greater than HashState progress " + std::to_string(hashstate_stage_progress));
         }
-
-        BlockNum segment_width{hashstate_stage_progress - previous_progress};
+        const BlockNum segment_width{hashstate_stage_progress - previous_progress};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
@@ -138,8 +137,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
             operation_ = OperationType::None;
             return Stage::Result::kSuccess;
         }
-
-        BlockNum segment_width{previous_progress - to};
+        const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),

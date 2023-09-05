@@ -103,7 +103,7 @@ inline constexpr const char* kAllStages[]{
 };
 
 //! \brief Stages won't log their "start" if segment is below this threshold
-inline constexpr size_t kSmallBlockSegmentWidth{16};
+inline constexpr size_t kSmallBlockSegmentWidth{0};
 
 //! \brief Some stages will use this threshold to determine if worth regen vs incremental
 inline constexpr size_t kLargeBlockSegmentWorthRegen{100'000};

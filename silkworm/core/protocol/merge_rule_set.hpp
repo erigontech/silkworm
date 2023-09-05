@@ -37,9 +37,13 @@ class MergeRuleSet : public BaseRuleSet {
 
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
 
+    void initialize(EVM& evm) override;
+
     void finalize(IntraBlockState& state, const Block& block) override;
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
+
+    BlockReward compute_reward(const Block& block) override;
 
   protected:
     intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;

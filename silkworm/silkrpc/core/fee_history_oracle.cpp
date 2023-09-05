@@ -150,7 +150,10 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     const auto parent_block = co_await block_provider_(header.number - 1);
 
     const auto evmc_revision = config_.revision(parent_block->block.header.number, parent_block->block.header.timestamp);
-    block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block->block.header, evmc_revision).value_or(0);
+    block_fees.next_base_fee = 0;
+    if (evmc_revision >= EVMC_LONDON) {
+        block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block->block.header);
+    }
 
     if (reward_percentile.size() == 0) {
         co_return;

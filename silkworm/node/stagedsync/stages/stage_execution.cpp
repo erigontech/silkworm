@@ -71,11 +71,11 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         block_num_ = previous_progress + 1;
         BlockNum max_block_num{senders_stage_progress};
-        BlockNum segment_width{senders_stage_progress - previous_progress};
+        const BlockNum segment_width{senders_stage_progress - previous_progress};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(block_num_),
+                       "from", std::to_string(previous_progress),
                        "to", std::to_string(senders_stage_progress),
                        "span", std::to_string(segment_width)});
         }

@@ -19,6 +19,7 @@
 #include <memory>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/state/state.hpp>
@@ -26,6 +27,11 @@
 #include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::protocol {
+
+struct BlockReward {
+    intx::uint256 miner;
+    std::vector<intx::uint256> ommers;
+};
 
 class IRuleSet {
   public:
@@ -56,7 +62,12 @@ class IRuleSet {
     //! \param [in] state: current state.
     virtual ValidationResult validate_ommers(const Block& block, const BlockState& state) = 0;
 
-    //! \brief Finalizes block execution by applying changes stipulated by the protocol (e.g. block rewards, withdrawals)
+    //! \brief Initializes block execution by applying changes stipulated by the protocol
+    //! (e.g. storing parent beacon root)
+    virtual void initialize(EVM& evm) = 0;
+
+    //! \brief Finalizes block execution by applying changes stipulated by the protocol
+    //! (e.g. block rewards, withdrawals)
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
@@ -65,6 +76,8 @@ class IRuleSet {
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
+
+    virtual BlockReward compute_reward(const Block& block) = 0;
 };
 
 using RuleSetPtr = std::unique_ptr<IRuleSet>;

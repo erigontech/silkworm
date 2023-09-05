@@ -160,11 +160,7 @@ ValidationResult pre_validate_transactions(const Block& block, const ChainConfig
     return ValidationResult::kOk;
 }
 
-std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision rev) {
-    if (rev < EVMC_LONDON) {
-        return std::nullopt;
-    }
-
+intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     if (!parent.base_fee_per_gas) {
         return kInitialBaseFee;
     }
@@ -196,11 +192,7 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent
     }
 }
 
-std::optional<uint64_t> calc_excess_data_gas(const BlockHeader& parent, const evmc_revision rev) {
-    if (rev < EVMC_CANCUN) {
-        return std::nullopt;
-    }
-
+uint64_t calc_excess_data_gas(const BlockHeader& parent) {
     const uint64_t parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
     const uint64_t consumed_data_gas{parent.data_gas_used.value_or(0)};
 

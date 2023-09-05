@@ -20,17 +20,13 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
-#include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 
 using namespace silkworm::sentry::grpc::client;
 using namespace silkworm;
-
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
 
 Task<void> run(sentry::api::SentryClient& client) {
     auto service = co_await client.service();
@@ -55,23 +51,20 @@ int main() {
     log_settings.log_verbosity = log::Level::kDebug;
     log::init(log_settings);
     log::set_thread_name("main");
-    // TODO(canepat): this could be an option in Silkworm logging facility
-    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     sentry::Settings sentry_settings;
 
-    silkworm::rpc::ServerContextPool context_pool{
+    silkworm::rpc::ClientContextPool context_pool{
         sentry_settings.context_pool_settings,
-        [] { return std::make_unique<DummyServerCompletionQueue>(); },
     };
 
     SentryClient client{
         sentry_settings.api_address,
-        *context_pool.next_context().client_grpc_context(),
+        context_pool.any_grpc_context(),
     };
 
     auto run_future = boost::asio::co_spawn(
-        context_pool.next_io_context(),
+        context_pool.any_executor(),
         run(client),
         boost::asio::use_future);
 

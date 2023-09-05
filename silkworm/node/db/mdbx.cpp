@@ -605,7 +605,7 @@ size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t count,
                         const CursorMoveDirection direction) {
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
-    while (count && data) {
+    while (count && data.done) {
         ++ret;
         --count;
         walker(from_slice(data.key), from_slice(data.value));

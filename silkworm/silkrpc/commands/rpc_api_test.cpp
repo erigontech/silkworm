@@ -253,7 +253,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
     }
 
   private:
-    static const std::vector<std::string> allowed_origins;
+    inline static const std::vector<std::string> allowed_origins;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

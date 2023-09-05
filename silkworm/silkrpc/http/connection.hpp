@@ -50,6 +50,7 @@ class Connection {
     Connection(boost::asio::io_context& io_context,
                commands::RpcApi& api,
                commands::RpcApiTable& handler_table,
+               const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret);
 
     ~Connection();

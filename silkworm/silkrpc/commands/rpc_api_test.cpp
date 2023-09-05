@@ -245,12 +245,15 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table,
                            std::optional<std::string> jwt_secret)
-        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, std::move(jwt_secret)) {
+        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, allowed_origins, std::move(jwt_secret)) {
     }
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
     }
+
+  private:
+    inline static const std::vector<std::string> allowed_origins;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

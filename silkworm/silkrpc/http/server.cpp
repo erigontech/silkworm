@@ -51,11 +51,13 @@ Server::Server(const std::string& end_point,
                const std::string& api_spec,
                boost::asio::io_context& io_context,
                boost::asio::thread_pool& workers,
+               std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret)
     : rpc_api_{io_context, workers},
       handler_table_{api_spec},
       io_context_(io_context),
       acceptor_{io_context},
+      allowed_origins_{allowed_origins},
       jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 
@@ -81,7 +83,7 @@ Task<void> Server::run() {
         while (acceptor_.is_open()) {
             SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
-            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, jwt_secret_);
+            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";

@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
@@ -34,6 +35,7 @@ struct DaemonSettings {
     std::string eth_api_spec{kDefaultEth1ApiSpec};
     std::string private_api_addr{kDefaultPrivateApiAddr};
     uint32_t num_workers{std::thread::hardware_concurrency() / 2};
+    std::vector<std::string> cors_domain;
     std::optional<std::string> jwt_secret_file;
     bool skip_protocol_check{false};
     bool erigon_json_rpc_compatibility{false};

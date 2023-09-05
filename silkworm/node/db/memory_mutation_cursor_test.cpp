@@ -805,8 +805,8 @@ TEST_CASE("MemoryMutationCursor: lower_bound", "[silkworm][node][db][memory_muta
     for (auto [tag, test] : mutation_tests) {
         SECTION(tag + ": lower_bound on nonexistent single-value table: mdbx::incompatible_operation") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
-            //CHECK_THROWS_AS(mutation_cursor1.lower_bound("k", /*throw_notfound=*/true), mdbx::incompatible_operation);
-            //CHECK_THROWS_AS(!mutation_cursor1.lower_bound("k"), mdbx::incompatible_operation);
+            CHECK_THROWS_AS(mutation_cursor1.lower_bound("k", /*throw_notfound=*/true), mdbx::not_found);
+            CHECK_THROWS_AS(mutation_cursor1.lower_bound("k"), mdbx::not_found);
         }
 
         SECTION(tag + ": lower_bound on nonexistent multi-value table: mdbx::not_found") {
@@ -871,7 +871,7 @@ TEST_CASE("MemoryMutationCursor: lower_bound_multivalue", "[silkworm][node][db][
         SECTION(tag + ": lower_bound_multivalue on nonexistent single-value table: mdbx::incompatible_operation") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.lower_bound_multivalue("k", "v", /*throw_notfound=*/true), mdbx::incompatible_operation);
-            CHECK_THROWS_AS(!mutation_cursor1.lower_bound_multivalue("k", "v"), mdbx::incompatible_operation);
+            CHECK_THROWS_AS(mutation_cursor1.lower_bound_multivalue("k", "v"), mdbx::incompatible_operation);
         }
 
         SECTION(tag + ": lower_bound_multivalue on nonexistent multi-value table: mdbx::not_found") {

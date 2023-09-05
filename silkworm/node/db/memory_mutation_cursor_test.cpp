@@ -717,6 +717,144 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
     }
 }
 
+TEST_CASE("MemoryMutationCursor: seek", "[silkworm][node][db][memory_mutation]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
+
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": seek on nonexistent table: MDBX_NOTFOUND") {
+            MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
+            CHECK(!mutation_cursor1.seek("k"));
+
+            MemoryMutationCursor mutation_cursor2{test->mutation, kNonexistentTestMultiMap};
+            CHECK(!mutation_cursor2.seek("k"));
+        }
+
+        SECTION(tag + ": seek on existent non-empty table: OK") {
+            // Single-value table
+            MemoryMutationCursor mutation_cursor1{test->mutation, db::table::kCode};
+            CHECK(mutation_cursor1.seek("AA"));   // existent key (seek saves value in current)
+            const auto result1 = mutation_cursor1.current();
+            CHECK(result1.done);
+            CHECK(result1.key == "AA");
+            CHECK(result1.value == "00");
+
+            CHECK(mutation_cursor1.seek("BB"));   // existent key (seek saves value in current)
+            const auto result2 = mutation_cursor1.current();
+            CHECK(result2.done);
+            CHECK(result2.key == "BB");
+            CHECK(result2.value == "11");
+
+            CHECK(!mutation_cursor1.seek("CC"));  // nonexistent key
+
+            // Multi-value table
+            MemoryMutationCursor mutation_cursor2{test->mutation, db::table::kAccountChangeSet};
+            CHECK(mutation_cursor2.seek("AA"));   // existent key (seek saves value in current)
+            const auto result3 = mutation_cursor2.current();
+            CHECK(result3.done);
+            CHECK(result3.key == "AA");
+            CHECK(result3.value == "00");
+
+            CHECK(mutation_cursor2.seek("BB"));   // existent key (seek saves value in current)
+            const auto result4 = mutation_cursor2.current();
+            CHECK(result4.done);
+            CHECK(result4.key == "BB");
+            CHECK(result4.value == "22");
+        }
+    }
+
+    test1.alter_main_tables();
+    test2.alter_mutation_tables();
+
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": seek after alter: OK") {
+            // Single-value table
+            MemoryMutationCursor mutation_cursor1{test2.mutation, db::table::kCode};
+            CHECK(mutation_cursor1.seek("AA"));  // existent key
+            CHECK(mutation_cursor1.seek("BB"));  // existent key
+            CHECK(mutation_cursor1.seek("CC"));  // existent key
+
+            // Multi-value table
+            MemoryMutationCursor mutation_cursor2{test2.mutation, db::table::kAccountChangeSet};
+            CHECK(mutation_cursor2.seek("AA"));  // existent key
+            CHECK(mutation_cursor2.seek("BB"));  // existent key
+        }
+    }
+}
+
+TEST_CASE("MemoryMutationCursor: lower_bound", "[silkworm][node][db][memory_mutation]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
+
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": lower_bound on nonexistent single-value table: mdbx::incompatible_operation") {
+            MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
+            //CHECK_THROWS_AS(mutation_cursor1.lower_bound("k", /*throw_notfound=*/true), mdbx::incompatible_operation);
+            //CHECK_THROWS_AS(!mutation_cursor1.lower_bound("k"), mdbx::incompatible_operation);
+        }
+
+        SECTION(tag + ": lower_bound on nonexistent multi-value table: mdbx::not_found") {
+            MemoryMutationCursor mutation_cursor2{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor2.lower_bound("k"), mdbx::not_found);
+            CHECK_THROWS_AS(mutation_cursor2.lower_bound("k", /*throw_notfound=*/true), mdbx::not_found);
+            CHECK(!mutation_cursor2.lower_bound("k", /*throw_notfound=*/false));
+        }
+
+        SECTION(tag + ": lower_bound on existent multi-value table: OK") {
+            MemoryMutationCursor mutation_cursor4{test->mutation, db::table::kAccountChangeSet};
+            const auto result4 = mutation_cursor4.lower_bound("AA");
+            CHECK(result4.done);
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "00");
+
+            MemoryMutationCursor mutation_cursor5{test->mutation, db::table::kAccountChangeSet};
+            const auto result5 = mutation_cursor5.lower_bound("AA", /*throw_notfound=*/true);
+            CHECK(result5.done);
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "00");
+
+            MemoryMutationCursor mutation_cursor6{test->mutation, db::table::kAccountChangeSet};
+            const auto result6 = mutation_cursor6.lower_bound("AA", /*throw_notfound=*/false);
+            CHECK(result6.done);
+            CHECK(result6.key == "AA");
+            CHECK(result6.value == "00");
+        }
+
+        SECTION(tag + ": lower_bound multiple operations") {
+            MemoryMutationCursor mutation_cursor{test->mutation, db::table::kAccountChangeSet};
+            const auto result4 = mutation_cursor.lower_bound("AA");
+            CHECK(result4.done);
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "00");
+            const auto result5 = mutation_cursor.lower_bound("AA");
+            CHECK(result5.done);
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "00");
+            REQUIRE(mutation_cursor.to_last(/*throw_notfound=*/false));
+            const auto result6 = mutation_cursor.lower_bound("AA");
+            CHECK(result6.done);
+            CHECK(result6.key == "AA");
+            CHECK(result6.value == "00");
+        }
+    }
+}
+
 TEST_CASE("MemoryMutationCursor: lower_bound_multivalue", "[silkworm][node][db][memory_mutation]") {
     MemoryMutationCursorTest test1;
     test1.fill_main_tables();

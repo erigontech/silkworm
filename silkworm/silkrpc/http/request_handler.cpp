@@ -56,9 +56,9 @@ Task<void> RequestHandler::handle(const http::Request& request) {
                 reply.status = http::StatusType::ok;
             } else {
                 const auto request_id = request_json["id"].get<uint32_t>();
-                const auto error = co_await is_request_authorized(request);
-                if (error.has_value()) {
-                    reply.content = make_json_error(request_id, 403, error.value()).dump() + "\n";
+                const auto auth_result = is_request_authorized(request);
+                if (!auth_result) {
+                    reply.content = make_json_error(request_id, 403, auth_result.error()).dump() + "\n";
                     reply.status = http::StatusType::unauthorized;
                 } else {
                     co_await handle_request_and_create_reply(request_json, reply);
@@ -75,9 +75,9 @@ Task<void> RequestHandler::handle(const http::Request& request) {
                     reply.status = http::StatusType::ok;
                 } else {
                     auto request_id = item_json["id"].get<uint32_t>();
-                    const auto error = co_await is_request_authorized(request);
-                    if (error.has_value()) {
-                        reply.content = make_json_error(request_id, 403, error.value()).dump() + "\n";
+                    const auto auth_result = is_request_authorized(request);
+                    if (!auth_result) {
+                        reply.content = make_json_error(request_id, 403, auth_result.error()).dump() + "\n";
                         reply.status = http::StatusType::unauthorized;
                     } else {
                         if (first_element) {
@@ -118,20 +118,23 @@ Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
     // Dispatch JSON handlers in this order: 1) glaze JSON 2) nlohmann JSON 3) JSON streaming
     const auto json_glaze_handler = rpc_api_table_.find_json_glaze_handler(method);
     if (json_glaze_handler) {
+        SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_glaze_handler, request_json, reply);
-        SILK_TRACE << "handle RPC request: " << method;
+        SILK_TRACE << "<-- handle RPC request: " << method;
         co_return;
     }
     const auto json_handler = rpc_api_table_.find_json_handler(method);
     if (json_handler) {
+        SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_handler, request_json, reply);
-        SILK_TRACE << "handle RPC request: " << method;
+        SILK_TRACE << "<-- handle RPC request: " << method;
         co_return;
     }
     const auto stream_handler = rpc_api_table_.find_stream_handler(method);
     if (stream_handler) {
+        SILK_TRACE << "--> handle RPC stream request: " << method;
         co_await handle_request(*stream_handler, request_json);
-        SILK_TRACE << "handle RPC stream request: " << method;
+        SILK_TRACE << "<-- handle RPC stream request: " << method;
         co_return;
     }
 
@@ -201,9 +204,9 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
     co_return;
 }
 
-Task<std::optional<std::string>> RequestHandler::is_request_authorized(const http::Request& request) {
+RequestHandler::AuthorizationResult RequestHandler::is_request_authorized(const http::Request& request) {
     if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
-        co_return std::nullopt;
+        return {};
     }
 
     const auto it = std::find_if(request.headers.begin(), request.headers.end(), [&](const Header& h) {
@@ -211,8 +214,8 @@ Task<std::optional<std::string>> RequestHandler::is_request_authorized(const htt
     });
 
     if (it == request.headers.end()) {
-        SILK_ERROR << "JWT request without Authorization in auth connection";
-        co_return "missing Authorization Header";
+        SILK_ERROR << "JWT request without Authorization field";
+        return tl::make_unexpected("missing Authorization Header");
     }
 
     std::string client_token;
@@ -220,29 +223,29 @@ Task<std::optional<std::string>> RequestHandler::is_request_authorized(const htt
         client_token = it->value.substr(7);
     } else {
         SILK_ERROR << "JWT client request without token";
-        co_return "missing token";
+        return tl::make_unexpected("missing token");
     }
     try {
         // Parse token
         auto decoded_client_token = jwt::decode(client_token);
         if (decoded_client_token.has_issued_at() == 0) {
             SILK_ERROR << "JWT iat (Issued At) not defined";
-            co_return "iat(Issued At) not defined";
+            return tl::make_unexpected("iat(Issued At) not defined");
         }
         // Validate token
         auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
 
-        SILK_TRACE << "jwt client token: " << client_token << " jwt_secret: " << *jwt_secret_;
+        SILK_TRACE << "JWT client token: " << client_token << " secret: " << *jwt_secret_;
         verifier.verify(decoded_client_token);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "JWT invalid token: " << se.what();
-        co_return "invalid token";
+        return tl::make_unexpected("invalid token");
     } catch (const std::exception& se) {
         SILK_ERROR << "JWT invalid token: " << se.what();
-        co_return "invalid token";
+        return tl::make_unexpected("invalid token");
     }
 
-    co_return std::nullopt;
+    return {};
 }
 
 Task<void> RequestHandler::do_write(Reply& reply) {

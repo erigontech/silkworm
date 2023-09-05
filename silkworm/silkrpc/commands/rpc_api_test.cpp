@@ -269,7 +269,7 @@ class RpcApiTestBase : public LocalContextTestBase {
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        static const std::vector<std::string> allowed_origins {};
+        static const std::vector<std::string> allowed_origins{};
         TestRequestHandler handler{socket, rpc_api, rpc_api_table, allowed_origins, ""};
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }

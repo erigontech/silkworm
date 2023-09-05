@@ -244,7 +244,6 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
     RequestHandler_ForTest(boost::asio::ip::tcp::socket& socket,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table,
-                           const std::vector<std::string>& allowed_origins,
                            std::optional<std::string> jwt_secret)
         : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, allowed_origins, std::move(jwt_secret)) {
     }
@@ -252,6 +251,9 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
     Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
     }
+
+  private:
+    static const std::vector<std::string> allowed_origins;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
@@ -269,8 +271,7 @@ class RpcApiTestBase : public LocalContextTestBase {
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        static const std::vector<std::string> allowed_origins{};
-        TestRequestHandler handler{socket, rpc_api, rpc_api_table, allowed_origins, ""};
+        TestRequestHandler handler{socket, rpc_api, rpc_api_table, ""};
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 

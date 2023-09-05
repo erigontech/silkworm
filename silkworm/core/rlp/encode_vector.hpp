@@ -17,37 +17,64 @@
 #pragma once
 
 #include <numeric>
+#include <span>
 #include <vector>
 
 #include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm::rlp {
 
+// std::span to RLP overloads
+
 template <typename T>
-size_t length_items(const std::vector<T>& v) {
-    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [](size_t sum, const T& x) { return sum + length(x); });
+size_t length_items(const std::span<const T>& v) {
+    return std::accumulate(v.begin(), v.end(), size_t{0}, [](size_t sum, const T& x) { return sum + length(x); });
 }
 
 template <typename T>
-size_t length(const std::vector<T>& v) {
+size_t length(const std::span<const T>& v) {
     const size_t payload_length = length_items(v);
     return length_of_length(payload_length) + payload_length;
 }
 
 template <typename T>
-void encode_items(Bytes& to, const std::vector<T>& v) {
+void encode_items(Bytes& to, const std::span<const T>& v) {
     for (const T& x : v) {
         encode(to, x);
     }
 }
 
 template <typename T>
-void encode(Bytes& to, const std::vector<T>& v) {
+void encode(Bytes& to, const std::span<const T>& v) {
     const Header h{.list = true, .payload_length = length_items(v)};
     to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
     encode_header(to, h);
     encode_items(to, v);
 }
+
+// std::vector to RLP overloads
+
+template <typename T>
+size_t length_items(const std::vector<T>& v) {
+    return length_items(std::span<const T>{v.data(), v.size()});
+}
+
+template <typename T>
+size_t length(const std::vector<T>& v) {
+    return length(std::span<const T>{v.data(), v.size()});
+}
+
+template <typename T>
+void encode_items(Bytes& to, const std::vector<T>& v) {
+    encode_items(to, std::span<const T>{v.data(), v.size()});
+}
+
+template <typename T>
+void encode(Bytes& to, const std::vector<T>& v) {
+    encode(to, std::span<const T>{v.data(), v.size()});
+}
+
+// variadic arguments to RLP overloads
 
 template <typename Arg1, typename Arg2>
 size_t length_items(const Arg1& arg1, const Arg2& arg2) {

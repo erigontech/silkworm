@@ -399,9 +399,7 @@ MoveResult MemoryMutationCursor::move(MoveOperation operation, bool throw_notfou
 
     auto db_result = cursor_->move(operation, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
-        auto result = operation == MoveOperation::next ?
-                                                       next_on_db(MoveType::kNext, throw_notfound) :
-                                                       previous_on_db(MoveType::kPrevious, throw_notfound);
+        auto result = operation == MoveOperation::next ? next_on_db(MoveType::kNext, throw_notfound) : previous_on_db(MoveType::kPrevious, throw_notfound);
         std::tie(db_result.done, db_result.key, db_result.value) = std::tuple{result.done, result.key, result.value};
     }
 

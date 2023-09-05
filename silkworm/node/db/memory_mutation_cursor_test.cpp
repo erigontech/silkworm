@@ -741,13 +741,13 @@ TEST_CASE("MemoryMutationCursor: seek", "[silkworm][node][db][memory_mutation]")
         SECTION(tag + ": seek on existent non-empty table: OK") {
             // Single-value table
             MemoryMutationCursor mutation_cursor1{test->mutation, db::table::kCode};
-            CHECK(mutation_cursor1.seek("AA"));   // existent key (seek saves value in current)
+            CHECK(mutation_cursor1.seek("AA"));  // existent key (seek saves value in current)
             const auto result1 = mutation_cursor1.current();
             CHECK(result1.done);
             CHECK(result1.key == "AA");
             CHECK(result1.value == "00");
 
-            CHECK(mutation_cursor1.seek("BB"));   // existent key (seek saves value in current)
+            CHECK(mutation_cursor1.seek("BB"));  // existent key (seek saves value in current)
             const auto result2 = mutation_cursor1.current();
             CHECK(result2.done);
             CHECK(result2.key == "BB");
@@ -757,13 +757,13 @@ TEST_CASE("MemoryMutationCursor: seek", "[silkworm][node][db][memory_mutation]")
 
             // Multi-value table
             MemoryMutationCursor mutation_cursor2{test->mutation, db::table::kAccountChangeSet};
-            CHECK(mutation_cursor2.seek("AA"));   // existent key (seek saves value in current)
+            CHECK(mutation_cursor2.seek("AA"));  // existent key (seek saves value in current)
             const auto result3 = mutation_cursor2.current();
             CHECK(result3.done);
             CHECK(result3.key == "AA");
             CHECK(result3.value == "00");
 
-            CHECK(mutation_cursor2.seek("BB"));   // existent key (seek saves value in current)
+            CHECK(mutation_cursor2.seek("BB"));  // existent key (seek saves value in current)
             const auto result4 = mutation_cursor2.current();
             CHECK(result4.done);
             CHECK(result4.key == "BB");

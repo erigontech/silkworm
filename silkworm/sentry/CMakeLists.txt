@@ -85,6 +85,8 @@ set(LIBS_PRIVATE
     silkworm-buildinfo
     silkworm_sentry_common
     silkworm_sentry_node_db
+    silkworm_sentry_discovery_common
+    silkworm_sentry_discovery_enr
     silkworm_sentry_disc_v4
 )
 if(MSVC)

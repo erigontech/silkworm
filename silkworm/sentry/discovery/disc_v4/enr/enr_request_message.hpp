@@ -16,16 +16,19 @@
 
 #pragma once
 
-#include "enr/message_sender.hpp"
-#include "find/message_sender.hpp"
-#include "ping/message_sender.hpp"
+#include <chrono>
 
-namespace silkworm::sentry::discovery::disc_v4 {
+#include <silkworm/core/common/base.hpp>
 
-struct MessageSender
-    : ping::MessageSender,
-      enr::MessageSender,
-      find::MessageSender {
+namespace silkworm::sentry::discovery::disc_v4::enr {
+
+struct EnrRequestMessage {
+    std::chrono::time_point<std::chrono::system_clock> expiration;
+
+    [[nodiscard]] Bytes rlp_encode() const;
+    [[nodiscard]] static EnrRequestMessage rlp_decode(ByteView data);
+
+    static const uint8_t kId;
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4
+}  // namespace silkworm::sentry::discovery::disc_v4::enr

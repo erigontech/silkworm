@@ -72,7 +72,8 @@ Task<void> FindNodeHandler::handle(
             address = co_await db.find_node_address_v6(node_id);
         if (address) {
             NodeAddress node_address{
-                boost::asio::ip::udp::endpoint(address->ip, address->port_disc),
+                address->ip,
+                address->port_disc,
                 address->port_rlpx,
             };
             node_addresses.insert({node_id, std::move(node_address)});

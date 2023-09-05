@@ -25,6 +25,7 @@
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
+#include "enr/enr_request_handler.hpp"
 #include "find/find_node_handler.hpp"
 #include "find/lookup.hpp"
 #include "message_handler.hpp"
@@ -41,9 +42,11 @@ class DiscoveryImpl : private MessageHandler {
         uint16_t server_port,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::function<discovery::enr::EnrRecord()> node_record,
         node_db::NodeDb& node_db)
         : server_(server_port, std::move(node_key), *this),
           node_url_(std::move(node_url)),
+          node_record_(std::move(node_record)),
           node_db_(node_db),
           discover_more_needed_notifier_(executor) {}
     ~DiscoveryImpl() override = default;
@@ -76,6 +79,22 @@ class DiscoveryImpl : private MessageHandler {
 
     Task<void> on_pong(ping::PongMessage message, EccPublicKey sender_public_key) override {
         on_pong_signal_(std::move(message), std::move(sender_public_key));
+        co_return;
+    }
+
+    Task<void> on_enr_request(enr::EnrRequestMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint, Bytes packet_hash) override {
+        return enr::EnrRequestHandler::handle(
+            std::move(message),
+            std::move(sender_public_key),
+            std::move(sender_endpoint),
+            std::move(packet_hash),
+            node_record_(),
+            server_,
+            node_db_);
+    }
+
+    Task<void> on_enr_response(enr::EnrResponseMessage message) override {
+        on_enr_response_signal_(std::move(message));
         co_return;
     }
 
@@ -122,11 +141,13 @@ class DiscoveryImpl : private MessageHandler {
     }
 
     Server server_;
-    [[maybe_unused]] std::function<EnodeUrl()> node_url_;
-    [[maybe_unused]] node_db::NodeDb& node_db_;
+    std::function<EnodeUrl()> node_url_;
+    std::function<discovery::enr::EnrRecord()> node_record_;
+    node_db::NodeDb& node_db_;
     concurrency::EventNotifier discover_more_needed_notifier_;
     boost::signals2::signal<void(find::NeighborsMessage, EccPublicKey)> on_neighbors_signal_;
     boost::signals2::signal<void(ping::PongMessage, EccPublicKey)> on_pong_signal_;
+    boost::signals2::signal<void(enr::EnrResponseMessage)> on_enr_response_signal_;
 };
 
 Discovery::Discovery(
@@ -134,8 +155,9 @@ Discovery::Discovery(
     uint16_t server_port,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::function<discovery::enr::EnrRecord()> node_record,
     node_db::NodeDb& node_db)
-    : p_impl_(std::make_unique<DiscoveryImpl>(std::move(executor), server_port, std::move(node_key), std::move(node_url), node_db)) {}
+    : p_impl_(std::make_unique<DiscoveryImpl>(std::move(executor), server_port, std::move(node_key), std::move(node_url), std::move(node_record), node_db)) {}
 
 Discovery::~Discovery() {
     log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";

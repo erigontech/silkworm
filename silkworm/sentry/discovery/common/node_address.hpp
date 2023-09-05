@@ -32,6 +32,16 @@ namespace silkworm::sentry::discovery {
 struct NodeAddress {
     boost::asio::ip::udp::endpoint endpoint;
     uint16_t port_rlpx{};
+
+    NodeAddress() = default;
+
+    NodeAddress(boost::asio::ip::udp::endpoint endpoint1, uint16_t port_rlpx1)
+        : endpoint(std::move(endpoint1)),
+          port_rlpx(port_rlpx1) {}
+
+    NodeAddress(const boost::asio::ip::address& ip, uint16_t port_disc, uint16_t port_rlpx1)
+        : endpoint(ip, port_disc),
+          port_rlpx(port_rlpx1) {}
 };
 
 //! RLP length

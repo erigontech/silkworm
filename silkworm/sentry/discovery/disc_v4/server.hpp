@@ -44,6 +44,8 @@ class Server : public MessageSender {
     Task<void> send_pong(ping::PongMessage message, boost::asio::ip::udp::endpoint recipient) override;
     Task<void> send_find_node(find::FindNodeMessage message, boost::asio::ip::udp::endpoint recipient) override;
     Task<void> send_neighbors(find::NeighborsMessage message, boost::asio::ip::udp::endpoint recipient) override;
+    Task<void> send_enr_request(enr::EnrRequestMessage message, boost::asio::ip::udp::endpoint recipient) override;
+    Task<void> send_enr_response(enr::EnrResponseMessage message, boost::asio::ip::udp::endpoint recipient) override;
 
   private:
     std::unique_ptr<ServerImpl> p_impl_;

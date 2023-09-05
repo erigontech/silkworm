@@ -98,7 +98,8 @@ static std::optional<NodeAddress> try_decode_node_address(
     }
 
     return NodeAddress{
-        boost::asio::ip::udp::endpoint(*ip, port_disc),
+        *ip,
+        port_disc,
         port_rlpx,
     };
 }

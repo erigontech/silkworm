@@ -289,6 +289,9 @@ Task<void> RequestHandler::write_headers() {
 }
 
 void RequestHandler::set_cors(std::vector<Header>& headers) {
+    if (allowed_origins_.size() == 0) {
+        return;
+    }
     if (allowed_origins_.at(0) == "*") {
         headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
     } else {

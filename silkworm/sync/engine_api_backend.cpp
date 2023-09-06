@@ -16,26 +16,30 @@
 
 #include "engine_api_backend.hpp"
 
+#include <chrono>
+
+using namespace std::chrono_literals;
+
 namespace silkworm::chainsync {
 
 Task<rpc::PayloadStatus> EngineApiBackend::engine_new_payload(const rpc::ExecutionPayload& payload) {
-    co_return co_await pos_sync_.new_payload(payload);
+    co_return co_await pos_sync_.new_payload(payload, 8s);
 }
 
 Task<rpc::ExecutionPayloadAndValue> EngineApiBackend::engine_get_payload(uint64_t payload_id) {
-    co_return co_await pos_sync_.get_payload(payload_id);
+    co_return co_await pos_sync_.get_payload(payload_id, 1s);
 }
 
 Task<rpc::ForkChoiceUpdatedReply> EngineApiBackend::engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) {
-    co_return co_await pos_sync_.fork_choice_update(fcu_request.fork_choice_state, fcu_request.payload_attributes);
+    co_return co_await pos_sync_.fork_choice_update(fcu_request.fork_choice_state, fcu_request.payload_attributes, 8s);
 }
 
 Task<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
-    co_return co_await pos_sync_.get_payload_bodies_by_hash(block_hashes);
+    co_return co_await pos_sync_.get_payload_bodies_by_hash(block_hashes, 10s);
 }
 
 Task<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
-    co_return co_await pos_sync_.get_payload_bodies_by_range(start, count);
+    co_return co_await pos_sync_.get_payload_bodies_by_range(start, count, 10s);
 }
 
 Task<evmc::address> EngineApiBackend::etherbase() {

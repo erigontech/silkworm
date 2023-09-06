@@ -22,6 +22,7 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/test/context.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -45,6 +46,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     using namespace std::chrono_literals;
     using intx::operator""_u256;
 
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     context.add_genesis_data();
 

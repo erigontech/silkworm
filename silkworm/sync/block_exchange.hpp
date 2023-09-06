@@ -33,7 +33,7 @@ namespace silkworm {
 class SentryClient;
 
 //! \brief Implement the logic needed to download headers and bodies
-class BlockExchange final : public ActiveComponent {
+class BlockExchange : public ActiveComponent {
   public:
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     ~BlockExchange() override;

@@ -59,7 +59,7 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
     return (requested_bodies + kMaxBlocksPerMessage - 1) / kMaxBlocksPerMessage;
 }
 
-Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
+Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId& peer) {
     Penalty penalty = NoPenalty;
     BlockNum start_block = std::numeric_limits<BlockNum>::max();
     size_t count = 0;
@@ -99,6 +99,9 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
         }
 
         BodyRequest& request = exact_request->second;
+        if (!body.withdrawals) {
+            SILK_WARN << "BodySequence: body " << request.block_height << " w/o withdrawals received from peer " << to_hex(human_readable_id(peer));
+        }
         if (!request.ready) {
             request.body = std::move(body);
             request.ready = true;

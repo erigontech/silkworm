@@ -16,6 +16,7 @@
 
 find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(GTest REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -57,7 +58,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sync_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2)
+  target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2 GTest::gmock)
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)
   find_package(CLI11 REQUIRED)

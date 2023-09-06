@@ -43,11 +43,11 @@ class PoSSync : public ChainSync {
     Task<void> download_blocks(); /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    Task<rpc::PayloadStatus> new_payload(const rpc::ExecutionPayload&);
-    Task<rpc::ForkChoiceUpdatedReply> fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&);
-    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId);
-    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes);
-    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count);
+    Task<rpc::PayloadStatus> new_payload(const rpc::ExecutionPayload&, std::chrono::milliseconds timeout);
+    Task<rpc::ForkChoiceUpdatedReply> fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&, std::chrono::milliseconds timeout);
+    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId, std::chrono::milliseconds timeout);
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes, std::chrono::milliseconds timeout);
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds timeout);
 
   private:
     static std::shared_ptr<Block> make_execution_block(const rpc::ExecutionPayload& payload);

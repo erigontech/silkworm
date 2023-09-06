@@ -95,7 +95,8 @@ void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& setting
         ->description("JWT secret file to ensure safe connection between CL and EL as file path")
         ->capture_default_str();
 
-    cli.add_option("--http.corsdomain", settings.cors_domain, "Comma separated list of domains from which to accept cross origin requests (browser enforced)")
+    cli.add_option("--http.cors.domain", settings.cors_domain)
+        ->description("Comma separated list of domains from which to accept cross origin requests (browser enforced)")
         ->delimiter(',')
         ->required(false);
 

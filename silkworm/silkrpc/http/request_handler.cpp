@@ -25,6 +25,7 @@
 #include <iostream>
 #include <vector>
 
+#include <absl/strings/str_join.h>
 #include <boost/asio/write.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
@@ -248,11 +249,14 @@ RequestHandler::AuthorizationResult RequestHandler::is_request_authorized(const 
     return {};
 }
 
+//! The number of HTTP headers added when Cross-Origin Resource Sharing (CORS) is enabled.
+static constexpr size_t kCorsNumHeaders{4};
+
 Task<void> RequestHandler::do_write(Reply& reply) {
     try {
         SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
 
-        reply.headers.reserve(2);
+        reply.headers.reserve(allowed_origins_.empty() ? 2 : 2 + kCorsNumHeaders);
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
         reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
 
@@ -270,7 +274,7 @@ Task<void> RequestHandler::do_write(Reply& reply) {
 Task<void> RequestHandler::write_headers() {
     try {
         std::vector<http::Header> headers;
-        headers.reserve(2);
+        headers.reserve(allowed_origins_.empty() ? 2 : 2 + kCorsNumHeaders);
         headers.emplace_back(http::Header{"Content-Type", "application/json"});
         headers.emplace_back(http::Header{"Transfer-Encoding", "chunked"});
 
@@ -289,20 +293,15 @@ Task<void> RequestHandler::write_headers() {
 }
 
 void RequestHandler::set_cors(std::vector<Header>& headers) {
-    if (allowed_origins_.size() == 0) {
+    if (allowed_origins_.empty()) {
         return;
     }
+
     if (allowed_origins_.at(0) == "*") {
         headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
     } else {
-        std::string allowed_origins;
-        for (auto& origin : allowed_origins_) {
-            allowed_origins += origin + ",";
-        }
-        allowed_origins.pop_back();
-        headers.emplace_back(http::Header{"Access-Control-Allow-Origin", allowed_origins});
+        headers.emplace_back(http::Header{"Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ",")});
     }
-
     headers.emplace_back(http::Header{"Access-Control-Allow-Methods", "GET, POST"});
     headers.emplace_back(http::Header{"Access-Control-Allow-Headers", "*"});
     headers.emplace_back(http::Header{"Access-Control-Max-Age", "600"});

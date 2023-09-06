@@ -341,7 +341,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
         const auto fcu_application = co_await (
             exec_engine_.update_fork_choice(state.head_block_hash, finalized_block_hash) || concurrency::timeout(timeout));
         ensure(std::holds_alternative<ForkChoiceApplication>(fcu_application), "PoSSync: unexpected awaitable operators outcome");
-        const auto application{std::get<ForkChoiceApplication>(fcu_application)};
+        auto application{std::get<ForkChoiceApplication>(fcu_application)};
         log::Info() << "PoSSync: fork_choice_update " << (application.success ? "OK" : "KO")
                     << " latest_valid_hash=" << (application.success ? to_hex(state.head_block_hash) : application.current_head.to_hex())
                     << " current_head=" << application.current_head << " current_height=" << application.current_height;

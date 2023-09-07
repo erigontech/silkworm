@@ -16,20 +16,26 @@
 
 #pragma once
 
-#include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/protocol/base_rule_set.hpp>
 
 namespace silkworm::protocol {
 
 // Warning: most Clique (EIP-225) logic is not implemented yet.
 // This rule set is just a dummy!
-class CliqueRuleSet : public EthashRuleSet {
+class CliqueRuleSet : public BaseRuleSet {
   public:
-    explicit CliqueRuleSet(const ChainConfig& chain_config) : EthashRuleSet(chain_config) {}
+    explicit CliqueRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, false) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) final;
 
+    void initialize(EVM&) final {}
+
+    void finalize(IntraBlockState&, const Block&) final {}
+
     evmc::address get_beneficiary(const BlockHeader& header) final;
+
+    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) final { return 1; }
 };
 
 }  // namespace silkworm::protocol

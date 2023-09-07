@@ -326,4 +326,8 @@ roaring::Roaring64Map parse(const ByteView data) {
     return parse_impl<roaring::Roaring64Map>(data);
 }
 
+roaring::Roaring parse32(const mdbx::slice& data) {
+    return parse_impl<roaring::Roaring>(data);
+}
+
 }  // namespace silkworm::db::bitmap

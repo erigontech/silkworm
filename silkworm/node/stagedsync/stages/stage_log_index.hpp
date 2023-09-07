@@ -18,8 +18,6 @@
 
 #include <stdexcept>
 
-#include <cbor/cbor.h>
-
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
@@ -62,32 +60,6 @@ class LogIndex : public Stage {
         std::map<Bytes, bool>& topics);
 
     void reset_log_progress();  // Clears out all logging vars
-
-    using cbor_function = std::function<void(unsigned char*, int)>;
-    class CborListener : public cbor::listener {
-      public:
-        explicit CborListener(cbor_function& on_bytes_function) : on_bytes_function_{on_bytes_function} {};
-
-        void on_integer(int) override {}
-        void on_bytes(unsigned char* data, int size) override { on_bytes_function_(data, size); };
-        void on_string(std::string&) override {}
-        void on_array(int) override {}
-        void on_map(int) override {}
-        void on_tag(unsigned int) override {}
-        void on_special(unsigned int) override {}
-        void on_bool(bool) override {}
-        void on_null() override {}
-        void on_undefined() override {}
-        void on_error(const char*) override { throw std::runtime_error("Unexpected CBOR decoding error"); }
-        void on_extra_integer(unsigned long long, int) override {}
-        void on_extra_tag(unsigned long long) override {}
-        void on_extra_special(unsigned long long) override {}
-        void on_double(double) override {}
-        void on_float32(float) override {}
-
-      private:
-        cbor_function& on_bytes_function_;
-    };
 };
 
 }  // namespace silkworm::stagedsync

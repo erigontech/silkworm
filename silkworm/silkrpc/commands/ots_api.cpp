@@ -52,7 +52,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
-    const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
+    const auto block_id = params[1].is_string() ? params[1].get<std::string>() : to_quantity(params[1].get<uint64_t>());
 
     SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
 

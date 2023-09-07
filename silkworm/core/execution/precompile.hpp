@@ -86,17 +86,7 @@ inline constexpr std::optional<SupportedContract> kContracts[]{
     SupportedContract{{bn_mul_gas, bn_mul_run}, EVMC_BYZANTIUM},                   // 0x07
     SupportedContract{{snarkv_gas, snarkv_run}, EVMC_BYZANTIUM},                   // 0x08
     SupportedContract{{blake2_f_gas, blake2_f_run}, EVMC_ISTANBUL},                // 0x09
-    std::nullopt,                                                                  // 0x0a
-    std::nullopt,                                                                  // 0x0b
-    std::nullopt,                                                                  // 0x0c
-    std::nullopt,                                                                  // 0x0d
-    std::nullopt,                                                                  // 0x0e
-    std::nullopt,                                                                  // 0x0f
-    std::nullopt,                                                                  // 0x10
-    std::nullopt,                                                                  // 0x11
-    std::nullopt,                                                                  // 0x12
-    std::nullopt,                                                                  // 0x13
-    SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x14
+    SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x0a
 };
 
 [[nodiscard]] bool is_precompile(const evmc::address&, evmc_revision) noexcept;

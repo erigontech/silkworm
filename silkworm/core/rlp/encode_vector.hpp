@@ -112,4 +112,53 @@ void encode(Bytes& to, const Arg1& arg1, const Arg2& arg2, const Args&... args) 
     encode_items(to, arg1, arg2, args...);
 }
 
+// RlpBytes to RLP overloads
+
+/**
+ * RlpBytes represents a raw RLP-encoded list item.
+ * It is useful when RLP structure has a dynamic list with elements of different types.
+ * Each item can be encoded separately and then assembled using the methods below.
+ */
+struct RlpBytes {
+    Bytes data;
+    explicit RlpBytes(Bytes data1) : data(std::move(data1)) {}
+};
+
+//! see RlpBytes
+struct RlpByteView {
+    const ByteView data;
+    explicit RlpByteView(ByteView data1) : data(data1) {}
+};
+
+template <>
+inline void encode(Bytes& to, const std::span<const RlpByteView>& v) {
+    Header header{true, 0};
+    for (const auto& item : v)
+        header.payload_length += item.data.size();
+    to.reserve(to.size() + length_of_length(header.payload_length) + header.payload_length);
+
+    encode_header(to, header);
+    for (const auto& item : v)
+        to.append(item.data);
+}
+
+template <>
+inline void encode(Bytes& to, const std::vector<RlpByteView>& v) {
+    encode(to, std::span<const RlpByteView>{v.data(), v.size()});
+}
+
+template <>
+inline void encode(Bytes& to, const std::span<const RlpBytes>& v) {
+    std::vector<RlpByteView> views;
+    views.reserve(v.size());
+    for (const auto& item : v)
+        views.emplace_back(item.data);
+    encode(to, views);
+}
+
+template <>
+inline void encode(Bytes& to, const std::vector<RlpBytes>& v) {
+    encode(to, std::span<const RlpBytes>{v.data(), v.size()});
+}
+
 }  // namespace silkworm::rlp

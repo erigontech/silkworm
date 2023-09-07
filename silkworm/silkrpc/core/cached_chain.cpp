@@ -35,11 +35,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, con
     if (!block_found) {
         co_return nullptr;
     }
-    block_with_hash->hash = block_with_hash->block.header.hash();
+    block_with_hash->hash = *block_hash;
     if (!block_with_hash->block.transactions.empty()) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
-        cache.insert(*block_hash, block_with_hash);
+        cache.insert(std::move(*block_hash), block_with_hash);
     }
     co_return block_with_hash;
 }
@@ -58,11 +58,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     if (!block_found) {
         co_return nullptr;
     }
-    block_with_hash->hash = block_with_hash->block.header.hash();
+    block_with_hash->hash = block_hash;
     if (!block_with_hash->block.transactions.empty()) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
-        cache.insert(block_hash, block_with_hash);
+        cache.insert(std::move(block_hash), block_with_hash);
     }
     co_return block_with_hash;
 }

@@ -219,6 +219,8 @@ Daemon::Daemon(DaemonSettings settings,
 
     if (snapshot_repository_) {
         snapshot_repository_->reopen_folder();
+        SILK_INFO << "Total restored Snapshots: " << snapshot_repository_->header_snapshots_count() + snapshot_repository_->body_snapshots_count() + snapshot_repository_->tx_snapshots_count();
+
         db::DataModel::set_snapshot_repository(snapshot_repository_.get());
     }
 

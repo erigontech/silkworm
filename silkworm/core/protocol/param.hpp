@@ -61,11 +61,11 @@ inline constexpr uint64_t kElasticityMultiplier{2};
 
 // EIP-4844: Shard Blob Transactions
 inline constexpr uint8_t kBlobCommitmentVersionKzg{1};
-inline constexpr uint64_t kMaxDataGasPerBlock{1u << 19};
-inline constexpr uint64_t kTargetDataGasPerBlock{1u << 18};
 inline constexpr uint64_t kDataGasPerBlob{1u << 17};
+inline constexpr uint64_t kTargetDataGasPerBlock{3 * kDataGasPerBlob};
+inline constexpr uint64_t kMaxDataGasPerBlock{6 * kDataGasPerBlob};
 inline constexpr uint64_t kMinDataGasPrice{1};
-inline constexpr uint64_t kDataGasPriceUpdateFraction{2225652};
+inline constexpr uint64_t kDataGasPriceUpdateFraction{3338477};
 
 // EIP-4788: Beacon block root in the EVM
 inline constexpr uint64_t kSystemCallGasLimit{30'000'000};

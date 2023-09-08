@@ -26,7 +26,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/etl/collector.hpp>
 
 #include "../common/common.hpp"
 
@@ -64,7 +63,6 @@ int main(int argc, char* argv[]) {
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
     db::ROTxnManaged txn{env};

@@ -122,4 +122,7 @@ roaring::Roaring64Map parse(const mdbx::slice& data);
 //! \brief Parse 64-bit roaring bitmap from ByteView
 roaring::Roaring64Map parse(const ByteView data);
 
+//! \brief Parse 32-bit roaring bitmap from MDBX slice
+roaring::Roaring parse32(const mdbx::slice& data);
+
 }  // namespace silkworm::db::bitmap

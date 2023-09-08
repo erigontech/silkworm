@@ -1,10 +1,50 @@
-# Silkworm tools
+# Silkworm development tools
+
+## Check Log Indices
+
+### Overview
+
+Silkworm maintains transaction log address/topic indices in MDBX database. Such indices are generated at runtime by processing
+transaction logs.
+
+### The `check_log_indices` tool
+
+The `check_log_indices` tool is a command-line utility to check the consistency and integrity of transaction log indices.
+
+#### Synopsis
+
+#### Examples
+
+Check only log address index from block 0 up to block 2'000'000
+
+```
+cmd/dev/check_log_indices --to 2000000 --index address
+```
+
+Check only log topic index for block 2'000'000
+
+```
+cmd/dev/check_log_indices --from 2000000 --to 2000000 --index topic
+```
+
+Check both log address and topic indices for block 17'500'000
+
+```
+cmd/dev/check_log_indices --from 17500000 --to 17500000
+```
+
+Check both log address and topic indices from block 17'000'000 up to the tip (beware: long-running)
+
+```
+cmd/dev/check_log_indices --from 17000000
+```
 
 ## Snapshots
 
 ### Overview
 
-Historical data are stored in `snapshots` (immutable .seg files) seeded/downloaded by [BitTorrent](https://en.wikipedia.org/wiki/BitTorrent) protocol.
+Silkworm stores historical chain data in `snapshots` (immutable .seg files) which maintain binary compatibility with Erigon ones
+and can be seeded/downloaded by [BitTorrent](https://en.wikipedia.org/wiki/BitTorrent) protocol.
 
 Each `snapshot` contains just one type of data (e.g. block headers, block bodies, block transactions) encoded with specific format.
 
@@ -15,7 +55,7 @@ A `magnet link` is a simple text link that includes all the necessary informatio
 
 ### The `snapshots` tool
 
-The `snapshots` tool is a collection of small utilities and benchmark tests for working with snapshot files.
+The `snapshots` tool is a collection of small utilities and benchmark tests for working with Silkworm snapshot files.
 
 #### Synopsis
 
@@ -124,4 +164,42 @@ Search transaction by hash or by progressive identifier in one snapshot
 ```
 cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
 cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --number 7341272
+```
+
+## Database Toolbox
+
+### Overview
+
+Silkworm keeps recent chain data in MDBX database for faster access.
+
+### The `toolbox` tool
+
+The `toolbox` tool is a collection of utilities to perform operations on Silkworm MDBX database.
+
+#### Synopsis
+
+#### Examples
+
+Dump the database table layout and stats
+
+```
+cmd/dev/toolbox --datadir ~/Library/Silkworm/ tables
+```
+
+Dump the progress of sync stages (i.e. content of SyncStage table)
+
+```
+cmd/dev/toolbox --datadir ~/Library/Silkworm/ stages
+```
+
+Clear content (i.e. delete all the rows) in LogAddressIndex and LogTopicIndex tables
+
+```
+cmd/dev/toolbox --datadir ~/Library/Silkworm/ --exclusive clear --names LogAddressIndex LogTopicIndex
+```
+
+Reset the LogIndex stage progress to zero
+
+```
+cmd/dev/toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --height 0
 ```

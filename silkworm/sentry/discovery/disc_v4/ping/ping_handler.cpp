@@ -30,6 +30,7 @@ Task<void> PingHandler::handle(
     PingMessage message,
     boost::asio::ip::udp::endpoint sender_endpoint,
     Bytes ping_packet_hash,
+    uint64_t local_enr_seq_num,
     MessageSender& sender) {
     if (is_expired_message_expiration(message.expiration)) {
         co_return;
@@ -40,6 +41,7 @@ Task<void> PingHandler::handle(
         recipient,
         ping_packet_hash,
         make_message_expiration(),
+        local_enr_seq_num,
     };
 
     try {

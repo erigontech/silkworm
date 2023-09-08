@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 #include <boost/asio/ip/udp.hpp>
 
@@ -31,6 +32,7 @@ struct PingMessage {
     uint16_t sender_port_rlpx{};
     boost::asio::ip::udp::endpoint recipient_endpoint;
     std::chrono::time_point<std::chrono::system_clock> expiration;
+    std::optional<uint64_t> enr_seq_num;
 
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static PingMessage rlp_decode(ByteView data);

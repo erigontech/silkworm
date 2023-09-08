@@ -64,6 +64,10 @@ class DiscoveryImpl : private MessageHandler {
     }
 
   private:
+    uint64_t local_enr_seq_num() const {
+        return this->node_record_().seq_num;
+    }
+
     Task<void> on_find_node(find::FindNodeMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint) override {
         return find::FindNodeHandler::handle(std::move(message), std::move(sender_public_key), std::move(sender_endpoint), server_, node_db_);
     }
@@ -74,7 +78,7 @@ class DiscoveryImpl : private MessageHandler {
     }
 
     Task<void> on_ping(ping::PingMessage message, boost::asio::ip::udp::endpoint sender_endpoint, Bytes ping_packet_hash) override {
-        return ping::PingHandler::handle(std::move(message), std::move(sender_endpoint), std::move(ping_packet_hash), server_);
+        return ping::PingHandler::handle(std::move(message), std::move(sender_endpoint), std::move(ping_packet_hash), local_enr_seq_num(), server_);
     }
 
     Task<void> on_pong(ping::PongMessage message, EccPublicKey sender_public_key) override {
@@ -128,7 +132,7 @@ class DiscoveryImpl : private MessageHandler {
 
             for (auto& node_id : node_ids) {
                 try {
-                    co_await ping::ping_check(node_id, std::nullopt, local_node_url, server_, on_pong_signal_, node_db_);
+                    co_await ping::ping_check(node_id, std::nullopt, local_node_url, local_enr_seq_num(), server_, on_pong_signal_, node_db_);
                 } catch (const boost::system::system_error& ex) {
                     if (ex.code() == boost::system::errc::operation_canceled)
                         throw;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <optional>
 
 #include <boost/asio/ip/udp.hpp>
 
@@ -29,6 +30,7 @@ struct PongMessage {
     boost::asio::ip::udp::endpoint recipient_endpoint;
     Bytes ping_hash;
     std::chrono::time_point<std::chrono::system_clock> expiration;
+    std::optional<uint64_t> enr_seq_num;
 
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static PongMessage rlp_decode(ByteView data);

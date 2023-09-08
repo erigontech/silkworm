@@ -33,6 +33,7 @@ struct PingHandler {
         PingMessage message,
         boost::asio::ip::udp::endpoint sender_endpoint,
         Bytes ping_packet_hash,
+        uint64_t local_enr_seq_num,
         MessageSender& sender);
 };
 

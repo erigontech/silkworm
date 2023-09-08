@@ -6,7 +6,6 @@
       "method": "erigon_getLatestLogs",
       "params": [
         {
-          "TAIL": "tail",
           "fromBlock": 5415091,
           "toBlock": 5415092,
           "topics": [
@@ -15,7 +14,6 @@
           ]
         },
         {
-          "TAIL": "tail"
         }
       ]
     },

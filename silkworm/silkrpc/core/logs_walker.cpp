@@ -95,9 +95,12 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     }
 
     std::vector<BlockNum> matching_block_numbers;
+    matching_block_numbers.reserve(block_numbers.cardinality());
     for (const auto& block_to_match : block_numbers) {
-        auto pos = desc_order ? matching_block_numbers.begin() : matching_block_numbers.end();
-        matching_block_numbers.insert(pos, block_to_match);
+        matching_block_numbers.push_back(block_to_match);
+    }
+    if (desc_order) {
+        std::reverse(matching_block_numbers.begin(), matching_block_numbers.end());
     }
 
     std::uint64_t logCount{0};
@@ -115,7 +118,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
 
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);
-        SILK_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
+        SILK_DEBUG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
         co_await tx_database_.for_prefix(db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
             chunk_logs.clear();
             const bool decoding_ok{cbor_decode(v, chunk_logs)};
@@ -125,7 +128,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             for (auto& log : chunk_logs) {
                 log.index = log_index++;
             }
-            SILK_TRACE << "chunk_logs.size(): " << chunk_logs.size();
+            SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
 
             filtered_chunk_logs.clear();
             filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
@@ -142,7 +145,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             }
             return options.log_count == 0 || options.log_count > logCount;
         });
-        SILK_TRACE << "filtered_block_logs.size(): " << filtered_block_logs.size();
+        SILK_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size();
 
         if (!filtered_block_logs.empty()) {
             const auto block_with_hash = co_await core::read_block_by_number(block_cache_, *chain_storage, block_to_match);

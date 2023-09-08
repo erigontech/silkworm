@@ -6,13 +6,11 @@
       "method": "erigon_getLatestLogs",
       "params": [
         {
-          "TAIL": "tail",
           "address": "0x89a284bd0f69a20778f9beba68a9b480957d7305",
           "fromBlock": 5415091,
           "toBlock": 5415092
         },
         {
-          "TAIL": "tail"
         }
       ]
     },

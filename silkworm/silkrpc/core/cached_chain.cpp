@@ -22,7 +22,7 @@
 namespace silkworm::rpc::core {
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, BlockNum block_number) {
-    auto block_hash = co_await storage.read_canonical_hash(block_number);
+    const auto block_hash = co_await storage.read_canonical_hash(block_number);
     if (!block_hash) {
         co_return nullptr;
     }
@@ -84,7 +84,7 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& 
     if (!block_number) {
         co_return nullptr;
     }
-    auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
+    const auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
     if (!block_by_hash) {
         co_return nullptr;
     }

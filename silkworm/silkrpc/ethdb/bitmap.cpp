@@ -88,7 +88,7 @@ Task<Roaring> from_topics(
     for (const auto& subtopics : topics) {
         SILK_DEBUG << "#subtopics: " << subtopics.size();
         roaring::Roaring subtopic_bitmap;
-        for (auto topic : subtopics) {
+        for (auto& topic : subtopics) {
             silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
             SILK_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic);
             auto bitmap = co_await ethdb::bitmap::get(db_reader, table, topic_key, gsl::narrow<uint32_t>(start), gsl::narrow<uint32_t>(end));
@@ -116,7 +116,7 @@ Task<Roaring> from_addresses(
     uint64_t end) {
     SILK_TRACE << "#addresses: " << addresses.size() << " start: " << start << " end: " << end;
     roaring::Roaring result_bitmap;
-    for (auto address : addresses) {
+    for (auto& address : addresses) {
         silkworm::Bytes address_key{std::begin(address.bytes), std::end(address.bytes)};
         auto bitmap = co_await ethdb::bitmap::get(db_reader, table, address_key, gsl::narrow<uint32_t>(start), gsl::narrow<uint32_t>(end));
         SILK_TRACE << "bitmap: " << bitmap.toString();

@@ -455,7 +455,7 @@ int get_stack_count(std::uint8_t op_code) {
 }
 
 void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<std::string>& trace_stack) {
-    int top = get_stack_count(op_code);
+    const int top = get_stack_count(op_code);
     trace_stack.reserve(top > 0 ? static_cast<std::size_t>(top) : 0);
     for (int i = top - 1; i >= 0; i--) {
         const auto str = intx::to_string(stack[-i], 16);
@@ -472,7 +472,7 @@ void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace
         }
         tm.data = "0x";
         const auto data = memory.data();
-        auto start = tm.offset;
+        const auto start = tm.offset;
         for (uint64_t idx{0}; idx < tm.len; idx++) {
             std::string entry{evmc::hex({data + start + idx, 1})};
             tm.data.append(entry);
@@ -550,7 +550,7 @@ std::string get_op_name(const char* const* names, std::uint8_t opcode) {
 
 static const char* PADDING = "0x0000000000000000000000000000000000000000000000000000000000000000";
 std::string to_string(intx::uint256 value) {
-    auto out = intx::to_string(value, 16);
+    const auto out = intx::to_string(value, 16);
     std::string padding = std::string{PADDING};
     return padding.substr(0, padding.size() - out.size()) + out;
 }

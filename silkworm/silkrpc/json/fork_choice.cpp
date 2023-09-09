@@ -41,8 +41,8 @@ void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state) {
 void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply) {
     nlohmann::json json_payload_status = forkchoice_updated_reply.payload_status;
     json["payloadStatus"] = json_payload_status;
-    if (forkchoice_updated_reply.payload_id != std::nullopt) {
-        json["payloadId"] = to_quantity(forkchoice_updated_reply.payload_id.value());
+    if (forkchoice_updated_reply.payload_id) {
+        json["payloadId"] = to_hex(forkchoice_updated_reply.payload_id.value());
     }
 }
 

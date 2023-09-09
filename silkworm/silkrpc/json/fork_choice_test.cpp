@@ -51,4 +51,16 @@ TEST_CASE("deserialize ForkChoiceStateV1", "[silkworm::json][from_json]") {
     CHECK(forkchoice_state.finalized_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
 }
 
+TEST_CASE("serialize ForkChoiceUpdatedReply", "[silkworm::json][to_json]") {
+    ForkChoiceUpdatedReply fcu_reply{
+        .payload_status = PayloadStatus::Accepted,
+        .payload_id = 0};
+
+    nlohmann::json j = fcu_reply;
+    CHECK(j == R"({
+        "payloadStatus":{"status":"ACCEPTED"},
+        "payloadId":"0x0000000000000000"
+    })"_json);
+}
+
 }  // namespace silkworm::rpc

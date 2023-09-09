@@ -43,12 +43,12 @@ Task<void> RemoteTransaction::close() {
 
 Task<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
     if (is_cursor_sorted) {
-        auto cursor_it = dup_cursors_.find(table);
+        const auto cursor_it = dup_cursors_.find(table);
         if (cursor_it != dup_cursors_.end()) {
             co_return cursor_it->second;
         }
     } else {
-        auto cursor_it = cursors_.find(table);
+        const auto cursor_it = cursors_.find(table);
         if (cursor_it != cursors_.end()) {
             co_return cursor_it->second;
         }

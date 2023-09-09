@@ -57,7 +57,7 @@ void from_json(const nlohmann::json& json, Log& log) {
         }
         std::vector<evmc::bytes32> topics{};
         topics.reserve(json[1].size());
-        for (auto topic : json[1]) {
+        for (auto& topic : json[1]) {
             auto topic_bytes = topic.get_binary();
             topics.push_back(silkworm::to_bytes32(silkworm::Bytes{topic_bytes.begin(), topic_bytes.end()}));
         }

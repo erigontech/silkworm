@@ -593,7 +593,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
-    auto transaction_hash = params[0].get<evmc::bytes32>();
+    const auto transaction_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "transaction_hash: " << transaction_hash;
 
     auto tx = co_await database_->begin();

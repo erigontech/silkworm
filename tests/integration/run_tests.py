@@ -16,88 +16,90 @@ import time
 import pytz
 import jwt
 
-SILK="silk"
-RPCDAEMON="rpcdaemon"
-INFURA="infura"
+SILK = "silk"
+RPCDAEMON = "rpcdaemon"
+INFURA = "infura"
 
 tests_with_big_json = [
-   "debug_traceBlockByHash/test_02.tar",
-   "debug_traceBlockByHash/test_03.tar",
-   "debug_traceBlockByHash/test_04.tar",
-   "debug_traceBlockByNumber/test_02.tar",
-   "trace_replayBlockTransactions/test_01.tar",
-   "trace_replayBlockTransactions/test_02.tar",
-   "trace_replayTransaction/test_16.tar",
-   "trace_replayTransaction/test_23.tar"
+    "debug_traceBlockByHash/test_02.tar",
+    "debug_traceBlockByHash/test_03.tar",
+    "debug_traceBlockByHash/test_04.tar",
+    "debug_traceBlockByNumber/test_02.tar",
+    "trace_replayBlockTransactions/test_01.tar",
+    "trace_replayBlockTransactions/test_02.tar",
+    "trace_replayTransaction/test_16.tar",
+    "trace_replayTransaction/test_23.tar"
 ]
 
 api_not_compared = [
-   "trace_rawTransaction",
-   "parity_getBlockReceipts",
-   "erigon_watchTheBurn",
-   "txpool_content"
+    "trace_rawTransaction",
+    "parity_getBlockReceipts",
+    "erigon_watchTheBurn",
+    "txpool_content"
 ]
 
 tests_not_compared = [
-   "debug_accountAt/test_04.json",
-   "debug_accountAt/test_05.json",
-   "debug_accountAt/test_06.json",
-   "debug_accountAt/test_07.json",
-   "debug_accountAt/test_10.json",
-   "debug_accountAt/test_11.json",
-   "debug_traceBlockByHash/test_02.tar",
-   "debug_traceBlockByHash/test_03.tar",
-   "debug_traceBlockByHash/test_04.tar",
-   "debug_traceBlockByNumber/test_02.tar",
-   "debug_traceCall/test_10.json",
-   "debug_traceCall/test_14.json",
-   "debug_traceCall/test_17.json",
-   "eth_callMany/test_01.json",
-   "eth_callMany/test_02.json",
-   "eth_callMany/test_04.json",
-   "eth_callMany/test_05.json",
-   "eth_callMany/test_06.json",
-   "eth_callMany/test_09.json",
-   "eth_callMany/test_10.json",
-   "eth_maxPriorityFeePerGas/test_1.json",
-   "eth_feeHistory/test_1.json",
-   "engine_getPayloadBodiesByHashV1/test_1.json",
-   "engine_getPayloadBodiesByRangeV1/test_1.json"
+    "debug_accountAt/test_04.json",
+    "debug_accountAt/test_05.json",
+    "debug_accountAt/test_06.json",
+    "debug_accountAt/test_07.json",
+    "debug_accountAt/test_10.json",
+    "debug_accountAt/test_11.json",
+    "debug_traceBlockByHash/test_02.tar",
+    "debug_traceBlockByHash/test_03.tar",
+    "debug_traceBlockByHash/test_04.tar",
+    "debug_traceBlockByNumber/test_02.tar",
+    "debug_traceCall/test_10.json",
+    "debug_traceCall/test_14.json",
+    "debug_traceCall/test_17.json",
+    "eth_callMany/test_01.json",
+    "eth_callMany/test_02.json",
+    "eth_callMany/test_04.json",
+    "eth_callMany/test_05.json",
+    "eth_callMany/test_06.json",
+    "eth_callMany/test_09.json",
+    "eth_callMany/test_10.json",
+    "eth_maxPriorityFeePerGas/test_1.json",
+    "eth_feeHistory/test_1.json",
+    "engine_getPayloadBodiesByHashV1/test_1.json",
+    "engine_getPayloadBodiesByRangeV1/test_1.json"
 ]
 
 tests_not_compared_result = [
-   "trace_call/test_04.json",
-   "trace_call/test_11.json",
-   "trace_call/test_15.json",
-   "trace_call/test_17.json",
-   "trace_callMany/test_04.json",
-   "trace_callMany/test_05.json",
-   "trace_callMany/test_13.json",
-   "trace_callMany/test_14.tar",
-   "trace_callMany/test_15.json"
+    "trace_call/test_04.json",
+    "trace_call/test_11.json",
+    "trace_call/test_15.json",
+    "trace_call/test_17.json",
+    "trace_callMany/test_04.json",
+    "trace_callMany/test_05.json",
+    "trace_callMany/test_13.json",
+    "trace_callMany/test_14.tar",
+    "trace_callMany/test_15.json"
 ]
 
 tests_message_lower_case = [
-   "eth_callBundle/test_8.json",
-   "eth_createAccessList/test_4.json"
+    "eth_callBundle/test_8.json",
+    "eth_createAccessList/test_4.json"
 ]
 
-def get_target(target_type: str, method: str, infura_url: str, host: str):
+
+def get_target(target_type: str, method: str, infura_url: str, host: str, port: int = 0):
     """ determine target
     """
     if "engine_" in method and target_type == SILK:
-        return host + ":51516"
+        return host + ":" + str(port if port > 0 else 51516)
 
     if "engine_" in method and target_type == RPCDAEMON:
-        return host + ":8551"
+        return host + ":" + str(port if port > 0 else 8551)
 
     if target_type == SILK:
-        return host + ":51515"
+        return host + ":" + str(port if port > 0 else 51515)
 
     if target_type == INFURA:
         return infura_url
 
-    return host + ":8545"
+    return host + ":" + str(port if port > 0 else 8545)
+
 
 def get_json_filename_ext(target_type: str):
     """ determine json file name
@@ -108,9 +110,6 @@ def get_json_filename_ext(target_type: str):
         return "-infura.json"
     return "-rpcdaemon.json"
 
-#
-#
-#
 def get_jwt_secret(name):
     """ parse secret file
     """
@@ -121,9 +120,7 @@ def get_jwt_secret(name):
     except FileNotFoundError:
         return ""
 
-#
-#
-#
+
 def to_lower_case(file):
     """ converts input string into lower case
     """
@@ -132,6 +129,7 @@ def to_lower_case(file):
     os.system(cmd)
     cmd = "cp " + lowercase_file + " " + file
     os.system(cmd)
+
 
 def replace_str_from_file(filer, filew, matched_string):
     """ parse file and replace string
@@ -143,6 +141,7 @@ def replace_str_from_file(filer, filew, matched_string):
                 # if text matches then don't write it
                 if (matched_string in line) == 0:
                     output_file.write(line)
+
 
 def modified_str_from_file(filer, filew, matched_string):
     """ parse file and convert string
@@ -158,7 +157,8 @@ def modified_str_from_file(filer, filew, matched_string):
                     output_file.write(line)
 
 
-def is_skipped(api_name, exclude_api_list, exclude_test_list, api_file: str, req_test, verify_with_daemon, global_test_number):
+def is_skipped(api_name, exclude_api_list, exclude_test_list, api_file: str, req_test, verify_with_daemon,
+               global_test_number):
     """ determine if test must be skipped
     """
     if req_test == -1 and verify_with_daemon == 1:
@@ -169,17 +169,18 @@ def is_skipped(api_name, exclude_api_list, exclude_test_list, api_file: str, req
         for curr_test in tests_not_compared:
             if curr_test == api_file:
                 return 1
-    if exclude_api_list != "": # scans exclude api list (-x)
+    if exclude_api_list != "":  # scans exclude api list (-x)
         tokenize_exclude_api_list = exclude_api_list.split(",")
         for exclude_api in tokenize_exclude_api_list:
             if exclude_api in api_name:
                 return 1
-    if exclude_test_list != "": # scans exclude test list (-X)
+    if exclude_test_list != "":  # scans exclude test list (-X)
         tokenize_exclude_test_list = exclude_test_list.split(",")
         for exclude_test in tokenize_exclude_test_list:
             if exclude_test == str(global_test_number):
                 return 1
     return 0
+
 
 def is_big_json(test_name: str):
     """ determine if json is in the big list
@@ -189,6 +190,7 @@ def is_big_json(test_name: str):
             return 1
     return 0
 
+
 def is_not_compared_result(test_name: str):
     """ determine if test not compared result
     """
@@ -196,6 +198,7 @@ def is_not_compared_result(test_name: str):
         if curr_test_name == test_name:
             return 1
     return 0
+
 
 def is_message_to_be_converted(test_name: str):
     """ determine if test not compared result
@@ -206,7 +209,8 @@ def is_message_to_be_converted(test_name: str):
     return 0
 
 
-def run_shell_command(command: str, command1: str, expected_response: str, verbose: bool, exit_on_fail: bool, output_dir: str, silk_file: str,
+def run_shell_command(command: str, command1: str, expected_response: str, verbose: bool, exit_on_fail: bool,
+                      output_dir: str, silk_file: str,
                       exp_rsp_file: str, diff_file: str, dump_output, json_file: str, test_number):
     """ Run the specified command as shell. If exact result or error don't care, they are null but present in expected_response. """
 
@@ -215,7 +219,8 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
     if process.returncode != 0:
         sys.exit(process.returncode)
     process.stdout = process.stdout.strip('\n')
-    #print (process.stdout)
+    if verbose:
+        print(process.stdout)
     response = json.loads(process.stdout)
     if command1 != "":
         command_and_args = shlex.split(command1)
@@ -253,15 +258,15 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             if verbose:
                 print("OK")
             return 0
-        if (silk_file != "" and os.path.exists(output_dir) == 0):
-            os.mkdir (output_dir)
+        if silk_file != "" and os.path.exists(output_dir) == 0:
+            os.mkdir(output_dir)
         if silk_file != "":
             with open(silk_file, 'w', encoding='utf8') as json_file_ptr:
-                json_file_ptr.write(json.dumps(response,  indent=5))
+                json_file_ptr.write(json.dumps(response, indent=5))
         if exp_rsp_file != "":
             with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
-                json_file_ptr.write(json.dumps(expected_response,  indent=5))
-        #response_diff = jsondiff.diff(expected_response, response, marshal=True)
+                json_file_ptr.write(json.dumps(expected_response, indent=5))
+        response_diff = jsondiff.diff(expected_response, response, marshal=True)
         to_lower_case(exp_rsp_file)
         to_lower_case(silk_file)
 
@@ -278,9 +283,9 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             modified_str_from_file(silk_file, temp_file2, modified_string)
             cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
         elif is_big_json(json_file):
-            cmd = "json-patch-jsondiff --indent 4 " + exp_rsp_file  + " " + silk_file + " > " + diff_file
+            cmd = "json-patch-jsondiff --indent 4 " + exp_rsp_file + " " + silk_file + " > " + diff_file
         else:
-            cmd = "json-diff -s " + exp_rsp_file  + " " + silk_file + " > " + diff_file
+            cmd = "json-diff -s " + exp_rsp_file + " " + silk_file + " > " + diff_file
         os.system(cmd)
         diff_file_size = os.stat(diff_file).st_size
         if diff_file_size != 0:
@@ -308,35 +313,38 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         if verbose:
             print("OK")
         if dump_output:
-            if (silk_file != "" and os.path.exists(output_dir) == 0):
-                os.mkdir (output_dir)
+            if silk_file != "" and os.path.exists(output_dir) == 0:
+                os.mkdir(output_dir)
             if silk_file != "":
                 with open(silk_file, 'w', encoding='utf8') as json_file_ptr:
-                    json_file_ptr.write(json.dumps(response, indent = 6))
+                    json_file_ptr.write(json.dumps(response, indent=6))
             if exp_rsp_file != "":
                 with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
-                    json_file_ptr.write(json.dumps(expected_response,  indent=5))
+                    json_file_ptr.write(json.dumps(expected_response, indent=5))
     return 0
 
-def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, daemon_under_test: str, exit_on_fail: bool, verify_with_daemon: bool, daemon_as_reference: str,
-              dump_output: bool, test_number, infura_url: str, daemon_on_host: str, jwt_secret: str):
+
+def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, daemon_under_test: str, exit_on_fail: bool,
+              verify_with_daemon: bool, daemon_as_reference: str,
+              dump_output: bool, test_number, infura_url: str, daemon_on_host: str, daemon_on_port: int,
+              jwt_secret: str):
     """ Run integration tests. """
     json_filename = test_dir + json_file
     ext = os.path.splitext(json_file)[1]
 
     if ext in (".zip", ".tar"):
-        with tarfile.open(json_filename,encoding='utf-8') as tar:
+        with tarfile.open(json_filename, encoding='utf-8') as tar:
             files = tar.getmembers()
             if len(files) != 1:
-                print ("bad archive file " + json_filename)
+                print("bad archive file " + json_filename)
                 sys.exit(1)
             file = tar.extractfile(files[0])
             buff = file.read()
             tar.close()
             jsonrpc_commands = json.loads(buff)
     elif ext in (".gzip"):
-        with gzip.open(json_filename,'rb') as zipped_file:
-            buff=zipped_file.read()
+        with gzip.open(json_filename, 'rb') as zipped_file:
+            buff = zipped_file.read()
             jsonrpc_commands = json.loads(buff)
     else:
         with open(json_filename, encoding='utf8') as json_file_ptr:
@@ -351,7 +359,7 @@ def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, dae
         except KeyError:
             method = ""
         request_dumps = json.dumps(request)
-        target = get_target(daemon_under_test, method, infura_url, daemon_on_host)
+        target = get_target(daemon_under_test, method, infura_url, daemon_on_host, daemon_on_port)
         if jwt_secret == "":
             jwt_auth = ""
         else:
@@ -368,8 +376,8 @@ def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, dae
             exp_rsp_file = output_api_filename + "-expResponse.json"
             diff_file = output_api_filename + "-diff.json"
         else:
-            target = get_target(SILK, method, infura_url, daemon_on_host)
-            target1 = get_target(daemon_as_reference, method, infura_url, daemon_on_host)
+            target = get_target(SILK, method, infura_url, daemon_on_host, daemon_on_port)
+            target1 = get_target(daemon_as_reference, method, infura_url, daemon_on_host, daemon_on_port)
             cmd = '''curl --silent -X POST -H "Content-Type: application/json" ''' + jwt_auth + ''' --data \'''' + request_dumps + '''\' ''' + target
             cmd1 = '''curl --silent -X POST -H "Content-Type: application/json" ''' + jwt_auth + ''' --data \'''' + request_dumps + '''\' ''' + target1
             output_api_filename = output_dir + json_file[:-4]
@@ -380,18 +388,19 @@ def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, dae
             diff_file = output_api_filename + "-diff.json"
 
         return run_shell_command(
-                cmd,
-                cmd1,
-                response,
-                verbose,
-                exit_on_fail,
-                output_dir_name,
-                silk_file,
-                exp_rsp_file,
-                diff_file,
-                dump_output,
-                json_file,
-                test_number)
+            cmd,
+            cmd1,
+            response,
+            verbose,
+            exit_on_fail,
+            output_dir_name,
+            silk_file,
+            exp_rsp_file,
+            diff_file,
+            dump_output,
+            json_file,
+            test_number)
+
 
 #
 # usage
@@ -417,9 +426,11 @@ def usage(argv):
     print("-v verbose")
     print("-o dump response")
     print("-k authentication token file")
-    print("-x exclude API list (i.e txpool_content,txpool_status,engine_")
-    print("-X exclude test list (i.e 18,22")
+    print("-x exclude API list (i.e. txpool_content,txpool_status,engine_")
+    print("-X exclude test list (i.e. 18,22")
     print("-H host where the RpcDaemon is located (e.g. 10.10.2.3)")
+    print("-p port where the RpcDaemon is located (e.g. 8545)")
+
 
 #
 # main
@@ -427,17 +438,18 @@ def usage(argv):
 def main(argv):
     """ parse command line and execute tests
     """
-    exit_on_fail = 1
+    exit_on_fail = True
     daemon_under_test = SILK
     daemon_as_reference = RPCDAEMON
     loop_number = 1
-    verbose = 0
+    verbose = False
     req_test = -1
-    dump_output = 0
+    dump_output = False
     infura_url = ""
     daemon_on_host = "localhost"
+    daemon_on_port = 8545
     requested_api = ""
-    verify_with_daemon = 0
+    verify_with_daemon = False
     json_dir = "./goerly/"
     results_dir = "results"
     output_dir = json_dir + results_dir + "/"
@@ -448,7 +460,7 @@ def main(argv):
     display_only_fail = 0
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "hfrcvt:l:a:di:b:ox:X:H:k:s:")
+        opts, _ = getopt.getopt(argv[1:], "hfrcvt:l:a:di:b:ox:X:H:k:s:p:")
         for option, optarg in opts:
             if option in ("-h", "--help"):
                 usage(argv)
@@ -462,6 +474,8 @@ def main(argv):
                 infura_url = optarg
             elif option == "-H":
                 daemon_on_host = optarg
+            elif option == "-p":
+                daemon_on_port = int(optarg)
             elif option == "-f":
                 display_only_fail = 1
             elif option == "-v":
@@ -487,7 +501,7 @@ def main(argv):
             elif option == "-k":
                 jwt_secret = get_jwt_secret(optarg)
                 if jwt_secret == "":
-                    print ("secret file not found")
+                    print("secret file not found")
                     sys.exit(-1)
             else:
                 usage(argv)
@@ -503,17 +517,17 @@ def main(argv):
         shutil.rmtree(output_dir)
 
     start_time = time.time()
-    os.mkdir (output_dir)
+    os.mkdir(output_dir)
     match = 0
+    executed_tests = 0
     failed_tests = 0
     success_tests = 0
     tests_not_executed = 0
+    global_test_number = 1
     for test_rep in range(0, loop_number):
         if verbose:
             print("Test iteration: ", test_rep + 1)
         dirs = sorted(os.listdir(json_dir))
-        executed_tests = 0
-        global_test_number = 1
         for api_file in dirs:
             # jump result_dir
             if api_file == results_dir:
@@ -522,9 +536,10 @@ def main(argv):
             test_lists = sorted(os.listdir(test_dir))
             test_number = 1
             for test_name in test_lists:
-                if requested_api in api_file or requested_api == "": # -a
+                if requested_api in api_file or requested_api == "":  # -a
                     test_file = api_file + "/" + test_name
-                    if  is_skipped(api_file, exclude_api_list, exclude_test_list, test_file, req_test, verify_with_daemon, global_test_number) == 1:
+                    if is_skipped(api_file, exclude_api_list, exclude_test_list, test_file, req_test,
+                                  verify_with_daemon, global_test_number) == 1:
                         if start_test == "" or global_test_number >= int(start_test):
                             if display_only_fail == 0:
                                 file = test_file.ljust(60)
@@ -533,15 +548,18 @@ def main(argv):
                     else:
                         # runs all tests req_test refers global test number or
                         # runs only tests on specific api req_test refers all test on specific api
-                        if (requested_api == "" and req_test in (-1, global_test_number)) or (requested_api != "" and req_test in (-1, test_number)):
+                        if ((requested_api == "" and req_test in (-1, global_test_number)) or
+                                (requested_api != "" and req_test in (-1, test_number))):
                             if (start_test == "") or (start_test != "" and global_test_number >= int(start_test)):
                                 file = test_file.ljust(60)
                                 if verbose:
-                                    print(f"{global_test_number:03d}. {file} ", end = '', flush=True)
+                                    print(f"{global_test_number:03d}. {file} ", end='', flush=True)
                                 else:
-                                    print(f"{global_test_number:03d}. {file}\r", end = '', flush=True)
-                                ret=run_tests(json_dir, output_dir, test_file, verbose, daemon_under_test, exit_on_fail, verify_with_daemon, daemon_as_reference,
-                                          dump_output, global_test_number, infura_url, daemon_on_host, jwt_secret)
+                                    print(f"{global_test_number:03d}. {file}\r", end='', flush=True)
+                                ret = run_tests(json_dir, output_dir, test_file, verbose, daemon_under_test,
+                                                exit_on_fail, verify_with_daemon, daemon_as_reference,
+                                                dump_output, global_test_number, infura_url, daemon_on_host,
+                                                daemon_on_port, jwt_secret)
                                 if ret == 0:
                                     success_tests = success_tests + 1
                                 else:
@@ -560,10 +578,12 @@ def main(argv):
         elapsed = end_time - start_time
         print("                                                                                    \r")
         print(f"Test time-elapsed (secs):     {int(elapsed)}")
-        print(f"Number of executed tests:     {executed_tests}/{global_test_number-1}")
+        print(f"Number of executed tests:     {executed_tests}/{global_test_number - 1}")
         print(f"Number of NOT executed tests: {tests_not_executed}")
         print(f"Number of success tests:      {success_tests}")
         print(f"Number of failed tests:       {failed_tests}")
+
+
 #
 # module as main
 #

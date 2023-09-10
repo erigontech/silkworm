@@ -211,7 +211,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_return;
         }
         auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
-        SILK_INFO << "#receipts: " << receipts.size();
+        SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
         for (size_t i{0}; i < block.transactions.size(); i++) {

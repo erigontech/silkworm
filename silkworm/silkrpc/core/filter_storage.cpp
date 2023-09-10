@@ -53,7 +53,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
         }
     }
     if (!slot_found) {
-        SILK_INFO << "Unable to generate a new filter_id without clashing";
+        SILK_WARN << "Unable to generate a new filter_id without clashing";
         return std::nullopt;
     }
 

@@ -424,11 +424,11 @@ Task<void> DebugExecutor::execute(
     const silkworm::Block& block,
     const Transaction& transaction,
     int32_t index) {
-    SILK_INFO << "DebugExecutor::execute: "
-              << " block_number: " << block_number
-              << " transaction: {" << transaction << "}"
-              << " index: " << std::dec << index
-              << " config: " << config_;
+    SILK_TRACE << "DebugExecutor::execute: "
+               << " block_number: " << block_number
+               << " transaction: {" << transaction << "}"
+               << " index: " << std::dec << index
+               << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
@@ -486,12 +486,12 @@ Task<void> DebugExecutor::execute(
     const auto& block = block_with_hash.block;
     const auto& block_transactions = block.transactions;
 
-    SILK_INFO << "DebugExecutor::execute: "
-              << " block number: " << block.header.number
-              << " txns in block: " << block_transactions.size()
-              << " bundles: [" << bundles << "]"
-              << " transaction_index: " << std::dec << transaction_index
-              << " config: " << config_;
+    SILK_TRACE << "DebugExecutor::execute: "
+               << " block number: " << block.header.number
+               << " txns in block: " << block_transactions.size()
+               << " bundles: [" << bundles << "]"
+               << " transaction_index: " << std::dec << transaction_index
+               << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
 

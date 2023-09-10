@@ -76,8 +76,8 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
     auto mdbx_ver{mdbx::get_version()};
     auto mdbx_bld{mdbx::get_build()};
-    SILK_LOG << "Silkrpc build info: " << info.build << " " << info.libraries;
-    SILK_LOG << "Silkrpc libmdbx version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
+    SILK_INFO << "Silkrpc build info: " << info.build << " " << info.libraries;
+    SILK_INFO << "Silkrpc libmdbx version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
 
     std::set_terminate([]() {
         try {
@@ -98,11 +98,11 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
     try {
         if (!settings.datadir) {
-            SILK_LOG << "Silkrpc launched with private address " << settings.private_api_addr << " using "
-                     << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
+            SILK_INFO << "Silkrpc launched with private address " << settings.private_api_addr << " using "
+                      << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
         } else {
-            SILK_LOG << "Silkrpc launched with datadir " << *settings.datadir << " using "
-                     << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
+            SILK_INFO << "Silkrpc launched with datadir " << *settings.datadir << " using "
+                      << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
         }
 
         // Create the one-and-only Silkrpc daemon
@@ -110,15 +110,15 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
         // Check protocol version compatibility with Core Services
         if (not settings.skip_protocol_check) {
-            SILK_LOG << "Checking protocol version compatibility with core services...";
+            SILK_INFO << "Checking protocol version compatibility with core services...";
 
             const auto checklist = rpc_daemon.run_checklist();
             for (const auto& protocol_check : checklist.protocol_checklist) {
-                SILK_LOG << protocol_check.result;
+                SILK_INFO << protocol_check.result;
             }
             checklist.success_or_throw();
         } else {
-            SILK_LOG << "Skip protocol version compatibility check with core services";
+            SILK_INFO << "Skip protocol version compatibility check with core services";
         }
 
         // Start execution context dedicated to handling termination signals
@@ -131,7 +131,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             rpc_daemon.stop();
         });
 
-        SILK_LOG << "Starting ETH RPC API at " << settings.eth_end_point << " ENGINE RPC API at " << settings.engine_end_point;
+        SILK_INFO << "Starting ETH RPC API at " << settings.eth_end_point << " ENGINE RPC API at " << settings.engine_end_point;
 
         rpc_daemon.start();
 
@@ -219,7 +219,6 @@ Daemon::Daemon(DaemonSettings settings,
 
     if (snapshot_repository_) {
         snapshot_repository_->reopen_folder();
-        SILK_LOG << "Total restored Snapshots: " << snapshot_repository_->header_snapshots_count() + snapshot_repository_->body_snapshots_count() + snapshot_repository_->tx_snapshots_count();
 
         db::DataModel::set_snapshot_repository(snapshot_repository_.get());
     }

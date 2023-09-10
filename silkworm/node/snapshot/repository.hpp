@@ -86,6 +86,9 @@ class SnapshotRepository {
     [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }
     [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }
     [[nodiscard]] std::size_t tx_snapshots_count() const { return tx_segments_.size(); }
+    [[nodiscard]] std::size_t total_snapshots_count() const {
+        return header_snapshots_count() + body_snapshots_count() + tx_snapshots_count();
+    }
 
     [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
     enum ViewResult {

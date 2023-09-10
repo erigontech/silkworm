@@ -82,6 +82,7 @@ void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotPathList segment_files = get_segment_files();
     reopen_list(segment_files);
+    SILK_INFO << "Total reopened snapshots: " << total_snapshots_count();
 }
 
 void SnapshotRepository::close() {

@@ -76,11 +76,11 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
         max_result = kAccountRangeMaxResults;
     }
 
-    SILK_INFO << "block_number_or_hash: " << block_number_or_hash
-              << " start_address: 0x" << silkworm::to_hex(start_address)
-              << " max_result: " << max_result
-              << " exclude_code: " << exclude_code
-              << " exclude_storage: " << exclude_storage;
+    SILK_TRACE << "block_number_or_hash: " << block_number_or_hash
+               << " start_address: 0x" << silkworm::to_hex(start_address)
+               << " max_result: " << max_result
+               << " exclude_code: " << exclude_code
+               << " exclude_storage: " << exclude_storage;
 
     auto tx = co_await database_->begin();
 

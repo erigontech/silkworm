@@ -1240,7 +1240,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_INFO << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
+    SILK_TRACE << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
@@ -1385,7 +1385,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_INFO << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
+    SILK_TRACE << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
@@ -1585,7 +1585,7 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
 }
 
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
-    SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
+    SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
     if (!from_block_with_hash) {
@@ -1619,9 +1619,9 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     auto block_with_hash = from_block_with_hash;
     while (block_number++ <= to_block_with_hash->block.header.number) {
         const Block block{*block_with_hash, {}, false};
-        SILK_INFO << "TraceCallExecutor::trace_filter: processing "
-                  << " block_number: " << block_number - 1
-                  << " block: " << block;
+        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
+                   << " block_number: " << block_number - 1
+                   << " block: " << block;
 
         co_await trace_block(*block_with_hash, filter, stream);
 
@@ -1638,7 +1638,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
 
     stream->close_array();
 
-    SILK_INFO << "TraceCallExecutor::trace_filter: end";
+    SILK_TRACE << "TraceCallExecutor::trace_filter: end";
 
     co_return;
 }

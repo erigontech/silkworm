@@ -153,7 +153,7 @@ Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, n
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
-        SILK_INFO << "latest_block_number " << latest_block_number;
+        SILK_TRACE << "latest_block_number " << latest_block_number;
 
         BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
@@ -1234,10 +1234,10 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
         timeout = params[3].get<std::uint64_t>();
     }
 
-    SILK_INFO << "bundles: " << bundles
-              << " simulation_context: " << simulation_context
-              << " accounts_overrides #" << accounts_overrides.size()
-              << " timeout: " << timeout.value_or(0);
+    SILK_TRACE << "bundles: " << bundles
+               << " simulation_context: " << simulation_context
+               << " accounts_overrides #" << accounts_overrides.size()
+               << " timeout: " << timeout.value_or(0);
 
     auto tx = co_await database_->begin();
 
@@ -1270,7 +1270,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
-        SILK_INFO << "latest_block_number " << latest_block_number;
+        SILK_TRACE << "latest_block_number " << latest_block_number;
 
         BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
@@ -1531,7 +1531,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
         filter.end = end;
 
         const auto filter_id = filter_storage_->add_filter(filter);
-        SILK_INFO << "Added a new filter, storage size: " << filter_storage_->size();
+        SILK_TRACE << "Added a new filter, storage size: " << filter_storage_->size();
 
         if (filter_id) {
             reply = make_json_content(request["id"], filter_id.value());
@@ -1603,7 +1603,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
         co_return;
     }
     auto filter_id = params[0].get<std::string>();
-    SILK_INFO << "filter_id: " << filter_id;
+    SILK_TRACE << "filter_id: " << filter_id;
 
     const auto filter_ref = filter_storage_->get_filter(filter_id);
     if (!filter_ref) {
@@ -1656,7 +1656,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
         co_return;
     }
     auto filter_id = params[0].get<std::string>();
-    SILK_INFO << "filter_id: " << filter_id;
+    SILK_TRACE << "filter_id: " << filter_id;
 
     const auto filter_opt = filter_storage_->get_filter(filter_id);
 
@@ -1713,7 +1713,7 @@ Task<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json& req
 
     const auto success = filter_storage_->remove_filter(filter_id);
 
-    SILK_INFO << "Removing filter " << (success ? "succeeded" : "failed") << ", storage size: " << filter_storage_->size();
+    SILK_TRACE << "Removing filter " << (success ? "succeeded" : "failed") << ", storage size: " << filter_storage_->size();
 
     reply = make_json_content(request["id"], success);
 

@@ -48,7 +48,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     const auto config = params[1].get<trace::TraceConfig>();
     const auto block_number_or_hash = params[2].get<BlockNumberOrHash>();
 
-    SILK_INFO << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
+    SILK_TRACE << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -98,7 +98,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     const auto trace_calls = params[0].get<std::vector<trace::TraceCall>>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
 
-    SILK_INFO << "#trace_calls: " << trace_calls.size() << " block_number_or_hash: " << block_number_or_hash;
+    SILK_TRACE << "#trace_calls: " << trace_calls.size() << " block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -190,7 +190,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
 
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILK_INFO << "transaction: " << transaction << " config: " << config;
+    SILK_TRACE << "transaction: " << transaction << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -238,7 +238,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILK_INFO << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
+    SILK_TRACE << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -277,7 +277,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     const auto transaction_hash = params[0].get<evmc::bytes32>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILK_INFO << "transaction_hash: " << transaction_hash << " config: " << config;
+    SILK_TRACE << "transaction_hash: " << transaction_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -322,7 +322,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
 
-    SILK_INFO << " block_number_or_hash: " << block_number_or_hash;
+    SILK_TRACE << " block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -365,7 +365,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
 
     const auto trace_filter = params[0].get<trace::TraceFilter>();
 
-    SILK_INFO << "trace_filter: " << trace_filter;
+    SILK_TRACE << "trace_filter: " << trace_filter;
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -413,7 +413,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     std::vector<uint16_t> indices;
     std::transform(str_indices.begin(), str_indices.end(), std::back_inserter(indices),
                    [](const std::string& str) { return std::stoi(str, nullptr, 16); });
-    SILK_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size();
+    SILK_TRACE << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size();
 
     // Erigon RpcDaemon compatibility
     // Parity fails if it gets more than a single index. It returns nothing in this case. Must we?
@@ -464,7 +464,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_INFO << "transaction_hash: " << transaction_hash;
+    SILK_TRACE << "transaction_hash: " << transaction_hash;
 
     auto tx = co_await database_->begin();
 

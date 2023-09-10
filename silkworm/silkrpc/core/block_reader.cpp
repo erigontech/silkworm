@@ -50,7 +50,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
     }
     const auto block_number = block_with_hash->block.header.number;
 
-    SILK_INFO << "read_balance_changes: block_number: " << block_number;
+    SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
     StateReader state_reader(database_reader_);
 

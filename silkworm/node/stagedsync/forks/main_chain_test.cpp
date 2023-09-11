@@ -164,7 +164,7 @@ TEST_CASE("MainChain") {
         REQUIRE(holds_alternative<InvalidChain>(current_status));
 
         // check canonical
-        auto present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
+        auto present_in_canonical = main_chain.get_finalized_canonical_hash(block1.header.number);
         REQUIRE(!present_in_canonical);
 
         // reverting the chain
@@ -172,13 +172,12 @@ TEST_CASE("MainChain") {
         CHECK(updated);
 
         // checking the status
-        present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
+        present_in_canonical = main_chain.get_finalized_canonical_hash(block1.header.number);
         REQUIRE(!present_in_canonical);
 
         final_canonical_head = main_chain.current_head();
-        CHECK(final_canonical_head == block1_id);                        // still block1 even if invalid
-        CHECK(main_chain.canonical_chain_.current_head() == block1_id);  // still block1 even if invalid
-        CHECK(main_chain.last_chosen_head() == block0_id);               // not changed
+        CHECK(final_canonical_head == block1_id);           // still block1 even if invalid
+        CHECK(main_chain.last_chosen_head() == block0_id);  // not changed
 
         current_status = main_chain.canonical_head_status_;
         CHECK(holds_alternative<InvalidChain>(current_status));
@@ -235,7 +234,7 @@ TEST_CASE("MainChain") {
         bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
         REQUIRE(present);
 
-        auto present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
+        auto present_in_canonical = main_chain.get_finalized_canonical_hash(block1.header.number);
         REQUIRE(!present_in_canonical);  // not yet
 
         // confirming the chain
@@ -243,12 +242,11 @@ TEST_CASE("MainChain") {
         CHECK(updated);
 
         // checking the status
-        present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
+        present_in_canonical = main_chain.get_finalized_canonical_hash(block1.header.number);
         REQUIRE(present_in_canonical);
 
         final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == block1_id);
-        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
         REQUIRE(main_chain.last_chosen_head() == block1_id);
 
         // testing other methods
@@ -274,24 +272,20 @@ TEST_CASE("MainChain") {
         extends_canonical = main_chain.extends_last_fork_choice(block3.header.number, block3.header.hash());
         CHECK(extends_canonical);
 
-        // TODO(canepat) seems broken, fixme - START
-        // reverting the chain simulating invalid block
-        main_chain.canonical_head_status_ = InvalidChain{BlockId{1, block1_hash}};
-        updated = main_chain.notify_fork_choice_update(*header0_hash);
-        CHECK(updated);
+        // Testing a mini re-org
+        Block new_block1 = generateSampleChildrenBlock(*header0);
+        const auto new_block1_hash{new_block1.header.hash()};
+        BlockId new_block1_id{1, new_block1_hash};
 
-        // checking the status
-        CHECK(main_chain.get_canonical_hash(block1.header.number));  // block1 still in canonical even if invalid
+        // inserting & verifying the block
+        main_chain.insert_block(new_block1);
+        const auto new_verification1 = main_chain.verify_chain(new_block1_hash);
+        CHECK(holds_alternative<ValidChain>(new_verification1));
+        CHECK(std::get<ValidChain>(new_verification1).current_head == new_block1_id);
 
-        final_canonical_head = main_chain.current_head();
-        CHECK(final_canonical_head == block1_id);
-        CHECK(main_chain.canonical_chain_.current_head() == block1_id);
-        // CHECK(main_chain.last_chosen_head() == block0_id);
-
-        current_status = main_chain.canonical_head_status_;
-        // CHECK(holds_alternative<InvalidChain>(current_status));
-        // CHECK(std::get<InvalidChain>(current_status).unwind_point == block1_id);
-        // TODO(canepat) seems broken, fixme - END
+        // confirming the chain
+        const auto new_block1_updated = main_chain.notify_fork_choice_update(new_block1_hash);
+        CHECK(new_block1_updated);
     }
 
     SECTION("diverting the head") {

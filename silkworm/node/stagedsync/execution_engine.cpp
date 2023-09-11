@@ -272,17 +272,17 @@ std::optional<BlockBody> ExecutionEngine::get_body(Hash header_hash) const {
 }
 
 std::optional<BlockHeader> ExecutionEngine::get_canonical_header(BlockNum bn) const {
-    auto hash = main_chain_.get_canonical_hash(bn);
+    auto hash = main_chain_.get_finalized_canonical_hash(bn);
     if (!hash) return {};
     return main_chain_.get_header(*hash);
 }
 
 std::optional<Hash> ExecutionEngine::get_canonical_hash(BlockNum bn) const {
-    return main_chain_.get_canonical_hash(bn);
+    return main_chain_.get_finalized_canonical_hash(bn);
 }
 
 std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum bn) const {
-    auto hash = main_chain_.get_canonical_hash(bn);
+    auto hash = main_chain_.get_finalized_canonical_hash(bn);
     if (!hash) return {};
     return main_chain_.get_body(*hash);
 }

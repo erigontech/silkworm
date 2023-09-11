@@ -70,7 +70,7 @@ class MainChain {
     // header/body retrieval
     BlockNum get_block_progress() const;
     std::optional<BlockHeader> get_header(BlockNum, Hash) const;
-    std::optional<Hash> get_canonical_hash(BlockNum) const;
+    std::optional<Hash> get_finalized_canonical_hash(BlockNum) const;
     std::optional<TotalDifficulty> get_header_td(BlockNum, Hash) const;
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     bool extends_last_fork_choice(BlockNum, Hash) const;

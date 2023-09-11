@@ -151,7 +151,7 @@ void ExecutionPipeline::load_stages() {
                                     db::stages::kTxLookupKey,
                                     db::stages::kLogIndexKey,
                                     db::stages::kHistoryIndexKey,
-                                    db::stages::kHashStateKey,           // Needs to happen before unwinding Execution
+                                    db::stages::kHashStateKey,
                                     db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
                                     db::stages::kExecutionKey,
                                     db::stages::kSendersKey,

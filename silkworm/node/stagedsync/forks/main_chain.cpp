@@ -70,7 +70,7 @@ void MainChain::open() {
 
     forward(canonical_head.number, canonical_head.hash);
 
-    // If forward cleanup cycle has not produced a valida chain, then we need to unwind
+    // If forward cleanup cycle has not produced a valid chain, then we need to unwind
     if (not std::holds_alternative<ValidChain>(canonical_head_status_)) {
         const auto unwind_point{pipeline_.unwind_point()};
         ensure_invariant(unwind_point.has_value(), "unwind point from pipeline requested when forward fails");
@@ -163,7 +163,7 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     if (is_canonical(block_header->number, block_hash)) {
         // The incoming block matches a block already on the canonical chain, verification is not always needed
         if (block_header->number <= last_fork_choice_.number) {
-            // Last FCU block is greater than or equal incoming canonical block, chain is valid up to last FCU block
+            // Last FCU block is greater than or equal to incoming canonical block, chain is valid up to last FCU block
             return ValidChain{last_fork_choice_.number, last_fork_choice_.hash};
         } else if (std::holds_alternative<ValidChain>(canonical_head_status_)) {
             // Chain is valid up to canonical head
@@ -184,17 +184,15 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     // db commit policy
     bool commit_at_each_stage = is_first_sync_;
     if (!commit_at_each_stage) tx_.disable_commit();
+    auto _ = gsl::finally([&]() { tx_.enable_commit(); });
 
     // the new head is on a new fork?
     BlockId forking_point = canonical_chain_.find_forking_point(*block_header, block_hash);  // the forking origin
 
     if (block_hash != canonical_chain_.current_head().hash &&             // if the new head is not the current head
         forking_point.number < canonical_chain_.current_head().number) {  // and if the forking is behind the head
-        // we need to do unwind to change canonical
-        auto unwind_result = pipeline_.unwind(tx_, forking_point.number);
-        success_or_throw(unwind_result);  // unwind must complete with success
-        // remove last part of canonical
-        canonical_chain_.delete_down_to(forking_point.number);
+        // We need to do unwind to change canonical
+        unwind(forking_point.number);
     }
 
     // update canonical up to header_hash
@@ -202,7 +200,7 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
 
     // forward
     Stage::Result forward_result = pipeline_.forward(tx_, block_header->number);
-    SILK_INFO << "MainChain::verify_chain commit forward_result=" << magic_enum::enum_name<>(forward_result);
+    SILK_INFO << "MainChain::verify_chain forward_result=" << magic_enum::enum_name<>(forward_result);
 
     // evaluate result
     VerificationResult verify_result;
@@ -212,7 +210,6 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
                                  pipeline_.head_header_hash() == canonical_chain_.current_head().hash,
                              "forward succeeded with pipeline head not aligned with canonical head");
             verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
-            SILK_INFO << "MainChain::verify_chain commit verify_result index=" << verify_result.index();
             break;
         }
         case Stage::Result::kWrongFork:
@@ -238,15 +235,6 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     }
     canonical_head_status_ = verify_result;
 
-    // finish
-    tx_.enable_commit();
-    if (commit_at_each_stage and std::holds_alternative<ValidChain>(verify_result)) {
-        StopWatch timing{StopWatch::kStart};
-        SILK_INFO << "MainChain::verify_chain commit BEFORE";
-        tx_.commit_and_renew();
-        SILK_INFO << "MainChain::verify_chain commit at hash=" << block_hash.to_hex()
-                  << " took " << StopWatch::format(timing.since_start());
-    }
     return verify_result;
 }
 
@@ -377,7 +365,7 @@ std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash he
     return header;
 }
 
-std::optional<Hash> MainChain::get_canonical_hash(BlockNum height) const {
+std::optional<Hash> MainChain::get_finalized_canonical_hash(BlockNum height) const {
     if (height > last_fork_choice_.number) return {};
     return canonical_chain_.get_hash(height);
 }

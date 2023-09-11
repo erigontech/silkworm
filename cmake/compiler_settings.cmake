@@ -115,11 +115,6 @@ if(SILKWORM_SANITIZE)
   if("${SILKWORM_SANITIZE}" STREQUAL "thread" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     add_compile_options(-Wno-error=tsan)
   endif()
-
-  # Suppress ASAN/TSAN in gRPC to avoid ODR violation. https://github.com/grpc/grpc/issues/19224
-  if(SILKWORM_SANITIZE)
-    add_compile_definitions(GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
 endif()
 
 # Position independent code

@@ -21,15 +21,15 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   # cmake-format: off
 
-  add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
-  add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
-  add_definitions(-DWIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's
-  add_definitions(-DNOMINMAX)             # Prevent MSVC to tamper with std::min/std::max
-  add_definitions(-DPSAPI_VERSION=2)      # For process info
+  add_compile_definitions(_WIN32_WINNT=0x0602)  # Min Windows 8
+  add_compile_definitions(VC_EXTRALEAN)         # Process windows headers faster ...
+  add_compile_definitions(WIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's
+  add_compile_definitions(NOMINMAX)             # Prevent MSVC to tamper with std::min/std::max
+  add_compile_definitions(PSAPI_VERSION=2)      # For process info
 
   # LINK : fatal error LNK1104: cannot open file 'libboost_date_time-vc142-mt-x64-1_72.lib
   # is solved by this (issue only for MVC)
-  add_definitions(-DBOOST_DATE_TIME_NO_LIB)
+  add_compile_definitions(BOOST_DATE_TIME_NO_LIB)
 
 
   add_compile_options(/MP)            # Enable parallel compilation
@@ -107,7 +107,7 @@ if(SILKWORM_SANITIZE)
   )
   add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
-  add_definitions(-DSILKWORM_SANITIZE)
+  add_compile_definitions(SILKWORM_SANITIZE)
 
   # asio is using atomic_thread_fence in asio::detail::std_fenced_block, unsupported on GCC with thread sanitizer. See:
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=97868

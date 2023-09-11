@@ -34,12 +34,14 @@ bool Server::stop() {
 }
 
 void Server::execution_loop() {
+    SILK_TRACE << "execution::Server::execution_loop enter";
     exec_engine_.open();
 
     asio::executor_work_guard<decltype(io_context_.get_executor())> work{io_context_.get_executor()};
     io_context_.run();
 
     exec_engine_.close();
+    SILK_TRACE << "execution::Server::execution_loop exit";
 }
 
 void Server::handle_exception(const std::exception_ptr& e) {

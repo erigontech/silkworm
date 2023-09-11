@@ -16,7 +16,7 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED container thread)
+find_package(Boost REQUIRED headers container thread)
 find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)

@@ -16,7 +16,7 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED container thread)
+find_package(Boost REQUIRED headers container)
 find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
@@ -55,7 +55,7 @@ set(SILKRPC_PUBLIC_LIBRARIES
     absl::flat_hash_set
     absl::btree
     Boost::container
-    Boost::thread
+    Boost::headers
     protobuf::libprotobuf
     intx::intx
     pico_http_parser

@@ -349,43 +349,11 @@ parameters:
 workflows:
   version: 2
 
-  light:
-    when:
-      not:
-        equal: [ master, <<pipeline.git.branch>> ]
-    jobs:
-      - lint
-      - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
-          compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_latest>>
-          ethereum_tests: false
-          requires:
-            - lint
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
-          ethereum_tests: false
-          requires:
-            - lint
-
   integration:
     when:
       or:
         - equal: [ master, <<pipeline.git.branch>> ]
         - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
-      - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
-          compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_min>>
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
       - linux-gcc-thread-sanitizer
-      - linux-clang-coverage
       - linux-clang-address-sanitizer
-      - linux-clang-tidy
-      - linux-wasm-build

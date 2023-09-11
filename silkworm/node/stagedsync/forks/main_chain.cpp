@@ -66,7 +66,7 @@ void MainChain::open() {
     // - if last cycle completed successfully, this will simply do nothing (no hurt)
     // - if last cycle was executed partially (i.e. not all stages are at the same height), this will do a cleanup cycle
     const auto& canonical_head{canonical_chain_.current_head()};
-    SILK_INFO << "Revalidate chain up to the canonical current head number=" << canonical_head.number << " hash=" << to_hex(canonical_head.hash);
+    SILK_INFO << "Revalidate canonical chain up to number=" << canonical_head.number << " hash=" << to_hex(canonical_head.hash);
 
     forward(canonical_head.number, canonical_head.hash);
 

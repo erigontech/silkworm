@@ -300,44 +300,6 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     return true;
 }
 
-bool MainChain::notify_fork_choice_update2(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    if (canonical_chain_.current_head().hash != head_block_hash) {
-        // usually update_fork_choice must follow verify_chain with the same header except when:
-        // 1) (PoS) CL is syncing so head_block_hash is referring to a previous valid head
-        // 2) (PoW) previous verify_chain returned InvalidChain so CL is issuing a fcu with a previous valid head
-
-        if (not canonical_chain_.has(head_block_hash) or not std::holds_alternative<ValidChain>(canonical_head_status_)) {
-            auto verification = verify_chain(head_block_hash);  // this will reset canonical chain to head_block_hash
-            ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
-                             "canonical head not aligned with fork choice");
-        }
-    }
-
-    if (!std::holds_alternative<ValidChain>(canonical_head_status_)) return false;  // head is not valid
-
-    auto valid_chain = std::get<ValidChain>(canonical_head_status_);
-    ensure_invariant(canonical_chain_.current_head() == valid_chain.current_head,
-                     "canonical head not aligned with recorded head status");
-
-    if (finalized_block_hash && !canonical_chain_.has(*finalized_block_hash)) return false;  // finalized block not found
-    // we need a way to disambiguate this "false" from the one above
-
-    db::write_last_head_block(tx_, head_block_hash);
-    if (finalized_block_hash) db::write_last_finalized_block(tx_, *finalized_block_hash);
-
-    tx_.commit_and_renew();
-
-    last_fork_choice_ = canonical_chain_.current_head();
-    if (finalized_block_hash) {
-        auto finalized_header = get_header(*finalized_block_hash);
-        last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
-    }
-
-    is_first_sync_ = false;
-
-    return true;
-}
-
 std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
 

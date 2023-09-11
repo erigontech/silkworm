@@ -61,7 +61,6 @@ class MainChain {
     VerificationResult verify_chain(Hash head_block_hash);
     // accept the current chain up to head_block_hash
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
-    bool notify_fork_choice_update2(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     BlockId last_chosen_head() const;  // set by notify_fork_choice_update(), is always valid

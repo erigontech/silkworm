@@ -176,9 +176,9 @@ TEST_CASE("MainChain") {
         REQUIRE(!present_in_canonical);
 
         final_canonical_head = main_chain.current_head();
-        CHECK(final_canonical_head == block1_id);  // still block1 even if invalid
+        CHECK(final_canonical_head == block1_id);                        // still block1 even if invalid
         CHECK(main_chain.canonical_chain_.current_head() == block1_id);  // still block1 even if invalid
-        CHECK(main_chain.last_chosen_head() == block0_id);  // not changed
+        CHECK(main_chain.last_chosen_head() == block0_id);               // not changed
 
         current_status = main_chain.canonical_head_status_;
         CHECK(holds_alternative<InvalidChain>(current_status));

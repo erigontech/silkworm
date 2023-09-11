@@ -51,6 +51,7 @@ struct NodeSettings {
     uint32_t sync_loop_throttle_seconds{0};                // Minimum interval amongst sync cycle
     uint32_t sync_loop_log_interval_seconds{30};           // Interval for sync loop to emit logs
     std::string node_name;                                 // The node identifying name
+    bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
 };
 
 }  // namespace silkworm

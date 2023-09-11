@@ -45,12 +45,13 @@ class ExecutionPipeline : public Stoppable {
     silkworm::NodeSettings* node_settings_;
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
 
-    using Stage_Container = std::map<const char*, std::unique_ptr<stagedsync::Stage>>;
-    Stage_Container stages_;
+    using StageContainer = std::map<const char*, std::unique_ptr<stagedsync::Stage>>;
+    StageContainer stages_;
+    StageContainer::iterator current_stage_;
 
-    Stage_Container::iterator current_stage_;
-    std::vector<const char*> stages_forward_order_;
-    std::vector<const char*> stages_unwind_order_;
+    using StageNames = std::vector<const char*>;
+    StageNames stages_forward_order_;
+    StageNames stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};
     std::atomic<size_t> current_stage_number_{0};
 

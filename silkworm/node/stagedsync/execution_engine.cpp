@@ -125,7 +125,7 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     if (path.forking_point == main_chain_.last_chosen_head()) return {std::move(path)};
 
     // search remaining path on main chain
-    if (main_chain_.is_canonical(path.forking_point)) return {std::move(path)};
+    if (main_chain_.is_finalized_canonical(path.forking_point)) return {std::move(path)};
 
     auto forking_point = main_chain_.find_forking_point(path.forking_point.hash);
     if (!forking_point) return {};  // not found
@@ -152,7 +152,7 @@ concurrency::AwaitableFuture<VerificationResult> ExecutionEngine::verify_chain(H
 
     auto fork = find_fork_by_head(forks_, head_block_hash);
     if (fork == forks_.end()) {
-        if (main_chain_.is_canonical(head_block_hash)) {
+        if (main_chain_.is_finalized_canonical(head_block_hash)) {
             SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
             concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};
             promise.set_value(ValidChain{last_fork_choice_});
@@ -176,13 +176,16 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         if (!updated) return false;
 
         last_fork_choice_ = main_chain_.last_chosen_head();
-        fork_tracking_active_ = true;
+        if (head_block_hash == main_chain_.current_head().hash and node_settings_.parallel_fork_tracking_enabled) {
+            log::Info("ExecutionEngine") << "activate parallel fork tracking at head " << head_block_hash.to_hex();
+            fork_tracking_active_ = true;
+        }
     } else {
         // chose the fork with the given head
         auto f = find_fork_by_head(forks_, head_block_hash);
 
         if (f == forks_.end()) {
-            if (main_chain_.is_canonical(head_block_hash)) {
+            if (main_chain_.is_finalized_canonical(head_block_hash)) {
                 SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already chosen";
                 return true;
             } else {
@@ -291,7 +294,7 @@ std::optional<BlockNum> ExecutionEngine::get_block_number(Hash header_hash) cons
 }
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {
-    return main_chain_.is_canonical(header_hash);
+    return main_chain_.is_finalized_canonical(header_hash);
 }
 
 }  // namespace silkworm::stagedsync

@@ -28,6 +28,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>

@@ -31,10 +31,6 @@
 
 namespace silkworm {
 
-// Converts bytes to evmc::address; input is cropped if necessary.
-// Short inputs are left-padded with 0s.
-evmc::address to_evmc_address(ByteView bytes);
-
 // Converts bytes to evmc::bytes32; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
 evmc::bytes32 to_bytes32(ByteView bytes);

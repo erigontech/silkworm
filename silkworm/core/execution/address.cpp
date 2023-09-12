@@ -68,6 +68,15 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
     return address;
 }
 
+evmc::address to_evmc_address(ByteView bytes) {
+    evmc::address out;
+    if (!bytes.empty()) {
+        size_t n{std::min(bytes.length(), kAddressLength)};
+        std::memcpy(out.bytes + kAddressLength - n, bytes.data(), n);
+    }
+    return out;
+}
+
 std::string address_to_string(const evmc::address& address) {
     return to_hex(ByteView{address.bytes}, true);
 }

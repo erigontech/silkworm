@@ -31,6 +31,10 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexce
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept;
 
+// Converts bytes to evmc::address; input is cropped if necessary.
+// Short inputs are left-padded with 0s.
+evmc::address to_evmc_address(ByteView bytes);
+
 std::string address_to_string(const evmc::address& address);
 
 namespace rlp {

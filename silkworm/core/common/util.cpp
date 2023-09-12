@@ -57,15 +57,6 @@ static constexpr uint8_t kUnhexTable4[256] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-evmc::address to_evmc_address(ByteView bytes) {
-    evmc::address out;
-    if (!bytes.empty()) {
-        size_t n{std::min(bytes.length(), kAddressLength)};
-        std::memcpy(out.bytes + kAddressLength - n, bytes.data(), n);
-    }
-    return out;
-}
-
 evmc::bytes32 to_bytes32(ByteView bytes) {
     evmc::bytes32 out;
     if (!bytes.empty()) {

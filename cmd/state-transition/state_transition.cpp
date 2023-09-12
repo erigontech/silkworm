@@ -26,6 +26,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>

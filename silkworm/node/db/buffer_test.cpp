@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/tables.hpp>

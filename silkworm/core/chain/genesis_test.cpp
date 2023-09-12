@@ -19,6 +19,7 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>

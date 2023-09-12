@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED headers filesystem system)
 find_package(CLI11 REQUIRED)
 
 add_executable(execute execute.cpp)

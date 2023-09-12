@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers)
 
 set(TARGET silkworm_infra_test_util)
 
@@ -22,4 +22,4 @@ file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 
 add_library(${TARGET} ${SRC})
 
-target_link_libraries(${TARGET} PUBLIC silkworm_infra Boost::thread)
+target_link_libraries(${TARGET} PUBLIC silkworm_infra Boost::headers)

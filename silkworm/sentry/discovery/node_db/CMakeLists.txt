@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers)
 find_package(Catch2 REQUIRED)
 find_package(SQLiteCpp REQUIRED)
 
@@ -30,7 +30,7 @@ target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 target_link_libraries(
   ${TARGET}
   PUBLIC silkworm_infra silkworm_sentry_common
-  PRIVATE Boost::thread SQLiteCpp::SQLiteCpp
+  PRIVATE Boost::headers SQLiteCpp::SQLiteCpp
 )
 
 # unit tests

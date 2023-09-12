@@ -16,7 +16,7 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED container thread)
+find_package(Boost REQUIRED headers container)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
@@ -93,7 +93,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     absl::flat_hash_set
     asio-grpc::asio-grpc
     Boost::container
-    Boost::thread
+    Boost::headers
     gRPC::grpc++
     mdbx-static
     nlohmann_json::nlohmann_json

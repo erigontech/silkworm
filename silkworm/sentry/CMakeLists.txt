@@ -17,7 +17,7 @@
 set(TARGET silkworm_sentry)
 
 find_package(absl REQUIRED)
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers)
 find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
@@ -93,7 +93,7 @@ endif(MSVC)
 
 # cmake-format: off
 set(LIBS_PUBLIC
-    Boost::thread
+    Boost::headers
     Microsoft.GSL::GSL
     silkworm_infra
 )

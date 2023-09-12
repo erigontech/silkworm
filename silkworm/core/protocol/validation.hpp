@@ -94,12 +94,12 @@ enum class [[nodiscard]] ValidationResult{
     kWrongWithdrawalsRoot,
 
     // EIP-4844: Shard Blob Transactions
-    kWrongDataGasUsed,
-    kWrongExcessDataGas,
+    kWrongBlobGasUsed,
+    kWrongExcessBlobGas,
     kNoBlobs,
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,
-    kMaxFeePerDataGasTooLow,  // max_fee_per_data_gas < data_gas_price
+    kMaxFeePerBlobGasTooLow,  // max_fee_per_blob_gas < blob_gas_price
 };
 
 namespace protocol {
@@ -112,7 +112,7 @@ namespace protocol {
     //! \remarks These function is agnostic to whole block validity
     ValidationResult pre_validate_transaction(const Transaction& txn, evmc_revision revision, uint64_t chain_id,
                                               const std::optional<intx::uint256>& base_fee_per_gas,
-                                              const std::optional<intx::uint256>& data_gas_price);
+                                              const std::optional<intx::uint256>& blob_gas_price);
 
     ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config);
 
@@ -128,7 +128,7 @@ namespace protocol {
     intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent);
 
     //! \see EIP-4844: Shard Blob Transactions
-    uint64_t calc_excess_data_gas(const BlockHeader& parent);
+    uint64_t calc_excess_blob_gas(const BlockHeader& parent);
 
     //! \brief Calculate the transaction root of a block body
     evmc::bytes32 compute_transaction_root(const BlockBody& body);

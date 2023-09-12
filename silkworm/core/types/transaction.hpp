@@ -64,7 +64,7 @@ struct UnsignedTransaction {
     std::vector<AccessListEntry> access_list{};  // EIP-2930
 
     // EIP-4844: Shard Blob Transactions
-    intx::uint256 max_fee_per_data_gas{0};
+    intx::uint256 max_fee_per_blob_gas{0};
     std::vector<Hash> blob_versioned_hashes{};
 
     //! \brief Maximum possible cost of normal and data (EIP-4844) gas
@@ -73,7 +73,7 @@ struct UnsignedTransaction {
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
     [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 
-    [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
+    [[nodiscard]] uint64_t total_blob_gas() const;  // EIP-4844
 
     void encode_for_signing(Bytes& into) const;
 

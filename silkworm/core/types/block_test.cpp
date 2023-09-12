@@ -197,8 +197,8 @@ TEST_CASE("Cancun Header RLP") {
         .prev_randao = 0xd01681d2b3acdebff0288a02a1648b3910500961982d5ecdbef064af7c34090b_bytes32,
         .base_fee_per_gas = 2'700'000'000,
         .withdrawals_root = 0xbac9348581b0ee244d6eb61076b63c4e4afa70430c804ab0e6a0ab69d9a9d323_bytes32,
-        .data_gas_used = 456,
-        .excess_data_gas = 789633,
+        .blob_gas_used = 456,
+        .excess_blob_gas = 789633,
         .parent_beacon_block_root = 0x22_bytes32,
     };
 

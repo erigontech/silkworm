@@ -91,7 +91,7 @@ namespace rlp {
         if (txn.type != TransactionType::kLegacy) {
             h.payload_length += length(txn.access_list);
             if (txn.type == TransactionType::kBlob) {
-                h.payload_length += length(txn.max_fee_per_data_gas);
+                h.payload_length += length(txn.max_fee_per_blob_gas);
                 h.payload_length += length(txn.blob_versioned_hashes);
             }
         }
@@ -172,7 +172,7 @@ namespace rlp {
         encode(to, txn.access_list);
 
         if (txn.type == TransactionType::kBlob) {
-            encode(to, txn.max_fee_per_data_gas);
+            encode(to, txn.max_fee_per_blob_gas);
             encode(to, txn.blob_versioned_hashes);
         }
     }
@@ -273,9 +273,9 @@ namespace rlp {
         }
 
         if (to.type != TransactionType::kBlob) {
-            to.max_fee_per_data_gas = 0;
+            to.max_fee_per_blob_gas = 0;
             to.blob_versioned_hashes.clear();
-        } else if (DecodingResult res{decode_items(from, to.max_fee_per_data_gas, to.blob_versioned_hashes)}; !res) {
+        } else if (DecodingResult res{decode_items(from, to.max_fee_per_blob_gas, to.blob_versioned_hashes)}; !res) {
             return res;
         }
 
@@ -309,7 +309,7 @@ namespace rlp {
         if (h->list) {  // Legacy transaction
             to.type = TransactionType::kLegacy;
             to.access_list.clear();
-            to.max_fee_per_data_gas = 0;
+            to.max_fee_per_blob_gas = 0;
             to.blob_versioned_hashes.clear();
 
             const uint64_t leftover{from.length() - h->payload_length};
@@ -420,7 +420,7 @@ intx::uint512 UnsignedTransaction::maximum_gas_cost() const {
     // See https://github.com/ethereum/EIPs/pull/3594
     intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
     // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
-    max_gas_cost += intx::umul(intx::uint256{total_data_gas()}, max_fee_per_data_gas);
+    max_gas_cost += intx::umul(intx::uint256{total_blob_gas()}, max_fee_per_blob_gas);
     return max_gas_cost;
 }
 
@@ -436,8 +436,8 @@ intx::uint256 UnsignedTransaction::effective_gas_price(const intx::uint256& base
     return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
 }
 
-uint64_t UnsignedTransaction::total_data_gas() const {
-    return protocol::kDataGasPerBlob * blob_versioned_hashes.size();
+uint64_t UnsignedTransaction::total_blob_gas() const {
+    return protocol::kBlobGasPerBlob * blob_versioned_hashes.size();
 }
 
 }  // namespace silkworm

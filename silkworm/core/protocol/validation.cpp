@@ -40,7 +40,7 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
 
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas,
-                                          const std::optional<intx::uint256>& data_gas_price) {
+                                          const std::optional<intx::uint256>& blob_gas_price) {
     if (txn.chain_id.has_value()) {
         if (rev < EVMC_SPURIOUS_DRAGON) {
             // EIP-155 transaction before EIP-155 was activated
@@ -101,9 +101,9 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
                 return ValidationResult::kWrongBlobCommitmentVersion;
             }
         }
-        SILKWORM_ASSERT(data_gas_price);
-        if (txn.max_fee_per_data_gas < data_gas_price) {
-            return ValidationResult::kMaxFeePerDataGasTooLow;
+        SILKWORM_ASSERT(blob_gas_price);
+        if (txn.max_fee_per_blob_gas < blob_gas_price) {
+            return ValidationResult::kMaxFeePerBlobGasTooLow;
         }
         // TODO(yperbasis): There is an equal amount of versioned hashes, kzg commitments and blobs.
         // The KZG commitments hash to the versioned hashes, i.e. kzg_to_versioned_hash(kzg[i]) == versioned_hash[i]
@@ -147,11 +147,11 @@ ValidationResult validate_transaction(const Transaction& txn, const IntraBlockSt
 ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config) {
     const BlockHeader& header{block.header};
     const evmc_revision rev{config.revision(header.number, header.timestamp)};
-    const std::optional<intx::uint256> data_gas_price{header.data_gas_price()};
+    const std::optional<intx::uint256> blob_gas_price{header.blob_gas_price()};
 
     for (const Transaction& txn : block.transactions) {
         ValidationResult err{pre_validate_transaction(txn, rev, config.chain_id,
-                                                      header.base_fee_per_gas, data_gas_price)};
+                                                      header.base_fee_per_gas, blob_gas_price)};
         if (err != ValidationResult::kOk) {
             return err;
         }
@@ -192,14 +192,14 @@ intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     }
 }
 
-uint64_t calc_excess_data_gas(const BlockHeader& parent) {
-    const uint64_t parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
-    const uint64_t consumed_data_gas{parent.data_gas_used.value_or(0)};
+uint64_t calc_excess_blob_gas(const BlockHeader& parent) {
+    const uint64_t parent_excess_blob_gas{parent.excess_blob_gas.value_or(0)};
+    const uint64_t consumed_blob_gas{parent.blob_gas_used.value_or(0)};
 
-    if (parent_excess_data_gas + consumed_data_gas < kTargetDataGasPerBlock) {
+    if (parent_excess_blob_gas + consumed_blob_gas < kTargetBlobGasPerBlock) {
         return 0;
     } else {
-        return parent_excess_data_gas + consumed_data_gas - kTargetDataGasPerBlock;
+        return parent_excess_blob_gas + consumed_blob_gas - kTargetBlobGasPerBlock;
     }
 }
 

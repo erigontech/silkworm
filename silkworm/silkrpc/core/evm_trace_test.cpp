@@ -2593,19 +2593,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
             "transactionHash": "0x849ca3076047d76288f2d15b652f18e80622aa6163eff0a216a446d0a4a5288e",
             "transactionPosition": 0,
             "type": "create"
-        },
-        {
-            "action": {
-            "author": "0x0000000000000000000000000000000000000000",
-            "rewardType": "block",
-            "value": "0x1bc16d674ec80000"
-            },
-            "blockHash": "0x527198f474c1f1f1d01129d3a17ecc17895d85884a31b05ef0ecd480faee1592",
-            "blockNumber": 1024165,
-            "result": null,
-            "subtraces": 0,
-            "traceAddress": [],
-            "type": "reward"
         }
     ])"_json);
 }

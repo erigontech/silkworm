@@ -692,7 +692,7 @@ TEST_CASE("serialize ForkChoiceUpdatedReplyV1", "[silkworm::json][to_json]") {
             "latestValidHash":"0x0000000000000000000000000000000000000000000000000000000000000040",
             "validationError":"some error"
         },
-        "payloadId":"0x1"
+        "payloadId":"0x0000000000000001"
     })"_json);
 }
 

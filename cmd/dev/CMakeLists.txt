@@ -41,6 +41,9 @@ target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::tim
 add_executable(check_hashstate check_hashstate.cpp)
 target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
+add_executable(check_log_indices check_log_indices.cpp)
+target_link_libraries(check_log_indices PRIVATE silkworm_node cborcpp cmd_common CLI11::CLI11)
+
 add_executable(check_pow check_pow.cpp)
 target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
 

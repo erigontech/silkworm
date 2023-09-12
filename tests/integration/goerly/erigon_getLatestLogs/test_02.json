@@ -6,11 +6,9 @@
       "method": "erigon_getLatestLogs",
       "params": [
         {
-          "TAIL": "tail",
           "blockHash": "0xe64899e6fe64ebb72b8f65565e9dd765776da064aff9af4601c1efa445dbb0a1"
         },
         {
-          "TAIL": "tail"
         }
       ]
     },

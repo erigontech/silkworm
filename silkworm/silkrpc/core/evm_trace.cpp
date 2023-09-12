@@ -455,7 +455,7 @@ int get_stack_count(std::uint8_t op_code) {
 }
 
 void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<std::string>& trace_stack) {
-    int top = get_stack_count(op_code);
+    const int top = get_stack_count(op_code);
     trace_stack.reserve(top > 0 ? static_cast<std::size_t>(top) : 0);
     for (int i = top - 1; i >= 0; i--) {
         const auto str = intx::to_string(stack[-i], 16);
@@ -472,7 +472,7 @@ void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace
         }
         tm.data = "0x";
         const auto data = memory.data();
-        auto start = tm.offset;
+        const auto start = tm.offset;
         for (uint64_t idx{0}; idx < tm.len; idx++) {
             std::string entry{evmc::hex({data + start + idx, 1})};
             tm.data.append(entry);
@@ -550,7 +550,7 @@ std::string get_op_name(const char* const* names, std::uint8_t opcode) {
 
 static const char* PADDING = "0x0000000000000000000000000000000000000000000000000000000000000000";
 std::string to_string(intx::uint256 value) {
-    auto out = intx::to_string(value, 16);
+    const auto out = intx::to_string(value, 16);
     std::string padding = std::string{PADDING};
     return padding.substr(0, padding.size() - out.size()) + out;
 }
@@ -1240,7 +1240,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_INFO << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
+    SILK_TRACE << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
@@ -1385,7 +1385,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_INFO << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
+    SILK_TRACE << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
 
@@ -1585,7 +1585,7 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
 }
 
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
-    SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
+    SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
     if (!from_block_with_hash) {
@@ -1619,9 +1619,9 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     auto block_with_hash = from_block_with_hash;
     while (block_number++ <= to_block_with_hash->block.header.number) {
         const Block block{*block_with_hash, {}, false};
-        SILK_INFO << "TraceCallExecutor::trace_filter: processing "
-                  << " block_number: " << block_number - 1
-                  << " block: " << block;
+        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
+                   << " block_number: " << block_number - 1
+                   << " block: " << block;
 
         co_await trace_block(*block_with_hash, filter, stream);
 
@@ -1638,7 +1638,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
 
     stream->close_array();
 
-    SILK_INFO << "TraceCallExecutor::trace_filter: end";
+    SILK_TRACE << "TraceCallExecutor::trace_filter: end";
 
     co_return;
 }

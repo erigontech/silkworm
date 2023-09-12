@@ -67,12 +67,12 @@ void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, 
 }
 
 void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory) {
-    std::size_t len = 32;
+    const std::size_t len = 32;
     vect.reserve(memory.size() / len);
 
     const auto data = memory.data();
     for (std::size_t start = 0; start < memory.size(); start += len) {
-        std::string entry{evmc::hex({data + start, len})};
+        const std::string entry{evmc::hex({data + start, len})};
         vect.push_back(entry);
     }
 }
@@ -95,8 +95,8 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         opcode_names_ = evmc_get_instruction_names_table(rev);
     }
     start_gas_ = msg.gas;
-    evmc::address recipient(msg.recipient);
-    evmc::address sender(msg.sender);
+    const evmc::address recipient(msg.recipient);
+    const evmc::address sender(msg.sender);
     SILK_DEBUG << "on_execution_start: gas: " << std::dec << msg.gas
                << " depth: " << msg.depth
                << " recipient: " << recipient
@@ -107,11 +107,11 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     assert(execution_state.msg);
-    evmc::address recipient(execution_state.msg->recipient);
-    evmc::address sender(execution_state.msg->sender);
+    const evmc::address recipient(execution_state.msg->recipient);
+    const evmc::address sender(execution_state.msg->sender);
 
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    const auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
     SILK_DEBUG << "on_instruction_start:"
                << " pc: " << std::dec << pc
@@ -424,11 +424,11 @@ Task<void> DebugExecutor::execute(
     const silkworm::Block& block,
     const Transaction& transaction,
     int32_t index) {
-    SILK_INFO << "DebugExecutor::execute: "
-              << " block_number: " << block_number
-              << " transaction: {" << transaction << "}"
-              << " index: " << std::dec << index
-              << " config: " << config_;
+    SILK_TRACE << "DebugExecutor::execute: "
+               << " block_number: " << block_number
+               << " transaction: {" << transaction << "}"
+               << " index: " << std::dec << index
+               << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
@@ -486,12 +486,12 @@ Task<void> DebugExecutor::execute(
     const auto& block = block_with_hash.block;
     const auto& block_transactions = block.transactions;
 
-    SILK_INFO << "DebugExecutor::execute: "
-              << " block number: " << block.header.number
-              << " txns in block: " << block_transactions.size()
-              << " bundles: [" << bundles << "]"
-              << " transaction_index: " << std::dec << transaction_index
-              << " config: " << config_;
+    SILK_TRACE << "DebugExecutor::execute: "
+               << " block number: " << block.header.number
+               << " txns in block: " << block_transactions.size()
+               << " bundles: [" << bundles << "]"
+               << " transaction_index: " << std::dec << transaction_index
+               << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
 

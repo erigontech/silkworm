@@ -100,7 +100,7 @@ Task<void> StateChangesStream::run() {
         while (!read_ec) {
             std::tie(read_ec, reply) = co_await state_changes_rpc->read_on(scheduler_.get_executor(), use_nothrow_awaitable);
             if (!read_ec) {
-                SILK_INFO << "State changes batch received: " << reply << "";
+                SILK_TRACE << "State changes batch received: " << reply << "";
                 cache_->on_new_block(reply);
             } else {
                 if (read_ec.value() == grpc::StatusCode::CANCELLED) {

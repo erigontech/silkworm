@@ -54,7 +54,7 @@ class MainChain {
     void reintegrate_fork(ExtendingFork&);                       // reintegrate fork into the main chain
     std::optional<BlockId> find_forking_point(const BlockHeader& header, const Hash& header_hash) const;
     std::optional<BlockId> find_forking_point(const Hash& header_hash) const;
-    bool is_canonical(BlockId block) const;
+    bool is_finalized_canonical(BlockId block) const;
 
     // verification
     // verify chain up to head_block_hash
@@ -65,17 +65,18 @@ class MainChain {
     // state
     BlockId last_chosen_head() const;  // set by notify_fork_choice_update(), is always valid
     BlockId last_finalized_head() const;
+    BlockId current_head() const;
 
     // header/body retrieval
     BlockNum get_block_progress() const;
     std::optional<BlockHeader> get_header(BlockNum, Hash) const;
-    std::optional<Hash> get_canonical_hash(BlockNum) const;
+    std::optional<Hash> get_finalized_canonical_hash(BlockNum) const;
     std::optional<TotalDifficulty> get_header_td(BlockNum, Hash) const;
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     bool extends_last_fork_choice(BlockNum, Hash) const;
     bool extends(BlockId block, BlockId supposed_parent) const;
     bool is_ancestor(BlockId supposed_parent, BlockId block) const;
-    bool is_canonical(Hash) const;
+    bool is_finalized_canonical(Hash) const;
     // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
     std::optional<BlockHeader> get_header(Hash) const;
     std::optional<TotalDifficulty> get_header_td(Hash) const;
@@ -88,8 +89,11 @@ class MainChain {
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
+    void forward(BlockNum head_height, const Hash& head_hash);
+    void unwind(BlockNum unwind_point);
 
-    BlockId current_head() const;  // private state, it is implementation dependent, this head can be invalid
+    bool is_canonical(BlockNum block_height, const Hash& block_hash) const;
+    bool is_canonical_head_ancestor(const Hash& block_hash) const;
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

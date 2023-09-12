@@ -121,6 +121,7 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses);
 
 uint64_t from_quantity(const std::string& hex_quantity);
 
+std::string to_hex(uint64_t number);
 std::string to_hex_no_leading_zeros(uint64_t number);
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes);
 std::string to_quantity(uint64_t number);

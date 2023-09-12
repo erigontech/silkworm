@@ -62,16 +62,7 @@ tests_not_compared = [
    "eth_maxPriorityFeePerGas/test_1.json",
    "eth_feeHistory/test_1.json",
    "engine_getPayloadBodiesByHashV1/test_1.json",
-   "engine_getPayloadBodiesByRangeV1/test_1.json",
-   "erigon_getLatestLogs/test_01.json",
-   "erigon_getLatestLogs/test_02.json",
-   "erigon_getLatestLogs/test_03.json",
-   "erigon_getLatestLogs/test_05.json",
-   "erigon_getLatestLogs/test_06.json",
-   "erigon_getLatestLogs/test_07.json",
-   "erigon_getLatestLogs/test_08.json",
-   "erigon_getLatestLogs/test_10.json",
-   "erigon_getLatestLogs/test_11.json"
+   "engine_getPayloadBodiesByRangeV1/test_1.json"
 ]
 
 tests_not_compared_result = [

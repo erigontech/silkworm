@@ -105,9 +105,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
                                                       prune_receipts)};
 
             // If we return with success we must persist data
-            // Though counterintuitive we also must persist on KInvalidBlock to allow subsequent unwind
-            if (execution_result != Stage::Result::kSuccess &&
-                execution_result != Stage::Result::kInvalidBlock) {
+            if (execution_result != Stage::Result::kSuccess) {
                 throw StageError(execution_result);
             }
 
@@ -122,11 +120,6 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
-            // If an invalid block returned now can throw
-            if (execution_result == Stage::Result::kInvalidBlock) {
-                ret = execution_result;
-                break;
-            }
             block_num_++;
         }
 

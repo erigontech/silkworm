@@ -29,6 +29,7 @@ see its package dbutils.
 #include <absl/strings/str_cat.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 

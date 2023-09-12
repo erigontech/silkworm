@@ -20,6 +20,7 @@
 #include <map>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
 

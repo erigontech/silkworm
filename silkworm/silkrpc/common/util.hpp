@@ -27,6 +27,7 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/bloom.hpp>

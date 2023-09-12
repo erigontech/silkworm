@@ -22,6 +22,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/transaction.hpp>

@@ -24,6 +24,7 @@
 #include <boost/asio/ip/udp.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4 {

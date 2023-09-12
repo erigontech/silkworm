@@ -19,6 +19,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

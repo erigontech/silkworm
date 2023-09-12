@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 

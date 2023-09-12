@@ -19,6 +19,7 @@
 #include <memory>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry::rlpx::framing {
 

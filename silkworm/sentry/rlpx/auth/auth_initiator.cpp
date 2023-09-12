@@ -17,6 +17,7 @@
 #include "auth_initiator.hpp"
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 

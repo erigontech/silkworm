@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 

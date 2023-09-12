@@ -21,6 +21,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
 
 namespace silkworm::rpc {

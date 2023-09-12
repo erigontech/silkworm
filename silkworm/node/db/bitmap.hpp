@@ -36,6 +36,7 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/etl/collector.hpp>
 

@@ -140,7 +140,7 @@ evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& g
             state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
             // First pass for state_root_hash
-            ethash::hash256 hash{keccak256(address)};
+            ethash::hash256 hash{keccak256(address.bytes)};
             account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
         }
 

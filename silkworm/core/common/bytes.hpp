@@ -45,8 +45,6 @@ class ByteView : public std::basic_string_view<uint8_t> {
     constexpr ByteView(const std::array<uint8_t, N>& array) noexcept
         : std::basic_string_view<uint8_t>{array.data(), N} {}
 
-    constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
-
     constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
 
     template <std::size_t Extent>

@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
@@ -804,7 +805,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
             throw_if_stopping();
             last_address = address;
             log_lck.lock();
-            current_key_ = to_hex(address, true);
+            current_key_ = address_to_string(address);
             log_lck.unlock();
         }
 
@@ -857,7 +858,7 @@ Stage::Result HashState::write_changes_from_changed_storage(
             std::memcpy(&hashed_storage_prefix[0], hashed_addresses.at(last_address).bytes, kHashLength);
 
             log_lck.lock();
-            current_key_ = to_hex(address, true);
+            current_key_ = address_to_string(address);
             log_lck.unlock();
         }
 

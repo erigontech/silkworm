@@ -23,6 +23,18 @@
 
 namespace silkworm {
 
+namespace rlp {
+
+    void encode(Bytes& to, const evmc::address& address) {
+        encode(to, ByteView{address.bytes});
+    }
+
+    size_t length(const evmc::address& address) noexcept {
+        return length(ByteView{address.bytes});
+    }
+
+}  // namespace rlp
+
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexcept {
     rlp::Header h{true, 1 + kAddressLength};
     h.payload_length += rlp::length(nonce);
@@ -55,4 +67,17 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
     std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
     return address;
 }
+
+std::string address_to_string(const evmc::address& address) {
+    return to_hex(ByteView{address.bytes}, true);
+}
+
 }  // namespace silkworm
+
+namespace evmc {
+
+std::ostream& operator<<(std::ostream& out, const evmc::address& address) {
+    return out << silkworm::address_to_string(address);
+}
+
+}  // namespace evmc

@@ -31,10 +31,6 @@ namespace silkworm {
 
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
-// using Bytes = std::basic_string<uint8_t>; already defined elsewhere
-// using std::string to_hex(ByteView bytes);
-// using std::optional<Bytes> from_hex(std::string_view hex) noexcept;
-
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using duration_t = std::chrono::system_clock::duration;
 using seconds_t = std::chrono::seconds;
@@ -45,16 +41,6 @@ inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& byt
     out << silkworm::to_hex(bytes);
     return out;
 }
-
-inline std::ostream& operator<<(std::ostream& out, const evmc::address& addr) {
-    out << silkworm::to_hex(addr);
-    return out;
-}
-
-/*inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
-    out << silkworm::to_hex(b32);
-    return out;
-}*/
 
 // Peers
 using PeerId = Bytes;

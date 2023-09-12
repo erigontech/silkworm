@@ -24,6 +24,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
@@ -169,7 +170,7 @@ std::string to_quantity(intx::uint256 number) {
 namespace evmc {
 
 void to_json(nlohmann::json& json, const address& addr) {
-    json = "0x" + silkworm::to_hex(addr);
+    json = silkworm::address_to_string(addr);
 }
 
 void from_json(const nlohmann::json& json, address& addr) {
@@ -454,7 +455,7 @@ void to_json(nlohmann::json& json, const RevertError& error) {
 void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses) {
     json = nlohmann::json::array();
     for (const auto& address : addresses) {
-        json.push_back("0x" + silkworm::to_hex(address));
+        json.push_back(silkworm::address_to_string(address));
     }
 }
 

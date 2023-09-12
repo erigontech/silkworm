@@ -20,6 +20,7 @@
 
 #include <boost/endian/conversion.hpp>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -182,7 +183,7 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
     for (auto& log : logs) {
         SILK_DEBUG << "log: " << log;
         if (!addresses.empty() && std::find(addresses.begin(), addresses.end(), log.address) == addresses.end()) {
-            SILK_DEBUG << "skipped log for address: 0x" << silkworm::to_hex(log.address);
+            SILK_DEBUG << "skipped log for address: " << log.address;
             continue;
         }
         auto matches = true;

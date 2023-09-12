@@ -27,6 +27,10 @@
 
 namespace silkworm::trie {
 
+static ethash::hash256 keccak256(const evmc::address& address) {
+    return silkworm::keccak256(address.bytes);
+}
+
 TEST_CASE("Trie Cursor") {
     test::Context db_context{};
     auto txn{db_context.txn()};
@@ -786,8 +790,8 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
         const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
         const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
 
-        const auto hashed_loc1{keccak256(plain_loc1)};
-        const auto hashed_loc2{keccak256(plain_loc2)};
+        const auto hashed_loc1{silkworm::keccak256(plain_loc1)};
+        const auto hashed_loc2{silkworm::keccak256(plain_loc2)};
 
         const auto nibbled_hashed_loc1{unpack_nibbles(hashed_loc1.bytes)};
         const auto nibbled_hashed_loc2{unpack_nibbles(hashed_loc2.bytes)};

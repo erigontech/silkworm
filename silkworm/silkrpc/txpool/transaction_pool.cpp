@@ -16,6 +16,7 @@
 
 #include "transaction_pool.hpp"
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>

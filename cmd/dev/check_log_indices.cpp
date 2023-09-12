@@ -27,6 +27,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -130,7 +131,7 @@ std::string block_range(const Settings& settings) {
 }
 
 void trace(const Log& log) {
-    log::Trace() << "address: " << to_hex(log.address) << " topics: " << log.topics.size();
+    log::Trace() << "address: " << log.address << " topics: " << log.topics.size();
     int i{0};
     for (const auto& t : log.topics) {
         log::Trace() << "topic[" << i << "]: " << to_hex(t);
@@ -234,7 +235,7 @@ int main(int argc, char* argv[]) {
 
                 if (settings.index != TargetIndex::kLogTopic) {
                     if (log.address == settings.address) {
-                        log::Info() << "block " << block_number << " tx " << tx_id << " generated log for " << to_hex(log.address);
+                        log::Info() << "block " << block_number << " tx " << tx_id << " generated log for " << log.address;
                     }
                     check_address_index(block_number, log.address, log_address_cursor.get());
                     processed_addresses_count++;

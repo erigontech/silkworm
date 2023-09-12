@@ -126,7 +126,7 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
 
     for (const auto& l : logs) {
         GlazeJsonLogItem item{};
-        to_hex(std::span(item.address), l.address);
+        to_hex(std::span(item.address), l.address.bytes);
         to_hex(std::span(item.tx_hash), l.tx_hash);
         to_hex(std::span(item.block_hash), l.block_hash);
         to_quantity(std::span(item.block_number), l.block_number);

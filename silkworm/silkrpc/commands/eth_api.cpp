@@ -976,7 +976,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1016,7 +1016,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1058,7 +1058,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1100,7 +1100,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     const auto address = params[0].get<evmc::address>();
     const auto location = params[1].get<evmc::bytes32>();
     const auto block_id = params[2].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 

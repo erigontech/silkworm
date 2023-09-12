@@ -19,6 +19,7 @@
 #include <iomanip>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -39,7 +40,7 @@ std::ostream& operator<<(std::ostream& out, const Transaction& t) {
     }
     out << " data: " << silkworm::to_hex(t.data);
     if (t.from) {
-        out << " from: " << silkworm::to_hex(*t.from);
+        out << " from: " << *t.from;
     } else {
         out << " from: null";
     }
@@ -54,7 +55,7 @@ std::ostream& operator<<(std::ostream& out, const Transaction& t) {
     out << " s: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.s));
 
     if (t.to) {
-        out << " to: " << silkworm::to_hex(*t.to);
+        out << " to: " << *t.to;
     } else {
         out << " to: null";
     }
@@ -74,7 +75,7 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
     }
     out << " data: " << silkworm::to_hex(t.data);
     if (t.from) {
-        out << " from: " << silkworm::to_hex(*t.from);
+        out << " from: " << *t.from;
     } else {
         out << " from: null";
     }
@@ -88,7 +89,7 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
     out << " s: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.s));
 
     if (t.to) {
-        out << " to: " << silkworm::to_hex(*t.to);
+        out << " to: " << *t.to;
     } else {
         out << " to: null";
     }

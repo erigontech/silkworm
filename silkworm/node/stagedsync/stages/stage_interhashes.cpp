@@ -252,7 +252,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             changeset_value_view.remove_prefix(kAddressLength);
             auto hashed_addresses_it{hashed_addresses.find(address)};
             if (hashed_addresses_it == hashed_addresses.end()) {
-                const auto hashed_address{keccak256(address)};
+                const auto hashed_address{keccak256(address.bytes)};
                 hashed_addresses_it = hashed_addresses.insert_or_assign(address, hashed_address).first;
             }
 

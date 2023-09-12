@@ -74,6 +74,8 @@ using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, 
 // address can be either plain account address (20 bytes) or hash thereof (32 bytes)
 Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
+Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
+
 // Erigon EncodeBlockNumber
 Bytes block_key(BlockNum block_number);
 
@@ -120,6 +122,10 @@ std::tuple<ByteView, uint32_t> split_log_topic_key(const mdbx::slice& key);
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(ByteView key, ByteView value);
 
 inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
+
+inline mdbx::slice to_slice(const evmc::address& address) {
+    return to_slice(ByteView{address.bytes});
+}
 
 inline ByteView from_slice(const mdbx::slice slice) {
     return {static_cast<const uint8_t*>(slice.data()), slice.length()};

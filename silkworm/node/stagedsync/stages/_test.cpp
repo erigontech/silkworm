@@ -35,6 +35,10 @@
 using namespace silkworm;
 using namespace evmc::literals;
 
+static ethash::hash256 keccak256(const evmc::address& address) {
+    return silkworm::keccak256(address.bytes);
+}
+
 TEST_CASE("Sync Stages") {
     TemporaryDirectory temp_dir{};
     NodeSettings node_settings{};

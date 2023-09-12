@@ -247,7 +247,7 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
 
     std::map<evmc::bytes32, Bytes> account_rlp;
     for (const auto& [address, account] : accounts_) {
-        ethash::hash256 hash{keccak256(address)};
+        ethash::hash256 hash{keccak256(address.bytes)};
         evmc::bytes32 storage_root{account_storage_root(address, account.incarnation)};
         account_rlp[to_bytes32(hash.bytes)] = account.rlp(storage_root);
     }

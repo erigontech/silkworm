@@ -33,6 +33,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -1015,7 +1016,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
         auto exists = intra_block_state.exists(address);
         auto& diff_storage = diff_storage_[address];
 
-        auto address_key = "0x" + silkworm::to_hex(address);
+        auto address_key = silkworm::address_to_string(address);
         auto& entry = state_diff_[address_key];
         if (initial_exists) {
             auto initial_balance = state_addresses_.get_balance(address);

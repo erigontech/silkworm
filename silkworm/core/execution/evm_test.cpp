@@ -232,7 +232,7 @@ TEST_CASE("DELEGATECALL") {
     Transaction txn{};
     txn.from = caller_address;
     txn.to = caller_address;
-    txn.data = ByteView{to_bytes32(callee_address)};
+    txn.data = ByteView{to_bytes32(callee_address.bytes)};
 
     uint64_t gas{1'000'000};
     CallResult res{evm.execute(txn, gas)};
@@ -240,7 +240,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.data.empty());
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(caller_address));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0)), true) == address_to_string(caller_address));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification

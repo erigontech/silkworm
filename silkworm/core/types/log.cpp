@@ -16,6 +16,7 @@
 
 #include "log.hpp"
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm ::rlp {

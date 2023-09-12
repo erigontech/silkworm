@@ -28,6 +28,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/bittorrent/client.hpp>
@@ -335,13 +336,13 @@ static void print_header(const BlockHeader& header, const std::string& snapshot_
               << "hash=" << to_hex(header.hash()) << "\n"
               << "parent_hash=" << to_hex(header.parent_hash) << "\n"
               << "number=" << header.number << "\n"
-              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
               << "ommers_hash=" << to_hex(header.ommers_hash) << "\n"
               << "state_root=" << to_hex(header.state_root) << "\n"
               << "transactions_root=" << to_hex(header.transactions_root) << "\n"
               << "receipts_root=" << to_hex(header.receipts_root) << "\n"
               << "withdrawals_root=" << (header.withdrawals_root ? to_hex(*header.withdrawals_root) : "") << "\n"
-              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
               << "timestamp=" << header.timestamp << "\n"
               << "nonce=" << to_hex(header.nonce) << "\n"
               << "prev_randao=" << to_hex(header.prev_randao) << "\n"
@@ -487,8 +488,8 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
     std::cout << "Transaction found in: " << snapshot_filename << "\n"
               << "hash=" << to_hex(txn.hash()) << "\n"
               << "type=" << magic_enum::enum_name(txn.type) << "\n"
-              << "from=" << (txn.from ? to_hex(*txn.from) : "") << "\n"
-              << "to=" << (txn.to ? to_hex(*txn.to) : "") << "\n"
+              << "from=" << (txn.from ? address_to_string(*txn.from) : "") << "\n"
+              << "to=" << (txn.to ? address_to_string(*txn.to) : "") << "\n"
               << "chain_id=" << (txn.chain_id ? intx::to_string(*txn.chain_id) : "") << "\n"
               << "nonce=" << txn.nonce << "\n"
               << "value=" << intx::to_string(txn.value) << "\n"
@@ -505,7 +506,7 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
                      std::string rep{"["};
                      for (size_t i{0}; i < txn.access_list.size(); ++i) {
                          const auto& access_entry{txn.access_list[i]};
-                         rep.append(to_hex(access_entry.account));
+                         rep.append(address_to_string(access_entry.account));
                          rep.append(" : [");
                          for (size_t j{0}; j < access_entry.storage_keys.size(); ++j) {
                              rep.append(to_hex(access_entry.storage_keys[j].bytes));

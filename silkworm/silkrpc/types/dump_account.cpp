@@ -17,6 +17,7 @@
 #include "dump_account.hpp"
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -35,7 +36,7 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
     for (const auto& entry : dump.accounts) {
         nlohmann::json item;
         to_json(item, entry.second);
-        accounts.push_back(nlohmann::json::object_t::value_type("0x" + silkworm::to_hex(entry.first), item));
+        accounts.push_back(nlohmann::json::object_t::value_type(silkworm::address_to_string(entry.first), item));
     }
     auto encoded = base64_encode({dump.next.bytes, kAddressLength}, false);
     json = {

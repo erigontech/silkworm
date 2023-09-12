@@ -115,11 +115,6 @@ inline auto hash_of_transaction(const silkworm::Transaction& txn) {
 
 namespace evmc {
 
-inline std::ostream& operator<<(std::ostream& out, const address& addr) {
-    out << silkworm::to_hex(addr);
-    return out;
-}
-
 inline std::ostream& operator<<(std::ostream& out, const bytes32& b32) {
     out << silkworm::to_hex(b32);
     return out;

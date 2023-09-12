@@ -35,6 +35,10 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation) {
     return res;
 }
 
+Bytes storage_prefix(const evmc::address& address, uint64_t incarnation) {
+    return storage_prefix(ByteView{address.bytes}, incarnation);
+}
+
 Bytes block_key(BlockNum block_number) {
     Bytes key(sizeof(BlockNum), '\0');
     endian::store_big_u64(&key[0], block_number);

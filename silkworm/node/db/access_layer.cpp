@@ -629,7 +629,7 @@ static std::optional<ByteView> historical_account(ROTxn& txn, const evmc::addres
 
     cursor->bind(txn, table::kAccountChangeSet);
     const Bytes change_set_key{block_key(*change_block)};
-    return find_value_suffix(*cursor, change_set_key, address);
+    return find_value_suffix(*cursor, change_set_key, address.bytes);
 }
 
 // Erigon FindByHistory for storage

@@ -28,6 +28,7 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>

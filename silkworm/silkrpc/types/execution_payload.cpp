@@ -16,6 +16,7 @@
 
 #include "execution_payload.hpp"
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {

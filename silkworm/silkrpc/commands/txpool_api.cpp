@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -54,7 +55,7 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
         bool error = false;
         for (std::size_t i{0}; i < txpool_transactions.size(); i++) {
             silkworm::ByteView from{txpool_transactions[i].rlp};
-            std::string sender = silkworm::to_hex(txpool_transactions[i].sender, true);
+            std::string sender = silkworm::address_to_string(txpool_transactions[i].sender);
             Transaction txn{};
             const auto result = silkworm::rlp::decode_transaction(from, txn, rlp::Eip2718Wrapping::kBoth);
             if (!result) {

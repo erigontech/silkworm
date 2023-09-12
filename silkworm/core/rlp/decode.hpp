@@ -43,8 +43,6 @@ enum class Leftover {
 // in which case the byte is put back.
 [[nodiscard]] tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
 
-DecodingResult decode(ByteView& from, evmc::bytes32& to, Leftover mode = Leftover::kProhibit) noexcept;
-
 DecodingResult decode(ByteView& from, Bytes& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 template <UnsignedIntegral T>

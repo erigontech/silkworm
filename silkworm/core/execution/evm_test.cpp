@@ -25,6 +25,7 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "address.hpp"
 
@@ -114,7 +115,7 @@ TEST_CASE("Smart contract with storage") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/1)};
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0).bytes)) == "2a");
 
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
@@ -240,7 +241,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.data.empty());
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0)), true) == address_to_string(caller_address));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_string(caller_address));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
@@ -539,7 +540,7 @@ TEST_CASE("Tracing smart contract with storage") {
     evm.add_tracer(tracer3);
     CHECK(evm.tracers().size() == 3);
 
-    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0).bytes)) == "2a");
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
     txn.data = ByteView{new_val};

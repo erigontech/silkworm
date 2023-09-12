@@ -26,6 +26,7 @@
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 

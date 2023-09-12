@@ -21,6 +21,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
@@ -412,7 +413,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             // ...header
             auto [block_num, hash] = split_block_key(key);
             const bool present = read_header(txn, hash, block_num, block.header);
-            ensure(present, "header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            ensure(present, "header not found for body number= " + std::to_string(block_num) + ", hash= " + silkworm::to_hex(hash));
             // invoke handler
             process_func(block);
         },
@@ -591,7 +592,7 @@ void write_tx_lookup(RWTxn& txn, const Block& block) {
     const auto block_number_bytes = db::block_key(block.header.number);
     for (const auto& block_txn : block.transactions) {
         auto tx_key = block_txn.hash();
-        target->upsert(to_slice(tx_key.bytes), to_slice(block_number_bytes));
+        target->upsert(to_slice(tx_key), to_slice(block_number_bytes));
     }
 }
 
@@ -658,7 +659,7 @@ static std::optional<ByteView> historical_storage(ROTxn& txn, const evmc::addres
 
     cursor->bind(txn, table::kStorageChangeSet);
     const Bytes change_set_key{storage_change_key(*change_block, address, incarnation)};
-    return find_value_suffix(*cursor, change_set_key, location);
+    return find_value_suffix(*cursor, change_set_key, location.bytes);
 }
 
 std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, std::optional<BlockNum> block_num) {
@@ -700,7 +701,7 @@ evmc::bytes32 read_storage(ROTxn& txn, const evmc::address& address, uint64_t in
     if (!val.has_value()) {
         auto cursor = txn.ro_cursor_dup_sort(table::kPlainState);
         auto key{storage_prefix(address, incarnation)};
-        val = find_value_suffix(*cursor, key, location);
+        val = find_value_suffix(*cursor, key, location.bytes);
     }
 
     if (!val.has_value()) {
@@ -1320,7 +1321,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) 
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
     auto cursor = txn_.ro_cursor(table::kTxLookup);
-    auto data{cursor->find(to_slice(tx_hash.bytes), /*throw_notfound = */ false)};
+    auto data{cursor->find(to_slice(tx_hash), /*throw_notfound = */ false)};
     if (!data) {
         return std::nullopt;
     }

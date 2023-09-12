@@ -57,15 +57,6 @@ static constexpr uint8_t kUnhexTable4[256] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-evmc::bytes32 to_bytes32(ByteView bytes) {
-    evmc::bytes32 out;
-    if (!bytes.empty()) {
-        size_t n{std::min(bytes.length(), kHashLength)};
-        std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
-    }
-    return out;
-}
-
 ByteView zeroless_view(ByteView data) {
     const auto is_zero_byte = [](const auto& b) { return b == 0x0; };
     const auto first_nonzero_byte_it{as_range::find_if_not(data, is_zero_byte)};

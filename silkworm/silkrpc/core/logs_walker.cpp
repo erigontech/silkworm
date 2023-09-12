@@ -21,6 +21,7 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -193,12 +194,12 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
                 continue;
             }
             for (size_t i{0}; i < topics.size(); i++) {
-                SILK_DEBUG << "log.topics[i]: " << log.topics[i];
+                SILK_DEBUG << "log.topics[i]: " << to_hex(log.topics[i]);
                 auto subtopics = topics[i];
                 auto matches_subtopics = subtopics.empty();  // empty rule set == wildcard
                 SILK_DEBUG << "matches_subtopics: " << std::boolalpha << matches_subtopics;
                 for (auto& topic : subtopics) {
-                    SILK_DEBUG << "topic: " << topic;
+                    SILK_DEBUG << "topic: " << to_hex(topic);
                     if (log.topics[i] == topic) {
                         matches_subtopics = true;
                         SILK_DEBUG << "matches_subtopics: " << std::boolalpha << matches_subtopics;

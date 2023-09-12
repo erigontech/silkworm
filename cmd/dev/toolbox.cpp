@@ -37,6 +37,7 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -1644,7 +1645,7 @@ void do_trie_root(db::EnvConfig& config) {
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
         SILKWORM_ASSERT(!trie_data.first_uncovered.has_value());  // Means skip state
         log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)});
-        auto hash{to_bytes32(trie_data.hash.value())};
+        auto& hash = trie_data.hash.value();
         hash_builder.add_branch_node(trie_data.key.value(), hash, false);
         if (SignalHandler::signalled()) {
             throw std::runtime_error("Interrupted");

@@ -25,6 +25,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
@@ -154,6 +155,10 @@ std::string to_quantity(silkworm::ByteView bytes) {
     return "0x" + to_hex_no_leading_zeros(bytes);
 }
 
+std::string to_quantity(const evmc::bytes32& bytes) {
+    return to_quantity(silkworm::ByteView{bytes.bytes});
+}
+
 std::string to_quantity(uint64_t number) {
     return "0x" + to_hex_no_leading_zeros(number);
 }
@@ -179,7 +184,7 @@ void from_json(const nlohmann::json& json, address& addr) {
 }
 
 void to_json(nlohmann::json& json, const bytes32& b32) {
-    json = "0x" + silkworm::to_hex(b32);
+    json = silkworm::to_hex(b32, true);
 }
 
 void from_json(const nlohmann::json& json, bytes32& b32) {

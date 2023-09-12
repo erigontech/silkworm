@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -30,7 +31,7 @@ intx::uint256 Transaction::effective_gas_price() const {
 
 std::ostream& operator<<(std::ostream& out, const Transaction& t) {
     out << " #access_list: " << t.access_list.size();
-    out << " block_hash: " << t.block_hash;
+    out << " block_hash: " << to_hex(t.block_hash);
     out << " block_number: " << t.block_number;
     out << " block_base_fee_per_gas: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.block_base_fee_per_gas.value_or(0)));
     if (t.chain_id) {

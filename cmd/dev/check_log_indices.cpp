@@ -28,6 +28,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>

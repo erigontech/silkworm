@@ -21,6 +21,7 @@
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
@@ -148,7 +149,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     }
     auto block_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -521,7 +522,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -568,7 +569,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -615,7 +616,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 

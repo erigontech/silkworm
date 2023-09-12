@@ -24,6 +24,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -202,12 +203,12 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
             // if not found, try to get it from the execution engine
             auto parent = co_await exec_engine_.get_header(block->header.number - 1, block->header.parent_hash);
             if (!parent) {
-                log::Trace() << "PoSSync: new_payload parent=" << to_hex(block->header.parent_hash) << " NOT found, extend the chain";
+                log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " NOT found, extend the chain";
                 // send payload to the block exchange to extend the chain up to it
                 block_exchange_.new_target_block(std::move(block));
                 co_return rpc::PayloadStatus::Syncing;
             }
-            log::Trace() << "PoSSync: new_payload parent=" << to_hex(block->header.parent_hash) << " found, add to chain fork";
+            log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " found, add to chain fork";
             // if found, add it to the chain_fork_view_ and calc total difficulty
             parent_td = co_await exec_engine_.get_header_td(block->header.parent_hash, block->header.number - 1);
             // TODO(canepat) either remove caching here or use a distinct cache (the same ChainForkView eats on itself)
@@ -281,8 +282,8 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
         if (!state.head_block_hash) {
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "invalid head block hash"}};
         }
-        log::Info() << "PoSSync: fork_choice_update head_block_hash=" << to_hex(state.head_block_hash)
-                    << " safe_block_hash=" << to_hex(state.safe_block_hash) << " finalized_block_hash=" << to_hex(state.finalized_block_hash);
+        log::Info() << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
+                    << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         Hash head_header_hash = state.head_block_hash;
         auto head_header = co_await exec_engine_.get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
@@ -306,7 +307,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
         auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
         if (!parent_td) {
             log::Info() << "PoSSync: fork_choice_update TD not found for parent block number=" << (head_header->number - 1)
-                        << " hash=" << to_hex(head_header->parent_hash) << " => SYNCING";
+                        << " hash=" << Hash(head_header->parent_hash) << " => SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing};
         }
 
@@ -343,7 +344,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
         ensure(std::holds_alternative<ForkChoiceApplication>(fcu_application), "PoSSync: unexpected awaitable operators outcome");
         auto application{std::get<ForkChoiceApplication>(fcu_application)};
         log::Info() << "PoSSync: fork_choice_update " << (application.success ? "OK" : "KO")
-                    << " latest_valid_hash=" << (application.success ? to_hex(state.head_block_hash) : application.current_head.to_hex())
+                    << " latest_valid_hash=" << (application.success ? Hash(state.head_block_hash).to_hex() : application.current_head.to_hex())
                     << " current_head=" << application.current_head << " current_height=" << application.current_height;
         if (!application.success) {
             // at the moment application doesn't carry information to disambiguate between invalid head and

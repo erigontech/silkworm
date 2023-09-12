@@ -20,8 +20,6 @@
 #include <string>
 #include <string_view>
 
-#include <evmc/evmc.hpp>
-
 namespace silkworm {
 
 using Bytes = std::basic_string<uint8_t>;
@@ -44,8 +42,6 @@ class ByteView : public std::basic_string_view<uint8_t> {
     template <std::size_t N>
     constexpr ByteView(const std::array<uint8_t, N>& array) noexcept
         : std::basic_string_view<uint8_t>{array.data(), N} {}
-
-    constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
 
     template <std::size_t Extent>
     constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept

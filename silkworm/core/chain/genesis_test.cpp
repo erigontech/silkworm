@@ -22,6 +22,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
 namespace silkworm {

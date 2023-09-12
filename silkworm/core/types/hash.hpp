@@ -45,8 +45,8 @@ class Hash : public evmc::bytes32 {
     [[nodiscard]] std::string to_hex() const { return silkworm::to_hex(*this); }
     static std::optional<Hash> from_hex(const std::string& hex) { return evmc::from_hex<Hash>(hex); }
 
-    // conversion to ByteView is handled in ByteView class,
-    // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
+    // conversion to ByteView
+    operator ByteView() const { return ByteView{bytes}; }
 
     static_assert(sizeof(evmc::bytes32) == 32);
 };

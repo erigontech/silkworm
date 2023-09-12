@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -194,7 +195,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -244,7 +245,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -406,7 +407,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 

@@ -26,6 +26,7 @@
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -263,7 +264,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
                 plainstate_account = *item;
             } else {
-                auto ps_data{plain_state->find(db::to_slice(address.bytes), false)};
+                auto ps_data{plain_state->find(db::to_slice(address), false)};
                 if (ps_data && ps_data.value.length()) {
                     const auto account{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     success_or_throw(account);

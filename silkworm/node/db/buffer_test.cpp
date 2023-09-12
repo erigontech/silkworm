@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/tables.hpp>
@@ -42,8 +43,8 @@ TEST_CASE("Storage update") {
 
     auto state = txn.rw_cursor_dup_sort(table::kPlainState);
 
-    upsert_storage_value(*state, key, location_a, value_a1);
-    upsert_storage_value(*state, key, location_b, value_b);
+    upsert_storage_value(*state, key, location_a.bytes, value_a1.bytes);
+    upsert_storage_value(*state, key, location_b.bytes, value_b.bytes);
 
     Buffer buffer{txn, 0};
 
@@ -59,14 +60,14 @@ TEST_CASE("Storage update") {
     buffer.write_to_db();
 
     // Location A should have the new value
-    const std::optional<ByteView> db_value_a{find_value_suffix(*state, key, location_a)};
+    const std::optional<ByteView> db_value_a{find_value_suffix(*state, key, location_a.bytes)};
     REQUIRE(db_value_a.has_value());
-    CHECK(db_value_a == zeroless_view(value_a2));
+    CHECK(db_value_a == zeroless_view(value_a2.bytes));
 
     // Location B should not change
-    const std::optional<ByteView> db_value_b{find_value_suffix(*state, key, location_b)};
+    const std::optional<ByteView> db_value_b{find_value_suffix(*state, key, location_b.bytes)};
     REQUIRE(db_value_b.has_value());
-    CHECK(db_value_b == zeroless_view(value_b));
+    CHECK(db_value_b == zeroless_view(value_b.bytes));
 }
 
 TEST_CASE("Account update") {

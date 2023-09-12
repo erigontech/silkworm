@@ -99,7 +99,7 @@ Task<void> StorageWalker::walk_of_storages(
     auto ps_key{make_key(address, incarnation)};
     ethdb::SplitCursorDupSort ps_split_cursor{*ps_cursor,
                                               ps_key,
-                                              location_hash,            /* subkey */
+                                              location_hash.bytes,      /* subkey */
                                               8 * (kAddressLength + 8), /* match_bits */
                                               kAddressLength,           /* part1_end */
                                               kHashLength};             /* value_offset */

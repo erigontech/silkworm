@@ -101,7 +101,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     if (block_number_ >= prune_history_threshold_) {
         changed_storage_.insert(address);
-        ByteView initial_val{zeroless_view(initial)};
+        ByteView initial_val{zeroless_view(initial.bytes)};
         if (block_storage_changes_[block_number_][address][incarnation]
                 .insert_or_assign(location, initial_val)
                 .second) {
@@ -314,7 +314,7 @@ void Buffer::write_state_to_db() {
             for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
                 for (const auto& [location, value] : contract_storage) {
-                    upsert_storage_value(*state_table, prefix, location, value);
+                    upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
                     written_size += prefix.length() + kLocationLength + kHashLength;
                 }
             }

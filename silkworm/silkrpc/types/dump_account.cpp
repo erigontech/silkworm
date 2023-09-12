@@ -18,13 +18,14 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump) {
-    out << "root: 0x" << dump.root
+    out << "root: 0x" << silkworm::to_hex(dump.root)
         << " next: " << dump.next
         << " accounts: " << dump.accounts.size();
     return out;

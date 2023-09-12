@@ -29,6 +29,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/bittorrent/client.hpp>

@@ -21,6 +21,7 @@
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/processor.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>

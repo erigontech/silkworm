@@ -22,6 +22,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
@@ -74,9 +75,9 @@ TEST_CASE("print empty address", "[silkrpc][common][util]") {
 
 TEST_CASE("print bytes32", "[silkrpc][common][util]") {
     evmc::bytes32 b32_1{};
-    CHECK_NOTHROW(test_util::null_stream() << b32_1);
+    CHECK_NOTHROW(test_util::null_stream() << to_hex(b32_1));
     evmc::bytes32 b32_2{0x3763e4f6e4198413383534c763f3f5dac5c5e939f0a81724e3beb96d6e2ad0d5_bytes32};
-    CHECK_NOTHROW(test_util::null_stream() << b32_2);
+    CHECK_NOTHROW(test_util::null_stream() << to_hex(b32_2));
 }
 
 TEST_CASE("print empty const_buffer", "[silkrpc][common][util]") {

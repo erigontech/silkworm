@@ -24,6 +24,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 
@@ -226,15 +227,15 @@ evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, 
     std::map<evmc::bytes32, Bytes> storage_rlp;
     Bytes buffer;
     for (const auto& [location, value] : storage) {
-        ethash::hash256 hash{keccak256(location)};
+        ethash::hash256 hash{keccak256(location.bytes)};
         buffer.clear();
-        rlp::encode(buffer, zeroless_view(value));
+        rlp::encode(buffer, zeroless_view(value.bytes));
         storage_rlp[to_bytes32(hash.bytes)] = buffer;
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : storage_rlp) {
-        hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+        hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
     }
 
     return hb.root_hash();
@@ -254,7 +255,7 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : account_rlp) {
-        hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+        hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
     }
 
     return hb.root_hash();

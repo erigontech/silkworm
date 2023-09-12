@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 #include "types.hpp"
@@ -128,8 +129,8 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
     for (const auto& l : logs) {
         GlazeJsonLogItem item{};
         to_hex(std::span(item.address), l.address.bytes);
-        to_hex(std::span(item.tx_hash), l.tx_hash);
-        to_hex(std::span(item.block_hash), l.block_hash);
+        to_hex(std::span(item.tx_hash), l.tx_hash.bytes);
+        to_hex(std::span(item.block_hash), l.block_hash.bytes);
         to_quantity(std::span(item.block_number), l.block_number);
         to_quantity(std::span(item.tx_index), l.tx_index);
         to_quantity(std::span(item.index), l.index);
@@ -139,7 +140,7 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
             item.timestamp = to_quantity(*(l.timestamp));
         }
         for (const auto& t : l.topics) {
-            item.topics.push_back("0x" + silkworm::to_hex(t));
+            item.topics.push_back(silkworm::to_hex(t, true));
         }
         log_json_data.log_json_list.push_back(item);
     }

@@ -23,6 +23,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
@@ -460,15 +461,15 @@ TEST_CASE("Sync Stages") {
             REQUIRE(hashed_storage_table.count_multivalue() == 2);
 
             // location 0
-            auto hashed_loc0{keccak256(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)};
+            auto hashed_loc0{keccak256((0x0000000000000000000000000000000000000000000000000000000000000000_bytes32).bytes)};
             hashed_storage_table.to_current_first_multi();
             mdbx::slice db_val{hashed_storage_table.current().value};
             REQUIRE(db_val.starts_with(db::to_slice(hashed_loc0.bytes)));
             ByteView value{db::from_slice(db_val).substr(kHashLength)};
-            REQUIRE(to_hex(value) == to_hex(zeroless_view(new_val)));
+            REQUIRE(to_hex(value) == to_hex(zeroless_view(new_val.bytes)));
 
             // location 1
-            auto hashed_loc1{keccak256(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32)};
+            auto hashed_loc1{keccak256((0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes)};
             hashed_storage_table.to_current_next_multi();
             db_val = hashed_storage_table.current().value;
             CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));

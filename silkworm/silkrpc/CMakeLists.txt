@@ -65,12 +65,6 @@ set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
 
 add_library(silkrpc "${SILKRPC_SRC}")
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
-# https://github.com/grpc/grpc/issues/19224
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(silkrpc PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
-
 # cmake-format: off
 target_include_directories(
   silkrpc

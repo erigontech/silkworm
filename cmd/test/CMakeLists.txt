@@ -36,17 +36,11 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
-  if(SILKWORM_SANITIZE)
-    target_compile_definitions(node_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
-  if(SILKWORM_SANITIZE)
-    target_compile_definitions(rpcdaemon_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
   target_include_directories(
     rpcdaemon_test PRIVATE ${SILKWORM_MAIN_DIR} ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include
   )
@@ -55,9 +49,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
   add_executable(sync_test unit_test.cpp ${SILKWORM_SYNC_TESTS})
-  if(SILKWORM_SANITIZE)
-    target_compile_definitions(sync_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
   target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2 GTest::gmock)
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)

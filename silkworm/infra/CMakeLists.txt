@@ -33,12 +33,6 @@ list(FILTER SRC EXCLUDE REGEX "test_util/")
 
 add_library(${TARGET} "${SRC}")
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
-# https://github.com/grpc/grpc/issues/19224
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
-
 target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(LIBS_PUBLIC
@@ -72,9 +66,6 @@ target_link_libraries(
 set(TEST_TARGET ${TARGET}_test)
 file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
 add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
 target_link_libraries(
   ${TEST_TARGET}
   PRIVATE ${TARGET} Catch2::Catch2 GTest::gmock

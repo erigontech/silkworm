@@ -29,6 +29,7 @@
 namespace silkworm::rpc {
 
 Task<std::optional<silkworm::Account>> StateReader::read_account(const evmc::address& address, BlockNum block_number) const {
+    std::cout << "read_account is called\n";
     std::optional<silkworm::Bytes> encoded{co_await read_historical_account(address, block_number)};
     if (!encoded) {
         encoded = co_await db_reader_.get_one(db::table::kPlainStateName, full_view(address));
@@ -50,6 +51,7 @@ Task<std::optional<silkworm::Account>> StateReader::read_account(const evmc::add
         }
     }
 
+    std::cout << "read_account returns\n";
     co_return *account;
 }
 
@@ -58,6 +60,8 @@ Task<evmc::bytes32> StateReader::read_storage(
     uint64_t incarnation,
     const evmc::bytes32& location_hash,
     BlockNum block_number) const {
+
+    std::cout << "read_storage is called\n";
     std::optional<silkworm::Bytes> value{co_await read_historical_storage(address, incarnation, location_hash, block_number)};
     if (!value) {
         auto composite_key{silkworm::composite_storage_key_without_hash_lookup(address, incarnation)};
@@ -66,11 +70,13 @@ Task<evmc::bytes32> StateReader::read_storage(
         SILK_DEBUG << "StateReader::read_storage value: " << (value ? *value : silkworm::Bytes{});
     }
     if (!value) {
+        std::cout << "read_storage returns exit1\n";
         co_return evmc::bytes32{};
     }
 
     evmc::bytes32 storage_value{};
     std::memcpy(storage_value.bytes + silkworm::kHashLength - value->length(), value->data(), value->length());
+    std::cout << "read_storage returns exit2\n";
     co_return storage_value;
 }
 
@@ -82,6 +88,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_code(const evmc::bytes32&
 }
 
 Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const evmc::address& address, BlockNum block_number) const {
+    std::cout << "read_historical_account is called\n";
     const auto account_history_key{silkworm::db::account_history_key(address, block_number)};
     SILK_DEBUG << "StateReader::read_historical_account account_history_key: " << account_history_key;
     const auto kv_pair{co_await db_reader_.get(db::table::kAccountHistoryName, account_history_key)};
@@ -89,11 +96,13 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const 
     SILK_DEBUG << "StateReader::read_historical_account kv_pair.key: " << silkworm::to_hex(kv_pair.key);
     const auto address_view{full_view(address)};
     if (kv_pair.key.substr(0, silkworm::kAddressLength) != address_view) {
+        std::cout << "read_historical_account return exit1\n";
         co_return std::nullopt;
     }
 
     SILK_DEBUG << "StateReader::read_historical_account kv_pair.value: " << silkworm::to_hex(kv_pair.value);
     if (kv_pair.value.empty()) {
+        std::cout << "read_historical_account return exit2\n";
         co_return std::nullopt;
     }
     const auto bitmap{silkworm::db::bitmap::parse(kv_pair.value)};
@@ -101,6 +110,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const 
 
     const auto change_block{silkworm::db::bitmap::seek(bitmap, block_number)};
     if (!change_block) {
+        std::cout << "read_historical_account return exit3\n";
         co_return std::nullopt;
     }
 
@@ -111,11 +121,13 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_account(const 
     const auto value{co_await db_reader_.get_both_range(db::table::kAccountChangeSetName, block_key, address_subkey)};
     SILK_DEBUG << "StateReader::read_historical_account value: " << (value ? *value : silkworm::Bytes{});
 
+    std::cout << "read_historical_account return exit4\n";
     co_return value;
 }
 
 Task<std::optional<silkworm::Bytes>> StateReader::read_historical_storage(const evmc::address& address, uint64_t incarnation,
                                                                           const evmc::bytes32& location_hash, BlockNum block_number) const {
+    std::cout << "read_historical_storage is called\n";
     const auto storage_history_key{silkworm::db::storage_history_key(address, location_hash, block_number)};
     SILK_DEBUG << "StateReader::read_historical_storage storage_history_key: " << storage_history_key;
     const auto kv_pair{co_await db_reader_.get(db::table::kStorageHistoryName, storage_history_key)};
@@ -123,6 +135,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_storage(const 
     const auto location_hash_view{full_view(location_hash)};
     if (kv_pair.key.substr(0, silkworm::kAddressLength) != full_view(address) ||
         kv_pair.key.substr(silkworm::kAddressLength, silkworm::kHashLength) != location_hash_view) {
+        std::cout << "read_historical_storage exit1\n";
         co_return std::nullopt;
     }
 
@@ -131,6 +144,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_storage(const 
 
     const auto change_block{silkworm::db::bitmap::seek(bitmap, block_number)};
     if (!change_block) {
+        std::cout << "read_historical_storage exit2\n";
         co_return std::nullopt;
     }
 
@@ -141,6 +155,7 @@ Task<std::optional<silkworm::Bytes>> StateReader::read_historical_storage(const 
     const auto value{co_await db_reader_.get_both_range(db::table::kStorageChangeSetName, storage_change_key, location_subkey)};
     SILK_DEBUG << "StateReader::read_historical_storage value: " << (value ? *value : silkworm::Bytes{});
 
+    std::cout << "read_historical_storage exit3\n";
     co_return value;
 }
 }  // namespace silkworm::rpc

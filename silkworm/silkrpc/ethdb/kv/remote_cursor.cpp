@@ -22,6 +22,7 @@
 namespace silkworm::rpc::ethdb::kv {
 
 Task<void> RemoteCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
+    std::cout << "RemoteCursor::open_cursor opening new cursor for table: " << table_name << " is_dup_sorted: " << is_dup_sorted << "\n";
     const auto start_time = clock_time::now();
     if (cursor_id_ == 0) {
         SILK_DEBUG << "RemoteCursor::open_cursor opening new cursor for table: " << table_name;
@@ -34,6 +35,7 @@ Task<void> RemoteCursor::open_cursor(const std::string& table_name, bool is_dup_
         open_message.set_bucket_name(table_name);
         cursor_id_ = (co_await tx_rpc_.write_and_read(open_message)).cursor_id();
         SILK_DEBUG << "RemoteCursor::open_cursor cursor: " << cursor_id_ << " for table: " << table_name;
+        std::cout << "RemoteCursor::open_cursor cursor: " << cursor_id_ << " for table: " << table_name << "\n";
     }
     SILK_DEBUG << "RemoteCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return;
@@ -41,7 +43,8 @@ Task<void> RemoteCursor::open_cursor(const std::string& table_name, bool is_dup_
 
 Task<KeyValue> RemoteCursor::seek(silkworm::ByteView key) {
     const auto start_time = clock_time::now();
-    SILK_DEBUG << "RemoteCursor::seek cursor: " << cursor_id_ << " key: " << key;
+    std::cout << "RemoteCursor::seek cursor: " << cursor_id_ << " key: " << key << "\n";
+    SILK_DEBUG << "RemoteCursor::seek cursor: " << cursor_id_ << " key: " << key << "\n";
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id_);
@@ -56,6 +59,7 @@ Task<KeyValue> RemoteCursor::seek(silkworm::ByteView key) {
 Task<KeyValue> RemoteCursor::seek_exact(silkworm::ByteView key) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "RemoteCursor::seek_exact cursor: " << cursor_id_ << " key: " << key;
+    std::cout << "RemoteCursor::seek_exact cursor: " << cursor_id_ << " key: " << key << "\n";
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_EXACT);
     seek_message.set_cursor(cursor_id_);
@@ -72,6 +76,7 @@ Task<KeyValue> RemoteCursor::next() {
     auto next_message = remote::Cursor{};
     next_message.set_op(remote::Op::NEXT);
     next_message.set_cursor(cursor_id_);
+    std::cout << "RemoteCursor::next cursor: " << cursor_id_ << "\n";
     auto next_pair = co_await tx_rpc_.write_and_read(next_message);
     const auto k = silkworm::bytes_of_string(next_pair.k());
     const auto v = silkworm::bytes_of_string(next_pair.v());
@@ -96,6 +101,7 @@ Task<KeyValue> RemoteCursor::next_dup() {
     auto next_message = remote::Cursor{};
     next_message.set_op(remote::Op::NEXT_DUP);
     next_message.set_cursor(cursor_id_);
+    std::cout << "RemoteCursor::next_dup cursor: " << cursor_id_ << "\n";
     auto next_pair = co_await tx_rpc_.write_and_read(next_message);
     const auto k = silkworm::bytes_of_string(next_pair.k());
     const auto v = silkworm::bytes_of_string(next_pair.v());
@@ -106,6 +112,7 @@ Task<KeyValue> RemoteCursor::next_dup() {
 Task<silkworm::Bytes> RemoteCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "RemoteCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
+    std::cout << "RemoteCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH);
     seek_message.set_cursor(cursor_id_);
@@ -121,6 +128,7 @@ Task<silkworm::Bytes> RemoteCursor::seek_both(silkworm::ByteView key, silkworm::
 Task<KeyValue> RemoteCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "RemoteCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
+    std::cout << "RemoteCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH_EXACT);
     seek_message.set_cursor(cursor_id_);

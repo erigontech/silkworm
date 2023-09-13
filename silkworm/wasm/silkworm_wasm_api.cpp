@@ -184,7 +184,7 @@ Bytes* state_read_storage_new(const State* state, const uint8_t* address, const 
                               const Bytes* location) {
     evmc::bytes32 value{state->read_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location))};
     auto out{new Bytes};
-    *out = zeroless_view(value);
+    *out = zeroless_view(value.bytes);
     return out;
 }
 

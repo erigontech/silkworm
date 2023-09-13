@@ -21,7 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>

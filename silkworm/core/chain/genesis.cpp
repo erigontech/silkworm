@@ -21,7 +21,7 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/protocol/param.hpp>
 
 extern const char* genesis_mainnet_data();

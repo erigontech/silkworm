@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/test/context.hpp>
 

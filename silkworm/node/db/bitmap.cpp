@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>

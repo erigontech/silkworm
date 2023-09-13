@@ -26,7 +26,7 @@
 #include <roaring/roaring.hh>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>

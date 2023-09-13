@@ -21,7 +21,7 @@
 #include <nlohmann/json.hpp>
 
 #include "cmd/state-transition/expected_state.hpp"
-#include "silkworm/core/common/cast.hpp"
+#include "silkworm/core/common/bytes_to_string.hpp"
 #include "silkworm/core/execution/execution.hpp"
 #include "silkworm/core/protocol/rule_set.hpp"
 #include "silkworm/core/rlp/encode_vector.hpp"

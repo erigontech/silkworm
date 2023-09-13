@@ -130,9 +130,9 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
+    state_.clear_journal_and_substate();
     rule_set_.finalize(state_, block);
-    // TODO(yperbasis): Why do tests fail with destruct_suicides?
-    state_.finalize_transaction(rev, /*destruct_suicides=*/false);
+    state_.finalize_transaction(rev);
 
     return ValidationResult::kOk;
 }

@@ -355,10 +355,8 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
     logs_.resize(snapshot.log_size_);
 }
 
-void IntraBlockState::finalize_transaction(evmc_revision rev, bool destruct_suicides) {
-    if (destruct_suicides) {
-        this->destruct_suicides();
-    }
+void IntraBlockState::finalize_transaction(evmc_revision rev) {
+    destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         destruct_touched_dead();
     }

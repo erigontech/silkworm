@@ -383,11 +383,6 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
     const auto contract_address = params[0].get<evmc::address>();
 
-    if (contract_address == kZeroAddress) {
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
-        co_return;
-    }
-
     SILK_DEBUG << "contract_address: " << contract_address;
 
     auto tx = co_await database_->begin();
@@ -404,7 +399,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             co_return;
         }
 
-        if (!plain_state_account.value().code_hash) {
+        if (plain_state_account.value().code_hash == kEmptyHash) {
             reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;

@@ -184,8 +184,6 @@ class FromToBlockProvider : public BlockProvider {
     Task<BlockProviderResponse> get();
 };
 
-static constexpr evmc::address kZeroAddress{0x0000000000000000000000000000000000000000};
-
 class OtsRpcApi {
   public:
     OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)

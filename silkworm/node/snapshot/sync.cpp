@@ -131,16 +131,23 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     static int completed{0};
     auto log_stats = [&](lt::span<const int64_t> counters) {
-        std::string counters_dump;
-        for (int i{0}; i < counters.size(); ++i) {
-            const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
-            counters_dump.append(stats_metric.name);
-            counters_dump.append("=");
-            counters_dump.append(std::to_string(counters[i]));
-            if (i != counters.size() - 1) counters_dump.append(", ");
-        }
+        // Log progress just once in a while because our BitTorrent notifications rely on alert polling so quite chatty
+        static int notification_count{0};
+        if (notification_count++ != 30) return;
+        notification_count = 0;
+
         SILK_INFO << "SnapshotSync: sync in progress: [" << completed << "/" << num_snapshots << "]";
-        SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
+        if (log::test_verbosity(log::Level::kTrace)) {
+            std::string counters_dump;
+            for (int i{0}; i < counters.size(); ++i) {
+                const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
+                counters_dump.append(stats_metric.name);
+                counters_dump.append("=");
+                counters_dump.append(std::to_string(counters[i]));
+                if (i != counters.size() - 1) counters_dump.append(", ");
+            }
+            SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
+        }
     };
     const auto stats_connection = client_.stats_subscription.connect(log_stats);
 

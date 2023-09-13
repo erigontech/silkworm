@@ -231,47 +231,46 @@ void SnapshotRepository::reopen_file(const SnapshotPath& segment_path, bool opti
 }
 
 void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool optimistic) {
-    close_segments_not_in_list(segment_files);
-
     BlockNum segment_max_block{0};
     for (const auto& seg_file : segment_files) {
         try {
             SILK_DEBUG << "Reopen segment file: " << seg_file.path().filename().string();
-            bool snapshot_added{false};
+            bool snapshot_valid{true};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
                     const auto header_it = header_segments_.find(seg_file.path());
                     if (header_it != header_segments_.end()) {
                         header_it->second->reopen_index();
-                        continue;
+                    } else {
+                        snapshot_valid = reopen_header(seg_file);
                     }
-                    snapshot_added = reopen_header(seg_file);
                     break;
                 }
                 case SnapshotType::bodies: {
                     const auto body_it = body_segments_.find(seg_file.path());
                     if (body_it != body_segments_.end()) {
                         body_it->second->reopen_index();
-                        continue;
+                    } else {
+                        snapshot_valid = reopen_body(seg_file);
                     }
-                    snapshot_added = reopen_body(seg_file);
                     break;
                 }
                 case SnapshotType::transactions: {
                     const auto tx_it = tx_segments_.find(seg_file.path());
                     if (tx_it != tx_segments_.end()) {
                         tx_it->second->reopen_index();
-                        continue;
+                    } else {
+                        snapshot_valid = reopen_transaction(seg_file);
                     }
-                    snapshot_added = reopen_transaction(seg_file);
                     break;
                 }
                 default: {
                     SILKWORM_ASSERT(false);
                 }
             }
+            ensure(snapshot_valid, "invalid empty snapshot " + seg_file.filename());
 
-            if (snapshot_added && seg_file.block_to() > segment_max_block) {
+            if (seg_file.block_to() > segment_max_block) {
                 segment_max_block = seg_file.block_to() - 1;
             }
         } catch (const std::exception& exc) {
@@ -293,10 +292,6 @@ bool SnapshotRepository::reopen_body(const SnapshotPath& seg_file) {
 
 bool SnapshotRepository::reopen_transaction(const SnapshotPath& seg_file) {
     return reopen(tx_segments_, seg_file);
-}
-
-void SnapshotRepository::close_segments_not_in_list(const SnapshotPathList& /*segment_files*/) {
-    // TODO(canepat): implement
 }
 
 template <ConcreteSnapshot T>

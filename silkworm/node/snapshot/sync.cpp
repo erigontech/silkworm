@@ -243,7 +243,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
     repository_->for_each_header([&](const BlockHeader* header) -> bool {
-        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << to_hex(header->hash());
+        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << Hash{header->hash()}.to_hex();
         const auto block_number = header->number;
         if (block_number > max_block_available) return true;
 

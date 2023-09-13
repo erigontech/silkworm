@@ -24,6 +24,7 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
 namespace silkworm::rpc::ethdb {
@@ -39,9 +40,9 @@ static const silkworm::Bytes empty_key{};
 static const silkworm::Bytes short_key{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5")};
 static const silkworm::Bytes wrong_key_last_byte{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7430")};
 static const silkworm::Bytes wrong_key_first_byte{*silkworm::from_hex("0x59a4d35bd00b1843ec5292217e71dace5e5a7430")};
-static const evmc::address key = 0x79a4d35bd00b1843ec5292217e71dace5e5a7439_address;
+static const silkworm::Bytes key{(0x79a4d35bd00b1843ec5292217e71dace5e5a7439_address).bytes, kAddressLength};
 static const silkworm::Bytes correct_key{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7439")};
-static const evmc::bytes32 location = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32;
+static const silkworm::Bytes location{(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes, kHashLength};
 
 TEST_CASE("split cursor dup sort") {
     boost::asio::thread_pool pool{1};

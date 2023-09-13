@@ -21,6 +21,8 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/common/singleton.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/db_utils.hpp>
@@ -268,7 +270,7 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
  * Add a ready header to the chain, if it becomes a new anchor then try to extend it if there are no other anchors
  */
 std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) {
-    SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << anchor.hash();
+    SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << Hash{anchor.hash()};
 
     statistics_.received_items += 1;
 
@@ -679,7 +681,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
 
     if (end == 0) {
         SILK_TRACE << "HeaderChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
-                   << ", hash=" << segment[start]->hash() << " parent-hash=" << segment[start]->parent_hash
+                   << ", hash=" << Hash{segment[start]->hash()} << " parent-hash=" << Hash{segment[start]->parent_hash}
                    << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
@@ -731,7 +733,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
-                     << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()
+                     << Hash{segment[start]->hash()} << ") down=" << endNum << " (" << Hash{segment[end - 1]->hash()}
                      << ") failed, reason: " << e.what();
         return false;
     }

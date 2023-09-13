@@ -22,6 +22,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/hash_maps.hpp>
 #include <silkworm/core/state/delta.hpp>
 #include <silkworm/core/state/object.hpp>

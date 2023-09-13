@@ -31,11 +31,13 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/common/terminal.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
@@ -416,7 +418,7 @@ RunResults transaction_test(const nlohmann::json& j, bool) {
         const std::string expected_sender{test["sender"].get<std::string>()};
         if (txn.from != to_evmc_address(*from_hex(expected_sender))) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
-                      << to_hex(*txn.from) << " != " << expected_sender << std::endl;
+                      << *txn.from << " != " << expected_sender << std::endl;
             return Status::kFailed;
         }
 

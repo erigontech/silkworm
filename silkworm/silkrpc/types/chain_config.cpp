@@ -16,12 +16,13 @@
 
 #include "chain_config.hpp"
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config) {
-    out << "genesis: " << chain_config.genesis_hash << " "
+    out << "genesis: " << to_hex(chain_config.genesis_hash) << " "
         << "config: " << chain_config.config.dump();
     return out;
 }

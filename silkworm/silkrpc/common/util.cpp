@@ -16,12 +16,14 @@
 
 #include "util.hpp"
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
+
 namespace silkworm {
 
 std::ostream& operator<<(std::ostream& out, const Account& account) {
     out << "nonce: " << account.nonce;
     out << " balance: " << account.balance;
-    out << " code_hash: 0x" << account.code_hash;
+    out << " code_hash: 0x" << to_hex(account.code_hash);
     out << " incarnation: " << account.incarnation;
     return out;
 }

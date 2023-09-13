@@ -21,6 +21,7 @@
 
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -447,7 +448,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
         }
         if (cl_configuration.terminal_block_hash != kZeroHash) {
             SILK_ERROR << "execution layer has the incorrect terminal block hash, expected: "
-                       << cl_configuration.terminal_block_hash << " got: " << kZeroHash;
+                       << silkworm::to_hex(cl_configuration.terminal_block_hash) << " got: " << silkworm::to_hex(kZeroHash);
             reply = make_json_error(request.at("id"), kInvalidParams, "consensus layer terminal block hash is not zero");
             co_await tx->close();
             co_return;

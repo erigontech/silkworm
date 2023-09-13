@@ -26,6 +26,7 @@
 #include <glaze/glaze.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::rpc {
 

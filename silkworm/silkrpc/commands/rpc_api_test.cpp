@@ -29,6 +29,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -157,7 +158,7 @@ std::unique_ptr<InMemoryState> populate_genesis(db::RWTxn& txn, const std::files
     // Write Chain Settings
     auto config_data{genesis_json["config"].dump()};
     db::open_cursor(txn, db::table::kConfig)
-        .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
+        .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
 
     return state_buffer;
 }

@@ -24,6 +24,8 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
@@ -112,7 +114,7 @@ inline bool AccessListTracer::exclude(const evmc::address& address) {
 }
 
 void AccessListTracer::add_storage(const evmc::address& address, const evmc::bytes32& storage) {
-    SILK_TRACE << "add_storage:" << address << " storage: " << storage;
+    SILK_TRACE << "add_storage:" << address << " storage: " << to_hex(storage);
     for (std::size_t i{0}; i < access_list_.size(); i++) {
         if (access_list_[i].account == address) {
             for (const auto& storage_key : access_list_[i].storage_keys) {
@@ -147,7 +149,7 @@ void AccessListTracer::dump(const std::string& user_string, const AccessList& ac
     for (std::size_t i{0}; i < acl.size(); i++) {
         std::cout << "Address: " << acl[i].account << "\n";
         for (std::size_t z{0}; z < acl[i].storage_keys.size(); z++) {
-            std::cout << "-> StorageKeys: " << acl[i].storage_keys[z] << "\n";
+            std::cout << "-> StorageKeys: " << to_hex(acl[i].storage_keys[z]) << "\n";
         }
     }
 }

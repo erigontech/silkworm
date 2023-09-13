@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/log.hpp>
 

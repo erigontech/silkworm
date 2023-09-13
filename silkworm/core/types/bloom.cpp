@@ -33,9 +33,9 @@ void m3_2048(Bloom& bloom, ByteView x) {
 Bloom logs_bloom(const std::vector<Log>& logs) {
     Bloom bloom{};  // zero initialization
     for (const Log& log : logs) {
-        m3_2048(bloom, log.address);
+        m3_2048(bloom, log.address.bytes);
         for (const auto& topic : log.topics) {
-            m3_2048(bloom, topic);
+            m3_2048(bloom, topic.bytes);
         }
     }
     return bloom;

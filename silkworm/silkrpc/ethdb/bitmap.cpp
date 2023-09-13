@@ -23,6 +23,7 @@
 
 #include <gsl/narrow>
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb::bitmap {
@@ -90,7 +91,7 @@ Task<Roaring> from_topics(
         roaring::Roaring subtopic_bitmap;
         for (auto& topic : subtopics) {
             silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
-            SILK_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic);
+            SILK_TRACE << "topic: " << silkworm::to_hex(topic) << " topic_key: " << silkworm::to_hex(topic_key);
             auto bitmap = co_await ethdb::bitmap::get(db_reader, table, topic_key, gsl::narrow<uint32_t>(start), gsl::narrow<uint32_t>(end));
             SILK_TRACE << "bitmap: " << bitmap.toString();
             subtopic_bitmap |= bitmap;

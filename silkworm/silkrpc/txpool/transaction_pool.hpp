@@ -31,6 +31,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/silkrpc/common/clock_time.hpp>

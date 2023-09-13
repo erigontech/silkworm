@@ -19,9 +19,11 @@
 #include <stdexcept>
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "tables.hpp"
 
@@ -140,13 +142,13 @@ evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& g
             state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
             // First pass for state_root_hash
-            ethash::hash256 hash{keccak256(address)};
+            ethash::hash256 hash{keccak256(address.bytes)};
             account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
         }
 
         trie::HashBuilder hb;
         for (const auto& [hash, rlp] : account_rlp) {
-            hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+            hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
         }
         state_root_hash = hb.root_hash();
     }
@@ -205,7 +207,7 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
         // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
+            .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
 
         return true;
 

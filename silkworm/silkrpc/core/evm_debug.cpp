@@ -28,6 +28,8 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -321,7 +323,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 
     if (!tx_with_block) {
         std::ostringstream oss;
-        oss << "transaction 0x" << tx_hash << " not found";
+        oss << "transaction " << silkworm::to_hex(tx_hash, true) << " not found";
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } else {

@@ -21,6 +21,7 @@
 #include <gsl/pointers>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 typedef struct evp_cipher_ctx_st EVP_CIPHER_CTX;
 

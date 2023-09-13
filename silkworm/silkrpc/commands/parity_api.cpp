@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -100,9 +101,9 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         block_id = params[3].get<std::string>();
     }
 
-    SILK_DEBUG << "address: 0x" << silkworm::to_hex(address)
+    SILK_DEBUG << "address: " << address
                << " quantity: " << quantity
-               << " offset: 0x" << (offset ? silkworm::to_hex(offset.value()) : silkworm::to_hex(silkworm::Bytes{}));
+               << " offset: " << (offset ? silkworm::to_hex(offset.value(), true) : "null");
 
     auto tx = co_await database_->begin();
 
@@ -111,7 +112,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         StateReader state_reader{tx_database};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        SILK_DEBUG << "read account with address: " << silkworm::to_hex(address) << " block number: " << block_number;
+        SILK_DEBUG << "read account with address: " << address << " block number: " << block_number;
         std::optional<silkworm::Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};
 

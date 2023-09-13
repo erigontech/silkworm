@@ -25,6 +25,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
@@ -246,7 +247,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
 
     nlohmann::json storage({});
     StorageWalker::AccountCollector collector = [&](const evmc::address& address, const silkworm::ByteView loc, const silkworm::ByteView data) {
-        auto key = "0x" + silkworm::to_hex(address);
+        auto key = silkworm::address_to_string(address);
         storage[key].push_back({{"loc", "0x" + silkworm::to_hex(loc)}, {"data", "0x" + silkworm::to_hex(data)}});
 
         return true;

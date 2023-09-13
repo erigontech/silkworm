@@ -19,6 +19,7 @@
 #include <string>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 #include "ecc_public_key.hpp"
 

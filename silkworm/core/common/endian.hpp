@@ -27,6 +27,7 @@ See https://en.wikipedia.org/wiki/Endianness
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/decoding_result.hpp>
 
 namespace silkworm::endian {

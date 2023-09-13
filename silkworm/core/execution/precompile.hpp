@@ -21,6 +21,7 @@
 #include <evmc/evmc.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 // See Yellow Paper, Appendix E "Precompiled Contracts"
 namespace silkworm::precompile {

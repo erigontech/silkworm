@@ -18,6 +18,7 @@
 #include <ostream>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/sentry/eth/message_id.hpp>
 
 #include "message.hpp"

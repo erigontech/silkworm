@@ -28,6 +28,7 @@
 #include <absl/container/btree_set.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>

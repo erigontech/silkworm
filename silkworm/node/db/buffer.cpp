@@ -114,7 +114,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
-void Buffer::write_history_to_db() {
+void Buffer::write_history_to_db(bool write_change_sets) {
     size_t written_size{0};
     size_t total_written_size{0};
 
@@ -122,7 +122,7 @@ void Buffer::write_history_to_db() {
     StopWatch sw;
     sw.start();
 
-    if (!block_account_changes_.empty()) {
+    if (!block_account_changes_.empty() && write_change_sets) {
         auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
         Bytes change_key(sizeof(BlockNum), '\0');
         Bytes change_value(kAddressLength + 128 /* see comment*/,
@@ -140,7 +140,6 @@ void Buffer::write_history_to_db() {
                 written_size += kAddressLength + account_encoded.length();
             }
         }
-        block_account_changes_.clear();
         total_written_size += written_size;
         if (should_trace) {
             auto [_, duration]{sw.lap()};
@@ -148,8 +147,9 @@ void Buffer::write_history_to_db() {
         }
         written_size = 0;
     }
+    block_account_changes_.clear();
 
-    if (!block_storage_changes_.empty()) {
+    if (!block_storage_changes_.empty() && write_change_sets) {
         Bytes change_key(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
         Bytes change_value(kHashLength + 128, '\0');  // Se comment above (account changes) for explanation about 128
 
@@ -174,7 +174,6 @@ void Buffer::write_history_to_db() {
                 }
             }
         }
-        block_storage_changes_.clear();
         total_written_size += written_size;
         if (should_trace) {
             auto [_, duration]{sw.lap()};
@@ -182,6 +181,7 @@ void Buffer::write_history_to_db() {
         }
         written_size = 0;
     }
+    block_storage_changes_.clear();
 
     if (!receipts_.empty()) {
         auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
@@ -213,6 +213,28 @@ void Buffer::write_history_to_db() {
         if (should_trace) {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Logs", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
+        written_size = 0;
+    }
+
+    if (!call_traces_.empty()) {
+        Bytes call_traces_key(sizeof(BlockNum), '\0');
+        auto call_traces_cursor{txn_.rw_cursor_dup_sort(table::kCallTraceSet)};
+        for (const auto& [block_number, account_and_flags_set] : call_traces_) {
+            endian::store_big_u64(call_traces_key.data(), block_number);
+            written_size += sizeof(BlockNum);
+            for (const auto& account_and_flags : account_and_flags_set) {
+                auto account_and_flags_slice{to_slice(account_and_flags)};
+                mdbx::error::success_or_throw(
+                    call_traces_cursor->put(to_slice(call_traces_key), &account_and_flags_slice, MDBX_APPENDDUP));
+                written_size += account_and_flags_slice.size();
+            }
+        }
+        call_traces_.clear();
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Append Call Traces", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
     }
 
@@ -334,8 +356,8 @@ void Buffer::write_state_to_db() {
               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(time_point))});
 }
 
-void Buffer::write_to_db() {
-    write_history_to_db();
+void Buffer::write_to_db(bool write_change_sets) {
+    write_history_to_db(write_change_sets);
 
     // This should be very last to be written so updated pages
     // have higher chances not to be evicted from RAM
@@ -361,6 +383,35 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     Bytes value{cbor_encode(receipts)};
     receipts_[key] = value;
     batch_history_size_ += key.size() + value.size();
+}
+
+void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces) {
+    // Collect and sort all unique accounts touched by the call trace (no duplicates)
+    absl::btree_set<evmc::address> touched_accounts;
+    for (const auto& sender : traces.senders) {
+        touched_accounts.insert(sender);
+    }
+    for (const auto& recipient : traces.recipients) {
+        touched_accounts.insert(recipient);
+    }
+
+    if (not touched_accounts.empty()) {
+        batch_history_size_ += sizeof(BlockNum);
+    }
+    absl::btree_set<Bytes> values;
+    for (const auto& account : touched_accounts) {
+        Bytes value(kAddressLength + 1, '\0');
+        std::memcpy(value.data(), account.bytes, kAddressLength);
+        if (traces.senders.contains(account)) {
+            value[kAddressLength] |= 1;
+        }
+        if (traces.recipients.contains(account)) {
+            value[kAddressLength] |= 2;
+        }
+        values.insert(std::move(value));
+        batch_history_size_ += value.size();
+    }
+    call_traces_.emplace(block_number, values);
 }
 
 evmc::bytes32 Buffer::state_root_hash() const {

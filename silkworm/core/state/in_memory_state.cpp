@@ -139,6 +139,8 @@ void InMemoryState::decanonize_block(uint64_t block_number) { (void)canonical_ha
 
 void InMemoryState::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
+void InMemoryState::insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) {}
+
 void InMemoryState::begin_block(uint64_t block_number) {
     block_number_ = block_number;
     account_changes_.erase(block_number);

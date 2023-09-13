@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,11 +12,19 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
-set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
+#pragma once
 
-add_compile_definitions(CATCH_CONFIG_NO_POSIX_SIGNALS JSON_HAS_FILESYSTEM=0)
+#include <set>
 
-include(${CMAKE_CURRENT_LIST_DIR}/cxx20.cmake)
+#include <evmc/evmc.h>
+
+namespace silkworm {
+
+struct CallTraces {
+    std::set<evmc::address> senders;
+    std::set<evmc::address> recipients;
+};
+
+}  // namespace silkworm

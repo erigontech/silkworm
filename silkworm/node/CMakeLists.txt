@@ -16,7 +16,7 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED container thread)
+find_package(Boost REQUIRED headers container)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
@@ -76,12 +76,6 @@ add_library(silkworm_node "${SILKWORM_NODE_SRC}" "${SILKWORM_TOML_CPP_SRC}")
 
 add_dependencies(silkworm_node generate_toml)
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
-# https://github.com/grpc/grpc/issues/19224
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
-
 target_include_directories(silkworm_node PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(SILKWORM_NODE_PUBLIC_LIBS
@@ -93,7 +87,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     absl::flat_hash_set
     asio-grpc::asio-grpc
     Boost::container
-    Boost::thread
+    Boost::headers
     gRPC::grpc++
     mdbx-static
     nlohmann_json::nlohmann_json

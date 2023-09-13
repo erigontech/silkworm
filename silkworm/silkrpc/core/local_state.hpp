@@ -66,6 +66,8 @@ class LocalState : public silkworm::State {
 
     void insert_receipts(BlockNum /*block_number*/, const std::vector<silkworm::Receipt>& /*receipts*/) override {}
 
+    void insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) override {}
+
     void begin_block(BlockNum /*block_number*/) override {}
 
     void update_account(

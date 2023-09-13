@@ -16,14 +16,15 @@
 
 #pragma once
 
-#include <absl/container/btree_set.h>
+#include <set>
+
 #include <evmc/evmc.h>
 
 namespace silkworm {
 
 struct CallTraces {
-    absl::btree_set<evmc::address> senders;
-    absl::btree_set<evmc::address> recipients;
+    std::set<evmc::address> senders;
+    std::set<evmc::address> recipients;
 };
 
 }  // namespace silkworm

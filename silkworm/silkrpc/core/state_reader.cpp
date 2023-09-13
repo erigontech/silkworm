@@ -60,7 +60,6 @@ Task<evmc::bytes32> StateReader::read_storage(
     uint64_t incarnation,
     const evmc::bytes32& location_hash,
     BlockNum block_number) const {
-
     std::cout << "read_storage is called\n";
     std::optional<silkworm::Bytes> value{co_await read_historical_storage(address, incarnation, location_hash, block_number)};
     if (!value) {

@@ -176,7 +176,10 @@ void IntraBlockState::subtract_from_balance(const evmc::address& address, const 
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance -= subtrahend;
-    touch(address);
+    if (subtrahend != 0) {
+        // See https://github.com/ethereum/go-ethereum/blob/v1.13.0/core/state/state_object.go#L419
+        touch(address);
+    }
 }
 
 uint64_t IntraBlockState::get_nonce(const evmc::address& address) const noexcept {
@@ -351,7 +354,13 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
     logs_.resize(snapshot.log_size_);
 }
 
-void IntraBlockState::finalize_transaction() {
+void IntraBlockState::finalize_transaction(evmc_revision rev, bool destruct_suicides) {
+    if (destruct_suicides) {
+        this->destruct_suicides();
+    }
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
+        destruct_touched_dead();
+    }
     for (auto& x : storage_) {
         state::Storage& storage{x.second};
         for (const auto& [key, val] : storage.current) {

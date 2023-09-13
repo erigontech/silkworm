@@ -100,7 +100,7 @@ class IntraBlockState {
     Snapshot take_snapshot() const noexcept;
     void revert_to_snapshot(const Snapshot& snapshot) noexcept;
 
-    void finalize_transaction();
+    void finalize_transaction(evmc_revision rev, bool destruct_suicides = true);
 
     // See Section 6.1 "Substate" of the Yellow Paper
     void clear_journal_and_substate();

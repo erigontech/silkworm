@@ -80,12 +80,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
-    state_.destruct_suicides();
-    if (rev >= EVMC_SPURIOUS_DRAGON) {
-        state_.destruct_touched_dead();
-    }
-
-    state_.finalize_transaction();
+    state_.finalize_transaction(rev);
 
     cumulative_gas_used_ += gas_used;
 
@@ -117,8 +112,9 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
+    const evmc_revision rev{evm_.revision()};
     rule_set_.initialize(evm_);
-    state_.finalize_transaction();
+    state_.finalize_transaction(rev);
 
     cumulative_gas_used_ = 0;
 
@@ -135,10 +131,8 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     }
 
     rule_set_.finalize(state_, block);
-
-    if (evm_.revision() >= EVMC_SPURIOUS_DRAGON) {
-        state_.destruct_touched_dead();
-    }
+    // TODO(yperbasis): Why do tests fail with destruct_suicides?
+    state_.finalize_transaction(rev, /*destruct_suicides=*/false);
 
     return ValidationResult::kOk;
 }

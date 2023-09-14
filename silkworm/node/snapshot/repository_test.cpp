@@ -40,7 +40,7 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][node][snapshot]") {
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
     SnapshotRepository repository{settings};
-    CHECK_NOTHROW(repository.reopen_folder());
+    CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
     CHECK(repository.header_snapshots_count() == 0);
     CHECK(repository.body_snapshots_count() == 0);
     CHECK(repository.tx_snapshots_count() == 0);
@@ -76,7 +76,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
         test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
         test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
-        repository.reopen_folder();
+        CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
 
         using ViewResult = SnapshotRepository::ViewResult;
         CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);

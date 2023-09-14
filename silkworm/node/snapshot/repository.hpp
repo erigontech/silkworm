@@ -124,8 +124,6 @@ class SnapshotRepository {
     bool reopen_body(const SnapshotPath& seg_file);
     bool reopen_transaction(const SnapshotPath& seg_file);
 
-    void close_segments_not_in_list(const SnapshotPathList& segment_files);
-
     template <ConcreteSnapshot T>
     const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const;
 

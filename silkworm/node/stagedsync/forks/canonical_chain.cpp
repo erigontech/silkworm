@@ -29,10 +29,7 @@ CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
     : tx_{tx},
       data_model_{tx_},  // todo: put an header cache into the data_model_ and share the data_model_ with the owner
       canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(cache_size)} {
-    // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
-    // Set current status
-    current_head_ = initial_head_;
+    open();
 }
 
 CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
@@ -41,10 +38,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
       initial_head_{copy.initial_head_},
       current_head_{copy.current_head_},
       canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
-    // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
-    // Set current status
-    current_head_ = initial_head_;
+    open();
 }
 
 CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
@@ -53,15 +47,19 @@ CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
       initial_head_{orig.initial_head_},
       current_head_{orig.current_head_},
       canonical_hash_cache_{std::move(orig.canonical_hash_cache_)} {
-    // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
-    // Set current status
-    current_head_ = initial_head_;
+    open();
 }
 
 void CanonicalChain::set_current_head(BlockId head) {
     current_head_ = head;
     canonical_hash_cache_->clear();  // invalidate cache
+}
+
+void CanonicalChain::open() {
+    // Read head of canonical chain
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
+    // Set current status
+    current_head_ = initial_head_;
 }
 
 BlockId CanonicalChain::initial_head() const { return initial_head_; }

@@ -33,7 +33,7 @@ using RecSplitSettings = succinct::RecSplitSettings;
 using RecSplit8 = succinct::RecSplit8;
 
 void Index::build() {
-    SILK_INFO << "Index::build path: " << segment_path_.path().string() << " start";
+    SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
 
     huffman::Decompressor decoder{segment_path_.path()};
     decoder.open();
@@ -46,12 +46,12 @@ void Index::build() {
         .base_data_id = index_file.block_from()};
     RecSplit8 rec_split{rec_split_settings};
 
-    SILK_INFO << "Build index for: " << segment_path_.path().string() << " start";
+    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
     bool collision_detected;
     do {
         iterations++;
-        SILK_INFO << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
+        SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
         const bool read_ok = decoder.read_ahead([&](huffman::Decompressor::Iterator it) {
             Bytes word{};
             word.reserve(kPageSize);
@@ -69,12 +69,12 @@ void Index::build() {
         });
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
-        SILK_INFO << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
+        SILK_TRACE << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
         collision_detected = rec_split.build();
         SILK_DEBUG << "Build RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
         if (collision_detected) rec_split.reset_new_salt();
     } while (collision_detected);
-    SILK_INFO << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
+    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
 
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
@@ -98,19 +98,19 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
 }
 
 void TransactionIndex::build() {
-    SILK_INFO << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
+    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
     const SnapshotPath bodies_segment_path = SnapshotPath::from(segment_path_.path().parent_path(),
                                                                 segment_path_.version(),
                                                                 segment_path_.block_from(),
                                                                 segment_path_.block_to(),
                                                                 SnapshotType::bodies);
-    SILK_INFO << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
+    SILK_TRACE << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
 
     BodySnapshot bodies_snapshot{bodies_segment_path};
     bodies_snapshot.reopen_segment();
     const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
-    SILK_INFO << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
+    SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
     huffman::Decompressor txs_decoder{segment_path_.path()};
     txs_decoder.open();
@@ -124,7 +124,7 @@ void TransactionIndex::build() {
     const BlockNum first_block_num{segment_path_.block_from()};
 
     const SnapshotPath tx_idx_file = segment_path_.index_file();
-    SILK_INFO << "TransactionIndex::build tx_idx_file path: " << tx_idx_file.path().string();
+    SILK_TRACE << "TransactionIndex::build tx_idx_file path: " << tx_idx_file.path().string();
     RecSplitSettings tx_hash_rs_settings{
         .keys_count = txs_decoder.words_count(),
         .bucket_size = kBucketSize,
@@ -135,7 +135,7 @@ void TransactionIndex::build() {
     RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
-    SILK_INFO << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
+    SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
     RecSplitSettings tx_hash_to_block_rs_settings{
         .keys_count = txs_decoder.words_count(),
         .bucket_size = kBucketSize,
@@ -157,13 +157,13 @@ void TransactionIndex::build() {
         });
     };
 
-    SILK_INFO << "Build index for: " << segment_path_.path().string() << " start";
+    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
     Hash tx_hash;
     bool collision_detected;
     do {
         iterations++;
-        SILK_INFO << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
+        SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
         const bool read_ok = double_read_ahead(
             [&, first_tx_id = first_tx_id, expected_tx_count = expected_tx_count](auto tx_it, auto body_it) -> bool {
                 BlockNum block_number = first_block_num;
@@ -176,7 +176,7 @@ void TransactionIndex::build() {
 
                 body_it.next(body_buffer);
                 ByteView body_rlp{body_buffer.data(), body_buffer.length()};
-                SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
+                SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
                 auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
                 if (!decode_result) {
                     SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " error: " << magic_enum::enum_name(decode_result.error());
@@ -248,22 +248,22 @@ void TransactionIndex::build() {
             });
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
-        SILK_INFO << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
+        SILK_TRACE << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
         collision_detected = tx_hash_rs.build();
-        SILK_DEBUG << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
+        SILK_TRACE << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
-        SILK_INFO << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
+        SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
         collision_detected |= tx_hash_to_block_rs.build();
-        SILK_DEBUG << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
+        SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {
             tx_hash_rs.reset_new_salt();
             tx_hash_to_block_rs.reset_new_salt();
         }
     } while (collision_detected);
-    SILK_INFO << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
+    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
 
-    SILK_INFO << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
+    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
 bool TransactionIndex::walk(RecSplit8& /*rec_split*/, uint64_t /*i*/, uint64_t /*offset*/, ByteView /*word*/) {

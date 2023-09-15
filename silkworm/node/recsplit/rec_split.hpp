@@ -413,7 +413,7 @@ class RecSplit {
         current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
 
         [[maybe_unused]] auto _ = gsl::finally([&]() { bucket_collector_.clear(); });
-        SILK_INFO << "[index] calculating file=" << index_path_.string();
+        SILK_TRACE << "[index] calculating file=" << index_path_.string();
 
         // We use an exception for collision error condition because ETL currently does not support loading errors
         // TODO(canepat) refactor ETL to support errors in LoadFunc and propagate them to caller to get rid of CollisionError

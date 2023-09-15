@@ -86,7 +86,7 @@ DiscoveryImpl::DiscoveryImpl(
       network_id_(network_id),
       node_db_(executor),
       bootnodes_(std::move(bootnodes)),
-      disc_v4_discovery_(executor_pool, disc_v4_port, node_key, node_url, node_record, node_db_.interface()) {
+      disc_v4_discovery_(executor, disc_v4_port, node_key, node_url, node_record, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {

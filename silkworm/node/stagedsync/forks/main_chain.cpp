@@ -61,6 +61,7 @@ MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, const db::R
 
 void MainChain::open() {
     tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
+    canonical_chain_.open();
 
     // Revalidate chain by executing forward cycle up to the canonical current head at startup:
     // - if last cycle completed successfully, this will simply do nothing (no hurt)

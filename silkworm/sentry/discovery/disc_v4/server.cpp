@@ -26,7 +26,6 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/this_coro.hpp>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>

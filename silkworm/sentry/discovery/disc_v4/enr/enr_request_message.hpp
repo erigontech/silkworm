@@ -18,7 +18,7 @@
 
 #include <chrono>
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::enr {
 

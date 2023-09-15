@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 #include "enr_record.hpp"

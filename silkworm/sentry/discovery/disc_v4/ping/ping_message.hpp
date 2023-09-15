@@ -22,7 +22,6 @@
 
 #include <boost/asio/ip/udp.hpp>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {

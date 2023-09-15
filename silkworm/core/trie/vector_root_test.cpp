@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/transaction.hpp>
 

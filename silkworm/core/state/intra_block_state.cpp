@@ -305,6 +305,17 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
 }
 
+evmc::bytes32 IntraBlockState::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) {
+    return transient_storage_[addr][key];
+}
+
+void IntraBlockState::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) {
+    auto& v = transient_storage_[addr][key];
+    const auto prev = v;
+    v = value;
+    journal_.emplace_back(std::make_unique<state::TransientStorageChangeDelta>(addr, key, prev));
+}
+
 void IntraBlockState::write_to_db(uint64_t block_number) {
     db_.begin_block(block_number);
 
@@ -379,6 +390,8 @@ void IntraBlockState::clear_journal_and_substate() {
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();
+
+    transient_storage_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

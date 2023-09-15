@@ -33,9 +33,11 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -157,13 +159,13 @@ static void print_header(const BlockHeader& header) {
     std::cout << "Header:\nhash=" << to_hex(header.hash()) << "\n"
               << "parent_hash=" << to_hex(header.parent_hash) << "\n"
               << "number=" << header.number << "\n"
-              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
               << "ommers_hash=" << to_hex(header.ommers_hash) << "\n"
               << "state_root=" << to_hex(header.state_root) << "\n"
               << "transactions_root=" << to_hex(header.transactions_root) << "\n"
               << "receipts_root=" << to_hex(header.receipts_root) << "\n"
               << "withdrawals_root=" << (header.withdrawals_root ? to_hex(*header.withdrawals_root) : "") << "\n"
-              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
               << "timestamp=" << header.timestamp << "\n"
               << "nonce=" << to_hex(header.nonce) << "\n"
               << "prev_randao=" << to_hex(header.prev_randao) << "\n"
@@ -1643,7 +1645,7 @@ void do_trie_root(db::EnvConfig& config) {
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
         SILKWORM_ASSERT(!trie_data.first_uncovered.has_value());  // Means skip state
         log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)});
-        auto hash{to_bytes32(trie_data.hash.value())};
+        auto& hash = trie_data.hash.value();
         hash_builder.add_branch_node(trie_data.key.value(), hash, false);
         if (SignalHandler::signalled()) {
             throw std::runtime_error("Interrupted");

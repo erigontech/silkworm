@@ -23,6 +23,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm::trie {
 
@@ -39,8 +40,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add_leaf(unpack_nibbles(key1), val1);
-    hb.add_leaf(unpack_nibbles(key2), val2);
+    hb.add_leaf(unpack_nibbles(key1.bytes), val1);
+    hb.add_leaf(unpack_nibbles(key2.bytes), val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};

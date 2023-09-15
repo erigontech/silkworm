@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>

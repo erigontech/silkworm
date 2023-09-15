@@ -24,6 +24,7 @@
 #include <secp256k1_recovery.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm {
 

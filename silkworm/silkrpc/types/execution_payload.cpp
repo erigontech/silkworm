@@ -16,6 +16,8 @@
 
 #include "execution_payload.hpp"
 
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -24,15 +26,15 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "version: " << payload.version
         << " number: " << payload.number
-        << " block_hash: " << payload.block_hash
-        << " parent_hash: " << payload.parent_hash
+        << " block_hash: " << to_hex(payload.block_hash)
+        << " parent_hash: " << to_hex(payload.parent_hash)
         << " timestamp: " << payload.timestamp
         << " gas_limit: " << payload.gas_limit
         << " gas_used: " << payload.gas_used
         << " suggested_fee_recipient: " << payload.suggested_fee_recipient
-        << " state_root: " << payload.state_root
-        << " receipts_root: " << payload.receipts_root
-        << " prev_randao: " << payload.prev_randao
+        << " state_root: " << to_hex(payload.state_root)
+        << " receipts_root: " << to_hex(payload.receipts_root)
+        << " prev_randao: " << to_hex(payload.prev_randao)
         << " logs_bloom: " << silkworm::to_hex(bloom_bytes)
         << " extra_data: " << silkworm::to_hex(payload.extra_data)
         << " #transactions: " << payload.transactions.size();
@@ -45,7 +47,7 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status) {
     out << "status: " << payload_status.status;
     if (payload_status.latest_valid_hash) {
-        out << " latest_valid_hash: " << *payload_status.latest_valid_hash;
+        out << " latest_valid_hash: " << to_hex(*payload_status.latest_valid_hash);
     }
     if (payload_status.validation_error) {
         out << " validation_error: " << *payload_status.validation_error;
@@ -54,16 +56,16 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status)
 }
 
 std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state) {
-    out << "head_block_hash: " << fork_choice_state.head_block_hash
-        << " safe_block_hash: " << fork_choice_state.safe_block_hash
-        << " finalized_block_hash: " << fork_choice_state.finalized_block_hash;
+    out << "head_block_hash: " << to_hex(fork_choice_state.head_block_hash)
+        << " safe_block_hash: " << to_hex(fork_choice_state.safe_block_hash)
+        << " finalized_block_hash: " << to_hex(fork_choice_state.finalized_block_hash);
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const PayloadAttributes& attributes) {
     out << "version: " << attributes.version
         << " timestamp: " << attributes.timestamp
-        << " prev_randao: " << attributes.prev_randao
+        << " prev_randao: " << to_hex(attributes.prev_randao)
         << " suggested_fee_recipient: " << attributes.suggested_fee_recipient;
     if (attributes.withdrawals) {
         out << " #withdrawals: " << attributes.withdrawals->size();
@@ -89,7 +91,7 @@ std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_re
 
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration) {
     out << "terminal_total_difficulty: " << transition_configuration.terminal_total_difficulty
-        << " terminal_block_hash: " << transition_configuration.terminal_block_hash
+        << " terminal_block_hash: " << to_hex(transition_configuration.terminal_block_hash)
         << " terminal_block_number: " << transition_configuration.terminal_block_number;
     return out;
 }

@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 

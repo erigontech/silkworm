@@ -32,6 +32,7 @@
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
 

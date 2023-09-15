@@ -23,6 +23,7 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
@@ -113,9 +114,6 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
     }
-    if (write_change_sets || write_call_traces) {
-        return SILKWORM_NOT_IMPLEMENTED_ERROR;  // Flags for writing state changes and call traces not yet supported
-    }
     const auto chain_info = lookup_known_chain(chain_id);
     if (!chain_info) {
         return SILKWORM_UNKNOWN_CHAIN_ID;
@@ -158,14 +156,30 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             }
             const Block& block{prefetched_blocks.front()};
 
+            const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
+            if (!protocol_rule_set) {
+                return SILKWORM_UNKNOWN_CHAIN_ID;
+            }
+            ExecutionProcessor processor{block, *protocol_rule_set, state_buffer, *chain_config};
+            processor.evm().analysis_cache = &analysis_cache;
+            processor.evm().state_pool = &state_pool;
+            CallTraces traces;
+            if (write_call_traces) {
+                CallTracer tracer{traces};
+                processor.evm().add_tracer(tracer);
+            }
+
             std::vector<Receipt> receipts;
-            const auto validation_result{execute_block(block, analysis_cache, state_pool, state_buffer, *chain_config, receipts)};
-            if (validation_result != ValidationResult::kOk) {
+            const auto result{processor.execute_and_write_block(receipts)};
+            if (result != ValidationResult::kOk) {
                 return SILKWORM_INVALID_BLOCK;
             }
 
             if (write_receipts) {
                 state_buffer.insert_receipts(block.header.number, receipts);
+            }
+            if (write_call_traces) {
+                state_buffer.insert_call_traces(block.header.number, traces);
             }
 
             if (last_executed_block) {
@@ -181,16 +195,16 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
             if (gas_batch_size >= gas_max_batch_size) {
                 SILK_TRACE << log::Args{"buffer", "state", "size", human_size(state_buffer.current_batch_state_size())};
-                state_buffer.write_to_db();
+                state_buffer.write_to_db(write_change_sets);
                 gas_batch_size = 0;
             } else if (gas_history_size >= gas_max_history_size) {
                 SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_state_size())};
-                state_buffer.write_history_to_db();
+                state_buffer.write_history_to_db(write_change_sets);
                 gas_history_size = 0;
             }
         }
 
-        state_buffer.write_to_db();
+        state_buffer.write_to_db(write_change_sets);
         return SILKWORM_OK;
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {

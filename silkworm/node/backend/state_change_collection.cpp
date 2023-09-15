@@ -18,6 +18,8 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 
@@ -86,7 +88,7 @@ void StateChangeCollection::change_account(const evmc::address& address, uint64_
             account_change->set_action(remote::Action::UPSERT_CODE);
             break;
         case remote::Action::REMOVE:
-            SILK_CRIT << "cannot change deleted account: " << to_hex(address) << " incarnation: " << incarnation;
+            SILK_CRIT << "cannot change deleted account: " << address << " incarnation: " << incarnation;
             SILKWORM_ASSERT(false);
             break;
         default:
@@ -120,7 +122,7 @@ void StateChangeCollection::change_code(const evmc::address& address, uint64_t i
             account_change->set_action(remote::Action::UPSERT_CODE);
             break;
         case remote::Action::REMOVE:
-            SILK_CRIT << "cannot change code for deleted account: " << to_hex(address)
+            SILK_CRIT << "cannot change code for deleted account: " << address
                       << " incarnation: " << incarnation;
             SILKWORM_ASSERT(false);
             break;
@@ -150,7 +152,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     remote::AccountChange* account_change = latest_change_->mutable_changes(static_cast<int>(ac_index.value()));
     switch (account_change->action()) {
         case remote::Action::REMOVE:
-            SILK_CRIT << "cannot change storage for deleted account: " << to_hex(address)
+            SILK_CRIT << "cannot change storage for deleted account: " << address
                       << " incarnation: " << incarnation;
             SILKWORM_ASSERT(false);
             break;

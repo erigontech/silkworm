@@ -22,6 +22,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
@@ -55,7 +56,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         std::optional<silkworm::Account> account{co_await account_reader_(from, block_number + 1)};
 
         intx::uint256 balance = account->balance;
-        SILK_DEBUG << "balance for address 0x" << from << ": 0x" << intx::hex(balance);
+        SILK_DEBUG << "balance for address " << from << ": 0x" << intx::hex(balance);
         if (call.value.value_or(0) > balance) {
             // TODO(sixtysixter) what is the right error code?
             throw EstimateGasException{-1, "insufficient funds for transfer"};

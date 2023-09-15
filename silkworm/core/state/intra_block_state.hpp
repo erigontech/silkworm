@@ -22,6 +22,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/hash_maps.hpp>
 #include <silkworm/core/state/delta.hpp>
 #include <silkworm/core/state/object.hpp>
@@ -112,6 +113,10 @@ class IntraBlockState {
 
     const FlatHashSet<evmc::address>& touched() const noexcept { return touched_; }
 
+    evmc::bytes32 get_transient_storage(const evmc::address& address, const evmc::bytes32& bytes32);
+
+    void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value);
+
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
@@ -123,6 +128,7 @@ class IntraBlockState {
     friend class state::StorageCreateDelta;
     friend class state::StorageAccessDelta;
     friend class state::AccountAccessDelta;
+    friend class state::TransientStorageChangeDelta;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
@@ -148,6 +154,8 @@ class IntraBlockState {
     // EIP-2929 substate
     FlatHashSet<evmc::address> accessed_addresses_;
     FlatHashMap<evmc::address, FlatHashSet<evmc::bytes32>> accessed_storage_keys_;
+
+    FlatHashMap<evmc::address, FlatHashMap<evmc::bytes32, evmc::bytes32>> transient_storage_;
 };
 
 }  // namespace silkworm

@@ -21,6 +21,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
@@ -73,7 +74,7 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
 
     SILK_TRACE << "GasPriceOracle::load_block_prices # transactions in block: " << block_with_hash->block.transactions.size();
     SILK_TRACE << "GasPriceOracle::load_block_prices # block base_fee: 0x" << intx::hex(base_fee);
-    SILK_TRACE << "GasPriceOracle::load_block_prices # block beneficiary: 0x" << coinbase;
+    SILK_TRACE << "GasPriceOracle::load_block_prices # block beneficiary: " << coinbase;
 
     std::vector<intx::uint256> block_prices;
     int idx = 0;

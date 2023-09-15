@@ -21,6 +21,7 @@
 
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "address.hpp"
 
@@ -198,7 +199,7 @@ TEST_CASE("Self-destruct") {
         originator,  // from
     };
 
-    evmc::bytes32 address_as_hash{to_bytes32(suicidal_address)};
+    evmc::bytes32 address_as_hash{to_bytes32(suicidal_address.bytes)};
     txn.data = ByteView{address_as_hash};
 
     Receipt receipt1;

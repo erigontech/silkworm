@@ -28,6 +28,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>

@@ -20,6 +20,7 @@
 #include <cstring>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/db/util.hpp>
 

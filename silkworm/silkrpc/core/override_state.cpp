@@ -26,6 +26,8 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
@@ -68,36 +70,36 @@ std::optional<silkworm::Account> OverrideState::read_account(const evmc::address
 }
 
 silkworm::ByteView OverrideState::read_code(const evmc::bytes32& code_hash) const noexcept {
-    SILK_DEBUG << "OverrideState::read_code code_hash=" << code_hash << " start";
+    SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " start";
     auto it = code_hash_.find(code_hash);
     if (it != code_hash_.end()) {
-        SILK_DEBUG << "OverrideState::read_code code_hash=" << code_hash << " code: " << it->second;
+        SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " code: " << it->second;
         return it->second;
     }
     return inner_state_.read_code(code_hash);
 }
 
 evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << location << " start";
+    SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << to_hex(location) << " start";
     auto storage_value = inner_state_.read_storage(address, incarnation, location);
-    SILK_DEBUG << "OverrideState::read_storage storage_value=" << storage_value;
+    SILK_DEBUG << "OverrideState::read_storage storage_value=" << to_hex(storage_value);
     return storage_value;
 }
 
 std::optional<silkworm::BlockHeader> OverrideState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILK_DEBUG << "OverrideState::read_header block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::read_header block_number=" << block_number << " block_hash=" << to_hex(block_hash);
     auto optional_header = inner_state_.read_header(block_number, block_hash);
     return optional_header;
 }
 
 bool OverrideState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
-    SILK_DEBUG << "OverrideState::read_body block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::read_body block_number=" << block_number << " block_hash=" << to_hex(block_hash);
     auto result = inner_state_.read_body(block_number, block_hash, filled_body);
     return result;
 }
 
 std::optional<intx::uint256> OverrideState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILK_DEBUG << "OverrideState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::total_difficulty block_number=" << block_number << " block_hash=" << to_hex(block_hash);
     auto optional_total_difficulty = inner_state_.total_difficulty(block_number, block_hash);
     SILK_DEBUG << "OverrideState::total_difficulty optional_total_difficulty=" << optional_total_difficulty.value_or(intx::uint256{});
     return optional_total_difficulty;
@@ -106,7 +108,7 @@ std::optional<intx::uint256> OverrideState::total_difficulty(BlockNum block_numb
 std::optional<evmc::bytes32> OverrideState::canonical_hash(BlockNum block_number) const {
     SILK_DEBUG << "OverrideState::canonical_hash block_number=" << block_number;
     auto optional_canonical_hash = inner_state_.canonical_hash(block_number);
-    SILK_DEBUG << "OverrideState::canonical_hash optional_canonical_hash=" << optional_canonical_hash.value_or(evmc::bytes32{});
+    SILK_DEBUG << "OverrideState::canonical_hash optional_canonical_hash=" << to_hex(optional_canonical_hash.value_or(evmc::bytes32{}));
     return optional_canonical_hash;
 }
 

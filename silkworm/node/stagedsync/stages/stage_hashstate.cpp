@@ -22,6 +22,8 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
@@ -457,7 +459,7 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
                 evmc::address address{to_evmc_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
-                    auto plainstate_data{source_plainstate->find(db::to_slice(address.bytes), /*throw_notfound=*/false)};
+                    auto plainstate_data{source_plainstate->find(db::to_slice(address), /*throw_notfound=*/false)};
                     if (plainstate_data.done) {
                         Bytes current_value{db::from_slice(plainstate_data.value)};
                         changed_addresses[address] = std::make_pair(address_hash, current_value);
@@ -562,7 +564,7 @@ Stage::Result HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum pr
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
                 auto location{to_bytes32(changeset_value_view)};
                 if (!storage_changes[address][incarnation].contains(location)) {
-                    auto plain_state_value{db::find_value_suffix(*source_plainstate, plain_storage_prefix, location)};
+                    auto plain_state_value{db::find_value_suffix(*source_plainstate, plain_storage_prefix, location.bytes)};
                     storage_changes[address][incarnation].insert_or_assign(location,
                                                                            plain_state_value.value_or(Bytes()));
                 }
@@ -804,14 +806,14 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
             throw_if_stopping();
             last_address = address;
             log_lck.lock();
-            current_key_ = to_hex(address, true);
+            current_key_ = address_to_string(address);
             log_lck.unlock();
         }
 
         auto& [address_hash, current_encoded_value] = pair;
         if (!current_encoded_value.empty()) {
             // Update HashedAccounts table
-            target_hashed_accounts->upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
+            target_hashed_accounts->upsert(db::to_slice(address_hash), db::to_slice(current_encoded_value));
 
             // Lookup value in PlainCodeHash for Contract
             const auto incarnation{Account::incarnation_from_encoded_storage(current_encoded_value)};
@@ -830,7 +832,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
                 }
             }
         } else {
-            target_hashed_accounts->erase(db::to_slice(address_hash.bytes));
+            target_hashed_accounts->erase(db::to_slice(address_hash));
         }
     }
 
@@ -857,7 +859,7 @@ Stage::Result HashState::write_changes_from_changed_storage(
             std::memcpy(&hashed_storage_prefix[0], hashed_addresses.at(last_address).bytes, kHashLength);
 
             log_lck.lock();
-            current_key_ = to_hex(address, true);
+            current_key_ = address_to_string(address);
             log_lck.unlock();
         }
 

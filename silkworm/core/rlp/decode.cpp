@@ -87,10 +87,6 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     return h;
 }
 
-DecodingResult decode(ByteView& from, evmc::bytes32& to, Leftover mode) noexcept {
-    return decode(from, to.bytes, mode);
-}
-
 DecodingResult decode(ByteView& from, Bytes& to, Leftover mode) noexcept {
     const auto h{decode_header(from)};
     if (!h) {

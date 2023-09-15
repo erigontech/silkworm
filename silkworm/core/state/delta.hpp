@@ -157,5 +157,19 @@ namespace state {
         evmc::address address_;
     };
 
+    /// Transient storage add/modify/delete delta.
+    class TransientStorageChangeDelta : public Delta {
+      public:
+        TransientStorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
+                                    const evmc::bytes32& previous) noexcept;
+
+        void revert(IntraBlockState& state) noexcept override;
+
+      private:
+        evmc::address address_;
+        evmc::bytes32 key_;
+        evmc::bytes32 previous_;
+    };
+
 }  // namespace state
 }  // namespace silkworm

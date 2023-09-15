@@ -27,6 +27,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -189,23 +190,23 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
     if (rev >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < base_fee_per_gas) {
-                const std::string from = to_hex(*txn.from);
-                const std::string error = "fee cap less than block base fee: address 0x" + from + ", gasFeeCap: " +
+                const std::string from = address_to_string(*txn.from);
+                const std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
                                           intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
                 return error;
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
-                std::string from = to_hex(*txn.from);
-                std::string error = "tip higher than fee cap: address 0x" + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
+                std::string from = address_to_string(*txn.from);
+                std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
                 return error;
             }
         }
     }
     if (txn.gas_limit < g0) {
-        std::string from = to_hex(*txn.from);
-        std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
+        std::string from = address_to_string(*txn.from);
+        std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         return error;
     }
     return std::nullopt;
@@ -256,8 +257,8 @@ ExecutionResult EVMExecutor::call(
     if (have < want + txn.value) {
         if (!gas_bailout) {
             Bytes data{};
-            std::string from = to_hex(*txn.from);
-            std::string msg = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
+            std::string from = address_to_string(*txn.from);
+            std::string msg = "insufficient funds for gas * price + value: address " + from + ", have " + intx::to_string(have) + ", want " + intx::to_string(want + txn.value);
             return {std::nullopt, txn.gas_limit, data, msg};
         }
     } else {

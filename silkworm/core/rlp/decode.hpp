@@ -26,6 +26,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
@@ -41,8 +42,6 @@ enum class Leftover {
 // Consumes an RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.
 [[nodiscard]] tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
-
-DecodingResult decode(ByteView& from, evmc::bytes32& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 DecodingResult decode(ByteView& from, Bytes& to, Leftover mode = Leftover::kProhibit) noexcept;
 

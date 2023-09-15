@@ -18,19 +18,21 @@
 
 #include <iomanip>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r) {
-    out << " block_hash: " << r.block_hash;
+    out << " block_hash: " << to_hex(r.block_hash);
     out << " block_number: " << r.block_number;
     out << " contract_address: " << r.contract_address;
     out << " cumulative_gas_used: " << r.cumulative_gas_used;
     if (r.from) {
-        out << " from: " << silkworm::to_hex(*r.from);
+        out << " from: " << *r.from;
     } else {
         out << " from: null";
     }
@@ -40,11 +42,11 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     out << " bloom: " << silkworm::to_hex(bloom_view);
     out << " success: " << r.success;
     if (r.to) {
-        out << " to: " << silkworm::to_hex(*r.to);
+        out << " to: " << *r.to;
     } else {
         out << " to: null";
     }
-    out << " tx_hash: " << r.tx_hash;
+    out << " tx_hash: " << to_hex(r.tx_hash);
     out << " tx_index: " << r.tx_index;
     if (r.type) {
         out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(*r.type) << std::dec;

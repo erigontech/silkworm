@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers)
 find_package(Catch2 REQUIRED)
 
 set(TARGET silkworm_sentry_common)
@@ -26,11 +26,7 @@ add_library(${TARGET} ${SRC})
 
 target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC Boost::thread silkworm_core silkworm_infra
-  PRIVATE Boost::headers
-)
+target_link_libraries(${TARGET} PUBLIC Boost::headers silkworm_core silkworm_infra)
 
 # unit tests
 set(TEST_TARGET ${TARGET}_test)

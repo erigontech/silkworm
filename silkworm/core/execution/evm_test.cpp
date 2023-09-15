@@ -24,7 +24,9 @@
 
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "address.hpp"
 
@@ -114,7 +116,7 @@ TEST_CASE("Smart contract with storage") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/1)};
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0).bytes)) == "2a");
 
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
@@ -232,7 +234,7 @@ TEST_CASE("DELEGATECALL") {
     Transaction txn{};
     txn.from = caller_address;
     txn.to = caller_address;
-    txn.data = ByteView{to_bytes32(callee_address)};
+    txn.data = ByteView{to_bytes32(callee_address.bytes)};
 
     uint64_t gas{1'000'000};
     CallResult res{evm.execute(txn, gas)};
@@ -240,7 +242,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.data.empty());
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(caller_address));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_string(caller_address));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
@@ -438,10 +440,10 @@ class TestTracer : public EvmTracer {
 TEST_CASE("Tracing smart contract with storage") {
     Block block{};
     block.header.number = 10'336'006;
-    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address contract_address0{create_address(caller, 0)};
 
-    // This contract initially sets its 0th storage to 0x2a
-    // and its 1st storage to 0x01c9.
+    // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
     // When called, it updates the 0th storage to the input provided.
     Bytes code{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
     // https://github.com/CoinCulture/evm-tools
@@ -473,10 +475,15 @@ TEST_CASE("Tracing smart contract with storage") {
 
     CHECK(evm.tracers().empty());
 
+    // TODO(canepat) use 3 SECTIONS
+
     // First execution: out of gas
     TestTracer tracer1;
     evm.add_tracer(tracer1);
-    CHECK(evm.tracers().size() == 1);
+    CallTraces call_traces1;
+    CallTracer call_tracer1{call_traces1};
+    evm.add_tracer(call_tracer1);
+    CHECK(evm.tracers().size() == 2);
 
     uint64_t gas{0};
     CallResult res{evm.execute(txn, gas)};
@@ -495,11 +502,18 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer1.result().status == EVMC_OUT_OF_GAS);
     CHECK(tracer1.result().gas_left == 0);
     CHECK(tracer1.result().data.empty());
+    CHECK(call_traces1.senders.contains(caller));
+    CHECK(call_traces1.recipients.contains(contract_address0));  // even if deployment fails
 
     // Second execution: success
+    const evmc::address contract_address1{create_address(caller, 1)};
+
     TestTracer tracer2;
     evm.add_tracer(tracer2);
-    CHECK(evm.tracers().size() == 2);
+    CallTraces call_traces2;
+    CallTracer call_tracer2{call_traces2};
+    evm.add_tracer(call_tracer2);
+    CHECK(evm.tracers().size() == 4);
 
     gas = 50'000;
     res = evm.execute(txn, gas);
@@ -530,24 +544,28 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer2.result().status == EVMC_SUCCESS);
     CHECK(tracer2.result().gas_left == 9964);
     CHECK(tracer2.result().data == res.data);
+    CHECK(call_traces2.senders.contains(caller));
+    CHECK(call_traces2.recipients.contains(contract_address1));
 
     // Third execution: success
-    evmc::address contract_address{create_address(caller, 1)};
     evmc::bytes32 key0{};
 
-    TestTracer tracer3{contract_address, key0};
+    TestTracer tracer3{contract_address1, key0};
     evm.add_tracer(tracer3);
-    CHECK(evm.tracers().size() == 3);
+    CallTraces call_traces3;
+    CallTracer call_tracer3{call_traces3};
+    evm.add_tracer(call_tracer3);
+    CHECK(evm.tracers().size() == 6);
 
-    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address1, key0).bytes)) == "2a");
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
-    txn.to = contract_address;
+    txn.to = contract_address1;
     txn.data = ByteView{new_val};
     gas = 50'000;
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
     CHECK(res.data.empty());
-    CHECK(state.get_current_storage(contract_address, key0) == new_val);
+    CHECK(state.get_current_storage(contract_address1, key0) == new_val);
 
     CHECK((tracer3.execution_start_called() && tracer3.execution_end_called()));
     CHECK(tracer3.rev() == evmc_revision::EVMC_ISTANBUL);
@@ -566,12 +584,14 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer3.result().status == EVMC_SUCCESS);
     CHECK(tracer3.result().gas_left == 49191);
     CHECK(tracer3.result().data.empty());
+    CHECK(call_traces3.senders.contains(caller));
+    CHECK(call_traces3.recipients.contains(contract_address1));
 }
 
 TEST_CASE("Tracing creation smart contract with CREATE2") {
     Block block{};
     block.header.number = 10'336'006;
-    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
     Bytes code{*from_hex(
         "6080604052348015600f57600080fd5b506000801b604051601e906043565b81"
@@ -603,16 +623,25 @@ TEST_CASE("Tracing creation smart contract with CREATE2") {
 
     TestTracer tracer;
     evm.add_tracer(tracer);
-    CHECK(evm.tracers().size() == 1);
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+    CHECK(evm.tracers().size() == 2);
 
     uint64_t gas = {100'000};
     CallResult res{evm.execute(txn, gas)};
 
     CHECK(tracer.msg_stack().at(0).depth == 0);
-    CHECK(tracer.msg_stack().at(1).depth == 1);
-
     CHECK(tracer.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+    CHECK(tracer.msg_stack().at(0).recipient == 0xb7698071d0a593014f241f9d7fbbc49bcd62e014_address);
+    CHECK(evmc::is_zero(tracer.msg_stack().at(0).code_address));
+    CHECK(tracer.msg_stack().at(1).depth == 1);
     CHECK(tracer.msg_stack().at(1).kind == evmc_call_kind::EVMC_CREATE2);
+    CHECK(tracer.msg_stack().at(1).recipient == 0xe3e8f1881ba12f7d2494c010422982a8bf6045f7_address);
+    CHECK(evmc::is_zero(tracer.msg_stack().at(1).code_address));
+    CHECK(call_traces.senders.contains(caller));
+    CHECK(call_traces.recipients.contains(0xb7698071d0a593014f241f9d7fbbc49bcd62e014_address));
+    CHECK(call_traces.recipients.contains(0xe3e8f1881ba12f7d2494c010422982a8bf6045f7_address));
 }
 
 TEST_CASE("Tracing smart contract w/o code") {

@@ -33,7 +33,9 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -1015,7 +1017,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
         auto exists = intra_block_state.exists(address);
         auto& diff_storage = diff_storage_[address];
 
-        auto address_key = "0x" + silkworm::to_hex(address);
+        auto address_key = silkworm::address_to_string(address);
         auto& entry = state_diff_[address_key];
         if (initial_exists) {
             auto initial_balance = state_addresses_.get_balance(address);
@@ -1053,8 +1055,8 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
                     if (initial_storage != final_storage) {
                         all_equals = false;
                         entry.storage[key] = DiffValue{
-                            "0x" + silkworm::to_hex(intra_block_state.get_original_storage(address, key_b32)),
-                            "0x" + silkworm::to_hex(intra_block_state.get_current_storage(address, key_b32))};
+                            silkworm::to_hex(intra_block_state.get_original_storage(address, key_b32), true),
+                            silkworm::to_hex(intra_block_state.get_current_storage(address, key_b32), true)};
                     }
                 }
                 if (all_equals) {
@@ -1070,7 +1072,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
                 for (auto& key : diff_storage) {
                     auto key_b32 = silkworm::bytes32_from_hex(key);
                     entry.storage[key] = DiffValue{
-                        "0x" + silkworm::to_hex(intra_block_state.get_original_storage(address, key_b32))};
+                        silkworm::to_hex(intra_block_state.get_original_storage(address, key_b32), true)};
                 }
             }
         } else if (exists) {
@@ -1093,7 +1095,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
                 if (intra_block_state.get_current_storage(address, key_b32) != evmc::bytes32{}) {
                     entry.storage[key] = DiffValue{
                         {},
-                        "0x" + silkworm::to_hex(intra_block_state.get_current_storage(address, key_b32))};
+                        silkworm::to_hex(intra_block_state.get_current_storage(address, key_b32), true)};
                 }
                 to_be_removed = false;
             }

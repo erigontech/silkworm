@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -37,7 +38,7 @@ namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     for (const auto& entry : balance_changes) {
-        json["0x" + silkworm::to_hex(entry.first)] = to_quantity(entry.second);
+        json[silkworm::address_to_string(entry.first)] = to_quantity(entry.second);
     }
 }
 
@@ -64,7 +65,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
                 it = balance_changes.erase(it);
             } else {
                 SILK_DEBUG << "Address "
-                           << "0x" + silkworm::to_hex(it->first) << ": balance changed from " << to_quantity(it->second) << " to " << to_quantity(balance);
+                           << it->first << ": balance changed from " << to_quantity(it->second) << " to " << to_quantity(balance);
                 it->second = balance;
                 it++;
             }

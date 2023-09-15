@@ -22,6 +22,7 @@
 #include <boost/asio/ip/tcp.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry {
 

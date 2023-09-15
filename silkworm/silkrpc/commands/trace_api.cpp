@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -277,7 +278,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     const auto transaction_hash = params[0].get<evmc::bytes32>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILK_TRACE << "transaction_hash: " << transaction_hash << " config: " << config;
+    SILK_TRACE << "transaction_hash: " << silkworm::to_hex(transaction_hash) << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -287,7 +288,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
-            oss << "transaction 0x" << transaction_hash << " not found";
+            oss << "transaction " << silkworm::to_hex(transaction_hash, true) << " not found";
             reply = make_json_error(request["id"], -32000, oss.str());
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
@@ -413,7 +414,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     std::vector<uint16_t> indices;
     std::transform(str_indices.begin(), str_indices.end(), std::back_inserter(indices),
                    [](const std::string& str) { return std::stoi(str, nullptr, 16); });
-    SILK_TRACE << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size();
+    SILK_TRACE << "transaction_hash: " << silkworm::to_hex(transaction_hash) << ", #indices: " << indices.size();
 
     // Erigon RpcDaemon compatibility
     // Parity fails if it gets more than a single index. It returns nothing in this case. Must we?
@@ -464,7 +465,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_TRACE << "transaction_hash: " << transaction_hash;
+    SILK_TRACE << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 

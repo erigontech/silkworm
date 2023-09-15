@@ -68,6 +68,8 @@ class InMemoryState : public State {
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
+    void insert_call_traces(BlockNum block_number, const CallTraces& traces) override;
+
     void begin_block(uint64_t block_number) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,

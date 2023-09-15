@@ -17,7 +17,7 @@
 set(TARGET silkworm_sentry)
 
 find_package(absl REQUIRED)
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers)
 find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
@@ -64,12 +64,6 @@ list(FILTER SRC EXCLUDE REGEX "discovery/[a-z0-9_]+/")
 
 add_library(${TARGET} ${SRC})
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
-# https://github.com/grpc/grpc/issues/19224
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
-
 target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(LIBS_PRIVATE
@@ -93,7 +87,7 @@ endif(MSVC)
 
 # cmake-format: off
 set(LIBS_PUBLIC
-    Boost::thread
+    Boost::headers
     Microsoft.GSL::GSL
     silkworm_infra
 )
@@ -111,7 +105,4 @@ file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
 list(FILTER TEST_SRC EXCLUDE REGEX "sentry/common")
 list(FILTER TEST_SRC EXCLUDE REGEX "discovery/")
 add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
 target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)

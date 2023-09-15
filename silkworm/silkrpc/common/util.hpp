@@ -27,9 +27,11 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 
 namespace silkworm {
@@ -111,20 +113,6 @@ inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::rlp::encode(txn_rlp, txn, /*wrap_eip2718_into_string=*/false);
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
 }
-
-namespace evmc {
-
-inline std::ostream& operator<<(std::ostream& out, const address& addr) {
-    out << silkworm::to_hex(addr);
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const bytes32& b32) {
-    out << silkworm::to_hex(b32);
-    return out;
-}
-
-}  // namespace evmc
 
 namespace intx {
 template <unsigned N>

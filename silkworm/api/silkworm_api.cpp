@@ -164,8 +164,8 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
             CallTraces traces;
+            CallTracer tracer{traces};
             if (write_call_traces) {
-                CallTracer tracer{traces};
                 processor.evm().add_tracer(tracer);
             }
 

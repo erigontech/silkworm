@@ -37,6 +37,7 @@ TEST_CASE("Storage update") {
     const auto location_a{0x0000000000000000000000000000000000000000000000000000000000000013_bytes32};
     const auto value_a1{0x000000000000000000000000000000000000000000000000000000000000006b_bytes32};
     const auto value_a2{0x0000000000000000000000000000000000000000000000000000000000000085_bytes32};
+    const auto value_a3{0x0000000000000000000000000000000000000000000000000000000000000095_bytes32};
 
     const auto location_b{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
     const auto value_b{0x0000000000000000000000000000000000000000000000000000000000000132_bytes32};
@@ -68,6 +69,29 @@ TEST_CASE("Storage update") {
     const std::optional<ByteView> db_value_b{find_value_suffix(*state, key, location_b.bytes)};
     REQUIRE(db_value_b.has_value());
     CHECK(db_value_b == zeroless_view(value_b.bytes));
+
+    // Update again only location A
+    buffer.update_storage(address, kDefaultIncarnation, location_a,
+                          /*initial=*/value_a2, /*current=*/value_a3);
+
+    REQUIRE(buffer.storage_changes().empty() == false);
+    REQUIRE(buffer.current_batch_history_size() != 0);
+
+    // Ask state buffer to not write change sets
+    buffer.write_to_db(/*write_change_sets=*/false);
+
+    // Location A should have the previous value of old value in state changes, i.e. value_a1
+    const auto storage_changes{db::read_storage_changes(txn, 0)};
+    REQUIRE(storage_changes.size() == 1);
+    const auto& [changed_address, changed_map] = *storage_changes.begin();
+    CHECK(changed_address == address);
+    REQUIRE(changed_map.size() == 1);
+    const auto& [changed_incarnation, changed_storage] = *changed_map.begin();
+    CHECK(changed_incarnation == kDefaultIncarnation);
+    REQUIRE(changed_storage.size() == 1);
+    const auto& [changed_location, changed_value] = *changed_storage.begin();
+    CHECK(changed_location == location_a);
+    CHECK(changed_value == zeroless_view(value_a1.bytes));
 }
 
 TEST_CASE("Account update") {

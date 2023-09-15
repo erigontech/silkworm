@@ -17,7 +17,7 @@
 find_package(Boost REQUIRED headers)
 find_package(Catch2 REQUIRED)
 
-set(TARGET silkworm_sentry_disc_v4)
+set(TARGET silkworm_sentry_discovery_common)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
@@ -26,11 +26,7 @@ add_library(${TARGET} ${SRC})
 
 target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_sentry_common silkworm_sentry_node_db silkworm_sentry_discovery_enr
-  PRIVATE Boost::headers stbrumme_keccak silkworm_core silkworm_sentry_discovery_common
-)
+target_link_libraries(${TARGET} PUBLIC silkworm_core Boost::headers)
 
 # unit tests
 set(TEST_TARGET ${TARGET}_test)

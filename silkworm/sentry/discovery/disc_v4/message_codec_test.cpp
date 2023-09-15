@@ -47,6 +47,7 @@ TEST_CASE("MessageCodec.ping_encode_and_decode") {
         101,
         udp::endpoint{make_address("10.0.0.2"), 200},
         std::chrono::system_clock::now(),
+        123,
     };
 
     Message expected_message{static_cast<uint8_t>(PacketType::kPing), expected_ping_message.rlp_encode()};
@@ -64,6 +65,7 @@ TEST_CASE("MessageCodec.ping_encode_and_decode") {
     CHECK(decoded_ping_message.sender_port_rlpx == expected_ping_message.sender_port_rlpx);
     CHECK(decoded_ping_message.recipient_endpoint == expected_ping_message.recipient_endpoint);
     CHECK(std::chrono::duration_cast<std::chrono::seconds>(decoded_ping_message.expiration - expected_ping_message.expiration).count() == 0);
+    CHECK(decoded_ping_message.enr_seq_num == expected_ping_message.enr_seq_num);
 }
 
 TEST_CASE("MessageCodec.ping_decode") {

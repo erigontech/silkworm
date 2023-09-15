@@ -44,6 +44,12 @@ add_subdirectory(common)
 # node DB
 add_subdirectory(discovery/node_db)
 
+# discovery common
+add_subdirectory(discovery/common)
+
+# ENR
+add_subdirectory(discovery/enr)
+
 # disc v4
 add_subdirectory(discovery/disc_v4)
 
@@ -79,6 +85,8 @@ set(LIBS_PRIVATE
     silkworm-buildinfo
     silkworm_sentry_common
     silkworm_sentry_node_db
+    silkworm_sentry_discovery_common
+    silkworm_sentry_discovery_enr
     silkworm_sentry_disc_v4
 )
 if(MSVC)

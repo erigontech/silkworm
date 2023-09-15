@@ -29,9 +29,9 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/ip_classify.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
-#include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::find {

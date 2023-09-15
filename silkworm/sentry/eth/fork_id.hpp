@@ -47,6 +47,13 @@ class ForkId {
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static ForkId rlp_decode(ByteView data);
 
+    /**
+     * Encode ForkId for EnrRecord.eth1_fork_id_data.
+     * It expects to be wrapped in an extra RLP list: RLP([RLP(this)]),
+     * because in geth forkid.ID struct is contained within an enrEntry struct and each struct forms a list.
+     */
+    [[nodiscard]] Bytes rlp_encode_enr_entry() const;
+
     [[nodiscard]] bool is_compatible_with(
         ByteView genesis_hash,
         const std::vector<BlockNum>& fork_block_numbers,

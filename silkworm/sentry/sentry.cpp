@@ -17,7 +17,6 @@
 #include "sentry.hpp"
 
 #include <cassert>
-#include <functional>
 #include <optional>
 #include <string>
 
@@ -29,6 +28,8 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/discovery/common/node_address.hpp>
+#include <silkworm/sentry/discovery/enr/enr_record.hpp>
 
 #include "api/common/node_info.hpp"
 #include "api/common/service.hpp"
@@ -83,9 +84,11 @@ class SentryImpl final {
     [[nodiscard]] std::string client_id() const;
     [[nodiscard]] EnodeUrl make_node_url() const;
     [[nodiscard]] api::NodeInfo make_node_info() const;
+    [[nodiscard]] discovery::enr::EnrRecord make_node_record();
     [[nodiscard]] std::function<api::NodeInfo()> node_info_provider() const;
     [[nodiscard]] std::function<EccKeyPair()> node_key_provider() const;
     [[nodiscard]] std::function<EnodeUrl()> node_url_provider() const;
+    [[nodiscard]] std::function<discovery::enr::EnrRecord()> node_record_provider();
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -149,6 +152,7 @@ SentryImpl::SentryImpl(Settings settings, concurrency::ExecutorPool& executor_po
           settings_.network_id,
           node_key_provider(),
           node_url_provider(),
+          node_record_provider(),
           settings_.bootnodes,
           settings_.port),
       peer_manager_(executor_pool.any_executor(), settings_.max_peers, executor_pool_),
@@ -288,6 +292,30 @@ api::NodeInfo SentryImpl::make_node_info() const {
     };
 }
 
+discovery::enr::EnrRecord SentryImpl::make_node_record() {
+    discovery::NodeAddress address{*public_ip_, settings_.port, settings_.port};
+    std::optional<discovery::NodeAddress> address_v4;
+    std::optional<discovery::NodeAddress> address_v6;
+    if (public_ip_->is_v4()) {
+        address_v4 = std::move(address);
+    } else if (public_ip_->is_v6()) {
+        address_v6 = std::move(address);
+    }
+
+    auto status_data = status_manager_.status_provider()();
+    Bytes eth1_fork_id_data = status_data.message.fork_id.rlp_encode_enr_entry();
+
+    return {
+        node_key_->public_key(),
+        1,
+        std::move(address_v4),
+        std::move(address_v6),
+        std::move(eth1_fork_id_data),
+        std::nullopt,
+        std::nullopt,
+    };
+}
+
 std::function<api::NodeInfo()> SentryImpl::node_info_provider() const {
     return [this] { return this->make_node_info(); };
 }
@@ -301,6 +329,10 @@ std::function<EccKeyPair()> SentryImpl::node_key_provider() const {
 
 std::function<EnodeUrl()> SentryImpl::node_url_provider() const {
     return [this] { return this->make_node_url(); };
+}
+
+std::function<discovery::enr::EnrRecord()> SentryImpl::node_record_provider() {
+    return [this] { return this->make_node_record(); };
 }
 
 Sentry::Sentry(Settings settings, concurrency::ExecutorPool& executor_pool)

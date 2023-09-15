@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "enr/message_sender.hpp"
 #include "find/message_sender.hpp"
 #include "ping/message_sender.hpp"
 
@@ -23,6 +24,7 @@ namespace silkworm::sentry::discovery::disc_v4 {
 
 struct MessageSender
     : ping::MessageSender,
+      enr::MessageSender,
       find::MessageSender {
 };
 

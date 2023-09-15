@@ -21,19 +21,21 @@
 #include <boost/asio/ip/udp.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-#include "message_sender.hpp"
-#include "ping_message.hpp"
+#include "enr_request_message.hpp"
+#include "enr_response_message.hpp"
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
+namespace silkworm::sentry::discovery::disc_v4::enr {
 
-struct PingHandler {
-    static Task<void> handle(
-        PingMessage message,
+struct MessageHandler {
+    virtual ~MessageHandler() = default;
+    virtual Task<void> on_enr_request(
+        EnrRequestMessage message,
+        EccPublicKey sender_public_key,
         boost::asio::ip::udp::endpoint sender_endpoint,
-        Bytes ping_packet_hash,
-        uint64_t local_enr_seq_num,
-        MessageSender& sender);
+        Bytes packet_hash) = 0;
+    virtual Task<void> on_enr_response(EnrResponseMessage message) = 0;
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4::enr

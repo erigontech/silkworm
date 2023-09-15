@@ -48,7 +48,7 @@ Bytes MessageCodec::encode(const Message& message, ByteView private_key) {
     memcpy(packet->data, message.data.data(), message.data.size());
 
     auto type_and_data_hash = keccak256(ByteView(packet_data).substr(offsetof(Packet, type)));
-    Bytes signature = ecdsa_signature::sign(ByteView(type_and_data_hash.bytes), private_key);
+    Bytes signature = ecdsa_signature::sign_recoverable(ByteView(type_and_data_hash.bytes), private_key);
     memcpy(packet->signature, signature.data(), signature.size());
 
     auto hash = keccak256(ByteView(packet_data).substr(offsetof(Packet, signature)));
@@ -77,7 +77,7 @@ MessageEnvelope MessageCodec::decode(ByteView packet_data) {
         throw std::runtime_error("MessageCodec: invalid hash");
 
     auto type_and_data_hash = keccak256(packet_data.substr(offsetof(Packet, type)));
-    auto public_key = ecdsa_signature::recover_and_verify(
+    auto public_key = ecdsa_signature::verify_and_recover(
         ByteView(type_and_data_hash.bytes),
         ByteView(packet->signature));
 

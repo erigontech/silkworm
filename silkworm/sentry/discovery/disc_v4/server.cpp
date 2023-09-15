@@ -16,6 +16,7 @@
 
 #include "server.hpp"
 
+#include <concepts>
 #include <optional>
 #include <stdexcept>
 
@@ -25,7 +26,6 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/this_coro.hpp>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -115,11 +115,20 @@ class ServerImpl {
                             std::move(envelope->public_key));
                         break;
                     case PacketType::kEnrRequest:
+                        co_await handler_.on_enr_request(
+                            enr::EnrRequestMessage::rlp_decode(data),
+                            std::move(envelope->public_key),
+                            std::move(sender_endpoint),
+                            std::move(envelope->packet_hash));
                         break;
                     case PacketType::kEnrResponse:
+                        co_await handler_.on_enr_response(
+                            enr::EnrResponseMessage::rlp_decode(data));
                         break;
                 }
             } catch (const find::FindNodeMessage::DecodeTargetPublicKeyError& ex) {
+                log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
+            } catch (const enr::EnrResponseMessage::DecodeEnrRecordError& ex) {
                 log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             } catch (const DecodingException& ex) {
                 log::Warning("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
@@ -129,15 +138,24 @@ class ServerImpl {
 
     template <class TMessage>
     Task<void> send_message(TMessage message, ip::udp::endpoint recipient) {
-        auto packet_data = MessageCodec::encode(
-            Message{TMessage::kId, message.rlp_encode()},
-            node_key_().private_key());
-        co_await send_packet(std::move(packet_data), recipient);
+        return send_message(Message{TMessage::kId, message.rlp_encode()}, std::move(recipient));
+    }
+
+    template <std::same_as<enr::EnrResponseMessage> TMessage>
+    Task<void> send_message(TMessage message, ip::udp::endpoint recipient) {
+        return send_message(Message{enr::EnrResponseMessage::kId, message.rlp_encode(node_key_())}, std::move(recipient));
     }
 
   private:
     [[nodiscard]] ip::udp::endpoint listen_endpoint() const {
         return ip::udp::endpoint{ip_, port_};
+    }
+
+    Task<void> send_message(Message message, ip::udp::endpoint recipient) {
+        auto packet_data = MessageCodec::encode(
+            std::move(message),
+            node_key_().private_key());
+        co_await send_packet(std::move(packet_data), recipient);
     }
 
     Task<void> send_packet(Bytes data, ip::udp::endpoint recipient) {
@@ -182,6 +200,14 @@ Task<void> Server::send_find_node(find::FindNodeMessage message, ip::udp::endpoi
 }
 
 Task<void> Server::send_neighbors(find::NeighborsMessage message, ip::udp::endpoint recipient) {
+    return p_impl_->send_message(std::move(message), std::move(recipient));
+}
+
+Task<void> Server::send_enr_request(enr::EnrRequestMessage message, ip::udp::endpoint recipient) {
+    return p_impl_->send_message(std::move(message), std::move(recipient));
+}
+
+Task<void> Server::send_enr_response(enr::EnrResponseMessage message, ip::udp::endpoint recipient) {
     return p_impl_->send_message(std::move(message), std::move(recipient));
 }
 

@@ -40,6 +40,7 @@ class DiscoveryImpl {
         uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::function<enr::EnrRecord()> node_record,
         std::vector<EnodeUrl> bootnodes,
         uint16_t disc_v4_port);
 
@@ -76,6 +77,7 @@ DiscoveryImpl::DiscoveryImpl(
     uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::function<enr::EnrRecord()> node_record,
     std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
@@ -84,7 +86,7 @@ DiscoveryImpl::DiscoveryImpl(
       network_id_(network_id),
       node_db_(executor),
       bootnodes_(std::move(bootnodes)),
-      disc_v4_discovery_(executor, disc_v4_port, node_key, node_url, node_db_.interface()) {
+      disc_v4_discovery_(executor_pool, disc_v4_port, node_key, node_url, node_record, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
@@ -189,6 +191,7 @@ Discovery::Discovery(
     uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::function<enr::EnrRecord()> node_record,
     std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
@@ -199,6 +202,7 @@ Discovery::Discovery(
           network_id,
           std::move(node_key),
           std::move(node_url),
+          std::move(node_record),
           std::move(bootnodes),
           disc_v4_port)) {}
 

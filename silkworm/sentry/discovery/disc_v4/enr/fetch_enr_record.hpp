@@ -16,24 +16,25 @@
 
 #pragma once
 
+#include <optional>
+
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/ip/udp.hpp>
+#include <boost/signals2.hpp>
 
-#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/discovery/enr/enr_record.hpp>
 
+#include "enr_response_message.hpp"
 #include "message_sender.hpp"
-#include "ping_message.hpp"
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
+namespace silkworm::sentry::discovery::disc_v4::enr {
 
-struct PingHandler {
-    static Task<void> handle(
-        PingMessage message,
-        boost::asio::ip::udp::endpoint sender_endpoint,
-        Bytes ping_packet_hash,
-        uint64_t local_enr_seq_num,
-        MessageSender& sender);
-};
+Task<std::optional<discovery::enr::EnrRecord>> fetch_enr_record(
+    EccPublicKey node_id,
+    boost::asio::ip::udp::endpoint endpoint,
+    MessageSender& message_sender,
+    boost::signals2::signal<void(EnrResponseMessage)>& on_enr_response_signal);
 
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4::enr

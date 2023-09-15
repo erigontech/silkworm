@@ -16,24 +16,19 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <boost/asio/ip/udp.hpp>
+#include <chrono>
 
 #include <silkworm/core/common/bytes.hpp>
 
-#include "message_sender.hpp"
-#include "ping_message.hpp"
+namespace silkworm::sentry::discovery::disc_v4::enr {
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
+struct EnrRequestMessage {
+    std::chrono::time_point<std::chrono::system_clock> expiration;
 
-struct PingHandler {
-    static Task<void> handle(
-        PingMessage message,
-        boost::asio::ip::udp::endpoint sender_endpoint,
-        Bytes ping_packet_hash,
-        uint64_t local_enr_seq_num,
-        MessageSender& sender);
+    [[nodiscard]] Bytes rlp_encode() const;
+    [[nodiscard]] static EnrRequestMessage rlp_decode(ByteView data);
+
+    static const uint8_t kId;
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4::enr

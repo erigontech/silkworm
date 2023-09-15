@@ -16,27 +16,30 @@
 
 #pragma once
 
-#include <chrono>
+#include <stdexcept>
 #include <string>
 
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/discovery/enr/enr_record.hpp>
 
-namespace silkworm::sentry::discovery::disc_v4::find {
+namespace silkworm::sentry::discovery::disc_v4::enr {
 
-struct FindNodeMessage {
-    EccPublicKey target_public_key;
-    std::chrono::time_point<std::chrono::system_clock> expiration;
+struct EnrResponseMessage {
+    using EnrRecord = discovery::enr::EnrRecord;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static FindNodeMessage rlp_decode(ByteView data);
+    Bytes request_hash;
+    EnrRecord record;
+
+    [[nodiscard]] Bytes rlp_encode(const EccKeyPair& key_pair) const;
+    [[nodiscard]] static EnrResponseMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 
-    class DecodeTargetPublicKeyError : public std::runtime_error {
+    class DecodeEnrRecordError : public std::runtime_error {
       public:
-        DecodeTargetPublicKeyError(const std::exception& ex) : std::runtime_error(std::string("Failed to decode FindNodeMessage.target_public_key: ") + ex.what()) {}
+        DecodeEnrRecordError(const std::exception& ex) : std::runtime_error(std::string("Failed to decode EnrResponseMessage.record: ") + ex.what()) {}
     };
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4::find
+}  // namespace silkworm::sentry::discovery::disc_v4::enr

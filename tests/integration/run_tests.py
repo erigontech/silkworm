@@ -77,11 +77,11 @@ tests_not_compared_result = [
 ]
 
 tests_not_compared_message = [
-   "trace_callMany/test_10.json",
-   "trace_callMany/test_11.json",
-   "eth_callMany/test_08.json",
-   "trace_call/test_12.json",
-   "trace_call/test_16.json"
+    "trace_callMany/test_10.json",
+    "trace_callMany/test_11.json",
+    "eth_callMany/test_08.json",
+    "trace_call/test_12.json",
+    "trace_call/test_16.json"
 ]
 
 tests_message_lower_case = [

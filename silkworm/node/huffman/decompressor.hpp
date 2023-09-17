@@ -54,12 +54,12 @@ class CodeWord {
   public:
     explicit CodeWord();
     explicit CodeWord(uint16_t code, uint8_t length, ByteView pattern);
-    explicit CodeWord(uint16_t code, uint8_t length, ByteView pattern, std::unique_ptr<PatternTable> table, CodeWord* next);
+    explicit CodeWord(uint16_t code, uint8_t length, ByteView pattern, PatternTable* table, CodeWord* next);
 
     [[nodiscard]] uint16_t code() const { return code_; }
     [[nodiscard]] uint8_t code_length() const { return code_length_; }
     [[nodiscard]] ByteView pattern() const { return pattern_; }
-    [[nodiscard]] PatternTable* table() const { return table_.get(); }
+    [[nodiscard]] PatternTable* table() const { return table_; }
     [[nodiscard]] CodeWord* next() const { return next_; }
 
     void reset_content(uint16_t code, uint8_t length, ByteView pattern);
@@ -72,7 +72,7 @@ class CodeWord {
     //! Number of bits in the codes
     uint8_t code_length_{0};
     ByteView pattern_;
-    std::unique_ptr<PatternTable> table_;
+    PatternTable* table_;
     CodeWord* next_;
 };
 
@@ -99,7 +99,7 @@ class PatternTable : public DecodingTable {
     explicit PatternTable(std::size_t max_depth);
 
     [[nodiscard]] const CodeWord* codeword(std::size_t code) const {
-        return code < codewords_.size() ? codewords_[code].get() : nullptr;
+        return code < codewords_.size() ? codewords_[code] : nullptr;
     }
 
     [[nodiscard]] std::size_t num_codewords() const { return codewords_.size(); }
@@ -121,11 +121,12 @@ class PatternTable : public DecodingTable {
         int bits,
         uint64_t depth);
 
-    [[maybe_unused]] CodeWord* insert_word(std::shared_ptr<CodeWord> codeword);
+    [[maybe_unused]] CodeWord* insert_word(CodeWord* codeword);
 
-    std::vector<std::shared_ptr<CodeWord>> codewords_;
+    std::vector<CodeWord*> codewords_;
     mutable CodeWord* head_{nullptr};
 
+    std::vector<CodeWord> codewords_list_;
     friend std::ostream& operator<<(std::ostream& out, const PatternTable& pt);
 };
 

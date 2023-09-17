@@ -146,14 +146,14 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
     if (depth == first_pattern.depth) {
         const CodeWord codeword{code, static_cast<uint8_t>(bits), first_pattern.value, nullptr, nullptr};
         codewords_list_.push_back(codeword);
-        insert_word(&codewords_list_[codewords_list_.size()-1]);
+        insert_word(&codewords_list_[codewords_list_.size() - 1]);
         return 1;
     }
     if (bits == kMaxTableBitLength) {
         auto new_table{new PatternTable(highest_depth)};
         const CodeWord codeword{code, 0, ByteView{}, new_table, nullptr};
         codewords_list_.push_back(codeword);
-        const auto last_cw = insert_word(&codewords_list_[codewords_list_.size()-1]);
+        const auto last_cw = insert_word(&codewords_list_[codewords_list_.size() - 1]);
         return last_cw->table()->build_condensed(patterns, highest_depth, 0, 0, depth);
     }
     const auto b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);

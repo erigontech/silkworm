@@ -91,9 +91,9 @@ TEST_CASE("CodeWord::reset_content", "[silkworm][node][huffman][decompressor]") 
     uint16_t old_code{121};
     uint8_t old_length{2};
     Bytes old_pattern{0x11, 0x00, 0x11};
-    auto table_ptr = std::make_unique<PatternTable>(3);
-    const PatternTable* table = table_ptr.get();
-    CodeWord cw{old_code, old_length, old_pattern, std::move(table_ptr), &parent_cw};
+    auto table_ptr = new PatternTable(3);
+    const PatternTable* table = table_ptr;
+    CodeWord cw{old_code, old_length, old_pattern, table_ptr, &parent_cw};
     CHECK(cw.code() == old_code);
     CHECK(cw.code_length() == old_length);
     CHECK(cw.pattern() == old_pattern);
@@ -114,7 +114,7 @@ TEST_CASE("CodeWord::reset_content", "[silkworm][node][huffman][decompressor]") 
 
 TEST_CASE("CodeWord::set_next", "[silkworm][node][huffman][decompressor]") {
     CodeWord parent1_cw{}, parent2_cw{};
-    CodeWord cw{0, 0, Bytes{}, std::make_unique<PatternTable>(3), &parent1_cw};
+    CodeWord cw{0, 0, Bytes{}, new PatternTable(3), &parent1_cw};
     CHECK(cw.next() == &parent1_cw);
 
     CHECK_NOTHROW(cw.set_next(&parent2_cw));

@@ -146,20 +146,24 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
     test::SampleBodySnapshotFile body_snapshot{tmp_dir};
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    std::cout << "before check\n";
 
     SECTION("header w/o index") {
+        std::cout << "check hdr\n";
         CHECK(repository.find_header_segment(1'500'011) == nullptr);
         CHECK(repository.find_header_segment(1'500'012) == nullptr);
         CHECK(repository.find_header_segment(1'500'013) == nullptr);
         CHECK(repository.find_header_segment(1'500'014) == nullptr);
     }
     SECTION("body w/o index") {
+        std::cout << "check body\n";
         CHECK(repository.find_body_segment(1'500'011) == nullptr);
         CHECK(repository.find_body_segment(1'500'012) == nullptr);
         CHECK(repository.find_body_segment(1'500'013) == nullptr);
         CHECK(repository.find_body_segment(1'500'014) == nullptr);
     }
     SECTION("tx w/o index") {
+        std::cout << "check tx\n";
         CHECK(repository.find_tx_segment(1'500'011) == nullptr);
         CHECK(repository.find_tx_segment(1'500'012) == nullptr);
         CHECK(repository.find_tx_segment(1'500'013) == nullptr);

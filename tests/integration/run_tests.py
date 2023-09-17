@@ -5,7 +5,6 @@ from datetime import datetime
 import getopt
 import gzip
 import json
-#import jsondiff
 import os
 import shlex
 import shutil
@@ -77,6 +76,14 @@ tests_not_compared_result = [
     "trace_callMany/test_15.json"
 ]
 
+tests_not_compared_message = [
+    "trace_callMany/test_10.json",
+    "trace_callMany/test_11.json",
+    "eth_callMany/test_08.json",
+    "trace_call/test_12.json",
+    "trace_call/test_16.json"
+]
+
 tests_message_lower_case = [
     "eth_callBundle/test_8.json",
     "eth_createAccessList/test_4.json"
@@ -142,6 +149,18 @@ def replace_str_from_file(filer, filew, matched_string):
                 if (matched_string in line) == 0:
                     output_file.write(line)
 
+def replace_message(filer, filew, matched_string):
+    """ parse file and replace string
+    """
+    with open(filer, "r", encoding='utf8') as input_file:
+        with open(filew, "w", encoding='utf8') as output_file:
+            # iterate all lines from file
+            for line in input_file:
+                # if text matches then don't write it
+                if (matched_string in line) == 0:
+                    output_file.write(line)
+                else:
+                    output_file.write("     \"message\": \"\"\n")
 
 def modified_str_from_file(filer, filew, matched_string):
     """ parse file and convert string
@@ -199,6 +218,13 @@ def is_not_compared_result(test_name: str):
             return 1
     return 0
 
+def is_not_compared_message(test_name: str):
+    """ determine if test not compared result
+    """
+    for curr_test_name in tests_not_compared_message:
+        if curr_test_name == test_name:
+            return 1
+    return 0
 
 def is_message_to_be_converted(test_name: str):
     """ determine if test not compared result
@@ -209,7 +235,7 @@ def is_message_to_be_converted(test_name: str):
     return 0
 
 
-def run_shell_command(command: str, command1: str, expected_response: str, verbose: bool, exit_on_fail: bool,
+def run_shell_command(command: str, command1: str, expected_response: str, verbose_level: int, exit_on_fail: bool,
                       output_dir: str, silk_file: str,
                       exp_rsp_file: str, diff_file: str, dump_output, json_file: str, test_number):
     """ Run the specified command as shell. If exact result or error don't care, they are null but present in expected_response. """
@@ -219,7 +245,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
     if process.returncode != 0:
         sys.exit(process.returncode)
     process.stdout = process.stdout.strip('\n')
-    if verbose:
+    if verbose_level > 1:
         print(process.stdout)
     response = json.loads(process.stdout)
     if command1 != "":
@@ -231,7 +257,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         try:
             expected_response = json.loads(process.stdout)
         except json.decoder.JSONDecodeError:
-            if verbose:
+            if verbose_level:
                 print("Failed (bad json format on expected rsp)")
                 print(process.stdout)
                 return 1
@@ -245,17 +271,17 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
     if response != expected_response:
         if "result" in response and "result" in expected_response and expected_response["result"] is None:
             # response and expected_response are different but don't care
-            if verbose:
+            if verbose_level:
                 print("OK")
             return 0
         if "error" in response and "error" in expected_response and expected_response["error"] is None:
             # response and expected_response are different but don't care
-            if verbose:
+            if verbose_level:
                 print("OK")
             return 0
         if "error" not in expected_response and "result" not in expected_response:
             # response and expected_response are different but don't care
-            if verbose:
+            if verbose_level:
                 print("OK")
             return 0
         if silk_file != "" and os.path.exists(output_dir) == 0:
@@ -266,7 +292,6 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         if exp_rsp_file != "":
             with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
                 json_file_ptr.write(json.dumps(expected_response, indent=5))
-        response_diff = jsondiff.diff(expected_response, response, marshal=True)
         to_lower_case(exp_rsp_file)
         to_lower_case(silk_file)
 
@@ -276,6 +301,11 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             removed_line_string = "error"
             replace_str_from_file(exp_rsp_file, temp_file1, removed_line_string)
             replace_str_from_file(silk_file, temp_file2, removed_line_string)
+            cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
+        elif is_not_compared_message(json_file):
+            removed_line_string = "message"
+            replace_message(exp_rsp_file, temp_file1, removed_line_string)
+            replace_message(silk_file, temp_file2, removed_line_string)
             cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
         elif is_message_to_be_converted(json_file):
             modified_string = "message"
@@ -289,7 +319,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         os.system(cmd)
         diff_file_size = os.stat(diff_file).st_size
         if diff_file_size != 0:
-            if verbose:
+            if verbose_level:
                 print("Failed")
             else:
                 file = json_file.ljust(60)
@@ -298,7 +328,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
                 print("TEST ABORTED!")
                 sys.exit(1)
             return 1
-        if verbose:
+        if verbose_level:
             print("OK")
         if os.path.exists(temp_file1):
             os.remove(temp_file1)
@@ -310,7 +340,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         if not os.listdir(output_dir):
             os.rmdir(output_dir)
     else:
-        if verbose:
+        if verbose_level:
             print("OK")
         if dump_output:
             if silk_file != "" and os.path.exists(output_dir) == 0:
@@ -324,7 +354,7 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
     return 0
 
 
-def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, daemon_under_test: str, exit_on_fail: bool,
+def run_tests(test_dir: str, output_dir: str, json_file: str, verbose_level: int, daemon_under_test: str, exit_on_fail: bool,
               verify_with_daemon: bool, daemon_as_reference: str,
               dump_output: bool, test_number, infura_url: str, daemon_on_host: str, daemon_on_port: int,
               jwt_secret: str):
@@ -391,7 +421,7 @@ def run_tests(test_dir: str, output_dir: str, json_file: str, verbose: bool, dae
             cmd,
             cmd1,
             response,
-            verbose,
+            verbose_level,
             exit_on_fail,
             output_dir_name,
             silk_file,
@@ -423,7 +453,7 @@ def usage(argv):
     print("-d send requests also to the reference daemon i.e. Erigon RpcDaemon")
     print("-i <infura_url> send any request also to the Infura API endpoint as reference")
     print("-b blockchain [default: goerly]")
-    print("-v verbose")
+    print("-v <verbose_level>")
     print("-o dump response")
     print("-k authentication token file")
     print("-x exclude API list (i.e. txpool_content,txpool_status,engine_")
@@ -442,12 +472,12 @@ def main(argv):
     daemon_under_test = SILK
     daemon_as_reference = RPCDAEMON
     loop_number = 1
-    verbose = False
+    verbose_level = 0
     req_test = -1
     dump_output = False
     infura_url = ""
     daemon_on_host = "localhost"
-    daemon_on_port = 8545
+    daemon_on_port = 0
     requested_api = ""
     verify_with_daemon = False
     json_dir = "./goerly/"
@@ -460,7 +490,7 @@ def main(argv):
     display_only_fail = 0
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "hfrcvt:l:a:di:b:ox:X:H:k:s:p:")
+        opts, _ = getopt.getopt(argv[1:], "hfrcv:t:l:a:di:b:ox:X:H:k:s:p:")
         for option, optarg in opts:
             if option in ("-h", "--help"):
                 usage(argv)
@@ -479,7 +509,7 @@ def main(argv):
             elif option == "-f":
                 display_only_fail = 1
             elif option == "-v":
-                verbose = 1
+                verbose_level = int(optarg)
             elif option == "-t":
                 req_test = int(optarg)
             elif option == "-s":
@@ -525,7 +555,7 @@ def main(argv):
     tests_not_executed = 0
     global_test_number = 1
     for test_rep in range(0, loop_number):
-        if verbose:
+        if verbose_level:
             print("Test iteration: ", test_rep + 1)
         dirs = sorted(os.listdir(json_dir))
         for api_file in dirs:
@@ -552,11 +582,11 @@ def main(argv):
                                 (requested_api != "" and req_test in (-1, test_number))):
                             if (start_test == "") or (start_test != "" and global_test_number >= int(start_test)):
                                 file = test_file.ljust(60)
-                                if verbose:
+                                if verbose_level:
                                     print(f"{global_test_number:03d}. {file} ", end='', flush=True)
                                 else:
                                     print(f"{global_test_number:03d}. {file}\r", end='', flush=True)
-                                ret = run_tests(json_dir, output_dir, test_file, verbose, daemon_under_test,
+                                ret = run_tests(json_dir, output_dir, test_file, verbose_level, daemon_under_test,
                                                 exit_on_fail, verify_with_daemon, daemon_as_reference,
                                                 dump_output, global_test_number, infura_url, daemon_on_host,
                                                 daemon_on_port, jwt_secret)

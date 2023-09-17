@@ -24,6 +24,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 
@@ -138,6 +139,8 @@ void InMemoryState::decanonize_block(uint64_t block_number) { (void)canonical_ha
 
 void InMemoryState::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
+void InMemoryState::insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) {}
+
 void InMemoryState::begin_block(uint64_t block_number) {
     block_number_ = block_number;
     account_changes_.erase(block_number);
@@ -226,15 +229,15 @@ evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, 
     std::map<evmc::bytes32, Bytes> storage_rlp;
     Bytes buffer;
     for (const auto& [location, value] : storage) {
-        ethash::hash256 hash{keccak256(location)};
+        ethash::hash256 hash{keccak256(location.bytes)};
         buffer.clear();
-        rlp::encode(buffer, zeroless_view(value));
+        rlp::encode(buffer, zeroless_view(value.bytes));
         storage_rlp[to_bytes32(hash.bytes)] = buffer;
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : storage_rlp) {
-        hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+        hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
     }
 
     return hb.root_hash();
@@ -247,14 +250,14 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
 
     std::map<evmc::bytes32, Bytes> account_rlp;
     for (const auto& [address, account] : accounts_) {
-        ethash::hash256 hash{keccak256(address)};
+        ethash::hash256 hash{keccak256(address.bytes)};
         evmc::bytes32 storage_root{account_storage_root(address, account.incarnation)};
         account_rlp[to_bytes32(hash.bytes)] = account.rlp(storage_root);
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : account_rlp) {
-        hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+        hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
     }
 
     return hb.root_hash();

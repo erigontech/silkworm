@@ -19,6 +19,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 

@@ -18,10 +18,11 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 #include <boost/asio/ip/udp.hpp>
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
@@ -30,6 +31,7 @@ struct PingMessage {
     uint16_t sender_port_rlpx{};
     boost::asio::ip::udp::endpoint recipient_endpoint;
     std::chrono::time_point<std::chrono::system_clock> expiration;
+    std::optional<uint64_t> enr_seq_num;
 
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static PingMessage rlp_decode(ByteView data);

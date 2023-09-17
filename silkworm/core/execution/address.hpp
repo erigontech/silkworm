@@ -16,13 +16,37 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
+#include <ostream>
+#include <string>
+
+#include <evmc/evmc.hpp>
+
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm {
+
 // Yellow Paper, Section 7
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-1014
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept;
+
+// Converts bytes to evmc::address; input is cropped if necessary.
+// Short inputs are left-padded with 0s.
+evmc::address to_evmc_address(ByteView bytes);
+
+std::string address_to_string(const evmc::address& address);
+
+namespace rlp {
+    void encode(Bytes& to, const evmc::address& address);
+    size_t length(const evmc::address& address) noexcept;
+}  // namespace rlp
+
 }  // namespace silkworm
+
+namespace evmc {
+
+std::ostream& operator<<(std::ostream& out, const evmc::address& address);
+
+}  // namespace evmc

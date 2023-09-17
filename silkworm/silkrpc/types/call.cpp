@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {

@@ -17,13 +17,15 @@
 #include "dump_account.hpp"
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump) {
-    out << "root: 0x" << dump.root
+    out << "root: 0x" << silkworm::to_hex(dump.root)
         << " next: " << dump.next
         << " accounts: " << dump.accounts.size();
     return out;
@@ -35,7 +37,7 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
     for (const auto& entry : dump.accounts) {
         nlohmann::json item;
         to_json(item, entry.second);
-        accounts.push_back(nlohmann::json::object_t::value_type("0x" + silkworm::to_hex(entry.first), item));
+        accounts.push_back(nlohmann::json::object_t::value_type(silkworm::address_to_string(entry.first), item));
     }
     auto encoded = base64_encode({dump.next.bytes, kAddressLength}, false);
     json = {

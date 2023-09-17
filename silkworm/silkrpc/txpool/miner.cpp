@@ -16,6 +16,7 @@
 
 #include "miner.hpp"
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
@@ -40,11 +41,11 @@ Task<WorkResult> Miner::get_work() {
     UnaryRpc<&::txpool::Mining::StubInterface::AsyncGetWork> get_work_rpc{*stub_, grpc_context_};
     const auto reply = co_await get_work_rpc.finish_on(executor_, ::txpool::GetWorkRequest{});
     const auto header_hash = silkworm::bytes32_from_hex(reply.header_hash());
-    SILK_DEBUG << "Miner::get_work header_hash=" << header_hash;
+    SILK_DEBUG << "Miner::get_work header_hash=" << silkworm::to_hex(header_hash);
     const auto seed_hash = silkworm::bytes32_from_hex(reply.seed_hash());
-    SILK_DEBUG << "Miner::get_work seed_hash=" << seed_hash;
+    SILK_DEBUG << "Miner::get_work seed_hash=" << silkworm::to_hex(seed_hash);
     const auto target = silkworm::bytes32_from_hex(reply.target());
-    SILK_DEBUG << "Miner::get_work target=" << target;
+    SILK_DEBUG << "Miner::get_work target=" << silkworm::to_hex(target);
     const auto block_number = silkworm::from_hex(reply.block_number()).value_or(silkworm::Bytes{});
     SILK_DEBUG << "Miner::get_work block_number=" << block_number;
     WorkResult result{header_hash, seed_hash, target, block_number};
@@ -54,7 +55,7 @@ Task<WorkResult> Miner::get_work() {
 
 Task<bool> Miner::submit_work(const silkworm::Bytes& block_nonce, const evmc::bytes32& pow_hash, const evmc::bytes32& digest) {
     const auto start_time = clock_time::now();
-    SILK_DEBUG << "Miner::submit_work block_nonce=" << block_nonce << " pow_hash=" << pow_hash << " digest=" << digest;
+    SILK_DEBUG << "Miner::submit_work block_nonce=" << block_nonce << " pow_hash=" << silkworm::to_hex(pow_hash) << " digest=" << silkworm::to_hex(digest);
     ::txpool::SubmitWorkRequest submit_work_request;
     submit_work_request.set_block_nonce(block_nonce.data(), block_nonce.size());
     submit_work_request.set_pow_hash(pow_hash.bytes, silkworm::kHashLength);
@@ -68,7 +69,7 @@ Task<bool> Miner::submit_work(const silkworm::Bytes& block_nonce, const evmc::by
 
 Task<bool> Miner::submit_hash_rate(const intx::uint256& rate, const evmc::bytes32& id) {
     const auto start_time = clock_time::now();
-    SILK_DEBUG << "Miner::submit_hash_rate rate=" << rate << " id=" << id;
+    SILK_DEBUG << "Miner::submit_hash_rate rate=" << rate << " id=" << silkworm::to_hex(id);
     ::txpool::SubmitHashRateRequest submit_hash_rate_request;
     submit_hash_rate_request.set_rate(uint64_t(rate));
     submit_hash_rate_request.set_id(id.bytes, silkworm::kHashLength);

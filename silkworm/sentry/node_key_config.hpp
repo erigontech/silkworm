@@ -21,6 +21,7 @@
 #include <variant>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 

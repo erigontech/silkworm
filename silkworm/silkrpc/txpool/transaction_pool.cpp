@@ -16,6 +16,8 @@
 
 #include "transaction_pool.hpp"
 
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
@@ -76,7 +78,7 @@ Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView&
 
 Task<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc::bytes32& tx_hash) {
     const auto start_time = clock_time::now();
-    SILK_DEBUG << "TransactionPool::get_transaction tx_hash=" << tx_hash;
+    SILK_DEBUG << "TransactionPool::get_transaction tx_hash=" << silkworm::to_hex(tx_hash);
     auto hi = new ::types::H128{};
     auto lo = new ::types::H128{};
     hi->set_hi(evmc::load64be(tx_hash.bytes + 0));

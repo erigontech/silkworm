@@ -25,6 +25,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 // #include <silkworm/infra/test_util/log.hpp>

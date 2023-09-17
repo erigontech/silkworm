@@ -18,6 +18,7 @@
 
 #include <iomanip>
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -26,9 +27,9 @@ std::ostream& operator<<(std::ostream& out, const Log& log) {
     out << "#topics: " << log.topics.size();
     out << " #data: " << log.data.size();
     out << " block_number: " << uint32_t(log.block_number);
-    out << " tx_hash: " << log.tx_hash;
+    out << " tx_hash: " << to_hex(log.tx_hash);
     out << " tx_index: " << log.tx_index;
-    out << " block_hash: " << log.block_hash;
+    out << " block_hash: " << to_hex(log.block_hash);
     out << " index: " << log.index;
     out << " removed: " << log.removed;
     out << " address: ";

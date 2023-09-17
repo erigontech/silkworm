@@ -23,6 +23,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
@@ -52,7 +53,7 @@ Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::byte
 
 Task<ChainConfig> read_chain_config(const DatabaseReader& reader) {
     const auto genesis_block_hash{co_await read_canonical_block_hash(reader, kEarliestBlockNumber)};
-    SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << genesis_block_hash;
+    SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << silkworm::to_hex(genesis_block_hash);
     const silkworm::ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, silkworm::kHashLength};
     const auto data{co_await reader.get_one(db::table::kConfigName, genesis_block_hash_bytes)};
     if (data.empty()) {
@@ -80,7 +81,7 @@ Task<evmc::bytes32> read_canonical_block_hash(const DatabaseReader& reader, uint
         throw std::invalid_argument{"empty block hash value in read_canonical_block_hash"};
     }
     const auto canonical_block_hash{silkworm::to_bytes32(value)};
-    SILK_DEBUG << "rawdb::read_canonical_block_hash canonical block hash: " << canonical_block_hash;
+    SILK_DEBUG << "rawdb::read_canonical_block_hash canonical block hash: " << silkworm::to_hex(canonical_block_hash);
     co_return canonical_block_hash;
 }
 
@@ -133,7 +134,7 @@ Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader) {
         throw std::invalid_argument{"empty head header hash value in read_head_header_hash"};
     }
     const auto head_header_hash{silkworm::to_bytes32(value)};
-    SILK_DEBUG << "head header hash: " << head_header_hash;
+    SILK_DEBUG << "head header hash: " << silkworm::to_hex(head_header_hash);
     co_return head_header_hash;
 }
 

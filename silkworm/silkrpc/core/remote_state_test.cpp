@@ -25,6 +25,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/storage/remote_chain_storage.hpp>

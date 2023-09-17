@@ -16,6 +16,7 @@
 
 #include "backend_calls.hpp"
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
@@ -39,7 +40,7 @@ Task<void> EtherbaseCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
         co_await agrpc::finish(responder_, response_, grpc::Status::OK);
-        SILK_TRACE << "EtherbaseCall END etherbase: " << to_hex(address_from_H160(response_.address()));
+        SILK_TRACE << "EtherbaseCall END etherbase: " << address_from_H160(response_.address());
     } else {
         const grpc::Status error{grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
         co_await agrpc::finish_with_error(responder_, error);

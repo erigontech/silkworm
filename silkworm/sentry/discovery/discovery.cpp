@@ -33,13 +33,14 @@ using namespace boost::asio;
 class DiscoveryImpl {
   public:
     explicit DiscoveryImpl(
-        concurrency::ExecutorPool& executor_pool,
+        boost::asio::any_io_executor executor,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
         uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::function<enr::EnrRecord()> node_record,
         std::vector<EnodeUrl> bootnodes,
         uint16_t disc_v4_port);
 
@@ -69,22 +70,23 @@ class DiscoveryImpl {
 };
 
 DiscoveryImpl::DiscoveryImpl(
-    concurrency::ExecutorPool& executor_pool,
+    boost::asio::any_io_executor executor,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
     uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::function<enr::EnrRecord()> node_record,
     std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
       network_id_(network_id),
-      node_db_(executor_pool.any_executor()),
+      node_db_(executor),
       bootnodes_(std::move(bootnodes)),
-      disc_v4_discovery_(executor_pool.any_executor(), disc_v4_port, node_key, node_url, node_db_.interface()) {
+      disc_v4_discovery_(executor, disc_v4_port, node_key, node_url, node_record, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
@@ -189,16 +191,18 @@ Discovery::Discovery(
     uint64_t network_id,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
+    std::function<enr::EnrRecord()> node_record,
     std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
-          executor_pool,
+          executor_pool.any_executor(),
           std::move(peer_urls),
           with_dynamic_discovery,
           data_dir_path,
           network_id,
           std::move(node_key),
           std::move(node_url),
+          std::move(node_record),
           std::move(bootnodes),
           disc_v4_port)) {}
 

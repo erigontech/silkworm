@@ -91,6 +91,12 @@ ForkId ForkId::rlp_decode(ByteView data) {
     return value;
 }
 
+Bytes ForkId::rlp_encode_enr_entry() const {
+    Bytes data;
+    rlp::encode(data, std::vector<rlp::RlpBytes>{rlp::RlpBytes{rlp_encode()}});
+    return data;
+}
+
 bool ForkId::is_compatible_with(
     ByteView genesis_hash,
     const std::vector<BlockNum>& fork_block_numbers,

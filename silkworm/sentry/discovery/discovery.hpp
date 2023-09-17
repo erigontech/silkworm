@@ -27,6 +27,7 @@
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/discovery/enr/enr_record.hpp>
 
 namespace silkworm::sentry::discovery {
 
@@ -42,6 +43,7 @@ class Discovery {
         uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
+        std::function<enr::EnrRecord()> node_record,
         std::vector<EnodeUrl> bootnodes,
         uint16_t disc_v4_port);
     ~Discovery();

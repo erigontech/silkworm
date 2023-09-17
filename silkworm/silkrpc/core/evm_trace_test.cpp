@@ -307,7 +307,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 50000, want 53072");
+        CHECK(result.pre_check_error.value() == "intrinsic gas too low: address 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7, have 50000, want 53072");
     }
 
     SECTION("Call: full output") {
@@ -1655,7 +1655,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "first run for txIndex 0 error: intrinsic gas too low: have 50000, want 53072");
+        CHECK(result.pre_check_error.value() == "first run for txIndex 0 error: intrinsic gas too low: address 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7, have 50000, want 53072");
     }
 
     SECTION("Call: full output") {
@@ -6488,8 +6488,8 @@ TEST_CASE("TraceFilter") {
         os << config;
 
         CHECK(os.str() ==
-              "from_block: 0x0, to_block: latest, from_addresses: [0a6bb546b9208cfab9e8fa2b9b2c042b18df7030, ], "
-              "to_addresses: [0a6bb546b9208cfab9e8fa2b9b2c042b18df7031, ], mode: union, after: 0, count: 4294967295");
+              "from_block: 0x0, to_block: latest, from_addresses: [0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030, ], "
+              "to_addresses: [0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7031, ], mode: union, after: 0, count: 4294967295");
     }
     SECTION("json deserialization: simple") {
         nlohmann::json json = R"({

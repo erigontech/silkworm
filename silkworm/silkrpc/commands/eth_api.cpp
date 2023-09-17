@@ -27,9 +27,11 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -193,7 +195,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
     }
     auto block_hash = params[0].get<evmc::bytes32>();
     auto full_tx = params[1].get<bool>();
-    SILK_DEBUG << "block_hash: " << block_hash << " full_tx: " << std::boolalpha << full_tx;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " full_tx: " << std::boolalpha << full_tx;
 
     auto tx = co_await database_->begin();
 
@@ -278,7 +280,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -357,7 +359,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
     const auto index = params[1].get<std::string>();
-    SILK_DEBUG << "block_hash: " << block_hash << " index: " << index;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
     auto tx = co_await database_->begin();
 
@@ -464,7 +466,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -538,7 +540,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -594,7 +596,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -643,7 +645,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
     const auto index = params[1].get<std::string>();
-    SILK_DEBUG << "block_hash: " << block_hash << " index: " << index;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
     auto tx = co_await database_->begin();
 
@@ -692,7 +694,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
     const auto index = params[1].get<std::string>();
-    SILK_DEBUG << "block_hash: " << block_hash << " index: " << index;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
     auto tx = co_await database_->begin();
 
@@ -847,7 +849,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
     auto tx = co_await database_->begin();
 
     try {
@@ -870,7 +872,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         for (size_t idx{0}; idx < transactions.size(); idx++) {
             auto ethash_hash{hash_of_transaction(transactions[idx])};
 
-            SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
+            SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_hex(silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength}));
             if (std::memcmp(transaction_hash.bytes, ethash_hash.bytes, silkworm::kHashLength) == 0) {
                 tx_index = idx;
                 const intx::uint256 base_fee_per_gas{block_with_hash->block.header.base_fee_per_gas.value_or(0)};
@@ -975,7 +977,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1015,7 +1017,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1057,7 +1059,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
     }
     const auto address = params[0].get<evmc::address>();
     const auto block_id = params[1].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1099,7 +1101,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     const auto address = params[0].get<evmc::address>();
     const auto location = params[1].get<evmc::bytes32>();
     const auto block_id = params[2].get<std::string>();
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -1837,9 +1839,9 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
         const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);
-        SILK_DEBUG << "submitted contract creation hash: " << hash << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
+        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
     } else {
-        SILK_DEBUG << "submitted transaction hash: " << hash << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
+        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
     }
 
     reply = make_json_content(request["id"], hash);

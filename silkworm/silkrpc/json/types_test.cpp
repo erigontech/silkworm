@@ -64,14 +64,14 @@ TEST_CASE("convert positive uint256 to quantity(buff)", "[silkrpc][to_quantity]"
 TEST_CASE("serialize empty address using to_hex(char *)", "[silkrpc][to_json]") {
     evmc::address address{};
     char address_zero[64];
-    to_hex(address_zero, address);
+    to_hex(address_zero, address.bytes);
     CHECK(strcmp(address_zero, "0x0000000000000000000000000000000000000000") == 0);
 }
 
 TEST_CASE("serialize empty address using to_hex(char *) small buffer", "[silkrpc][to_json]") {
     evmc::address address{};
     char address_zero[10];
-    CHECK_THROWS(to_hex(address_zero, address));
+    CHECK_THROWS(to_hex(address_zero, address.bytes));
 }
 
 TEST_CASE("serialize empty address", "[silkrpc][to_json]") {

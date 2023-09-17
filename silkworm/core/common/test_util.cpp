@@ -16,6 +16,7 @@
 
 #include "test_util.hpp"
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/log.hpp>
 
 namespace silkworm::test {

@@ -25,6 +25,7 @@
 #include <utility>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/node/db/util.hpp>

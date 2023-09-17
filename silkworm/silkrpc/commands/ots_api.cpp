@@ -19,7 +19,9 @@
 #include <numeric>
 #include <string>
 
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
@@ -52,9 +54,9 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
-    const auto block_id = params[1].get<std::string>();
+    const auto block_id = params[1].is_string() ? params[1].get<std::string>() : to_quantity(params[1].get<uint64_t>());
 
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id;
+    SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -94,7 +96,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
-    const auto block_id = params[0].get<std::string>();
+    const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
 
     SILK_DEBUG << "block_id: " << block_id;
 
@@ -147,7 +149,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     }
     auto block_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "block_hash: " << block_hash;
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
     auto tx = co_await database_->begin();
 
@@ -196,7 +198,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
         co_return;
     }
 
-    const auto block_id = params[0].get<std::string>();
+    const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
     const auto page_number = params[1].get<std::size_t>();
     const auto page_size = params[2].get<std::size_t>();
 
@@ -399,7 +401,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             co_return;
         }
 
-        if (!plain_state_account.value().code_hash) {
+        if (plain_state_account.value().code_hash == kEmptyHash) {
             reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
@@ -520,7 +522,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -567,7 +569,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -614,7 +616,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 
@@ -663,7 +665,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     auto block_number = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
     auto tx = co_await database_->begin();
 
     try {
@@ -747,7 +749,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto block_number = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
     auto tx = co_await database_->begin();
 
     try {

@@ -20,7 +20,7 @@
 
 #include <boost/asio/ip/udp.hpp>
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 #include "message_sender.hpp"
 #include "ping_message.hpp"
@@ -32,6 +32,7 @@ struct PingHandler {
         PingMessage message,
         boost::asio::ip::udp::endpoint sender_endpoint,
         Bytes ping_packet_hash,
+        uint64_t local_enr_seq_num,
         MessageSender& sender);
 };
 

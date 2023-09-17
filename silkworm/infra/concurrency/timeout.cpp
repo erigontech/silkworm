@@ -22,9 +22,14 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <silkworm/infra/common/log.hpp>
+
 namespace silkworm::concurrency {
 
-Task<void> timeout(std::chrono::milliseconds duration) {
+Task<void> timeout(
+    std::chrono::milliseconds duration,
+    const char* source_file_path,
+    int source_file_line) {
     auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::steady_timer timer(executor);
     timer.expires_after(duration);
@@ -36,6 +41,10 @@ Task<void> timeout(std::chrono::milliseconds duration) {
         if (ex.code() == boost::system::errc::operation_canceled)
             co_return;
         throw;
+    }
+
+    if (source_file_path) {
+        log::Trace() << "TimeoutExpiredError in " << source_file_path << ":" << source_file_line;
     }
 
     throw TimeoutExpiredError();

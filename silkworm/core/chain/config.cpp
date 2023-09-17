@@ -21,6 +21,7 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 

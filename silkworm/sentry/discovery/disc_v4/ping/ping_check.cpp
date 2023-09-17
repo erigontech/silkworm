@@ -59,6 +59,7 @@ Task<bool> ping_check(
     EccPublicKey node_id,
     std::optional<boost::asio::ip::udp::endpoint> endpoint_opt,
     EnodeUrl local_node_url,
+    uint64_t local_enr_seq_num,
     MessageSender& message_sender,
     boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
     node_db::NodeDb& db) {
@@ -101,6 +102,7 @@ Task<bool> ping_check(
         local_node_url.port_rlpx(),
         endpoint,
         make_message_expiration(),
+        local_enr_seq_num,
     };
 
     try {

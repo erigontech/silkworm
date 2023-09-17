@@ -40,6 +40,8 @@ class CanonicalChain {
     CanonicalChain(const CanonicalChain&, db::RWTxn&);  // we can copy a CanonicalChain giving a new tx
     CanonicalChain(CanonicalChain&&) noexcept;
 
+    void open();
+
     BlockId find_forking_point(Hash header_hash) const;
     BlockId find_forking_point(const BlockHeader& header, Hash header_hash) const;
 

@@ -659,9 +659,9 @@ TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
     const auto val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
     const auto val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-    upsert_storage_value(table, key, loc1, val1);
-    upsert_storage_value(table, key, loc2, val2);
-    upsert_storage_value(table, key, loc3, val3);
+    upsert_storage_value(table, key, loc1.bytes, val1.bytes);
+    upsert_storage_value(table, key, loc2.bytes, val2.bytes);
+    upsert_storage_value(table, key, loc3.bytes, val3.bytes);
 
     CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc1) == val1);
     CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc2) == val2);

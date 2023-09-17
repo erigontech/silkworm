@@ -30,6 +30,8 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
@@ -77,7 +79,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     }
 
     SILK_TRACE << "block_number_or_hash: " << block_number_or_hash
-               << " start_address: 0x" << silkworm::to_hex(start_address)
+               << " start_address: " << start_address
                << " max_result: " << max_result
                << " exclude_code: " << exclude_code
                << " exclude_storage: " << exclude_storage;
@@ -161,7 +163,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     if (params.size() == 2) {
         end_hash = params[1].get<evmc::bytes32>();
     }
-    SILK_DEBUG << "start_hash: " << start_hash << " end_hash: " << end_hash;
+    SILK_DEBUG << "start_hash: " << silkworm::to_hex(start_hash) << " end_hash: " << silkworm::to_hex(end_hash);
 
     auto tx = co_await database_->begin();
 
@@ -205,7 +207,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
 
     SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
                << " tx_index: " << tx_index
-               << " address: 0x" << silkworm::to_hex(address)
+               << " address: " << address
                << " start_key: 0x" << silkworm::to_hex(start_key)
                << " max_result: " << max_result;
 
@@ -285,7 +287,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
     SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
                << " tx_index: " << tx_index
-               << " address: 0x" << silkworm::to_hex(address);
+               << " address: " << address;
 
     auto tx = co_await database_->begin();
 
@@ -387,7 +389,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILK_DEBUG << "transaction_hash: " << transaction_hash << " config: {" << config << "}";
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash) << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -456,7 +458,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
-        oss << "block " << block_number_or_hash.number() << "(" << block_number_or_hash.hash() << ") not found";
+        oss << "block " << block_number_or_hash.number() << "(" << silkworm::to_hex(block_number_or_hash.hash()) << ") not found";
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } catch (...) {
@@ -604,7 +606,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILK_DEBUG << "block_hash: " << block_hash << " config: {" << config << "}";
+    SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -621,7 +623,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
-        oss << "block_hash " << block_hash << " not found";
+        oss << "block_hash " << silkworm::to_hex(block_hash) << " not found";
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } catch (const std::exception& e) {
@@ -656,7 +658,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& 
             if (block_number <= end_block_number) {
                 auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
 
-                SILK_TRACE << "Walker: processing block " << block_number << " address 0x" << silkworm::to_hex(address);
+                SILK_TRACE << "Walker: processing block " << block_number << " address " << address;
                 addresses.insert(address);
             }
             return block_number <= end_block_number;
@@ -760,7 +762,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
-    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+    SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();
 

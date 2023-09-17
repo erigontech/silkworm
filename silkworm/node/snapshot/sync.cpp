@@ -131,16 +131,23 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     static int completed{0};
     auto log_stats = [&](lt::span<const int64_t> counters) {
-        std::string counters_dump;
-        for (int i{0}; i < counters.size(); ++i) {
-            const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
-            counters_dump.append(stats_metric.name);
-            counters_dump.append("=");
-            counters_dump.append(std::to_string(counters[i]));
-            if (i != counters.size() - 1) counters_dump.append(", ");
-        }
+        // Log progress just once in a while because our BitTorrent notifications rely on alert polling so quite chatty
+        static int notification_count{0};
+        if (notification_count++ != 30) return;
+        notification_count = 0;
+
         SILK_INFO << "SnapshotSync: sync in progress: [" << completed << "/" << num_snapshots << "]";
-        SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
+        if (log::test_verbosity(log::Level::kTrace)) {
+            std::string counters_dump;
+            for (int i{0}; i < counters.size(); ++i) {
+                const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
+                counters_dump.append(stats_metric.name);
+                counters_dump.append("=");
+                counters_dump.append(std::to_string(counters[i]));
+                if (i != counters.size() - 1) counters_dump.append(", ");
+            }
+            SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
+        }
     };
     const auto stats_connection = client_.stats_subscription.connect(log_stats);
 
@@ -243,7 +250,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
     repository_->for_each_header([&](const BlockHeader* header) -> bool {
-        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << to_hex(header->hash());
+        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << Hash{header->hash()}.to_hex();
         const auto block_number = header->number;
         if (block_number > max_block_available) return true;
 

@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::sentry {
 
@@ -31,7 +32,7 @@ class EccPublicKey {
     [[nodiscard]] ByteView data() const { return data_; }
     [[nodiscard]] Bytes::size_type size() const { return data_.size(); }
 
-    [[nodiscard]] Bytes serialized_std() const;
+    [[nodiscard]] Bytes serialized_std(bool is_compressed = false) const;
     [[nodiscard]] Bytes serialized() const;
     [[nodiscard]] std::string hex() const;
 

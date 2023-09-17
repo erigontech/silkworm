@@ -66,7 +66,7 @@ AuthMessage::AuthMessage(ByteView data, const EccKeyPair& recipient_key_pair)
     // shared_secret ^= nonce_
     crypto::xor_bytes(shared_secret, nonce_);
 
-    ephemeral_public_key_ = recover_and_verify(shared_secret, signature_);
+    ephemeral_public_key_ = verify_and_recover(shared_secret, signature_);
 }
 
 Bytes AuthMessage::body_as_rlp() const {

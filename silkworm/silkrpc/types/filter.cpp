@@ -16,6 +16,8 @@
 
 #include "filter.hpp"
 
+#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterAddresses>& addresses) {
@@ -23,7 +25,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
         auto address_vector = addresses.value();
         out << "[";
         for (std::size_t i{0}; i < address_vector.size(); i++) {
-            out << "0x" << address_vector[i];
+            out << address_vector[i];
             if (i != address_vector.size() - 1) {
                 out << " ";
             }
@@ -38,7 +40,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
 std::ostream& operator<<(std::ostream& out, const silkworm::rpc::FilterSubTopics& subtopics) {
     out << "[";
     for (std::size_t i{0}; i < subtopics.size(); i++) {
-        out << "0x" << subtopics[i];
+        out << silkworm::to_hex(subtopics[i], true);
         if (i != subtopics.size() - 1) {
             out << " ";
         }

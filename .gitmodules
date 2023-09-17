@@ -33,6 +33,9 @@
 [submodule "third_party/blst"]
 	path = third_party/blst
 	url = https://github.com/supranational/blst.git
+[submodule "third_party/cpp-base64"]
+	path = third_party/cpp-base64
+	url = https://github.com/ReneNyffenegger/cpp-base64.git
 [submodule "third_party/intx"]
 	path = third_party/intx
 	url = https://github.com/chfast/intx.git

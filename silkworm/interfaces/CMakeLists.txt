@@ -52,12 +52,6 @@ if(NOT MSVC)
   endif()
 endif(NOT MSVC)
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
-# https://github.com/grpc/grpc/issues/19224
-if(SILKWORM_SANITIZE)
-  target_compile_definitions(silkworm_interfaces PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-endif()
-
 target_include_directories(silkworm_interfaces PUBLIC "${SILKWORM_MAIN_DIR};${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(LIBS_PUBLIC gRPC::grpc++ protobuf::libprotobuf)

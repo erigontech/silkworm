@@ -17,6 +17,7 @@
 #include "remote_client.hpp"
 
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>

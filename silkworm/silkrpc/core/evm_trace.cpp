@@ -1188,11 +1188,11 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         co_return traces;
     }
 
-    if (filter.count > 0 && filter.after == 0) {
-        const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-        const auto rule_set_factory = protocol::rule_set_factory(*chain_config_ptr);
-        const auto block_rewards = rule_set_factory->compute_reward(block_with_hash.block);
+    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    const auto rule_set_factory = protocol::rule_set_factory(*chain_config_ptr);
+    const auto block_rewards = rule_set_factory->compute_reward(block_with_hash.block);
 
+    if (filter.count > 0 && filter.after == 0) {
         if (block_rewards.miner) {
             RewardAction action;
             action.author = block_with_hash.block.header.beneficiary;
@@ -1232,7 +1232,8 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         }
         filter.count--;
     } else if (filter.after > 0) {
-        filter.after--;
+        if (block_rewards.miner || !block_rewards.ommers.empty())
+            filter.after--;
     }
 
     co_return traces;

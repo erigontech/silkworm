@@ -100,6 +100,7 @@ enum class [[nodiscard]] ValidationResult{
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,
     kMaxFeePerBlobGasTooLow,  // max_fee_per_blob_gas < blob_gas_price
+    kBlobCreateTransaction,   // Blob transactions cannot have the form of a create transaction
 };
 
 namespace protocol {

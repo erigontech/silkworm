@@ -105,9 +105,9 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         if (txn.max_fee_per_blob_gas < blob_gas_price) {
             return ValidationResult::kMaxFeePerBlobGasTooLow;
         }
-        // TODO(yperbasis): There is an equal amount of versioned hashes, kzg commitments and blobs.
-        // The KZG commitments hash to the versioned hashes, i.e. kzg_to_versioned_hash(kzg[i]) == versioned_hash[i]
-        // The KZG commitments match the blob contents.
+        if (!txn.to) {
+            return ValidationResult::kBlobCreateTransaction;
+        }
     }
 
     return ValidationResult::kOk;

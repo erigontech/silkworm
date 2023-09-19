@@ -32,6 +32,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
@@ -311,6 +312,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
 
         auto chain_config_ptr = co_await chain_storage->read_chain_config();
+        ensure(chain_config_ptr.has_value(), "cannot read chain config");
         auto this_executor = co_await boost::asio::this_coro::executor;
 
         auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(

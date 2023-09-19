@@ -175,12 +175,11 @@ std::string to_quantity(intx::uint256 number) {
 namespace evmc {
 
 void to_json(nlohmann::json& json, const address& addr) {
-    json = silkworm::address_to_string(addr);
+    json = silkworm::address_to_hex(addr);
 }
 
 void from_json(const nlohmann::json& json, address& addr) {
-    const auto address_bytes = silkworm::from_hex(json.get<std::string>());
-    addr = silkworm::to_evmc_address(address_bytes.value_or(silkworm::Bytes{}));
+    addr = silkworm::hex_to_address(json.get<std::string>());
 }
 
 void to_json(nlohmann::json& json, const bytes32& b32) {
@@ -460,7 +459,7 @@ void to_json(nlohmann::json& json, const RevertError& error) {
 void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses) {
     json = nlohmann::json::array();
     for (const auto& address : addresses) {
-        json.push_back(silkworm::address_to_string(address));
+        json.push_back(address_to_hex(address));
     }
 }
 

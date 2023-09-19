@@ -74,12 +74,7 @@ Settings parse_cli_settings(int argc, char* argv[]) {
             ->capture_default_str()
             ->check(CLI::NonNegativeNumber);
         cli.add_option("--address", [&settings](const CLI::results_t& results) {
-               const auto address_bytes{from_hex(results[0])};
-               if (!address_bytes) {
-                   log::Critical() << "Invalid input for --address option: " << results[0];
-                   return false;
-               }
-               settings.address = to_evmc_address(*address_bytes);
+               settings.address = hex_to_address(results[0]);
                return true;
            })
             ->description("Target account address to match (optional)")

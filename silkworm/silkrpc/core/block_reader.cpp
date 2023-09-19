@@ -38,7 +38,7 @@ namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     for (const auto& entry : balance_changes) {
-        json[silkworm::address_to_string(entry.first)] = to_quantity(entry.second);
+        json[address_to_hex(entry.first)] = to_quantity(entry.second);
     }
 }
 
@@ -82,7 +82,7 @@ Task<void> BlockReader::load_addresses(BlockNum block_number, BalanceChanges& ba
     const auto block_number_key = silkworm::db::block_key(block_number);
 
     auto decode = [](silkworm::ByteView value) {
-        auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
+        auto address = bytes_to_address(value.substr(0, kAddressLength));
         auto remain = value.substr(silkworm::kAddressLength);
         auto account{silkworm::Account::from_encoded_storage(remain)};
 

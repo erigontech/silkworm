@@ -410,7 +410,7 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
                    " error: " + to_string(payload_result));
 
         if (read_senders) {
-            transaction.from = to_evmc_address(senders_data);
+            transaction.from = bytes_to_address(senders_data);
         }
 
         transactions.push_back(std::move(transaction));
@@ -470,7 +470,7 @@ DecodingResult TransactionSnapshot::decode_txn(const WordItem& item, Transaction
     auto [senders_data, tx_rlp] = slice_tx_data(item);
 
     const auto result = rlp::decode(tx_rlp, tx);
-    tx.from = to_evmc_address(senders_data);  // Must happen after rlp::decode because it resets sender
+    tx.from = bytes_to_address(senders_data);  // Must happen after rlp::decode because it resets sender
 
     return result;
 }

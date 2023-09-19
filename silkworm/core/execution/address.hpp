@@ -18,6 +18,7 @@
 
 #include <ostream>
 #include <string>
+#include <string_view>
 
 #include <evmc/evmc.hpp>
 
@@ -34,9 +35,13 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
-evmc::address to_evmc_address(ByteView bytes);
+evmc::address bytes_to_address(ByteView bytes);
 
-std::string address_to_string(const evmc::address& address);
+// Similar to HexToAddress in erigon-lib.
+// Terminates the program if hex is not a valid hex encoding.
+evmc::address hex_to_address(std::string_view hex);
+
+std::string address_to_hex(const evmc::address& address);
 
 namespace rlp {
     void encode(Bytes& to, const evmc::address& address);

@@ -119,8 +119,7 @@ evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& g
         auto expected_allocations{genesis_json["alloc"].size()};
 
         for (auto& item : genesis_json["alloc"].items()) {
-            auto address_bytes{from_hex(item.key())};
-            evmc::address account_address = to_evmc_address(*address_bytes);
+            evmc::address account_address = hex_to_address(item.key());
             auto balance_str{item.value()["balance"].get<std::string>()};
             Account account{0, intx::from_string<intx::uint256>(balance_str)};
             state_buffer.update_account(account_address, std::nullopt, account);

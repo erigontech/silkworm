@@ -48,11 +48,6 @@ std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
-inline evmc::address AccessListTracer::address_from_hex_string(const std::string& s) {
-    const auto bytes = silkworm::from_hex(s);
-    return silkworm::to_evmc_address(bytes.value_or(silkworm::Bytes{}));
-}
-
 void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
@@ -83,12 +78,12 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
         add_storage(recipient, address);
     } else if (is_contract_opcode(opcode_name) && stack_height >= 1) {
-        const auto address = address_from_hex_string(intx::hex(stack_top[0]));
+        const auto address = hex_to_address(intx::hex(stack_top[0]));
         if (!exclude(address)) {
             add_address(address);
         }
     } else if (is_call_opcode(opcode_name) && stack_height >= 5) {
-        const auto address = address_from_hex_string(intx::hex(stack_top[-1]));
+        const auto address = hex_to_address(intx::hex(stack_top[-1]));
         if (!exclude(address)) {
             add_address(address);
         }

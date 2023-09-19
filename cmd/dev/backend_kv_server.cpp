@@ -96,12 +96,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
 
     // Validate and assign settings
     if (!etherbase_address.empty()) {
-        const auto etherbase = from_hex(etherbase_address);
-        if (!etherbase) {
-            SILK_CRIT << "Invalid etherbase address: " << etherbase_address;
-            return -1;
-        }
-        node_settings.etherbase = to_evmc_address(etherbase.value());
+        node_settings.etherbase = hex_to_address(etherbase_address);
     }
 
     node_settings.data_directory = std::make_unique<DataDirectory>(data_dir, /*create=*/false);

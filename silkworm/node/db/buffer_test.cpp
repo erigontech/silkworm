@@ -119,7 +119,7 @@ TEST_CASE("Account update") {
         auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
         REQUIRE(changeset_blocknum == 1);
 
-        auto changeset_address{to_evmc_address(data_value_view)};
+        auto changeset_address{bytes_to_address(data_value_view)};
         REQUIRE(changeset_address == address);
         data_value_view.remove_prefix(kAddressLength);
         REQUIRE(data_value_view.length() == 0);
@@ -150,7 +150,7 @@ TEST_CASE("Account update") {
         auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
         REQUIRE(changeset_blocknum == 1);
 
-        auto changeset_address{to_evmc_address(data_value_view)};
+        auto changeset_address{bytes_to_address(data_value_view)};
         REQUIRE(changeset_address == address);
         data_value_view.remove_prefix(kAddressLength);
         REQUIRE(data_value_view.length() != 0);

@@ -699,13 +699,13 @@ TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
     acs_data.append(account.encode_for_storage());
     acs_cursor->upsert(to_slice(acs_key), to_slice(acs_data));
 
-    Bytes ah_key1{account_history_key(account_address, UINT64_MAX)};
+    Bytes ah_key{account_history_key(account_address, UINT64_MAX)};
     roaring::Roaring64Map bitmap({block_num});
-    ah_cursor->upsert(to_slice(ah_key1), to_slice(db::bitmap::to_bytes(bitmap)));
+    ah_cursor->upsert(to_slice(ah_key), to_slice(db::bitmap::to_bytes(bitmap)));
 
-    std::optional<uint64_t> previous_incarnation1{read_previous_incarnation(txn, account_address, block_num - 1)};
-    REQUIRE(previous_incarnation1.has_value());
-    CHECK(*previous_incarnation1 == account.incarnation - 1);
+    std::optional<uint64_t> previous_incarnation{read_previous_incarnation(txn, account_address, block_num - 1)};
+    REQUIRE(previous_incarnation.has_value());
+    CHECK(*previous_incarnation == account.incarnation - 1);
 }
 
 TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {

@@ -20,6 +20,10 @@
 #include <string>
 #include <utility>
 
+#ifndef WIN32
+#include <cxxabi.h>
+#endif
+
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
@@ -74,6 +78,15 @@ using silkworm::cmd::common::get_node_name_from_build_info;
 using silkworm::cmd::common::HumanSizeParserValidator;
 using silkworm::cmd::common::ShutdownSignal;
 using silkworm::cmd::common::SilkwormSettings;
+
+const char* current_exception_name() {
+#ifdef WIN32
+    return "<Exception name not supported on Windows>";
+#else
+    int status;
+    return abi::__cxa_demangle(abi::__cxa_current_exception_type()->name(), nullptr, nullptr, &status);
+#endif
+}
 
 struct PruneModeValidator : public CLI::Validator {
     explicit PruneModeValidator() {
@@ -210,6 +223,20 @@ int main(int argc, char* argv[]) {
     using namespace std::chrono;
     using namespace silkworm::concurrency::awaitable_wait_for_one;
     using namespace silkworm::concurrency::awaitable_wait_for_all;
+
+    std::set_terminate([]() {
+        try {
+            auto exc = std::current_exception();
+            if (exc) {
+                std::rethrow_exception(exc);
+            }
+        } catch (const std::exception& e) {
+            SILK_CRIT << "Silkworm terminating due to exception: " << e.what();
+        } catch (...) {
+            SILK_CRIT << "Silkworm terminating due to unexpected exception: " << current_exception_name();
+        }
+        std::abort();
+    });
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);

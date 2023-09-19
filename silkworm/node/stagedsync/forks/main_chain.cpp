@@ -40,13 +40,21 @@ MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, const db::R
       data_model_{tx_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
+    // We commit and close the one-and-only RW txn here because it must be reopened below in MainChain::open
+    tx_.commit_and_stop();
+}
+
+void MainChain::open() {
+    tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
+
+    // Load last finalized and last chosen blocks from persistence
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
     if (last_finalized_hash) {
         auto header = get_header(*last_finalized_hash);
         ensure_invariant(header.has_value(), "last finalized block not found in db");
         last_finalized_head_ = {header->number, *last_finalized_hash};
     } else
-        last_finalized_head_ = {0, ns.chain_config.value().genesis_hash.value()};
+        last_finalized_head_ = {0, node_settings_.chain_config.value().genesis_hash.value()};
 
     auto last_head_hash = db::read_last_head_block(tx_);
     if (last_head_hash) {
@@ -56,11 +64,6 @@ MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, const db::R
     } else
         last_fork_choice_ = last_finalized_head_;
 
-    tx_.commit_and_stop();
-}
-
-void MainChain::open() {
-    tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
     canonical_chain_.open();
 
     // Revalidate chain by executing forward cycle up to the canonical current head at startup:

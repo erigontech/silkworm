@@ -638,6 +638,10 @@ TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
     std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
     REQUIRE(historical_account.has_value());
     CHECK(intx::to_string(historical_account->balance) == std::to_string(protocol::kBlockRewardFrontier));
+
+    std::optional<uint64_t> previous_incarnation{read_previous_incarnation(txn, miner_a, /*block_number=*/2)};
+    REQUIRE(previous_incarnation.has_value());
+    CHECK(previous_incarnation == 0);
 }
 
 TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
@@ -669,7 +673,42 @@ TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
     CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
 }
 
-TEST_CASE("Account_changes", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
+    test::Context context;
+    auto& txn{context.rw_txn()};
+
+    BlockNum block_num{42};
+
+    AccountChanges changes{read_account_changes(txn, block_num)};
+    CHECK(changes.empty());
+
+    const auto account_address{0x63c696931d3d3fd7cd83472febd193488266660d_address};
+    const Account account{
+        .nonce = 21,
+        .balance = 1 * kEther,
+        .code_hash = kEmptyHash,
+        .incarnation = 3,
+    };
+
+    auto ah_cursor{txn.rw_cursor_dup_sort(table::kAccountHistory)};
+    auto acs_cursor{txn.rw_cursor_dup_sort(table::kAccountChangeSet)};
+
+    // Account change set for block_num
+    Bytes acs_key{block_key(block_num)};
+    Bytes acs_data{ByteView{account_address}};
+    acs_data.append(account.encode_for_storage());
+    acs_cursor->upsert(to_slice(acs_key), to_slice(acs_data));
+
+    Bytes ah_key1{account_history_key(account_address, UINT64_MAX)};
+    roaring::Roaring64Map bitmap({block_num});
+    ah_cursor->upsert(to_slice(ah_key1), to_slice(db::bitmap::to_bytes(bitmap)));
+
+    std::optional<uint64_t> previous_incarnation1{read_previous_incarnation(txn, account_address, block_num - 1)};
+    REQUIRE(previous_incarnation1.has_value());
+    CHECK(*previous_incarnation1 == account.incarnation - 1);
+}
+
+TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {
     test::Context context;
     auto& txn{context.rw_txn()};
 

@@ -714,21 +714,29 @@ evmc::bytes32 read_storage(ROTxn& txn, const evmc::address& address, uint64_t in
     return res;
 }
 
-static std::optional<uint64_t> historical_previous_incarnation() {
-    // TODO (Andrew) implement properly
-    return std::nullopt;
+static std::optional<uint64_t> historical_previous_incarnation(ROTxn& txn, const evmc::address& address, BlockNum block_num) {
+    std::optional<ByteView> encoded_account{historical_account(txn, address, block_num + 1)};
+    if (!encoded_account) {
+        return std::nullopt;
+    }
+    const auto acc_result{Account::from_encoded_storage(encoded_account.value())};
+    success_or_throw(acc_result);
+    Account account{*acc_result};
+    const uint64_t previous_incarnation{account.incarnation > 0 ? account.incarnation - 1 : 0};
+    return previous_incarnation;
 }
 
 std::optional<uint64_t> read_previous_incarnation(ROTxn& txn, const evmc::address& address,
                                                   std::optional<BlockNum> block_num) {
     if (block_num.has_value()) {
-        return historical_previous_incarnation();
+        return historical_previous_incarnation(txn, address, *block_num);
     }
 
     auto cursor = txn.ro_cursor(table::kIncarnationMap);
     if (auto data{cursor->find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
         SILKWORM_ASSERT(data.value.length() == 8);
-        return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
+        const uint64_t previous_incarnation{endian::load_big_u64(static_cast<uint8_t*>(data.value.data()))};
+        return previous_incarnation;
     }
     return std::nullopt;
 }
@@ -999,7 +1007,7 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsA
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const Hash& block_hash) const {
     if (repository_ && block_number <= repository_->max_block_available()) {
-        auto header = read_header_from_snapshot(block_number);  // todo: check if it is more efficient reading using hash
+        auto header = read_header_from_snapshot(block_number);
         if (header && header->hash() == block_hash) {           // reading using hash avoid this heavy hash calculation
             return header;
         }

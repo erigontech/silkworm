@@ -12,10 +12,10 @@
 CGO_LDFLAGS="-L/home/user/silkworm/build_debug/silkworm/api -lsilkworm_api -lstdc++ -ldl" go build
 ```
 
-3. run the application with the environment variable LD_LIBRARY_PATH set to find the silkworm library:
+3. run the application with the environment variable DYLD_LIBRARY_PATH set to find the silkworm library:
 
 ```bash
-export LD_LIBRARY_PATH=/home/user/silkworm/build_debug/silkworm/api
+export DYLD_LIBRARY_PATH=/home/user/silkworm/build_debug/silkworm/api
 ./sample-go-client
 ```
 

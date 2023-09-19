@@ -20,8 +20,8 @@
 // C API exported by Silkworm to be used in Erigon.
 
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)
@@ -41,19 +41,19 @@ extern "C" {
 
 typedef struct MDBX_txn MDBX_txn;
 
-#define SILKWORM_OK                    0 /* Successful result */
-#define SILKWORM_INTERNAL_ERROR        1
-#define SILKWORM_UNKNOWN_ERROR         2
-#define SILKWORM_INVALID_HANDLE        3
-#define SILKWORM_INVALID_PATH          4
-#define SILKWORM_INVALID_SNAPSHOT      5
-#define SILKWORM_INVALID_MDBX_TXN      6
-#define SILKWORM_INVALID_BLOCK_RANGE   7
-#define SILKWORM_BLOCK_NOT_FOUND       8
-#define SILKWORM_UNKNOWN_CHAIN_ID      9
-#define SILKWORM_MDBX_ERROR            10
-#define SILKWORM_INVALID_BLOCK         11
-#define SILKWORM_DECODING_ERROR        12
+#define SILKWORM_OK 0 /* Successful result */
+#define SILKWORM_INTERNAL_ERROR 1
+#define SILKWORM_UNKNOWN_ERROR 2
+#define SILKWORM_INVALID_HANDLE 3
+#define SILKWORM_INVALID_PATH 4
+#define SILKWORM_INVALID_SNAPSHOT 5
+#define SILKWORM_INVALID_MDBX_TXN 6
+#define SILKWORM_INVALID_BLOCK_RANGE 7
+#define SILKWORM_BLOCK_NOT_FOUND 8
+#define SILKWORM_UNKNOWN_CHAIN_ID 9
+#define SILKWORM_MDBX_ERROR 10
+#define SILKWORM_INVALID_BLOCK 11
+#define SILKWORM_DECODING_ERROR 12
 #define SILKWORM_NOT_IMPLEMENTED_ERROR 13
 
 typedef struct SilkwormHandle SilkwormHandle;
@@ -88,11 +88,30 @@ struct SilkwormChainSnapshot {
     struct SilkwormTransactionsSnapshot transactions;
 };
 
+/** \brief Build a set of indexes for the given snapshots.
+ *
+ * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] snapshots An array of snapshots to index.
+ * \param[in] indexPaths An array of paths to write indexes to.
+ * Note that the name of the index is a part of the path and it is used to determine the index type.
+ * \param[in] len The number of snapshots and paths.
+ *
+ * \return A non-zero error value on failure on some or all indexes and SILKWORM_OK (=0) on success.
+ */
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT;
+
+/** \brief Notifies Silkworm about a new snapshot to use.
+ *
+ * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] snapshot A snapshot to use.
+ *
+ * \return A non-zero error value on failure and SILKWORM_OK (=0) on success.
+ */
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
 /** \brief Execute a batch of blocks and write resulting changes into the database.
  *
- * \param[in] handle Valid read-write MDBX transaction. Must not be zero.
+ * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
  * \param[in] txn Valid read-write MDBX transaction. Must not be zero.
  * This function does not commit nor abort the transaction.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.

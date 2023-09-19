@@ -1168,7 +1168,7 @@ void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> 
     auto block_number_in_snapshots = repository_ ? repository_->max_block_available() : 0;
 
     // We've reached the first header in db but still need to read more from snapshots
-    if (repository_ && last_read_number_from_db) {
+    if (repository_ && last_read_number_from_db > 0) {
         ensure(*last_read_number_from_db == block_number_in_snapshots + 1,
                "db and snapshot block numbers are not contiguous");
     }

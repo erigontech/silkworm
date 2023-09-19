@@ -80,6 +80,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
+    // TODO(yperbasis) eip1559FeeCollector
+
     state_.finalize_transaction(rev);
 
     cumulative_gas_used_ += gas_used;

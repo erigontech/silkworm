@@ -37,7 +37,7 @@ namespace protocol {
         kNoProof,
         kEthash,
         kClique,
-        kAuRa,
+        kBor,
     };
 
 }  // namespace protocol

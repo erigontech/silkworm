@@ -59,8 +59,8 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         case protocol::RuleSetType::kClique:
             ret.emplace("clique", empty_object);
             break;
-        case protocol::RuleSetType::kAuRa:
-            ret.emplace("aura", empty_object);
+        case protocol::RuleSetType::kBor:
+            ret.emplace("bor", empty_object);
             break;
         default:
             break;
@@ -81,7 +81,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
     if (terminal_total_difficulty) {
-        // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
+        // TODO(yperbasis) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
@@ -108,8 +108,8 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.protocol_rule_set = protocol::RuleSetType::kEthash;
     } else if (json.contains("clique")) {
         config.protocol_rule_set = protocol::RuleSetType::kClique;
-    } else if (json.contains("aura")) {
-        config.protocol_rule_set = protocol::RuleSetType::kAuRa;
+    } else if (json.contains("bor")) {
+        config.protocol_rule_set = protocol::RuleSetType::kBor;
     } else {
         config.protocol_rule_set = protocol::RuleSetType::kNoProof;
     }

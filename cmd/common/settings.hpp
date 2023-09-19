@@ -30,7 +30,7 @@ struct SilkwormSettings {
     node::Settings node_settings;
     sentry::Settings sentry_settings;
     rpc::DaemonSettings rpcdaemon_settings;
-    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
+    bool force_pow{false};  // TODO(canepat) remove when PoS sync works
 };
 
 }  // namespace silkworm::cmd::common

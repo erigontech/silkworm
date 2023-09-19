@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
                 int mismatch_count{0};
                 auto calculated_it{calculated_storage_changes.cbegin()};
                 auto db_it{db_storage_changes.cbegin()};
-                for ( ; calculated_it != calculated_storage_changes.cend() && db_it != db_storage_changes.cend(); ++calculated_it, ++db_it) {
+                for (; calculated_it != calculated_storage_changes.cend() && db_it != db_storage_changes.cend(); ++calculated_it, ++db_it) {
                     auto calculated_change{*calculated_it};
                     auto stored_change{*db_it};
                     if (calculated_change != stored_change) {

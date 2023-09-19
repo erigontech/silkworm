@@ -306,7 +306,7 @@ ExecutionResult EVMExecutor::call(
     for (auto& tracer : evm.tracers()) {
         tracer.get().on_reward_granted(result, evm.state());
     }
-    ibs_state_.finalize_transaction();
+    ibs_state_.finalize_transaction(rev);
 
     ExecutionResult exec_result{result.status, gas_left, result.data};
 

@@ -208,7 +208,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
                 throw_if_stopping();
-                last_address = to_evmc_address(data_key_view);
+                last_address = bytes_to_address(data_key_view);
                 address_hash = keccak256(last_address.bytes);
                 log_lck.lock();
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
@@ -362,7 +362,7 @@ Stage::Result HashState::hash_from_plaincode(db::RWTxn& txn) {
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
                 throw_if_stopping();
-                last_address = to_evmc_address(data_key_view);
+                last_address = bytes_to_address(data_key_view);
                 log_lck.lock();
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
                 log_lck.unlock();
@@ -456,7 +456,7 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
 
             while (changeset_data) {
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
-                evmc::address address{to_evmc_address(changeset_value_view)};
+                evmc::address address{bytes_to_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
                     auto plainstate_data{source_plainstate->find(db::to_slice(address), /*throw_notfound=*/false)};
@@ -546,7 +546,7 @@ Stage::Result HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum pr
             }
 
             changeset_key_view.remove_prefix(8);
-            evmc::address address{to_evmc_address(changeset_key_view)};
+            evmc::address address{bytes_to_address(changeset_key_view)};
             changeset_key_view.remove_prefix(kAddressLength);
 
             const auto incarnation{endian::load_big_u64(changeset_key_view.data())};
@@ -646,7 +646,7 @@ Stage::Result HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum 
                 ensure(changeset_value_view.length() >= kAddressLength,
                        "invalid account changeset value size=" + std::to_string(changeset_value_view.length()) +
                            " at block " + std::to_string(reached_blocknum));
-                evmc::address address{to_evmc_address(changeset_value_view)};
+                evmc::address address{bytes_to_address(changeset_value_view)};
 
                 if (!changed_addresses.contains(address)) {
                     changeset_value_view.remove_prefix(kAddressLength);
@@ -733,7 +733,7 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
             }
 
             changeset_key_view.remove_prefix(sizeof(BlockNum));
-            evmc::address address{to_evmc_address(changeset_key_view)};
+            evmc::address address{bytes_to_address(changeset_key_view)};
             changeset_key_view.remove_prefix(kAddressLength);
             const auto incarnation{endian::load_big_u64(changeset_key_view.data())};
             if (!incarnation) {
@@ -806,7 +806,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
             throw_if_stopping();
             last_address = address;
             log_lck.lock();
-            current_key_ = address_to_string(address);
+            current_key_ = address_to_hex(address);
             log_lck.unlock();
         }
 
@@ -859,7 +859,7 @@ Stage::Result HashState::write_changes_from_changed_storage(
             std::memcpy(&hashed_storage_prefix[0], hashed_addresses.at(last_address).bytes, kHashLength);
 
             log_lck.lock();
-            current_key_ = address_to_string(address);
+            current_key_ = address_to_hex(address);
             log_lck.unlock();
         }
 

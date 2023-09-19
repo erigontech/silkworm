@@ -247,7 +247,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
 
     nlohmann::json storage({});
     StorageWalker::AccountCollector collector = [&](const evmc::address& address, const silkworm::ByteView loc, const silkworm::ByteView data) {
-        auto key = silkworm::address_to_string(address);
+        auto key = address_to_hex(address);
         storage[key].push_back({{"loc", "0x" + silkworm::to_hex(loc)}, {"data", "0x" + silkworm::to_hex(data)}});
 
         return true;

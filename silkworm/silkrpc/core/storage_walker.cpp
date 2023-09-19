@@ -137,7 +137,7 @@ Task<void> StorageWalker::walk_of_storages(
             cmp = ps_skv.key2.compare(h_loc);
         }
         if (cmp < 0) {
-            const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+            const auto ps_address = bytes_to_address(ps_skv.key1);
             go_on = collector(ps_address, ps_skv.key2, ps_skv.value);
         } else {
             std::optional<uint64_t> found;
@@ -152,11 +152,11 @@ Task<void> StorageWalker::walk_of_storages(
                 auto data = co_await cs_cursor->seek_both(dup_key, h_loc);
                 if (data.length() > silkworm::kHashLength) {  // Skip deleted entries
                     data = data.substr(silkworm::kHashLength);
-                    const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+                    const auto ps_address = bytes_to_address(ps_skv.key1);
                     go_on = collector(ps_address, ps_skv.key2, data);
                 }
             } else if (cmp == 0) {
-                const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+                const auto ps_address = bytes_to_address(ps_skv.key1);
                 go_on = collector(ps_address, ps_skv.key2, ps_skv.value);
             }
         }

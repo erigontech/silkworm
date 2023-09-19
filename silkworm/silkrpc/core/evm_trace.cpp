@@ -1017,7 +1017,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
         auto exists = intra_block_state.exists(address);
         auto& diff_storage = diff_storage_[address];
 
-        auto address_key = silkworm::address_to_string(address);
+        auto address_key = address_to_hex(address);
         auto& entry = state_diff_[address_key];
         if (initial_exists) {
             auto initial_balance = state_addresses_.get_balance(address);

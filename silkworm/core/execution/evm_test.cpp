@@ -242,7 +242,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.data.empty());
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_string(caller_address));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_hex(caller_address));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification

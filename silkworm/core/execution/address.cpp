@@ -18,6 +18,7 @@
 
 #include <ethash/keccak.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
@@ -68,7 +69,7 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
     return address;
 }
 
-evmc::address to_evmc_address(ByteView bytes) {
+evmc::address bytes_to_address(ByteView bytes) {
     evmc::address out;
     if (!bytes.empty()) {
         size_t n{std::min(bytes.length(), kAddressLength)};
@@ -77,7 +78,13 @@ evmc::address to_evmc_address(ByteView bytes) {
     return out;
 }
 
-std::string address_to_string(const evmc::address& address) {
+evmc::address hex_to_address(std::string_view hex) {
+    const auto bytes{from_hex(hex)};
+    SILKWORM_ASSERT(bytes);
+    return bytes_to_address(*bytes);
+}
+
+std::string address_to_hex(const evmc::address& address) {
     return to_hex(ByteView{address.bytes}, true);
 }
 
@@ -86,7 +93,7 @@ std::string address_to_string(const evmc::address& address) {
 namespace evmc {
 
 std::ostream& operator<<(std::ostream& out, const evmc::address& address) {
-    return out << silkworm::address_to_string(address);
+    return out << silkworm::address_to_hex(address);
 }
 
 }  // namespace evmc

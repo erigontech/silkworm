@@ -19,11 +19,11 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 
@@ -85,7 +85,7 @@ evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
         auto address_bytes{from_hex(item.key())};
         REQUIRE((address_bytes != std::nullopt && address_bytes.value().length() == kAddressLength));
 
-        evmc::address account_address = silkworm::to_evmc_address(*address_bytes);
+        evmc::address account_address = bytes_to_address(*address_bytes);
         auto balance_str{item.value()["balance"].get<std::string>()};
         Account account{0, intx::from_string<intx::uint256>(balance_str)};
         state.update_account(account_address, std::nullopt, account);

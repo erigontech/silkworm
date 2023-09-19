@@ -18,14 +18,17 @@
 
 #include <CLI/CLI.hpp>
 #include <absl/container/flat_hash_set.h>
+#include <magic_enum.hpp>
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;
@@ -38,41 +41,64 @@ static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
     0x5a719cf3e02c17c876f6d294adb5cb7c6eb47e2f_address,
 };
 
-static void print_storage_changes(const db::StorageChanges& s) {
-    for (const auto& [address, x] : s) {
-        std::cout << address << "\n";
-        for (const auto& [incarnation, changes] : x) {
-            std::cout << "  " << incarnation << "\n";
-            for (const auto& [location, value] : changes) {
-                std::cout << "    " << to_hex(location) << " = " << to_hex(value) << "\n";
-            }
-        }
+static void print_storage_locations(const db::ChangedLocations& changed_locations) {
+    std::cout << "storage:\n";
+    for (const auto& [location, value] : changed_locations) {
+        std::cout << "\t" << to_hex(location) << " = " << to_hex(value) << "\n";
+    }
+}
+
+static void print_storage_incarnations(const db::ChangedIncarnations& changed_incarnations) {
+    for (const auto& [incarnation, changed_locations] : changed_incarnations) {
+        std::cout << "incarnation: " << incarnation << "\n";
+        print_storage_locations(changed_locations);
+    }
+}
+
+static void print_storage_changes(const evmc::address& address, const db::ChangedIncarnations& changed_incarnations) {
+    std::cout << "address: " << address << "\n";
+    print_storage_incarnations(changed_incarnations);
+}
+
+static void print_all_storage_changes(const db::StorageChanges& s) {
+    for (const auto& [address, changed_incarnations] : s) {
+        print_storage_changes(address, changed_incarnations);
     }
 }
 
 int main(int argc, char* argv[]) {
-    CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
+    SignalHandler::init();
+
+    CLI::App app{"Execute Ethereum blocks and compare resulting state changes against db"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);
 
-    uint64_t from{1};
-    app.add_option("--from", from, "start from block number (inclusive)");
+    BlockNum from{1};
+    app.add_option("--from", from, "Start from block number (inclusive)");
 
-    uint64_t to{UINT64_MAX};
-    app.add_option("--to", to, "check up to block number (exclusive)");
+    BlockNum to{UINT64_MAX};
+    app.add_option("--to", to, "Check up to block number (inclusive)");
 
-    CLI11_PARSE(app, argc, argv);
+    bool full_mismatch_dump{false};
+    app.add_flag("--full_mismatch_dump", full_mismatch_dump, "Generate full dump on mismatch")
+        ->capture_default_str();
 
-    absl::Time t1{absl::Now()};
+    bool continue_after_mismatch{false};
+    app.add_flag("--continue_after_mismatch", continue_after_mismatch, "Continue to compare after first mismatch")
+        ->capture_default_str();
 
-    log::Info() << " Checking change sets in " << chaindata << "\n";
+    CLI11_PARSE(app, argc, argv)
 
-    uint64_t block_num{from};
-
+    BlockNum block_num{from};
     try {
+        ensure(from > 0, "Invalid input: from must be greater than zero");
+
+        absl::Time t1{absl::Now()};
+        log::Info() << "Checking state change sets in " << chaindata;
+
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
@@ -83,14 +109,20 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
+        snapshot::SnapshotRepository repository;
+        repository.reopen_folder();
+        db::DataModel::set_snapshot_repository(&repository);
+        db::DataModel access_layer{txn};
+
         AnalysisCache analysis_cache{/*max_size=*/5'000};
         ObjectPool<evmone::ExecutionState> state_pool;
         std::vector<Receipt> receipts;
         auto rule_set{protocol::rule_set_factory(*chain_config)};
         Block block;
-        for (; block_num < to; ++block_num) {
-            txn->renew_reading();
-            if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {
+        for (; block_num <= to; ++block_num) {
+            log::Trace() << "Processing block " << block_num;
+            if (!access_layer.read_block(block_num, /*read_senders=*/true, block)) {
+                log::Error() << "Failed reading block " << block_num;
                 break;
             }
 
@@ -101,39 +133,48 @@ int main(int argc, char* argv[]) {
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::Error() << "Failed to execute block " << block_num;
+                log::Error() << "Failed execution for block " << block_num << " result " << magic_enum::enum_name<>(res);
                 continue;
             }
 
             db::AccountChanges db_account_changes{db::read_account_changes(txn, block_num)};
-            const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
-            if (calculated_account_changes != db_account_changes) {
-                bool mismatch{false};
 
-                for (const auto& e : db_account_changes) {
-                    if (!calculated_account_changes.contains(e.first)) {
-                        if (!kPhantomAccounts.contains(e.first)) {
-                            log::Error() << e.first << " is missing";
+            const auto& block_account_changes{buffer.account_changes()};
+            if (block_account_changes.contains(block_num)) {
+                const db::AccountChanges& calculated_account_changes{block_account_changes.at(block_num)};
+                if (calculated_account_changes != db_account_changes) {
+                    bool mismatch{false};
+
+                    for (const auto& e : db_account_changes) {
+                        log::Info() << "key=" << to_hex(e.first.bytes) << " value=" << to_hex(e.second);
+                        if (!calculated_account_changes.contains(e.first)) {
+                            if (!kPhantomAccounts.contains(e.first)) {
+                                log::Error() << e.first << " is missing";
+                                mismatch = true;
+                            } else {
+                                log::Warning() << "Phantom account " << e.first << " skipped";
+                            }
+                        } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
+                            log::Error() << "Value mismatch for " << e.first << ":\n"
+                                         << to_hex(val) << "\n"
+                                         << "vs DB\n"
+                                         << to_hex(e.second);
                             mismatch = true;
                         }
-                    } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
-                        log::Error() << "Value mismatch for " << e.first << ":\n"
-                                     << to_hex(val) << "\n"
-                                     << "vs DB\n"
-                                     << to_hex(e.second);
-                        mismatch = true;
                     }
-                }
-                for (const auto& e : calculated_account_changes) {
-                    if (!db_account_changes.contains(e.first)) {
-                        log::Error() << e.first << " is not in DB";
-                        mismatch = true;
+                    for (const auto& e : calculated_account_changes) {
+                        if (!db_account_changes.contains(e.first)) {
+                            log::Error() << e.first << " is not in DB";
+                            mismatch = true;
+                        }
                     }
-                }
 
-                if (mismatch) {
-                    log::Error() << "Account change mismatch for block " << block_num << " 😲";
+                    if (mismatch) {
+                        log::Error() << "Account change mismatch for block " << block_num << " 😲";
+                    }
                 }
+            } else {
+                ensure(db_account_changes.empty(), "read account changes are not empty whilst calculated ones are");
             }
 
             db::StorageChanges db_storage_changes{db::read_storage_changes(txn, block_num)};
@@ -143,14 +184,42 @@ int main(int argc, char* argv[]) {
             }
             if (calculated_storage_changes != db_storage_changes) {
                 log::Error() << "Storage change mismatch for block " << block_num << " 😲";
-                print_storage_changes(calculated_storage_changes);
-                std::cout << "vs\n";
-                print_storage_changes(db_storage_changes);
+                if (full_mismatch_dump) {
+                    std::cout << "calculated storage changes:\n";
+                    print_all_storage_changes(calculated_storage_changes);
+                    std::cout << "vs\ndb storage changes:\n";
+                    print_all_storage_changes(db_storage_changes);
+                }
+                int mismatch_count{0};
+                auto calculated_it{calculated_storage_changes.cbegin()};
+                auto db_it{db_storage_changes.cbegin()};
+                for ( ; calculated_it != calculated_storage_changes.cend() && db_it != db_storage_changes.cend(); ++calculated_it, ++db_it) {
+                    auto calculated_change{*calculated_it};
+                    auto stored_change{*db_it};
+                    if (calculated_change != stored_change) {
+                        std::cout << "Mismatch number " << mismatch_count + 1 << ") is:\n- calculated change:\n";
+                        print_storage_changes(calculated_change.first, calculated_change.second);
+                        std::cout << "- stored change:\n";
+                        print_storage_changes(stored_change.first, stored_change.second);
+                        ++mismatch_count;
+                        if (!continue_after_mismatch) {
+                            log::Info() << "Use flag --continue_after_mismatch to see all mismatches for block " << block_num;
+                            break;
+                        }
+                    }
+                }
+                if (continue_after_mismatch) {
+                    log::Error() << "Total mismatch count is " << mismatch_count << " for block " << block_num;
+                }
             }
 
-            if (block_num % 1000 == 0) {
+            if (SignalHandler::signalled()) {
+                break;
+            }
+
+            if (block_num % 100'000 == 0) {
                 absl::Time t2{absl::Now()};
-                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
+                log::Info() << "Checked blocks up to " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
                 t1 = t2;
             }
         }
@@ -159,6 +228,6 @@ int main(int argc, char* argv[]) {
         return -5;
     }
 
-    log::Info() << " Blocks [" << from << "; " << block_num << ") have been checked";
+    log::Info() << "State changes for blocks [" << from << "; " << block_num - 1 << "] have been checked";
     return 0;
 }

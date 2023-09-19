@@ -68,7 +68,9 @@ inline constexpr size_t kHashedStoragePrefixLength{kHashLength + kIncarnationLen
 using AccountChanges = absl::btree_map<evmc::address, Bytes>;
 
 // address -> incarnation -> location -> zeroless initial value
-using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, Bytes>>>;
+using ChangedLocations = absl::btree_map<evmc::bytes32, Bytes>;
+using ChangedIncarnations = absl::btree_map<uint64_t, ChangedLocations>;
+using StorageChanges = absl::btree_map<evmc::address, ChangedIncarnations>;
 
 // Erigon GenerateStoragePrefix, PlainGenerateStoragePrefix
 // address can be either plain account address (20 bytes) or hash thereof (32 bytes)

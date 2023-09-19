@@ -92,33 +92,3 @@ func (silkworm *Silkworm) BuildRecsplitIndexes(snapshots []*C.struct_SilkwormMem
 
 	return int(result)
 }
-
-/*
-func (silkworm *Silkworm) BuildRecsplitIndexes(snapshotPaths []string, snapshotIndexes []string) {
-	// convert the Go string array to C string array
-	cSnapshotPaths := make([]*C.char, len(snapshotPaths))
-	for i, s := range snapshotPaths {
-		cSnapshotPaths[i] = C.CString(s)
-		defer C.free(unsafe.Pointer(cSnapshotPaths[i]))
-	}
-
-	// convert the C string array to C string array pointer
-	cSnapshotPaths_begin := (**C.char)(unsafe.Pointer(&cSnapshotPaths[0]))
-	cSnapshotPaths_len := C.int(len(cSnapshotPaths))
-	var cIndexPaths_begin **C.char
-
-	// call the C function
-	C.call_silkworm_build_recsplit_indexes_func(silkworm.buildIndexes, silkworm.instance, cSnapshotPaths_begin, cSnapshotPaths_len, &cIndexPaths_begin)
-
-	// convert the C string array pointer to C string array
-	for i := 0; i < cSnapshotPaths_len; i++ {
-		// point to a string in the array
-		cIndexPaths_current := (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cIndexPaths_begin)) + uintptr(i)*unsafe.Sizeof(cIndexPaths_begin)))
-		// convert the C string in Go string
-		snapshotIndexes[i] = C.GoString(*(cIndexPaths_current))
-	}
-
-	// free the C string array
-	C.call_silkworm_free_strings_func(cIndexPaths_begin, cSnapshotPaths_len)
-}
-*/

@@ -78,12 +78,14 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
         add_storage(recipient, address);
     } else if (is_contract_opcode(opcode_name) && stack_height >= 1) {
-        const auto address = hex_to_address(intx::hex(stack_top[0]));
+        evmc::address address;
+        intx::be::trunc(address.bytes, stack_top[0]);
         if (!exclude(address)) {
             add_address(address);
         }
     } else if (is_call_opcode(opcode_name) && stack_height >= 5) {
-        const auto address = hex_to_address(intx::hex(stack_top[-1]));
+        evmc::address address;
+        intx::be::trunc(address.bytes, stack_top[-1]);
         if (!exclude(address)) {
             add_address(address);
         }

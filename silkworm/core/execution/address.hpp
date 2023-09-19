@@ -38,8 +38,8 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 evmc::address bytes_to_address(ByteView bytes);
 
 // Similar to HexToAddress in erigon-lib.
-// Terminates the program if hex is not a valid hex encoding.
-evmc::address hex_to_address(std::string_view hex);
+// Terminates the program if hex is not a valid hex encoding, unless return_zero_if_err is true.
+evmc::address hex_to_address(std::string_view hex, bool return_zero_if_err = false);
 
 std::string address_to_hex(const evmc::address& address);
 

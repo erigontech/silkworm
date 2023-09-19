@@ -1008,7 +1008,7 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsA
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const Hash& block_hash) const {
     if (repository_ && block_number <= repository_->max_block_available()) {
         auto header = read_header_from_snapshot(block_number);
-        if (header && header->hash() == block_hash) {           // reading using hash avoid this heavy hash calculation
+        if (header && header->hash() == block_hash) {  // reading using hash avoid this heavy hash calculation
             return header;
         }
         return {};

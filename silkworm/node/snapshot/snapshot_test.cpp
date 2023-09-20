@@ -393,7 +393,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
              .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
              .data = *from_hex("04f7"),
              .access_list = access_list,
-             .max_fee_per_data_gas = 123,
+             .max_fee_per_blob_gas = 123,
              .blob_versioned_hashes = {
                  0xc6bdd1de713471bd6cfa62dd8b5a5b42969ed09e26212d3377f3f8426d8ec210_bytes32,
                  0x8aaeccaf3873d07cef005aca28c39f8a9f8bdb1ec8d79ffc25afc0a4fa2ab736_bytes32,

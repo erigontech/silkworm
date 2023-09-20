@@ -389,7 +389,7 @@ RunResults transaction_test(const nlohmann::json& j, bool) {
 
         if (ValidationResult err{
                 pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt,
-                                         /*data_gas_price=*/std::nullopt)};
+                                         /*blob_gas_price=*/std::nullopt)};
             err != ValidationResult::kOk) {
             if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;

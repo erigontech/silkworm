@@ -62,9 +62,9 @@ inline constexpr uint64_t kElasticityMultiplier{2};
 
 // EIP-4844: Shard Blob Transactions
 inline constexpr uint8_t kBlobCommitmentVersionKzg{1};
-inline constexpr uint64_t kBlobGasPerBlob{1u << 17};
-inline constexpr uint64_t kTargetBlobGasPerBlock{3 * kBlobGasPerBlob};
-inline constexpr uint64_t kMaxBlobGasPerBlock{6 * kBlobGasPerBlob};
+inline constexpr uint64_t kGasPerBlob{1u << 17};
+inline constexpr uint64_t kTargetBlobGasPerBlock{3 * kGasPerBlob};
+inline constexpr uint64_t kMaxBlobGasPerBlock{6 * kGasPerBlob};
 inline constexpr uint64_t kMinBlobGasPrice{1};
 inline constexpr uint64_t kBlobGasPriceUpdateFraction{3338477};
 

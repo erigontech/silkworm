@@ -439,7 +439,7 @@ intx::uint256 UnsignedTransaction::effective_gas_price(const intx::uint256& base
 }
 
 uint64_t UnsignedTransaction::total_blob_gas() const {
-    return protocol::kBlobGasPerBlob * blob_versioned_hashes.size();
+    return protocol::kGasPerBlob * blob_versioned_hashes.size();
 }
 
 }  // namespace silkworm

@@ -31,13 +31,12 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
     : io_context_{ctx},
       node_settings_{ns},
       main_chain_(ctx, ns, dba),
-      block_cache_{kDefaultCacheSize} {
-    last_finalized_block_ = main_chain_.last_finalized_head();
-    last_fork_choice_ = main_chain_.last_chosen_head();
-}
+      block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
     main_chain_.open();
+    last_finalized_block_ = main_chain_.last_finalized_head();
+    last_fork_choice_ = main_chain_.last_chosen_head();
     block_progress_ = main_chain_.get_block_progress();
 }
 

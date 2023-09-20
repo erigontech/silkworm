@@ -22,7 +22,6 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>

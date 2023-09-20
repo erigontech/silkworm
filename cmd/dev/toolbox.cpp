@@ -173,8 +173,8 @@ static void print_header(const BlockHeader& header) {
               << "difficulty=" << intx::to_string(header.difficulty) << "\n"
               << "gas_limit=" << header.gas_limit << "\n"
               << "gas_used=" << header.gas_used << "\n"
-              << "data_gas_used=" << (header.data_gas_used ? *header.data_gas_used : 0) << "\n"
-              << "excess_data_gas=" << (header.excess_data_gas ? *header.excess_data_gas : 0) << "\n"
+              << "blob_gas_used=" << header.blob_gas_used.value_or(0) << "\n"
+              << "excess_blob_gas=" << header.excess_blob_gas.value_or(0) << "\n"
               << "logs_bloom=" << to_hex(header.logs_bloom) << "\n"
               << "extra_data=" << to_hex(header.extra_data) << "\n"
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";

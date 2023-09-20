@@ -52,11 +52,11 @@ static void serialize_header(const BlockHeader& bh, ::execution::Header* header)
     if (bh.withdrawals_root) {
         header->set_allocated_withdrawal_hash(rpc::H256_from_bytes32(*bh.withdrawals_root).release());
     }
-    if (bh.data_gas_used) {
-        header->set_data_gas_used(*bh.data_gas_used);
+    if (bh.blob_gas_used) {
+        header->set_data_gas_used(*bh.blob_gas_used);
     }
-    if (bh.excess_data_gas) {
-        header->set_excess_data_gas(*bh.excess_data_gas);
+    if (bh.excess_blob_gas) {
+        header->set_excess_data_gas(*bh.excess_blob_gas);
     }
 }
 
@@ -84,10 +84,10 @@ static void deserialize_header(const ::execution::Header& received_header, Block
         header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawal_hash());
     }
     if (received_header.has_data_gas_used()) {
-        header.data_gas_used = received_header.data_gas_used();
+        header.blob_gas_used = received_header.data_gas_used();
     }
     if (received_header.has_excess_data_gas()) {
-        header.excess_data_gas = received_header.excess_data_gas();
+        header.excess_blob_gas = received_header.excess_data_gas();
     }
 }
 

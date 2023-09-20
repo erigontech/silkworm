@@ -179,7 +179,7 @@ void to_json(nlohmann::json& json, const address& addr) {
 }
 
 void from_json(const nlohmann::json& json, address& addr) {
-    addr = silkworm::hex_to_address(json.get<std::string>(), /*return_zero_if_err=*/true);
+    addr = silkworm::hex_to_address(json.get<std::string>(), /*return_zero_on_err=*/true);
 }
 
 void to_json(nlohmann::json& json, const bytes32& b32) {

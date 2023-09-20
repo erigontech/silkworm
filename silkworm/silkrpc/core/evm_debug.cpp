@@ -30,6 +30,7 @@
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -365,6 +366,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
@@ -433,6 +435,7 @@ Task<void> DebugExecutor::execute(
                << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
@@ -496,6 +499,7 @@ Task<void> DebugExecutor::execute(
                << " config: " << config_;
 
     const auto chain_config_ptr = co_await storage.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(

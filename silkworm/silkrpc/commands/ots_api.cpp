@@ -117,6 +117,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
             const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
+            ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
@@ -167,6 +168,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
             const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
+            ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};

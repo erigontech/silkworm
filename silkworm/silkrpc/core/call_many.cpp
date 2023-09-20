@@ -29,6 +29,7 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -165,6 +166,7 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config_ptr = co_await chain_storage->read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, tx_database, context.block_number);
     if (!block_with_hash) {

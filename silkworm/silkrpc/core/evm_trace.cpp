@@ -36,6 +36,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -1189,6 +1190,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
     }
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
     const auto rule_set_factory = protocol::rule_set_factory(*chain_config_ptr);
     const auto block_rewards = rule_set_factory->compute_reward(block_with_hash.block);
 
@@ -1246,6 +1248,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     SILK_TRACE << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1323,6 +1326,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
                << " #trace_calls: " << calls.size();
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
@@ -1391,6 +1395,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     SILK_TRACE << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1463,6 +1468,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1495,6 +1501,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1528,6 +1535,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1560,6 +1568,7 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
     auto block_number = block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -1659,6 +1668,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
                << " config: " << config;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
+    ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 

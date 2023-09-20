@@ -324,7 +324,7 @@ int main(int argc, char* argv[]) {
 
             std::vector<SilkwormMemoryMappedFile*> snapshots;
             // Parse snapshot paths and create memory mapped files
-            for(auto& raw_snapshot_path : idxes_cmd.snapshot_paths) {
+            for (auto& raw_snapshot_path : idxes_cmd.snapshot_paths) {
                 auto snapshot_path = SnapshotPath::parse(raw_snapshot_path);
                 if (!snapshot_path.has_value())
                     throw std::runtime_error("Invalid snapshot path");
@@ -361,7 +361,7 @@ int main(int argc, char* argv[]) {
             SILK_INFO << "Building indexes for snapshots done in "
                       << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
             // Free memory mapped files
-            for(auto snapshot : snapshots) {
+            for (auto snapshot : snapshots) {
                 delete snapshot;
             }
         } else {

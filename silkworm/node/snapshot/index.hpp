@@ -28,9 +28,10 @@ namespace silkworm::snapshot {
 class Index {
   public:
     static constexpr uint64_t kPageSize{4096};
-    static constexpr std::size_t kBucketSize{2'000};
+    static constexpr std::size_t kBucketSize{2'048};
 
-    explicit Index(SnapshotPath segment_path) : segment_path_(std::move(segment_path)) {}
+    explicit Index(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
+        : segment_path_(std::move(segment_path)), segment_region_{std::move(segment_region)} {}
     virtual ~Index() = default;
 
     [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
@@ -41,11 +42,13 @@ class Index {
     virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
     SnapshotPath segment_path_;
+    std::optional<MemoryMappedRegion> segment_region_;
 };
 
 class HeaderIndex : public Index {
   public:
-    explicit HeaderIndex(SnapshotPath segment_path) : Index(std::move(segment_path)) {}
+    explicit HeaderIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
+        : Index(std::move(segment_path), std::move(segment_region)) {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
@@ -53,7 +56,8 @@ class HeaderIndex : public Index {
 
 class BodyIndex : public Index {
   public:
-    explicit BodyIndex(SnapshotPath segment_path) : Index(std::move(segment_path)), uint64_buffer_(8, '\0') {}
+    explicit BodyIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
+        : Index(std::move(segment_path), std::move(segment_region)), uint64_buffer_(8, '\0') {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
@@ -64,7 +68,8 @@ class BodyIndex : public Index {
 
 class TransactionIndex : public Index {
   public:
-    explicit TransactionIndex(SnapshotPath segment_path) : Index(std::move(segment_path)) {}
+    explicit TransactionIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
+        : Index(std::move(segment_path), std::move(segment_region)) {}
 
     void build() override;
 

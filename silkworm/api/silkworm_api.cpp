@@ -25,8 +25,10 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 
 using namespace silkworm;
 
@@ -41,6 +43,78 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     const auto snapshot_repository = new snapshot::SnapshotRepository{};
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
+    const int kNeededIndexesToBuildInParallel = 2;
+
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    std::vector<std::shared_ptr<snapshot::Index>> needed_indexes;
+    for (int i = 0; i < len; i++) {
+        struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
+        if (!snapshot) {
+            return SILKWORM_INVALID_SNAPSHOT;
+        }
+        auto snapshot_region = make_region(*snapshot);
+
+        const auto snapshot_path = snapshot::SnapshotPath::parse(snapshot->file_path);
+        if (!snapshot_path) {
+            return SILKWORM_INVALID_PATH;
+        }
+
+        std::shared_ptr<snapshot::Index> index;
+        switch (snapshot_path->type()) {
+            case snapshot::SnapshotType::headers: {
+                index = std::make_shared<snapshot::HeaderIndex>(*snapshot_path, snapshot_region);
+                break;
+            }
+            case snapshot::SnapshotType::bodies: {
+                index = std::make_shared<snapshot::BodyIndex>(*snapshot_path, snapshot_region);
+                break;
+            }
+            case snapshot::SnapshotType::transactions: {
+                index = std::make_shared<snapshot::TransactionIndex>(*snapshot_path, snapshot_region);
+                break;
+            }
+            default: {
+                SILKWORM_ASSERT(false);
+            }
+        }
+        needed_indexes.push_back(index);
+    }
+
+    if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {
+        // sequential build
+        for (const auto& index : needed_indexes) {
+            index->build();
+        }
+    } else {
+        // parallel build
+        ThreadPool workers;
+
+        // Create worker tasks for missing indexes
+        for (const auto& index : needed_indexes) {
+            workers.push_task([=]() {
+                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+                index->build();
+                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+            });
+        }
+
+        // Wait for all missing indexes to be built or stop request
+        while (workers.get_tasks_total()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        // Wait for any already-started-but-unfinished work in case of stop request
+        workers.pause();
+        workers.wait_for_tasks();
+    }
+
     return SILKWORM_OK;
 }
 

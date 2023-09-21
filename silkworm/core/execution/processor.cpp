@@ -65,9 +65,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 
-    // EIP-4844 data gas cost (calc_data_fee)
-    const intx::uint256 data_gas_price{evm_.block().header.data_gas_price().value_or(0)};
-    state_.subtract_from_balance(*txn.from, txn.total_data_gas() * data_gas_price);
+    // EIP-4844 blob gas cost (calc_data_fee)
+    const intx::uint256 blob_gas_price{evm_.block().header.blob_gas_price().value_or(0)};
+    state_.subtract_from_balance(*txn.from, txn.total_blob_gas() * blob_gas_price);
 
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)

@@ -93,30 +93,24 @@ void SnapshotSync::reopen() {
               << " idx_max_block=" << std::to_string(repository_->idx_max_block());
 }
 
-static std::string collect_torrent_summary(const std::vector<lt::stats_metric>& metrics, lt::span<const int64_t> counters) {
-    const static auto num_peers_connected_idx{lt::find_metric_idx("peer.num_peers_connected")};
-    const static auto recv_payload_bytes_idx{lt::find_metric_idx("net.recv_payload_bytes")};
-    const static auto sent_payload_bytes_idx{lt::find_metric_idx("net.sent_payload_bytes")};
-    const static auto has_incoming_connections_idx{lt::find_metric_idx("net.has_incoming_connections")};
-    const static auto num_downloading_torrents_idx{lt::find_metric_idx("ses.num_downloading_torrents")};
-    const static auto num_incoming_metadata_idx{lt::find_metric_idx("ses.num_incoming_metadata")};
-    const static std::vector<int> metric_indices{
-        num_peers_connected_idx,
-        recv_payload_bytes_idx,
-        sent_payload_bytes_idx,
-        has_incoming_connections_idx,
-        num_downloading_torrents_idx,
-        num_incoming_metadata_idx,
+static std::string collect_torrent_summary(lt::span<const int64_t> counters) {
+    const static std::map<const char*, int> metric_indices{
+        {"peers", lt::find_metric_idx("peer.num_peers_connected")},
+        {"recv_bytes", lt::find_metric_idx("net.recv_payload_bytes")},
+        {"sent_bytes", lt::find_metric_idx("net.sent_payload_bytes")},
+        {"has_incoming_connections", lt::find_metric_idx("net.has_incoming_connections")},
+        {"downloading_torrents", lt::find_metric_idx("ses.num_downloading_torrents")},
+        {"incoming_metadata", lt::find_metric_idx("ses.num_incoming_metadata")},
     };
 
     std::string counters_dump;
-    for (size_t i{0}; i < metric_indices.size(); ++i) {
-        const int idx{metric_indices[i]};
-        const auto& stats_metric = metrics.at(static_cast<std::size_t>(idx));
-        counters_dump.append(stats_metric.name);
+    size_t i{0};
+    for (auto [metric_name, value_index] : metric_indices) {
+        counters_dump.append(metric_name);
         counters_dump.append("=");
-        counters_dump.append(std::to_string(counters[idx]));
-        if (idx != counters.size() - 1) counters_dump.append(", ");
+        counters_dump.append(std::to_string(counters[value_index]));
+        if (i != metric_indices.size() - 1) counters_dump.append(", ");
+        ++i;
     }
     return counters_dump;
 }
@@ -173,11 +167,11 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     auto log_stats = [&](lt::span<const int64_t> counters) {
         // Log progress just once in a while because our BitTorrent notifications rely on alert polling so quite chatty
         static int notification_count{0};
-        if (notification_count++ != 30) return;
+        if (notification_count++ != 10) return;
         notification_count = 0;
 
         SILK_INFO << "SnapshotSync: sync in progress: [" << completed << "/" << num_snapshots << "] "
-                  << collect_torrent_summary(client_.stats_metrics(), counters);
+                  << collect_torrent_summary(counters);
         if (log::test_verbosity(log::Level::kTrace)) {
             std::string counters_dump{dump_all_torrent_counters(client_.stats_metrics(), counters)};
             SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";

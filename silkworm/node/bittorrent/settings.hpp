@@ -32,7 +32,6 @@ struct BitTorrentSettings {
     constexpr static bool kDefaultVerifyOnStartup{false};
     constexpr static bool kDefaultSeeding{false};
 
-    constexpr static const char* kDefaultListenInterfaces{"0.0.0.0:42069,[::]:42069"};
     constexpr static int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
     constexpr static int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
     constexpr static int kDefaultActiveDownloads{6};
@@ -63,7 +62,8 @@ struct BitTorrentSettings {
     bool seeding{kDefaultSeeding};
 
     /* BitTorrent protocol settings */
-    std::string listen_interfaces{kDefaultListenInterfaces};
+    std::optional<std::string> outgoing_interfaces;
+    std::optional<std::string> listen_interfaces;
     int download_rate_limit{kDefaultDownloadRateLimit};
     int upload_rate_limit{kDefaultUploadRateLimit};
     int active_downloads{kDefaultActiveDownloads};

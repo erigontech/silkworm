@@ -24,8 +24,6 @@
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
-
-
 namespace silkworm {
 
 const Bytes kLoremIpsumDict{*from_hex(
@@ -154,4 +152,4 @@ static void reopen_folder(benchmark::State& state) {
 }
 BENCHMARK(reopen_folder);
 
-} // namespace silkworm
+}  // namespace silkworm

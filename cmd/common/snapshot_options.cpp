@@ -34,6 +34,11 @@ void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_se
                  "If set, the snapshot downloader will verify snapshots on startup."
                  " It will not report founded problems but just re-download broken pieces")
         ->capture_default_str();
+    cli.add_flag("--torrent.listen_interfaces", snapshot_settings.bittorrent_settings.listen_interfaces,
+                 "Comma-separated list of IP_or_host_name:port pairs. These are the listen ports that will be"
+                 " opened for accepting incoming uTP and TCP peer connections. These are also used for outgoing uTP and UDP"
+                 " tracker connections and DHT nodes. Default is 0.0.0.0:42069,[::]:42069")
+        ->capture_default_str();
     cli.add_flag("--torrent.download.rate", snapshot_settings.bittorrent_settings.download_rate_limit,
                  "Download rate limit for BitTorrent client in bytes per seconds")
         ->capture_default_str();

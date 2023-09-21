@@ -117,6 +117,7 @@ lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
 
     // Customize the session settings
     auto& settings = session_params.settings;
+    settings.set_str(lt::settings_pack::listen_interfaces, settings_.listen_interfaces);
     settings.set_int(lt::settings_pack::alert_mask,
                      lt::alert_category::error | lt::alert_category::storage |
                          lt::alert_category::status | lt::alert_category::performance_warning);

@@ -33,9 +33,15 @@ extern size_t sizeof_genesis_goerli_data();
 extern const char* genesis_sepolia_data();
 extern size_t sizeof_genesis_sepolia_data();
 
+extern const char* genesis_polygon_data();
+extern size_t sizeof_genesis_polygon_data();
+
+extern const char* genesis_mumbai_data();
+extern size_t sizeof_genesis_mumbai_data();
+
 namespace silkworm {
 
-std::string read_genesis_data(uint64_t chain_id) {
+std::string read_genesis_data(ChainId chain_id) {
     switch (chain_id) {
         case kMainnetConfig.chain_id:
             assert(sizeof_genesis_mainnet_data() != 0);
@@ -46,6 +52,12 @@ std::string read_genesis_data(uint64_t chain_id) {
         case kSepoliaConfig.chain_id:
             assert(sizeof_genesis_sepolia_data() != 0);
             return std::string(genesis_sepolia_data(), sizeof_genesis_sepolia_data());
+        case kPolygonConfig.chain_id:
+            assert(sizeof_genesis_polygon_data() != 0);
+            return std::string(genesis_polygon_data(), sizeof_genesis_polygon_data());
+        case kMumbaiConfig.chain_id:
+            assert(sizeof_genesis_mumbai_data() != 0);
+            return std::string(genesis_mumbai_data(), sizeof_genesis_mumbai_data());
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }

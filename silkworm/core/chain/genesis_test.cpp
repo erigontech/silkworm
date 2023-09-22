@@ -27,36 +27,25 @@
 
 namespace silkworm {
 
+void test_genesis_config(const ChainConfig& x) {
+    const std::string genesis_data{read_genesis_data(x.chain_id)};
+    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
+    CHECK_FALSE(genesis_json.is_discarded());
+
+    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+    const std::optional<ChainConfig> config{ChainConfig::from_json(genesis_json["config"])};
+    CHECK(config == x);
+}
+
 TEST_CASE("genesis config") {
-    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
-    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
+    test_genesis_config(kMainnetConfig);
+    test_genesis_config(kGoerliConfig);
+    test_genesis_config(kSepoliaConfig);
+    test_genesis_config(kPolygonConfig);
+    test_genesis_config(kMumbaiConfig);
 
-    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    auto config = ChainConfig::from_json(genesis_json["config"]);
-    REQUIRE(config.has_value());
-    CHECK(config.value() == kMainnetConfig);
-
-    genesis_data = read_genesis_data(static_cast<uint32_t>(kGoerliConfig.chain_id));
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-
-    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    REQUIRE(config.has_value());
-    CHECK(config.value() == kGoerliConfig);
-
-    genesis_data = read_genesis_data(static_cast<uint32_t>(kSepoliaConfig.chain_id));
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-
-    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    REQUIRE(config.has_value());
-    CHECK(config.value() == kSepoliaConfig);
-
-    genesis_data = read_genesis_data(1'000u);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    const std::string genesis_data{read_genesis_data(1'000u)};
+    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
 }
 

@@ -175,8 +175,8 @@ inline constexpr ChainConfig kSepoliaConfig{
     .shanghai_time = 1677557088,
 };
 
-inline constexpr evmc::bytes32 kPolygonPoSGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
-inline constexpr ChainConfig kPolygonPoSConfig{
+inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
+inline constexpr ChainConfig kPolygonConfig{
     .chain_id = 137,
     .protocol_rule_set = protocol::RuleSetType::kBor,
     .homestead_block = 0,

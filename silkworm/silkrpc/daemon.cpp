@@ -218,7 +218,9 @@ Daemon::Daemon(DaemonSettings settings,
     }
 
     if (snapshot_repository_) {
+        SILK_LOG << "snapshot: reopen folder invoked\n";
         snapshot_repository_->reopen_folder();
+        SILK_LOG << "all snapshots loaded\n";
 
         db::DataModel::set_snapshot_repository(snapshot_repository_.get());
     }

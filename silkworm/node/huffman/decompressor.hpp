@@ -99,7 +99,7 @@ class PatternTable : public DecodingTable {
     explicit PatternTable(std::size_t max_depth);
 
     [[nodiscard]] const CodeWord* codeword(std::size_t code) const {
-        return code < codewords_.size() ? codewords_[code].get() : nullptr;
+        return code < codewords_.size() ? codewords_[code] : nullptr;
     }
 
     [[nodiscard]] std::size_t num_codewords() const { return codewords_.size(); }
@@ -121,9 +121,10 @@ class PatternTable : public DecodingTable {
         int bits,
         uint64_t depth);
 
-    [[maybe_unused]] CodeWord* insert_word(std::shared_ptr<CodeWord> codeword);
+    [[maybe_unused]] CodeWord* insert_word(CodeWord* codeword);
 
-    std::vector<std::shared_ptr<CodeWord>> codewords_;
+    std::vector<CodeWord*> codewords_;
+    std::vector<std::unique_ptr<CodeWord>> codewords_list_;
     mutable CodeWord* head_{nullptr};
 
     friend std::ostream& operator<<(std::ostream& out, const PatternTable& pt);

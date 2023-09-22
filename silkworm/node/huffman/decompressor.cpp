@@ -144,19 +144,23 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
     }
     const auto first_pattern = patterns.front();
     if (depth == first_pattern.depth) {
-        insert_word(std::make_shared<CodeWord>(code, static_cast<uint8_t>(bits), first_pattern.value, nullptr, nullptr));
+        auto codeword = make_unique<CodeWord>(code, static_cast<uint8_t>(bits), first_pattern.value, nullptr, nullptr);
+        codewords_list_.push_back(std::move(codeword));
+        insert_word(codewords_list_.back().get());
         return 1;
     }
     if (bits == kMaxTableBitLength) {
         auto new_table{std::make_unique<PatternTable>(highest_depth)};
-        const auto last_cw = insert_word(std::make_shared<CodeWord>(code, 0, ByteView{}, std::move(new_table), nullptr));
+        auto codeword = make_unique<CodeWord>(code, 0, ByteView{}, std::move(new_table), nullptr);
+        codewords_list_.push_back(std::move(codeword));
+        const auto last_cw = insert_word(codewords_list_.back().get());
         return last_cw->table()->build_condensed(patterns, highest_depth, 0, 0, depth);
     }
     const auto b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);
     return b0 + build_condensed(patterns.subspan(b0), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
 }
 
-CodeWord* PatternTable::insert_word(std::shared_ptr<CodeWord> codeword) {
+CodeWord* PatternTable::insert_word(CodeWord* codeword) {
     CodeWord* inserted{nullptr};
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
         const auto code_step = 1 << codeword->code_length();
@@ -164,10 +168,10 @@ CodeWord* PatternTable::insert_word(std::shared_ptr<CodeWord> codeword) {
         const auto code_to =
             bit_length_ != codeword->code_length() && codeword->code_length() > 0 ? code_from | 1 << bit_length_ : code_from + code_step;
         for (auto c{code_from}; c < code_to; c += code_step) {
-            auto* cw = codewords_[c].get();
+            auto cw = codewords_[c];
             if (cw == nullptr) {
                 codewords_[c] = codeword;
-                inserted = codewords_[c].get();
+                inserted = codewords_[c];
             } else {
                 cw->reset_content(c, codeword->code_length(), codeword->pattern());
                 inserted = cw;
@@ -177,12 +181,12 @@ CodeWord* PatternTable::insert_word(std::shared_ptr<CodeWord> codeword) {
         codeword->set_next(nullptr);
         if (head_ == nullptr) {
             codewords_.push_back(std::move(codeword));
-            head_ = codewords_.front().get();
+            head_ = codewords_.front();
             inserted = head_;
         } else {
             SILKWORM_ASSERT(!codewords_.empty());
             codewords_.push_back(std::move(codeword));
-            inserted = codewords_.back().get();
+            inserted = codewords_.back();
         }
     }
 

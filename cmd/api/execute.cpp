@@ -78,7 +78,7 @@ struct ExecuteBlocksSettings {
 struct BuildIdxesSettings {
     bool present;
     std::string snapshot_repo;
-    std::string snapshot_path;
+    std::vector<std::string> snapshot_paths;
 };
 
 void parse_command_line(int argc, char* argv[], CLI::App& app,
@@ -116,7 +116,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app,
     // build-indexes sub-command
     auto cmd_build_idxes = app.add_subcommand("build_idxes", "Build indexes");
 
-    cmd_build_idxes->add_option("--snapshot_path", build_idxes_settings.snapshot_path, "Snapshot to index")->required();
+    cmd_build_idxes->add_option("--snapshot_paths", build_idxes_settings.snapshot_paths, "Snapshot to index")->delimiter(',')->required();
 
     // parte
     app.parse(argc, argv);
@@ -320,44 +320,50 @@ int main(int argc, char* argv[]) {
             rw_txn.abort();  // We do *not* want to commit anything
 
         } else if (idxes_cmd.present) {  // Build index for a specific snapshot using Silkworm API library
-            const int size = 1;
+            SILK_INFO << "Building indexes for snapshots: " << idxes_cmd.snapshot_paths;
 
-            auto snapshot_path = SnapshotPath::parse(idxes_cmd.snapshot_path);
-            if (!snapshot_path.has_value())
-                throw std::runtime_error("Invalid snapshot path");
+            std::vector<SilkwormMemoryMappedFile*> snapshots;
+            // Parse snapshot paths and create memory mapped files
+            for (auto& raw_snapshot_path : idxes_cmd.snapshot_paths) {
+                auto snapshot_path = SnapshotPath::parse(raw_snapshot_path);
+                if (!snapshot_path.has_value())
+                    throw std::runtime_error("Invalid snapshot path");
 
-            const Snapshot* snapshot = nullptr;
-            switch (snapshot_path->type()) {
-                case headers:
-                    snapshot = repository.get_header_segment(*snapshot_path);
-                    break;
-                case bodies:
-                    snapshot = repository.get_body_segment(*snapshot_path);
-                    break;
-                case transactions:
-                case transactions_to_block:
-                    snapshot = repository.get_tx_segment(*snapshot_path);
-                    break;
-                default:
-                    throw std::runtime_error("Invalid snapshot type");
+                const Snapshot* snapshot = nullptr;
+                switch (snapshot_path->type()) {
+                    case headers:
+                        snapshot = repository.get_header_segment(*snapshot_path);
+                        break;
+                    case bodies:
+                        snapshot = repository.get_body_segment(*snapshot_path);
+                        break;
+                    case transactions:
+                    case transactions_to_block:
+                        snapshot = repository.get_tx_segment(*snapshot_path);
+                        break;
+                    default:
+                        throw std::runtime_error("Invalid snapshot type");
+                }
+
+                if (!snapshot)
+                    throw std::runtime_error("Snapshot not found in the repository:" + raw_snapshot_path);
+
+                auto mmf = new SilkwormMemoryMappedFile();
+                mmf->file_path = raw_snapshot_path.c_str();
+                mmf->memory_address = snapshot->memory_file_address();
+                mmf->memory_length = snapshot->memory_file_size();
+                snapshots.push_back(mmf);
             }
-
-            if (!snapshot)
-                throw std::runtime_error("Snapshot not found in the repository");
-
-            SilkwormMemoryMappedFile* snapshots[size];
-            snapshots[0] = new SilkwormMemoryMappedFile();
-            snapshots[0]->file_path = idxes_cmd.snapshot_path.c_str();
-            snapshots[0]->memory_address = snapshot->memory_file_address();
-            snapshots[0]->memory_length = snapshot->memory_file_size();
-
-            SILK_INFO << "Building index for snapshot: " << idxes_cmd.snapshot_path;
-
+            // Call api to build indexes
             const auto start_time{std::chrono::high_resolution_clock::now()};
-            status_code = silkworm_build_recsplit_indexes(handle, &snapshots[0], size);
+            status_code = silkworm_build_recsplit_indexes(handle, snapshots.data(), snapshots.size());
             auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-            SILK_INFO << "Building index for snapshot " << idxes_cmd.snapshot_path << " done in "
+            SILK_INFO << "Building indexes for snapshots done in "
                       << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
+            // Free memory mapped files
+            for (auto snapshot : snapshots) {
+                delete snapshot;
+            }
         } else {
             SILK_ERROR << "No sub-command chosen";
         }

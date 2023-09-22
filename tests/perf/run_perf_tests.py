@@ -437,7 +437,7 @@ def main(argv):
         if result == 0:
             print("Server dead test Aborted!")
             if config.create_test_report:
-               test_report.close()
+                test_report.close()
             sys.exit(-1)
 
     if config.create_test_report:

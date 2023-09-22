@@ -44,7 +44,6 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
         }
         if (!genesis_json.contains("gasLimit")) ret.second.emplace_back("Missing gasLimit member");
         if (!genesis_json.contains("timestamp")) ret.second.emplace_back("Missing timestamp member");
-        if (!genesis_json.contains("extraData")) ret.second.emplace_back("Missing extraData member");
         if (!genesis_json.contains("config")) {
             ret.second.emplace_back("Missing config member");
         } else {
@@ -155,10 +154,10 @@ evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& g
     return state_root_hash;
 }
 
-bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
+std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
     if (!txn->is_readwrite()) {
         if (!allow_exceptions) {
-            return false;
+            return std::nullopt;
         }
         throw std::runtime_error("Unable to write to db with a RO transaction");
     }
@@ -166,7 +165,7 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
     auto existing_config{read_chain_config(txn)};
     if (existing_config.has_value()) {
         if (!allow_exceptions) {
-            return false;
+            return std::nullopt;
         }
         throw std::runtime_error("This database is already initialized with genesis");
     }
@@ -175,7 +174,7 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
     auto [valid, errors]{validate_genesis_json(genesis_json)};
     if (!valid) {
         if (!allow_exceptions) {
-            return false;
+            return std::nullopt;
         }
         const char* delim{"\n"};
         std::ostringstream imploded;
@@ -208,11 +207,11 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
         db::open_cursor(txn, db::table::kConfig)
             .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
 
-        return true;
+        return header;
 
     } catch (const std::exception&) {
         if (!allow_exceptions) {
-            return false;
+            return std::nullopt;
         }
         throw;
     }

@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <optional>
+
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 
@@ -35,7 +38,7 @@ evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& g
 //! \param [in] txn : a RW MDBX transaction
 //! \param [in] genesis_json : the genesis JSON payload
 //! \param [in] allow_exceptions : whether to throw exceptions on failure(s)
-//! \returns True/False
-bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions);
+//! \returns Genesis header on success and std::nullopt on failure
+std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions);
 
 }  // namespace silkworm::db

@@ -175,6 +175,40 @@ inline constexpr ChainConfig kSepoliaConfig{
     .shanghai_time = 1677557088,
 };
 
+inline constexpr evmc::bytes32 kPolygonPoSGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
+inline constexpr ChainConfig kPolygonPoSConfig{
+    .chain_id = 137,
+    .protocol_rule_set = protocol::RuleSetType::kBor,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 3'395'000,
+    .muir_glacier_block = 3'395'000,
+    .berlin_block = 14'750'000,
+    .london_block = 23'850'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+};
+
+inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
+inline constexpr ChainConfig kMumbaiConfig{
+    .chain_id = 80001,
+    .protocol_rule_set = protocol::RuleSetType::kBor,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 2'722'000,
+    .muir_glacier_block = 2'722'000,
+    .berlin_block = 13'996'000,
+    .london_block = 22'640'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+};
+
 //! \brief Looks up a known chain config provided its chain ID
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;
 

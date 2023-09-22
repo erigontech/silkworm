@@ -42,10 +42,14 @@ From Erigon project directory:
 build/bin/erigon --goerli --private.api.addr=localhost:9090
 ```
 #### _Erigon RPCDaemon_
+```
 ./build/bin/rpcdaemon --private.api.addr=localhost:9090 --http.api=eth,debug,net,web3,txpool,trace,erigon,parity,ots  --datadir < select erigon db>
+```
 
 #### _Silkrpc_
+```
 ./build/cmd/silkrpcdaemon --private.addr 127.0.0.1:9090 --eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516 --workers 64 --contexts 8 --datadir <select erigon db>  --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 2 
+```
 
 ### 1.2 Test Workload
 

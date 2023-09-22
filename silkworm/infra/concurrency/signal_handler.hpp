@@ -26,10 +26,10 @@ namespace silkworm {
 class SignalHandler {
   public:
     static void init(std::function<void(int)> custom_handler = {}, bool silent = false);  // Enable the hooks
-    static void handle(int sig_code);                                // Handles incoming signal
-    [[nodiscard]] static bool signalled() { return signalled_; }     // Whether a signal has been intercepted
-    static void reset();                                             // Reset to un-signalled (see tests coverage)
-    static void throw_if_signalled();                                // Throws std::runtime_error if signalled() == true
+    static void handle(int sig_code);                                                     // Handles incoming signal
+    [[nodiscard]] static bool signalled() { return signalled_; }                          // Whether a signal has been intercepted
+    static void reset();                                                                  // Reset to un-signalled (see tests coverage)
+    static void throw_if_signalled();                                                     // Throws std::runtime_error if signalled() == true
 
   private:
     static std::atomic_int sig_code_;                 // Last sig_code which raised the signalled_ state

@@ -37,7 +37,7 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
     for (const auto& entry : dump.accounts) {
         nlohmann::json item;
         to_json(item, entry.second);
-        accounts.push_back(nlohmann::json::object_t::value_type(silkworm::address_to_string(entry.first), item));
+        accounts.push_back(nlohmann::json::object_t::value_type(address_to_hex(entry.first), item));
     }
     auto encoded = base64_encode({dump.next.bytes, kAddressLength}, false);
     json = {

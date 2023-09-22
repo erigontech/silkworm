@@ -74,7 +74,7 @@ static Bytes kNotEmptyBody{*silkworm::from_hex("c683897f2e04c0")};
 static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
     CHECK(bwh.block.header.parent_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);
     CHECK(bwh.block.header.ommers_hash == 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32);
-    CHECK(bwh.block.header.beneficiary == silkworm::to_evmc_address(*silkworm::from_hex("0000000000000000000000000000000000000000")));
+    CHECK(bwh.block.header.beneficiary == hex_to_address("0000000000000000000000000000000000000000"));
     CHECK(bwh.block.header.state_root == 0xe7536c5b61ed0e0ab7f3ce7f085806d40f716689c0c086676757de401b595658_bytes32);
     CHECK(bwh.block.header.transactions_root == 0x40be247314d834a319556d1dcf458e8707cc1aa4a416b6118474ce0c96fccb1a_bytes32);
     CHECK(bwh.block.header.receipts_root == 0x7862fe11d10a9b237ffe9cb660f31e4bc4be66836c9bfc17310d47c60d75671f_bytes32);

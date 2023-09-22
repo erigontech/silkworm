@@ -89,8 +89,7 @@ std::vector<ExpectedState> StateTransition::get_expected_states() {
 evmc::address StateTransition::to_evmc_address(const std::string& address) {
     evmc::address out;
     if (!address.empty()) {
-        auto bytes = from_hex(address);
-        out = silkworm::to_evmc_address(bytes.value_or(Bytes{}));
+        out = hex_to_address(address);
     }
 
     return out;
@@ -188,7 +187,7 @@ std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std
     auto public_key_hash = keccak256(pair.public_key().serialized());
     std::memcpy(out, public_key_hash.bytes + 12, sizeof(out));
 
-    return std::make_unique<evmc::address>(silkworm::to_evmc_address(out));
+    return std::make_unique<evmc::address>(bytes_to_address(out));
 }
 
 Transaction StateTransition::get_transaction(const ExpectedSubState& expected_sub_state) {

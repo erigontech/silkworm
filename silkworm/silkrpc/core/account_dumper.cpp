@@ -61,7 +61,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     AccountWalker::Collector collector = [&](silkworm::ByteView k, silkworm::ByteView v) {
         if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
-            dump_accounts.next = silkworm::to_evmc_address(k);
+            dump_accounts.next = bytes_to_address(k);
             return false;
         }
 
@@ -91,7 +91,7 @@ Task<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
                                         const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
     StateReader state_reader{tx_database};
     for (const auto& kv : collected_data) {
-        const auto address = silkworm::to_evmc_address(kv.key);
+        const auto address = bytes_to_address(kv.key);
 
         auto account{silkworm::Account::from_encoded_storage(kv.value)};
         silkworm::success_or_throw(account);

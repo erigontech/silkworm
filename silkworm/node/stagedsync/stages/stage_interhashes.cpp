@@ -250,7 +250,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             auto changeset_value_view{db::from_slice(changeset_data.value)};
 
             // Extract address and hash if needed
-            const evmc::address address{to_evmc_address(changeset_value_view)};
+            const evmc::address address{bytes_to_address(changeset_value_view)};
             changeset_value_view.remove_prefix(kAddressLength);
             auto hashed_addresses_it{hashed_addresses.find(address)};
             if (hashed_addresses_it == hashed_addresses.end()) {
@@ -387,7 +387,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
         changeset_key_view.remove_prefix(sizeof(BlockNum));
 
-        const evmc::address address{to_evmc_address(changeset_key_view)};
+        const evmc::address address{bytes_to_address(changeset_key_view)};
         hashed_addresses_it = hashed_addresses.find(address);
         if (hashed_addresses_it == hashed_addresses.end()) {
             const auto hashed_address{keccak256(address.bytes)};

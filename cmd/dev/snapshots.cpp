@@ -489,8 +489,8 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
     std::cout << "Transaction found in: " << snapshot_filename << "\n"
               << "hash=" << to_hex(txn.hash()) << "\n"
               << "type=" << magic_enum::enum_name(txn.type) << "\n"
-              << "from=" << (txn.from ? address_to_string(*txn.from) : "") << "\n"
-              << "to=" << (txn.to ? address_to_string(*txn.to) : "") << "\n"
+              << "from=" << (txn.from ? address_to_hex(*txn.from) : "") << "\n"
+              << "to=" << (txn.to ? address_to_hex(*txn.to) : "") << "\n"
               << "chain_id=" << (txn.chain_id ? intx::to_string(*txn.chain_id) : "") << "\n"
               << "nonce=" << txn.nonce << "\n"
               << "value=" << intx::to_string(txn.value) << "\n"
@@ -507,7 +507,7 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
                      std::string rep{"["};
                      for (size_t i{0}; i < txn.access_list.size(); ++i) {
                          const auto& access_entry{txn.access_list[i]};
-                         rep.append(address_to_string(access_entry.account));
+                         rep.append(address_to_hex(access_entry.account));
                          rep.append(" : [");
                          for (size_t j{0}; j < access_entry.storage_keys.size(); ++j) {
                              rep.append(to_hex(access_entry.storage_keys[j].bytes));

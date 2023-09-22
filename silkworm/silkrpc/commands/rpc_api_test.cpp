@@ -85,8 +85,7 @@ std::unique_ptr<InMemoryState> populate_genesis(db::RWTxn& txn, const std::files
         for (const auto& item : genesis_json["alloc"].items()) {
             const auto& account_alloc_json = item.value();
 
-            auto address_bytes{from_hex(item.key())};
-            evmc::address account_address = to_evmc_address(*address_bytes);
+            evmc::address account_address = hex_to_address(item.key());
             const auto acc_balance{intx::from_string<intx::uint256>(account_alloc_json.at("balance"))};
 
             intx::uint256 acc_nonce{0};

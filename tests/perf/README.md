@@ -98,5 +98,5 @@ Launch an automated performance test sequence on Silkrpc and RPCDaemon using Veg
 
 
 ```
-Results are written in a CSV file `/tmp/<date_time>_perf.csv`.
+Results are written on output and in case -R option is specified also in a CSV file `/tmp/<network>/<machine>/<date_time>_perf.csv`
 

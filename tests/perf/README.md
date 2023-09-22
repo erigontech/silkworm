@@ -21,20 +21,21 @@ sudo sysctl -w "net.ipv4.ip_local_port_range=5000 65000"
 ## Software Versions
 In order to reproduce the environment used in last performance testing session, pick the following source code versions:
 
-* Erigon RPCDaemon commit:  https://github.com/ledgerwatch/erigon/releases/tag/v2.48.1
-* Silkrpc commit: https://github.com/erigontech/silkworm
+* Erigon RPCDaemon:  https://github.com/ledgerwatch/erigon/releases/tag/v2.48.1
+* Silkworm RPCDaemon (a.k.a. Silkrpc) LATEST: https://github.com/erigontech/silkworm
 
 ## Build
 Follow the instructions for building:
 
 * Erigon RPCDaemon [build](https://github.com/)
-* Silkrpc [build](https://github.com/torquem-ch/silkworm)
+* Silkworm RPCDaemon (a.k.a. Silkrpc) [build](https://github.com/torquem-ch/silkworm)
 
-## 1. Automated Setup
-These are the instructions to execute *automatically* the performance comparison tests.
+## Setup
+Currently our setup for performance tests is "all-in-one", executing Erigon Core, Erigon RPCDaemon and/or Silkworm RPCDaemon all on the same host.
+These are the instructions to execute the performance comparison tests.
 
-### 1.1 Activation
-The command lines to activate such Erigon Core for performance testing are
+### Activation
+The shell commands to activate such Erigon Core for performance testing are
 
 #### _Erigon Core_
 From Erigon project directory:
@@ -43,24 +44,25 @@ build/bin/erigon --goerli --private.api.addr=localhost:9090
 ```
 #### _Erigon RPCDaemon_
 ```
-./build/bin/rpcdaemon --private.api.addr=localhost:9090 --http.api=eth,debug,net,web3,txpool,trace,erigon,parity,ots  --datadir < select erigon db>
+./build/bin/rpcdaemon --private.api.addr=localhost:9090 --http.api=eth,debug,net,web3,txpool,trace,erigon,parity,ots  --datadir <erigon_data_dir>
 ```
 
 #### _Silkrpc_
 ```
-./build/cmd/silkrpcdaemon --private.addr 127.0.0.1:9090 --eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516 --workers 64 --contexts 8 --datadir <select erigon db>  --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 2 
+./build/cmd/silkrpcdaemon --private.addr 127.0.0.1:9090 --eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516 --workers 64 --contexts 8 --datadir <erigon_data_dir>  --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 2 
 ```
+You *must* specify diffenrent ports for Silkrpc (i.e. `--eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516`) if you want to run Silkrpc simultaneously with Erigon RPCDaemon.
 
-### 1.2 Test Workload
+### Test Workload
 
 Currently the performance workload targets just the [eth_getLogs, eth_call, eth_getBalance] Ethereum API. The test workloads are executed using requests files of [Vegeta](https://github.com/tsenart/vegeta/), a HTTP load testing tool.
 
 #### _Workload Generation_
 
-Execute Erigon [bench<api name> tool](https://github.com/ledgerwatch/erigon/blob/3388c1f1af6c65808830e5839a0c6d5d78f018fa/cmd/rpctest/rpctest/bench*.go) against both Erigon RPCDaemon and Silkrpc using the following command line:
+Execute the relevant Erigon bench tool e.g. [bench_ethcall](https://github.com/ledgerwatch/erigon/blob/devel/cmd/rpctest/rpctest/bench_ethcall.go) against both Erigon RPCDaemon and Silkrpc using the following command line:
 
 ```
-build/bin/rpctest bench<api name> --erigonUrl http://localhost:8545 --gethUrl http://localhost:51515 --blockFrom 200000 --blockTo 300000
+build/bin/rpctest bench_ethcall --erigonUrl http://localhost:8545 --gethUrl http://localhost:51515 --blockFrom 200000 --blockTo 300000
 ```
 
 Vegeta request files are written to `/tmp/erigon_stress_test`:

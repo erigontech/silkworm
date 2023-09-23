@@ -19,8 +19,6 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -56,30 +54,15 @@ nlohmann::json sanity_checked_json(uint64_t chain_id) {
     CHECK_FALSE(genesis_json.is_discarded());
 
     CHECK(genesis_json.contains("difficulty"));
-    CHECK(genesis_json.contains("nonce"));
     CHECK(genesis_json.contains("gasLimit"));
     CHECK(genesis_json.contains("timestamp"));
-    CHECK(genesis_json.contains("extraData"));
     CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && !genesis_json["alloc"].empty()));
 
     return genesis_json;
 }
 
 evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
-    InMemoryState state;
-
-    for (auto& item : genesis_json["alloc"].items()) {
-        REQUIRE((item.value().is_object() && item.value().contains("balance") && item.value()["balance"].is_string()));
-
-        auto address_bytes{from_hex(item.key())};
-        REQUIRE((address_bytes != std::nullopt && address_bytes.value().length() == kAddressLength));
-
-        evmc::address account_address = bytes_to_address(*address_bytes);
-        auto balance_str{item.value()["balance"].get<std::string>()};
-        Account account{0, intx::from_string<intx::uint256>(balance_str)};
-        state.update_account(account_address, std::nullopt, account);
-    }
-
+    InMemoryState state{read_genesis_allocation(genesis_json["alloc"])};
     return state.state_root_hash();
 }
 
@@ -133,4 +116,29 @@ TEST_CASE("Sepolia genesis") {
     auto computed_hash{header.hash()};
     CHECK(to_hex(computed_hash) == to_hex(kSepoliaGenesisHash));
 }
+
+TEST_CASE("Polygon genesis") {
+    nlohmann::json genesis_json = sanity_checked_json(kPolygonConfig.chain_id);
+
+    auto expected_state_root{0x654f28d19b44239d1012f27038f1f71b3d4465dc415a382fb2b7009cba1527c8_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kPolygonGenesisHash));
+}
+
+TEST_CASE("Mumbai genesis") {
+    nlohmann::json genesis_json = sanity_checked_json(kMumbaiConfig.chain_id);
+
+    auto expected_state_root{0x1784d1c465e9a4c39cc58b1df8d42f2669b00b1badd231a7c4679378b9d91330_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kMumbaiGenesisHash));
+}
+
 }  // namespace silkworm

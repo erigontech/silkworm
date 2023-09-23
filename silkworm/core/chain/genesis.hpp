@@ -21,7 +21,10 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/block.hpp>
+
+// See https://arvanaghi.com/blog/explaining-the-genesis-block-in-ethereum/
 
 namespace silkworm {
 
@@ -31,6 +34,8 @@ namespace silkworm {
  */
 std::string read_genesis_data(ChainId chain_id);
 
-BlockHeader read_genesis_header(const nlohmann::json& genesis_config, const evmc::bytes32& state_root);
+BlockHeader read_genesis_header(const nlohmann::json& genesis, const evmc::bytes32& state_root);
+
+InMemoryState read_genesis_allocation(const nlohmann::json& alloc);
 
 }  // namespace silkworm

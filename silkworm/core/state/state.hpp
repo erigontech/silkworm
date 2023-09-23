@@ -27,9 +27,9 @@ class State : public BlockState {
   public:
     State() = default;
 
-    // Not copyable nor movable
-    State(const State&) = delete;
-    State& operator=(const State&) = delete;
+    // Move-only
+    State(State&& other) = default;
+    State& operator=(State&& other) = default;
 
     virtual ~State() = default;
 

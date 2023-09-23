@@ -78,9 +78,15 @@ evmc::address bytes_to_address(ByteView bytes) {
     return out;
 }
 
-evmc::address hex_to_address(std::string_view hex) {
-    const auto bytes{from_hex(hex)};
-    SILKWORM_ASSERT(bytes);
+evmc::address hex_to_address(std::string_view hex, bool return_zero_on_err) {
+    const std::optional<Bytes> bytes{from_hex(hex)};
+    if (!bytes) {
+        if (return_zero_on_err) {
+            return evmc::address{};
+        } else {
+            abort_due_to_assertion_failure("invalid hex encoding", __FILE__, __LINE__);
+        }
+    }
     return bytes_to_address(*bytes);
 }
 

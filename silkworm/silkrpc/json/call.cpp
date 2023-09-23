@@ -196,7 +196,7 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
 
 void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides) {
     for (const auto& el : json.items()) {
-        const auto key = hex_to_address(el.key());
+        const auto key = hex_to_address(el.key(), /*return_zero_on_err=*/true);
         const auto value = el.value().get<AccountOverrides>();
 
         accounts_overrides.emplace(key, value);

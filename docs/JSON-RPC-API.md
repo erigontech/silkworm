@@ -23,7 +23,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_maxPriorityFeePerGas                   |     Yes      |                 |                                           |
 | eth_feeHistory                             |     Yes      |                 |                                           |
 |                                            |              |                 |                                           |
-| eth_getBlockByHash                         |     Yes      |                 |                                           |
+| eth_getBlockByHash                         |     Yes      |        G        |                                           |
 | eth_getBlockByNumber                       |     Yes      |                 |                                           |
 | eth_getBlockTransactionCountByHash         |     Yes      |                 |                                           |
 | eth_getBlockTransactionCountByNumber       |     Yes      |                 |                                           |

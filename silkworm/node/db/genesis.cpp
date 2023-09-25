@@ -20,9 +20,7 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/execution/address.hpp>
-#include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
-#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "tables.hpp"
 

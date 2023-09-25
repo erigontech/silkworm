@@ -112,7 +112,7 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
     // set difficulty only for revisions before The Merge
-    // current block difficulty cannot fall below miniumum: https://eips.ethereum.org/EIPS/eip-2
+    // current block difficulty cannot fall below minimum: https://eips.ethereum.org/EIPS/eip-2
     static constexpr uint64_t kMinDifficulty{0x20000};
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
@@ -271,7 +271,7 @@ void StateTransition::print_message(const ExpectedState& expected_state, const E
 }
 
 /*
- * This function is used to cleanup the state after a failed block execution.
+ * This function is used to clean up the state after a failed block execution.
  * Certain post-processing would be a part of the execute_transaction() function,
  * but since the validation failed, we need to do it manually.
  */

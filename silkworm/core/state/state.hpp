@@ -36,21 +36,21 @@ class State : public BlockState {
     /** @name Readers */
     //!@{
 
-    virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
+    [[nodiscard]] virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
 
-    virtual ByteView read_code(const evmc::bytes32& code_hash) const noexcept = 0;
+    [[nodiscard]] virtual ByteView read_code(const evmc::bytes32& code_hash) const noexcept = 0;
 
-    virtual evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                                       const evmc::bytes32& location) const noexcept = 0;
+    [[nodiscard]] virtual evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
+                                                     const evmc::bytes32& location) const noexcept = 0;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
-    virtual uint64_t previous_incarnation(const evmc::address& address) const noexcept = 0;
+    [[nodiscard]] virtual uint64_t previous_incarnation(const evmc::address& address) const noexcept = 0;
 
-    virtual evmc::bytes32 state_root_hash() const = 0;
+    [[nodiscard]] virtual evmc::bytes32 state_root_hash() const = 0;
 
-    virtual BlockNum current_canonical_block() const = 0;
+    [[nodiscard]] virtual BlockNum current_canonical_block() const = 0;
 
-    virtual std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const = 0;
+    [[nodiscard]] virtual std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const = 0;
 
     //!@}
 

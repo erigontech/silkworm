@@ -52,6 +52,22 @@ TEST_CASE("Database genesis initialization") {
         CHECK(read_chain_config(txn) == kSepoliaConfig);
         CHECK(genesis_header->hash() == kSepoliaGenesisHash);
     }
+    SECTION("Initialize with Polygon") {
+        auto source_data{read_genesis_data(kPolygonConfig.chain_id)};
+        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
+        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
+        REQUIRE(genesis_header);
+        CHECK(read_chain_config(txn) == kPolygonConfig);
+        CHECK(genesis_header->hash() == kPolygonGenesisHash);
+    }
+    SECTION("Initialize with Mumbai") {
+        auto source_data{read_genesis_data(kMumbaiConfig.chain_id)};
+        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
+        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
+        REQUIRE(genesis_header);
+        CHECK(read_chain_config(txn) == kMumbaiConfig);
+        CHECK(genesis_header->hash() == kMumbaiGenesisHash);
+    }
 
     SECTION("Initialize with invalid Json") {
         std::string source_data{"{chainId="};

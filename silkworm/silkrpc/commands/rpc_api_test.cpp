@@ -38,6 +38,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/db/genesis.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
@@ -71,69 +72,16 @@ std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
     return std::make_shared<mdbx::env_managed>(db::open_env(chain_conf));
 }
 
-std::unique_ptr<InMemoryState> populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
+InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     auto genesis_json_path = tests_dir / "genesis.json";
     std::ifstream genesis_json_input_file(genesis_json_path);
     nlohmann::json genesis_json;
     genesis_json_input_file >> genesis_json;
-    auto state_buffer = std::make_unique<InMemoryState>();
 
-    // Allocate accounts
-    if (genesis_json.contains("alloc")) {
-        auto state_table_storage = txn.rw_cursor_dup_sort(db::table::kPlainState);
+    InMemoryState state = read_genesis_allocation(genesis_json.at("alloc"));
+    db::write_genesis_allocation_to_db(txn, state);
 
-        for (const auto& item : genesis_json["alloc"].items()) {
-            const auto& account_alloc_json = item.value();
-
-            evmc::address account_address = hex_to_address(item.key());
-            const auto acc_balance{intx::from_string<intx::uint256>(account_alloc_json.at("balance"))};
-
-            intx::uint256 acc_nonce{0};
-            if (account_alloc_json.contains("nonce")) {
-                acc_nonce = intx::from_string<intx::uint256>(account_alloc_json.at("nonce"));
-            }
-
-            Account account{acc_nonce[0], acc_balance};
-
-            if (account_alloc_json.contains("code")) {
-                const auto acc_code{from_hex(std::string(account_alloc_json.at("code"))).value()};
-                const auto acc_codehash{std::bit_cast<evmc_bytes32>(keccak256(acc_code))};
-                account.code_hash = acc_codehash;
-                state_buffer->update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
-            }
-
-            state_buffer->update_account(account_address, std::nullopt, account);
-
-            if (account_alloc_json.contains("storage")) {
-                for (const auto& storage_json : account_alloc_json.at("storage").items()) {
-                    Bytes key{from_hex(storage_json.key()).value()};
-                    Bytes value{from_hex(storage_json.value().get<std::string>()).value()};
-                    state_buffer->update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
-
-                    // FIX 1: update storage on-fly
-                    Bytes prefix{silkworm::db::storage_prefix(account_address, account.incarnation)};
-                    upsert_storage_value(*state_table_storage, prefix, key, value);
-                }
-            }
-        }
-
-        // Write allocations to db - no changes only accounts
-        auto state_table{db::open_cursor(txn, db::table::kPlainState)};
-        auto code_table{db::open_cursor(txn, db::table::kCode)};
-        for (const auto& [address, account] : state_buffer->accounts()) {
-            // Store account plain state
-            Bytes encoded{account.encode_for_storage()};
-            state_table.upsert(db::to_slice(address), db::to_slice(encoded));
-
-            // Store code
-            if (account.code_hash != kEmptyHash) {
-                auto code = state_buffer->read_code(account.code_hash);
-                code_table.upsert(db::to_slice(account.code_hash), db::to_slice(code));
-            }
-        }
-    }
-
-    BlockHeader header{read_genesis_header(genesis_json, state_buffer->state_root_hash())};
+    BlockHeader header{read_genesis_header(genesis_json, state.state_root_hash())};
     BlockBody block_body{
         .withdrawals = std::vector<silkworm::Withdrawal>{0},
     };
@@ -159,10 +107,10 @@ std::unique_ptr<InMemoryState> populate_genesis(db::RWTxn& txn, const std::files
     db::open_cursor(txn, db::table::kConfig)
         .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
 
-    return state_buffer;
+    return state;
 }
 
-void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, std::unique_ptr<InMemoryState>& state_buffer) {
+void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer) {
     auto rlp_path = tests_dir / "chain.rlp";
     std::ifstream file(rlp_path, std::ios::binary);
     if (!file) {
@@ -204,7 +152,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, std
 
         // FIX 4b: populate receipts and logs table
         std::vector<silkworm::Receipt> receipts;
-        ExecutionProcessor processor{block, *ruleSet, *state_buffer, *chain_config};
+        ExecutionProcessor processor{block, *ruleSet, state_buffer, *chain_config};
         db::Buffer db_buffer{txn, 0};
         for (auto& block_txn : block.transactions) {
             silkworm::Receipt receipt{};

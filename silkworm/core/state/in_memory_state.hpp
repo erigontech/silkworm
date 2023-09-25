@@ -26,14 +26,16 @@ namespace silkworm {
 
 //! InMemoryState holds the entire state in memory.
 class InMemoryState : public State {
-  private:
+  public:
     // address -> initial value
     using AccountChanges = FlatHashMap<evmc::address, std::optional<Account>>;
 
     // address -> incarnation -> location -> initial value
     using StorageChanges = FlatHashMap<evmc::address, FlatHashMap<uint64_t, FlatHashMap<evmc::bytes32, evmc::bytes32>>>;
 
-  public:
+    // address -> incarnation -> location -> value
+    using Storage = FlatHashMap<evmc::address, FlatHashMap<uint64_t, FlatHashMap<evmc::bytes32, evmc::bytes32>>>;
+
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
     ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
@@ -82,11 +84,11 @@ class InMemoryState : public State {
     void unwind_state_changes(BlockNum block_number) override;
 
     size_t number_of_accounts() const;
-
-    size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
-
     const FlatHashMap<BlockNum, AccountChanges>& account_changes() const { return account_changes_; }
     const FlatHashMap<evmc::address, Account>& accounts() const { return accounts_; }
+
+    size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
+    const Storage& storage() const { return storage_; }
 
   private:
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
@@ -99,7 +101,7 @@ class InMemoryState : public State {
     FlatHashMap<evmc::address, uint64_t> prev_incarnations_;
 
     // address -> incarnation -> location -> value
-    FlatHashMap<evmc::address, FlatHashMap<uint64_t, FlatHashMap<evmc::bytes32, evmc::bytes32>>> storage_;
+    Storage storage_;
 
     // block number -> hash -> header
     std::map<BlockNum, FlatHashMap<evmc::bytes32, BlockHeader>> headers_;

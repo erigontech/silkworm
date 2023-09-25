@@ -30,18 +30,13 @@ void test_genesis_config(const ChainConfig& x) {
     const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK_FALSE(genesis_json.is_discarded());
 
-    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+    REQUIRE(genesis_json.contains("config"));
+    REQUIRE(genesis_json["config"].is_object());
     const std::optional<ChainConfig> config{ChainConfig::from_json(genesis_json["config"])};
     CHECK(config == x);
 }
 
-TEST_CASE("genesis config") {
-    test_genesis_config(kMainnetConfig);
-    test_genesis_config(kGoerliConfig);
-    test_genesis_config(kSepoliaConfig);
-    test_genesis_config(kPolygonConfig);
-    test_genesis_config(kMumbaiConfig);
-
+TEST_CASE("unknown genesis") {
     const std::string genesis_data{read_genesis_data(1'000u)};
     const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
@@ -68,6 +63,7 @@ evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
 
 // https://etherscan.io/block/0
 TEST_CASE("mainnet_genesis") {
+    test_genesis_config(kMainnetConfig);
     nlohmann::json genesis_json = sanity_checked_json(kMainnetConfig.chain_id);
 
     auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
@@ -92,6 +88,7 @@ TEST_CASE("mainnet_genesis") {
 
 // https://goerli.etherscan.io/block/0
 TEST_CASE("Goerli genesis") {
+    test_genesis_config(kGoerliConfig);
     nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
 
     auto expected_state_root{0x5d6cded585e73c4e322c30c2f782a336316f17dd85a4863b9d838d2d4b8b3008_bytes32};
@@ -105,6 +102,7 @@ TEST_CASE("Goerli genesis") {
 
 // https://sepolia.etherscan.io/block/0
 TEST_CASE("Sepolia genesis") {
+    test_genesis_config(kSepoliaConfig);
     nlohmann::json genesis_json = sanity_checked_json(kSepoliaConfig.chain_id);
     CHECK(genesis_json["extraData"] == "Sepolia, Athens, Attica, Greece!");
 
@@ -118,6 +116,7 @@ TEST_CASE("Sepolia genesis") {
 }
 
 TEST_CASE("Polygon genesis") {
+    test_genesis_config(kPolygonConfig);
     nlohmann::json genesis_json = sanity_checked_json(kPolygonConfig.chain_id);
 
     auto expected_state_root{0x654f28d19b44239d1012f27038f1f71b3d4465dc415a382fb2b7009cba1527c8_bytes32};
@@ -130,6 +129,7 @@ TEST_CASE("Polygon genesis") {
 }
 
 TEST_CASE("Mumbai genesis") {
+    test_genesis_config(kMumbaiConfig);
     nlohmann::json genesis_json = sanity_checked_json(kMumbaiConfig.chain_id);
 
     auto expected_state_root{0x1784d1c465e9a4c39cc58b1df8d42f2669b00b1badd231a7c4679378b9d91330_bytes32};

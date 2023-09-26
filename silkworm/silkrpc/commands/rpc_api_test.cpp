@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>

@@ -25,44 +25,20 @@
 
 namespace silkworm {
 
-TEST_CASE("genesis config") {
-    auto genesis_data{read_genesis_data(kMainnetConfig.chain_id)};
-    auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
+void test_genesis_config(const ChainConfig& x) {
+    const std::string_view genesis_data{read_genesis_data(x.chain_id)};
+    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK_FALSE(genesis_json.is_discarded());
-    REQUIRE((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    auto config{ChainConfig::from_json(genesis_json["config"])};
-    CHECK(config == kMainnetConfig);
 
-    genesis_data = read_genesis_data(kGoerliConfig.chain_id);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-    REQUIRE((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config == kGoerliConfig);
+    REQUIRE(genesis_json.contains("config"));
+    REQUIRE(genesis_json["config"].is_object());
+    const std::optional<ChainConfig> config{ChainConfig::from_json(genesis_json["config"])};
+    CHECK(config == x);
+}
 
-    genesis_data = read_genesis_data(kSepoliaConfig.chain_id);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-    REQUIRE((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config == kSepoliaConfig);
-
-    genesis_data = read_genesis_data(kPolygonConfig.chain_id);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-    REQUIRE((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config == kPolygonConfig);
-
-    genesis_data = read_genesis_data(kMumbaiConfig.chain_id);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
-    REQUIRE((genesis_json.contains("config") && genesis_json["config"].is_object()));
-    config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config == kMumbaiConfig);
-
-    genesis_data = read_genesis_data(1'000u);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+TEST_CASE("unknown genesis") {
+    const std::string_view genesis_data{read_genesis_data(1'000u)};
+    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
 }
 
@@ -87,6 +63,7 @@ evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
 
 // https://etherscan.io/block/0
 TEST_CASE("mainnet_genesis") {
+    test_genesis_config(kMainnetConfig);
     nlohmann::json genesis_json = sanity_checked_json(kMainnetConfig.chain_id);
 
     auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
@@ -111,6 +88,7 @@ TEST_CASE("mainnet_genesis") {
 
 // https://goerli.etherscan.io/block/0
 TEST_CASE("Goerli genesis") {
+    test_genesis_config(kGoerliConfig);
     nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
 
     auto expected_state_root{0x5d6cded585e73c4e322c30c2f782a336316f17dd85a4863b9d838d2d4b8b3008_bytes32};
@@ -124,6 +102,7 @@ TEST_CASE("Goerli genesis") {
 
 // https://sepolia.etherscan.io/block/0
 TEST_CASE("Sepolia genesis") {
+    test_genesis_config(kSepoliaConfig);
     nlohmann::json genesis_json = sanity_checked_json(kSepoliaConfig.chain_id);
     CHECK(genesis_json["extraData"] == "Sepolia, Athens, Attica, Greece!");
 
@@ -137,6 +116,7 @@ TEST_CASE("Sepolia genesis") {
 }
 
 TEST_CASE("Polygon genesis") {
+    test_genesis_config(kPolygonConfig);
     nlohmann::json genesis_json = sanity_checked_json(kPolygonConfig.chain_id);
 
     auto expected_state_root{0x654f28d19b44239d1012f27038f1f71b3d4465dc415a382fb2b7009cba1527c8_bytes32};
@@ -149,6 +129,7 @@ TEST_CASE("Polygon genesis") {
 }
 
 TEST_CASE("Mumbai genesis") {
+    test_genesis_config(kMumbaiConfig);
     nlohmann::json genesis_json = sanity_checked_json(kMumbaiConfig.chain_id);
 
     auto expected_state_root{0x1784d1c465e9a4c39cc58b1df8d42f2669b00b1badd231a7c4679378b9d91330_bytes32};

@@ -24,8 +24,8 @@
 #include <stdexcept>
 #include <thread>
 
-#include <absl/time/clock.h>
 #include <absl/strings/ascii.h>
+#include <absl/time/clock.h>
 
 #include <silkworm/infra/grpc/common/util.hpp>
 

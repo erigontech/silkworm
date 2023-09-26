@@ -40,21 +40,26 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 
 //! Log configuration matching Erigon log format
 static log::Settings kLogSettingsLikeErigon{
-        .log_utc = false,
-        .log_timezone = false,
-        .log_nocolor = false,
-        .log_trim = true,
+    .log_utc = false,
+    .log_timezone = false,
+    .log_nocolor = false,
+    .log_trim = true,
 };
 
 //! Generate log arguments for specified block
 static log::Args log_args_for_exec_progress(uint64_t current_block) {
     return {
-        "number", std::to_string(current_block),
+        "number",
+        std::to_string(current_block),
         // TODO(canepat) compute values
-        "blk/s", std::to_string(0.0),
-        "tx/s", std::to_string(0.0),
-        "Mgas/s", std::to_string(0.0),
-        "gasState", std::to_string(0.0),
+        "blk/s",
+        std::to_string(0.0),
+        "tx/s",
+        std::to_string(0.0),
+        "Mgas/s",
+        std::to_string(0.0),
+        "gasState",
+        std::to_string(0.0),
     };
 }
 

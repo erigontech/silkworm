@@ -2,179 +2,181 @@
 
 The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/API) implementation status in `Silkrpc`.
 
-| Command                                    | Availability |     PerfTest    |                                     Notes |
-|                                            |              | (G)oerly/(M)ain |                                           |   
-|:-------------------------------------------|:------------:|-----------------|------------------------------------------:|
-| admin_nodeInfo                             |     Yes      |                 |                                           |
-| admin_peers                                |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| web3_clientVersion                         |     Yes      |                 |                                           |
-| web3_sha3                                  |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| net_listening                              |     Yes      |                 | hard-coded (needs ethbackend integration) |
-| net_peerCount                              |     Yes      |                 |                                           |
-| net_version                                |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_blockNumber                            |     Yes      |                 |                                           |
-| eth_chainId                                |     Yes      |                 |                                           |
-| eth_protocolVersion                        |     Yes      |                 |                                           |
-| eth_syncing                                |     Yes      |                 |                                           |
-| eth_gasPrice                               |     Yes      |                 |                                           |
-| eth_maxPriorityFeePerGas                   |     Yes      |                 |                                           |
-| eth_feeHistory                             |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_getBlockByHash                         |     Yes      |        G        |                                           |
-| eth_getBlockByNumber                       |     Yes      |                 |                                           |
-| eth_getBlockTransactionCountByHash         |     Yes      |                 |                                           |
-| eth_getBlockTransactionCountByNumber       |     Yes      |                 |                                           |
-| eth_getUncleByBlockHashAndIndex            |     Yes      |                 |                                           |
-| eth_getUncleByBlockNumberAndIndex          |     Yes      |                 |                                           |
-| eth_getUncleCountByBlockHash               |     Yes      |                 |                                           |
-| eth_getUncleCountByBlockNumber             |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_getTransactionByHash                   |     Yes      |                 |                     partially implemented |
-| eth_getRawTransactionByHash                |     Yes      |                 |                     partially implemented |
-| eth_getTransactionByBlockHashAndIndex      |     Yes      |                 |                                           |
-| eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                 |                     partially implemented |
-| eth_getTransactionByBlockNumberAndIndex    |     Yes      |                 |                                           |
-| eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                 |                     partially implemented |
-| eth_getTransactionReceipt                  |     Yes      |                 |                     partially implemented |
-| eth_getBlockReceipts                       |     Yes      |                 |           same as parity_getBlockReceipts |
-| eth_getTransactionReceiptsByBlock          |     Yes      |                 |           same as parity_getBlockReceipts |
-|                                            |              |                 |                                           |
-| eth_estimateGas                            |     Yes      |                 |                                           |
-| eth_getBalance                             |     Yes      |        G        |                                           |
-| eth_getCode                                |     Yes      |                 |                                           |
-| eth_getTransactionCount                    |     Yes      |                 |                                           |
-| eth_getStorageAt                           |     Yes      |                 |                                           |
-| eth_call                                   |     Yes      |        G        |                                           |
-| eth_callMany                               |     Yes      |                 |                     partially implemented |
-| eth_callBundle                             |     Yes      |                 |                                           |
-| eth_createAccessList                       |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_newFilter                              |     Yes      |                 |                                           |
-| eth_newBlockFilter                         |      -       |                 |                       not yet implemented |
-| eth_newPendingTransactionFilter            |      -       |                 |                       not yet implemented |
-| eth_getFilterChanges                       |     Yes      |                 |                                           |
-| eth_getFilterLogs                          |     Yes      |                 |                                           |
-| eth_uninstallFilter                        |     Yes      |                 |                                           |
-| eth_getLogs                                |     Yes      |        G        |                                           |
-|                                            |              |                 |                                           |
-| eth_accounts                               |      No      |                 |                                deprecated |
-| eth_sendRawTransaction                     |     Yes      |                 |                               remote only |
-| eth_sendTransaction                        |      -       |                 |                       not yet implemented |
-| eth_sign                                   |      No      |                 |                                deprecated |
-| eth_signTransaction                        |      -       |                 |                                deprecated |
-| eth_signTypedData                          |      -       |                 |                                      ???? |
-|                                            |              |                 |                                           |
-| eth_getProof                               |      -       |                 |                       not yet implemented |
-|                                            |              |                 |                                           |
-| eth_mining                                 |     Yes      |                 |                                           |
-| eth_coinbase                               |     Yes      |                 |                                           |
-| eth_hashrate                               |     Yes      |                 |                                           |
-| eth_submitHashrate                         |     Yes      |                 |                                           |
-| eth_getWork                                |     Yes      |                 |                                           |
-| eth_submitWork                             |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_subscribe                              |      -       |                 |     not yet implemented (WebSockets only) |
-| eth_unsubscribe                            |      -       |                 |     not yet implemented (WebSockets only) |
-|                                            |              |                 |                                           |
-| engine_newPayloadV1                        |     Yes      |                 |                                           |
-| engine_newPayloadV2                        |     Yes      |                 |                                           |
-| engine_forkchoiceUpdatedV1                 |     Yes      |                 |                                           |
-| engine_forkchoiceUpdatedV2                 |     Yes      |                 |                                           |
-| engine_getPayloadV1                        |     Yes      |                 |                                           |
-| engine_getPayloadV2                        |     Yes      |                 |                                           |
-| engine_exchangeCapabilities                |     Yes      |                 |                                           |
-| engine_exchangeTransitionConfigurationV1   |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| debug_accountRange                         |     Yes      |                 |                                           |
-| debug_accountAt                            |     Yes      |                 |                                           |
-| debug_getModifiedAccountsByHash            |     Yes      |                 |                                           |
-| debug_getModifiedAccountsByNumber          |     Yes      |                 |                                           |
-| debug_getBadBlocks                         |      No      |                 |                        data not available |
-| debug_getRawBlock                          |     Yes      |                 |     can be optimized to avoid re-encoding |
-| debug_getRawHeader                         |     Yes      |                 |                                           |
-| debug_getRawReceipts                       |      No      |                 |                  see eth_getBlockReceipts |
-| debug_getRawTransaction                    |     Yes      |                 |                                           |
-| debug_storageRangeAt                       |     Yes      |                 |                                           |
-| debug_traceBlockByHash                     |     Yes      |                 |                       uses JSON streaming |
-| debug_traceBlockByNumber                   |     Yes      |                 |                       uses JSON streaming |
-| debug_traceTransaction                     |     Yes      |                 |                       uses JSON streaming |
-| debug_traceCall                            |     Yes      |                 |                       uses JSON streaming |
-| debug_traceCallMany                        |     Yes      |                 |                       uses JSON streaming |
-|                                            |              |                 |                                           |
-| trace_call                                 |     Yes      |                 |                                           |
-| trace_callMany                             |     Yes      |                 |                                           |
-| trace_rawTransaction                       |     Yes      |                 |                                           |
-| trace_replayBlockTransactions              |     Yes      |                 |                                           |
-| trace_replayTransaction                    |     Yes      |                 |                                           |
-| trace_block                                |     Yes      |                 |                                           |
-| trace_filter                               |     Yes      |                 |                       uses JSON streaming |
-| trace_get                                  |     Yes      |                 |                                           |
-| trace_transaction                          |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| txpool_content                             |     Yes      |                 |                                           |
-| txpool_status                              |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| eth_getCompilers                           |      No      |                 |                                deprecated |
-| eth_compileLLL                             |      No      |                 |                                deprecated |
-| eth_compileSolidity                        |      No      |                 |                                deprecated |
-| eth_compileSerpent                         |      No      |                 |                                deprecated |
-|                                            |              |                 |                                           |
-| db_putString                               |      No      |                 |                                deprecated |
-| db_getString                               |      No      |                 |                                deprecated |
-| db_putHex                                  |      No      |                 |                                deprecated |
-| db_getHex                                  |      No      |                 |                                deprecated |
-|                                            |              |                 |                                           |
-| shh_post                                   |      No      |                 |                                deprecated |
-| shh_version                                |      No      |                 |                                deprecated |
-| shh_newIdentity                            |      No      |                 |                                deprecated |
-| shh_hasIdentity                            |      No      |                 |                                deprecated |
-| shh_newGroup                               |      No      |                 |                                deprecated |
-| shh_addToGroup                             |      No      |                 |                                deprecated |
-| shh_newFilter                              |      No      |                 |                                deprecated |
-| shh_uninstallFilter                        |      No      |                 |                                deprecated |
-| shh_getFilterChanges                       |      No      |                 |                                deprecated |
-| shh_getMessages                            |      No      |                 |                                deprecated |
-|                                            |              |                 |                                           |
-| erigon_cumulativeChainTraffic              |     Yes      |                 |                                           |
-| erigon_getHeaderByHash                     |     Yes      |                 |                                           |
-| erigon_getHeaderByNumber                   |     Yes      |                 |                                           |
-| erigon_getBalanceChangesInBlock            |     Yes      |                 |                                           |
-| erigon_getBlockByTimestamp                 |     Yes      |                 |                                           |
-| erigon_getBlockReceiptsByBlockHash         |     Yes      |                 |                                           |
-| erigon_getLogsByHash                       |     Yes      |                 |                                           |
-| erigon_forks                               |     Yes      |                 |                                           |
-| erigon_watchTheBurn                        |     Yes      |                 |                                           |
-| erigon_nodeInfo                            |     Yes      |                 |                                           |
-| erigon_blockNumber                         |     Yes      |                 |                                           |
-| erigon_cacheCheck                          |      -       |                 |                       not yet implemented |
-| erigon_getLatestLogs                       |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| bor_getSnapshot                            |      -       |                 |                       not yet implemented |
-| bor_getAuthor                              |      -       |                 |                       not yet implemented |
-| bor_getSnapshotAtHash                      |      -       |                 |                       not yet implemented |
-| bor_getSigners                             |      -       |                 |                       not yet implemented |
-| bor_getSignersAtHash                       |      -       |                 |                       not yet implemented |
-| bor_getCurrentProposer                     |      -       |                 |                       not yet implemented |
-| bor_getCurrentValidators                   |      -       |                 |                       not yet implemented |
-| bor_getRootHash                            |      -       |                 |                       not yet implemented |
-|                                            |              |                 |                                           |
-| parity_getBlockReceipts                    |     Yes      |                 |              same as eth_getBlockReceipts |
-| parity_listStorageKeys                     |     Yes      |                 |                                           |
-|                                            |              |                 |                                           |
-| ots_getApiLevel                            |     Yes      |                 |                                           |
-| ots_getInternalOperations                  |     Yes      |                 |                                           |
-| ots_searchTransactionsBefore               |     Yes      |                 |                                           |
-| ots_searchTransactionsAfter                |     Yes      |                 |                                           |
-| ots_getBlockDetails                        |     Yes      |                 |                                           |
-| ots_getBlockDetailsByHash                  |     Yes      |                 |                                           |
-| ots_getBlockTransactions                   |     Yes      |                 |                                           |
-| ots_hasCode                                |     Yes      |                 |                                           |
-| ots_traceTransaction                       |     Yes      |                 |                                           |
-| ots_getTransactionError                    |     Yes      |                 |                                           |
-| ots_getTransactionBySenderAndNonce         |     Yes      |                 |                                           |
-| ots_getContractCreator                     |     Yes      |                 |                                           |
+| Command                                    | Availability |                                     Notes | Integration | Performance |
+|                                            |              |                                           |    Tests    |    Tests    |
+|:-------------------------------------------|:------------:|:-----------------------------------------:|:-----------:|------------:|
+| admin_nodeInfo                             |     Yes      |                                           |     Yes     |             |
+| admin_peers                                |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| web3_clientVersion                         |     Yes      |                                           |     Yes     |             |
+| web3_sha3                                  |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| net_listening                              |     Yes      | hard-coded (needs ethbackend integration) |     Yes     |             |
+| net_peerCount                              |     Yes      |                                           |     Yes     |             |
+| net_version                                |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_blockNumber                            |     Yes      |                                           |     Yes     |             |
+| eth_chainId                                |     Yes      |                                           |     Yes     |             |
+| eth_protocolVersion                        |     Yes      |                                           |     Yes     |             |
+| eth_syncing                                |     Yes      |                                           |     Yes     |             |
+| eth_gasPrice                               |     Yes      |                                           |     Yes     |             |
+| eth_maxPriorityFeePerGas                   |     Yes      |                                           |     Yes     |             |
+| eth_feeHistory                             |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_getBlockByHash                         |     Yes      |                                           |     Yes     |     Yes     |
+| eth_getBlockByNumber                       |     Yes      |                                           |     Yes     |             |
+| eth_getBlockTransactionCountByHash         |     Yes      |                                           |     Yes     |             |
+| eth_getBlockTransactionCountByNumber       |     Yes      |                                           |     Yes     |             |
+| eth_getUncleByBlockHashAndIndex            |     Yes      |                                           |     Yes     |             |
+| eth_getUncleByBlockNumberAndIndex          |     Yes      |                                           |     Yes     |             |
+| eth_getUncleCountByBlockHash               |     Yes      |                                           |     Yes     |             |
+| eth_getUncleCountByBlockNumber             |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_getTransactionByHash                   |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getRawTransactionByHash                |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionByBlockHashAndIndex      |     Yes      |                                           |     Yes     |             |
+| eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionByBlockNumberAndIndex    |     Yes      |                                           |     Yes     |             |
+| eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionReceipt                  |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getBlockReceipts                       |     Yes      |           same as parity_getBlockReceipts |     Yes     |             |
+| eth_getTransactionReceiptsByBlock          |     Yes      |           same as parity_getBlockReceipts |             |             |
+|                                            |              |                                           |             |             |
+| eth_estimateGas                            |     Yes      |                                           |     Yes     |             |
+| eth_getBalance                             |     Yes      |                                           |     Yes     |     Yes     |
+| eth_getCode                                |     Yes      |                                           |     Yes     |             |
+| eth_getTransactionCount                    |     Yes      |                                           |     Yes     |             |
+| eth_getStorageAt                           |     Yes      |                                           |     Yes     |             |
+| eth_call                                   |     Yes      |                                           |     Yes     |     Yes     |
+| eth_callMany                               |     Yes      |                     partially implemented |     Yes     |             |
+| eth_callBundle                             |     Yes      |                                           |     Yes     |             |
+| eth_createAccessList                       |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_newFilter                              |     Yes      |                                           |             |             |
+| eth_newBlockFilter                         |      -       |                       not yet implemented |             |             |
+| eth_newPendingTransactionFilter            |      -       |                       not yet implemented |             |             |
+| eth_getFilterChanges                       |     Yes      |                                           |             |             |
+| eth_getFilterLogs                          |     Yes      |                                           |             |             |
+| eth_uninstallFilter                        |     Yes      |                                           |             |             |
+| eth_getLogs                                |     Yes      |                                           |     Yes     |     Yes     |
+|                                            |              |                                           |             |             |
+| eth_accounts                               |      No      |                                deprecated |             |             |
+| eth_sendRawTransaction                     |     Yes      |                               remote only |     Yes     |             |
+| eth_sendTransaction                        |      -       |                       not yet implemented |             |             |
+| eth_sign                                   |      No      |                                deprecated |             |             |
+| eth_signTransaction                        |      -       |                                deprecated |             |             |
+| eth_signTypedData                          |      -       |                                      ???? |             |             |
+|                                            |              |                                           |             |             |
+| eth_getProof                               |      -       |                       not yet implemented |             |             |
+|                                            |              |                                           |             |             |
+| eth_mining                                 |     Yes      |                                           |     Yes     |             |
+| eth_coinbase                               |     Yes      |                                           |     Yes     |             |
+| eth_hashrate                               |     Yes      |                                           |             |             |
+| eth_submitHashrate                         |     Yes      |                                           |     Yes     |             |
+| eth_getWork                                |     Yes      |                                           |     Yes     |             |
+| eth_submitWork                             |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_subscribe                              |      -       |     not yet implemented (WebSockets only) |             |             |
+| eth_unsubscribe                            |      -       |     not yet implemented (WebSockets only) |             |             |
+|                                            |              |                                           |             |             |
+| engine_newPayloadV1                        |     Yes      |                                           |     Yes     |             |
+| engine_newPayloadV2                        |     Yes      |                                           |     Yes     |             |
+| engine_forkchoiceUpdatedV1                 |     Yes      |                                           |     Yes     |             |
+| engine_forkchoiceUpdatedV2                 |     Yes      |                                           |     Yes     |             |
+| engine_getPayloadV1                        |     Yes      |                                           |     Yes     |             |
+| engine_getPayloadV2                        |     Yes      |                                           |     Yes     |             |
+| engine_exchangeCapabilities                |     Yes      |                                           |     Yes     |             |
+| engine_exchangeTransitionConfigurationV1   |     Yes      |                                           |     Yes     |             |
+| engine_getPayloadBodiesByHashV1            |     Yes      |                                           |     Yes     |             |
+| engine_getPayloadBodiesByRangeV1           |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| debug_accountRange                         |     Yes      |                                           |     Yes     |             |
+| debug_accountAt                            |     Yes      |                                           |     Yes     |             |
+| debug_getModifiedAccountsByHash            |     Yes      |                                           |     Yes     |             |
+| debug_getModifiedAccountsByNumber          |     Yes      |                                           |     Yes     |             |
+| debug_getBadBlocks                         |      No      |                        data not available |             |             |
+| debug_getRawBlock                          |     Yes      |     can be optimized to avoid re-encoding |             |             |
+| debug_getRawHeader                         |     Yes      |                                           |             |             |
+| debug_getRawReceipts                       |      No      |                  see eth_getBlockReceipts |             |             |
+| debug_getRawTransaction                    |     Yes      |                                           |             |             |
+| debug_storageRangeAt                       |     Yes      |                                           |     Yes     |             |
+| debug_traceBlockByHash                     |     Yes      |                       uses JSON streaming |     Yes     |             |
+| debug_traceBlockByNumber                   |     Yes      |                       uses JSON streaming |     Yes     |             |
+| debug_traceTransaction                     |     Yes      |                       uses JSON streaming |     Yes     |             |
+| debug_traceCall                            |     Yes      |                       uses JSON streaming |     Yes     |             |
+| debug_traceCallMany                        |     Yes      |                       uses JSON streaming |     Yes     |             |
+|                                            |              |                                           |             |             |
+| trace_call                                 |     Yes      |                                           |     Yes     |             |
+| trace_callMany                             |     Yes      |                                           |     Yes     |             |
+| trace_rawTransaction                       |     Yes      |                                           |     Yes     |             |
+| trace_replayBlockTransactions              |     Yes      |                                           |     Yes     |             |
+| trace_replayTransaction                    |     Yes      |                                           |     Yes     |             |
+| trace_block                                |     Yes      |                                           |     Yes     |             |
+| trace_filter                               |     Yes      |                       uses JSON streaming |     Yes     |             |
+| trace_get                                  |     Yes      |                                           |     Yes     |             |
+| trace_transaction                          |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| txpool_content                             |     Yes      |                                           |     Yes     |             |
+| txpool_status                              |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| eth_getCompilers                           |      No      |                                deprecated |             |             |
+| eth_compileLLL                             |      No      |                                deprecated |             |             |
+| eth_compileSolidity                        |      No      |                                deprecated |             |             |
+| eth_compileSerpent                         |      No      |                                deprecated |             |             |
+|                                            |              |                                           |             |             |
+| db_putString                               |      No      |                                deprecated |             |             |
+| db_getString                               |      No      |                                deprecated |             |             |
+| db_putHex                                  |      No      |                                deprecated |             |             |
+| db_getHex                                  |      No      |                                deprecated |             |             |
+|                                            |              |                                           |             |             |
+| shh_post                                   |      No      |                                deprecated |             |             |
+| shh_version                                |      No      |                                deprecated |             |             |
+| shh_newIdentity                            |      No      |                                deprecated |             |             |
+| shh_hasIdentity                            |      No      |                                deprecated |             |             |
+| shh_newGroup                               |      No      |                                deprecated |             |             |
+| shh_addToGroup                             |      No      |                                deprecated |             |             |
+| shh_newFilter                              |      No      |                                deprecated |             |             |
+| shh_uninstallFilter                        |      No      |                                deprecated |             |             |
+| shh_getFilterChanges                       |      No      |                                deprecated |             |             |
+| shh_getMessages                            |      No      |                                deprecated |             |             |
+|                                            |              |                                           |             |             |
+| erigon_cumulativeChainTraffic              |     Yes      |                                           |     Yes     |             |
+| erigon_getHeaderByHash                     |     Yes      |                                           |     Yes     |             |
+| erigon_getHeaderByNumber                   |     Yes      |                                           |     Yes     |             |
+| erigon_getBalanceChangesInBlock            |     Yes      |                                           |     Yes     |             |
+| erigon_getBlockByTimestamp                 |     Yes      |                                           |     Yes     |             |
+| erigon_getBlockReceiptsByBlockHash         |     Yes      |                                           |     Yes     |             |
+| erigon_getLogsByHash                       |     Yes      |                                           |     Yes     |             |
+| erigon_forks                               |     Yes      |                                           |     Yes     |             |
+| erigon_watchTheBurn                        |     Yes      |                                           |     Yes     |             |
+| erigon_nodeInfo                            |     Yes      |                                           |     Yes     |             |
+| erigon_blockNumber                         |     Yes      |                                           |     Yes     |             |
+| erigon_cacheCheck                          |      -       |                       not yet implemented |             |             |
+| erigon_getLatestLogs                       |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| bor_getSnapshot                            |      -       |                       not yet implemented |             |             |
+| bor_getAuthor                              |      -       |                       not yet implemented |             |             |
+| bor_getSnapshotAtHash                      |      -       |                       not yet implemented |             |             |
+| bor_getSigners                             |      -       |                       not yet implemented |             |             |
+| bor_getSignersAtHash                       |      -       |                       not yet implemented |             |             |
+| bor_getCurrentProposer                     |      -       |                       not yet implemented |             |             |
+| bor_getCurrentValidators                   |      -       |                       not yet implemented |             |             |
+| bor_getRootHash                            |      -       |                       not yet implemented |             |             |
+|                                            |              |                                           |             |             |
+| parity_getBlockReceipts                    |     Yes      |              same as eth_getBlockReceipts |     Yes     |             |
+| parity_listStorageKeys                     |     Yes      |                                           |     Yes     |             |
+|                                            |              |                                           |             |             |
+| ots_getApiLevel                            |     Yes      |                                           |     Yes     |             |
+| ots_getInternalOperations                  |     Yes      |                                           |     Yes     |             |
+| ots_searchTransactionsBefore               |     Yes      |                                           |     Yes     |             |
+| ots_searchTransactionsAfter                |     Yes      |                                           |     Yes     |             |
+| ots_getBlockDetails                        |     Yes      |                                           |     Yes     |             |
+| ots_getBlockDetailsByHash                  |     Yes      |                                           |     Yes     |             |
+| ots_getBlockTransactions                   |     Yes      |                                           |     Yes     |             |
+| ots_hasCode                                |     Yes      |                                           |     Yes     |             |
+| ots_traceTransaction                       |     Yes      |                                           |     Yes     |             |
+| ots_getTransactionError                    |     Yes      |                                           |     Yes     |             |
+| ots_getTransactionBySenderAndNonce         |     Yes      |                                           |     Yes     |             |
+| ots_getContractCreator                     |     Yes      |                                           |     Yes     |             |
 
 This table is constantly updated. Please visit again.

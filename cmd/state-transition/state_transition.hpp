@@ -18,6 +18,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
 #include "cmd/state-transition/expected_state.hpp"
@@ -27,7 +28,6 @@
 #include "silkworm/core/rlp/encode_vector.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
 #include "silkworm/sentry/common/ecc_key_pair.hpp"
-#include "third_party/ethash/include/ethash/keccak.hpp"
 
 namespace silkworm::cmd::state_transition {
 class StateTransition {

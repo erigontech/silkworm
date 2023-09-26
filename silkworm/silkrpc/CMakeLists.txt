@@ -35,19 +35,14 @@ file(
 )
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
 
-# pico_http_parser
-add_library(pico_http_parser "${SILKWORM_MAIN_DIR}/third_party/picohttpparser/picohttpparser.c")
-if(MSVC)
-  target_compile_options(pico_http_parser PRIVATE /w)
-else()
-  target_compile_options(pico_http_parser PRIVATE -Wno-error)
-endif(MSVC)
-
 set(SILKRPC_PUBLIC_LIBRARIES
     silkworm_node
     silkworm_core
     silkworm_interfaces
     asio-grpc::asio-grpc
+    cborcpp
+    evmone
+    glaze::glaze
     gRPC::grpc++
     jwt-cpp::jwt-cpp
     nlohmann_json::nlohmann_json
@@ -64,17 +59,6 @@ set(SILKRPC_PUBLIC_LIBRARIES
 set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
 
 add_library(silkrpc "${SILKRPC_SRC}")
-
-# cmake-format: off
-target_include_directories(
-  silkrpc
-  PUBLIC "${SILKWORM_MAIN_DIR}"
-         "${SILKWORM_MAIN_DIR}/third_party/picohttpparser"
-         "${SILKWORM_MAIN_DIR}/third_party/cbor-cpp"
-         "${SILKWORM_MAIN_DIR}/third_party/glaze/include"
-         "${SILKWORM_MAIN_DIR}/third_party/evmone/lib"
-)
-# cmake-format: on
 
 target_link_libraries(
   silkrpc

@@ -33,8 +33,9 @@ file(
   "examples/CMakeLists.txt"
   "silkworm/*.cmake"
   "silkworm/CMakeLists.txt"
+  "third_party/CMakeLists.txt"
 )
 list(PREPEND SRC "${CMAKE_CURRENT_LIST_DIR}/../CMakeLists.txt")
-list(APPEND SRC "${CMAKE_CURRENT_LIST_DIR}/../third_party/CMakeLists.txt")
+list(FILTER SRC EXCLUDE REGEX "third_party/.+/(.+/)+CMakeLists.txt$")
 
 execute_process(COMMAND "${CMAKE_FORMAT}" --in-place "--config-file=${CMAKE_CURRENT_LIST_DIR}/cmake_format.yaml" ${SRC})

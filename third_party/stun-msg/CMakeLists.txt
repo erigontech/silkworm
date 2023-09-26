@@ -1,5 +1,5 @@
 #[[
-   Copyright 2023 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers filesystem system)
-find_package(CLI11 REQUIRED)
-
-add_executable(execute execute.cpp)
-target_link_libraries(
-  execute
-  PRIVATE Boost::headers
-          Boost::filesystem
-          Boost::system
-          CLI11::CLI11
-          mdbx-static
-          silkworm_node
-          cmd_common
-)
+file(GLOB STUN_MSG_SRC "stun-msg/src/*.*")
+add_library(stun_msg "${STUN_MSG_SRC}")
+target_include_directories(stun_msg PUBLIC "stun-msg/include")
+target_compile_options(stun_msg PRIVATE -w) # disable warnings

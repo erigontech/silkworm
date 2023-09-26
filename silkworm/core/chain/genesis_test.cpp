@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <iostream>
+
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
@@ -38,6 +40,8 @@ void test_genesis_config(const ChainConfig& x) {
 
 TEST_CASE("unknown genesis") {
     const std::string genesis_data{read_genesis_data(1'000u)};
+    std::cerr << "unknown genesis\n"
+              << genesis_data << std::endl;
     const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
 }

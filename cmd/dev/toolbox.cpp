@@ -31,7 +31,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>

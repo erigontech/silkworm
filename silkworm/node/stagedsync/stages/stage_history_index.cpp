@@ -18,7 +18,7 @@
 
 #include <magic_enum.hpp>
 
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::stagedsync {

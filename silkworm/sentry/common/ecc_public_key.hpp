@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 
 namespace silkworm::sentry {
 
@@ -57,8 +58,7 @@ namespace std {
 template <>
 struct hash<silkworm::sentry::EccPublicKey> {
     size_t operator()(const silkworm::sentry::EccPublicKey& public_key) const noexcept {
-        silkworm::ByteView data = public_key.data();
-        std::string_view data_str{reinterpret_cast<const char*>(data.data()), data.size()};
+        auto data_str = silkworm::byte_view_to_string_view(public_key.data());
         return std::hash<std::string_view>{}(data_str);
     }
 };

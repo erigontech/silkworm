@@ -17,7 +17,6 @@
 #include "silkworm_api.h"
 
 #include <chrono>
-#include <memory>
 #include <vector>
 
 #include <boost/circular_buffer.hpp>
@@ -39,15 +38,24 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
 }
 
-static std::string log_execution_progress(const std::string& log_prefix, uint64_t current_block) {
-    std::string log{log_prefix};
-    log.append(" number=");
-    log.append(std::to_string(current_block));
-    log.append(" blk/s=0.0");
-    log.append(" tx/s=0.0");
-    log.append(" Mgas/s=0.0");
-    log.append(" gasState=0.0");
-    return log;
+//! Log configuration matching Erigon log format
+static log::Settings kLogSettingsLikeErigon{
+        .log_utc = false,
+        .log_timezone = false,
+        .log_nocolor = false,
+        .log_trim = true,
+};
+
+//! Generate log arguments for specified block
+static log::Args log_args_for_exec_progress(uint64_t current_block) {
+    return {
+        "number", std::to_string(current_block),
+        // TODO(canepat) compute values
+        "blk/s", std::to_string(0.0),
+        "tx/s", std::to_string(0.0),
+        "Mgas/s", std::to_string(0.0),
+        "gasState", std::to_string(0.0),
+    };
 }
 
 struct SilkwormInstance {
@@ -62,6 +70,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     if (instance.handle) {
         return SILKWORM_TOO_MANY_INSTANCES;
     }
+    log::init(kLogSettingsLikeErigon);
     const auto snapshot_repository = new snapshot::SnapshotRepository{};
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
@@ -308,7 +317,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 signal_check_time = now + 5s;
             }
             if (log_time <= now) {
-                std::cout << log_execution_progress("[4/12 Execution] Executed blocks ", block.header.number) << std::endl;
+                SILK_INFO << "[4/12 Execution] Executed blocks" << log_args_for_exec_progress(block.header.number);
                 log_time = now + 20s;
             }
         }

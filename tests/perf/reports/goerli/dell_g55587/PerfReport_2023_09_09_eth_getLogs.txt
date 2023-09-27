@@ -32,8 +32,8 @@ Clique ecRecover commented
 eth_getLogs
 ============================================================================================
 
-RPCDaemon: eth_getLogs su file NO snapshot
------------------------------------------
+RPCDaemon using datadir no snapshot: eth_getLogs
+-------------------------------------------------
 [1. 1]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 61.262ms ]
 [1. 2]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 63.411ms ]
 [1. 3]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 61.388ms ]
@@ -64,8 +64,8 @@ RPCDaemon: eth_getLogs su file NO snapshot
 ]
 
 
-RPCDaemon: eth_getLogs su file Snapshot found in snapshot
-----------------------------------------------------------
+RPCDaemon using datadir & snapshot: eth_getLogs block in snapshot
+------------------------------------------------------------------
 [1. 1]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 212.372ms ]
 [1. 2]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 56.868ms ]
 [1. 3]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 57.9ms ]
@@ -85,8 +85,8 @@ RPCDaemon: eth_getLogs su file Snapshot found in snapshot
 [3. 5]  rpcdaemon: executes test qps: 2500 time: 20 ->  [ Ratio=100.00%, MaxLatency= 1.565s ]
 
 
-RPCDaemon: eth_getLogs su file Snapshot found in DB
-------------------------------------------------------
+RPCDaemon using datadir & snapshot: eth_getLogs block in DB
+-----------------------------------------------------------
 [1. 1]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 231.247ms ]
 [1. 2]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 187.941ms ]
 [1. 3]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 178.294ms ]
@@ -114,8 +114,8 @@ RPCDaemon: eth_getLogs su file Snapshot found in DB
 
 
 
-Silk: eth_getLogs su file NO snapshot
------------------------------------------
+Silk using datadir no snapshot: eth_getLogs
+--------------------------------------------
 [1. 1]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 486.213ms ]
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 17.75ms ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 17.748ms ]
@@ -142,8 +142,8 @@ Silk: eth_getLogs su file NO snapshot
 
 
 
-Silk: eth_getLogs su file with snapshot found in snapshot
-----------------------------------------------------------
+Silk using datadir & snapshot: eth_getLogs block in snapshot
+-------------------------------------------------------------
 [1. 1]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 29.19ms ]
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 29.009ms ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 28.563ms ]
@@ -171,8 +171,8 @@ Silk: eth_getLogs su file with snapshot found in snapshot
 [4. 5]  silkrpc: executes test qps: 10000 time: 20 ->  [ Ratio=100.00%, MaxLatency= 19.218s ]
 
 
-Silk: eth_getLogs su file with snapshot found in DB
----------------------------------------------------
+Silk using datadir & snapshot: eth_getLogs block in DB
+-------------------------------------------------------
 [1. 1]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 78.948ms ]
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 104.175ms ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 84.772ms ]

@@ -32,7 +32,7 @@ Clique ecRecover commented
 eth_call
 ===========================================================================================================
 
-RPCDaemon: eth_call su file DB NO snapshot 
+RPCDaemon using datadir no snapshot: eth_call
 ---------------------------------------------
 
 [1. 1]  rpcdaemon: executes test qps: 50 time: 30 [ Ratio=100.00%, MaxLatency= 5.096ms ]
@@ -63,8 +63,8 @@ RPCDaemon: eth_call su file DB NO snapshot
 [4. 5]  rpcdaemon: executes test qps: 10000 time: 20 [ Ratio=59.01%, MaxLatency= 4m29s  Error: Post &quot;http://localhost:8545&quot;: dial tcp 0.0.0.0:0-&gt;127.0.0.1:8545: bind: address already in use
 ]
 
-RPCDaemon: eth_call su file DB Snapshot 
----------------------------------------------
+RPCDaemon using datadir & snapshot: eth_call block in snapshot
+---------------------------------------------------------------
 [1. 1]  rpcdaemon: executes test qps: 50 time: 20 ->  [ Ratio=100.00%, MaxLatency= 48.265ms ]
 [1. 2]  rpcdaemon: executes test qps: 50 time: 20 ->  [ Ratio=100.00%, MaxLatency= 1.405ms ]
 [1. 3]  rpcdaemon: executes test qps: 50 time: 20 ->  [ Ratio=100.00%, MaxLatency= 1.978ms ]
@@ -84,7 +84,7 @@ RPCDaemon: eth_call su file DB Snapshot
 [3. 5]  rpcdaemon: executes test qps: 2500 time: 20 ->  [ Ratio=100.00%, MaxLatency= 12.86ms ]
 
 
-RPCDaemon: eth_call su file DB Snapshot found in  DB
+RPCDaemon using datadir & snapshot: eth_call block in DB
 --------------------------------------------------------
 
 [1. 1]  rpcdaemon: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 400.386ms ]
@@ -111,7 +111,7 @@ RPCDaemon: eth_call su file DB Snapshot found in  DB
 
 
 
-Silk: eth_call su file DB NO Snapshot 
+Silk using datadir no snapshot: eth_call
 -------------------------------------------------------
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 775.829µs ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 820.592µs ]
@@ -139,8 +139,8 @@ Silk: eth_call su file DB NO Snapshot
 
 
 
-Silk: eth_call su file DB Snapshot retrived on snapshot
--------------------------------------------------------
+Silk using datadir & snapshot: eth_call block in snapshot
+----------------------------------------------------------
 [1. 1]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 41.655ms ]
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 726.152µs ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 765.207µs ]
@@ -166,8 +166,8 @@ Silk: eth_call su file DB Snapshot retrived on snapshot
 [4. 5]  silkrpc: executes test qps: 10000 time: 20 ->  [ Ratio=100.00%, MaxLatency= 3.032ms ]
 
 
-Silk: eth_call su file DB Snapshot  retrived on DB
--------------------------------------------------------
+Silk using datadir & snapshot: eth_call block in DB
+---------------------------------------------------
 [1. 1]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 86.446ms ]
 [1. 2]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 24.612ms ]
 [1. 3]  silkrpc: executes test qps: 50 time: 30 ->  [ Ratio=100.00%, MaxLatency= 24.623ms ]

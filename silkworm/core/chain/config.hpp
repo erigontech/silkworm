@@ -20,7 +20,7 @@
 #include <map>
 #include <optional>
 #include <string_view>
-#include <tuple>
+#include <variant>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -32,13 +32,25 @@ namespace silkworm {
 
 namespace protocol {
 
-    //! \see IRuleSet
-    enum class RuleSetType {
-        kNoProof,
-        kEthash,
-        kClique,
-        kBor,
+    //! \see EthashRuleSet
+    struct EthashConfig {
+        bool validate_seal{true};
+
+        bool operator==(const EthashConfig&) const = default;
     };
+
+    //! \see CliqueRuleSet
+    struct CliqueConfig {
+        bool operator==(const CliqueConfig&) const = default;
+    };
+
+    //! \see BorRuleSet
+    struct BorConfig {
+        bool operator==(const BorConfig&) const = default;
+    };
+
+    //! \see IRuleSet
+    using RuleSetConfig = std::variant<EthashConfig, CliqueConfig, BorConfig>;
 
 }  // namespace protocol
 
@@ -51,9 +63,6 @@ struct ChainConfig {
 
     //! \brief Holds the hash of genesis block
     std::optional<evmc::bytes32> genesis_hash;
-
-    //! \brief Returns the type of the (pre-Merge) protocol rule set
-    protocol::RuleSetType protocol_rule_set{protocol::RuleSetType::kNoProof};
 
     // https://github.com/ethereum/execution-specs/tree/master/network-upgrades/mainnet-upgrades
     std::optional<BlockNum> homestead_block{std::nullopt};
@@ -81,6 +90,9 @@ struct ChainConfig {
 
     // In some chains (e.g. Polygon) EIP-1559 fees are not burnt but rather sent to the collector
     std::optional<evmc::address> eip1559_fee_collector{std::nullopt};
+
+    //! \brief Returns the config of the (pre-Merge) protocol rule set
+    protocol::RuleSetConfig protocol_rule_set{protocol::EthashConfig{.validate_seal = false}};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
@@ -121,7 +133,6 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
 inline constexpr ChainConfig kMainnetConfig{
     .chain_id = 1,
-    .protocol_rule_set = protocol::RuleSetType::kEthash,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
     .tangerine_whistle_block = 2'463'000,
@@ -137,12 +148,12 @@ inline constexpr ChainConfig kMainnetConfig{
     .gray_glacier_block = 15'050'000,
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
+    .protocol_rule_set = protocol::EthashConfig{},
 };
 
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 inline constexpr ChainConfig kGoerliConfig{
     .chain_id = 5,
-    .protocol_rule_set = protocol::RuleSetType::kClique,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -154,12 +165,12 @@ inline constexpr ChainConfig kGoerliConfig{
     .london_block = 5'062'605,
     .terminal_total_difficulty = 10790000,
     .shanghai_time = 1678832736,
+    .protocol_rule_set = protocol::CliqueConfig{},
 };
 
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 inline constexpr ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
-    .protocol_rule_set = protocol::RuleSetType::kEthash,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -173,12 +184,12 @@ inline constexpr ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
+    .protocol_rule_set = protocol::EthashConfig{},
 };
 
 inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
 inline constexpr ChainConfig kPolygonConfig{
     .chain_id = 137,
-    .protocol_rule_set = protocol::RuleSetType::kBor,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -190,12 +201,12 @@ inline constexpr ChainConfig kPolygonConfig{
     .berlin_block = 14'750'000,
     .london_block = 23'850'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .protocol_rule_set = protocol::BorConfig{},
 };
 
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
 inline constexpr ChainConfig kMumbaiConfig{
     .chain_id = 80001,
-    .protocol_rule_set = protocol::RuleSetType::kBor,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -207,6 +218,7 @@ inline constexpr ChainConfig kMumbaiConfig{
     .berlin_block = 13'996'000,
     .london_block = 22'640'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .protocol_rule_set = protocol::BorConfig{},
 };
 
 //! \brief Looks up a known chain config provided its chain ID

@@ -21,6 +21,7 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/overloaded.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
@@ -55,19 +56,13 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     ret["chainId"] = chain_id;
 
     nlohmann::json empty_object(nlohmann::json::value_t::object);
-    switch (protocol_rule_set) {
-        case protocol::RuleSetType::kEthash:
-            ret.emplace("ethash", empty_object);
-            break;
-        case protocol::RuleSetType::kClique:
-            ret.emplace("clique", empty_object);
-            break;
-        case protocol::RuleSetType::kBor:
-            ret.emplace("bor", empty_object);
-            break;
-        default:
-            break;
-    }
+    std::visit(
+        Overloaded{
+            [&](const protocol::EthashConfig& x) { if (x.validate_seal) ret.emplace("ethash", empty_object); },
+            [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
+            [&](const protocol::BorConfig&) { ret.emplace("bor", empty_object); },
+        },
+        protocol_rule_set);
 
     member_to_json(ret, "homesteadBlock", homestead_block);
     member_to_json(ret, "daoForkBlock", dao_block);
@@ -112,13 +107,13 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     config.chain_id = json["chainId"].get<uint64_t>();
 
     if (json.contains("ethash")) {
-        config.protocol_rule_set = protocol::RuleSetType::kEthash;
+        config.protocol_rule_set = protocol::EthashConfig{};
     } else if (json.contains("clique")) {
-        config.protocol_rule_set = protocol::RuleSetType::kClique;
+        config.protocol_rule_set = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
-        config.protocol_rule_set = protocol::RuleSetType::kBor;
+        config.protocol_rule_set = protocol::BorConfig{};
     } else {
-        config.protocol_rule_set = protocol::RuleSetType::kNoProof;
+        config.protocol_rule_set = protocol::EthashConfig{.validate_seal = false};
     }
 
     read_json_config_member(json, "homesteadBlock", config.homestead_block);

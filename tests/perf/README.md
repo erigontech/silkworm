@@ -51,7 +51,7 @@ build/bin/erigon --goerli --private.api.addr=localhost:9090
 ```
 ./build/cmd/silkrpcdaemon --private.addr 127.0.0.1:9090 --eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516 --workers 64 --contexts 8 --datadir <erigon_data_dir>  --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 2 
 ```
-You *must* specify diffenrent ports for Silkrpc (i.e. `--eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516`) if you want to run Silkrpc simultaneously with Erigon RPCDaemon.
+You *must* specify different ports for Silkrpc (i.e. `--eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516`) if you want to run Silkrpc simultaneously with Erigon RPCDaemon.
 
 ### Test Workload
 
@@ -81,7 +81,7 @@ Usage: ./run_perf_tests.py -p vegetaPatternTarFile -y <api_name>
 Launch an automated performance test sequence on Silkrpc and RPCDaemon using Vegeta
 
 -h                      print this help
--Z                      doen't verify server is still active
+-Z                      doesn't verify server is still active
 -R                      generate Report
 -u                      save test report in Git repo
 -v                      verbose

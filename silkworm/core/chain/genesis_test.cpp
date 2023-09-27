@@ -26,28 +26,21 @@
 namespace silkworm {
 
 void test_genesis_config(const ChainConfig& x) {
-    const std::string_view genesis_data{read_genesis_data(x.chain_id)};
-    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
-    CHECK_FALSE(genesis_json.is_discarded());
-
-    REQUIRE(genesis_json.contains("config"));
-    REQUIRE(genesis_json["config"].is_object());
-    const std::optional<ChainConfig> config{ChainConfig::from_json(genesis_json["config"])};
-    CHECK(config == x);
-}
-
-TEST_CASE("genesis config") {
-    std::string_view genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
+    std::string_view genesis_data = read_genesis_data(x.chain_id);
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     auto config = ChainConfig::from_json(genesis_json["config"]);
     REQUIRE(config.has_value());
-    CHECK(config.value() == kMainnetConfig);
+    CHECK(config.value() == x);
+}
 
-    genesis_data = read_genesis_data(1'000u);
-    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+TEST_CASE("genesis config") {
+    test_genesis_config(kMainnetConfig);
+
+    std::string_view genesis_data = read_genesis_data(1'000u);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
 }
 

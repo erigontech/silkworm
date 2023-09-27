@@ -37,14 +37,14 @@ void test_genesis_config(const ChainConfig& x) {
 }
 
 TEST_CASE("unknown genesis 0") {
-    const nlohmann::json genesis_json{nlohmann::json::parse("{", nullptr, /* allow_exceptions = */ false)};
+    nlohmann::json genesis_json{nlohmann::json::parse("{", nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
 }
 
 TEST_CASE("unknown genesis") {
     const std::string_view genesis_data{read_genesis_data(1'000u)};
     CHECK(genesis_data == "{");
-    const nlohmann::json genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
+    nlohmann::json genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
     CHECK(genesis_json.is_discarded());
 }
 

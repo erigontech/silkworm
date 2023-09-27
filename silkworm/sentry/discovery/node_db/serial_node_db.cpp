@@ -24,7 +24,7 @@ namespace silkworm::sentry::discovery::node_db {
 
 using namespace boost::asio;
 
-Task<void> SerialNodeDb::upsert_node_address(NodeId id, NodeAddress address) {
+Task<bool> SerialNodeDb::upsert_node_address(NodeId id, NodeAddress address) {
     return concurrency::co_spawn_sw(strand_, db_.upsert_node_address(std::move(id), std::move(address)), use_awaitable);
 }
 

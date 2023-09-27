@@ -30,7 +30,10 @@ Task<void> PeerDiscoveryFeedback::run(
     while (true) {
         auto [public_key, disconnect_reason] = co_await self->peer_disconnected_events_.receive();
         bool is_useless = disconnect_reason && (*disconnect_reason == rlpx::DisconnectReason::UselessPeer);
-        co_await discovery.on_peer_disconnected(*public_key, is_useless);
+        if (is_useless) {
+            co_await discovery.on_peer_useless(*public_key);
+        }
+        co_await discovery.on_peer_disconnected(*public_key);
     }
 }
 

@@ -67,16 +67,9 @@ Task<void> FindNodeHandler::handle(
     // find addresses
     std::map<EccPublicKey, NodeAddress> node_addresses;
     for (auto& node_id : node_ids) {
-        auto address = co_await db.find_node_address_v4(node_id);
-        if (!address)
-            address = co_await db.find_node_address_v6(node_id);
+        auto address = co_await db.find_node_address(node_id);
         if (address) {
-            NodeAddress node_address{
-                address->ip,
-                address->port_disc,
-                address->port_rlpx,
-            };
-            node_addresses.insert({node_id, std::move(node_address)});
+            node_addresses.insert({node_id, address->to_common_address()});
         }
     }
 

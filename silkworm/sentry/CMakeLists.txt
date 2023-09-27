@@ -26,11 +26,11 @@ find_package(Snappy REQUIRED)
 # sentry common
 add_subdirectory(common)
 
-# node DB
-add_subdirectory(discovery/node_db)
-
 # discovery common
 add_subdirectory(discovery/common)
+
+# node DB
+add_subdirectory(discovery/node_db)
 
 # ENR
 add_subdirectory(discovery/enr)

@@ -60,14 +60,7 @@ Task<bool> PingHandler::handle(
     }
 
     // save a ping sender node as if it was discovered by find_neighbors()
-    auto sender_node_address = message.sender_node_address();
-    bool is_inserted = co_await db.upsert_node_address(
-        sender_public_key,
-        node_db::NodeAddress{
-            sender_node_address.endpoint.address(),
-            sender_node_address.endpoint.port(),
-            sender_node_address.port_rlpx,
-        });
+    bool is_inserted = co_await db.upsert_node_address(sender_public_key, message.sender_node_address());
     if (is_inserted) {
         co_await db.update_distance(sender_public_key, node_distance(sender_public_key, local_node_id));
     }

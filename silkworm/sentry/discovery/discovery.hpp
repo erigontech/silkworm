@@ -19,10 +19,12 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/concurrency/executor_pool.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
@@ -53,13 +55,19 @@ class Discovery {
 
     Task<void> run();
 
-    Task<std::vector<EnodeUrl>> request_peer_urls(
+    struct PeerCandidate {
+        EnodeUrl url;
+        std::optional<Bytes> eth1_fork_id_data;
+    };
+
+    Task<std::vector<PeerCandidate>> request_peer_candidates(
         size_t max_count,
         std::vector<EnodeUrl> exclude_urls);
 
     bool is_static_peer_url(const EnodeUrl& peer_url);
 
-    Task<void> on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless);
+    Task<void> on_peer_useless(EccPublicKey peer_public_key);
+    Task<void> on_peer_disconnected(EccPublicKey peer_public_key);
 
   private:
     std::unique_ptr<DiscoveryImpl> p_impl_;

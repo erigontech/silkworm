@@ -35,9 +35,6 @@ TEST_CASE("Stage Transaction Lookups") {
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
-    log::Settings log_settings;
-    log_settings.log_std_out = true;
-    log::init(log_settings);
 
     db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);
     db::PooledCursor bodies_table(txn, db::table::kBlockBodies);

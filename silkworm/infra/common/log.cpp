@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <thread>
 
+#include <absl/strings/ascii.h>
 #include <absl/time/clock.h>
 
 #include <silkworm/infra/grpc/common/util.hpp>
@@ -117,15 +118,21 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
         ss_.imbue(std::locale(ss_.getloc(), new separate_thousands(settings_.log_thousands_sep)));
     }
 
-    auto [prefix, color] = get_level_settings(level);
+    auto [log_level, color] = get_level_settings(level);
 
     // Prefix
-    ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
+    auto log_tag{settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level};
+    ss_ << kColorReset
+        << (settings_.log_trim ? "" : " ") << color << log_tag
+        << kColorReset
+        << (settings_.log_trim ? "" : " ");
 
     // TimeStamp
-    static const absl::TimeZone tz{settings_.log_utc ? absl::LocalTimeZone() : absl::UTCTimeZone()};
+    static const absl::TimeZone tz{settings_.log_utc ? absl::UTCTimeZone() : absl::LocalTimeZone()};
     absl::Time now{absl::Now()};
-    ss_ << kColorCyan << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, tz) << " " << tz << "] " << kColorReset;
+
+    auto log_timezone{settings_.log_timezone ? std::string{" "} + tz.name() : ""};
+    ss_ << kColorWhite << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, tz) << log_timezone << "] " << kColorReset;
 
     // ThreadId
     if (settings_.log_threads) {

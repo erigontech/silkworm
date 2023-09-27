@@ -68,6 +68,41 @@ TEST_CASE("Value transfer") {
     CHECK(state.touched().count(to) == 1);
 }
 
+TEST_CASE("Destruct and create") {
+    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
+
+    InMemoryState db;
+
+    {
+        IntraBlockState state{db};
+
+        // First create the contract in a "transaction" and push it to the DB
+        state.clear_journal_and_substate();
+        state.create_contract(to);
+        state.set_storage(to, {}, evmc::bytes32{1});
+        CHECK(state.get_current_storage(to, {}) == evmc::bytes32{1});
+        state.finalize_transaction(EVMC_SHANGHAI);
+        state.write_to_db(1);
+    }
+
+    // Then destruct it in another "transaction" and "block"
+    IntraBlockState state{db};
+    state.clear_journal_and_substate();
+    CHECK(state.record_suicide(to));
+    state.destruct_suicides();
+    state.finalize_transaction(EVMC_SHANGHAI);
+
+    // Add some balance to it
+    state.clear_journal_and_substate();
+    state.add_to_balance(to, 1);
+    state.finalize_transaction(EVMC_SHANGHAI);
+
+    // Recreate it
+    state.clear_journal_and_substate();
+    state.create_contract(to);
+    CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
+}
+
 TEST_CASE("Smart contract with storage") {
     Block block{};
     block.header.number = 1;

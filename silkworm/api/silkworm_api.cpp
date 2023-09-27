@@ -16,7 +16,7 @@
 
 #include "silkworm_api.h"
 
-#include <memory>
+#include <chrono>
 #include <vector>
 
 #include <boost/circular_buffer.hpp>
@@ -25,24 +25,62 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
 
+using namespace std::chrono_literals;
 using namespace silkworm;
 
 static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
 }
 
+//! Log configuration matching Erigon log format
+static log::Settings kLogSettingsLikeErigon{
+    .log_utc = false,
+    .log_timezone = false,
+    .log_nocolor = false,
+    .log_trim = true,
+};
+
+//! Generate log arguments for specified block
+static log::Args log_args_for_exec_progress(uint64_t current_block) {
+    return {
+        "number",
+        std::to_string(current_block),
+        // TODO(canepat) compute values
+        "blk/s",
+        std::to_string(0.0),
+        "tx/s",
+        std::to_string(0.0),
+        "Mgas/s",
+        std::to_string(0.0),
+        "gasState",
+        std::to_string(0.0),
+    };
+}
+
+struct SilkwormInstance {
+    SilkwormHandle* handle{nullptr};
+};
+SilkwormInstance instance;  // just one instance for the time being
+
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
+    if (instance.handle) {
+        return SILKWORM_TOO_MANY_INSTANCES;
+    }
+    log::init(kLogSettingsLikeErigon);
     const auto snapshot_repository = new snapshot::SnapshotRepository{};
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
+    instance.handle = *handle;
+    SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true);
     return SILKWORM_OK;
 }
 
@@ -213,6 +251,9 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         static constexpr size_t kMaxPrefetchedBlocks{10240};
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
+        auto signal_check_time{std::chrono::steady_clock::now()};
+        auto log_time{signal_check_time};
+
         size_t gas_history_size{0};
         size_t gas_batch_size{0};
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
@@ -260,10 +301,6 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 *last_executed_block = block.header.number;
             }
 
-            if (block.header.number % 1000 == 0) {
-                SILK_INFO << "Blocks <= " << block.header.number << " executed";
-            }
-
             prefetched_blocks.pop_front();
 
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
@@ -275,6 +312,18 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_state_size())};
                 state_buffer.write_history_to_db(write_change_sets);
                 gas_history_size = 0;
+            }
+
+            const auto now{std::chrono::steady_clock::now()};
+            if (signal_check_time <= now) {
+                if (SignalHandler::signalled()) {
+                    return SILKWORM_TERMINATION_SIGNAL;
+                }
+                signal_check_time = now + 5s;
+            }
+            if (log_time <= now) {
+                SILK_INFO << "[4/12 Execution] Executed blocks" << log_args_for_exec_progress(block.header.number);
+                log_time = now + 20s;
             }
         }
 
@@ -296,10 +345,15 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
 }
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    if (handle != instance.handle) {
+        return SILKWORM_INSTANCE_NOT_FOUND;
+    }
     const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
     if (!snapshot_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     delete snapshot_repository;
+    instance.handle = nullptr;
+    SignalHandler::reset();
     return SILKWORM_OK;
 }

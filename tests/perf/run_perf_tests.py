@@ -21,13 +21,10 @@ DEFAULT_DAEMON_VEGETA_ON_CORE = "-:-"
 DEFAULT_ERIGON_ADDRESS = "localhost:9090"
 DEFAULT_ERIGON_BUILD_DIR = "../../../erigon/build/"
 DEFAULT_SILKRPC_BUILD_DIR = "../../build/"
-DEFAULT_SILKRPC_NUM_CONTEXTS = ""
 DEFAULT_RPCDAEMON_ADDRESS = "localhost"
 DEFAULT_TEST_MODE = "3"
 DEFAULT_WAITING_TIME = 5
 DEFAULT_TEST_TYPE = "eth_getLogs"
-DEFAULT_WAIT_MODE = "blocking"
-DEFAULT_WORKERS = "16"
 
 VEGETA_PATTERN_DIRNAME = "erigon_stress_test"
 VEGETA_REPORT = "vegeta_report.hrd"
@@ -42,25 +39,23 @@ def usage(argv):
     print("Launch an automated performance test sequence on Silkrpc and RPCDaemon using Vegeta")
     print("")
     print("-h                      print this help")
-    print("-D                      perf command")
     print("-Z                      doen't verify server is still active")
+    print("-R                      generate Report")
     print("-u                      save test report in Git repo")
     print("-v                      verbose")
     print("-x                      verbose and tracing")
     print("-y testType             test type: eth_call, eth_getLogs                                                       [default: " + DEFAULT_TEST_TYPE + "]")
     print("-m targetMode           target mode: silkrpc(1), rpcdaemon(2), both(3)                                         [default: " + str(DEFAULT_TEST_MODE) + "]")
-    print("-d rpcDaemonAddress     Erigon: address of RPCDaemon (e.g. 10.1.1.20)                                          [default: " + DEFAULT_RPCDAEMON_ADDRESS +"]")
     print("-p vegetaPatternTarFile path to the request file for Vegeta attack                                             [default: " + DEFAULT_VEGETA_PATTERN_TAR_FILE +"]")
-    print("-c daemonVegetaOnCore   cpu list in taskset format for daemon & vegeta (e.g. 0-1:2-3 or 0-2:3-4 or 0,2:3,4...) [default: " + DEFAULT_DAEMON_VEGETA_ON_CORE +"]")
-    print("-a erigonAddress        Erigon: address of Core component as <address>:<port> (e.g. localhost:9090)            [default: " + DEFAULT_ERIGON_ADDRESS + "]")
-    print("-g erigonBuildDir       Erigon: path to build folder (e.g. ../../../erigon/build)                              [default: " + DEFAULT_ERIGON_BUILD_DIR + "]")
-    print("-s silkrpcBuildDir      Silkrpc: path to build folder (e.g. ../../build_gcc_release/)                          [default: " + DEFAULT_SILKRPC_BUILD_DIR + "]")
     print("-r testRepetitions      number of repetitions for each element in test sequence (e.g. 10)                      [default: " + str(DEFAULT_REPETITIONS) + "]")
     print("-t testSequence         list of query-per-sec and duration tests as <qps1>:<t1>,... (e.g. 200:30,400:10)       [default: " + DEFAULT_TEST_SEQUENCE + "]")
-    print("-i idleStrategy         Silkrpc: idle strategy for execution contexts                                          [default: " + DEFAULT_WAIT_MODE + "]")
-    print("-n numContexts          Silkrpc: number of execution contexts (threading based on idle strategy)               [default: " + DEFAULT_SILKRPC_NUM_CONTEXTS + "]")
     print("-w testWaitInterval     time interval between successive test iterations in sec                                [default: " + str(DEFAULT_WAITING_TIME) + "]")
-    print("-o workerThreads        Silkrpc: number of worker threads                                                      [default: " + DEFAULT_WORKERS + "]")
+
+    print("-d rpcDaemonAddress     Erigon: address of RPCDaemon (e.g. 10.1.1.20)                                          [default: " + DEFAULT_RPCDAEMON_ADDRESS +"]")
+    print("-a erigonAddress        Erigon: address of Core component as <address>:<port> (e.g. localhost:9090)            [default: " + DEFAULT_ERIGON_ADDRESS + "]")
+    print("-g erigonBuildDir       Erigon: path to build folder (e.g. ../../../erigon/build)                              [default: " + DEFAULT_ERIGON_BUILD_DIR + "]")
+    print("-s silkrpcBuildDir      Silkrpc: path to build folder (e.g. ../../build/)                                      [default: " + DEFAULT_SILKRPC_BUILD_DIR + "]")
+    print("-c daemonVegetaOnCore   cpu list in taskset format for daemon & vegeta (e.g. 0-1:2-3 or 0-2:3-4 or 0,2:3,4...) [default: " + DEFAULT_DAEMON_VEGETA_ON_CORE +"]")
     sys.exit(-1)
 
 def get_process(process_name: str):
@@ -81,35 +76,30 @@ class Config:
         self.erigon_addr = DEFAULT_ERIGON_ADDRESS
         self.erigon_builddir = DEFAULT_ERIGON_BUILD_DIR
         self.silkrpc_build_dir = DEFAULT_SILKRPC_BUILD_DIR
-        self.silkrpc_num_contexts = DEFAULT_SILKRPC_NUM_CONTEXTS
         self.repetitions = DEFAULT_REPETITIONS
         self.test_sequence = DEFAULT_TEST_SEQUENCE
         self.rpc_daemon_address = DEFAULT_RPCDAEMON_ADDRESS
         self.test_mode = DEFAULT_TEST_MODE
         self.test_type = DEFAULT_TEST_TYPE
         self.waiting_time = DEFAULT_WAITING_TIME
-        self.user_perf_command = ""
-        self.workers = DEFAULT_WORKERS
-        self.wait_mode = DEFAULT_WAIT_MODE
         self.versioned_test_report = False
         self.verbose = False
         self.check_server_alive = True
         self.tracing = False
+        self.create_test_report = False
 
         self.__parse_args(argv)
 
     def __parse_args(self, argv):
         try:
             local_config = 0
-            opts, _ = getopt.getopt(argv[1:], "D:hm:d:p:c:a:g:s:r:t:n:y:zw:i:o:uvxZ")
+            opts, _ = getopt.getopt(argv[1:], "hm:d:p:c:a:g:s:r:t:y:zw:uvxZR")
 
             for option, optarg in opts:
                 if option in ("-h", "--help"):
                     usage(argv)
                 elif option == "-m":
                     self.test_mode = optarg
-                elif option == "-D":
-                    self.user_perf_command = optarg
                 elif option == "-d":
                     if local_config == 1:
                         print("ERROR: incompatible option -d with -a -g -s -n")
@@ -138,13 +128,14 @@ class Config:
                         usage(argv)
                     local_config = 1
                     self.silkrpc_build_dir = optarg
-                elif option == "-o":
-                    self.workers = optarg
                 elif option == "-r":
                     self.repetitions = int(optarg)
                 elif option == "-t":
                     self.test_sequence = optarg
+                elif option == "-R":
+                    self.create_test_report = True
                 elif option == "-u":
+                    self.create_test_report = True
                     self.versioned_test_report = True
                 elif option == "-v":
                     self.verbose = True
@@ -155,16 +146,8 @@ class Config:
                     self.waiting_time = int(optarg)
                 elif option == "-y":
                     self.test_type = optarg
-                elif option == "-i":
-                    self.wait_mode = optarg
                 elif option == "-Z":
                     self.check_server_alive = False
-                elif option == "-n":
-                    if local_config == 2:
-                        print("ERROR: incompatible option -d with -a -g -s -n")
-                        usage(argv)
-                    local_config = 1
-                    self.silkrpc_num_contexts = optarg
                 else:
                     usage(argv)
         except getopt.GetoptError as err:
@@ -182,18 +165,6 @@ class PerfTest:
         self.test_report = test_report
         self.config = config
         self.cleanup()
-        if self.config.verbose:
-            print("Stop both RPC daemons in case they are already running...", end='', flush=True)
-        if self.config.tracing:
-            print("")
-        if self.config.verbose:
-            print("done", flush=True)
-        if self.config.verbose:
-            print("Start-and-stop both RPC daemons just to check that configuration is OK...", end='', flush=True)
-        if self.config.tracing:
-            print("")
-        if self.config.verbose:
-            print("done", flush=True)
         self.copy_and_extract_pattern_file()
 
     def cleanup(self):
@@ -312,8 +283,9 @@ class PerfTest:
         finally:
             file.close()
 
-        self.test_report.write_test_report(daemon_name, test_number, threads, qps_value, duration, min_latency, latency_values[7], latency_values[8], \
-                                           latency_values[9], latency_values[10], latency_values[11], max_latency, ratio, error)
+        if self.config.create_test_report:
+            self.test_report.write_test_report(daemon_name, test_number, threads, qps_value, duration, min_latency, latency_values[7], latency_values[8], \
+                                               latency_values[9], latency_values[10], latency_values[11], max_latency, ratio, error)
         os.system("/bin/rm " + test_report_filename)
 
 
@@ -445,7 +417,8 @@ def main(argv):
     perf_test = PerfTest(test_report, config)
 
     print(f"Test repetitions: {config.repetitions} on sequence: {config.test_sequence} for pattern: {config.vegeta_pattern_tar_file}")
-    test_report.open()
+    if config.create_test_report:
+        test_report.open()
 
     current_sequence = str(config.test_sequence).split(',')
 
@@ -453,7 +426,8 @@ def main(argv):
         result = perf_test.execute_sequence(current_sequence, 'silkrpc')
         if result == 0:
             print("Server dead test Aborted!")
-            test_report.close()
+            if config.create_test_report:
+                test_report.close()
             sys.exit(-1)
         if config.test_mode == "3":
             print("--------------------------------------------------------------------------------------------\n")
@@ -462,10 +436,12 @@ def main(argv):
         result = perf_test.execute_sequence(current_sequence, 'rpcdaemon')
         if result == 0:
             print("Server dead test Aborted!")
-            test_report.close()
+            if config.create_test_report:
+                test_report.close()
             sys.exit(-1)
 
-    test_report.close()
+    if config.create_test_report:
+        test_report.close()
     print("Performance Test completed successfully.")
 
 

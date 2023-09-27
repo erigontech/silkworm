@@ -19,6 +19,7 @@
 #include <cassert>
 #include <optional>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/sentry/eth/message_id.hpp>
 #include <silkworm/sentry/eth/status_message.hpp>
 
@@ -115,14 +116,10 @@ proto::MessageId proto_message_id_from_message_id(uint8_t message_id) {
     return proto_message_id_from_eth_id(eth::eth_message_id_from_common_id(message_id));
 }
 
-static Bytes bytes_from_string(const std::string& s) {
-    return Bytes{reinterpret_cast<const uint8_t*>(s.data()), s.size()};
-}
-
 sentry::Message message_from_outbound_data(const proto::OutboundMessageData& message_data) {
     return {
         message_id_from_proto_message_id(message_data.id()),
-        bytes_from_string(message_data.data()),
+        Bytes{string_view_to_byte_view(message_data.data())},
     };
 }
 
@@ -136,7 +133,7 @@ proto::OutboundMessageData outbound_data_from_message(const sentry::Message& mes
 sentry::Message message_from_inbound_message(const ::sentry::InboundMessage& message_data) {
     return {
         message_id_from_proto_message_id(message_data.id()),
-        bytes_from_string(message_data.data()),
+        Bytes{string_view_to_byte_view(message_data.data())},
     };
 }
 

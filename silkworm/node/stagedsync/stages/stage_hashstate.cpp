@@ -20,7 +20,7 @@
 
 #include <magic_enum.hpp>
 
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>

@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/node/test/context.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{

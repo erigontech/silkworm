@@ -18,6 +18,7 @@
 
 #include <cstring>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
@@ -26,11 +27,11 @@ namespace silkworm::sentry::discovery {
 Bytes ip_address_to_bytes(const boost::asio::ip::address& ip) {
     if (ip.is_v4()) {
         auto ip_bytes = ip.to_v4().to_bytes();
-        return Bytes{reinterpret_cast<uint8_t*>(ip_bytes.data()), ip_bytes.size()};
+        return Bytes{array_to_byte_view(ip_bytes)};
     }
     if (ip.is_v6()) {
         auto ip_bytes = ip.to_v6().to_bytes();
-        return Bytes{reinterpret_cast<uint8_t*>(ip_bytes.data()), ip_bytes.size()};
+        return Bytes{array_to_byte_view(ip_bytes)};
     }
     return {};
 }

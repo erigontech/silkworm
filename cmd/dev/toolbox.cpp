@@ -31,7 +31,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
@@ -1708,17 +1708,20 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     log::Info(db::stages::kLogIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
-    // Void HistoryIndex stage
-    log::Info(db::stages::kHistoryIndexKey, {"table", db::table::kStorageHistory.name}) << " truncating ...";
+    // Void HistoryIndex (StorageHistoryIndex + AccountHistoryIndex) stage
+    log::Info(db::stages::kStorageHistoryIndexKey, {"table", db::table::kStorageHistory.name}) << " truncating ...";
     source.bind(*txn, db::table::kStorageHistory);
     txn->clear_map(source.map());
-    log::Info(db::stages::kHistoryIndexKey, {"table", db::table::kAccountHistory.name}) << " truncating ...";
+    log::Info(db::stages::kAccountHistoryIndexKey, {"table", db::table::kAccountHistory.name}) << " truncating ...";
     source.bind(*txn, db::table::kAccountHistory);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kHistoryIndexKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kHistoryIndexKey, 0);
+    db::stages::write_stage_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
+    db::stages::write_stage_progress(txn, db::stages::kAccountHistoryIndexKey, 0);
+    db::stages::write_stage_prune_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
+    db::stages::write_stage_prune_progress(txn, db::stages::kAccountHistoryIndexKey, 0);
     txn.commit_and_renew();
-    log::Info(db::stages::kHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    log::Info(db::stages::kStorageHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    log::Info(db::stages::kAccountHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HashState stage

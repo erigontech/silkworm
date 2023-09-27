@@ -100,7 +100,6 @@ class InMemoryState : public State {
 
     FlatHashMap<evmc::address, uint64_t> prev_incarnations_;
 
-    // address -> incarnation -> location -> value
     Storage storage_;
 
     // block number -> hash -> header

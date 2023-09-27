@@ -31,42 +31,32 @@ TEST_CASE("Database genesis initialization") {
     SECTION("Initialize with Mainnet") {
         auto source_data{read_genesis_data(kMainnetConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
-        REQUIRE(genesis_header);
+        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kMainnetConfig);
-        CHECK(genesis_header->hash() == kMainnetGenesisHash);
     }
     SECTION("Initialize with Goerli") {
         auto source_data{read_genesis_data(kGoerliConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
-        REQUIRE(genesis_header);
+        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kGoerliConfig);
-        CHECK(genesis_header->hash() == kGoerliGenesisHash);
     }
     SECTION("Initialize with Sepolia") {
         auto source_data{read_genesis_data(kSepoliaConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
-        REQUIRE(genesis_header);
+        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kSepoliaConfig);
-        CHECK(genesis_header->hash() == kSepoliaGenesisHash);
     }
     SECTION("Initialize with Polygon") {
         auto source_data{read_genesis_data(kPolygonConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
-        REQUIRE(genesis_header);
+        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kPolygonConfig);
-        CHECK(genesis_header->hash() == kPolygonGenesisHash);
     }
     SECTION("Initialize with Mumbai") {
         auto source_data{read_genesis_data(kMumbaiConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        std::optional<BlockHeader> genesis_header = initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
-        REQUIRE(genesis_header);
+        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kMumbaiConfig);
-        CHECK(genesis_header->hash() == kMumbaiGenesisHash);
     }
 
     SECTION("Initialize with invalid Json") {

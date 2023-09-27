@@ -137,10 +137,10 @@ void write_genesis_allocation_to_db(RWTxn& txn, const InMemoryState& genesis_all
     }
 }
 
-std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
+bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
     if (!txn->is_readwrite()) {
         if (!allow_exceptions) {
-            return std::nullopt;
+            return false;
         }
         throw std::runtime_error("Unable to write to db with a RO transaction");
     }
@@ -148,7 +148,7 @@ std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& 
     auto existing_config{read_chain_config(txn)};
     if (existing_config.has_value()) {
         if (!allow_exceptions) {
-            return std::nullopt;
+            return false;
         }
         throw std::runtime_error("This database is already initialized with genesis");
     }
@@ -157,7 +157,7 @@ std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& 
     auto [valid, errors]{validate_genesis_json(genesis_json)};
     if (!valid) {
         if (!allow_exceptions) {
-            return std::nullopt;
+            return false;
         }
         const char* delim{"\n"};
         std::ostringstream imploded;
@@ -190,11 +190,11 @@ std::optional<BlockHeader> initialize_genesis(RWTxn& txn, const nlohmann::json& 
         db::open_cursor(txn, db::table::kConfig)
             .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
 
-        return header;
+        return true;
 
     } catch (const std::exception&) {
         if (!allow_exceptions) {
-            return std::nullopt;
+            return false;
         }
         throw;
     }

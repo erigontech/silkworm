@@ -27,7 +27,7 @@ namespace silkworm {
 
 void test_genesis_config(const ChainConfig& x) {
     const std::string_view genesis_data{read_genesis_data(x.chain_id)};
-    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
+    const nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
     REQUIRE(genesis_json.contains("config"));
@@ -38,7 +38,7 @@ void test_genesis_config(const ChainConfig& x) {
 
 TEST_CASE("unknown genesis") {
     const std::string_view genesis_data{read_genesis_data(1'000u)};
-    const auto genesis_json{nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false)};
+    const nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
 }
 

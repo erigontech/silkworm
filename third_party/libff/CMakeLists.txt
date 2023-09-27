@@ -14,25 +14,13 @@
    limitations under the License.
 ]]
 
-# please keep the list sorted
-add_subdirectory(blst)
-add_subdirectory(ethash)
-add_subdirectory(gmp)
-add_subdirectory(intx) # depends on gmp
-add_subdirectory(libff) # depends on gmp
-add_subdirectory(secp256k1)
-
-add_subdirectory(evmone) # depends on ethash, intx
-
-# please keep the list sorted
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(cbor-cpp)
-  add_subdirectory(cpp-base64)
-  add_subdirectory(glaze)
-  add_subdirectory(libmdbx)
-  add_subdirectory(libtorrent)
-  add_subdirectory(picohttpparser)
-  add_subdirectory(stbrumme-crc32)
-  add_subdirectory(stbrumme-keccak)
-  add_subdirectory(stun-msg)
+set(CURVE
+    "ALT_BN128"
+    CACHE STRING "" FORCE
+)
+option(WITH_PROCPS "" OFF)
+option(IS_LIBFF_PARENT "" OFF)
+add_subdirectory(libff)
+if(NOT MSVC)
+  add_dependencies(ff gmplib)
 endif()

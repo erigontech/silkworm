@@ -1,5 +1,5 @@
 #[[
-   Copyright 2023 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,12 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers filesystem system)
-find_package(CLI11 REQUIRED)
+add_library(pico_http_parser "picohttpparser/picohttpparser.c")
 
-add_executable(execute execute.cpp)
-target_link_libraries(
-  execute
-  PRIVATE Boost::headers
-          Boost::filesystem
-          Boost::system
-          CLI11::CLI11
-          mdbx-static
-          silkworm_node
-          cmd_common
-)
+if(MSVC)
+  target_compile_options(pico_http_parser PRIVATE /w)
+else()
+  target_compile_options(pico_http_parser PRIVATE -Wno-error)
+endif(MSVC)
+
+target_include_directories(pico_http_parser PUBLIC "picohttpparser")

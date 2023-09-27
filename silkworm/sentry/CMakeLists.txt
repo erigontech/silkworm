@@ -24,20 +24,6 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
-# stbrumme-crc32
-add_library(stbrumme_crc32 "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
-target_include_directories(stbrumme_crc32 PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32")
-
-# stbrumme-keccak
-add_library(stbrumme_keccak "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
-target_include_directories(stbrumme_keccak PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak")
-
-# stun-msg
-file(GLOB STUN_MSG_SRC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/src/*.*")
-add_library(stun_msg "${STUN_MSG_SRC}")
-target_include_directories(stun_msg PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/include")
-target_compile_options(stun_msg PRIVATE -w) # disable warnings
-
 # sentry common
 add_subdirectory(common)
 

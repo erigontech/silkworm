@@ -28,7 +28,7 @@ commands:
           command: |
             if [[ <<parameters.ethereum_tests>> == false ]]
             then
-              git config submodule.tests.update none
+              git config submodule.ethereum-tests.update none
             fi
 
             git submodule sync

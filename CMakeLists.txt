@@ -16,13 +16,13 @@
 
 cmake_minimum_required(VERSION 3.19.0)
 
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmc/.git)
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
-  include(third_party/evmone/cmake/cable/bootstrap.cmake)
+  include(third_party/evmone/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 

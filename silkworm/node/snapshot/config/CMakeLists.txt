@@ -23,7 +23,7 @@ find_package(CLI11 REQUIRED)
 add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/dev/embed.cpp)
 target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11 Boost::headers)
 
-set(SILKWORM_TOML_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/erigon-snapshot")
+set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")
 set(SILKWORM_TOML_SRC
     ${SILKWORM_TOML_SRC_DIR}/bor-mainnet.toml
     # ${SILKWORM_TOML_SRC_DIR}/chiado.toml

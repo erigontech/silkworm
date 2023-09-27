@@ -11,14 +11,14 @@
 	path = third_party/libmdbx/libmdbx
 	url = https://github.com/torquem-ch/libmdbx.git
 [submodule "interfaces"]
-	path = silkworm/interfaces/proto
+	path = third_party/erigon-interfaces
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
 [submodule "stbrumme-crc32"]
 	path = third_party/stbrumme-crc32/stbrumme-crc32
 	url = https://github.com/battlmonstr/stbrumme-crc32.git
 [submodule "erigon-snapshot"]
-	path = silkworm/node/snapshot/config/erigon-snapshot
+	path = third_party/erigon-snapshot
 	url = https://github.com/ledgerwatch/erigon-snapshot
 [submodule "secp256k1"]
 	path = third_party/secp256k1/secp256k1

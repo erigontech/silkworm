@@ -18,6 +18,8 @@
 
 #include <silkworm/core/crypto/ecdsa.h>
 
+#include "param.hpp"
+
 namespace silkworm::protocol {
 
 ValidationResult CliqueRuleSet::validate_seal(const BlockHeader&) {

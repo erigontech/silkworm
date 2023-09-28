@@ -38,7 +38,7 @@ using namespace evmc::literals;
 
 template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
-    std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
+                           std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using BlockNum = uint64_t;
 using BlockNumRange = std::pair<BlockNum, BlockNum>;
@@ -47,8 +47,6 @@ using BlockTime = uint64_t;
 inline constexpr size_t kAddressLength{20};
 
 inline constexpr size_t kHashLength{32};
-
-inline constexpr size_t kExtraSealSize{65};
 
 // Keccak-256 hash of an empty string, KEC("").
 inline constexpr evmc::bytes32 kEmptyHash{0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32};

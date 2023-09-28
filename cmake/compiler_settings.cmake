@@ -83,7 +83,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-gline-tables-only)
+  else()
+    add_compile_options(-g -O0)
   endif()
+
 
   # coroutines support
   if(NOT SILKWORM_WASM_API)
@@ -134,6 +137,7 @@ else()
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$"
      AND NOT SILKWORM_WASM_API
      AND NOT SILKWORM_SANITIZE
+     AND CMAKE_BUILD_TYPE STREQUAL "Release"
   )
     add_compile_options(-fsanitize=safe-stack)
     add_link_options(-fsanitize=safe-stack)

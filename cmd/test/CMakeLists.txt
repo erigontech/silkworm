@@ -43,9 +43,21 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
+
+
+
+  # Silkworm RpcDaemon Fuzz Tests
+  file(GLOB_RECURSE SILKWORM_RPCDAEMON_FUZZ_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/commands/*_test.cpp")
+  add_executable(rpcdaemon_fuzz_test fuzzer.cpp )
+  target_compile_options(rpcdaemon_fuzz_test PRIVATE -fsanitize=fuzzer)
+  target_link_libraries(rpcdaemon_fuzz_test silkrpc Catch2::Catch2 GTest::gmock -fsanitize=fuzzer)
+
+  
+
+
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
-  add_executable(sync_test unit_test.cpp ${SILKWORM_SYNC_TESTS})
+  add_executable(sync_test unit_test.cpp)
   target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2 GTest::gmock)
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)

@@ -14,22 +14,8 @@
    limitations under the License.
 ]]
 
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+
 find_package(Boost REQUIRED headers)
-find_package(Catch2 REQUIRED)
 
-set(TARGET silkworm_sentry_common)
-
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
-
-add_library(${TARGET} ${SRC})
-
-target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
-
-target_link_libraries(${TARGET} PUBLIC Boost::headers silkworm_core silkworm_infra)
-
-# unit tests
-set(TEST_TARGET ${TARGET}_test)
-file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)
+silkworm_library(silkworm_sentry_common PUBLIC Boost::headers silkworm_core silkworm_infra)

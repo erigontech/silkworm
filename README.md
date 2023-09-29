@@ -103,12 +103,7 @@ then `-j4` should be OK, while `-j8` is probably not. It also means that you nee
 
 Now you can run the unit tests
 ```
-cmd/test/core_test
-cmd/test/infra_test
-cmd/test/node_test
-cmd/test/rpcdaemon_test
-cmd/test/sentry_test
-cmd/test/sync_test
+make test
 ```
 or the [Ethereum EL Tests]
 ```

@@ -108,10 +108,10 @@ class BufferBase {
   protected:
     inline void append(std::string_view msg, const Args& args) {
         if (!should_print_) return;
-        ss_ << std::left << std::setw(9) << std::setfill(' ') << msg;
+        ss_ << std::left << std::setw(41) << std::setfill(' ') << msg;
         bool left{true};
         for (const auto& arg : args) {
-            ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+            ss_ << (left ? kColorGreen : kColorWhite) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
             left = !left;
         }
     }

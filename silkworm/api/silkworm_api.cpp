@@ -65,12 +65,9 @@ struct ExecutionProgress {
 static log::Args log_args_for_version() {
     const auto build_info{silkworm_get_buildinfo()};
     return {
-        "version",
-        std::string(build_info->git_branch) + std::string(build_info->project_version),
-        "build",
-        std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " + std::string(build_info->build_type),
-        "compiler",
-        std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version),
+        "git_branch", std::string(build_info->git_branch),
+        "git_tag", std::string(build_info->project_version),
+        "git_commit", std::string(build_info->git_commit_hash),
     };
 }
 
@@ -124,7 +121,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
         return SILKWORM_TOO_MANY_INSTANCES;
     }
     log::init(kLogSettingsLikeErigon);
-    SILK_INFO << "Silkworm" << log_args_for_version();
+    log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
     const auto snapshot_repository = new snapshot::SnapshotRepository{};
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
@@ -380,7 +377,8 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
                 progress.gas_history_perc = float(gas_history_size) / float(gas_max_history_size);
                 progress.end_time = now;
-                SILK_INFO << "[4/12 Execution] Executed blocks" << log_args_for_exec_progress(progress, block.header.number);
+                log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
+                          log_args_for_exec_progress(progress, block.header.number)};
                 log_time = now + 20s;
             }
         }

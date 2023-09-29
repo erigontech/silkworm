@@ -15,10 +15,6 @@
 ]]
 
 set(MDBX_ENABLE_TESTS OFF)
-# MDBX requires ENABLE_UBSAN in UBSAN build to avoid issues
-if(SILKWORM_SANITIZE)
-  set(ENABLE_UBSAN ON)
-endif()
 add_subdirectory(libmdbx)
 target_include_directories(mdbx-static INTERFACE "libmdbx")
 target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)

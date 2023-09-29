@@ -134,8 +134,8 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.extra_data.length() > kMaxExtraDataBytes) {
-        return ValidationResult::kExtraDataTooLong;
+    if (ValidationResult res{validate_extra_data(header)}; res != ValidationResult::kOk) {
+        return res;
     }
 
     if (prohibit_ommers_ && header.ommers_hash != kEmptyListHash) {
@@ -164,15 +164,6 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
 
     if (header.difficulty != difficulty(header, *parent)) {
         return ValidationResult::kWrongDifficulty;
-    }
-
-    // https://eips.ethereum.org/EIPS/eip-779
-    if (chain_config_.dao_block.has_value() && chain_config_.dao_block.value() <= header.number &&
-        header.number <= chain_config_.dao_block.value() + 9) {
-        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
-        if (header.extra_data != kDaoExtraData) {
-            return ValidationResult::kWrongDaoExtraData;
-        }
     }
 
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
@@ -214,6 +205,13 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
     }
 
     return validate_seal(header);
+}
+
+ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) {
+    if (header.extra_data.length() > kMaxExtraDataBytes) {
+        return ValidationResult::kExtraDataTooLong;
+    }
+    return ValidationResult::kOk;
 }
 
 std::optional<BlockHeader> BaseRuleSet::get_parent_header(const BlockState& state, const BlockHeader& header) {

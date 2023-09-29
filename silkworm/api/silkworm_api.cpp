@@ -65,9 +65,12 @@ struct ExecutionProgress {
 static log::Args log_args_for_version() {
     const auto build_info{silkworm_get_buildinfo()};
     return {
-        "git_branch", std::string(build_info->git_branch),
-        "git_tag", std::string(build_info->project_version),
-        "git_commit", std::string(build_info->git_commit_hash),
+        "git_branch",
+        std::string(build_info->git_branch),
+        "git_tag",
+        std::string(build_info->project_version),
+        "git_commit",
+        std::string(build_info->git_commit_hash),
     };
 }
 

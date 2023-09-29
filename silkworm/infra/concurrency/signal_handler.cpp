@@ -112,7 +112,9 @@ void SignalHandler::init(std::function<void(int)> custom_handler, bool silent) {
     for (const int sig_code : kHandleableCodes) {
         // Register our signal handler and remember the existing ones
         auto previous_handler{signal(sig_code, &SignalHandler::handle)};
-        previous_signal_handlers[sig_code] = previous_handler;
+        if (previous_handler != SIG_ERR) {
+            previous_signal_handlers[sig_code] = previous_handler;
+        }
     }
     custom_handler_ = std::move(custom_handler);
     silent_ = silent;
@@ -151,7 +153,9 @@ void SignalHandler::reset() {
     sig_count_ = 0;
     // Restore any previous signal handlers
     for (const int sig_code : kHandleableCodes) {
-        signal(sig_code, previous_signal_handlers[sig_code]);
+        if (previous_signal_handlers.contains(sig_code)) {
+            signal(sig_code, previous_signal_handlers[sig_code]);
+        }
     }
 }
 

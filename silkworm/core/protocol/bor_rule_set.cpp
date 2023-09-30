@@ -20,6 +20,14 @@
 
 namespace silkworm::protocol {
 
+ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                   bool with_future_timestamp_check) {
+    if (!is_zero(header.prev_randao)) {
+        return ValidationResult::kInvalidMixDigest;
+    }
+    return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
+}
+
 // validate_extra_data validates that the extra-data contains both the vanity and signature.
 // header.Extra = header.Vanity + header.ProducerBytes (optional) + header.Seal
 ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) {

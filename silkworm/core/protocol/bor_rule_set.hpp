@@ -26,6 +26,9 @@ class BorRuleSet : public BaseRuleSet {
   public:
     explicit BorRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/true) {}
 
+    ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
+                                           bool with_future_timestamp_check) override;
+
     ValidationResult validate_seal(const BlockHeader&) override {
         return ValidationResult::kOk;
     }

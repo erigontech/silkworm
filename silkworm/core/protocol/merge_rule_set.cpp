@@ -37,7 +37,7 @@ ValidationResult MergeRuleSet::pre_validate_block_body(const Block& block, const
 
 ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                      bool with_future_timestamp_check) {
-    // TODO (Andrew) how will all this work with backwards sync?
+    // TODO(yperbasis) how will all this work with backwards sync?
 
     const std::optional<BlockHeader> parent{BaseRuleSet::get_parent_header(state, header)};
     if (!parent) {

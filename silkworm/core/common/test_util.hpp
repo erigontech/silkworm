@@ -24,39 +24,13 @@
 namespace silkworm::test {
 
 //! Always Frontier rules.
-inline constexpr ChainConfig kFrontierConfig{
-    .chain_id = 1,
-};
+constinit extern const ChainConfig kFrontierConfig;
 
 //! Enables London from genesis.
-inline constexpr ChainConfig kLondonConfig{
-    .chain_id = 1,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 0,
-    .berlin_block = 0,
-    .london_block = 0,
-};
+constinit extern const ChainConfig kLondonConfig;
 
 //! Enables Shanghai from genesis.
-inline constexpr ChainConfig kShanghaiConfig{
-    .chain_id = 1,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 0,
-    .berlin_block = 0,
-    .london_block = 0,
-    .terminal_total_difficulty = 0,
-    .shanghai_time = 0,
-};
+constinit extern const ChainConfig kShanghaiConfig;
 
 static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Frontier", test::kFrontierConfig},

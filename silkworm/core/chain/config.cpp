@@ -311,7 +311,7 @@ constinit const ChainConfig kSepoliaConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-constinit const ChainConfig kPolygonConfig{
+const ChainConfig kPolygonConfig{
     .chain_id = 137,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -324,10 +324,12 @@ constinit const ChainConfig kPolygonConfig{
     .berlin_block = 14'750'000,
     .london_block = 23'850'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
-    .rule_set_config = protocol::BorConfig{},
+    .rule_set_config = protocol::BorConfig{
+        .sprint = {{0, 64}, {38189056, 16}},
+    },
 };
 
-constinit const ChainConfig kMumbaiConfig{
+const ChainConfig kMumbaiConfig{
     .chain_id = 80001,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -340,7 +342,9 @@ constinit const ChainConfig kMumbaiConfig{
     .berlin_block = 13'996'000,
     .london_block = 22'640'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
-    .rule_set_config = protocol::BorConfig{},
+    .rule_set_config = protocol::BorConfig{
+        .sprint = {{0, 64}, {29638656, 16}},
+    },
 };
 
 }  // namespace silkworm

@@ -77,10 +77,12 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
 }
 
 ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockState& state) {
-    const BlockHeader& header{block.header};
-
-    if (prohibit_ommers_ && !block.ommers.empty()) {
-        return ValidationResult::kTooManyOmmers;
+    if (prohibit_ommers_) {
+        if (block.ommers.empty()) {
+            return ValidationResult::kOk;
+        } else {
+            return ValidationResult::kTooManyOmmers;
+        }
     }
 
     if (block.ommers.size() > 2) {
@@ -91,7 +93,8 @@ ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockSta
         return ValidationResult::kDuplicateOmmer;
     }
 
-    std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    const BlockHeader& header{block.header};
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
         if (ValidationResult err{validate_block_header(ommer, state, /*with_future_timestamp_check=*/false)};

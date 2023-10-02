@@ -27,8 +27,7 @@ namespace silkworm::protocol {
 // Proof of Work implementation
 class EthashRuleSet : public BaseRuleSet {
   public:
-    explicit EthashRuleSet(const ChainConfig& chain_config, bool validate_seal)
-        : BaseRuleSet(chain_config, /*prohibit_ommers=*/false), validate_seal_{validate_seal} {}
+    explicit EthashRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/false) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;
@@ -55,8 +54,6 @@ class EthashRuleSet : public BaseRuleSet {
     intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
-    bool validate_seal_{true};
-
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
 

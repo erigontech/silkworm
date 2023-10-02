@@ -25,7 +25,7 @@ namespace silkworm::protocol {
 
 // Ethash ProofOfWork verification
 ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
-    if (!validate_seal_) {
+    if (!std::get<EthashConfig>(chain_config_.rule_set_config).validate_seal) {
         return ValidationResult::kOk;
     }
 

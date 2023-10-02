@@ -42,7 +42,7 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) {
 }
 
 evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
-    // TODO(yperbasis) implement properly
+    // TODO(yperbasis): implement properly
     return BaseRuleSet::get_beneficiary(header);
 }
 

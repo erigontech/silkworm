@@ -79,7 +79,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
     if (terminal_total_difficulty) {
-        // TODO(yperbasis) geth probably treats terminalTotalDifficulty as a JSON number
+        // TODO(yperbasis): geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
@@ -256,5 +256,91 @@ std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     });
     return ret;
 }
+
+constinit const ChainConfig kMainnetConfig{
+    .chain_id = 1,
+    .homestead_block = 1'150'000,
+    .dao_block = 1'920'000,
+    .tangerine_whistle_block = 2'463'000,
+    .spurious_dragon_block = 2'675'000,
+    .byzantium_block = 4'370'000,
+    .constantinople_block = 7'280'000,
+    .petersburg_block = 7'280'000,
+    .istanbul_block = 9'069'000,
+    .muir_glacier_block = 9'200'000,
+    .berlin_block = 12'244'000,
+    .london_block = 12'965'000,
+    .arrow_glacier_block = 13'773'000,
+    .gray_glacier_block = 15'050'000,
+    .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
+    .shanghai_time = 1681338455,
+    .protocol_rule_set = protocol::EthashConfig{},
+};
+
+constinit const ChainConfig kGoerliConfig{
+    .chain_id = 5,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 1'561'651,
+    .berlin_block = 4'460'644,
+    .london_block = 5'062'605,
+    .terminal_total_difficulty = 10790000,
+    .shanghai_time = 1678832736,
+    .protocol_rule_set = protocol::CliqueConfig{},
+};
+
+constinit const ChainConfig kSepoliaConfig{
+    .chain_id = 11155111,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 0,
+    .muir_glacier_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .terminal_total_difficulty = 17000000000000000,
+    .merge_netsplit_block = 1'735'371,
+    .shanghai_time = 1677557088,
+    .protocol_rule_set = protocol::EthashConfig{},
+};
+
+constinit const ChainConfig kPolygonConfig{
+    .chain_id = 137,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 3'395'000,
+    .muir_glacier_block = 3'395'000,
+    .berlin_block = 14'750'000,
+    .london_block = 23'850'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .protocol_rule_set = protocol::BorConfig{},
+};
+
+constinit const ChainConfig kMumbaiConfig{
+    .chain_id = 80001,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 2'722'000,
+    .muir_glacier_block = 2'722'000,
+    .berlin_block = 13'996'000,
+    .london_block = 22'640'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .protocol_rule_set = protocol::BorConfig{},
+};
 
 }  // namespace silkworm

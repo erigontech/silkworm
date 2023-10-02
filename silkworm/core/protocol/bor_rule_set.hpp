@@ -21,7 +21,7 @@
 namespace silkworm::protocol {
 
 // Warning: most Bor logic is not implemented yet.
-// TODO(yperbasis) implement
+// TODO(yperbasis): implement
 class BorRuleSet : public BaseRuleSet {
   public:
     explicit BorRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/true) {}

@@ -30,7 +30,7 @@ namespace silkworm::sentry::discovery::disc_v4::ping {
 
 struct MessageHandler {
     virtual ~MessageHandler() = default;
-    virtual Task<void> on_ping(PingMessage message, boost::asio::ip::udp::endpoint sender_endpoint, Bytes ping_packet_hash) = 0;
+    virtual Task<void> on_ping(PingMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint, Bytes ping_packet_hash) = 0;
     virtual Task<void> on_pong(PongMessage message, EccPublicKey sender_public_key) = 0;
 };
 

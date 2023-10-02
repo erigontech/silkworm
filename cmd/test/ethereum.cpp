@@ -15,7 +15,6 @@
 */
 
 #include <atomic>
-#include <bit>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -29,6 +28,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/address.hpp>
@@ -80,35 +80,6 @@ static constexpr size_t kColumnWidth{80};
 
 ObjectPool<evmone::ExecutionState> execution_state_pool{/*thread_safe=*/true};
 evmc_vm* exo_evm{nullptr};
-
-// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
-void init_pre_state(const nlohmann::json& pre, State& state) {
-    for (const auto& entry : pre.items()) {
-        const evmc::address address{hex_to_address(entry.key())};
-        const nlohmann::json& j{entry.value()};
-
-        Account account;
-        const auto balance{intx::from_string<intx::uint256>(j["balance"].get<std::string>())};
-        account.balance = balance;
-        const auto nonce_str{j["nonce"].get<std::string>()};
-        account.nonce = std::stoull(nonce_str, nullptr, /*base=*/16);
-
-        const Bytes code{from_hex(j["code"].get<std::string>()).value()};
-        if (!code.empty()) {
-            account.incarnation = kDefaultIncarnation;
-            account.code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
-            state.update_account_code(address, account.incarnation, account.code_hash, code);
-        }
-
-        state.update_account(address, /*initial=*/std::nullopt, account);
-
-        for (const auto& storage : j["storage"].items()) {
-            Bytes key{from_hex(storage.key()).value()};
-            Bytes value{from_hex(storage.value().get<std::string>()).value()};
-            state.update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
-        }
-    }
-}
 
 enum class Status {
     kPassed,
@@ -267,12 +238,8 @@ RunResults blockchain_test(const nlohmann::json& json_test, bool skip_cancun) {
         return Status::kFailed;
     }
 
-    const ChainConfig& config{config_it->second};
-
-    InMemoryState state;
-    init_pre_state(json_test["pre"], state);
-
-    Blockchain blockchain{state, config, genesis_block};
+    InMemoryState state{read_genesis_allocation(json_test["pre"])};
+    Blockchain blockchain{state, config_it->second, genesis_block};
     blockchain.state_pool = &execution_state_pool;
     blockchain.exo_evm = exo_evm;
 

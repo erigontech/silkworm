@@ -67,13 +67,15 @@ TEST_CASE("NodeDbSqlite") {
     }
 
     SECTION("update_address") {
-        runner.run(db.upsert_node_address(test_id, test_address));
+        bool is_inserted = runner.run(db.upsert_node_address(test_id, test_address));
+        CHECK(is_inserted);
         NodeAddress test_address2{
             ip::make_address("10.0.1.17"),
             30306,
             30305,
         };
-        runner.run(db.upsert_node_address(test_id, test_address2));
+        is_inserted = runner.run(db.upsert_node_address(test_id, test_address2));
+        CHECK_FALSE(is_inserted);
         auto address = runner.run(db.find_node_address_v4(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address2);

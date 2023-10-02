@@ -40,7 +40,7 @@ struct NodeAddress {
 struct NodeDb {
     virtual ~NodeDb() = default;
 
-    virtual Task<void> upsert_node_address(NodeId id, NodeAddress address) = 0;
+    virtual Task<bool> upsert_node_address(NodeId id, NodeAddress address) = 0;
     virtual Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) = 0;
     virtual Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) = 0;
 

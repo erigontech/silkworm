@@ -1785,7 +1785,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
         const auto chain_config{db::read_chain_config(txn)};
         ensure(chain_config.has_value(), "cannot read chain configuration from database");
         // Read genesis data from embedded file
-        std::string source_data{read_genesis_data(chain_config->chain_id)};
+        auto source_data{read_genesis_data(chain_config->chain_id)};
         // Parse genesis JSON data
         // N.B. = instead of {} initialization due to https://github.com/nlohmann/json/issues/2204
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);

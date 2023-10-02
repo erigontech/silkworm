@@ -99,7 +99,7 @@ if(NOT SILKWORM_HAS_PARENT)
 endif()
 
 # All unit tests target
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_all_targets.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/get_all_targets.cmake)
 get_all_targets(UNIT_TEST_TARGETS)
 list(FILTER UNIT_TEST_TARGETS INCLUDE REGEX "_test$")
 list(REMOVE_ITEM UNIT_TEST_TARGETS backend_kv_test benchmark_test sentry_client_test)

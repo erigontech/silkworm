@@ -17,25 +17,25 @@
 #pragma once
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 
+#include <silkworm/core/common/hash_maps.hpp>
 #include <silkworm/core/state/state.hpp>
 
 namespace silkworm {
 
 //! InMemoryState holds the entire state in memory.
 class InMemoryState : public State {
-  private:
+  public:
     // address -> initial value
-    using AccountChanges = std::unordered_map<evmc::address, std::optional<Account>>;
+    using AccountChanges = FlatHashMap<evmc::address, std::optional<Account>>;
 
     // address -> incarnation -> location -> initial value
-    using StorageChanges =
-        std::unordered_map<evmc::address,
-                           std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
+    using StorageChanges = FlatHashMap<evmc::address, FlatHashMap<uint64_t, FlatHashMap<evmc::bytes32, evmc::bytes32>>>;
 
-  public:
+    // address -> incarnation -> location -> value
+    using Storage = FlatHashMap<evmc::address, FlatHashMap<uint64_t, FlatHashMap<evmc::bytes32, evmc::bytes32>>>;
+
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
     ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
@@ -45,32 +45,32 @@ class InMemoryState : public State {
 
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(uint64_t block_number,
+    std::optional<BlockHeader> read_header(BlockNum block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] bool read_body(uint64_t block_number, const evmc::bytes32& block_hash,
+    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
                                  BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+    std::optional<intx::uint256> total_difficulty(BlockNum block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
-    uint64_t current_canonical_block() const override;
+    BlockNum current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
 
     void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
-    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
+    void canonize_block(BlockNum block_number, const evmc::bytes32& block_hash) override;
 
-    void decanonize_block(uint64_t block_number) override;
+    void decanonize_block(BlockNum block_number) override;
 
-    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
+    void insert_receipts(BlockNum block_number, const std::vector<Receipt>& receipts) override;
 
     void insert_call_traces(BlockNum block_number, const CallTraces& traces) override;
 
-    void begin_block(uint64_t block_number) override;
+    void begin_block(BlockNum block_number) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,
                         std::optional<Account> current) override;
@@ -81,44 +81,42 @@ class InMemoryState : public State {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
-    void unwind_state_changes(uint64_t block_number) override;
+    void unwind_state_changes(BlockNum block_number) override;
 
     size_t number_of_accounts() const;
+    const FlatHashMap<BlockNum, AccountChanges>& account_changes() const { return account_changes_; }
+    const FlatHashMap<evmc::address, Account>& accounts() const { return accounts_; }
 
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
-
-    const std::unordered_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
-    const std::unordered_map<evmc::address, Account>& accounts() const { return accounts_; }
+    const Storage& storage() const { return storage_; }
 
   private:
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 
-    std::unordered_map<evmc::address, Account> accounts_;
+    FlatHashMap<evmc::address, Account> accounts_;
 
     // hash -> code
-    std::unordered_map<evmc::bytes32, Bytes> code_;
+    FlatHashMap<evmc::bytes32, Bytes> code_;
 
-    std::unordered_map<evmc::address, uint64_t> prev_incarnations_;
+    FlatHashMap<evmc::address, uint64_t> prev_incarnations_;
 
-    // address -> incarnation -> location -> value
-    std::unordered_map<evmc::address, std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>
-        storage_;
+    Storage storage_;
 
     // block number -> hash -> header
-    std::map<BlockNum, std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+    std::map<BlockNum, FlatHashMap<evmc::bytes32, BlockHeader>> headers_;
 
     // block number -> hash -> body
-    std::map<BlockNum, std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+    std::map<BlockNum, FlatHashMap<evmc::bytes32, BlockBody>> bodies_;
 
     // block number -> hash -> total difficulty
-    std::map<BlockNum, std::unordered_map<evmc::bytes32, intx::uint256>> difficulty_;
+    std::map<BlockNum, FlatHashMap<evmc::bytes32, intx::uint256>> difficulty_;
 
     std::map<BlockNum, evmc::bytes32> canonical_hashes_;
 
-    std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
-    std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block
+    FlatHashMap<BlockNum, AccountChanges> account_changes_;  // per block
+    FlatHashMap<BlockNum, StorageChanges> storage_changes_;  // per block
 
-    uint64_t block_number_{0};
+    BlockNum block_number_{0};
 };
 
 }  // namespace silkworm

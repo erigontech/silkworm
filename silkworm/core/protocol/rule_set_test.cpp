@@ -32,15 +32,15 @@ TEST_CASE("Rule Set factory") {
     CHECK(rule_set != nullptr);
     rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
     CHECK(rule_set != nullptr);
-    rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = BorConfig{}});
+    rule_set = rule_set_factory(ChainConfig{.rule_set_config = BorConfig{}});
     CHECK(rule_set != nullptr);
 }
 
 TEST_CASE("Rule Set Seal") {
-    RuleSetPtr rule_set{rule_set_factory(ChainConfig{.protocol_rule_set = EthashConfig{.validate_seal = true}})};
+    RuleSetPtr rule_set{rule_set_factory(ChainConfig{.rule_set_config = EthashConfig{.validate_seal = true}})};
     BlockHeader fake_header{};
     CHECK(rule_set->validate_seal(fake_header) != ValidationResult::kOk);
-    rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = EthashConfig{.validate_seal = false}});
+    rule_set = rule_set_factory(ChainConfig{.rule_set_config = EthashConfig{.validate_seal = false}});
     CHECK(rule_set->validate_seal(fake_header) == ValidationResult::kOk);
 }
 

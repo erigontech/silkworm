@@ -44,7 +44,7 @@ TEST_CASE("Clique validate_seal") {
     header.prev_randao = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
 
-    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = CliqueConfig{}});
+    auto rule_set = rule_set_factory(ChainConfig{.rule_set_config = CliqueConfig{}});
     CHECK(rule_set->validate_seal(header) == ValidationResult::kOk);
 }
 
@@ -71,7 +71,7 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
     std::string extra_data_str = "d883010a0d846765746888676f312e31372e33856c696e7578000000000000002ab85c52944f7ced556a";
     extra_data_str.append("389a8044be45c006fca6ab41adf927f05f8c66a5debd68218cc4cf4e578581ca7db3c77efd6bbdabf0d435c5cfa68b5e80aa0798fece01");
     header.extra_data = *from_hex(extra_data_str);
-    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = CliqueConfig{}});
+    auto rule_set = rule_set_factory(ChainConfig{.rule_set_config = CliqueConfig{}});
     CHECK(rule_set->get_beneficiary(header) == 0xa6dd2974b96e959f2c8930024451a30afec24203_address);
 }
 
@@ -90,7 +90,7 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     header.prev_randao = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
     header.extra_data = string_view_to_byte_view("d883010a0d84");
-    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = CliqueConfig{}});
+    auto rule_set = rule_set_factory(ChainConfig{.rule_set_config = CliqueConfig{}});
     CHECK(rule_set->get_beneficiary(header) == 0x0000000000000000000000000000000000000000_address);
 }
 

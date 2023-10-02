@@ -92,7 +92,7 @@ struct ChainConfig {
     std::optional<evmc::address> eip1559_fee_collector{std::nullopt};
 
     //! \brief Returns the config of the (pre-Merge) protocol rule set
-    protocol::RuleSetConfig protocol_rule_set{protocol::EthashConfig{.validate_seal = false}};
+    protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data

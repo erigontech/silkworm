@@ -32,7 +32,7 @@ RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
             [&](const CliqueConfig&) { return std::make_unique<CliqueRuleSet>(chain_config); },
             [&](const BorConfig&) { return std::make_unique<BorRuleSet>(chain_config); },
         },
-        chain_config.protocol_rule_set);
+        chain_config.rule_set_config);
 }
 
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {

@@ -62,7 +62,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
             [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
             [&](const protocol::BorConfig&) { ret.emplace("bor", empty_object); },
         },
-        protocol_rule_set);
+        rule_set_config);
 
     member_to_json(ret, "homesteadBlock", homestead_block);
     member_to_json(ret, "daoForkBlock", dao_block);
@@ -107,13 +107,13 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     config.chain_id = json["chainId"].get<uint64_t>();
 
     if (json.contains("ethash")) {
-        config.protocol_rule_set = protocol::EthashConfig{};
+        config.rule_set_config = protocol::EthashConfig{};
     } else if (json.contains("clique")) {
-        config.protocol_rule_set = protocol::CliqueConfig{};
+        config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
-        config.protocol_rule_set = protocol::BorConfig{};
+        config.rule_set_config = protocol::BorConfig{};
     } else {
-        config.protocol_rule_set = protocol::EthashConfig{.validate_seal = false};
+        config.rule_set_config = protocol::EthashConfig{.validate_seal = false};
     }
 
     read_json_config_member(json, "homesteadBlock", config.homestead_block);
@@ -274,7 +274,7 @@ constinit const ChainConfig kMainnetConfig{
     .gray_glacier_block = 15'050'000,
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
-    .protocol_rule_set = protocol::EthashConfig{},
+    .rule_set_config = protocol::EthashConfig{},
 };
 
 constinit const ChainConfig kGoerliConfig{
@@ -290,7 +290,7 @@ constinit const ChainConfig kGoerliConfig{
     .london_block = 5'062'605,
     .terminal_total_difficulty = 10790000,
     .shanghai_time = 1678832736,
-    .protocol_rule_set = protocol::CliqueConfig{},
+    .rule_set_config = protocol::CliqueConfig{},
 };
 
 constinit const ChainConfig kSepoliaConfig{
@@ -308,7 +308,7 @@ constinit const ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
-    .protocol_rule_set = protocol::EthashConfig{},
+    .rule_set_config = protocol::EthashConfig{},
 };
 
 constinit const ChainConfig kPolygonConfig{
@@ -324,7 +324,7 @@ constinit const ChainConfig kPolygonConfig{
     .berlin_block = 14'750'000,
     .london_block = 23'850'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
-    .protocol_rule_set = protocol::BorConfig{},
+    .rule_set_config = protocol::BorConfig{},
 };
 
 constinit const ChainConfig kMumbaiConfig{
@@ -340,7 +340,7 @@ constinit const ChainConfig kMumbaiConfig{
     .berlin_block = 13'996'000,
     .london_block = 22'640'000,
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
-    .protocol_rule_set = protocol::BorConfig{},
+    .rule_set_config = protocol::BorConfig{},
 };
 
 }  // namespace silkworm

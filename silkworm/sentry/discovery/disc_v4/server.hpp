@@ -21,6 +21,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
+
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 #include "message_handler.hpp"
@@ -32,12 +34,17 @@ class ServerImpl;
 
 class Server : public MessageSender {
   public:
-    Server(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler);
+    Server(
+        const boost::asio::any_io_executor& executor,
+        uint16_t port,
+        std::function<EccKeyPair()> node_key,
+        MessageHandler& handler);
     ~Server() override;
 
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
+    void setup();
     Task<void> run();
 
     Task<void> send_ping(ping::PingMessage message, boost::asio::ip::udp::endpoint recipient) override;

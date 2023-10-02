@@ -32,7 +32,7 @@ class SerialNodeDb : public NodeDb {
           strand_(std::move(executor)) {}
     ~SerialNodeDb() override = default;
 
-    Task<void> upsert_node_address(NodeId id, NodeAddress address) override;
+    Task<bool> upsert_node_address(NodeId id, NodeAddress address) override;
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
 

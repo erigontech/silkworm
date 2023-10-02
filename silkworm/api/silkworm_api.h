@@ -19,9 +19,9 @@
 
 // C API exported by Silkworm to be used in Erigon.
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <stdbool.h>  // NOLINT(*-deprecated-headers)
+#include <stddef.h>  // NOLINT(*-deprecated-headers)
+#include <stdint.h>  // NOLINT(*-deprecated-headers)
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)
@@ -54,10 +54,9 @@ typedef struct MDBX_txn MDBX_txn;
 #define SILKWORM_MDBX_ERROR 10
 #define SILKWORM_INVALID_BLOCK 11
 #define SILKWORM_DECODING_ERROR 12
-#define SILKWORM_NOT_IMPLEMENTED_ERROR 13
-#define SILKWORM_TOO_MANY_INSTANCES 14
-#define SILKWORM_INSTANCE_NOT_FOUND 15
-#define SILKWORM_TERMINATION_SIGNAL 16
+#define SILKWORM_TOO_MANY_INSTANCES 13
+#define SILKWORM_INSTANCE_NOT_FOUND 14
+#define SILKWORM_TERMINATION_SIGNAL 15
 
 typedef struct SilkwormHandle SilkwormHandle;
 

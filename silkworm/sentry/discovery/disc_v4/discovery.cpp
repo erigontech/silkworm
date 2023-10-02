@@ -22,6 +22,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
@@ -44,10 +45,12 @@ class DiscoveryImpl : private MessageHandler {
         std::function<EnodeUrl()> node_url,
         std::function<discovery::enr::EnrRecord()> node_record,
         node_db::NodeDb& node_db)
-        : server_(server_port, std::move(node_key), *this),
+        : node_id_([node_key]() { return node_key().public_key(); }),
           node_url_(std::move(node_url)),
           node_record_(std::move(node_record)),
           node_db_(node_db),
+          server_(executor, server_port, node_key, *this),
+          discovered_event_notifier_(executor),
           discover_more_needed_notifier_(executor) {}
     ~DiscoveryImpl() override = default;
 
@@ -56,6 +59,7 @@ class DiscoveryImpl : private MessageHandler {
 
     Task<void> run() {
         using namespace concurrency::awaitable_wait_for_all;
+        server_.setup();
         co_await (server_.run() && discover_more() && periodic_ping_check());
     }
 
@@ -77,8 +81,19 @@ class DiscoveryImpl : private MessageHandler {
         co_return;
     }
 
-    Task<void> on_ping(ping::PingMessage message, boost::asio::ip::udp::endpoint sender_endpoint, Bytes ping_packet_hash) override {
-        return ping::PingHandler::handle(std::move(message), std::move(sender_endpoint), std::move(ping_packet_hash), local_enr_seq_num(), server_);
+    Task<void> on_ping(ping::PingMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint, Bytes ping_packet_hash) override {
+        bool is_new = co_await ping::PingHandler::handle(
+            std::move(message),
+            std::move(sender_public_key),
+            std::move(sender_endpoint),
+            std::move(ping_packet_hash),
+            node_id_(),
+            local_enr_seq_num(),
+            server_,
+            node_db_);
+        if (is_new) {
+            discovered_event_notifier_.notify();
+        }
     }
 
     Task<void> on_pong(ping::PongMessage message, EccPublicKey sender_public_key) override {
@@ -104,29 +119,31 @@ class DiscoveryImpl : private MessageHandler {
 
     Task<void> discover_more() {
         using namespace std::chrono_literals;
-        auto local_node_id = node_url_().public_key();
 
         while (true) {
             co_await discover_more_needed_notifier_.wait();
 
-            auto total_neighbors = co_await find::lookup(local_node_id, server_, on_neighbors_signal_, node_db_);
+            auto total_neighbors = co_await find::lookup(node_id_(), server_, on_neighbors_signal_, node_db_);
 
             if (total_neighbors == 0) {
                 co_await sleep(10s);
                 discover_more_needed_notifier_.notify();
+            } else {
+                discovered_event_notifier_.notify();
             }
         }
     }
 
     Task<void> periodic_ping_check() {
         using namespace std::chrono_literals;
+        using namespace concurrency::awaitable_wait_for_one;
         auto local_node_url = node_url_();
 
         while (true) {
             auto now = std::chrono::system_clock::now();
             auto node_ids = co_await node_db_.find_ping_candidates(now, 10);
             if (node_ids.empty()) {
-                co_await sleep(10s);
+                co_await (sleep(10s) || discovered_event_notifier_.wait());
                 continue;
             }
 
@@ -144,10 +161,12 @@ class DiscoveryImpl : private MessageHandler {
         }
     }
 
-    Server server_;
+    std::function<EccPublicKey()> node_id_;
     std::function<EnodeUrl()> node_url_;
     std::function<discovery::enr::EnrRecord()> node_record_;
     node_db::NodeDb& node_db_;
+    Server server_;
+    concurrency::EventNotifier discovered_event_notifier_;
     concurrency::EventNotifier discover_more_needed_notifier_;
     boost::signals2::signal<void(find::NeighborsMessage, EccPublicKey)> on_neighbors_signal_;
     boost::signals2::signal<void(ping::PongMessage, EccPublicKey)> on_pong_signal_;

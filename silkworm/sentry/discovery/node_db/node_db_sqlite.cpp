@@ -112,7 +112,7 @@ class NodeDbSqliteImpl : public NodeDb {
         db_->exec(kSqlCreateSchema);
     }
 
-    Task<void> upsert_node_address(NodeId id, NodeAddress address) override {
+    Task<bool> upsert_node_address(NodeId id, NodeAddress address) override {
         static const char* sql_ip_v4 = R"sql(
             INSERT INTO nodes(
                 id,
@@ -139,6 +139,13 @@ class NodeDbSqliteImpl : public NodeDb {
                 ip_v6_port_rlpx = excluded.ip_v6_port_rlpx
         )sql";
 
+        static const char* exists_sql = R"sql(
+            SELECT 1 FROM nodes WHERE id = ?
+        )sql";
+
+        SQLite::Statement exists_query{*db_, exists_sql};
+        exists_query.bind(1, id.hex());
+
         const char* sql = nullptr;
         if (address.ip.is_v4()) {
             sql = sql_ip_v4;
@@ -159,8 +166,11 @@ class NodeDbSqliteImpl : public NodeDb {
         if (address.port_rlpx > 0)
             statement.bind(4, address.port_rlpx);
 
+        SQLite::Transaction transaction{*db_};
+        bool exists = exists_query.executeStep();
         statement.exec();
-        co_return;
+        transaction.commit();
+        co_return !exists;
     }
 
     Task<std::optional<NodeAddress>> find_node_address(NodeId id, const char* sql) {

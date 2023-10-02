@@ -22,6 +22,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "bootnodes.hpp"
+#include "disc_v4/common/node_distance.hpp"
 #include "disc_v4/discovery.hpp"
 #include "disc_v4/ping/ping_check.hpp"
 #include "node_db/node_db_sqlite.hpp"
@@ -63,6 +64,7 @@ class DiscoveryImpl {
     const std::vector<EnodeUrl> peer_urls_;
     bool with_dynamic_discovery_;
     std::filesystem::path data_dir_path_;
+    std::function<EccPublicKey()> node_id_;
     uint64_t network_id_;
     node_db::NodeDbSqlite node_db_;
     std::vector<EnodeUrl> bootnodes_;
@@ -83,6 +85,7 @@ DiscoveryImpl::DiscoveryImpl(
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
+      node_id_([node_key] { return node_key().public_key(); }),
       network_id_(network_id),
       node_db_(executor),
       bootnodes_(std::move(bootnodes)),
@@ -97,6 +100,7 @@ Task<void> DiscoveryImpl::run() {
         co_await db.upsert_node_address(
             url.public_key(),
             node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
+        co_await db.update_distance(url.public_key(), disc_v4::node_distance(url.public_key(), node_id_()));
         if (!with_dynamic_discovery_) {
             co_await db.update_last_pong_time(url.public_key(), std::chrono::system_clock::now() + std::chrono::years(1));
         }
@@ -113,6 +117,7 @@ Task<void> DiscoveryImpl::run() {
             co_await db.upsert_node_address(
                 url.public_key(),
                 node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
+            co_await db.update_distance(url.public_key(), disc_v4::node_distance(url.public_key(), node_id_()));
         }
     }
 

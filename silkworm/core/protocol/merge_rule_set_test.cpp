@@ -20,6 +20,8 @@
 
 #include <silkworm/core/state/in_memory_state.hpp>
 
+#include "ethash_rule_set.hpp"
+
 namespace silkworm::protocol {
 
 TEST_CASE("Proof-of-Stake RuleSet") {
@@ -47,7 +49,7 @@ TEST_CASE("Proof-of-Stake RuleSet") {
     ChainConfig config{kMainnetConfig};
     config.terminal_total_difficulty = parent.header.difficulty;
 
-    MergeRuleSet rule_set{pre_merge_rule_set(config), config};
+    MergeRuleSet rule_set{std::make_unique<EthashRuleSet>(config), config};
 
     header.base_fee_per_gas = expected_base_fee_per_gas(parent.header);
 

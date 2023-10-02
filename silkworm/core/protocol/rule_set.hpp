@@ -82,8 +82,6 @@ class IRuleSet {
 
 using RuleSetPtr = std::unique_ptr<IRuleSet>;
 
-RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config);
-
 //! \brief Creates an instance of the proper Rule Set on behalf of chain configuration
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config);
 

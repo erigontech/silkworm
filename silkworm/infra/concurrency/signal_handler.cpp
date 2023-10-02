@@ -106,7 +106,7 @@ std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 std::function<void(int)> SignalHandler::custom_handler_;
 bool SignalHandler::silent_{false};
-std::map<int, void(*)(int)> previous_signal_handlers;
+std::map<int, void (*)(int)> previous_signal_handlers;
 
 void SignalHandler::init(std::function<void(int)> custom_handler, bool silent) {
     for (const int sig_code : kHandleableCodes) {

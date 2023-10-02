@@ -19,6 +19,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <stdexcept>
 
 namespace silkworm {
@@ -105,10 +106,15 @@ std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 std::function<void(int)> SignalHandler::custom_handler_;
 bool SignalHandler::silent_{false};
+std::map<int, __sighandler_t> previous_signal_handlers;
 
 void SignalHandler::init(std::function<void(int)> custom_handler, bool silent) {
     for (const int sig_code : kHandleableCodes) {
-        signal(sig_code, &SignalHandler::handle);
+        // Register our signal handler and remember the existing ones
+        auto previous_handler{signal(sig_code, &SignalHandler::handle)};
+        if (previous_handler != SIG_ERR) {
+            previous_signal_handlers[sig_code] = previous_handler;
+        }
     }
     custom_handler_ = std::move(custom_handler);
     silent_ = silent;
@@ -145,6 +151,12 @@ void SignalHandler::handle(int sig_code) {
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;
+    // Restore any previous signal handlers
+    for (const int sig_code : kHandleableCodes) {
+        if (previous_signal_handlers.contains(sig_code)) {
+            signal(sig_code, previous_signal_handlers[sig_code]);
+        }
+    }
 }
 
 void SignalHandler::throw_if_signalled() {

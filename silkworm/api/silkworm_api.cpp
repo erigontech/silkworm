@@ -42,10 +42,10 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 
 //! Log configuration matching Erigon log format
 static log::Settings kLogSettingsLikeErigon{
-    .log_utc = false,
-    .log_timezone = false,
-    .log_nocolor = false,
-    .log_trim = true,
+    .log_utc = false,       // display local time
+    .log_timezone = false,  // no timezone ID
+    .log_nocolor = false,   // use colors
+    .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 
 using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
@@ -87,7 +87,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
     progress.start_time = progress.end_time;
     const auto elapsed_seconds = float(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
     if (elapsed_seconds == 0 or progress.processed_blocks == 0) {
-        return {"number", std::to_string(current_block), "db", "saving..."};
+        return {"number", std::to_string(current_block), "db", "waiting..."};
     }
     const auto speed_blocks = float(progress.processed_blocks) / elapsed_seconds;
     const auto speed_transactions = float(progress.processed_transactions) / elapsed_seconds;
@@ -111,6 +111,14 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
     };
 }
 
+//! A signal handler guard using RAII pattern to acquire/release signal handling
+class SignalHandlerGuard {
+  public:
+    SignalHandlerGuard() { SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true); }
+    ~SignalHandlerGuard() { SignalHandler::reset(); }
+};
+
+//! The Silkworm library instance
 struct SilkwormInstance {
     SilkwormHandle* handle{nullptr};
 };
@@ -129,7 +137,6 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
     instance.handle = *handle;
-    SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true);
     return SILKWORM_OK;
 }
 
@@ -281,6 +288,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     }
     const ChainConfig* chain_config{chain_info->second};
 
+    SignalHandlerGuard signal_guard;
     try {
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
@@ -413,6 +421,5 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
     }
     delete snapshot_repository;
     instance.handle = nullptr;
-    SignalHandler::reset();
     return SILKWORM_OK;
 }

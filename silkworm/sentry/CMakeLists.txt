@@ -14,29 +14,14 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_sentry)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED headers)
-find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
-
-# stbrumme-crc32
-add_library(stbrumme_crc32 "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
-target_include_directories(stbrumme_crc32 PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32")
-
-# stbrumme-keccak
-add_library(stbrumme_keccak "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
-target_include_directories(stbrumme_keccak PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak")
-
-# stun-msg
-file(GLOB STUN_MSG_SRC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/src/*.*")
-add_library(stun_msg "${STUN_MSG_SRC}")
-target_include_directories(stun_msg PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/include")
-target_compile_options(stun_msg PRIVATE -w) # disable warnings
 
 # sentry common
 add_subdirectory(common)
@@ -52,25 +37,6 @@ add_subdirectory(discovery/enr)
 
 # disc v4
 add_subdirectory(discovery/disc_v4)
-
-set(SRC "")
-file(
-  GLOB_RECURSE
-  SRC
-  CONFIGURE_DEPENDS
-  "*.cpp"
-  "*.hpp"
-  "*.c"
-  "*.h"
-  "*.cc"
-)
-list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
-list(FILTER SRC EXCLUDE REGEX "sentry/common")
-list(FILTER SRC EXCLUDE REGEX "discovery/[a-z0-9_]+/")
-
-add_library(${TARGET} ${SRC})
-
-target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(LIBS_PRIVATE
     gRPC::grpc++
@@ -101,16 +67,9 @@ set(LIBS_PUBLIC
 )
 # cmake-format: on
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC "${LIBS_PUBLIC}"
-  PRIVATE "${LIBS_PRIVATE}"
+silkworm_library(
+  silkworm_sentry
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+  EXCLUDE_REGEX "sentry/common" "discovery/[a-z0-9_]+/"
 )
-
-# unit tests
-set(TEST_TARGET sentry_test)
-file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-list(FILTER TEST_SRC EXCLUDE REGEX "sentry/common")
-list(FILTER TEST_SRC EXCLUDE REGEX "discovery/")
-add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)

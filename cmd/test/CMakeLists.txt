@@ -41,9 +41,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
-  target_include_directories(
-    rpcdaemon_test PRIVATE ${SILKWORM_MAIN_DIR} ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include
-  )
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm Sync Tests
@@ -54,7 +51,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Ethereum EL Tests (https://github.com/ethereum/tests)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
-  target_compile_definitions(ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
+  target_compile_definitions(
+    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
+  )
   target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 
   # BE&KV Tests

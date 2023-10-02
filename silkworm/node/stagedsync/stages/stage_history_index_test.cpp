@@ -33,16 +33,11 @@ using namespace evmc::literals;
 namespace silkworm {
 
 TEST_CASE("Stage History Index") {
-    // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
-    test_util::StreamSwap cout_swap{std::cout, test_util::null_stream()};
-    test_util::StreamSwap cerr_swap{std::cerr, test_util::null_stream()};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
-    log::Settings log_settings;
-    log_settings.log_std_out = true;
-    log::init(log_settings);
 
     SECTION("Check bitmaps values") {
         // ---------------------------------------

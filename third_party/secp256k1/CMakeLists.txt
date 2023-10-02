@@ -14,25 +14,21 @@
    limitations under the License.
 ]]
 
-# please keep the list sorted
-add_subdirectory(blst)
-add_subdirectory(ethash)
-add_subdirectory(gmp)
-add_subdirectory(intx) # depends on gmp
-add_subdirectory(libff) # depends on gmp
-add_subdirectory(secp256k1)
-
-add_subdirectory(evmone) # depends on ethash, intx
-
-# please keep the list sorted
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(cbor-cpp)
-  add_subdirectory(cpp-base64)
-  add_subdirectory(glaze)
-  add_subdirectory(libmdbx)
-  add_subdirectory(libtorrent)
-  add_subdirectory(picohttpparser)
-  add_subdirectory(stbrumme-crc32)
-  add_subdirectory(stbrumme-keccak)
-  add_subdirectory(stun-msg)
+add_library(secp256k1 secp256k1/src/secp256k1.c)
+if(MSVC)
+  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
 endif()
+# cmake-format: off
+target_compile_definitions(
+  secp256k1
+  PUBLIC ECMULT_WINDOW_SIZE=15
+         ECMULT_GEN_PREC_BITS=4
+         ENABLE_MODULE_ECDH
+         ENABLE_MODULE_RECOVERY
+)
+# cmake-format: on
+target_include_directories(
+  secp256k1
+  PRIVATE secp256k1
+  INTERFACE secp256k1/include
+)

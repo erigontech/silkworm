@@ -41,4 +41,9 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) {
     return ValidationResult::kOk;
 }
 
+evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
+    // TODO(yperbasis) implement properly
+    return BaseRuleSet::get_beneficiary(header);
+}
+
 }  // namespace silkworm::protocol

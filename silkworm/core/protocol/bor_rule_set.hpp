@@ -37,6 +37,8 @@ class BorRuleSet : public BaseRuleSet {
 
     void finalize(IntraBlockState&, const Block&) override {}
 
+    evmc::address get_beneficiary(const BlockHeader& header) override;
+
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) override;
 

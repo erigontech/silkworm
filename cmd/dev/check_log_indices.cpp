@@ -35,6 +35,8 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/node/db/util.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/types/log_cbor.hpp>
 
 #include "../common/common.hpp"

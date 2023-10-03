@@ -34,7 +34,7 @@
 #include <silkworm/node/db/util.hpp>
 
 namespace silkworm::snapshot {
-    class SnapshotRepository;
+class SnapshotRepository;
 }
 
 namespace silkworm::db {

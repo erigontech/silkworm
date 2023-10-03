@@ -60,7 +60,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         Overloaded{
             [&](const protocol::EthashConfig& x) { if (x.validate_seal) ret.emplace("ethash", empty_object); },
             [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
-            [&](const protocol::BorConfig&) { ret.emplace("bor", empty_object); },
+            [&](const protocol::BorConfig& x) { ret.emplace("bor", x.to_json()); },
         },
         rule_set_config);
 
@@ -111,7 +111,11 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     } else if (json.contains("clique")) {
         config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
-        config.rule_set_config = protocol::BorConfig{};
+        std::optional<protocol::BorConfig> bor_config{protocol::BorConfig::from_json(json["bor"])};
+        if (!bor_config) {
+            return std::nullopt;
+        }
+        config.rule_set_config = *bor_config;
     } else {
         config.rule_set_config = protocol::EthashConfig{.validate_seal = false};
     }

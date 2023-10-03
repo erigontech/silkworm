@@ -14,25 +14,25 @@
    limitations under the License.
 */
 
-#pragma once
+#include "bor_config.hpp"
 
-#include <map>
-#include <optional>
-
-#include <nlohmann/json.hpp>
-
-#include <silkworm/core/common/base.hpp>
+#include <catch2/catch.hpp>
 
 namespace silkworm::protocol {
 
-struct BorConfig {
-    std::map<BlockNum, uint64_t> sprint;
+TEST_CASE("BorConfig JSON") {
+    const auto json = nlohmann::json::parse(R"({    
+            "sprint": {
+                "0": 64,
+                "38189056": 16
+            }
+        })");
 
-    [[nodiscard]] nlohmann::json to_json() const noexcept;
+    const std::optional<BorConfig> config{BorConfig::from_json(json)};
 
-    static std::optional<BorConfig> from_json(const nlohmann::json& json) noexcept;
-
-    bool operator==(const BorConfig&) const = default;
-};
+    REQUIRE(config);
+    CHECK(config == BorConfig{.sprint = {{0, 64}, {38189056, 16}}});
+    CHECK(config->to_json() == json);
+}
 
 }  // namespace silkworm::protocol

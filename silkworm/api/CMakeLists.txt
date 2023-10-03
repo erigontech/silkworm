@@ -38,7 +38,7 @@ list(REMOVE_ITEM silkworm_api_LINK_OPTIONS "-Wl,${SILKWORM_STACK_SIZE}")
 set_target_properties(silkworm_api PROPERTIES LINK_OPTIONS "${silkworm_api_LINK_OPTIONS}")
 
 set(SILKWORM_API_PUBLIC_LIBS "")
-set(SILKWORM_API_PRIVATE_LIBS Microsoft.GSL::GSL silkworm_core silkworm_infra silkworm_node)
+set(SILKWORM_API_PRIVATE_LIBS glaze::glaze Microsoft.GSL::GSL silkworm_core silkworm_infra silkworm_node silkrpc)
 
 target_link_libraries(
   silkworm_api

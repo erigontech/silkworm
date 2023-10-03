@@ -18,6 +18,7 @@
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/dll.hpp>
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
@@ -35,6 +36,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/silkrpc/daemon.hpp>
 
 #include "../common/common.hpp"
 
@@ -46,6 +48,8 @@ const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/api/silkworm_api";
 const char* kSilkwormInitSymbol = "silkworm_init";
 const char* kSilkwormBuildRecSplitIndexes = "silkworm_build_recsplit_indexes";
 const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
+const char* kSilkwormStartRpcDaemonSymbol = "silkworm_start_rpcdaemon";
+const char* kSilkwormStopRpcDaemonSymbol = "silkworm_stop_rpcdaemon";
 const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
 const char* kSilkwormFiniSymbol = "silkworm_fini";
 
@@ -59,6 +63,12 @@ using SilkwormBuildRecSplitIndexes = int(SilkwormHandle*, SilkwormMemoryMappedFi
 
 //! Function signature for silkworm_add_snapshot C API
 using SilkwormAddSnapshotSig = int(SilkwormHandle*, SilkwormChainSnapshot*);
+
+//! Function signature for silkworm_start_rpcdaemon C API
+using SilkwormStartRpcDaemonSig = int(SilkwormHandle*);
+
+//! Function signature for silkworm_stop_rpcdaemon C API
+using SilkwormStopRpcDaemonSig = int(SilkwormHandle*);
 
 //! Function signature for silkworm_execute_blocks C API
 using SilkwormExecuteBlocksSig =
@@ -86,6 +96,7 @@ struct Settings {
     std::string data_folder;
     std::optional<ExecuteBlocksSettings> execute_blocks_settings;
     std::optional<BuildIdxesSettings> build_indices_settings;
+    std::optional<rpc::DaemonSettings> rpcdaemon_settings;
 };
 
 void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silkworm_api_lib_path, Settings& settings) {
@@ -131,6 +142,11 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     BuildIdxesSettings build_idxes_settings;
     cmd_build_idxes->add_option("--snapshot_paths", build_idxes_settings.snapshot_paths, "Snapshot to index")->delimiter(',')->required();
 
+    // rpcdaemon sub-command
+    auto cmd_rpcdaemon = app.add_subcommand("rpcdaemon", "Start RPC Daemon");
+
+    rpc::DaemonSettings rpcdaemon_settings;
+
     // parse command line
     app.parse(argc, argv);
 
@@ -145,6 +161,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
         settings.execute_blocks_settings = std::move(exec_blocks_settings);
     } else if (app.got_subcommand(cmd_build_idxes)) {
         settings.build_indices_settings = std::move(build_idxes_settings);
+    } else if (app.got_subcommand(cmd_rpcdaemon)) {
+        settings.rpcdaemon_settings = std::move(rpcdaemon_settings);
     }
 }
 
@@ -354,6 +372,38 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
     return SILKWORM_OK;
 }
 
+int start_rpcdaemon(SilkwormHandle* handle, rpc::DaemonSettings /*settings*/) {
+    // Import the silkworm_start_rpcdaemon symbol from Silkworm API library
+    const auto silkworm_start_rpcdaemon{
+        boost::dll::import_symbol<SilkwormStartRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStartRpcDaemonSymbol)};
+
+    // Import the silkworm_stop_rpcdaemon symbol from Silkworm API library
+    const auto silkworm_stop_rpcdaemon{
+        boost::dll::import_symbol<SilkwormStopRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStopRpcDaemonSymbol)};
+
+    // Start execution context dedicated to handling termination signals
+    boost::asio::io_context signal_context;
+    boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
+    SILK_DEBUG << "Signals registered on signal_context " << &signal_context;
+    signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
+        if (signal_number == SIGINT) std::cout << "\n";
+        SILK_INFO << "Signal number: " << signal_number << " caught, error: " << error.message();
+        const int status_code{silkworm_stop_rpcdaemon(handle)};
+        if (status_code != SILKWORM_OK) {
+            SILK_ERROR << "silkworm_stop_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
+        }
+    });
+
+    const int status_code{silkworm_start_rpcdaemon(handle)};
+    if (status_code != SILKWORM_OK) {
+        SILK_ERROR << "silkworm_start_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
+    }
+
+    signal_context.run();
+
+    return SILKWORM_OK;
+}
+
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute"};
 
@@ -403,6 +453,9 @@ int main(int argc, char* argv[]) {
         } else if (settings.build_indices_settings) {
             // Build index for a specific snapshot using Silkworm API library
             status_code = build_indices(handle, std::move(*settings.build_indices_settings), repository);
+        } else if (settings.rpcdaemon_settings) {
+            // Start RPC Daemon using Silkworm API library
+            status_code = start_rpcdaemon(handle, std::move(*settings.rpcdaemon_settings));
         }
 
         // Finalize Silkworm API library

@@ -30,6 +30,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
 
 using namespace std::chrono_literals;
 using namespace silkworm;

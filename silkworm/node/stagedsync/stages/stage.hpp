@@ -20,6 +20,7 @@
 #include <exception>
 #include <mutex>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -53,7 +54,7 @@ struct SyncContext {
 //! prune
 class Stage : public Stoppable {
   public:
-    enum class [[nodiscard]] Result{
+    enum class [[nodiscard]] Result {
         kSuccess,                 // valid chain
         kUnknownChainId,          //
         kUnknownProtocolRuleSet,  //

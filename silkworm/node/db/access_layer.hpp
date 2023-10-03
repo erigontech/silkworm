@@ -32,7 +32,10 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+
+namespace silkworm::snapshot {
+    class SnapshotRepository;
+}
 
 namespace silkworm::db {
 

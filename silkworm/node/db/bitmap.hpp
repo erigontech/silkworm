@@ -38,7 +38,10 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/etl/collector.hpp>
+
+namespace silkworm::etl {
+class Collector;
+}
 
 namespace silkworm::db::bitmap {
 

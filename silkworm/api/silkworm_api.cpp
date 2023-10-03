@@ -280,8 +280,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NO
     // TODO(canepat) add RPC options in API and convert them
     rpc::DaemonSettings settings{
         .skip_protocol_check = true,
-        .erigon_json_rpc_compatibility = true
-    };
+        .erigon_json_rpc_compatibility = true};
 
     // Create the one-and-only Silkrpc daemon
     instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings);

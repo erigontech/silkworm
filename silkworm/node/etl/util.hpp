@@ -40,6 +40,15 @@ union head_t {
 
 // A data chunk on file or buffer
 struct Entry {
+    Entry() = default;
+    Entry(const Entry&) = default;
+    Entry(Entry&&) = default;
+    Entry(const Bytes& k, const Bytes& v) : key(k), value(v) {}
+    Entry(Bytes&& k, Bytes&& v) : key(std::move(k)), value(std::move(v)) {}
+    Entry& operator=(const Entry&) = default;
+    Entry& operator=(Entry&&) = default;
+    // remove all the above constructors switching to clang version >= 16
+
     Bytes key;
     Bytes value;
     [[nodiscard]] size_t size() const noexcept { return key.size() + value.size(); }

@@ -74,6 +74,24 @@ void Collector::collect(Entry&& entry) {
     }
 }
 
+void Collector::collect(const Bytes& key, const Bytes& value) {
+    ++size_;
+    bytes_size_ += key.size() + value.size();
+    buffer_.put(key, value);
+    if (buffer_.overflows()) {
+        flush_buffer();
+    }
+}
+
+void Collector::collect(Bytes&& key, Bytes&& value) {
+    ++size_;
+    bytes_size_ += key.size() + value.size();
+    buffer_.put(std::move(key), std::move(value));
+    if (buffer_.overflows()) {
+        flush_buffer();
+    }
+}
+
 void Collector::load(db::RWCursorDupSort& target, const LoadFunc& load_func, MDBX_put_flags_t flags) {
     using namespace std::chrono_literals;
     static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time

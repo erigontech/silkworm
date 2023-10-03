@@ -352,13 +352,13 @@ class RecSplit {
         }
 
         if (double_enum_index_) {
-            offset_collector_.collect({offset_key, {}});
+            offset_collector_.collect(offset_key, {});
 
             Bytes current_key_count(8, '\0');
             endian::store_big_u64(current_key_count.data(), keys_added_);
-            bucket_collector_.collect({bucket_key, current_key_count});
+            bucket_collector_.collect(bucket_key, current_key_count);
         } else {
-            bucket_collector_.collect({bucket_key, offset_key});
+            bucket_collector_.collect(bucket_key, offset_key);
         }
         keys_added_++;
         previous_offset_ = offset;

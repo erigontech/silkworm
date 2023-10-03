@@ -43,18 +43,14 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS} ${SILKWORM_MAIN_SRC_DIR}/silkrpc/test/execution_api_database.hpp)
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
-  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
-  add_compile_options(-fsanitize=fuzzer)
-  add_executable(rpcdaemon_test2 fuzzer.cpp )
-  target_link_libraries(rpcdaemon_test2 silkrpc Catch2::Catch2 GTest::gmock -fsanitize=fuzzer)
-
-
+  # Silkworm RpcDaemon Fuzz Tests
+  add_executable(rpcdaemon_fuzz_test fuzzer.cpp)
+  target_compile_options(rpcdaemon_fuzz_test PRIVATE -fsanitize=fuzzer,address)
+  target_link_libraries(rpcdaemon_fuzz_test PRIVATE silkrpc -fsanitize=fuzzer,address)
 
   # Silkworm RpcDaemon Fuzz Tests
-  file(GLOB_RECURSE SILKWORM_RPCDAEMON_FUZZ_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/commands/*_test.cpp")
-  add_executable(rpcdaemon_fuzz_test fuzzer.cpp ${SILKWORM_RPCDAEMON_TESTS} ${SILKWORM_MAIN_SRC_DIR}/silkrpc/test/execution_api_database.hpp)
-  target_compile_options(rpcdaemon_fuzz_test PRIVATE -fsanitize=fuzzer)
-  target_link_libraries(rpcdaemon_fuzz_test silkrpc Catch2::Catch2 GTest::gmock -fsanitize=fuzzer )
+  add_executable(rpcdaemon_fuzz_main fuzzer_main.cpp ${SILKWORM_MAIN_SRC_DIR}/silkrpc/test/execution_api_database.hpp)
+  target_link_libraries(rpcdaemon_fuzz_main PRIVATE silkrpc )
 
 
 

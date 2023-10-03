@@ -54,6 +54,12 @@ struct Entry {
     [[nodiscard]] size_t size() const noexcept { return key.size() + value.size(); }
 };
 
-bool operator<(const Entry& a, const Entry& b);
+inline bool operator<(const Entry& a, const Entry& b) {
+    auto diff{a.key.compare(b.key)};
+    if (diff == 0) {
+        return a.value < b.value;
+    }
+    return diff < 0;
+}
 
 }  // namespace silkworm::etl

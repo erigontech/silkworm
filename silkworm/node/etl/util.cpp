@@ -33,12 +33,4 @@ std::string errno2str(int err_code) {
     return {msg};
 }
 
-bool operator<(const Entry& a, const Entry& b) {
-    auto diff{a.key.compare(b.key)};
-    if (diff == 0) {
-        return a.value < b.value;
-    }
-    return diff < 0;
-}
-
 }  // namespace silkworm::etl

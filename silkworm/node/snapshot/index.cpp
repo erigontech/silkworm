@@ -131,7 +131,7 @@ void TransactionIndex::build() {
         .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
         .double_enum_index = true,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2};
+        .etl_optimal_size = etl::kOptimalBufferSize};
     RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
@@ -142,7 +142,7 @@ void TransactionIndex::build() {
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2};
+        .etl_optimal_size = etl::kOptimalBufferSize};
     RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, 1};
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};

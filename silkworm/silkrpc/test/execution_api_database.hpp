@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
@@ -226,6 +227,23 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
+    }
+
+    Task<void> do_write(http::Reply& reply) override {
+        try {
+            SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
+
+            reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
+            reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
+
+            std::cout << "Response: " << reply.to_buffers() << std::endl;
+        } catch (const boost::system::system_error& se) {
+            std::rethrow_exception(std::make_exception_ptr(se));
+        } catch (const std::exception& e) {
+            std::rethrow_exception(std::make_exception_ptr(e));
+        }
+
+        co_return; 
     }
 
   private:

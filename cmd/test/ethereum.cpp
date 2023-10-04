@@ -64,7 +64,6 @@ static const std::vector<fs::path> kSlowTests{
 static const std::vector<fs::path> kFailingTests{
     kBlockchainDir / "cancun" / "eip4844_blobs",
     kBlockchainDir / "cancun" / "eip5656_mcopy",
-    kBlockchainDir / "cancun" / "eip6780_selfdestruct",
 };
 
 // TODO(yperbasis) remove me

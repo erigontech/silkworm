@@ -79,6 +79,7 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
 }
 
 void IntraBlockState::create_contract(const evmc::address& address) noexcept {
+    created_.insert(address);
     state::Object created{};
     created.current = Account{};
 
@@ -391,6 +392,7 @@ void IntraBlockState::clear_journal_and_substate() {
     self_destructs_.clear();
     logs_.clear();
     touched_.clear();
+    created_.clear();
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();

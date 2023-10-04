@@ -33,7 +33,6 @@ namespace silkworm::sentry::discovery::disc_v4::find {
 
 Task<size_t> find_neighbors(
     EccPublicKey node_id,
-    std::optional<boost::asio::ip::udp::endpoint> endpoint_opt,
     EccPublicKey local_node_id,
     MessageSender& message_sender,
     boost::signals2::signal<void(NeighborsMessage, EccPublicKey)>& on_neighbors_signal,

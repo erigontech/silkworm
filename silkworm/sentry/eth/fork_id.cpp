@@ -97,6 +97,16 @@ Bytes ForkId::rlp_encode_enr_entry() const {
     return data;
 }
 
+ForkId ForkId::rlp_decode_enr_entry(ByteView data) {
+    std::vector<rlp::RlpByteView> list;
+    success_or_throw(rlp::decode(data, list), "Failed to decode ForkId ENR entry RLP: no wrapping list");
+
+    if (list.empty())
+        throw DecodingException(DecodingError::kUnexpectedListElements, "Failed to decode ForkId ENR entry RLP: wrapping list is empty");
+
+    return rlp_decode(list[0].data);
+}
+
 bool ForkId::is_compatible_with(
     ByteView genesis_hash,
     const std::vector<BlockNum>& fork_block_numbers,

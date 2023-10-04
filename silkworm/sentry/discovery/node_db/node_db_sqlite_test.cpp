@@ -151,6 +151,24 @@ TEST_CASE("NodeDbSqlite") {
         CHECK(*actual_value == expected_value);
     }
 
+    SECTION("update_and_find_enr_seq_num") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 123;
+        runner.run(db.update_enr_seq_num(test_id, expected_value));
+        auto actual_value = runner.run(db.find_enr_seq_num(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("update_and_find_eth1_fork_id") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        Bytes expected_value = {1, 2, 3};
+        runner.run(db.update_eth1_fork_id(test_id, expected_value));
+        auto actual_value = runner.run(db.find_eth1_fork_id(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
     SECTION("find_ping_candidates.default") {
         auto now = std::chrono::system_clock::system_clock::now();
         runner.run(db.upsert_node_address(test_id, test_address));

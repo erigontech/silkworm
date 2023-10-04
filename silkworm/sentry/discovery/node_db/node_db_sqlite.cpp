@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS nodes (
     peer_is_useless INTEGER,
     taken_time INTEGER,
 
+    enr_seq_num INTEGER,
+    eth1_fork_id BLOB,
+
     distance INTEGER NON NULL DEFAULT 256
 );
 
@@ -173,7 +176,7 @@ class NodeDbSqliteImpl : public NodeDb {
         co_return !exists;
     }
 
-    Task<std::optional<NodeAddress>> find_node_address(NodeId id, const char* sql) {
+    Task<std::optional<NodeAddress>> find_node_address_sql(NodeId id, const char* sql) {
         SQLite::Statement query{*db_, sql};
         query.bind(1, id.hex());
 
@@ -187,7 +190,7 @@ class NodeDbSqliteImpl : public NodeDb {
         std::string ip_str = query.getColumn(0);
         auto ip = boost::asio::ip::make_address(ip_str);
 
-        NodeAddress address{ip};
+        NodeAddress address{std::move(ip)};
         if (!query.isColumnNull(1))
             address.port_disc = query.getColumn(1);
         if (!query.isColumnNull(2))
@@ -206,7 +209,7 @@ class NodeDbSqliteImpl : public NodeDb {
             WHERE id = ?
         )sql";
 
-        return find_node_address(id, sql);
+        return find_node_address_sql(id, sql);
     }
 
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override {
@@ -219,7 +222,7 @@ class NodeDbSqliteImpl : public NodeDb {
             WHERE id = ?
         )sql";
 
-        return find_node_address(id, sql);
+        return find_node_address_sql(id, sql);
     }
 
     Task<void> update_next_ping_time(NodeId id, Time value) override {
@@ -337,6 +340,66 @@ class NodeDbSqliteImpl : public NodeDb {
         } else {
             co_return std::nullopt;
         }
+    }
+
+    Task<void> update_enr_seq_num(NodeId id, uint64_t value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET enr_seq_num = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        co_return;
+    }
+
+    Task<std::optional<uint64_t>> find_enr_seq_num(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT enr_seq_num FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return static_cast<uint64_t>(*value);
+        } else {
+            co_return std::nullopt;
+        }
+    }
+
+    Task<void> update_eth1_fork_id(NodeId id, std::optional<Bytes> value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET eth1_fork_id = ? WHERE id = ?
+        )sql";
+
+        SQLite::Statement statement{*db_, sql};
+        if (value) {
+            statement.bindNoCopy(1, value->data(), static_cast<int>(value->size()));
+        } else {
+            statement.bind(0);
+        }
+        statement.bind(2, id.hex());
+        statement.exec();
+        co_return;
+    }
+
+    Task<std::optional<Bytes>> find_eth1_fork_id(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT eth1_fork_id FROM nodes WHERE id = ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            co_return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            co_return std::nullopt;
+        }
+        Bytes value{
+            reinterpret_cast<const uint8_t*>(query.getColumn(0).getBlob()),
+            static_cast<size_t>(query.getColumn(0).size()),
+        };
+        co_return std::move(value);
     }
 
     Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override {

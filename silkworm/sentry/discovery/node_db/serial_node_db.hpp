@@ -54,6 +54,12 @@ class SerialNodeDb : public NodeDb {
     Task<void> update_distance(NodeId id, size_t value) override;
     Task<std::optional<size_t>> find_distance(NodeId id) override;
 
+    Task<void> update_enr_seq_num(NodeId id, uint64_t value) override;
+    Task<std::optional<uint64_t>> find_enr_seq_num(NodeId id) override;
+
+    Task<void> update_eth1_fork_id(NodeId id, std::optional<Bytes> value) override;
+    Task<std::optional<Bytes>> find_eth1_fork_id(NodeId id) override;
+
     Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override;
     Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override;
 

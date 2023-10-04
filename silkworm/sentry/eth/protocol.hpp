@@ -22,6 +22,7 @@
 
 #include <silkworm/sentry/rlpx/protocol.hpp>
 
+#include "fork_id.hpp"
 #include "status_data.hpp"
 
 namespace silkworm::sentry::eth {
@@ -43,11 +44,14 @@ class Protocol : public rlpx::Protocol {
     }
 
     void handle_peer_first_message(const Message& message) override;
+    bool is_compatible_enr_entry(std::string_view name, ByteView data) override;
 
     static const uint8_t kVersion;
 
   private:
     std::function<StatusData()> status_provider_;
+
+    static bool is_compatible_fork_id(const ForkId& fork_id, const StatusData& my_status);
 };
 
 }  // namespace silkworm::sentry::eth

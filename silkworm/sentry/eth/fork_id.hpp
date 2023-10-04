@@ -53,6 +53,7 @@ class ForkId {
      * because in geth forkid.ID struct is contained within an enrEntry struct and each struct forms a list.
      */
     [[nodiscard]] Bytes rlp_encode_enr_entry() const;
+    [[nodiscard]] static ForkId rlp_decode_enr_entry(ByteView data);
 
     [[nodiscard]] bool is_compatible_with(
         ByteView genesis_hash,

@@ -87,8 +87,9 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
 
     const auto elapsed{progress.end_time - progress.start_time};
     progress.start_time = progress.end_time;
-    const auto elapsed_seconds = float(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
-    if (elapsed_seconds == 0 or progress.processed_blocks == 0) {
+    const auto duration_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
+    const auto elapsed_seconds = duration_seconds.count() != 0 ? float(duration_seconds.count()) : 1.0f;
+    if (progress.processed_blocks == 0) {
         return {"number", std::to_string(current_block), "db", "waiting..."};
     }
     const auto speed_blocks = float(progress.processed_blocks) / elapsed_seconds;

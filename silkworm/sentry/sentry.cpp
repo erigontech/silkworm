@@ -201,7 +201,7 @@ Task<void> SentryImpl::run_tasks() {
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
-    return std::unique_ptr<rlpx::Protocol>(new eth::Protocol(status_manager_.status_provider()));
+    return std::make_unique<eth::Protocol>(status_manager_.status_provider());
 }
 
 std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() {
@@ -234,7 +234,7 @@ Task<void> SentryImpl::run_discovery() {
 }
 
 Task<void> SentryImpl::run_peer_manager() {
-    return peer_manager_.run(rlpx_server_, discovery_, client_factory());
+    return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
 }
 
 Task<void> SentryImpl::run_message_sender() {

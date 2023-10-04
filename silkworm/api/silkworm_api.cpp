@@ -18,6 +18,7 @@
 
 #include <charconv>
 #include <chrono>
+#include <memory>
 #include <vector>
 
 #include <boost/circular_buffer.hpp>
@@ -32,6 +33,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
+#include <silkworm/silkrpc/daemon.hpp>
 
 using namespace std::chrono_literals;
 using namespace silkworm;
@@ -85,8 +87,9 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
 
     const auto elapsed{progress.end_time - progress.start_time};
     progress.start_time = progress.end_time;
-    const auto elapsed_seconds = float(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
-    if (elapsed_seconds == 0 or progress.processed_blocks == 0) {
+    const auto duration_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
+    const auto elapsed_seconds = duration_seconds.count() != 0 ? float(duration_seconds.count()) : 1.0f;
+    if (progress.processed_blocks == 0) {
         return {"number", std::to_string(current_block), "db", "waiting..."};
     }
     const auto speed_blocks = float(progress.processed_blocks) / elapsed_seconds;
@@ -121,6 +124,7 @@ class SignalHandlerGuard {
 //! The Silkworm library instance
 struct SilkwormInstance {
     SilkwormHandle* handle{nullptr};
+    std::unique_ptr<rpc::Daemon> rpcdaemon;
 };
 SilkwormInstance instance;  // just one instance for the time being
 
@@ -266,6 +270,51 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
         .tx_snapshot_path = *transactions_segment_path,
         .tx_snapshot = std::move(transactions_snapshot)};
     snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    if (handle != instance.handle) {
+        return SILKWORM_INSTANCE_NOT_FOUND;
+    }
+
+    // TODO(canepat) add RPC options in API and convert them
+    rpc::DaemonSettings settings{
+        .skip_protocol_check = true,
+        .erigon_json_rpc_compatibility = true};
+
+    // Create the one-and-only Silkrpc daemon
+    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings);
+
+    // Check protocol version compatibility with Core Services
+    if (not settings.skip_protocol_check) {
+        SILK_INFO << "[RPC] Checking protocol version compatibility with core services...";
+
+        const auto checklist = instance.rpcdaemon->run_checklist();
+        for (const auto& protocol_check : checklist.protocol_checklist) {
+            SILK_INFO << protocol_check.result;
+        }
+        checklist.success_or_throw();
+    } else {
+        SILK_TRACE << "[RPC] Skip protocol version compatibility check with core services";
+    }
+
+    SILK_INFO << "[RPC] Starting ETH API at " << settings.eth_end_point << " ENGINE API at " << settings.engine_end_point;
+    instance.rpcdaemon->start();
+
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    if (handle != instance.handle) {
+        return SILKWORM_INSTANCE_NOT_FOUND;
+    }
+
+    instance.rpcdaemon->stop();
+    SILK_INFO << "[RPC] Exiting...";
+    instance.rpcdaemon->join();
+    SILK_INFO << "[RPC] Stopped";
+
     return SILKWORM_OK;
 }
 

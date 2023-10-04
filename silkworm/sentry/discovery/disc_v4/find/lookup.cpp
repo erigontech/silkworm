@@ -51,7 +51,7 @@ Task<size_t> lookup(
     auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), [&](size_t index) -> Task<void> {
         auto node_id = node_ids[index];
         try {
-            total_neighbors += co_await find_neighbors(node_id, std::nullopt, local_node_id, message_sender, on_neighbors_signal, db);
+            total_neighbors += co_await find_neighbors(node_id, local_node_id, message_sender, on_neighbors_signal, db);
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
                 throw;

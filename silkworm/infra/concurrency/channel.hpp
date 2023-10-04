@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "task.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
@@ -57,6 +59,18 @@ class Channel {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
             throw;
         }
+    }
+
+    std::optional<T> try_receive() {
+        std::optional<T> result;
+        channel_.try_receive([&](const boost::system::error_code& error, T&& value) {
+            if (error == boost::asio::experimental::error::channel_cancelled)
+                throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+            if (error)
+                throw boost::system::system_error(error);
+            result = std::move(value);
+        });
+        return result;
     }
 
     void close() {

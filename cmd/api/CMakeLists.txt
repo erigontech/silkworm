@@ -24,6 +24,7 @@ target_link_libraries(
           Boost::filesystem
           Boost::system
           CLI11::CLI11
+          glaze::glaze
           mdbx-static
           silkworm_node
           cmd_common

@@ -84,6 +84,22 @@ Task<std::optional<size_t>> SerialNodeDb::find_distance(NodeId id) {
     return concurrency::co_spawn_sw(strand_, db_.find_distance(std::move(id)), use_awaitable);
 }
 
+Task<void> SerialNodeDb::update_enr_seq_num(NodeId id, uint64_t value) {
+    return concurrency::co_spawn_sw(strand_, db_.update_enr_seq_num(std::move(id), value), use_awaitable);
+}
+
+Task<std::optional<uint64_t>> SerialNodeDb::find_enr_seq_num(NodeId id) {
+    return concurrency::co_spawn_sw(strand_, db_.find_enr_seq_num(std::move(id)), use_awaitable);
+}
+
+Task<void> SerialNodeDb::update_eth1_fork_id(NodeId id, std::optional<Bytes> value) {
+    return concurrency::co_spawn_sw(strand_, db_.update_eth1_fork_id(std::move(id), value), use_awaitable);
+}
+
+Task<std::optional<Bytes>> SerialNodeDb::find_eth1_fork_id(NodeId id) {
+    return concurrency::co_spawn_sw(strand_, db_.find_eth1_fork_id(std::move(id)), use_awaitable);
+}
+
 Task<std::vector<NodeId>> SerialNodeDb::find_ping_candidates(Time time, size_t limit) {
     return concurrency::co_spawn_sw(strand_, db_.find_ping_candidates(std::move(time), limit), use_awaitable);
 }

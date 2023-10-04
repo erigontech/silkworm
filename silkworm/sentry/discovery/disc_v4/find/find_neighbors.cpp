@@ -38,7 +38,6 @@ namespace silkworm::sentry::discovery::disc_v4::find {
 
 Task<size_t> find_neighbors(
     EccPublicKey node_id,
-    std::optional<boost::asio::ip::udp::endpoint> endpoint_opt,
     EccPublicKey local_node_id,
     MessageSender& message_sender,
     boost::signals2::signal<void(NeighborsMessage, EccPublicKey)>& on_neighbors_signal,
@@ -46,16 +45,11 @@ Task<size_t> find_neighbors(
     using namespace std::chrono_literals;
     using namespace concurrency::awaitable_wait_for_one;
 
-    boost::asio::ip::udp::endpoint endpoint;
-    if (endpoint_opt) {
-        endpoint = *endpoint_opt;
-    } else {
-        auto address = co_await db.find_node_address_v4(node_id);
-        if (!address) {
-            throw std::runtime_error("find_neighbors: node address not found");
-        }
-        endpoint = boost::asio::ip::udp::endpoint(address->ip, address->port_disc);
+    auto address = co_await db.find_node_address(node_id);
+    if (!address) {
+        throw std::runtime_error("find_neighbors: node address not found");
     }
+    auto endpoint = address->to_common_address().endpoint;
 
     auto executor = co_await boost::asio::this_coro::executor;
     concurrency::Channel<std::map<EccPublicKey, NodeAddress>> neighbors_channel{executor, 2};
@@ -99,15 +93,9 @@ Task<size_t> find_neighbors(
             continue;
         }
 
-        node_db::NodeAddress address{
-            std::move(ip),
-            neighbor_node_address.endpoint.port(),
-            neighbor_node_address.port_rlpx,
-        };
-
         auto distance = node_distance(neighbor_id, local_node_id);
 
-        co_await db.upsert_node_address(neighbor_id, std::move(address));
+        co_await db.upsert_node_address(neighbor_id, neighbor_node_address);
         co_await db.update_distance(neighbor_id, distance);
     }
 

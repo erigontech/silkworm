@@ -60,6 +60,11 @@ typedef struct MDBX_txn MDBX_txn;
 
 typedef struct SilkwormHandle SilkwormHandle;
 
+/**
+ * \brief Initialize the Silkworm C API library.
+ * \param[in,out] handle Silkworm instance handle returned on successful initialization.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
 
 struct SilkwormMemoryMappedFile {
@@ -90,31 +95,33 @@ struct SilkwormChainSnapshot {
     struct SilkwormTransactionsSnapshot transactions;
 };
 
-/** \brief Build a set of indexes for the given snapshots.
- *
- * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
+/**
+ * \brief Build a set of indexes for the given snapshots.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] snapshots An array of snapshots to index.
  * \param[in] indexPaths An array of paths to write indexes to.
  * Note that the name of the index is a part of the path and it is used to determine the index type.
  * \param[in] len The number of snapshots and paths.
- *
- * \return A non-zero error value on failure on some or all indexes and SILKWORM_OK (=0) on success.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure on some or all indexes.
  */
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT;
 
-/** \brief Notifies Silkworm about a new snapshot to use.
- *
- * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
+/**
+ * \brief Notify Silkworm about a new snapshot to use.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] snapshot A snapshot to use.
- *
  * \return A non-zero error value on failure and SILKWORM_OK (=0) on success.
  */
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
-/** \brief Execute a batch of blocks and write resulting changes into the database.
- *
- * \param[in] handle Valid Silkworm instance handle, got with silkworm_init.
- * \param[in] txn Valid read-write MDBX transaction. Must not be zero.
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
+
+SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Execute a batch of blocks and write resulting changes into the database.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] txn A valid read-write MDBX transaction. Must not be zero.
  * This function does not commit nor abort the transaction.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
  * \param[in] start_block The block height to start the execution from.
@@ -125,13 +132,11 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct Silkwor
  * \param[in] write_change_sets Whether to write state changes into the DB.
  * \param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  * \param[in] write_call_traces Whether to write call traces into the DB.
- *
  * \param[out] last_executed_block The height of the last successfully executed block.
  * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
  * \param[out] mdbx_error_code If an MDBX error occurs (this function returns kSilkwormMdbxError)
  * and mdbx_error_code isn't NULL, it's populated with the relevant MDBX error code.
- *
- * \return A non-zero error value on failure and SILKWORM_OK (=0) on success.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  * SILKWORM_BLOCK_NOT_FOUND is probably OK: it simply means that the execution reached the end of the chain
  * (blocks up to and incl. last_executed_block were still executed).
  */
@@ -140,6 +145,11 @@ SILKWORM_EXPORT int silkworm_execute_blocks(
     uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
     uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
 
+/**
+ * \brief Finalize the Silkworm C API library.
+ * \param[in] handle A valid Silkworm instance handle got with silkworm_init.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
 
 #if __cplusplus

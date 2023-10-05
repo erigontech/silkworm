@@ -261,7 +261,7 @@ std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     return ret;
 }
 
-constinit const ChainConfig kMainnetConfig{
+SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .chain_id = 1,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
@@ -281,7 +281,7 @@ constinit const ChainConfig kMainnetConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-constinit const ChainConfig kGoerliConfig{
+SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
     .chain_id = 5,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -297,7 +297,7 @@ constinit const ChainConfig kGoerliConfig{
     .rule_set_config = protocol::CliqueConfig{},
 };
 
-constinit const ChainConfig kSepoliaConfig{
+SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

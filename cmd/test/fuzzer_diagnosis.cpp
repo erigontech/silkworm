@@ -41,7 +41,10 @@ void printStackTrace() {
                 *end = '\0';
                 // use addr2line to get the file name and line number
                 std::string command = "addr2line -e ./rpcdaemon_fuzz_debug " + std::string(address);
-                system(command.c_str());
+                auto command_result = system(command.c_str());
+                if (command_result != 0) {
+                    std::cout << "addr2line failed" << std::endl;
+                }
             }
         }
     }
@@ -93,8 +96,8 @@ int main(int argc, char* argv[]) {
 
         request_handler->run<&silkworm::rpc::test::RequestHandler_ForTest::handle_request>(input_str, reply);
 
-        auto db_path = db->get_path();
-        db->close();
+        auto db_path = db.get_path();
+        db.close();
         std::filesystem::remove_all(db_path);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();

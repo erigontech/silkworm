@@ -27,12 +27,12 @@ class FuzzerContext {
     }
 
     ~FuzzerContext() {
-        auto db_path = db->get_path();
-        db->close();
+        auto db_path = db.get_path();
+        db.close();
         std::filesystem::remove_all(db_path);
     }
 
-    std::shared_ptr<mdbx::env_managed> db;
+    mdbx::env_managed db;
 };
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {

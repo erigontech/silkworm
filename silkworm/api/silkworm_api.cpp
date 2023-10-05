@@ -273,18 +273,23 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* env) SILKWORM_NOEXCEPT {
     if (handle != instance.handle) {
         return SILKWORM_INSTANCE_NOT_FOUND;
     }
 
+    struct EnvUnmanaged : public ::mdbx::env {
+        explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
+    } unmanaged_env{env};
+
     // TODO(canepat) add RPC options in API and convert them
     rpc::DaemonSettings settings{
         .skip_protocol_check = true,
-        .erigon_json_rpc_compatibility = true};
+        .erigon_json_rpc_compatibility = true,
+    };
 
     // Create the one-and-only Silkrpc daemon
-    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings);
+    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
 
     // Check protocol version compatibility with Core Services
     if (not settings.skip_protocol_check) {

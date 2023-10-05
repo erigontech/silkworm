@@ -40,7 +40,7 @@ using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
 class NodeImpl final {
   public:
-    NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db);
+    NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db);
 
     NodeImpl(const NodeImpl&) = delete;
     NodeImpl& operator=(const NodeImpl&) = delete;
@@ -63,7 +63,7 @@ class NodeImpl final {
     Task<void> start_execution_log_timer();
 
     Settings& settings_;
-    mdbx::env& chaindata_db_;
+    mdbx::env chaindata_db_;
 
     //! The repository for snapshots
     snapshot::SnapshotRepository snapshot_repository_;
@@ -78,7 +78,7 @@ class NodeImpl final {
     std::unique_ptr<BitTorrentClient> bittorrent_client_;
 };
 
-NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)
+NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
     : settings_{settings},
       chaindata_db_{chaindata_db},
       snapshot_repository_{settings_.snapshot_settings},
@@ -178,7 +178,7 @@ Task<void> NodeImpl::start_execution_log_timer() {
     co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop), "ctx-log-tmr");
 }
 
-Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)
+Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
     : p_impl_(std::make_unique<NodeImpl>(settings, std::move(sentry_client), chaindata_db)) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom

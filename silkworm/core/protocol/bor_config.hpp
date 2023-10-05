@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,10 +14,25 @@
    limitations under the License.
 */
 
-#include "no_proof_rule_set.hpp"
+#pragma once
+
+#include <map>
+#include <optional>
+
+#include <nlohmann/json.hpp>
+
+#include <silkworm/core/common/base.hpp>
 
 namespace silkworm::protocol {
 
-ValidationResult NoProofRuleSet::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+struct BorConfig {
+    std::map<BlockNum, uint64_t> sprint;
+
+    [[nodiscard]] nlohmann::json to_json() const noexcept;
+
+    static std::optional<BorConfig> from_json(const nlohmann::json& json) noexcept;
+
+    bool operator==(const BorConfig&) const = default;
+};
 
 }  // namespace silkworm::protocol

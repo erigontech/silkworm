@@ -35,6 +35,7 @@ class CliqueRuleSet : public BaseRuleSet {
 
     evmc::address get_beneficiary(const BlockHeader& header) final;
 
+  protected:
     intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) final { return 1; }
 };
 

@@ -67,7 +67,7 @@ struct BlockHeader {
 
     Bytes extra_data{};
 
-    evmc::bytes32 prev_randao{};  // mix hash prior to EIP-4399
+    evmc::bytes32 prev_randao{};  // mix hash (digest) prior to EIP-4399
     NonceType nonce{};
 
     // Added in London

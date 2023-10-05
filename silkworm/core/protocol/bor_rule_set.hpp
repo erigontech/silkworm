@@ -21,20 +21,28 @@
 namespace silkworm::protocol {
 
 // Warning: most Bor logic is not implemented yet.
-// TODO(yperbasis) implement
+// TODO(yperbasis): implement
 class BorRuleSet : public BaseRuleSet {
   public:
     explicit BorRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/true) {}
 
-    ValidationResult validate_seal(const BlockHeader&) final {
+    ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
+                                           bool with_future_timestamp_check) override;
+
+    ValidationResult validate_seal(const BlockHeader&) override {
         return ValidationResult::kOk;
     }
 
-    void initialize(EVM&) final {}
+    void initialize(EVM&) override {}
 
-    void finalize(IntraBlockState&, const Block&) final {}
+    void finalize(IntraBlockState&, const Block&) override {}
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) final { return 1; }
+    evmc::address get_beneficiary(const BlockHeader& header) override;
+
+  protected:
+    ValidationResult validate_extra_data(const BlockHeader& header) override;
+
+    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) override { return 1; }
 };
 
 }  // namespace silkworm::protocol

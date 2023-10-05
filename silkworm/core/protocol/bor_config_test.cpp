@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,20 +14,25 @@
    limitations under the License.
 */
 
-#pragma once
+#include "bor_config.hpp"
 
-#include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <catch2/catch.hpp>
 
 namespace silkworm::protocol {
 
-// This rule set does not validate PoW seal.
-// It is used in the Ethereum EL tests.
-class NoProofRuleSet : public EthashRuleSet {
-  public:
-    explicit NoProofRuleSet(const ChainConfig& chain_config) : EthashRuleSet(chain_config) {}
+TEST_CASE("BorConfig JSON") {
+    const auto json = nlohmann::json::parse(R"({    
+            "sprint": {
+                "0": 64,
+                "38189056": 16
+            }
+        })");
 
-    //! \brief Validates the seal of the header
-    ValidationResult validate_seal(const BlockHeader& header) final;
-};
+    const std::optional<BorConfig> config{BorConfig::from_json(json)};
+
+    REQUIRE(config);
+    CHECK(config == BorConfig{.sprint = {{0, 64}, {38189056, 16}}});
+    CHECK(config->to_json() == json);
+}
 
 }  // namespace silkworm::protocol

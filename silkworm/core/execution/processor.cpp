@@ -85,6 +85,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         state_.add_to_balance(*evm_.config().eip1559_fee_collector, would_be_burnt);
     }
 
+    // TODO(yperbasis): AddFeeTransferLog for bor
+
     state_.finalize_transaction(rev);
 
     cumulative_gas_used_ += gas_used;

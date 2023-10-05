@@ -73,4 +73,7 @@ inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
 inline constexpr auto kBeaconRootsAddress{0x0b_address};  // TODO(yperbasis) change to the proper one
 
+// Used in Bor & Clique
+inline constexpr size_t kExtraSealSize{65};
+
 }  // namespace silkworm::protocol

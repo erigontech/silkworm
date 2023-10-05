@@ -42,23 +42,35 @@ std::shared_ptr<mdbx::env_managed> InitializeTestBase() {
     return db;
 }
 
+class FuzzerContext {
+  public:
+    FuzzerContext() {
+        db = InitializeTestBase();
+    }
+
+    ~FuzzerContext() {
+        auto db_path = db->get_path();
+        db->close();
+        std::filesystem::remove_all(db_path);
+
+        std::cout << "FuzzerContext destructor" << std::endl;
+    }
+
+    std::shared_ptr<mdbx::env_managed> db;
+};
+
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
-    static auto db = InitializeTestBase();
-    static auto request_handler = new RpcApiTestBase<RequestHandler_ForTest>(db);
+    static auto context = FuzzerContext();
 
     auto request_str = std::string(reinterpret_cast<const char*>(Data), Size);
-    nlohmann::json request_json;
-    try {
-        request_json = nlohmann::json::parse(request_str);
-        if (!request_json.is_structured()) {
-            return -1;
-        }
-    } catch (const std::exception& e) {
+    if (!nlohmann::json::accept(request_str)) {
         return -1;
     }
 
+    auto request_handler = RpcApiTestBase<RequestHandler_ForTest>(context.db);
+    auto request_json = nlohmann::json::parse(request_str);
     silkworm::rpc::http::Reply reply;
-    request_handler->run<&RequestHandler_ForTest::request_and_create_reply>(request_json, reply);
+    request_handler.run<&RequestHandler_ForTest::request_and_create_reply>(request_json, reply);
 
     if (reply.status == silkworm::rpc::http::StatusType::ok) {
         return 0;

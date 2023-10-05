@@ -6,7 +6,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include "fuzzer.cpp"
+#include "fuzzer_test.cpp"
 
 void printStackTrace() {
     void* trace[16];
@@ -61,6 +61,11 @@ int main(int argc, char* argv[]) {
         input_str = std::string(std::istreambuf_iterator<char>(input_file_stream), std::istreambuf_iterator<char>());
     }
 
+    if (!nlohmann::json::accept(input_str)) {
+        std::cout << "Not valid json" << std::endl;
+        return -1;
+    }
+
     silkworm::rpc::http::Reply reply;
 
     try {
@@ -70,7 +75,11 @@ int main(int argc, char* argv[]) {
         auto request_json = nlohmann::json::parse(input_str);
         std::cout << "Request: " << request_json.dump(4) << std::endl;
 
-        request_handler->run<&RequestHandler_ForTest::request_and_create_reply>(request_json, reply);
+        request_handler->run<&RequestHandler_ForTest::handle_request>(input_str, reply);
+
+        auto db_path = db->get_path();
+        db->close();
+        std::filesystem::remove_all(db_path);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {
@@ -85,10 +94,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Reply Status: " << static_cast<int>(reply.status) << std::endl;
 
-    auto reply_json = nlohmann::json::parse(reply.content);
-    if (reply_json.is_structured()) {
-        std::cout << "Reply Content: " << reply_json.dump(4) << std::endl;
+    if (nlohmann::json::accept(reply.content)) {
+        std::cout << "Reply Content: " << nlohmann::json::parse(reply.content).dump(4) << std::endl;
     } else {
         std::cout << "Reply Content: " << reply.content << std::endl;
     }
+
+    return 0;
 }

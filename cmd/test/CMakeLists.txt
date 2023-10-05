@@ -47,13 +47,13 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm RpcDaemon Fuzz Tests
-  add_executable(rpcdaemon_fuzz_test fuzzer.cpp)
-  target_compile_options(rpcdaemon_fuzz_test PRIVATE -fsanitize=fuzzer,address)
-  target_link_libraries(rpcdaemon_fuzz_test PRIVATE silkrpc -fsanitize=fuzzer,address)
+  add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
+  target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)
+  target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address)
 
   # Silkworm RpcDaemon Fuzz Debug Executable
-  add_executable(rpcdaemon_fuzz_debug fuzzer_debug.cpp ${SILKWORM_MAIN_SRC_DIR}/silkrpc/test/execution_api_database.hpp)
-  target_link_libraries(rpcdaemon_fuzz_debug PRIVATE silkrpc CLI11::CLI11)
+  add_executable(rpcdaemon_fuzzer_diagnosis fuzzer_diagnosis.cpp)
+  target_link_libraries(rpcdaemon_fuzzer_diagnosis PRIVATE silkrpc CLI11::CLI11)
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")

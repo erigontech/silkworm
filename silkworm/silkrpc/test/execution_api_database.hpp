@@ -229,25 +229,31 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
         co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
     }
 
+    Task<void> handle_request(const std::string& request_str, http::Reply& reply) {
+        http::Request request;
+        request.content = request_str;
+        co_await RequestHandler::handle(request);
+        reply = std::move(reply_);
+    }
+
+    // Override required to avoid writing to socket and to intercept the reply
     Task<void> do_write(http::Reply& reply) override {
         try {
-            SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
-
             reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
             reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
 
-            std::cout << "Response: " << reply.to_buffers() << std::endl;
+            reply_ = std::move(reply);
         } catch (const boost::system::system_error& se) {
             std::rethrow_exception(std::make_exception_ptr(se));
         } catch (const std::exception& e) {
             std::rethrow_exception(std::make_exception_ptr(e));
         }
-
-        co_return; 
+        co_return;
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
+    http::Reply reply_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

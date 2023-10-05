@@ -281,6 +281,19 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table;
 };
 
+std::shared_ptr<mdbx::env_managed> InitializeTestBase() {
+    const auto tests_dir = get_tests_dir();
+    const auto db_dir = silkworm::TemporaryDirectory::get_unique_temporary_path();
+    auto db = open_db(db_dir);
+    silkworm::db::RWTxnManaged txn{*db};
+    silkworm::db::table::check_or_create_chaindata_tables(txn);
+    auto state_buffer = populate_genesis(txn, tests_dir);
+    populate_blocks(txn, tests_dir, state_buffer);
+    txn.commit_and_stop();
+
+    return db;
+}
+
 // Function to recursively sort JSON arrays
 void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
     if (jsonObj.is_array()) {

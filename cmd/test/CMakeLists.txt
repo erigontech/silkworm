@@ -40,10 +40,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
-  add_executable(
-    rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS}
-                   ${SILKWORM_MAIN_SRC_DIR}/silkrpc/test/execution_api_database.hpp
-  )
+  add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm RpcDaemon Fuzz Tests
@@ -57,7 +54,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
-  add_executable(sync_test unit_test.cpp)
+  add_executable(sync_test unit_test.cpp ${SILKWORM_SYNC_TESTS})
   target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2 GTest::gmock)
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)

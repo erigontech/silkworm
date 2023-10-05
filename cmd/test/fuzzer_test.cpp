@@ -14,33 +14,11 @@
    limitations under the License.
 */
 
-// #define CATCH_CONFIG_MAIN
-
 #include <string>
 
 #include <silkworm/silkrpc/test/execution_api_database.hpp>
 
 using namespace silkworm::rpc::test;
-
-int doSimpleCalc(std::string& simple) {
-    if (simple == "simple")
-        return 1;
-    else
-        return 0;
-}
-
-std::shared_ptr<mdbx::env_managed> InitializeTestBase() {
-    const auto tests_dir = get_tests_dir();
-    const auto db_dir = silkworm::TemporaryDirectory::get_unique_temporary_path();
-    auto db = open_db(db_dir);
-    silkworm::db::RWTxnManaged txn{*db};
-    silkworm::db::table::check_or_create_chaindata_tables(txn);
-    auto state_buffer = populate_genesis(txn, tests_dir);
-    populate_blocks(txn, tests_dir, state_buffer);
-    txn.commit_and_stop();
-
-    return db;
-}
 
 class FuzzerContext {
   public:
@@ -52,8 +30,6 @@ class FuzzerContext {
         auto db_path = db->get_path();
         db->close();
         std::filesystem::remove_all(db_path);
-
-        std::cout << "FuzzerContext destructor" << std::endl;
     }
 
     std::shared_ptr<mdbx::env_managed> db;

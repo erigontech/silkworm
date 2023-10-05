@@ -16,11 +16,14 @@
 
 #include "silkworm_api.h"
 
+#include <charconv>
 #include <chrono>
+#include <memory>
 #include <vector>
 
 #include <boost/circular_buffer.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
@@ -30,6 +33,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
+#include <silkworm/silkrpc/daemon.hpp>
 
 using namespace std::chrono_literals;
 using namespace silkworm;
@@ -40,31 +44,87 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 
 //! Log configuration matching Erigon log format
 static log::Settings kLogSettingsLikeErigon{
-    .log_utc = false,
-    .log_timezone = false,
-    .log_nocolor = false,
-    .log_trim = true,
+    .log_utc = false,       // display local time
+    .log_timezone = false,  // no timezone ID
+    .log_nocolor = false,   // use colors
+    .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 
-//! Generate log arguments for specified block
-static log::Args log_args_for_exec_progress(uint64_t current_block) {
+using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
+//! The progress reached by the block execution process
+struct ExecutionProgress {
+    SteadyTimePoint start_time;
+    SteadyTimePoint end_time;
+    size_t processed_blocks{0};
+    size_t processed_transactions{0};
+    size_t processed_gas{0};
+    float gas_state_perc{0.0};
+    float gas_history_perc{0.0};
+};
+
+//! Generate log arguments for Silkworm library version
+static log::Args log_args_for_version() {
+    const auto build_info{silkworm_get_buildinfo()};
     return {
-        "number",
-        std::to_string(current_block),
-        // TODO(canepat) compute values
-        "blk/s",
-        std::to_string(0.0),
-        "tx/s",
-        std::to_string(0.0),
-        "Mgas/s",
-        std::to_string(0.0),
-        "gasState",
-        std::to_string(0.0),
+        "git_branch",
+        std::string(build_info->git_branch),
+        "git_tag",
+        std::string(build_info->project_version),
+        "git_commit",
+        std::string(build_info->git_commit_hash),
     };
 }
 
+//! Generate log arguments for execution progress at specified block
+static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_t current_block) {
+    static auto float_to_string = [](float f) -> std::string {
+        const auto size = std::snprintf(nullptr, 0, "%.1f", static_cast<double>(f));
+        std::string s(static_cast<size_t>(size + 1), '\0');                 // +1 for null terminator
+        std::snprintf(s.data(), s.size(), "%.1f", static_cast<double>(f));  // certain to fit
+        return s;
+    };
+
+    const auto elapsed{progress.end_time - progress.start_time};
+    progress.start_time = progress.end_time;
+    const auto duration_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
+    const auto elapsed_seconds = duration_seconds.count() != 0 ? float(duration_seconds.count()) : 1.0f;
+    if (progress.processed_blocks == 0) {
+        return {"number", std::to_string(current_block), "db", "waiting..."};
+    }
+    const auto speed_blocks = float(progress.processed_blocks) / elapsed_seconds;
+    const auto speed_transactions = float(progress.processed_transactions) / elapsed_seconds;
+    const auto speed_mgas = float(progress.processed_gas) / elapsed_seconds / 1'000'000;
+    progress.processed_blocks = 0;
+    progress.processed_transactions = 0;
+    progress.processed_gas = 0;
+    return {
+        "number",
+        std::to_string(current_block),
+        "blk/s",
+        float_to_string(speed_blocks),
+        "tx/s",
+        float_to_string(speed_transactions),
+        "Mgas/s",
+        float_to_string(speed_mgas),
+        "gasState",
+        float_to_string(progress.gas_state_perc),
+        "gasHistory",
+        float_to_string(progress.gas_history_perc),
+    };
+}
+
+//! A signal handler guard using RAII pattern to acquire/release signal handling
+class SignalHandlerGuard {
+  public:
+    SignalHandlerGuard() { SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true); }
+    ~SignalHandlerGuard() { SignalHandler::reset(); }
+};
+
+//! The Silkworm library instance
 struct SilkwormInstance {
     SilkwormHandle* handle{nullptr};
+    std::unique_ptr<rpc::Daemon> rpcdaemon;
 };
 SilkwormInstance instance;  // just one instance for the time being
 
@@ -76,11 +136,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
         return SILKWORM_TOO_MANY_INSTANCES;
     }
     log::init(kLogSettingsLikeErigon);
+    log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
     const auto snapshot_repository = new snapshot::SnapshotRepository{};
     db::DataModel::set_snapshot_repository(snapshot_repository);
     *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
     instance.handle = *handle;
-    SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true);
     return SILKWORM_OK;
 }
 
@@ -213,6 +273,51 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     return SILKWORM_OK;
 }
 
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    if (handle != instance.handle) {
+        return SILKWORM_INSTANCE_NOT_FOUND;
+    }
+
+    // TODO(canepat) add RPC options in API and convert them
+    rpc::DaemonSettings settings{
+        .skip_protocol_check = true,
+        .erigon_json_rpc_compatibility = true};
+
+    // Create the one-and-only Silkrpc daemon
+    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings);
+
+    // Check protocol version compatibility with Core Services
+    if (not settings.skip_protocol_check) {
+        SILK_INFO << "[RPC] Checking protocol version compatibility with core services...";
+
+        const auto checklist = instance.rpcdaemon->run_checklist();
+        for (const auto& protocol_check : checklist.protocol_checklist) {
+            SILK_INFO << protocol_check.result;
+        }
+        checklist.success_or_throw();
+    } else {
+        SILK_TRACE << "[RPC] Skip protocol version compatibility check with core services";
+    }
+
+    SILK_INFO << "[RPC] Starting ETH API at " << settings.eth_end_point << " ENGINE API at " << settings.engine_end_point;
+    instance.rpcdaemon->start();
+
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+    if (handle != instance.handle) {
+        return SILKWORM_INSTANCE_NOT_FOUND;
+    }
+
+    instance.rpcdaemon->stop();
+    SILK_INFO << "[RPC] Exiting...";
+    instance.rpcdaemon->join();
+    SILK_INFO << "[RPC] Stopped";
+
+    return SILKWORM_OK;
+}
+
 SILKWORM_EXPORT
 int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
                             uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
@@ -232,6 +337,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     }
     const ChainConfig* chain_config{chain_info->second};
 
+    SignalHandlerGuard signal_guard;
     try {
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
@@ -251,11 +357,11 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
         static constexpr size_t kMaxPrefetchedBlocks{10240};
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
-        auto signal_check_time{std::chrono::steady_clock::now()};
-        auto log_time{signal_check_time};
+        ExecutionProgress progress{.start_time = std::chrono::steady_clock::now()};
+        auto signal_check_time{progress.start_time};
+        auto log_time{progress.start_time};
 
-        size_t gas_history_size{0};
-        size_t gas_batch_size{0};
+        size_t gas_batch_size{0}, gas_history_size{0};
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             if (prefetched_blocks.empty()) {
                 const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
@@ -301,6 +407,12 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 *last_executed_block = block.header.number;
             }
 
+            ++progress.processed_blocks;
+            progress.processed_transactions += block.transactions.size();
+            progress.processed_gas += block.header.gas_used;
+            gas_batch_size += block.header.gas_used;
+            gas_history_size += block.header.gas_used;
+
             prefetched_blocks.pop_front();
 
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
@@ -309,7 +421,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 state_buffer.write_to_db(write_change_sets);
                 gas_batch_size = 0;
             } else if (gas_history_size >= gas_max_history_size) {
-                SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_state_size())};
+                SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_history_size())};
                 state_buffer.write_history_to_db(write_change_sets);
                 gas_history_size = 0;
             }
@@ -322,7 +434,11 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
                 signal_check_time = now + 5s;
             }
             if (log_time <= now) {
-                SILK_INFO << "[4/12 Execution] Executed blocks" << log_args_for_exec_progress(block.header.number);
+                progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
+                progress.gas_history_perc = float(gas_history_size) / float(gas_max_history_size);
+                progress.end_time = now;
+                log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
+                          log_args_for_exec_progress(progress, block.header.number)};
                 log_time = now + 20s;
             }
         }
@@ -354,6 +470,5 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
     }
     delete snapshot_repository;
     instance.handle = nullptr;
-    SignalHandler::reset();
     return SILKWORM_OK;
 }

@@ -32,7 +32,7 @@ class SerialNodeDb : public NodeDb {
           strand_(std::move(executor)) {}
     ~SerialNodeDb() override = default;
 
-    Task<void> upsert_node_address(NodeId id, NodeAddress address) override;
+    Task<bool> upsert_node_address(NodeId id, NodeAddress address) override;
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
 
@@ -53,6 +53,12 @@ class SerialNodeDb : public NodeDb {
 
     Task<void> update_distance(NodeId id, size_t value) override;
     Task<std::optional<size_t>> find_distance(NodeId id) override;
+
+    Task<void> update_enr_seq_num(NodeId id, uint64_t value) override;
+    Task<std::optional<uint64_t>> find_enr_seq_num(NodeId id) override;
+
+    Task<void> update_eth1_fork_id(NodeId id, std::optional<Bytes> value) override;
+    Task<std::optional<Bytes>> find_eth1_fork_id(NodeId id) override;
 
     Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override;
     Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override;

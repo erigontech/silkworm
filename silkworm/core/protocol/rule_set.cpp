@@ -16,6 +16,7 @@
 
 #include "rule_set.hpp"
 
+#include "bor_rule_set.hpp"
 #include "clique_rule_set.hpp"
 #include "ethash_rule_set.hpp"
 #include "merge_rule_set.hpp"
@@ -31,6 +32,8 @@ static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
             return std::make_unique<NoProofRuleSet>(chain_config);
         case RuleSetType::kClique:
             return std::make_unique<CliqueRuleSet>(chain_config);
+        case RuleSetType::kBor:
+            return std::make_unique<BorRuleSet>(chain_config);
         default:
             return nullptr;
     }

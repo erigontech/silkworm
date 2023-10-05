@@ -55,47 +55,76 @@ static std::chrono::time_point<std::chrono::system_clock> next_ping_time(std::ch
     return now + next_ping_delay(ping_fails);
 }
 
-Task<bool> ping_check(
+Task<PingCheckResult> ping_check(
     EccPublicKey node_id,
-    std::optional<boost::asio::ip::udp::endpoint> endpoint_opt,
     EnodeUrl local_node_url,
     uint64_t local_enr_seq_num,
     MessageSender& message_sender,
     boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
     node_db::NodeDb& db) {
+    auto address = co_await db.find_node_address(node_id);
+    if (!address)
+        throw std::runtime_error("ping_check: node address not found");
+    auto endpoint = address->to_common_address().endpoint;
+
+    auto last_pong_time = co_await db.find_last_pong_time(node_id);
+    auto ping_fails_count = co_await db.find_ping_fails(node_id);
+
+    auto result = co_await ping_check(
+        std::move(node_id),
+        std::move(endpoint),
+        std::move(local_node_url),
+        local_enr_seq_num,
+        message_sender,
+        on_pong_signal,
+        std::move(last_pong_time),
+        ping_fails_count.value_or(0));
+
+    co_return result;
+}
+
+Task<void> PingCheckResult::save(node_db::NodeDb& db) const {
+    auto& result = *this;
+    if (result.ping_fails_count)
+        co_await db.update_ping_fails(node_id, *result.ping_fails_count);
+    if (result.next_ping_time)
+        co_await db.update_next_ping_time(node_id, *result.next_ping_time);
+    if (result.pong_time)
+        co_await db.update_last_pong_time(node_id, *result.pong_time);
+}
+
+Task<PingCheckResult> ping_check(
+    EccPublicKey node_id,
+    boost::asio::ip::udp::endpoint endpoint,
+    EnodeUrl local_node_url,
+    uint64_t local_enr_seq_num,
+    MessageSender& message_sender,
+    boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> last_pong_time,
+    size_t prev_ping_fails_count) {
     using namespace std::chrono_literals;
     using namespace concurrency::awaitable_wait_for_one;
 
     if (node_id == local_node_url.public_key()) {
         assert(false);
-        co_return false;
+        co_return PingCheckResult{std::move(node_id)};
     }
 
-    auto last_pong_time = co_await db.find_last_pong_time(node_id);
     if (last_pong_time && !is_time_in_past(pong_expiration(*last_pong_time))) {
-        co_return true;
-    }
-
-    boost::asio::ip::udp::endpoint endpoint;
-    if (endpoint_opt) {
-        endpoint = *endpoint_opt;
-    } else {
-        auto address = co_await db.find_node_address_v4(node_id);
-        if (!address) {
-            throw std::runtime_error("ping_check: node address not found");
-        }
-        endpoint = boost::asio::ip::udp::endpoint(address->ip, address->port_disc);
+        co_return PingCheckResult{std::move(node_id)};
     }
 
     auto executor = co_await boost::asio::this_coro::executor;
     concurrency::EventNotifier pong_received_notifier{executor};
+    std::optional<uint64_t> enr_seq_num;
     auto on_pong_handler = [&](PongMessage message, EccPublicKey sender_node_id) {
         if ((sender_node_id == node_id) && !is_expired_message_expiration(message.expiration)) {
+            enr_seq_num = message.enr_seq_num;
             pong_received_notifier.notify();
         }
     };
 
-    boost::signals2::scoped_connection pong_subscription(on_pong_signal.connect(on_pong_handler));
+    [[maybe_unused]] boost::signals2::scoped_connection pong_subscription(on_pong_signal.connect(on_pong_handler));
 
     PingMessage ping_message{
         boost::asio::ip::udp::endpoint{local_node_url.ip(), local_node_url.port_disc()},
@@ -122,30 +151,18 @@ Task<bool> ping_check(
     } catch (const concurrency::TimeoutExpiredError&) {
     }
 
-    if (endpoint_opt) {
-        if (!co_await db.find_node_address_v4(node_id)) {
-            node_db::NodeAddress address{
-                endpoint.address(),
-                endpoint.port(),
-                /* port_rlpx = */ 0,
-            };
-            auto distance = node_distance(node_id, local_node_url.public_key());
-
-            co_await db.upsert_node_address(node_id, std::move(address));
-            co_await db.update_distance(node_id, distance);
-        }
-    }
-
     auto now = std::chrono::system_clock::now();
-    if (is_pong_received) {
-        co_await db.update_last_pong_time(node_id, now);
-    }
+    auto pong_time = is_pong_received ? std::optional{now} : std::nullopt;
+    size_t ping_fails_count = is_pong_received ? 0 : prev_ping_fails_count + 1;
+    auto next_ping_time1 = next_ping_time(now, ping_fails_count);
 
-    size_t ping_fails_count = is_pong_received ? 0 : (co_await db.find_ping_fails(node_id)).value_or(0) + 1;
-    co_await db.update_ping_fails(node_id, ping_fails_count);
-    co_await db.update_next_ping_time(node_id, next_ping_time(now, ping_fails_count));
-
-    co_return is_pong_received;
+    co_return PingCheckResult{
+        std::move(node_id),
+        std::move(pong_time),
+        ping_fails_count,
+        std::move(next_ping_time1),
+        std::move(enr_seq_num),
+    };
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4::ping

@@ -15,30 +15,14 @@
 ]]
 
 find_package(Boost REQUIRED headers)
-find_package(Catch2 REQUIRED)
 find_package(SQLiteCpp REQUIRED)
 
-set(TARGET silkworm_sentry_node_db)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
-
-add_library(${TARGET} ${SRC})
-
-target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
-
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_sentry_common
+silkworm_library(
+  silkworm_sentry_node_db
+  PUBLIC silkworm_core silkworm_infra silkworm_sentry_common silkworm_sentry_discovery_common
   PRIVATE Boost::headers SQLiteCpp::SQLiteCpp
 )
 
-# unit tests
-set(TEST_TARGET ${TARGET}_test)
-file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-target_link_libraries(
-  ${TEST_TARGET}
-  PRIVATE ${TARGET} Catch2::Catch2
-  INTERFACE silkworm_infra_test_util
-)
+target_link_libraries(silkworm_sentry_node_db_test INTERFACE silkworm_infra_test_util)

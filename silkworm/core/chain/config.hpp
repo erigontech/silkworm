@@ -37,7 +37,7 @@ namespace protocol {
         kNoProof,
         kEthash,
         kClique,
-        kAuRa,
+        kBor,
     };
 
 }  // namespace protocol
@@ -78,6 +78,9 @@ struct ChainConfig {
     // Starting from Shanghai, forks are triggered by block time rather than number
     std::optional<BlockTime> shanghai_time{std::nullopt};
     std::optional<BlockTime> cancun_time{std::nullopt};
+
+    // In some chains (e.g. Polygon) EIP-1559 fees are not burnt but rather sent to the collector
+    std::optional<evmc::address> eip1559_fee_collector{std::nullopt};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
@@ -170,6 +173,40 @@ inline constexpr ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
+};
+
+inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
+inline constexpr ChainConfig kPolygonConfig{
+    .chain_id = 137,
+    .protocol_rule_set = protocol::RuleSetType::kBor,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 3'395'000,
+    .muir_glacier_block = 3'395'000,
+    .berlin_block = 14'750'000,
+    .london_block = 23'850'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+};
+
+inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
+inline constexpr ChainConfig kMumbaiConfig{
+    .chain_id = 80001,
+    .protocol_rule_set = protocol::RuleSetType::kBor,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 2'722'000,
+    .muir_glacier_block = 2'722'000,
+    .berlin_block = 13'996'000,
+    .london_block = 22'640'000,
+    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
 };
 
 //! \brief Looks up a known chain config provided its chain ID

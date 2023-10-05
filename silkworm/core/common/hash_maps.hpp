@@ -52,7 +52,7 @@ using FlatHashSet = absl::flat_hash_set<T>;
 
 #else
 
-// Abseil is not compatible with Wasm due to its mutli-threading features,
+// Abseil is not compatible with Wasm due to its multi-threading features,
 // at least not under CMake, but see
 // https://github.com/abseil/abseil-cpp/pull/721
 

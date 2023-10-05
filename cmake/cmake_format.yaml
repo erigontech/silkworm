@@ -6,6 +6,11 @@ parse:
         INSTALL_FOLDER: '*'
         BUILD: '*'
         PROFILE: '*'
+    silkworm_library:
+      kwargs:
+        PUBLIC: '*'
+        PRIVATE: '*'
+        EXCLUDE_REGEX: '*'
 
 format:
   line_width: 120

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 
@@ -30,6 +31,8 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
 //! \param [in] genesis_json : the genesis JSON payload
 //! \returns the state root hash after account allocation
 evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& genesis_json);
+
+void write_genesis_allocation_to_db(RWTxn& txn, const InMemoryState& genesis_allocation);
 
 //! \brief Initializes database with genesis from JSON payload
 //! \param [in] txn : a RW MDBX transaction

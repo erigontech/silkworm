@@ -22,9 +22,9 @@
 #include <memory>
 #include <stdexcept>
 
-#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
@@ -112,7 +112,7 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
     // set difficulty only for revisions before The Merge
-    // current block difficulty cannot fall below miniumum: https://eips.ethereum.org/EIPS/eip-2
+    // current block difficulty cannot fall below minimum: https://eips.ethereum.org/EIPS/eip-2
     static constexpr uint64_t kMinDifficulty{0x20000};
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
@@ -143,34 +143,6 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
     state.insert_block(parent_block, block.header.parent_hash);
 
     return block;
-}
-
-std::unique_ptr<InMemoryState> StateTransition::get_state() {
-    auto state = std::make_unique<InMemoryState>();
-
-    for (const auto& preState : test_data_["pre"].items()) {
-        const auto address = to_evmc_address(preState.key());
-        const nlohmann::json preStateValue = preState.value();
-
-        auto account = Account();
-        account.balance = intx::from_string<intx::uint256>(preStateValue.at("balance"));
-        account.nonce = std::stoull(std::string(preStateValue.at("nonce")), nullptr, 16);
-
-        const Bytes code{from_hex(std::string(preStateValue.at("code"))).value()};
-        account.code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
-        account.incarnation = kDefaultIncarnation;
-
-        state->update_account(address, /*initial=*/std::nullopt, account);
-        state->update_account_code(address, account.incarnation, account.code_hash, code);
-
-        for (const auto& storage : preStateValue.at("storage").items()) {
-            Bytes key{from_hex(storage.key()).value()};
-            Bytes value{from_hex(storage.value().get<std::string>()).value()};
-            state->update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
-        }
-    }
-
-    return state;
 }
 
 std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std::string& private_key) {
@@ -299,7 +271,7 @@ void StateTransition::print_message(const ExpectedState& expected_state, const E
 }
 
 /*
- * This function is used to cleanup the state after a failed block execution.
+ * This function is used to clean up the state after a failed block execution.
  * Certain post-processing would be a part of the execute_transaction() function,
  * but since the validation failed, we need to do it manually.
  */
@@ -321,17 +293,17 @@ void StateTransition::run() {
             ++total_count_;
             auto config = expectedState.get_config();
             auto ruleSet = protocol::rule_set_factory(config);
-            auto state = get_state();
-            auto block = get_block(*state, config);
+            auto state = read_genesis_allocation(test_data_["pre"]);
+            auto block = get_block(state, config);
             auto txn = get_transaction(expectedSubState);
 
-            ExecutionProcessor processor{block, *ruleSet, *state, config};
+            ExecutionProcessor processor{block, *ruleSet, state, config};
             Receipt receipt;
 
             const evmc_revision rev{config.revision(block.header.number, block.header.timestamp)};
 
-            auto pre_block_validation = ruleSet->pre_validate_block_body(block, *state);
-            auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
+            auto pre_block_validation = ruleSet->pre_validate_block_body(block, state);
+            auto block_validation = ruleSet->validate_block_header(block.header, state, true);
             auto pre_txn_validation = protocol::pre_validate_transaction(txn, rev, config.chain_id, block.header.base_fee_per_gas, block.header.blob_gas_price());
             auto txn_validation = protocol::validate_transaction(txn, processor.evm().state(), processor.available_gas());
 
@@ -352,7 +324,7 @@ void StateTransition::run() {
             // std::cout << "post: " << std::endl;
             // state->print_state_root_hash();
 
-            validate_transition(receipt, expectedState, expectedSubState, *state);
+            validate_transition(receipt, expectedState, expectedSubState, state);
         }
     }
 
@@ -362,4 +334,4 @@ void StateTransition::run() {
                   << std::endl;
     }
 }
-};  // namespace silkworm::cmd::state_transition
+}  // namespace silkworm::cmd::state_transition

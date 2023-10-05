@@ -59,7 +59,7 @@ static std::string prettified_key_value(const std::string& key, const std::strin
     kv_pair.append(kColorReset);
     kv_pair.append("=");
     kv_pair.append(kColorReset);
-    kv_pair.append(kColorWhiteHigh);
+    kv_pair.append(kColorWhite);
     kv_pair.append(value);
     return kv_pair;
 }

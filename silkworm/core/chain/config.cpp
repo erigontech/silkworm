@@ -21,6 +21,7 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
@@ -29,12 +30,14 @@ static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChain
     {"mainnet", &kMainnetConfig},
     {"goerli", &kGoerliConfig},
     {"sepolia", &kSepoliaConfig},
+    {"polygon", &kPolygonConfig},
+    {"mumbai", &kMumbaiConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
-    if (source.has_value()) {
+    if (source) {
         json[key] = source.value();
     }
 }
@@ -59,8 +62,8 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         case protocol::RuleSetType::kClique:
             ret.emplace("clique", empty_object);
             break;
-        case protocol::RuleSetType::kAuRa:
-            ret.emplace("aura", empty_object);
+        case protocol::RuleSetType::kBor:
+            ret.emplace("bor", empty_object);
             break;
         default:
             break;
@@ -81,13 +84,17 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
     if (terminal_total_difficulty) {
-        // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
+        // TODO(yperbasis) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
     member_to_json(ret, "mergeNetsplitBlock", merge_netsplit_block);
     member_to_json(ret, "shanghaiTime", shanghai_time);
     member_to_json(ret, "cancunTime", cancun_time);
+
+    if (eip1559_fee_collector) {
+        ret["eip1559FeeCollector"] = address_to_hex(*eip1559_fee_collector);
+    }
 
     if (genesis_hash.has_value()) {
         ret["genesisBlockHash"] = to_hex(*genesis_hash, /*with_prefix=*/true);
@@ -108,8 +115,8 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.protocol_rule_set = protocol::RuleSetType::kEthash;
     } else if (json.contains("clique")) {
         config.protocol_rule_set = protocol::RuleSetType::kClique;
-    } else if (json.contains("aura")) {
-        config.protocol_rule_set = protocol::RuleSetType::kAuRa;
+    } else if (json.contains("bor")) {
+        config.protocol_rule_set = protocol::RuleSetType::kBor;
     } else {
         config.protocol_rule_set = protocol::RuleSetType::kNoProof;
     }
@@ -146,6 +153,11 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "mergeNetsplitBlock", config.merge_netsplit_block);
     read_json_config_member(json, "shanghaiTime", config.shanghai_time);
     read_json_config_member(json, "cancunTime", config.cancun_time);
+
+    if (json.contains("eip1559FeeCollector")) {
+        const auto eip1559_fee_collector{json["eip1559FeeCollector"].get<std::string>()};
+        config.eip1559_fee_collector = hex_to_address(eip1559_fee_collector);
+    }
 
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */

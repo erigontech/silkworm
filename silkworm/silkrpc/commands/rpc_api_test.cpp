@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
@@ -38,6 +37,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/db/genesis.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
@@ -146,7 +146,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
                     }
                 }
 
-                db->close();
+                db.close();
                 std::filesystem::remove_all(db_dir);
             }
         }
@@ -174,7 +174,7 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
         CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 
-    db->close();
+    db.close();
     std::filesystem::remove_all(db_dir);
 }
 #endif  // SILKWORM_SANITIZE

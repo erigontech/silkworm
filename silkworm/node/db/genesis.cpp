@@ -20,10 +20,7 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/execution/address.hpp>
-#include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
-#include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "tables.hpp"
 
@@ -44,7 +41,6 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
         }
         if (!genesis_json.contains("gasLimit")) ret.second.emplace_back("Missing gasLimit member");
         if (!genesis_json.contains("timestamp")) ret.second.emplace_back("Missing timestamp member");
-        if (!genesis_json.contains("extraData")) ret.second.emplace_back("Missing extraData member");
         if (!genesis_json.contains("config")) {
             ret.second.emplace_back("Missing config member");
         } else {
@@ -111,48 +107,34 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
 }
 
 evmc::bytes32 initialize_genesis_allocations(RWTxn& txn, const nlohmann::json& genesis_json) {
-    InMemoryState state_buffer{};
-    evmc::bytes32 state_root_hash{kEmptyRoot};
+    InMemoryState state{read_genesis_allocation(genesis_json.at("alloc"))};
+    write_genesis_allocation_to_db(txn, state);
+    return state.state_root_hash();
+}
 
-    // Allocate accounts
-    if (genesis_json.contains("alloc")) {
-        auto expected_allocations{genesis_json["alloc"].size()};
+void write_genesis_allocation_to_db(RWTxn& txn, const InMemoryState& genesis_allocation) {
+    auto state_table = txn.rw_cursor_dup_sort(table::kPlainState);
+    auto code_table{open_cursor(txn, table::kCode)};
+    for (const auto& [address, account] : genesis_allocation.accounts()) {
+        // Store account plain state
+        Bytes encoded{account.encode_for_storage()};
+        state_table->upsert(to_slice(address), to_slice(encoded));
 
-        for (auto& item : genesis_json["alloc"].items()) {
-            evmc::address account_address = hex_to_address(item.key());
-            auto balance_str{item.value()["balance"].get<std::string>()};
-            Account account{0, intx::from_string<intx::uint256>(balance_str)};
-            state_buffer.update_account(account_address, std::nullopt, account);
+        // Store code
+        if (account.code_hash != kEmptyHash) {
+            ByteView code{genesis_allocation.read_code(account.code_hash)};
+            code_table.upsert(to_slice(account.code_hash), to_slice(code));
         }
-
-        auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
-        if (applied_allocations != expected_allocations) {
-            // Maybe some account alloc has been inserted twice ?
-            throw std::logic_error("Allocations mismatch. Check uniqueness of accounts");
-        }
-
-        // Write allocations to db - no changes only accounts
-        // Also compute state_root_hash in a single pass
-        std::map<evmc::bytes32, Bytes> account_rlp;
-        auto state_table{db::open_cursor(txn, db::table::kPlainState)};
-        for (const auto& [address, account] : state_buffer.accounts()) {
-            // Store account plain state
-            Bytes encoded{account.encode_for_storage()};
-            state_table.upsert(db::to_slice(address), db::to_slice(encoded));
-
-            // First pass for state_root_hash
-            ethash::hash256 hash{keccak256(address.bytes)};
-            account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
-        }
-
-        trie::HashBuilder hb;
-        for (const auto& [hash, rlp] : account_rlp) {
-            hb.add_leaf(trie::unpack_nibbles(hash.bytes), rlp);
-        }
-        state_root_hash = hb.root_hash();
     }
 
-    return state_root_hash;
+    for (const auto& [address, incarnations] : genesis_allocation.storage()) {
+        for (const auto& [incarnation, storage] : incarnations) {
+            Bytes prefix{storage_prefix(address, incarnation)};
+            for (const auto& [location, value] : storage) {
+                upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
+            }
+        }
+    }
 }
 
 bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {

@@ -28,7 +28,7 @@ namespace silkworm::rpc::ethdb::file {
 
 class LocalDatabase : public Database {
   public:
-    explicit LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env);
+    explicit LocalDatabase(mdbx::env chaindata_env);
 
     ~LocalDatabase() override;
 
@@ -38,7 +38,7 @@ class LocalDatabase : public Database {
     Task<std::unique_ptr<Transaction>> begin() override;
 
   private:
-    std::shared_ptr<mdbx::env_managed> chaindata_env_;
+    mdbx::env chaindata_env_;
 };
 
 }  // namespace silkworm::rpc::ethdb::file

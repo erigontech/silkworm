@@ -23,6 +23,7 @@
 #include <boost/asio/ip/udp.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/sentry/discovery/common/node_address.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
@@ -35,6 +36,8 @@ struct PingMessage {
 
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static PingMessage rlp_decode(ByteView data);
+
+    [[nodiscard]] NodeAddress sender_node_address() const { return {sender_endpoint, sender_port_rlpx}; };
 
     static const uint8_t kId;
 };

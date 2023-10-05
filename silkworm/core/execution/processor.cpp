@@ -80,6 +80,11 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
+    if (rev >= EVMC_LONDON && evm_.config().eip1559_fee_collector) {
+        const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
+        state_.add_to_balance(*evm_.config().eip1559_fee_collector, would_be_burnt);
+    }
+
     state_.finalize_transaction(rev);
 
     cumulative_gas_used_ += gas_used;

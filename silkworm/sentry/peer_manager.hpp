@@ -38,6 +38,7 @@
 #include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
+#include <silkworm/sentry/rlpx/protocol.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
 namespace silkworm::sentry {
@@ -62,6 +63,7 @@ class PeerManager {
     Task<void> run(
         rlpx::Server& server,
         discovery::Discovery& discovery,
+        std::unique_ptr<rlpx::Protocol> protocol,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
 
     using EnumeratePeersCallback = std::function<void(std::shared_ptr<rlpx::Peer>)>;
@@ -94,6 +96,7 @@ class PeerManager {
     static std::vector<EnodeUrl> peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers);
     Task<void> discover_peers(
         discovery::Discovery& discovery,
+        std::unique_ptr<rlpx::Protocol> protocol,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
     Task<void> connect_peer(
         EnodeUrl peer_url,

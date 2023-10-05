@@ -14,25 +14,10 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 REQUIRED)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-set(TARGET silkworm_sentry_discovery_enr)
-
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
-
-add_library(${TARGET} ${SRC})
-
-target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
-
-target_link_libraries(
-  ${TARGET}
+silkworm_library(
+  silkworm_sentry_discovery_enr
   PUBLIC silkworm_sentry_common silkworm_core silkworm_sentry_discovery_common
   PRIVATE cpp_base64 silkworm_infra
 )
-
-# unit tests
-set(TEST_TARGET ${TARGET}_test)
-file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)

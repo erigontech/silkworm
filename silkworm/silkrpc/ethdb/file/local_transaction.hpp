@@ -34,8 +34,8 @@ namespace silkworm::rpc::ethdb::file {
 
 class LocalTransaction : public Transaction {
   public:
-    explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
-        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0}, txn_{*chaindata_env_} {}
+    explicit LocalTransaction(mdbx::env chaindata_env)
+        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0}, txn_{chaindata_env_} {}
 
     ~LocalTransaction() override = default;
 
@@ -59,7 +59,7 @@ class LocalTransaction : public Transaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
-    std::shared_ptr<mdbx::env_managed> chaindata_env_;
+    mdbx::env chaindata_env_;
     uint32_t last_cursor_id_;
     db::ROTxnManaged txn_;
 };

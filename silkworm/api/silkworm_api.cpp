@@ -284,6 +284,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
 
     // TODO(canepat) add RPC options in API and convert them
     rpc::DaemonSettings settings{
+        .engine_end_point = "",  // disable end-point for Engine RPC API
         .skip_protocol_check = true,
         .erigon_json_rpc_compatibility = true,
     };
@@ -293,7 +294,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
 
     // Check protocol version compatibility with Core Services
     if (not settings.skip_protocol_check) {
-        SILK_INFO << "[RPC] Checking protocol version compatibility with core services...";
+        SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
 
         const auto checklist = instance.rpcdaemon->run_checklist();
         for (const auto& protocol_check : checklist.protocol_checklist) {
@@ -301,10 +302,10 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
         }
         checklist.success_or_throw();
     } else {
-        SILK_TRACE << "[RPC] Skip protocol version compatibility check with core services";
+        SILK_TRACE << "[Silkworm RPC] Skip protocol version compatibility check with core services";
     }
 
-    SILK_INFO << "[RPC] Starting ETH API at " << settings.eth_end_point << " ENGINE API at " << settings.engine_end_point;
+    SILK_INFO << "[Silkworm RPC] Starting ETH API at " << settings.eth_end_point;
     instance.rpcdaemon->start();
 
     return SILKWORM_OK;
@@ -316,9 +317,9 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOE
     }
 
     instance.rpcdaemon->stop();
-    SILK_INFO << "[RPC] Exiting...";
+    SILK_INFO << "[Silkworm RPC] Exiting...";
     instance.rpcdaemon->join();
-    SILK_INFO << "[RPC] Stopped";
+    SILK_INFO << "[Silkworm RPC] Stopped";
 
     return SILKWORM_OK;
 }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -50,9 +51,7 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(DaemonSettings settings,
-                    std::shared_ptr<mdbx::env_managed> chaindata_env = nullptr,
-                    std::shared_ptr<snapshot::SnapshotRepository> snapshot_repository = nullptr);
+    explicit Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env = {});
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
@@ -87,11 +86,8 @@ class Daemon {
     //! The pool of workers for long-running tasks.
     boost::asio::thread_pool worker_pool_;
 
-    //! The chaindata MDBX environment or \code nullptr if working remotely
-    std::shared_ptr<mdbx::env_managed> chaindata_env_;
-
-    //! The snapshot repository or \code nullptr if working remotely
-    std::shared_ptr<snapshot::SnapshotRepository> snapshot_repository_;
+    //! The chaindata MDBX environment or \code std::nullopt if working remotely
+    std::optional<mdbx::env> chaindata_env_;
 
     //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;

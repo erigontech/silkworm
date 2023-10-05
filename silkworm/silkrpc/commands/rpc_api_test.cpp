@@ -60,7 +60,7 @@ std::filesystem::path get_tests_dir() {
     return working_dir / "third_party" / "execution-apis" / "tests";
 }
 
-std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
+mdbx::env_managed open_db(const std::string& chaindata_dir) {
     db::EnvConfig chain_conf{
         .path = chaindata_dir,
         .create = true,
@@ -68,7 +68,7 @@ std::shared_ptr<mdbx::env_managed> open_db(const std::string& chaindata_dir) {
         .in_memory = true,
         .shared = false};
 
-    return std::make_shared<mdbx::env_managed>(db::open_env(chain_conf));
+    return db::open_env(chain_conf);
 }
 
 InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
@@ -205,7 +205,7 @@ class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
   public:
-    explicit LocalContextTestBase(const std::shared_ptr<mdbx::env_managed>& chaindata_env) : ContextTestBase() {
+    explicit LocalContextTestBase(mdbx::env& chaindata_env) : ContextTestBase() {
         add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(chaindata_env));
     }
 };
@@ -213,7 +213,7 @@ class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
 template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
-    explicit RpcApiTestBase(const std::shared_ptr<mdbx::env_managed>& chaindata_env) : LocalContextTestBase(chaindata_env), workers_{1}, socket{io_context_}, rpc_api{io_context_, workers_}, rpc_api_table{kDefaultEth1ApiSpec} {
+    explicit RpcApiTestBase(mdbx::env& chaindata_env) : LocalContextTestBase(chaindata_env), workers_{1}, socket{io_context_}, rpc_api{io_context_, workers_}, rpc_api_table{kDefaultEth1ApiSpec} {
     }
 
     template <auto method, typename... Args>
@@ -294,7 +294,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
                 auto db = open_db(db_dir);
-                db::RWTxnManaged txn{*db};
+                db::RWTxnManaged txn{db};
                 db::table::check_or_create_chaindata_tables(txn);
                 auto state_buffer = populate_genesis(txn, tests_dir);
                 populate_blocks(txn, tests_dir, state_buffer);
@@ -326,7 +326,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
                     }
                 }
 
-                db->close();
+                db.close();
                 std::filesystem::remove_all(db_dir);
             }
         }
@@ -338,7 +338,7 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     const auto tests_dir = get_tests_dir();
     const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
     auto db = open_db(db_dir);
-    db::RWTxnManaged txn{*db};
+    db::RWTxnManaged txn{db};
     db::table::check_or_create_chaindata_tables(txn);
     auto state_buffer = populate_genesis(txn, tests_dir);
     populate_blocks(txn, tests_dir, state_buffer);
@@ -354,7 +354,7 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
         CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 
-    db->close();
+    db.close();
     std::filesystem::remove_all(db_dir);
 }
 #endif  // SILKWORM_SANITIZE

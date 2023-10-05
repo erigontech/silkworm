@@ -114,7 +114,7 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
                 auto db = test::open_db(db_dir);
-                db::RWTxnManaged txn{*db};
+                db::RWTxnManaged txn{db};
                 db::table::check_or_create_chaindata_tables(txn);
                 auto state_buffer = test::populate_genesis(txn, tests_dir);
                 test::populate_blocks(txn, tests_dir, state_buffer);
@@ -158,7 +158,7 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     const auto tests_dir = test::get_tests_dir();
     const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
     auto db = test::open_db(db_dir);
-    db::RWTxnManaged txn{*db};
+    db::RWTxnManaged txn{db};
     db::table::check_or_create_chaindata_tables(txn);
     auto state_buffer = test::populate_genesis(txn, tests_dir);
     test::populate_blocks(txn, tests_dir, state_buffer);

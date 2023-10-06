@@ -83,8 +83,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-gline-tables-only)
-  else()
-    add_compile_options(-g -O0)
   endif()
 
   # coroutines support

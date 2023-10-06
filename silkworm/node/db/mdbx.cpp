@@ -66,7 +66,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
                : mdbx::cursor::move_operation::previous;
 }
 
-::mdbx::env_managed open_env(const EnvConfig& config) {
+::mdbx::env_managed open_env(EnvConfig& config) {
     namespace fs = std::filesystem;
 
     if (config.path.empty()) {
@@ -148,36 +148,32 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 
-    ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
-    if (size_t db_page_size{ret.get_pagesize()}; db_page_size != config.page_size) {
-        throw std::runtime_error(
-            "Incompatible page size. "
-            "Requested " +
-            human_size(config.page_size) +
-            " db has " + human_size(db_page_size));
-    }
+    ::mdbx::env_managed env{db_path.native(), cp, op, config.shared};
+
+    // MDBX will not change the page size if db already exists, so we need to read value
+    config.page_size = env.get_pagesize();
 
     if (!config.shared) {
         // C++ bindings don't have setoptions
-        ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32_Mebi));
+        ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_rp_augment_limit, 32_Mebi));
         if (!config.readonly) {
-            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_initial, 16_Kibi));
-            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_dp_reserve_limit, 16_Kibi));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_txn_dp_initial, 16_Kibi));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_dp_reserve_limit, 16_Kibi));
 
             uint64_t dirty_pages_limit{0};
-            ::mdbx::error::success_or_throw(::mdbx_env_get_option(ret, MDBX_opt_txn_dp_limit, &dirty_pages_limit));
-            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_limit, dirty_pages_limit * 2));
+            ::mdbx::error::success_or_throw(::mdbx_env_get_option(env, MDBX_opt_txn_dp_limit, &dirty_pages_limit));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_txn_dp_limit, dirty_pages_limit * 2));
 
             // must be in the range from 12.5% (almost empty) to 50% (half empty)
             // which corresponds to the range from 8192 and to 32768 in units respectively
             ::mdbx::error::success_or_throw(
-                ::mdbx_env_set_option(ret, MDBX_opt_merge_threshold_16dot16_percent, 32_Kibi));
+                ::mdbx_env_set_option(env, MDBX_opt_merge_threshold_16dot16_percent, 32_Kibi));
         }
     }
     if (!config.in_memory) {
-        ret.check_readers();
+        env.check_readers();
     }
-    return ret;
+    return env;
 }
 
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config) {

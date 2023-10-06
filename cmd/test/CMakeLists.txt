@@ -43,14 +43,17 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
-  # Silkworm RpcDaemon Fuzz Tests
-  add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-  target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)
-  target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address)
+  # Enable fuzzing tests only for Clang sanitizer builds
+  if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" SILKWORM_SANITIZE)
+    # Silkworm RpcDaemon Fuzz Tests 
+    add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)
+    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address)
 
-  # Silkworm RpcDaemon Fuzz Debug Executable
-  add_executable(rpcdaemon_fuzzer_diagnosis fuzzer_diagnosis.cpp)
-  target_link_libraries(rpcdaemon_fuzzer_diagnosis PRIVATE silkrpc CLI11::CLI11)
+    # Silkworm RpcDaemon Fuzz Debug Executable
+    add_executable(rpcdaemon_fuzzer_diagnosis fuzzer_diagnosis.cpp)
+    target_link_libraries(rpcdaemon_fuzzer_diagnosis PRIVATE silkrpc CLI11::CLI11)
+  endif()
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")

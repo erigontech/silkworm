@@ -46,7 +46,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     auto request_handler = RpcApiTestBase<RequestHandler_ForTest>(context.db);
     auto request_json = nlohmann::json::parse(request_str);
     silkworm::rpc::http::Reply reply;
-    request_handler.run<&RequestHandler_ForTest::request_and_create_reply>(request_json, reply);
+    request_handler.run<&RequestHandler_ForTest::handle_request>(request_str, reply);
 
     if (reply.status == silkworm::rpc::http::StatusType::ok) {
         return 0;

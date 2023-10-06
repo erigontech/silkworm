@@ -62,6 +62,7 @@ class RequestHandler {
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
     AuthorizationResult is_request_authorized(const http::Request& request);
+    bool is_valid_jsonrpc(const nlohmann::json& request_json);
 
     void set_cors(std::vector<Header>& headers);
 

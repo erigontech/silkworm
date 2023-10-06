@@ -58,36 +58,33 @@ Task<void> RequestHandler::handle(const http::Request& request) {
             const auto request_json = nlohmann::json::parse(request.content);
             if (request_json.is_object()) {
                 if (!is_valid_jsonrpc(request_json)) {
-                    reply.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
                     reply.status = http::StatusType::bad_request;
-                    co_await do_write(reply);
-                    co_return;
+                    reply.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
+                } else {
+                    co_await handle_request_and_create_reply(request_json, reply);
+                    reply.content += "\n";
                 }
-                co_await handle_request_and_create_reply(request_json, reply);
-                reply.content += "\n";
             } else {
-                reply.status = http::StatusType::ok;
-                std::string batch_reply_content = "[";
-                std::stringstream batch_reply_c;
-                bool first_element = true;
+                std::stringstream batch_reply_content;
+                batch_reply_content << "[";
+                int index = 0;
                 for (auto& item : request_json.items()) {
+                    if (index++ > 0) {
+                        batch_reply_content << ",";
+                    }
+
                     if (!is_valid_jsonrpc(item.value())) {
-                        reply.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
-                        reply.status = http::StatusType::bad_request;
-                        co_await do_write(reply);
-                        co_return;
-                    }
-                    const auto& item_json = item.value();
-                    if (first_element) {
-                        first_element = false;
+                        batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
                     } else {
-                        batch_reply_content += ",";
+                        http::Reply single_reply;
+                        co_await handle_request_and_create_reply(item.value(), single_reply);
+                        batch_reply_content << single_reply.content;
                     }
-                    co_await handle_request_and_create_reply(item_json, reply);
-                    batch_reply_content += reply.content;
                 }
-                batch_reply_content += "]\n";
-                reply.content = batch_reply_content;
+                batch_reply_content << "]\n";
+
+                reply.status = http::StatusType::ok;
+                reply.content = batch_reply_content.str();
             }
         }
     }

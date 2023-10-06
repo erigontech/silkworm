@@ -67,6 +67,9 @@ class DummyRuleSet : public protocol::IRuleSet {
     protocol::BlockReward compute_reward(const Block&) override { return {0, {}}; }
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
+
+    void add_fee_transfer_log(IntraBlockState&, const intx::uint256&, const evmc::address&, const intx::uint256&,
+                              const evmc::address&, const intx::uint256&) override {}
 };
 
 TEST_CASE("Headers receiving and saving") {

@@ -60,6 +60,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         state_.access_account(evm_.beneficiary);
     }
 
+    const intx::uint256 sender_initial_balance{state_.get_balance(*txn.from)};
+    const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
+
     // EIP-1559 normal gas cost
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
@@ -77,15 +80,16 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left, vm_res.gas_refund)};
 
     // award the fee recipient
-    const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
-    state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
+    const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
+    state_.add_to_balance(evm_.beneficiary, amount);
 
     if (rev >= EVMC_LONDON && evm_.config().eip1559_fee_collector) {
         const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
         state_.add_to_balance(*evm_.config().eip1559_fee_collector, would_be_burnt);
     }
 
-    // TODO(yperbasis): AddFeeTransferLog for bor
+    rule_set_.add_fee_transfer_log(state_, amount, *txn.from, sender_initial_balance,
+                                   evm_.beneficiary, recipient_initial_balance);
 
     state_.finalize_transaction(rev);
 

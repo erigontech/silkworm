@@ -16,7 +16,10 @@
 
 #include "bor_rule_set.hpp"
 
-#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
+
+#include "param.hpp"
 
 namespace silkworm::protocol {
 
@@ -42,8 +45,40 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) {
 }
 
 evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
-    // TODO(yperbasis): implement properly
+    // TODO(yperbasis): implement properly. Double check Author vs EVM Coinbase
     return BaseRuleSet::get_beneficiary(header);
+}
+
+void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
+                                      const intx::uint256& sender_initial_balance, const evmc::address& recipient,
+                                      const intx::uint256& recipient_initial_balance) {
+    SILKWORM_ASSERT(amount <= sender_initial_balance);
+
+    static constexpr evmc::address kFeeAddress{0x0000000000000000000000000000000000001010_address};
+    static constexpr evmc::bytes32 kTransferFeeLogSig{
+        0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63_bytes32};
+
+    SILKWORM_THREAD_LOCAL Log log{
+        .address = kFeeAddress,
+        .topics = {
+            kTransferFeeLogSig,
+            to_bytes32(kFeeAddress.bytes),
+            {},
+            {},
+        },
+        .data = Bytes(32 * 5, 0),
+    };
+
+    log.topics[2] = to_bytes32(sender.bytes);
+    log.topics[3] = to_bytes32(recipient.bytes);
+
+    intx::be::unsafe::store(&log.data[32 * 0], amount);
+    intx::be::unsafe::store(&log.data[32 * 1], sender_initial_balance);
+    intx::be::unsafe::store(&log.data[32 * 2], recipient_initial_balance);
+    intx::be::unsafe::store(&log.data[32 * 3], sender_initial_balance - amount);
+    intx::be::unsafe::store(&log.data[32 * 4], recipient_initial_balance + amount);
+
+    state.add_log(log);
 }
 
 }  // namespace silkworm::protocol

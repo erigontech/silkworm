@@ -39,6 +39,10 @@ class BorRuleSet : public BaseRuleSet {
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
+    void add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
+                              const intx::uint256& sender_initial_balance, const evmc::address& recipient,
+                              const intx::uint256& recipient_initial_balance) override;
+
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) override;
 

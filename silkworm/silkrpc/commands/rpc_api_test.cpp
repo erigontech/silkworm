@@ -42,7 +42,7 @@
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
-#include <silkworm/silkrpc/test/execution_api_database.hpp>
+#include <silkworm/silkrpc/test/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 

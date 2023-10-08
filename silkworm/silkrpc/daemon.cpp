@@ -203,9 +203,6 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
       context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
-    // Check pre-conditions
-    ensure(!settings_.datadir || !chaindata_env, "Daemon::Daemon datadir and chaindata_env are alternative");
-
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);

@@ -27,11 +27,9 @@
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>

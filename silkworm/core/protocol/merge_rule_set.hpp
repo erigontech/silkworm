@@ -46,7 +46,7 @@ class MergeRuleSet : public BaseRuleSet {
     BlockReward compute_reward(const Block& block) override;
 
   protected:
-    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const override;
 
   private:
     intx::uint256 terminal_total_difficulty_;

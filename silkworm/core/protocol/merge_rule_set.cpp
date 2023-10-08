@@ -125,7 +125,7 @@ ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockSt
     return BaseRuleSet::validate_ommers(block, state);
 }
 
-intx::uint256 MergeRuleSet::difficulty(const BlockHeader&, const BlockHeader&) {
+intx::uint256 MergeRuleSet::difficulty(const BlockHeader&, const BlockHeader&) const {
     return 0;
 }
 

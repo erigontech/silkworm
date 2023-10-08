@@ -132,7 +132,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
     }
 
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // https://eips.ethereum.org/EIPS/eip-1985
+    // EIP-1985: Sane limits for certain EVM parameters
     if (header.gas_limit > INT64_MAX) {
         return ValidationResult::kInvalidGasLimit;
     }
@@ -210,7 +210,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
     return validate_seal(header);
 }
 
-ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) {
+ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) const {
     if (header.extra_data.length() > kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }

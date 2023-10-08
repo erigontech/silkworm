@@ -17,6 +17,7 @@
 #include "bor_rule_set.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "param.hpp"
@@ -63,9 +64,35 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) cons
     return ValidationResult::kOk;
 }
 
+static std::optional<evmc::address> ecrecover(const BlockHeader& header, const BlockNum jaipur_block) {
+    evmc::bytes32 seal_hash{header.hash(/*for_sealing=*/false, /*exclude_extra_data_sig=*/true)};
+    if (header.base_fee_per_gas && header.number < jaipur_block) {
+        // See https://github.com/maticnetwork/bor/pull/269
+        BlockHeader copy{header};
+        copy.base_fee_per_gas = std::nullopt;
+        seal_hash = copy.hash(/*for_sealing=*/false, /*exclude_extra_data_sig=*/true);
+    }
+
+    ByteView signature{&header.extra_data[header.extra_data.length() - kExtraSealSize], kExtraSealSize - 1};
+    uint8_t recovery_id{header.extra_data[header.extra_data.length() - 1]};
+
+    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+    evmc::address beneficiary;
+    if (!silkworm_recover_address(beneficiary.bytes, seal_hash.bytes, signature.data(), recovery_id, context)) {
+        return std::nullopt;
+    }
+    return beneficiary;
+}
+
+ValidationResult BorRuleSet::validate_seal(const BlockHeader& header) {
+    if (!ecrecover(header, config().jaipur_block)) {
+        return ValidationResult::kInvalidSignature;
+    }
+    return ValidationResult::kOk;
+}
+
 evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
-    // TODO(yperbasis): implement properly. Double check Author vs EVM Coinbase
-    return BaseRuleSet::get_beneficiary(header);
+    return *ecrecover(header, config().jaipur_block);
 }
 
 void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,

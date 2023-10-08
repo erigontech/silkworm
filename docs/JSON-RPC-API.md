@@ -24,7 +24,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_feeHistory                             |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
 | eth_getBlockByHash                         |     Yes      |                                           |     Yes     |     Yes     |
-| eth_getBlockByNumber                       |     Yes      |                                           |     Yes     |             |
+| eth_getBlockByNumber                       |     Yes      |                                           |     Yes     |     Yes     |
 | eth_getBlockTransactionCountByHash         |     Yes      |                                           |     Yes     |             |
 | eth_getBlockTransactionCountByNumber       |     Yes      |                                           |     Yes     |             |
 | eth_getUncleByBlockHashAndIndex            |     Yes      |                                           |     Yes     |             |
@@ -32,13 +32,13 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getUncleCountByBlockHash               |     Yes      |                                           |     Yes     |             |
 | eth_getUncleCountByBlockNumber             |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| eth_getTransactionByHash                   |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionByHash                   |     Yes      |                     partially implemented |     Yes     |     Yes     |
 | eth_getRawTransactionByHash                |     Yes      |                     partially implemented |     Yes     |             |
 | eth_getTransactionByBlockHashAndIndex      |     Yes      |                                           |     Yes     |             |
 | eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                     partially implemented |     Yes     |             |
 | eth_getTransactionByBlockNumberAndIndex    |     Yes      |                                           |     Yes     |             |
 | eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                     partially implemented |     Yes     |             |
-| eth_getTransactionReceipt                  |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionReceipt                  |     Yes      |                     partially implemented |     Yes     |     Yes     |
 | eth_getBlockReceipts                       |     Yes      |           same as parity_getBlockReceipts |     Yes     |             |
 | eth_getTransactionReceiptsByBlock          |     Yes      |           same as parity_getBlockReceipts |             |             |
 |                                            |              |                                           |             |             |

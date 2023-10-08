@@ -17,7 +17,6 @@
 #include "base_rule_set.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/trie/vector_root.hpp>
 
 #include "param.hpp"
 

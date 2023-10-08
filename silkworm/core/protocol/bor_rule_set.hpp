@@ -46,10 +46,10 @@ class BorRuleSet : public BaseRuleSet {
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) const override;
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
+    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
 
   private:
-    const BorConfig& config() const;
+    [[nodiscard]] const BorConfig& config() const;
 };
 
 }  // namespace silkworm::protocol

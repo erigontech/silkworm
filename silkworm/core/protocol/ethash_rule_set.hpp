@@ -51,7 +51,7 @@ class EthashRuleSet : public BaseRuleSet {
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) const override;
 
-    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const override;
+    [[nodiscard]] intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const override;
 
   private:
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};

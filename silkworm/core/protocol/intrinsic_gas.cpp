@@ -16,8 +16,6 @@
 
 #include "intrinsic_gas.hpp"
 
-#include <algorithm>
-
 #include <silkworm/core/common/as_range.hpp>
 
 #include "param.hpp"

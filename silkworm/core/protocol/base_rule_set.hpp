@@ -63,7 +63,7 @@ class BaseRuleSet : public IRuleSet {
 
     //! \brief Calculates the difficulty of the header
     //! \note Used by validate_block_header
-    virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const = 0;
+    [[nodiscard]] virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const = 0;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

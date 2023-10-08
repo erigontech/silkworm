@@ -30,11 +30,11 @@ static evmc::address ecrecover(const BlockHeader& header) {
     evmc::address beneficiary = evmc::address{};
 
     evmc::bytes32 seal_hash = header.hash(false, true);
-    Bytes signature = header.extra_data.substr(header.extra_data.length() - kExtraSealSize, kExtraSealSize - 1);
-    bool odd_y_parity = header.extra_data[header.extra_data.length() - 1] != 0;
+    ByteView signature{&header.extra_data[header.extra_data.length() - kExtraSealSize], kExtraSealSize - 1};
+    uint8_t recovery_id = header.extra_data[header.extra_data.length() - 1];
 
     static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
-    if (!silkworm_recover_address(beneficiary.bytes, seal_hash.bytes, signature.c_str(), odd_y_parity, context)) {
+    if (!silkworm_recover_address(beneficiary.bytes, seal_hash.bytes, signature.data(), recovery_id, context)) {
         return header.beneficiary;
     }
     return beneficiary;

@@ -35,6 +35,7 @@ nlohmann::json BorConfig::to_json() const noexcept {
     }
     nlohmann::json ret;
     ret["sprint"] = sprint_json;
+    ret["jaipurBlock"] = jaipur_block;
     return ret;
 }
 
@@ -50,6 +51,7 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
             config.sprint.emplace(from, item.value().get<uint64_t>());
         }
     }
+    config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
     return config;
 }
 

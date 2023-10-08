@@ -25,13 +25,20 @@ TEST_CASE("BorConfig JSON") {
             "sprint": {
                 "0": 64,
                 "38189056": 16
-            }
+            },
+            "jaipurBlock": 123
         })");
 
     const std::optional<BorConfig> config{BorConfig::from_json(json)};
 
     REQUIRE(config);
-    CHECK(config == BorConfig{.sprint = {{0, 64}, {38189056, 16}}});
+    CHECK(config == BorConfig{
+                        .sprint = {
+                            {0, 64},
+                            {38189056, 16},
+                        },
+                        .jaipur_block = 123,
+                    });
     CHECK(config->to_json() == json);
 }
 

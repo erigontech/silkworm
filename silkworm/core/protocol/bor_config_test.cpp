@@ -35,4 +35,17 @@ TEST_CASE("BorConfig JSON") {
     CHECK(config->to_json() == json);
 }
 
+TEST_CASE("sprint_size") {
+    BorConfig c{.sprint = {{0, 64}, {10, 16}, {20, 12}}};
+    CHECK(c.sprint_size(0) == 64);
+    CHECK(c.sprint_size(1) == 64);
+    CHECK(c.sprint_size(9) == 64);
+    CHECK(c.sprint_size(10) == 16);
+    CHECK(c.sprint_size(11) == 16);
+    CHECK(c.sprint_size(19) == 16);
+    CHECK(c.sprint_size(20) == 12);
+    CHECK(c.sprint_size(21) == 12);
+    CHECK(c.sprint_size(100) == 12);
+}
+
 }  // namespace silkworm::protocol

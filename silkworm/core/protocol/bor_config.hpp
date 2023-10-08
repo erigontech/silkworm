@@ -26,7 +26,9 @@
 namespace silkworm::protocol {
 
 struct BorConfig {
-    std::map<BlockNum, uint64_t> sprint;
+    std::map<BlockNum, uint64_t> sprint;  // from block -> sprint size
+
+    uint64_t sprint_size(BlockNum number) const noexcept;
 
     [[nodiscard]] nlohmann::json to_json() const noexcept;
 

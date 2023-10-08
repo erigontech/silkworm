@@ -23,6 +23,12 @@
 
 namespace silkworm::protocol {
 
+static bool is_sprint_start(BlockNum number, uint64_t sprint_size) {
+    // N.B. Works fine for the specific Polygon sprint size config, but is flawed in general
+    // (e.g. it wouldn't work for {0->5, 10->3})
+    return number % sprint_size == 0;
+}
+
 ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) {
     if (!is_zero(header.prev_randao)) {
@@ -33,14 +39,27 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
 
 // validate_extra_data validates that the extra-data contains both the vanity and signature.
 // header.Extra = header.Vanity + header.ProducerBytes (optional) + header.Seal
-ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) {
-    static constexpr size_t kExtraVanitySize{32};
-    if (header.extra_data.length() < kExtraVanitySize) {
+ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) const {
+    static constexpr size_t kExtraVanityLength{32};
+    static constexpr size_t kValidatorHeaderLength{kAddressLength + 20};  // address + power
+
+    if (header.extra_data.length() < kExtraVanityLength) {
         return ValidationResult::kMissingVanity;
     }
-    if (header.extra_data.length() < kExtraVanitySize + kExtraSealSize) {
+    if (header.extra_data.length() < kExtraVanityLength + kExtraSealSize) {
         return ValidationResult::kMissingSignature;
     }
+
+    const bool is_sprint_end{is_sprint_start(header.number + 1, config().sprint_size(header.number))};
+    // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
+    const size_t signers_length{header.extra_data.length() - (kExtraVanityLength + kExtraSealSize)};
+    if (!is_sprint_end && signers_length != 0) {
+        return ValidationResult::kExtraValidators;
+    }
+    if (is_sprint_end && signers_length % kValidatorHeaderLength != 0) {
+        return ValidationResult::kInvalidSpanValidators;
+    }
+
     return ValidationResult::kOk;
 }
 
@@ -79,6 +98,10 @@ void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint25
     intx::be::unsafe::store(&log.data[32 * 4], recipient_initial_balance + amount);
 
     state.add_log(log);
+}
+
+const BorConfig& BorRuleSet::config() const {
+    return std::get<BorConfig>(chain_config_.rule_set_config);
 }
 
 }  // namespace silkworm::protocol

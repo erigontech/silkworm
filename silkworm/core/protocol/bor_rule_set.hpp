@@ -44,9 +44,12 @@ class BorRuleSet : public BaseRuleSet {
                               const intx::uint256& recipient_initial_balance) override;
 
   protected:
-    ValidationResult validate_extra_data(const BlockHeader& header) override;
+    ValidationResult validate_extra_data(const BlockHeader& header) const override;
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) override { return 1; }
+    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
+
+  private:
+    const BorConfig& config() const;
 };
 
 }  // namespace silkworm::protocol

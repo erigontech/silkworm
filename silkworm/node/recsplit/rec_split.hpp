@@ -69,6 +69,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
@@ -424,9 +425,13 @@ class RecSplit {
         add_key(key.c_str(), key.size(), offset);
     }
 
+    [[nodiscard]] bool build() {  // for test
+        ThreadPool thread_pool{std::thread::hardware_concurrency()};
+        return build(thread_pool);
+    }
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
-    [[nodiscard]] bool build() {
+    [[nodiscard]] bool build(ThreadPool& thread_pool) {
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
@@ -464,12 +469,17 @@ class RecSplit {
         // Find splitting trees for each bucket
         try {
             // todo(mike): parallelize! (libc++ lacks parallel for_each)
-            std::for_each(std::begin(buckets_), std::end(buckets_), [&](Bucket& bucket) {
+            for(auto& bucket : buckets_) {
                 SILK_DEBUG << "RECSPLIT for BUCKET " << bucket.bucket_id_;
-                bool collision = recsplit_bucket(bucket, bytes_per_record_);
-                if (collision) throw CollisionError{bucket.bucket_id_};
+                thread_pool.push_task([&]() {
+                    bool collision = recsplit_bucket(bucket, bytes_per_record_);
+                    if (collision) throw CollisionError{bucket.bucket_id_};  // todo(mike): use exception_ptr and return to caller
+                });
+            }
 
-            });
+            //thread_pool.pause();
+            thread_pool.wait_for_tasks();
+            //thread_pool.unpause();
         } catch (const CollisionError& error) {
             SILK_WARN << "[index] collision detected for bucket=" << error.bucket_id;
             return true;

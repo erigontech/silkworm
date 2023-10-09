@@ -23,6 +23,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
@@ -253,7 +254,7 @@ void TransactionIndex::build() {
         SILK_TRACE << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected |= tx_hash_to_block_rs.build();
+        collision_detected |= tx_hash_to_block_rs.build(thread_pool_);
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {

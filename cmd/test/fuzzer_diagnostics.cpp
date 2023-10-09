@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (!nlohmann::json::accept(input_str)) {
-        std::cout << "Not valid jsona" << std::endl;
+        std::cout << "Not valid json" << std::endl;
         return -1;
     }
 

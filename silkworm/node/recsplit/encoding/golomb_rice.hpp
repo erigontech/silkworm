@@ -116,6 +116,41 @@ class GolombRiceVector {
         std::size_t bit_count{0};
     };
 
+    class LazyBuilder {  // todo(mike): find a better solution
+      public:
+        static constexpr std::size_t kDefaultAllocatedWords{16};
+
+        LazyBuilder() : LazyBuilder(kDefaultAllocatedWords) {}
+
+        explicit LazyBuilder(const std::size_t allocated_words) {
+            fixeds.reserve(allocated_words);
+            unaries.reserve(allocated_words);
+        }
+
+        void append_fixed(const uint64_t v, const uint64_t log2golomb) {
+            fixeds.emplace_back(v, log2golomb);
+        }
+
+        void append_unary(uint32_t unary) {
+            unaries.push_back(unary);
+        }
+
+        void append_to(Builder& real_builder) {
+            for(const auto& [v, log2golomb] : fixeds) {
+                real_builder.append_fixed(v, log2golomb);
+            }
+            real_builder.append_unary_all(unaries);
+        }
+
+        void clear() {
+            fixeds.clear();
+            unaries.clear();
+        }
+      private:
+        std::vector<std::pair<uint64_t, uint64_t>> fixeds;
+        Uint32Sequence unaries;
+    };
+
     GolombRiceVector() = default;
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 

@@ -44,7 +44,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Enable fuzzing tests for Clang sanitizer builds only
-  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_SANITIZE)
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND "${SILKWORM_SANITIZE}" MATCHES ".*fuzzer")
     # Silkworm RpcDaemon Fuzz Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)

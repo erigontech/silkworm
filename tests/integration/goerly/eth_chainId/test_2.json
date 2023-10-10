@@ -1,7 +1,0 @@
-[
-   {
-        "request":[{ "jsonrpc":"2.0", "method":"eth_chainId", "params":[], "id":1 },{ "jsonrpc":"2.0", "method":"eth_chainId", "params":[], "id":1}],
-        "response":[{ "jsonrpc":"2.0", "id":1, "result":"0x5" },{ "jsonrpc":"2.0", "id":1, "result":"0x5" }]
-    }
-]
-

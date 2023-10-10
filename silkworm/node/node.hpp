@@ -34,7 +34,9 @@ class NodeImpl;
 
 class Node {
   public:
-    Node(Settings&, std::shared_ptr<sentry::api::SentryClient>, mdbx::env&);
+    Node(Settings& settings,
+         std::shared_ptr<sentry::api::SentryClient> sentry_client,
+         mdbx::env chaindata_db);
     ~Node();
 
     Node(const Node&) = delete;

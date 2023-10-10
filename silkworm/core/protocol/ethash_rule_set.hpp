@@ -49,6 +49,8 @@ class EthashRuleSet : public BaseRuleSet {
                                     bool parent_has_uncles, const ChainConfig& config);
 
   protected:
+    ValidationResult validate_extra_data(const BlockHeader& header) override;
+
     intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:

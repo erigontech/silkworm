@@ -56,8 +56,7 @@ class BaseRuleSet : public IRuleSet {
     BlockReward compute_reward(const Block& block) override;
 
   protected:
-    const ChainConfig& chain_config_;
-    bool prohibit_ommers_{false};
+    virtual ValidationResult validate_extra_data(const BlockHeader& header);
 
     //! \brief Calculates the difficulty of the header
     //! \note Used by validate_block_header
@@ -67,6 +66,9 @@ class BaseRuleSet : public IRuleSet {
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
+
+    const ChainConfig& chain_config_;
+    bool prohibit_ommers_{false};
 };
 
 }  // namespace silkworm::protocol

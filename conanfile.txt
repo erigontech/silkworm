@@ -1,5 +1,6 @@
 [requires]
 catch2/2.13.9
+magic_enum/0.8.2
 ms-gsl/4.0.0
 nlohmann_json/3.11.2
 tl-expected/1.1.0

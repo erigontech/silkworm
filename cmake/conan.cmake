@@ -16,7 +16,7 @@
 
 function(guess_conan_profile)
   if(SILKWORM_WASM_API)
-    set(wasi_release)
+    set(PROFILE wasi_release)
   elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     set(PROFILE linux_gcc_11_release)
   elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")

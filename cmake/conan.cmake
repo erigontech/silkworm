@@ -44,8 +44,8 @@ set(CONAN_CMAKE_SILENT_OUTPUT ON)
 
 include("${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan.cmake")
 
-# provide a static conanfile.txt instead of generating it with conan_cmake_configure()
-file(COPY "${CMAKE_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
+# provide a static conanfile.py instead of generating it with conan_cmake_configure()
+file(COPY "${CMAKE_SOURCE_DIR}/conanfile.py" DESTINATION "${CONAN_BINARY_DIR}")
 
 if(NOT DEFINED CONAN_PROFILE)
   guess_conan_profile()

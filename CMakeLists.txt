@@ -61,7 +61,7 @@ option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory managemen
 set_property(
   DIRECTORY
   APPEND
-  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.txt
+  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.py
 )
 
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)

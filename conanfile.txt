@@ -1,29 +1,8 @@
 [requires]
-abseil/20220623.0 # grpc dependency
-asio-grpc/2.4.0
-benchmark/1.6.1
-boost/1.81.0
 catch2/2.13.9
-cli11/2.2.0
-gmp/6.2.1
-grpc/1.48.0
-gtest/1.12.1
-jwt-cpp/0.6.0
-magic_enum/0.8.2
-mimalloc/2.1.2
 ms-gsl/4.0.0
 nlohmann_json/3.11.2
-openssl/1.1.1s # grpc dependency
-protobuf/3.21.4 # grpc dependency
-roaring/1.1.2
-snappy/1.1.7
-sqlitecpp/3.3.0
 tl-expected/1.1.0
-tomlplusplus/3.3.0
 
 [generators]
 cmake_find_package
-
-[options]
-asio-grpc:local_allocator=boost_container
-mimalloc:override=True

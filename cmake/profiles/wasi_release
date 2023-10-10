@@ -2,6 +2,7 @@
 os=Emscripten
 arch=wasm
 compiler=clang
+compiler.version=14
 compiler.libcxx=libc++
 build_type=Release
 [options]

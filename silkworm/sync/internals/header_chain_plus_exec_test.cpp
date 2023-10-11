@@ -67,6 +67,9 @@ class DummyRuleSet : public protocol::IRuleSet {
     protocol::BlockReward compute_reward(const Block&) override { return {0, {}}; }
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
+
+    void add_fee_transfer_log(IntraBlockState&, const intx::uint256&, const evmc::address&, const intx::uint256&,
+                              const evmc::address&, const intx::uint256&) override {}
 };
 
 TEST_CASE("Headers receiving and saving") {
@@ -444,7 +447,7 @@ TEST_CASE("Headers receiving and saving") {
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));  // there was a unwind op
+        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));  // there was an unwind op
 
         REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == new_expected_td);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
@@ -589,7 +592,7 @@ TEST_CASE("Headers receiving and saving") {
      *        h0
      * input:
      *         h0 <----- h1  <----- h2
-     *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
+     *               |-- h1' <----- h2' <----- h3' (new canonical) -> unwind?
      */
     //  SECTION("a header in a secondary chain") {
     //      // ...
@@ -600,7 +603,7 @@ TEST_CASE("Headers receiving and saving") {
      *               |-- h1'
      * input:
      *         h0 <----- h1  <----- h2
-     *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
+     *               |-- h1' <----- h2' <----- h3' (new canonical) -> unwind?
      */
     //  SECTION("a forking point in the past") {
     //       // ...

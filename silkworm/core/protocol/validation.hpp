@@ -103,9 +103,11 @@ enum class [[nodiscard]] ValidationResult{
     kBlobCreateTransaction,   // Blob transactions cannot have the form of a create transaction
 
     // Bor validation errors. See https://github.com/ledgerwatch/erigon/blob/devel/consensus/bor/bor.go
-    kMissingVanity,     // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity
-    kMissingSignature,  // Block's extra-data section doesn't seem to contain a 65 byte secp256k1 signature
-    kInvalidMixDigest,  // Block's mix digest is non-zero
+    kMissingVanity,          // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity
+    kMissingSignature,       // Block's extra-data section doesn't seem to contain a 65 byte secp256k1 signature
+    kInvalidMixDigest,       // Block's mix digest is non-zero
+    kExtraValidators,        // Non-sprint-end block contains extra validator list
+    kInvalidSpanValidators,  // Invalid validator list on sprint end block
 };
 
 namespace protocol {

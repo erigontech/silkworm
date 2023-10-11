@@ -330,6 +330,7 @@ const ChainConfig kPolygonConfig{
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
     .rule_set_config = protocol::BorConfig{
         .sprint = {{0, 64}, {38189056, 16}},
+        .jaipur_block = 23'850'000,
     },
 };
 
@@ -348,6 +349,7 @@ const ChainConfig kMumbaiConfig{
     .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
     .rule_set_config = protocol::BorConfig{
         .sprint = {{0, 64}, {29638656, 16}},
+        .jaipur_block = 22'770'000,
     },
 };
 

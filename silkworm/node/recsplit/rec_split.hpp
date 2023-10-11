@@ -480,8 +480,9 @@ class RecSplit {
         std::atomic_bool collision{false};
         for(auto& bucket : buckets_) {
             thread_pool.push_task([&]() noexcept(false) {
-                if (collision) return;
-                collision = recsplit_bucket(bucket, bytes_per_record_);
+                if (collision) return;  // skip work if collision detected
+                bool local_collision = recsplit_bucket(bucket, bytes_per_record_);
+                if (local_collision) collision = true;
             });
         }
         thread_pool.wait_for_tasks();

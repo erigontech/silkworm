@@ -15,6 +15,7 @@
 */
 
 #include "rec_split.hpp"
+#include "rec_split_seq.hpp"
 
 #include <vector>
 
@@ -23,6 +24,50 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/xoroshiro128pp.hpp>
+
+
+#include <fstream>
+#include <iomanip> // for std::setw and std::setfill
+
+void hexDump(std::string out_file_name, std::ifstream& file) {
+    std::ofstream out(out_file_name);
+    constexpr size_t bytesPerLine = 16;
+    size_t lineNumber = 0;
+
+    while (file) {
+        out << std::hex << std::setw(4) << std::setfill('0') << lineNumber << ": ";
+        std::vector<unsigned char> line(bytesPerLine, 0);
+
+        file.read(reinterpret_cast<char*>(line.data()), bytesPerLine);
+        size_t bytesRead = static_cast<size_t>(file.gcount());
+
+        for (size_t i = 0; i < bytesPerLine; ++i) {
+            if (i < bytesRead) {
+                unsigned char byte = line[i];
+                out << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
+            } else {
+                out << "   ";
+            }
+        }
+
+        out << "| ";
+
+        for (size_t i = 0; i < bytesRead; ++i) {
+            unsigned char byte = line[i];
+            if (std::isprint(byte)) {
+                out << static_cast<char>(byte);
+            } else {
+                out << ".";
+            }
+        }
+
+        out << "\n";
+        lineNumber += bytesPerLine;
+    }
+}
+
+
+
 
 namespace silkworm::succinct {
 
@@ -203,6 +248,31 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
     }
 }
 
+// test broken in sequential and parallel version due to the custom RecSplit construction
+// TEST_CASE("RecSplit8: operator()", "[silkworm][node][recsplit][ignore]") {
+//     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+//     test::TemporaryFile index_file;
+//     RecSplitSettings settings{
+//         .keys_count = 100,
+//         .bucket_size = 10,
+//         .index_path = index_file.path(),
+//         .base_data_id = 0,
+//         .double_enum_index = false};
+//     RecSplit8 rs{settings, /*.salt=*/kTestSalt};
+//
+//     for (size_t i{0}; i < settings.keys_count; ++i) {
+//         rs.add_key("key " + std::to_string(i), i * 17);
+//     }
+//     CHECK(rs.build() == false /*collision_detected*/);
+//
+//     RecSplit8 rs2{settings.index_path};
+//     for (size_t i{0}; i < settings.keys_count; ++i) {
+//         const std::string key{"key " + std::to_string(i)};
+//         CHECK(rs2(key) == i * 17);
+//     }
+// }
+
+
 TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
@@ -218,6 +288,37 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
         rs1.add_key("key " + std::to_string(i), i * 17);
     }
     CHECK(rs1.build() == false /*collision_detected*/);
+
+    //std::ifstream f(index_file.path(), std::ios::binary);
+    //hexDump("par_hexdump.txt", f);
+    //f.close();
+
+    RecSplit8 rs2{settings.index_path};
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        const std::string key{"key " + std::to_string(i)};
+        CHECK(rs2.lookup(key) == i * 17);
+    }
+}
+
+TEST_CASE("RecSplit8 SEQ: index lookup", "[silkworm][node][recsplit][ignore]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    succinct_seq::RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0,
+        .double_enum_index = false};
+    succinct_seq::RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    //std::ifstream f(index_file.path(), std::ios::binary);
+    //hexDump("seq_hexdump.txt", f);
+    //f.close();
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {

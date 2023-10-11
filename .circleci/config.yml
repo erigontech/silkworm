@@ -46,6 +46,9 @@ commands:
       conan_profile:
         type: string
         default: none
+      target:
+        type: string
+        default: all
     steps:
       - run:
           name: "Install compiler"
@@ -66,7 +69,13 @@ commands:
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command: cmake --build ~/build -j16 # each compiler job requires 4GB of RAM
+          command:  |
+            if [[ "<<parameters.target>>" == "all" ]]
+            then
+                cmake --build ~/build -j16
+            else
+                cmake --build ~/build -j16 --target <<parameters.target>>
+            fi
 
   build_using_conan:
     parameters:
@@ -77,6 +86,9 @@ commands:
         type: string
       compiler_version:
         type: integer
+      target:
+        type: string
+        default: all
     steps:
       - run:
           name: "Install Conan"
@@ -100,6 +112,7 @@ commands:
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
           conan_profile: $CONAN_PROFILE
+          target: <<parameters.target>>
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -127,6 +140,17 @@ commands:
           name: "Execution spec tests"
           working_directory: ~/build
           command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec
+
+  fuzz-test:
+    steps:
+      - run:
+          name: "RPCDaemon Fuzz test"
+          working_directory: ~/build
+          command: |
+            mkdir -p ~/corpus
+            mkdir -p ~/crashes
+            mkdir -p ~/artifacts
+            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=10 ~/corpus ~/crashes ~/artifacts
 
 jobs:
   lint:
@@ -281,6 +305,23 @@ jobs:
       - store_artifacts:
           path: /tmp/report.html
 
+  linux-clang-fuzzer:
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
+      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
+      UBSAN_OPTIONS: print_stacktrace=1
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          target: rpcdaemon_fuzzer_test
+      - fuzz-test
+
   linux-wasm-build:
     environment:
       WASI_SDK_VERSION: 15
@@ -373,7 +414,8 @@ workflows:
     when:
       or:
         - equal: [ master, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+        - equal: [ master, <<pipeline.git.branch>> ]
+        # - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-release:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
@@ -388,3 +430,7 @@ workflows:
       - linux-clang-address-sanitizer
       - linux-clang-tidy
       - linux-wasm-build
+  
+  fuzzer:
+    jobs:
+      - linux-clang-fuzzer

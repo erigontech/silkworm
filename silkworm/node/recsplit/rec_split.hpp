@@ -88,6 +88,23 @@
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
 
+// prettyPrint a vector, used for debugging
+// usage: prettyPrint(vi);
+// usage: prettyPrint(vi, "{", ", ", "}");
+template <typename T>
+std::string prettyPrint(const std::vector<T>& v, const std::string& prefix = "[", const std::string& separator = ", ", const std::string& suffix = "]") {
+    std::ostringstream oss;
+    oss << prefix;
+    for (size_t i = 0; i < v.size(); ++i) {
+        oss << v[i];
+        if (i < v.size() - 1) {
+            oss << separator;
+        }
+    }
+    oss << suffix;
+    return oss.str();
+}
+
 namespace silkworm::succinct {
 
 using namespace std::chrono;
@@ -216,7 +233,7 @@ class RecSplit {
             values_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
-        Bucket(Bucket&&) = default;
+        Bucket(Bucket&&) noexcept = default;
 
         //! Identifier of the current bucket being accumulated
         uint64_t bucket_id_{0};
@@ -231,7 +248,7 @@ class RecSplit {
         GolombRiceVector::LazyBuilder gr_builder_;
 
         //! Helper index output stream
-        std::ostringstream index_ofs;
+        std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
 
         void clear() {
             //bucket_id_ = 0;
@@ -467,25 +484,26 @@ class RecSplit {
         };
 
         // Find splitting trees for each bucket
-        try {
-            // todo(mike): parallelize! (libc++ lacks parallel for_each)
-            for(auto& bucket : buckets_) {
-                SILK_DEBUG << "RECSPLIT for BUCKET " << bucket.bucket_id_;
-                thread_pool.push_task([&]() {
-                    bool collision = recsplit_bucket(bucket, bytes_per_record_);
-                    if (collision) throw CollisionError{bucket.bucket_id_};  // todo(mike): use exception_ptr and return to caller
-                });
-            }
 
-            //thread_pool.pause();
-            thread_pool.wait_for_tasks();
-            //thread_pool.unpause();
-        } catch (const CollisionError& error) {
-            SILK_WARN << "[index] collision detected for bucket=" << error.bucket_id;
+        std::atomic_bool collision{false};
+        for(auto& bucket : buckets_) {
+            //SILK_DEBUG << "RECSPLIT for BUCKET " << bucket.bucket_id_;
+            thread_pool.push_task([&]() noexcept(false) {
+                if (collision) return;
+                collision = recsplit_bucket(bucket, bytes_per_record_);
+            });
+        }
+
+        //thread_pool.pause();
+        thread_pool.wait_for_tasks();
+        //thread_pool.unpause();
+
+        if (collision) {
+            SILK_WARN << "[index] collision detected";
             return true;
         }
 
-        // (mike) Store prefix sums of bucket sizes and bit positions
+        // Store prefix sums of bucket sizes and bit positions
 
         std::vector<int64_t> bucket_size_accumulator_(bucket_count_ + 1);  // accumulator for size of every bucket
         std::vector<int64_t> bucket_position_accumulator_(bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
@@ -500,7 +518,7 @@ class RecSplit {
                 buckets_[i].gr_builder_.append_to(gr_builder_);
             }
 
-            bucket_position_accumulator_[i + 1] = bucket_position_accumulator_[i] + gr_builder_.get_bits();
+            bucket_position_accumulator_[i + 1] = gr_builder_.get_bits();
 
             SILKWORM_ASSERT(bucket_size_accumulator_[i + 1] >= bucket_size_accumulator_[i]);
             SILKWORM_ASSERT(bucket_position_accumulator_[i + 1] >= bucket_position_accumulator_[i]);
@@ -508,7 +526,10 @@ class RecSplit {
 
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
 
-        // (mike) Concatenate the representation of each bucket
+        SILK_INFO << "par-vers - sizes: " << prettyPrint(bucket_size_accumulator_);
+        SILK_INFO << "par-vers - positions: " << prettyPrint(bucket_position_accumulator_);
+
+        // Concatenate the representation of each bucket
         golomb_rice_codes_ = gr_builder_.build();
 
         // Build Elias-Fano index for offsets (if any)
@@ -779,7 +800,7 @@ class RecSplit {
                 }
             }
 
-            std::vector<uint64_t> buffer_bucket_;  // temporary buffer for keys
+            std::vector<uint64_t> buffer_bucket_;  // temporary buffer for keys  // todo(mike): rename to buffer_keys_
             std::vector<uint64_t> buffer_offsets_;  // temporary buffer for offsets
             buffer_bucket_.resize(bucket.keys_.size());
             buffer_offsets_.resize(bucket.values_.size());
@@ -827,7 +848,7 @@ class RecSplit {
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
-            SILK_DEBUG << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
+            //SILK_DEBUG << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             // No need to build aggregation levels - just find bijection
             // if (level == 7) {
             //    SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
@@ -869,7 +890,7 @@ class RecSplit {
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            SILK_DEBUG << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
+            //SILK_DEBUG << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
             // SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
 

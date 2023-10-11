@@ -24,10 +24,11 @@
 
 #include <silkworm/silkrpc/test/api_test_database.hpp>
 
-void printStackTrace() {
+void print_stack_trace() {
     void* trace[16];
     int trace_size = backtrace(trace, 16);
     char** messages = backtrace_symbols(trace, trace_size);
+    [[maybe_unused]] auto _ = gsl::finally([&messages] { free(messages); });
     std::cout << "Stack Trace:" << std::endl;
     for (int i = 0; i < trace_size; i++) {
         std::cout << messages[i] << std::endl;
@@ -48,19 +49,15 @@ void printStackTrace() {
             }
         }
     }
-    free(messages);
 }
 
 int main(int argc, char* argv[]) {
-    const auto DEFAULT_REQUEST = R"({"jsonrpc":"2.0","id":1,"method":"eth_getTransactionByHash","params":["0x54b25c11650dca0253ef7b91b5415680eea8dac54b029863e12db48908ad386c"]})";
-
     CLI::App app{"Debugs or rerun a single fuzzer test"};
 
     std::string input_str;
     std::string input_file;
 
     app.add_option("input", input_str, "Input string")
-        ->default_val(DEFAULT_REQUEST)
         ->description("Wrap JSON in '' to avoid shell escaping, e.g. '{\"jsonrpc\":\"2.0\",\"id\":1}'")
         ->required(false);
 
@@ -88,17 +85,12 @@ int main(int argc, char* argv[]) {
     silkworm::rpc::http::Reply reply;
 
     try {
-        static auto db = silkworm::rpc::test::InitializeTestBase();
-        static auto request_handler = new silkworm::rpc::test::RpcApiTestBase<silkworm::rpc::test::RequestHandler_ForTest>(db);
-
+        auto context = silkworm::rpc::test::TestDatabaseContext();
+        auto request_handler = new silkworm::rpc::test::RpcApiTestBase<silkworm::rpc::test::RequestHandler_ForTest>(context.db);
         auto request_json = nlohmann::json::parse(input_str);
         std::cout << "Request: " << request_json.dump(4) << std::endl;
 
         request_handler->run<&silkworm::rpc::test::RequestHandler_ForTest::handle_request>(input_str, reply);
-
-        auto db_path = db.get_path();
-        db.close();
-        std::filesystem::remove_all(db_path);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {
@@ -107,7 +99,7 @@ int main(int argc, char* argv[]) {
             }
         } catch (const std::exception& e) {
             std::cout << "Caught exception: " << e.what() << std::endl;
-            printStackTrace();
+            print_stack_trace();
         }
     }
 

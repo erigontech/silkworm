@@ -21,6 +21,3 @@ set(CURVE
 option(WITH_PROCPS "" OFF)
 option(IS_LIBFF_PARENT "" OFF)
 add_subdirectory(libff)
-if(NOT MSVC)
-  add_dependencies(ff gmplib)
-endif()

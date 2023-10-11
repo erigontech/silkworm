@@ -112,15 +112,8 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
             }
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
-                const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
-                auto db = test::open_db(db_dir);
-                db::RWTxnManaged txn{db};
-                db::table::check_or_create_chaindata_tables(txn);
-                auto state_buffer = test::populate_genesis(txn, tests_dir);
-                test::populate_blocks(txn, tests_dir, state_buffer);
-                txn.commit_and_stop();
-
-                test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{db};
+                auto context = test::TestDatabaseContext();
+                test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
 
                 std::string line_out;
                 std::string line_in;
@@ -145,9 +138,6 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
                         CHECK(are_equivalent(nlohmann::json::parse(reply.content), expected));
                     }
                 }
-
-                db.close();
-                std::filesystem::remove_all(db_dir);
             }
         }
     }
@@ -155,16 +145,8 @@ TEST_CASE("rpc_api io (all files)", "[silkrpc][rpc_api]") {
 
 TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    const auto tests_dir = test::get_tests_dir();
-    const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
-    auto db = test::open_db(db_dir);
-    db::RWTxnManaged txn{db};
-    db::table::check_or_create_chaindata_tables(txn);
-    auto state_buffer = test::populate_genesis(txn, tests_dir);
-    test::populate_blocks(txn, tests_dir, state_buffer);
-    txn.commit_and_stop();
-
-    test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{db};
+    auto context = test::TestDatabaseContext();
+    test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
 
     SECTION("sample test") {
         auto request = R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawTransaction","params":["0x74e41d593675913d6d5521f46523f1bd396dff1891bdb35f59be47c7e5e0b34b"]})"_json;
@@ -173,9 +155,6 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
         test_base.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
         CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
-
-    db.close();
-    std::filesystem::remove_all(db_dir);
 }
 #endif  // SILKWORM_SANITIZE
 

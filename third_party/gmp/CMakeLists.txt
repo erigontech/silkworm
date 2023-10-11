@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-if((DEFINED GMP_LIBRARY) AND (NOT DEFINED CACHE{GMP_LIBRARY}))
+if(DEFINED GMP_LIBRARY)
   add_library(gmplib STATIC IMPORTED)
   set_target_properties(gmplib PROPERTIES IMPORTED_LOCATION "${GMP_LIBRARY}")
   if(DEFINED GMP_INCLUDE_DIR)

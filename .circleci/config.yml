@@ -94,7 +94,7 @@ commands:
             cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>
@@ -322,7 +322,6 @@ jobs:
           name: "Cmake"
           working_directory: ~/build
           command: |
-            sed -i.bak '/grpc/d' ../project/conanfile.txt # remove GRPC dependencies to avoid building them
             cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_CORE_USE_ABSEIL=OFF -DSILKWORM_WASM_API=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Release
       - run:
           name: "Build"

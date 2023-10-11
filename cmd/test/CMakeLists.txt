@@ -16,7 +16,6 @@
 
 find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
-find_package(GTest REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")

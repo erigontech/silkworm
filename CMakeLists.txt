@@ -37,10 +37,6 @@ endif()
 project(silkworm)
 set(PROJECT_VERSION 0.1.0-dev)
 
-if(NOT SILKWORM_HAS_PARENT)
-  include(cmake/conan.cmake)
-endif()
-
 include(CableBuildInfo)
 
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
@@ -59,10 +55,14 @@ option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 
+if(NOT SILKWORM_HAS_PARENT)
+  include(cmake/conan.cmake)
+endif()
+
 set_property(
   DIRECTORY
   APPEND
-  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.txt
+  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.py
 )
 
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)

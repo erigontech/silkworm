@@ -44,6 +44,7 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) cons
     static constexpr size_t kExtraVanityLength{32};
     static constexpr size_t kValidatorHeaderLength{kAddressLength + 20};  // address + power
 
+    // See https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L393
     if (header.extra_data.length() < kExtraVanityLength) {
         return ValidationResult::kMissingVanity;
     }
@@ -51,7 +52,10 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) cons
         return ValidationResult::kMissingSignature;
     }
 
+    // The end of a sprint at block n == the start of next sprint at block n+1
+    // See https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L351
     const bool is_sprint_end{is_sprint_start(header.number + 1, config().sprint_size(header.number))};
+
     // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
     const size_t signers_length{header.extra_data.length() - (kExtraVanityLength + kExtraSealSize)};
     if (!is_sprint_end && signers_length != 0) {
@@ -95,6 +99,7 @@ evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
     return *ecrecover(header, config().jaipur_block);
 }
 
+// See https://github.com/maticnetwork/bor/blob/v1.0.6/core/bor_fee_log.go
 void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
                                       const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                                       const intx::uint256& recipient_initial_balance) {

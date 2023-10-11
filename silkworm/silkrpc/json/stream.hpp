@@ -18,6 +18,7 @@
 
 #include <stack>
 #include <string>
+#include <string_view>
 
 #include <nlohmann/json.hpp>
 
@@ -43,12 +44,22 @@ class Stream {
     void close_array();
 
     void write_json(const nlohmann::json& json);
+    void write_json_field(std::string_view name, const nlohmann::json& value);
 
-    void write_field(const std::string& name);
-    void write_field(const std::string& name, const nlohmann::json& value);
+    void write_field(std::string_view name);
+    void write_entry(std::string_view value);
+    void write_field(std::string_view name, std::string_view value);
+    void write_field(std::string_view name, bool value);
+    void write_field(std::string_view name, const char* value);
+    void write_field(std::string_view name, std::int32_t value);
+    void write_field(std::string_view name, std::uint32_t value);
+    void write_field(std::string_view name, std::int64_t value);
+    void write_field(std::string_view name, std::uint64_t value);
+    void write_field(std::string_view name, std::float_t value);
+    void write_field(std::string_view name, std::double_t value);
 
   private:
-    void write_string(const std::string& str);
+    void write_string(std::string_view str);
     void ensure_separator();
 
     Writer& writer_;

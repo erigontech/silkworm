@@ -25,6 +25,7 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <evmc/hex.hpp>
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
@@ -50,17 +51,20 @@ struct DebugConfig {
     bool disableStack{false};
 };
 
+std::string uint256_to_hex(const evmone::uint256& x);
+std::string bytes_to_hex(evmc::bytes_view bv);
+
 void from_json(const nlohmann::json& json, DebugConfig& tc);
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc);
 
 using Storage = std::map<std::string, std::string>;
 
 struct DebugLog {
-    uint32_t pc;
+    std::uint32_t pc;
     std::string op;
-    int64_t gas;
-    int64_t gas_cost;
-    int32_t depth;
+    std::int64_t gas;
+    std::int64_t gas_cost;
+    std::int32_t depth;
     bool error{false};
     std::vector<std::string> memory;
     std::vector<std::string> stack;

@@ -29,8 +29,16 @@ class Writer {
   public:
     virtual ~Writer() = default;
 
-    virtual void write(const std::string& content) = 0;
+    virtual void write(std::string_view content) = 0;
     virtual void close() {}
+};
+
+class NullWriter : public Writer {
+  public:
+    explicit NullWriter() = default;
+
+    void write(std::string_view) override {
+    }
 };
 
 class StringWriter : public Writer {
@@ -41,7 +49,7 @@ class StringWriter : public Writer {
         content_.reserve(initial_capacity);
     }
 
-    void write(const std::string& content) override {
+    void write(std::string_view content) override {
         content_.append(content);
     }
 
@@ -57,7 +65,7 @@ class SocketWriter : public Writer {
   public:
     explicit SocketWriter(boost::asio::ip::tcp::socket& socket) : socket_(socket) {}
 
-    void write(const std::string& content) override {
+    void write(std::string_view content) override {
         boost::asio::write(socket_, boost::asio::buffer(content));
     }
 
@@ -69,7 +77,7 @@ class ChunksWriter : public Writer {
   public:
     explicit ChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
 
-    void write(const std::string& content) override;
+    void write(std::string_view content) override;
     void close() override;
 
   private:
@@ -81,6 +89,24 @@ class ChunksWriter : public Writer {
     const std::size_t chunk_size_;
     std::size_t available_;
     std::unique_ptr<char[]> buffer_;
+};
+
+class JsonChunksWriter : public Writer {
+  public:
+    explicit JsonChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
+
+    void write(std::string_view content) override;
+    void close() override;
+
+  private:
+    static const std::size_t kDefaultChunkSize = 0x800;
+
+    Writer& writer_;
+    bool chunk_open_ = false;
+    const std::size_t chunk_size_;
+    size_t room_left_in_chunck_;
+    std::size_t written_;
+    std::stringstream str_chunk_size_;
 };
 
 }  // namespace silkworm::rpc

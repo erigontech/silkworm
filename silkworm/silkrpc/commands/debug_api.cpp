@@ -394,7 +394,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash) << " config: {" << config << "}";
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -407,11 +407,11 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();
@@ -441,7 +441,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: {" << config << "}";
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -462,11 +462,11 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
         std::ostringstream oss;
         oss << "block " << block_number_or_hash.number() << "(" << silkworm::to_hex(block_number_or_hash.hash()) << ") not found";
         const Error error{-32000, oss.str()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();
@@ -516,7 +516,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     SILK_DEBUG << "bundles: " << bundles << " simulation_context: " << simulation_context << " config: {" << config << "}";
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -529,7 +529,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();
@@ -558,7 +558,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     SILK_DEBUG << "block_number: " << block_number << " config: {" << config << "}";
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -574,15 +574,15 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         std::ostringstream oss;
         oss << "block_number " << block_number << " not found";
         const Error error{-32000, oss.str()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();
@@ -611,7 +611,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " config: {" << config << "}";
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -627,15 +627,15 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
         std::ostringstream oss;
         oss << "block_hash " << silkworm::to_hex(block_hash) << " not found";
         const Error error{-32000, oss.str()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();

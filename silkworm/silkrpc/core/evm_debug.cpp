@@ -22,12 +22,12 @@
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -55,6 +55,31 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     return out;
 }
 
+std::string uint256_to_hex(const evmone::uint256& x) {
+    std::stringstream ss;
+    ss << "0x";
+
+    bool leading_zeros = true;
+    const uint64_t* px = &x[0];
+    for (int i = 3; i >= 0; i--) {
+        if (px[i] == 0) {
+            continue;
+        }
+        if (leading_zeros) {
+            ss << std::hex << px[i];
+            leading_zeros = false;
+        } else {
+            ss << std::setfill('0') << std::setw(16) << std::hex << px[i];
+        }
+    }
+
+    if (leading_zeros) {
+        ss << "0";
+    }
+
+    return ss.str();
+}
+
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     const auto name = names[opcode];
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
@@ -65,7 +90,7 @@ static std::string EMPTY_MEMORY(64, '0');
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
     for (int i = int(stack_size - 1); i >= 0; --i) {
-        vect.push_back("0x" + intx::to_string(stack[-i], 16));
+        vect.push_back(std::move(uint256_to_hex(stack[-i])));
     }
 }
 
@@ -75,8 +100,7 @@ void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory)
 
     const auto data = memory.data();
     for (std::size_t start = 0; start < memory.size(); start += len) {
-        const std::string entry{evmc::hex({data + start, len})};
-        vect.push_back(entry);
+        vect.push_back(std::move(silkworm::to_hex({data + start, len})));
     }
 }
 
@@ -251,27 +275,42 @@ void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkwo
 }
 
 void DebugTracer::write_log(const DebugLog& log) {
-    nlohmann::json json;
+    stream_.open_object();
+    stream_.write_field("depth", log.depth);
+    stream_.write_field("gas", log.gas);
+    stream_.write_field("gasCost", log.gas_cost);
+    stream_.write_field("op", log.op);
+    stream_.write_field("pc", log.pc);
 
-    json["depth"] = log.depth;
-    json["gas"] = log.gas;
-    json["gasCost"] = log.gas_cost;
-    json["op"] = log.op;
-    json["pc"] = log.pc;
     if (!config_.disableStack) {
-        json["stack"] = log.stack;
+        stream_.write_field("stack");
+        stream_.open_array();
+        for (const auto& item : log.stack) {
+            stream_.write_entry(item);
+        }
+        stream_.close_array();
     }
     if (!config_.disableMemory) {
-        json["memory"] = log.memory;
+        stream_.write_field("memory");
+        stream_.open_array();
+        for (const auto& item : log.memory) {
+            stream_.write_entry(item);
+        }
+        stream_.close_array();
     }
     if (!config_.disableStorage && !log.storage.empty()) {
-        json["storage"] = log.storage;
+        stream_.write_field("storage");
+        stream_.open_object();
+        for (const auto& entry : log.storage) {
+            stream_.write_field(entry.first, entry.second);
+        }
+        stream_.close_object();
     }
     if (log.error) {
-        json["error"] = nlohmann::json::object();
+        stream_.write_field("error", "{}");
     }
 
-    stream_.write_json(json);
+    stream_.close_object();
 }
 
 Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_number) {
@@ -326,7 +365,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
         std::ostringstream oss;
         oss << "transaction " << silkworm::to_hex(tx_hash, true) << " not found";
         const Error error{-32000, oss.str()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } else {
         const auto& block = tx_with_block->block_with_hash.block;
         const auto& transaction = tx_with_block->transaction;
@@ -396,7 +435,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
                     debug_tracer->flush_logs();
                     stream.close_array();
 
-                    stream.write_field("failed", !execution_result.success());
+                    stream.write_json_field("failed", !execution_result.success());
                     if (!execution_result.pre_check_error) {
                         stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
                         stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
@@ -467,7 +506,7 @@ Task<void> DebugExecutor::execute(
 
                 SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-                stream.write_field("failed", !execution_result.success());
+                stream.write_json_field("failed", !execution_result.success());
                 if (!execution_result.pre_check_error) {
                     stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
                     stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
@@ -561,7 +600,7 @@ Task<void> DebugExecutor::execute(
 
                         SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-                        stream.write_field("failed", !execution_result.success());
+                        stream.write_json_field("failed", !execution_result.success());
                         if (!execution_result.pre_check_error) {
                             stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
                             stream.write_field("returnValue", silkworm::to_hex(execution_result.data));

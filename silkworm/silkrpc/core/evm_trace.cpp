@@ -1602,19 +1602,19 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
     if (!from_block_with_hash) {
         const Error error{-32000, "invalid parameters: fromBlock not found"};
-        stream->write_field("error", error);
+        stream->write_json_field("error", error);
         co_return;
     }
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.to_block);
     if (!to_block_with_hash) {
         const Error error{-32000, "invalid parameters: toBlock not found"};
-        stream->write_field("error", error);
+        stream->write_json_field("error", error);
         co_return;
     }
 
     if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
-        stream->write_field("error", error);
+        stream->write_json_field("error", error);
         co_return;
     }
 

@@ -1309,6 +1309,26 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
         CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true");
     }
 }
+
+TEST_CASE("uint256_to_hex", "evmone::uint256") {
+    SECTION("test 1") {
+        evmone::uint256 v{0xB0A0};
+        const std::string intx_hex{"0x" + intx::to_string(v, 16)};
+
+        std::string hex{uint256_to_hex(v)};
+
+        CHECK(intx_hex == hex);
+    }
+    SECTION("test 2") {
+        evmone::uint256 v{0xCB0A0};
+        const std::string intx_hex{"0x" + intx::to_string(v, 16)};
+
+        std::string hex{uint256_to_hex(v)};
+
+        CHECK(intx_hex == hex);
+    }
+}
+
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc::debug

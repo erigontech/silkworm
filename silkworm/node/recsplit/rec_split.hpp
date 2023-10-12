@@ -517,7 +517,14 @@ class RecSplit {
         for (size_t i = 0; i < bucket_count_; i++) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
-            index_output_stream << buckets_[i].index_ofs.rdbuf();  // todo(mike): fails when rdbuf() is empty
+            //auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
+            //if (!is_empty(underlying_buffer))  // todo(mike): avoid this, use a buffer in place of index_ofs
+            //    index_output_stream << underlying_buffer;
+            char byte;
+            while (buckets_[i].index_ofs.get(byte)) {  // todo(mike): avoid this, use a buffer in place of index_ofs
+                index_output_stream.put(byte);
+            }
+            //index_output_stream << buckets_[i].index_ofs.rdbuf();  // todo(mike): better but fails when rdbuf() is empty
 
             if (buckets_[i].keys_.size() > 1) {
                 buckets_[i].gr_builder_.append_to(gr_builder_);

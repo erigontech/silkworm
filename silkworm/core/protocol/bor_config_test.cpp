@@ -25,14 +25,34 @@ TEST_CASE("BorConfig JSON") {
             "sprint": {
                 "0": 64,
                 "38189056": 16
-            }
+            },
+            "jaipurBlock": 123
         })");
 
     const std::optional<BorConfig> config{BorConfig::from_json(json)};
 
     REQUIRE(config);
-    CHECK(config == BorConfig{.sprint = {{0, 64}, {38189056, 16}}});
+    CHECK(config == BorConfig{
+                        .sprint = {
+                            {0, 64},
+                            {38189056, 16},
+                        },
+                        .jaipur_block = 123,
+                    });
     CHECK(config->to_json() == json);
+}
+
+TEST_CASE("sprint_size") {
+    BorConfig c{.sprint = {{0, 64}, {10, 16}, {20, 12}}};
+    CHECK(c.sprint_size(0) == 64);
+    CHECK(c.sprint_size(1) == 64);
+    CHECK(c.sprint_size(9) == 64);
+    CHECK(c.sprint_size(10) == 16);
+    CHECK(c.sprint_size(11) == 16);
+    CHECK(c.sprint_size(19) == 16);
+    CHECK(c.sprint_size(20) == 12);
+    CHECK(c.sprint_size(21) == 12);
+    CHECK(c.sprint_size(100) == 12);
 }
 
 }  // namespace silkworm::protocol

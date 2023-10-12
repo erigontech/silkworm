@@ -22,9 +22,6 @@ namespace silkworm::protocol {
 
 class BaseRuleSet : public IRuleSet {
   public:
-    explicit BaseRuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
-        : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
-
     //! \brief Performs validation of block body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity" and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.
@@ -55,12 +52,18 @@ class BaseRuleSet : public IRuleSet {
 
     BlockReward compute_reward(const Block& block) override;
 
+    void add_fee_transfer_log(IntraBlockState&, const intx::uint256&, const evmc::address&, const intx::uint256&,
+                              const evmc::address&, const intx::uint256&) override {}
+
   protected:
-    virtual ValidationResult validate_extra_data(const BlockHeader& header);
+    explicit BaseRuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
+        : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
+
+    virtual ValidationResult validate_extra_data(const BlockHeader& header) const;
 
     //! \brief Calculates the difficulty of the header
     //! \note Used by validate_block_header
-    virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
+    [[nodiscard]] virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const = 0;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

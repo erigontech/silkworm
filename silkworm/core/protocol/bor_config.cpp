@@ -18,7 +18,15 @@
 
 #include <string>
 
+#include <silkworm/core/common/assert.hpp>
+
 namespace silkworm::protocol {
+
+uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
+    auto it{sprint.upper_bound(number)};
+    SILKWORM_ASSERT(it != sprint.begin());
+    return (--it)->second;
+}
 
 nlohmann::json BorConfig::to_json() const noexcept {
     nlohmann::json sprint_json = nlohmann::json::object();
@@ -27,6 +35,7 @@ nlohmann::json BorConfig::to_json() const noexcept {
     }
     nlohmann::json ret;
     ret["sprint"] = sprint_json;
+    ret["jaipurBlock"] = jaipur_block;
     return ret;
 }
 
@@ -42,6 +51,7 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
             config.sprint.emplace(from, item.value().get<uint64_t>());
         }
     }
+    config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
     return config;
 }
 

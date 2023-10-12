@@ -47,11 +47,17 @@ namespace silkworm::rpc::test {
 std::filesystem::path get_tests_dir() {
     auto working_dir = std::filesystem::current_path();
 
-    while (!std::filesystem::exists(working_dir / "third_party" / "execution-apis") && working_dir != "/") {
+    while (working_dir != "/") {
+        if (std::filesystem::exists(working_dir / "third_party" / "execution-apis")) {
+            return working_dir / "third_party" / "execution-apis" / "tests";
+        }
+        if (std::filesystem::exists(working_dir / "project" / "third_party" / "execution-apis")) {
+            return working_dir / "project" / "third_party" / "execution-apis" / "tests";
+        }
         working_dir = working_dir.parent_path();
     }
 
-    return working_dir / "third_party" / "execution-apis" / "tests";
+    throw std::logic_error("Failed to find execution-apis tests directory, starting point: " + std::filesystem::current_path().string());
 }
 
 mdbx::env_managed open_db(const std::string& chaindata_dir) {

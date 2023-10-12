@@ -61,10 +61,10 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            # if [[ "<<parameters.compiler_id>>" == "clang" ]]
-            # then
-            #     TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
-            # fi
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
+            fi
 
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
@@ -150,7 +150,9 @@ commands:
             mkdir -p ~/corpus
             mkdir -p ~/crashes
             mkdir -p ~/artifacts
-            for pathname in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$pathname" ~/artifacts; done
+            for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
+            for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
+            for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
             ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=10 ~/corpus ~/crashes ~/artifacts
 
 jobs:

@@ -51,8 +51,8 @@ if(NOT SILKWORM_CORE_ONLY)
 
     # Silkworm RpcDaemon Fuzz Debug Executable
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address)
-    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11 -fsanitize=address)
+    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined)
+    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11 -fsanitize=address,undefined)
   endif()
 
   # Silkworm Sync Tests

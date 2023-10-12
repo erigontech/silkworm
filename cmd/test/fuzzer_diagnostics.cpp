@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+
 #include <execinfo.h>
 
 #include <cstdlib>
@@ -23,6 +24,7 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/silkrpc/test/api_test_database.hpp>
+#include "address_sanitizer_fix.hpp"
 
 void print_stack_trace() {
     void* trace[16];
@@ -59,6 +61,7 @@ int main(int argc, char* argv[]) {
 
     app.add_option("input", input_str, "Input string")
         ->description("Wrap JSON in '' to avoid shell escaping, e.g. '{\"jsonrpc\":\"2.0\",\"id\":1}'")
+        ->default_val(R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawBlock","params":["3"]})")
         ->required(false);
 
     app.add_option("-f", input_file, "Path to test file or directory")

@@ -18,6 +18,8 @@
 
 #include <silkworm/silkrpc/test/api_test_database.hpp>
 
+#include "address_sanitizer_fix.hpp"
+
 using namespace silkworm::rpc::test;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {

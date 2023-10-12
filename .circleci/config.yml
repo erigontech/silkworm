@@ -61,10 +61,10 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            if [[ "<<parameters.compiler_id>>" == "clang" ]]
-            then
-                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
-            fi
+            # if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            # then
+            #     TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
+            # fi
 
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
@@ -150,6 +150,7 @@ commands:
             mkdir -p ~/corpus
             mkdir -p ~/crashes
             mkdir -p ~/artifacts
+            for pathname in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$pathname" ~/artifacts; done
             ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=10 ~/corpus ~/crashes ~/artifacts
 
 jobs:
@@ -308,13 +309,13 @@ jobs:
   linux-clang-fuzzer:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
-      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
-      - checkout_with_submodules
+      - checkout_with_submodules:
+          ethereum_tests: false
       - build_using_conan:
           build_type: Release
           compiler_id: clang
@@ -414,8 +415,7 @@ workflows:
     when:
       or:
         - equal: [ master, <<pipeline.git.branch>> ]
-        - equal: [ master, <<pipeline.git.branch>> ]
-        # - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-release:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release

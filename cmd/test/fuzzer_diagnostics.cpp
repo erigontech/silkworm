@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-
 #include <execinfo.h>
 
 #include <cstdlib>
@@ -24,6 +23,7 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/silkrpc/test/api_test_database.hpp>
+
 #include "address_sanitizer_fix.hpp"
 
 void print_stack_trace() {

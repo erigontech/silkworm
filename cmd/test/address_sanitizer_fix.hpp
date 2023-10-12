@@ -16,7 +16,6 @@
 
 // https://github.com/llvm/llvm-project/issues/59432
 
-
 #ifndef __has_feature
 // GCC does not have __has_feature, adding it to avoid compilation errors
 #define __has_feature(feature) 0
@@ -26,7 +25,8 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-const char *__asan_default_options() {
-  return "alloc_dealloc_mismatch=0";
+    const char*
+    __asan_default_options() {
+    return "alloc_dealloc_mismatch=0";
 }
 #endif

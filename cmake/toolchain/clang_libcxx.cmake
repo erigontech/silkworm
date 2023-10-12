@@ -16,11 +16,10 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/cxx20.cmake)
 
-if (not SILKWORM_FUZZER)
-    # coroutines support
-    set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -stdlib=libc++"
-        CACHE STRING "" FORCE
-    )
+if(not SILKWORM_FUZZER)
+  # coroutines support
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -stdlib=libc++"
+      CACHE STRING "" FORCE
+  )
 endif()
-

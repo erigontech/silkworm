@@ -248,31 +248,6 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
     }
 }
 
-// test broken in sequential and parallel version due to the custom RecSplit construction
-// TEST_CASE("RecSplit8: operator()", "[silkworm][node][recsplit][ignore]") {
-//     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-//     test::TemporaryFile index_file;
-//     RecSplitSettings settings{
-//         .keys_count = 100,
-//         .bucket_size = 10,
-//         .index_path = index_file.path(),
-//         .base_data_id = 0,
-//         .double_enum_index = false};
-//     RecSplit8 rs{settings, /*.salt=*/kTestSalt};
-//
-//     for (size_t i{0}; i < settings.keys_count; ++i) {
-//         rs.add_key("key " + std::to_string(i), i * 17);
-//     }
-//     CHECK(rs.build() == false /*collision_detected*/);
-//
-//     RecSplit8 rs2{settings.index_path};
-//     for (size_t i{0}; i < settings.keys_count; ++i) {
-//         const std::string key{"key " + std::to_string(i)};
-//         CHECK(rs2(key) == i * 17);
-//     }
-// }
-
-
 TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
@@ -300,35 +275,8 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     }
 }
 
-TEST_CASE("RecSplit8 SEQ: index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
-    succinct_seq::RecSplitSettings settings{
-        .keys_count = 100,
-        .bucket_size = 10,
-        .index_path = index_file.path(),
-        .base_data_id = 0,
-        .double_enum_index = false};
-    succinct_seq::RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
-
-    for (size_t i{0}; i < settings.keys_count; ++i) {
-        rs1.add_key("key " + std::to_string(i), i * 17);
-    }
-    CHECK(rs1.build() == false /*collision_detected*/);
-
-    //std::ifstream f(index_file.path(), std::ios::binary);
-    //hexDump("seq_hexdump.txt", f);
-    //f.close();
-
-    RecSplit8 rs2{settings.index_path};
-    for (size_t i{0}; i < settings.keys_count; ++i) {
-        const std::string key{"key " + std::to_string(i)};
-        CHECK(rs2.lookup(key) == i * 17);
-    }
-}
-
 TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
@@ -353,3 +301,147 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
 #endif  // _WIN32
 
 }  // namespace silkworm::succinct
+
+
+namespace silkworm::succinct_seq {
+
+// Exclude tests from Windows build due to access issues with files in OS temporary dir
+#ifndef _WIN32
+
+//! Make the MPHF predictable just for testing
+constexpr int kTestSalt{1};
+
+
+template <typename RS>
+static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
+    // RecSplit implements a MPHF K={k1...kN} -> V={0..N-1} so we must check all codomain is exhausted
+    std::vector<uint64_t> recsplit_values(keys.size());
+    // Fill the codomain values w/ zero, so we can easily check if a value is already used or not
+    std::fill(recsplit_values.begin(), recsplit_values.end(), 0);
+
+    uint64_t i{0};
+    for (const auto& k : keys) {
+        uint64_t v = rec_split(k);
+        // Value associated to key in RecSplit must be unique (perfect: no collision)
+        CHECK(recsplit_values[v] == 0);
+        // Mark the value as used in codomain
+        recsplit_values[v] = ++i;
+    }
+
+    // All codomain values must be used (minimal: rank(K) == rank(V))
+    for (const auto& v : recsplit_values) {
+        CHECK(v != 0);
+    }
+}
+
+constexpr int kTestLeaf{4};
+
+using RecSplit4 = RecSplit<kTestLeaf>;
+template <>
+const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::kLowerAggregationBound;
+template <>
+const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
+template <>
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
+
+
+TEST_CASE("RecSplit4 SEQ: multiple keys-buckets", "[silkworm][node][recsplit]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+
+    struct RecSplitParams {
+        std::size_t key_count{0};
+        std::size_t bucket_size{0};
+    };
+    std::vector<RecSplitParams> recsplit_params_sequence{
+        {1'000, 128},
+        {5'000, 512},
+        {10'000, 1024},
+        {20'000, 2048},
+        {40'000, 2048},
+    };
+    for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
+        SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
+            std::vector<hash128_t> hashed_keys;
+            for (std::size_t i{0}; i < key_count; ++i) {
+                hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
+            }
+
+            RecSplitSettings settings{
+                .keys_count = key_count,
+                .bucket_size = bucket_size,
+                .index_path = index_file.path(),
+                .base_data_id = 0};
+            RecSplit4 rs{settings, /*.salt=*/kTestSalt};
+
+            for (const auto& hk : hashed_keys) {
+                rs.add_key(hk, 0);
+            }
+            CHECK(rs.build() == false /*collision_detected*/);
+            check_bijection(rs, hashed_keys);
+
+            RecSplit4 rs_index{index_file.path()};
+            CHECK(rs.base_data_id() == settings.base_data_id);
+            CHECK(rs.key_count() == settings.keys_count);
+            CHECK(rs.empty() == !settings.keys_count);
+            CHECK(rs.record_mask() == 0);
+            CHECK(rs.bucket_count() == (settings.keys_count + settings.bucket_size - 1) / settings.bucket_size);
+            CHECK(rs.bucket_size() == settings.bucket_size);
+            check_bijection(rs_index, hashed_keys);
+        }
+    }
+}
+
+TEST_CASE("RecSplit8 SEQ: index lookup", "[silkworm][node][recsplit][ignore]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0,
+        .double_enum_index = false};
+    RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    //std::ifstream f(index_file.path(), std::ios::binary);
+    //hexDump("seq_hexdump.txt", f);
+    //f.close();
+
+    RecSplit8 rs2{settings.index_path};
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        const std::string key{"key " + std::to_string(i)};
+        CHECK(rs2.lookup(key) == i * 17);
+    }
+}
+
+TEST_CASE("RecSplit8 SEQ: double index lookup", "[silkworm][node][recsplit][ignore]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    RecSplit8 rs2{settings.index_path};
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        const auto enumeration_index = rs2.lookup("key " + std::to_string(i));
+        CHECK(enumeration_index == i);
+        CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
+    }
+}
+
+#endif  // _WIN32
+
+}  // namespace silkworm::succinct_seq

@@ -61,10 +61,10 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            if [[ "<<parameters.compiler_id>>" == "clang" ]]
-            then
-                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
-            fi
+            # if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            # then
+            #     TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
+            # fi
 
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:

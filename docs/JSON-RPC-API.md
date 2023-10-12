@@ -1,9 +1,8 @@
 ## RPC API Implementation Status
 
-The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/API) implementation status in `Silkrpc`.
+The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/API) implementation status in `Silkworm RPCDaemon`.
 
 | Command                                    | Availability |                                     Notes | Integration | Performance |
-|                                            |              |                                           |    Tests    |    Tests    |
 |:-------------------------------------------|:------------:|:-----------------------------------------:|:-----------:|------------:|
 | admin_nodeInfo                             |     Yes      |                                           |     Yes     |             |
 | admin_peers                                |     Yes      |                                           |     Yes     |             |

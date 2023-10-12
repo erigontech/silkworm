@@ -29,9 +29,7 @@ class BorRuleSet : public BaseRuleSet {
     ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
-    ValidationResult validate_seal(const BlockHeader&) override {
-        return ValidationResult::kOk;
-    }
+    ValidationResult validate_seal(const BlockHeader&) override;
 
     void initialize(EVM&) override {}
 
@@ -39,10 +37,17 @@ class BorRuleSet : public BaseRuleSet {
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
-  protected:
-    ValidationResult validate_extra_data(const BlockHeader& header) override;
+    void add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
+                              const intx::uint256& sender_initial_balance, const evmc::address& recipient,
+                              const intx::uint256& recipient_initial_balance) override;
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) override { return 1; }
+  protected:
+    ValidationResult validate_extra_data(const BlockHeader& header) const override;
+
+    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
+
+  private:
+    [[nodiscard]] const BorConfig& config() const;
 };
 
 }  // namespace silkworm::protocol

@@ -45,7 +45,7 @@ ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 
-ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) {
+ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) const {
     // EIP-779: Hardfork Meta: DAO Fork
     if (chain_config_.dao_block.has_value() && chain_config_.dao_block <= header.number &&
         header.number <= chain_config_.dao_block.value() + 9) {
@@ -58,7 +58,7 @@ ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) {
     return BaseRuleSet::validate_extra_data(header);
 }
 
-intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHeader& parent) {
+intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHeader& parent) const {
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     return difficulty(header.number, header.timestamp, parent.difficulty,
                       parent.timestamp, parent_has_uncles, chain_config_);

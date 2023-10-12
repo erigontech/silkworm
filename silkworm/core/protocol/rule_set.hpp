@@ -78,6 +78,11 @@ class IRuleSet {
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 
     virtual BlockReward compute_reward(const Block& block) = 0;
+
+    //! \brief Bor adds a transfer log after each transaction reflecting the gas fee transfer
+    virtual void add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
+                                      const intx::uint256& sender_initial_balance, const evmc::address& recipient,
+                                      const intx::uint256& recipient_initial_balance) = 0;
 };
 
 using RuleSetPtr = std::unique_ptr<IRuleSet>;

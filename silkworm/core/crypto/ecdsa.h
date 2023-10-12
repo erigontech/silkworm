@@ -34,11 +34,11 @@ enum {
 //! \brief Tries recover the address used for message signing
 //! \param [in] message : the signed message
 //! \param [in] signature : the signature
-//! \param [in] odd_y_parity : whether y parity is odd
+//! \param [in] recovery_id : the recovery id (0, 1, 2 or 3)
 //! \param [in] context: a pointer to an existing secp256k1 context
 //! \return Whether the recovery has succeeded
-bool silkworm_recover_address(uint8_t out[20], const uint8_t message[32], const uint8_t signature[64], bool odd_y_parity,
-                              secp256k1_context* context);
+bool silkworm_recover_address(uint8_t out[20], const uint8_t message[32], const uint8_t signature[64],
+                              uint8_t recovery_id, secp256k1_context* context);
 
 #if defined(__cplusplus)
 }

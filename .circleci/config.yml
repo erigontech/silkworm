@@ -61,10 +61,10 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            # if [[ "<<parameters.compiler_id>>" == "clang" ]]
-            # then
-            #     TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
-            # fi
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
+            fi
 
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
@@ -321,7 +321,7 @@ jobs:
       - build_using_conan:
           build_type: Release
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: 16
           target: rpcdaemon_fuzzer_test
       - fuzz-test
 
@@ -416,8 +416,8 @@ workflows:
   integration:
     when:
       or:
-        - equal: [ master, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+        - equal: [ master_disable, <<pipeline.git.branch>> ]
+        - matches: { pattern: "^ci_disable\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-release:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release

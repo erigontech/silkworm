@@ -54,17 +54,17 @@ commands:
           name: "Install compiler"
           no_output_timeout: 30m
           command: |
-            # sudo apt-get --allow-releaseinfo-change-suite update
-            # sudo add-apt-repository ppa:nilarimogard/webupd8
-            # sudo apt-get update
-            # sudo apt-get install launchpad-getkeys          
-            # sudo apt-get update
-            # sudo launchpad-getkeys
-            # sudo apt-get update
-            # wget https://apt.llvm.org/llvm.sh
-            # chmod +x llvm.sh
-            # sudo ./llvm.sh <<parameters.compiler_version>> all
-            cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
+            sudo apt-get --allow-releaseinfo-change-suite update
+            sudo add-apt-repository ppa:nilarimogard/webupd8
+            sudo apt-get update
+            sudo apt-get install launchpad-getkeys          
+            sudo apt-get update
+            sudo launchpad-getkeys
+            sudo apt-get update
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh <<parameters.compiler_version>> all
+            # cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Cmake"
           working_directory: ~/build

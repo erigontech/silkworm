@@ -67,8 +67,8 @@ commands:
             # chmod +x llvm.sh
             # sudo ./llvm.sh <<parameters.compiler_version>> all
             # sudo echo -e "\ndeb http://apt.llvm.org/jammy\n" >> /etc/apt/sources.list
-            sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
-            cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
+            # sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
+            sudo cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Cmake"
           working_directory: ~/build

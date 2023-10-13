@@ -442,6 +442,10 @@ class RecSplit {
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
 
+        // SILK_INFO << "seq-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
+        //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
+        //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
+
         current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
 
         [[maybe_unused]] auto _ = gsl::finally([&]() { bucket_collector_.clear(); });
@@ -480,13 +484,13 @@ class RecSplit {
         }
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
 
-        SILK_INFO << "seq-vers - sizes: " << prettyPrint_seq(bucket_size_accumulator_);
-        SILK_INFO << "seq-vers - positions: " << prettyPrint_seq(bucket_position_accumulator_);
+        // SILK_INFO << "seq-vers - sizes: " << prettyPrint_seq(bucket_size_accumulator_);
+        // SILK_INFO << "seq-vers - positions: " << prettyPrint_seq(bucket_position_accumulator_);
 
         // Concatenate the representation of each bucket
         golomb_rice_codes_ = gr_builder_.build();
 
-        SILK_INFO << "seq-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
+        // SILK_INFO << "seq-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
 
         // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
@@ -797,10 +801,10 @@ class RecSplit {
                   std::vector<uint64_t>& offsets,
                   std::vector<uint32_t>& unary,
                   std::ofstream& index_ofs) {
-        SILK_INFO << "seq-vers - bucket: " << prettyPrint_seq(bucket);
-        SILK_INFO << "seq-vers - offsets: " << prettyPrint_seq(offsets);
-        SILK_INFO << "seq-vers - buffer_bucket_: " << prettyPrint_seq(buffer_bucket_);
-        SILK_INFO << "seq-vers - buffer_offsets_: " << prettyPrint_seq(buffer_offsets_);
+        // SILK_INFO << "seq-vers - bucket: " << prettyPrint_seq(bucket);
+        // SILK_INFO << "seq-vers - offsets: " << prettyPrint_seq(offsets);
+        // SILK_INFO << "seq-vers - buffer_bucket_: " << prettyPrint_seq(buffer_bucket_);
+        // SILK_INFO << "seq-vers - buffer_offsets_: " << prettyPrint_seq(buffer_offsets_);
 
         recsplit(/*.level=*/0, bucket, offsets, /*.start=*/0, /*.end=*/bucket.size(), unary, index_ofs);
     }
@@ -816,7 +820,7 @@ class RecSplit {
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
-            SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
+            // SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             // No need to build aggregation levels - just find bijection
             // if (level == 7) {
             //    SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
@@ -858,7 +862,7 @@ class RecSplit {
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
+            // SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
             // SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
 
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);

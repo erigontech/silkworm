@@ -412,12 +412,12 @@ class RecSplit {
         if (offset > max_offset_) {
             max_offset_ = offset;
         }
-        if (keys_added_ > 0) {
-            const auto delta = offset - previous_offset_;
-            if (keys_added_ == 1 || delta < min_delta_) {
-                min_delta_ = delta;
-            }
-        }
+        // if (keys_added_ > 0) {  // unused
+        //     const auto delta = offset - previous_offset_;
+        //     if (keys_added_ == 1 || delta < min_delta_) {
+        //         min_delta_ = delta;
+        //     }
+        // }
 
         ensure(bucket_id < bucket_count_, "bucket_id out of range");
         Bucket& bucket = buckets_[bucket_id];
@@ -435,7 +435,7 @@ class RecSplit {
         }
 
         keys_added_++;
-        previous_offset_ = offset;
+        // previous_offset_ = offset;
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
@@ -488,6 +488,10 @@ class RecSplit {
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
+
+        // SILK_INFO << "par-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
+        //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
+        //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
 
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};
@@ -1035,10 +1039,10 @@ class RecSplit {
     uint64_t keys_added_{0};
 
     //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    uint64_t min_delta_{0};
+    // uint64_t min_delta_{0};  // unused
 
     //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    uint64_t previous_offset_{0};
+    // uint64_t previous_offset_{0};  // unused
 
     //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
     uint64_t max_offset_{0};

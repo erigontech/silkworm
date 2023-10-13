@@ -26,6 +26,9 @@
 
 namespace silkworm::snapshot {
 
+using RecSplitSettings = succinct::RecSplitSettings;
+using RecSplit8 = succinct::RecSplit8;
+
 class Index {
   public:
     static constexpr uint64_t kPageSize{4096};
@@ -40,7 +43,7 @@ class Index {
     virtual void build();
 
   protected:
-    virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
+    virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
     ThreadPool thread_pool_{std::thread::hardware_concurrency()};
     SnapshotPath segment_path_;
@@ -53,7 +56,7 @@ class HeaderIndex : public Index {
         : Index(std::move(segment_path), std::move(segment_region)) {}
 
   protected:
-    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 class BodyIndex : public Index {
@@ -62,7 +65,7 @@ class BodyIndex : public Index {
         : Index(std::move(segment_path), std::move(segment_region)), uint64_buffer_(8, '\0') {}
 
   protected:
-    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 
   private:
     Bytes uint64_buffer_;
@@ -76,7 +79,7 @@ class TransactionIndex : public Index {
     void build() override;
 
   protected:
-    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 }  // namespace silkworm::snapshot

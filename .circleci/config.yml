@@ -55,6 +55,8 @@ commands:
           no_output_timeout: 30m
           command: |
             sudo apt-get --allow-releaseinfo-change-suite update
+            sudo apt update
+            sudo apt install software-properties-common
             sudo add-apt-repository ppa:nilarimogard/webupd8
             sudo apt-get update
             sudo apt-get install launchpad-getkeys          

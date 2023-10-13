@@ -57,17 +57,17 @@ commands:
             # sudo apt-get --allow-releaseinfo-change-suite update
             sudo apt update
             # sudo apt install software-properties-common
-            # sudo add-apt-repository ppa:nilarimogard/webupd8
+            sudo add-apt-repository -y ppa:nilarimogard/webupd8
             # sudo apt-get update
-            # sudo apt-get install launchpad-getkeys          
-            # sudo apt-get update
-            # sudo launchpad-getkeys
-            # sudo apt-get update
+            sudo apt-get install launchpad-getkeys          
+            sudo apt-get update
+            sudo launchpad-getkeys
+            sudo apt-get update
             # wget https://apt.llvm.org/llvm.sh
             # chmod +x llvm.sh
             # sudo ./llvm.sh <<parameters.compiler_version>> all
             # sudo echo -e "\ndeb http://apt.llvm.org/jammy\n" >> /etc/apt/sources.list
-            # sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
+            sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
             sudo cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Cmake"

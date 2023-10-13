@@ -290,8 +290,7 @@ class RecSplit {
           bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
           base_data_id_(settings.base_data_id),
           index_path_(settings.index_path),
-          double_enum_index_(settings.double_enum_index),
-          offset_collector_(settings.etl_optimal_size) {
+          double_enum_index_(settings.double_enum_index) {
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
@@ -301,6 +300,8 @@ class RecSplit {
         buckets_.reserve(bucket_count_);
         for(int i = 0; i < bucket_count_; i++)
             buckets_.emplace_back(i, bucket_size_);
+        if (double_enum_index_)
+            offsets_.reserve(key_count_);
     }
 
     explicit RecSplit(std::filesystem::path index_path, std::optional<MemoryMappedRegion> index_region = {})
@@ -424,10 +425,7 @@ class RecSplit {
         Bucket& bucket = buckets_[bucket_id];
 
         if (double_enum_index_) {
-            Bytes offset_key(8, '\0');
-            endian::store_big_u64(offset_key.data(), offset);
-
-            offset_collector_.collect(offset_key, {});
+            offsets_.push_back(offset);
 
             auto current_key_count = keys_added_;
 
@@ -518,7 +516,7 @@ class RecSplit {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
             //auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
-            //if (!is_empty(underlying_buffer))  // todo(mike): avoid this, use a buffer in place of index_ofs
+            //if (!is_empty(underlying_buffer))
             //    index_output_stream << underlying_buffer;
             char byte;
             while (buckets_[i].index_ofs.get(byte)) {  // todo(mike): avoid this, use a buffer in place of index_ofs
@@ -548,12 +546,11 @@ class RecSplit {
 
         // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
+            std::sort(offsets_.begin(), offsets_.end());
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
-            db::PooledCursor empty_cursor{};
-            offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
-                const uint64_t offset = endian::load_big_u64(entry.key.data());
+            for(auto offset : offsets_) {
                 ef_offsets_->add_offset(offset);
-            });
+            }
             ef_offsets_->build();
         }
 
@@ -628,7 +625,7 @@ class RecSplit {
     void reset_new_salt() {
         built_ = false;
         keys_added_ = 0;
-        offset_collector_.clear();
+        offsets_.clear();
         max_offset_ = 0;
         for(auto& bucket : buckets_) {
             bucket.clear();
@@ -804,7 +801,8 @@ class RecSplit {
     }
 
     //! Compute and store the splittings and bijections of the current bucket
-    static bool recsplit_bucket(Bucket& bucket, uint8_t bytes_per_record) {  // todo(mike): make it member of Bucket
+    // It would be better to make this function a member of Bucket
+    static bool recsplit_bucket(Bucket& bucket, uint8_t bytes_per_record) {
 
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (bucket.keys_.size() > 1) {
@@ -813,7 +811,7 @@ class RecSplit {
                 return true;
             }
 
-            std::vector<uint64_t> buffer_keys;  // temporary buffer for keys  // todo(mike): rename to buffer_keys_
+            std::vector<uint64_t> buffer_keys;  // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets
             buffer_keys.resize(bucket.keys_.size());
             buffer_offsets.resize(bucket.values_.size());
@@ -1055,6 +1053,7 @@ class RecSplit {
     //! The bitmask to be used to interpret record data
     uint64_t record_mask_{0};
 
+    //! The buckets of the RecSplit algorithm
     std::vector<Bucket> buckets_;
 
     //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
@@ -1063,8 +1062,8 @@ class RecSplit {
     //! Flag indicating that the MPHF has been built and no more keys can be added
     bool built_{false};
 
-    //! The ETL collector sorting keys by offset
-    etl::Collector offset_collector_{};
+    //! The offset collector for Elias-Fano encoding of "enum -> offset" index
+    std::vector<uint64_t> offsets_;
 
     //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
     uint32_t salt_{0};

@@ -104,7 +104,9 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: sudo pip install conan==1.58.0 chardet
+          command: |
+            sudo apt-get update
+            sudo pip install conan==1.58.0 chardet
       - run:
           name: "Select Conan profile"
           command: |

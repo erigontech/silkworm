@@ -54,6 +54,7 @@ commands:
           name: "Install compiler"
           no_output_timeout: 30m
           command: |
+            sudo apt-get --allow-releaseinfo-change-suite update
             sudo add-apt-repository ppa:nilarimogard/webupd8
             sudo apt-get update
             sudo apt-get install launchpad-getkeys          
@@ -324,7 +325,7 @@ jobs:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2204:2023.07.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules:

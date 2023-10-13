@@ -15,8 +15,9 @@
 */
 
 #include "rec_split.hpp"
-#include "rec_split_seq.hpp"
 
+#include <fstream>
+#include <iomanip>  // for std::setw and std::setfill
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -25,9 +26,7 @@
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/xoroshiro128pp.hpp>
 
-
-#include <fstream>
-#include <iomanip> // for std::setw and std::setfill
+#include "rec_split_seq.hpp"
 
 void hexDump(std::string out_file_name, std::ifstream& file) {
     std::ofstream out(out_file_name);
@@ -65,9 +64,6 @@ void hexDump(std::string out_file_name, std::ifstream& file) {
         lineNumber += bytesPerLine;
     }
 }
-
-
-
 
 namespace silkworm::succinct {
 
@@ -264,9 +260,9 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     }
     CHECK(rs1.build() == false /*collision_detected*/);
 
-    //std::ifstream f(index_file.path(), std::ios::binary);
-    //hexDump("par_hexdump.txt", f);
-    //f.close();
+    // std::ifstream f(index_file.path(), std::ios::binary);
+    // hexDump("par_hexdump.txt", f);
+    // f.close();
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {
@@ -302,7 +298,6 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
 
 }  // namespace silkworm::succinct
 
-
 namespace silkworm::succinct_seq {
 
 // Exclude tests from Windows build due to access issues with files in OS temporary dir
@@ -310,7 +305,6 @@ namespace silkworm::succinct_seq {
 
 //! Make the MPHF predictable just for testing
 constexpr int kTestSalt{1};
-
 
 template <typename RS>
 static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
@@ -343,7 +337,6 @@ template <>
 const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
-
 
 TEST_CASE("RecSplit4 SEQ: multiple keys-buckets", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -408,9 +401,9 @@ TEST_CASE("RecSplit8 SEQ: index lookup", "[silkworm][node][recsplit][ignore]") {
     }
     CHECK(rs1.build() == false /*collision_detected*/);
 
-    //std::ifstream f(index_file.path(), std::ios::binary);
-    //hexDump("seq_hexdump.txt", f);
-    //f.close();
+    // std::ifstream f(index_file.path(), std::ios::binary);
+    // hexDump("seq_hexdump.txt", f);
+    // f.close();
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {

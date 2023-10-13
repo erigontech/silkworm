@@ -69,10 +69,10 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
 #pragma GCC diagnostic push
@@ -107,12 +107,12 @@ std::string prettyPrint_seq(const std::vector<T>& v, const std::string& prefix =
 
 namespace silkworm::succinct_seq {
 
-using succinct::GolombRiceVector;
-using succinct::EliasFanoList32;
 using succinct::DoubleEliasFanoList16;
+using succinct::EliasFanoList32;
+using succinct::GolombRiceVector;
 using succinct::Murmur3;
-using succinct::remap16;
 using succinct::remap128;
+using succinct::remap16;
 
 using namespace std::chrono;
 
@@ -220,7 +220,6 @@ struct RecSplitSettings {
     bool double_enum_index{true};                           // Flag indicating if 2-level index is required
     std::size_t etl_optimal_size{etl::kOptimalBufferSize};  // Optimal size for offset and bucket ETL collectors
 };
-
 
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
@@ -788,7 +787,7 @@ class RecSplit {
         // Clear for the next bucket
         current_bucket_.clear();
         current_bucket_offsets_.clear();
-        buffer_bucket_.clear();  // todo(mike): IMO this must be added
+        buffer_bucket_.clear();   // todo(mike): IMO this must be added
         buffer_offsets_.clear();  // todo(mike): IMO this must be added
         return false;
     }
@@ -798,7 +797,6 @@ class RecSplit {
                   std::vector<uint64_t>& offsets,
                   std::vector<uint32_t>& unary,
                   std::ofstream& index_ofs) {
-
         SILK_INFO << "seq-vers - bucket: " << prettyPrint_seq(bucket);
         SILK_INFO << "seq-vers - offsets: " << prettyPrint_seq(offsets);
         SILK_INFO << "seq-vers - buffer_bucket_: " << prettyPrint_seq(buffer_bucket_);
@@ -1062,6 +1060,6 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
 
-}  // namespace silkworm::succinct
+}  // namespace silkworm::succinct_seq
 
 #pragma GCC diagnostic pop

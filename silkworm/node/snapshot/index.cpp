@@ -23,9 +23,9 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {

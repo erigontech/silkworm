@@ -69,10 +69,10 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
 #pragma GCC diagnostic push
@@ -121,14 +121,13 @@ bool containsDuplicate(const std::vector<T>& items) {
 
     // Check for duplicates using the sorted index vector
     for (size_t i = 1; i < indices.size(); ++i) {
-        if (items[indices[i]] == items[indices[i-1]]) {
+        if (items[indices[i]] == items[indices[i - 1]]) {
             return true;
         }
     }
 
     return false;  // No duplicate found
 }
-
 
 namespace silkworm::succinct {
 
@@ -239,7 +238,6 @@ struct RecSplitSettings {
     std::size_t etl_optimal_size{etl::kOptimalBufferSize};  // Optimal size for offset and bucket ETL collectors
 };
 
-
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
 //! space and faster evaluation
@@ -264,10 +262,10 @@ class RecSplit {
         uint64_t bucket_id_{0};
 
         //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
-        std::vector<uint64_t> keys_; // mike: current_bucket_;  -> keys_
+        std::vector<uint64_t> keys_;  // mike: current_bucket_;  -> keys_
 
         //! Index offsets for the current bucket
-        std::vector<uint64_t> values_; // mike: current_bucket_offsets_; -> values_
+        std::vector<uint64_t> values_;  // mike: current_bucket_offsets_; -> values_
 
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
         GolombRiceVector::LazyBuilder gr_builder_;
@@ -276,7 +274,7 @@ class RecSplit {
         std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
 
         void clear() {
-            //bucket_id_ = 0;
+            // bucket_id_ = 0;
             keys_.clear();
             values_.clear();
             gr_builder_.clear();
@@ -298,7 +296,7 @@ class RecSplit {
         hasher_ = std::make_unique<Murmur3>(salt_);
         // Prepare backets
         buckets_.reserve(bucket_count_);
-        for(int i = 0; i < bucket_count_; i++)
+        for (int i = 0; i < bucket_count_; i++)
             buckets_.emplace_back(i, bucket_size_);
         if (double_enum_index_)
             offsets_.reserve(key_count_);
@@ -493,12 +491,12 @@ class RecSplit {
 
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};
-        for(auto& bucket : buckets_) {
+        for (auto& bucket : buckets_) {
             thread_pool.push_task([&]() noexcept(false) {
                 if (collision) return;  // skip work if collision detected
                 bool local_collision = recsplit_bucket(bucket, bytes_per_record_);
                 if (local_collision) collision = true;
-                //SILK_INFO << "processed " << bucket.bucket_id_;
+                // SILK_INFO << "processed " << bucket.bucket_id_;
             });
         }
         thread_pool.wait_for_tasks();
@@ -508,21 +506,21 @@ class RecSplit {
         }
 
         // Store prefix sums of bucket sizes and bit positions
-        std::vector<int64_t> bucket_size_accumulator_(bucket_count_ + 1);  // accumulator for size of every bucket
+        std::vector<int64_t> bucket_size_accumulator_(bucket_count_ + 1);      // accumulator for size of every bucket
         std::vector<int64_t> bucket_position_accumulator_(bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
         bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
         for (size_t i = 0; i < bucket_count_; i++) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
-            //auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
-            //if (!is_empty(underlying_buffer))
-            //    index_output_stream << underlying_buffer;
+            // auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
+            // if (!is_empty(underlying_buffer))
+            //     index_output_stream << underlying_buffer;
             char byte;
             while (buckets_[i].index_ofs.get(byte)) {  // todo(mike): avoid this, use a buffer in place of index_ofs
                 index_output_stream.put(byte);
             }
-            //index_output_stream << buckets_[i].index_ofs.rdbuf();  // todo(mike): better but fails when rdbuf() is empty
+            // index_output_stream << buckets_[i].index_ofs.rdbuf();  // todo(mike): better but fails when rdbuf() is empty
 
             if (buckets_[i].keys_.size() > 1) {
                 buckets_[i].gr_builder_.append_to(gr_builder_);
@@ -548,7 +546,7 @@ class RecSplit {
         if (double_enum_index_) {
             std::sort(offsets_.begin(), offsets_.end());
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
-            for(auto offset : offsets_) {
+            for (auto offset : offsets_) {
                 ef_offsets_->add_offset(offset);
             }
             ef_offsets_->build();
@@ -627,7 +625,7 @@ class RecSplit {
         keys_added_ = 0;
         offsets_.clear();
         max_offset_ = 0;
-        for(auto& bucket : buckets_) {
+        for (auto& bucket : buckets_) {
             bucket.clear();
         }
         salt_++;
@@ -803,7 +801,6 @@ class RecSplit {
     //! Compute and store the splittings and bijections of the current bucket
     // It would be better to make this function a member of Bucket
     static bool recsplit_bucket(Bucket& bucket, uint8_t bytes_per_record) {
-
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (bucket.keys_.size() > 1) {
             if (containsDuplicate(bucket.keys_)) {
@@ -811,7 +808,7 @@ class RecSplit {
                 return true;
             }
 
-            std::vector<uint64_t> buffer_keys;  // temporary buffer for keys
+            std::vector<uint64_t> buffer_keys;     // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets
             buffer_keys.resize(bucket.keys_.size());
             buffer_offsets.resize(bucket.values_.size());
@@ -833,13 +830,12 @@ class RecSplit {
 
     //! Apply the RecSplit algorithm to the given bucket
     static void recsplit(std::vector<uint64_t>& keys,
-                  std::vector<uint64_t>& offsets,
-                  std::vector<uint64_t>& buffer_keys,  // temporary buffer for keys
-                  std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
-                  GolombRiceVector::LazyBuilder& gr_builder,
-                  std::ostream& index_ofs,
-                  uint8_t bytes_per_record) {
-
+                         std::vector<uint64_t>& offsets,
+                         std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
+                         std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
+                         GolombRiceVector::LazyBuilder& gr_builder,
+                         std::ostream& index_ofs,
+                         uint8_t bytes_per_record) {
         // SILK_INFO << "PROBE par-vers - keys: " << prettyPrint(keys);
         // SILK_INFO << "PROBE par-vers - offsets: " << prettyPrint(offsets);
         // SILK_INFO << "PROBE par-vers - buffer_keys_: " << prettyPrint(buffer_keys_);
@@ -850,15 +846,15 @@ class RecSplit {
     }
 
     static void recsplit(int level,
-                  std::vector<uint64_t>& keys,
-                  std::vector<uint64_t>& offsets,  // aka values
-                  std::vector<uint64_t>& buffer_keys,  // temporary buffer for keys
-                  std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
-                  std::size_t start,
-                  std::size_t end,
-                  GolombRiceVector::LazyBuilder& gr_builder,
-                  std::ostream& index_ofs,
-                  uint8_t bytes_per_record) {
+                         std::vector<uint64_t>& keys,
+                         std::vector<uint64_t>& offsets,         // aka values
+                         std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
+                         std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
+                         std::size_t start,
+                         std::size_t end,
+                         GolombRiceVector::LazyBuilder& gr_builder,
+                         std::ostream& index_ofs,
+                         uint8_t bytes_per_record) {
         uint64_t salt = kStartSeed[level];
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);

@@ -84,6 +84,7 @@ namespace silkworm::rpc {
 inline constexpr auto jsonVersionSize = 8;
 inline constexpr auto addressSize = 64;
 inline constexpr auto hashSize = 128;
+inline constexpr auto bloomSize = 1024;
 inline constexpr auto int64Size = 32;
 inline constexpr auto dataSize = 4096;
 inline constexpr auto ethCallResultFixedSize = 2048;

@@ -228,12 +228,12 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbynumber
-Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, std::string& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        make_glaze_json_error(reply, request["id"], 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -252,18 +252,20 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
             const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
 
-            reply = make_json_content(request["id"], extended_block);
+            make_glaze_json_content(reply, request["id"], extended_block);
         } else {
-            reply = make_json_content(request["id"], {});
+            const Block b{};
+            make_glaze_json_content(reply, request["id"], b);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request["id"], {});
+        const Block b{};
+        make_glaze_json_content(reply, request["id"], b);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(reply, request["id"], 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

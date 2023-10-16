@@ -92,31 +92,53 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
-TEST_CASE("Env opening") {
-    SECTION("Non default page size") {
+TEST_CASE("Environment opening") {
+    SECTION("Default page size on creation") {
         const TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.in_memory = true;
-        db_config.page_size = 8_Kibi;
-        auto env{db::open_env(db_config)};
-        REQUIRE(env.get_pagesize() == db_config.page_size);
+        db::EnvConfig db_config{
+            .path = tmp_dir.path().string(),
+            .create = true,
+            .in_memory = true,
+        };
+        REQUIRE(db_config.page_size == os::page_size());
+        const auto env{db::open_env(db_config)};
+        CHECK(env.get_pagesize() == db_config.page_size);
     }
 
-    SECTION("Incompatible page size") {
+    SECTION("Non default page size on creation") {
+        const TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{
+            .path = tmp_dir.path().string(),
+            .create = true,
+            .in_memory = true,
+            .page_size = os::page_size() / 2,
+        };
+        const auto env{db::open_env(db_config)};
+        CHECK(env.get_pagesize() == db_config.page_size);
+    }
+
+    SECTION("Read page size on opening") {
         const TemporaryDirectory tmp_dir;
         {
-            db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-            db_config.in_memory = true;
-            db_config.page_size = 4_Kibi;
-            REQUIRE_NOTHROW((void)db::open_env(db_config));
+            db::EnvConfig db_config{
+                .path = tmp_dir.path().string(),
+                .create = true,
+                .in_memory = true,
+                .page_size = os::page_size() / 2,
+            };
+            (void)db::open_env(db_config);
         }
 
         {
-            // Try to reopen same db with 16KB page size
-            db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ false};
-            db_config.in_memory = true;
-            db_config.page_size = 16_Kibi;
-            REQUIRE_THROWS((void)db::open_env(db_config));
+            // Try to reopen same db with another page size
+            db::EnvConfig db_config{
+                .path = tmp_dir.path().string(),
+                .create = false,
+                .in_memory = true,
+                .page_size = os::page_size() * 2,
+            };
+            const auto env{db::open_env(db_config)};
+            CHECK(env.get_pagesize() == os::page_size() / 2);
         }
     }
 }

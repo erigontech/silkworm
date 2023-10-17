@@ -129,7 +129,9 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
     if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {
         // sequential build
         for (const auto& index : needed_indexes) {
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
             index->build();
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
         }
     } else {
         // parallel build

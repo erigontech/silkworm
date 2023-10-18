@@ -277,6 +277,9 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
     if (handle != instance.handle) {
         return SILKWORM_INSTANCE_NOT_FOUND;
     }
+    if (instance.rpcdaemon) {
+        return SILKWORM_RPCDAEMON_ALREADY_STARTED;
+    }
 
     struct EnvUnmanaged : public ::mdbx::env {
         explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
@@ -293,7 +296,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
     instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
 
     // Check protocol version compatibility with Core Services
-    if (not settings.skip_protocol_check) {
+    if (!settings.skip_protocol_check) {
         SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
 
         const auto checklist = instance.rpcdaemon->run_checklist();
@@ -315,11 +318,15 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOE
     if (handle != instance.handle) {
         return SILKWORM_INSTANCE_NOT_FOUND;
     }
+    if (!instance.rpcdaemon) {
+        return SILKWORM_RPCDAEMON_NOT_STARTED;
+    }
 
     instance.rpcdaemon->stop();
     SILK_INFO << "[Silkworm RPC] Exiting...";
     instance.rpcdaemon->join();
     SILK_INFO << "[Silkworm RPC] Stopped";
+    instance.rpcdaemon.reset();
 
     return SILKWORM_OK;
 }

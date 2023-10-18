@@ -41,7 +41,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     CLI::App cli{"Sentry - P2P proxy"};
 
     Settings settings;
-    settings.build_info = silkworm_get_buildinfo();
+    settings.client_id = Sentry::make_client_id(*silkworm_get_buildinfo());
 
     add_logging_options(cli, settings.log_settings);
     add_option_data_dir(cli, settings.data_dir_path);

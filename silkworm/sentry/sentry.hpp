@@ -26,6 +26,8 @@
 #include "api/common/sentry_client.hpp"
 #include "settings.hpp"
 
+struct buildinfo;
+
 namespace silkworm::sentry {
 
 class SentryImpl;
@@ -44,6 +46,8 @@ class Sentry final : public api::SentryClient {
     [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<Task<void>()> callback) override;
     Task<void> reconnect() override;
+
+    static std::string make_client_id(const buildinfo& info);
 
   private:
     std::unique_ptr<SentryImpl> p_impl_;

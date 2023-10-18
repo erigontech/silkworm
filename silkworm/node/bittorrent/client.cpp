@@ -30,6 +30,7 @@
 #include <libtorrent/write_resume_data.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -120,8 +121,8 @@ lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
     settings.set_int(lt::settings_pack::alert_mask,
                      lt::alert_category::error | lt::alert_category::storage |
                          lt::alert_category::status | lt::alert_category::performance_warning);
-    settings.set_int(lt::settings_pack::download_rate_limit, settings_.download_rate_limit);
-    settings.set_int(lt::settings_pack::upload_rate_limit, settings_.upload_rate_limit);
+    settings.set_int(lt::settings_pack::download_rate_limit, settings_.download_rate_limit * int(1_Mebi));
+    settings.set_int(lt::settings_pack::upload_rate_limit, settings_.upload_rate_limit * int(1_Mebi));
     settings.set_int(lt::settings_pack::active_downloads, settings_.active_downloads);
     settings.set_int(lt::settings_pack::max_out_request_queue, settings_.max_out_request_queue);
     settings.set_int(lt::settings_pack::aio_threads, settings_.aio_threads);
@@ -349,6 +350,30 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
     if (const auto ssa = lt::alert_cast<lt::session_stats_alert>(alert)) {
         stats_subscription(ssa->counters());
         handled = true;
+    }
+
+    // When we receive any error alert, put it out as warning if required (there can be many)
+    if (settings_.warn_on_error_alerts) {
+        if (const auto tea = lt::alert_cast<lt::tracker_error_alert>(alert)) {
+            SILK_WARN << "tracker_error_alert: " << alert->message() << " [error=" << tea->error_message() << " reason=" << tea->failure_reason() << "]";
+            handled = true;
+        }
+        if (const auto sfa = lt::alert_cast<lt::scrape_failed_alert>(alert)) {
+            SILK_WARN << "scrape_failed_alert: " << alert->message() << " [error=" << sfa->error_message() << " what=" << sfa->what() << "]";
+            handled = true;
+        }
+        if (const auto sea = lt::alert_cast<lt::session_error_alert>(alert)) {
+            SILK_WARN << "session_error_alert: " << alert->message() << " [error_code=" << sea->error << " what=" << sea->what() << "]";
+            handled = true;
+        }
+        if (const auto pea = lt::alert_cast<lt::peer_error_alert>(alert)) {
+            SILK_WARN << "peer_error_alert: " << alert->message() << " [error_code=" << pea->error << " what=" << pea->what() << "]";
+            handled = true;
+        }
+        if (const auto tea = lt::alert_cast<lt::torrent_error_alert>(alert)) {
+            SILK_WARN << "torrent_error_alert: " << alert->message() << " [error_code=" << tea->error << " what=" << tea->what() << "]";
+            handled = true;
+        }
     }
 
     // When we receive any performance alert, put it out as warning

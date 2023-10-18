@@ -21,12 +21,16 @@
 namespace silkworm::sentry::nat {
 
 bool lexical_cast(const std::string& input, NatOption& value) {
+    return lexical_cast(std::string_view{input}, value);
+}
+
+bool lexical_cast(std::string_view input, NatOption& value) {
     if (input == "none") {
         value = {};
         return true;
     }
     if (boost::algorithm::istarts_with(input, "extip:")) {
-        auto ip_str = input.c_str() + 6;
+        auto ip_str = input.substr(6);
         boost::system::error_code err;
         auto ip = boost::asio::ip::make_address(ip_str, err);
         value = {NatMode::kExternalIP, {ip}};

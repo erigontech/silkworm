@@ -77,6 +77,13 @@ static log::Args log_args_for_version() {
     };
 }
 
+static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
+    // treat as char8_t so that filesystem::path assumes UTF-8 encoding of the input path
+    auto begin = reinterpret_cast<const char8_t*>(data_dir_path);
+    size_t len = strnlen(data_dir_path, SILKWORM_PATH_SIZE);
+    return std::filesystem::path{begin, begin + len};
+}
+
 //! Generate log arguments for execution progress at specified block
 static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_t current_block) {
     static auto float_to_string = [](float f) -> std::string {
@@ -122,9 +129,14 @@ class SignalHandlerGuard {
     ~SignalHandlerGuard() { SignalHandler::reset(); }
 };
 
-SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_init(
+    SilkwormHandle** handle,
+    const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
+    }
+    if (!settings) {
+        return SILKWORM_INVALID_SETTINGS;
     }
 
     static bool is_initialized = false;
@@ -141,8 +153,12 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
     *handle = new SilkwormHandle{
+        {},  // context_pool_settings
+        make_path(settings->data_dir_path),
         std::move(snapshot_repository),
         {},  // rpcdaemon unique_ptr
+        {},  // sentry_thread unique_ptr
+        {},  // sentry_stop_signal
     };
     return SILKWORM_OK;
 }

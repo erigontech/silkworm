@@ -16,12 +16,23 @@
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
+#include <thread>
 
+#include <boost/asio/cancellation_signal.hpp>
+
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
 struct SilkwormHandle {
+    silkworm::concurrency::ContextPoolSettings context_pool_settings;
+    std::filesystem::path data_dir_path;
     std::unique_ptr<silkworm::snapshot::SnapshotRepository> snapshot_repository;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
+
+    // sentry
+    std::unique_ptr<std::thread> sentry_thread;
+    boost::asio::cancellation_signal sentry_stop_signal;
 };

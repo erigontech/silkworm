@@ -250,9 +250,9 @@ void make_glaze_json_content(GlazeJsonBlock& block_json_data, const BlockBody& b
 void make_glaze_json_null_content(std::string& reply, uint32_t id) {
     GlazeJsonNullBlock block_json_data{};
     block_json_data.id = id;
-  
+
     glz::write<glz::opts{.skip_null_members = false}>(block_json_data, reply);
-    //glz::write_json(block_json_data, reply);
+    // glz::write_json(block_json_data, reply);
 }
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {

@@ -220,6 +220,19 @@ struct GlazeJsonBlock {
     };
 };
 
+struct GlazeJsonNullBlock {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+
+    struct glaze {
+        using T = GlazeJsonNullBlock;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", glz::tag::null);
+    };
+};
+
 void make_glaze_json_content(GlazeJsonBlock& block_json_data, const BlockBody& block) {
     std::vector<GlazeJsonWithdrawals> withdrawals;
     withdrawals.reserve(block.withdrawals->size());
@@ -234,38 +247,47 @@ void make_glaze_json_content(GlazeJsonBlock& block_json_data, const BlockBody& b
     block_json_data.result.withdrawals = make_optional(std::move(withdrawals));
 }
 
+void make_glaze_json_null_content(std::string& reply, uint32_t id) {
+    GlazeJsonNullBlock block_json_data{};
+    block_json_data.id = id;
+  
+    glz::write<glz::opts{.skip_null_members = false}>(block_json_data, reply);
+    //glz::write_json(block_json_data, reply);
+}
+
 void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
     GlazeJsonBlock block_json_data{};
     auto& block = b.block;
     auto& header = block.header;
+    auto& result = block_json_data.result;
 
     block_json_data.id = id;
-    to_quantity(std::span(block_json_data.result.block_number), header.number);
-    to_hex(std::span(block_json_data.result.hash), b.hash.bytes);
-    to_hex(std::span(block_json_data.result.parent_hash), header.parent_hash.bytes);
-    to_hex(std::span(block_json_data.result.nonce), header.nonce);
-    to_hex(std::span(block_json_data.result.sha3Uncles), header.ommers_hash.bytes);
-    to_hex(std::span(block_json_data.result.transactions_root), header.transactions_root.bytes);
-    to_hex(std::span(block_json_data.result.logs_bloom), header.logs_bloom);
+    to_quantity(std::span(result.block_number), header.number);
+    to_hex(std::span(result.hash), b.hash.bytes);
+    to_hex(std::span(result.parent_hash), header.parent_hash.bytes);
+    to_hex(std::span(result.nonce), header.nonce);
+    to_hex(std::span(result.sha3Uncles), header.ommers_hash.bytes);
+    to_hex(std::span(result.transactions_root), header.transactions_root.bytes);
+    to_hex(std::span(result.logs_bloom), header.logs_bloom);
     if (header.withdrawals_root) {
-        block_json_data.result.withdrawals_root = "0x" + silkworm::to_hex(*(header.withdrawals_root));
+        result.withdrawals_root = "0x" + silkworm::to_hex(*(header.withdrawals_root));
     }
-    to_hex(std::span(block_json_data.result.state_root), header.state_root.bytes);
-    to_hex(std::span(block_json_data.result.receipts_root), header.receipts_root.bytes);
-    to_hex(std::span(block_json_data.result.miner), header.beneficiary.bytes);
+    to_hex(std::span(result.state_root), header.state_root.bytes);
+    to_hex(std::span(result.receipts_root), header.receipts_root.bytes);
+    to_hex(std::span(result.miner), header.beneficiary.bytes);
 
-    to_quantity(std::span(block_json_data.result.size), b.get_block_size());
-    to_quantity(std::span(block_json_data.result.gas_limit), header.gas_limit);
-    to_quantity(std::span(block_json_data.result.gas_used), header.gas_used);
-    to_quantity(std::span(block_json_data.result.difficulty), header.difficulty);
-    to_quantity(std::span(block_json_data.result.total_difficulty), b.total_difficulty);
-    to_hex(std::span(block_json_data.result.mix_hash), header.prev_randao.bytes);
-    to_hex(std::span(block_json_data.result.extra_data), header.extra_data);
+    to_quantity(std::span(result.size), b.get_block_size());
+    to_quantity(std::span(result.gas_limit), header.gas_limit);
+    to_quantity(std::span(result.gas_used), header.gas_used);
+    to_quantity(std::span(result.difficulty), header.difficulty);
+    to_quantity(std::span(result.total_difficulty), b.total_difficulty);
+    to_hex(std::span(result.mix_hash), header.prev_randao.bytes);
+    to_hex(std::span(result.extra_data), header.extra_data);
 
     if (header.base_fee_per_gas.has_value()) {
-        block_json_data.result.base_fee_per_gas = std::make_optional(to_quantity(header.base_fee_per_gas.value_or(0)));
+        result.base_fee_per_gas = std::make_optional(to_quantity(header.base_fee_per_gas.value_or(0)));
     }
-    to_quantity(std::span(block_json_data.result.timestamp), header.timestamp);
+    to_quantity(std::span(result.timestamp), header.timestamp);
 
     if (b.full_tx) {
         std::vector<GlazeJsonTransactionItem> optional_list;
@@ -321,7 +343,7 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
             rpc::to_quantity(std::span(item.s), silkworm::endian::to_big_compact(transaction.s));
             optional_list.push_back(std::move(item));
         }
-        block_json_data.result.transactions_data = make_optional(std::move(optional_list));
+        result.transactions_data = make_optional(std::move(optional_list));
 
     } else {
         std::vector<std::string> transaction_hashes;
@@ -331,11 +353,11 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
             auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
             transaction_hashes.push_back("0x" + silkworm::to_hex(bytes32_hash));
         }
-        block_json_data.result.transaction_hashes = std::make_optional(std::move(transaction_hashes));
+        result.transaction_hashes = std::make_optional(std::move(transaction_hashes));
     }
-    block_json_data.result.ommers_hashes.reserve(block.ommers.size());
+    result.ommers_hashes.reserve(block.ommers.size());
     for (std::size_t i{0}; i < block.ommers.size(); i++) {
-        block_json_data.result.ommers_hashes.push_back("0x" + silkworm::to_hex(block.ommers[i].hash()));
+        result.ommers_hashes.push_back("0x" + silkworm::to_hex(block.ommers[i].hash()));
     }
 
     if (block.withdrawals) {

@@ -31,7 +31,8 @@ void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_se
 
     // TODO(canepat) add options for the other snapshot settings and for all bittorrent settings
     cli.add_option("--torrent.verify_on_startup", snapshot_settings.bittorrent_settings.verify_on_startup)
-        ->description("If set, the snapshot downloader will verify snapshots on startup."
+        ->description(
+            "If set, the snapshot downloader will verify snapshots on startup."
             " It will not report founded problems but just re-download broken pieces")
         ->capture_default_str();
     cli.add_option("--torrent.download.rate", snapshot_settings.bittorrent_settings.download_rate_limit)
@@ -41,7 +42,8 @@ void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_se
         ->description("Upload rate limit for BitTorrent client in megabytes per seconds")
         ->capture_default_str();
     cli.add_option("--torrent.download.slots", snapshot_settings.bittorrent_settings.active_downloads)
-        ->description("Number of BitTorrent files to download in parallel."
+        ->description(
+            "Number of BitTorrent files to download in parallel."
             " If network has enough seeders, then 1-3 slots are enough, otherwise please increase to 5-7"
             " (too big value will slow down everything)")
         ->capture_default_str();

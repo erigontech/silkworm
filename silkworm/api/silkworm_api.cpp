@@ -35,6 +35,8 @@
 #include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
+#include "handle.hpp"
+
 using namespace std::chrono_literals;
 using namespace silkworm;
 
@@ -120,26 +122,28 @@ class SignalHandlerGuard {
     ~SignalHandlerGuard() { SignalHandler::reset(); }
 };
 
-//! The Silkworm library instance
-struct SilkwormInstance {
-    SilkwormHandle* handle{nullptr};
-    std::unique_ptr<rpc::Daemon> rpcdaemon;
-};
-SilkwormInstance instance;  // just one instance for the time being
-
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    if (instance.handle) {
+
+    static bool is_initialized = false;
+    if (is_initialized) {
         return SILKWORM_TOO_MANY_INSTANCES;
+    } else {
+        is_initialized = true;
     }
+
     log::init(kLogSettingsLikeErigon);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
-    const auto snapshot_repository = new snapshot::SnapshotRepository{};
-    db::DataModel::set_snapshot_repository(snapshot_repository);
-    *handle = reinterpret_cast<SilkwormHandle*>(snapshot_repository);
-    instance.handle = *handle;
+
+    auto snapshot_repository = std::make_unique<snapshot::SnapshotRepository>();
+    db::DataModel::set_snapshot_repository(snapshot_repository.get());
+
+    *handle = new SilkwormHandle{
+        std::move(snapshot_repository),
+        {},  // rpcdaemon unique_ptr
+    };
     return SILKWORM_OK;
 }
 
@@ -273,10 +277,10 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
 }
 
 SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* env) SILKWORM_NOEXCEPT {
-    if (handle != instance.handle) {
-        return SILKWORM_INSTANCE_NOT_FOUND;
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
     }
-    if (instance.rpcdaemon) {
+    if (handle->rpcdaemon) {
         return SILKWORM_RPCDAEMON_ALREADY_STARTED;
     }
 
@@ -292,13 +296,13 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
     };
 
     // Create the one-and-only Silkrpc daemon
-    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
+    handle->rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
 
     // Check protocol version compatibility with Core Services
     if (!settings.skip_protocol_check) {
         SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
 
-        const auto checklist = instance.rpcdaemon->run_checklist();
+        const auto checklist = handle->rpcdaemon->run_checklist();
         for (const auto& protocol_check : checklist.protocol_checklist) {
             SILK_INFO << protocol_check.result;
         }
@@ -308,24 +312,24 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
     }
 
     SILK_INFO << "[Silkworm RPC] Starting ETH API at " << settings.eth_end_point;
-    instance.rpcdaemon->start();
+    handle->rpcdaemon->start();
 
     return SILKWORM_OK;
 }
 
 SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
-    if (handle != instance.handle) {
-        return SILKWORM_INSTANCE_NOT_FOUND;
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
     }
-    if (!instance.rpcdaemon) {
+    if (!handle->rpcdaemon) {
         return SILKWORM_RPCDAEMON_NOT_STARTED;
     }
 
-    instance.rpcdaemon->stop();
+    handle->rpcdaemon->stop();
     SILK_INFO << "[Silkworm RPC] Exiting...";
-    instance.rpcdaemon->join();
+    handle->rpcdaemon->join();
     SILK_INFO << "[Silkworm RPC] Stopped";
-    instance.rpcdaemon.reset();
+    handle->rpcdaemon.reset();
 
     return SILKWORM_OK;
 }
@@ -473,14 +477,12 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
 }
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
-    if (handle != instance.handle) {
-        return SILKWORM_INSTANCE_NOT_FOUND;
-    }
-    const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
-    if (!snapshot_repository) {
+    if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    delete snapshot_repository;
-    instance.handle = nullptr;
+    if (!handle->snapshot_repository) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    delete handle;
     return SILKWORM_OK;
 }

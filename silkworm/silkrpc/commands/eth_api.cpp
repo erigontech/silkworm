@@ -254,12 +254,10 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
 
             make_glaze_json_content(reply, request["id"], extended_block);
         } else {
-            const Block b{};
-            make_glaze_json_content(reply, request["id"], b);
+            make_glaze_json_null_content(reply, request["id"]);
         }
     } catch (const std::invalid_argument& iv) {
-        const Block b{};
-        make_glaze_json_content(reply, request["id"], b);
+        make_glaze_json_null_content(reply, request["id"]);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         make_glaze_json_error(reply, request["id"], 100, e.what());

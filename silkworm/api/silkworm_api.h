@@ -39,10 +39,9 @@
 extern "C" {
 #endif
 
-typedef struct MDBX_env MDBX_env;
-typedef struct MDBX_txn MDBX_txn;
+// Silkworm library error codes (SILKWORM_OK indicates no error, i.e. success)
 
-#define SILKWORM_OK 0 /* Successful result */
+#define SILKWORM_OK 0
 #define SILKWORM_INTERNAL_ERROR 1
 #define SILKWORM_UNKNOWN_ERROR 2
 #define SILKWORM_INVALID_HANDLE 3
@@ -58,15 +57,12 @@ typedef struct MDBX_txn MDBX_txn;
 #define SILKWORM_TOO_MANY_INSTANCES 13
 #define SILKWORM_INSTANCE_NOT_FOUND 14
 #define SILKWORM_TERMINATION_SIGNAL 15
+#define SILKWORM_RPCDAEMON_ALREADY_STARTED 16
+#define SILKWORM_RPCDAEMON_NOT_STARTED 17
 
+typedef struct MDBX_env MDBX_env;
+typedef struct MDBX_txn MDBX_txn;
 typedef struct SilkwormHandle SilkwormHandle;
-
-/**
- * \brief Initialize the Silkworm C API library.
- * \param[in,out] handle Silkworm instance handle returned on successful initialization.
- * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
- */
-SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
 
 struct SilkwormMemoryMappedFile {
     const char* file_path;
@@ -95,6 +91,13 @@ struct SilkwormChainSnapshot {
     struct SilkwormBodiesSnapshot bodies;
     struct SilkwormTransactionsSnapshot transactions;
 };
+
+/**
+ * \brief Initialize the Silkworm C API library.
+ * \param[in,out] handle Silkworm instance handle returned on successful initialization.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Build a set of indexes for the given snapshots.

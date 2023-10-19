@@ -23,7 +23,7 @@
 
 namespace silkworm::db {
 
-static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
+static mdbx::env_managed create_main_env(db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxnManaged main_txn{main_env};
     table::check_or_create_chaindata_tables(main_txn);

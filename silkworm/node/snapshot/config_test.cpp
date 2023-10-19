@@ -62,7 +62,7 @@ TEST_CASE("Config::lookup_known_config", "[silkworm][snapshot][config]") {
     }
 
     SECTION("mainnet") {
-        constexpr std::size_t kExpectedMaxBlockNumber{17'000'000};
+        constexpr std::size_t kExpectedMaxBlockNumber{18'000'000};
         const int kSnapshotSegmentCount{magic_enum::enum_count<SnapshotType>() - 1};  // transactions2block has no segments
         const auto mainnet_snapshot_config = Config::lookup_known_config(1, {});
         CHECK(mainnet_snapshot_config->preverified_snapshots().size() ==

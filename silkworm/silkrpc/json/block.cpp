@@ -223,13 +223,14 @@ struct GlazeJsonBlock {
 struct GlazeJsonNullBlock {
     char jsonrpc[jsonVersionSize] = "2.0";
     uint32_t id;
+    std::monostate result;
 
     struct glaze {
         using T = GlazeJsonNullBlock;
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
-            "result", glz::tag::null);
+            "result", &T::result);
     };
 };
 

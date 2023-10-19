@@ -186,7 +186,6 @@ commands:
             for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
             for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
             ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=10 ~/corpus ~/crashes ~/artifacts
-
 jobs:
   lint:
     machine:

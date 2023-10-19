@@ -75,7 +75,7 @@ void MainChain::open() {
     forward(canonical_head.number, canonical_head.hash);
 
     // If forward cleanup cycle has not produced a valid chain, then we need to unwind
-    if (not std::holds_alternative<ValidChain>(canonical_head_status_)) {
+    if (!std::holds_alternative<ValidChain>(canonical_head_status_)) {
         const auto unwind_point{pipeline_.unwind_point()};
         ensure_invariant(unwind_point.has_value(), "unwind point from pipeline requested when forward fails");
         unwind(*unwind_point);

@@ -45,26 +45,66 @@ void Index::build() {
     RecSplit8 rec_split{rec_split_settings, 0};
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
+
+    struct Slice {
+        uint64_t ordinal;
+        uint64_t offset;
+    };
+    //std::vector<uint64_t> prefetched_offsets{0, 13'249'773, 26'299'308, 39'469'479, 52'666'722, 66'092'488, 78'669'400, 91'048'413, decoder.data_size()};
+    std::vector<Slice> prefetched_offsets;
+    uint64_t slice_size = decoder.words_count() / std::thread::hardware_concurrency();
+    decoder.read_ahead([&](huffman::Decompressor::Iterator it) {
+        Bytes word{};
+        word.reserve(kPageSize);
+        uint64_t i{0}, offset{0};
+        prefetched_offsets.push_back({.ordinal = i, .offset = offset});
+        while (it.has_next()) {
+            offset = it.next(word);
+            ++i;
+            if (i % slice_size == 0) {
+                prefetched_offsets.push_back({.ordinal = i, .offset = offset});
+            }
+            word.clear();
+        }
+        if (prefetched_offsets.back().offset != decoder.data_size()) {
+            prefetched_offsets.push_back({.ordinal = i, .offset = decoder.data_size()});
+        }
+        return true;
+    });
+
     uint64_t iterations{0};
     bool collision_detected;
     do {
         iterations++;
+        std::atomic_bool read_ok{true};
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        const bool read_ok = decoder.read_ahead([&](huffman::Decompressor::Iterator it) {
-            Bytes word{};
-            word.reserve(kPageSize);
-            uint64_t i{0}, offset{0};
-            while (it.has_next()) {
-                uint64_t next_position = it.next(word);
-                if (bool ok = walk(rec_split, i, offset, word); !ok) {
-                    return false;
-                }
-                ++i;
-                offset = next_position;
-                word.clear();
-            }
-            return true;
-        });
+        for(size_t i = 0; i < prefetched_offsets.size() - 1; ++i) {
+            uint64_t start_offset = prefetched_offsets[i].offset;
+            uint64_t start_ordinal = prefetched_offsets[i].ordinal;
+            uint64_t end_offset = prefetched_offsets[i + 1].offset;
+            thread_pool_.push_task([&, start_offset, end_offset, start_ordinal]() {
+                decoder.read_ahead(start_offset, end_offset,
+                                   [start_offset, start_ordinal, &read_ok, &rec_split, this](huffman::Decompressor::Iterator it) {
+                    //SILK_INFO << "offset: " << start_offset;
+                    Bytes word{};
+                    word.reserve(kPageSize);
+                    uint64_t i{start_ordinal}, offset{start_offset};
+                    while (it.has_next()) {
+                        uint64_t next_position = it.next(word);
+                        if (bool ok = walk(rec_split, i, offset, word); !ok) {  // todo(mike): occorre generare il numerale che va passato alla add_key
+                            read_ok = false;
+                            return false;
+                        }
+                        ++i;
+                        offset = next_position;
+                        word.clear();
+                    }
+                    return true;
+                });
+            });
+        }
+        thread_pool_.wait_for_tasks();
+
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_TRACE << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
@@ -84,7 +124,7 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
     ensure(hash.bytes[0] == first_hash_byte,
            "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes));
-    rec_split.add_key(hash.bytes, kHashLength, offset);
+    rec_split.add_key(hash.bytes, kHashLength, offset, i);
     return true;
 }
 
@@ -207,7 +247,7 @@ void TransactionIndex::build() {
                     } else {
                         // Skip tx hash first byte plus address length for transaction decoding
                         constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-                        const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
+                        const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};  // todo(mike): avoid copy
                         ByteView tx_envelope_view{tx_envelope};
 
                         rlp::Header tx_header;
@@ -223,7 +263,7 @@ void TransactionIndex::build() {
                             SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;
                         }
 
-                        const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
+                        const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};  // todo(mike): avoid copy
                         const auto h256{keccak256(tx_payload)};
                         std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
                         SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)

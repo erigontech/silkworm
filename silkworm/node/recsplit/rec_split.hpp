@@ -129,6 +129,12 @@ bool containsDuplicate(const std::vector<T>& items) {
     return false;  // No duplicate found
 }
 
+template <typename T>
+void set_max(std::atomic<T>& atom, T v) {
+    T current = atom.load();
+    while (v > current && !atom.compare_exchange_weak(current, v));
+}
+
 namespace silkworm::succinct {
 
 using namespace std::chrono;
@@ -251,24 +257,32 @@ class RecSplit {
     using DoubleEliasFano = DoubleEliasFanoList16;
 
     struct Bucket {
-        Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id} {
+        Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id}, mutex_{new std::mutex} {
             keys_.reserve(bucket_size);
             values_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
-        Bucket(Bucket&&) noexcept = default;
+        Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)}, gr_builder_{std::move(other.gr_builder_)}, mutex_{other.mutex_} {
+            other.mutex_ = nullptr;
+        }
+        ~Bucket() {
+            delete mutex_;
+        }
 
         //! Identifier of the current bucket being accumulated
         uint64_t bucket_id_{0};
 
         //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
-        std::vector<uint64_t> keys_;  // mike: current_bucket_;  -> keys_
+        std::vector<uint64_t> keys_;
 
         //! Index offsets for the current bucket
-        std::vector<uint64_t> values_;  // mike: current_bucket_offsets_; -> values_
+        std::vector<uint64_t> values_;
 
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
         GolombRiceVector::LazyBuilder gr_builder_;
+
+        //!
+        std::mutex* mutex_;
 
         //! The local max index used in Golomb parameter array
         uint16_t golomb_param_max_index_{0};
@@ -400,7 +414,7 @@ class RecSplit {
         built_ = true;
     }
 
-    void add_key(const hash128_t& key_hash, uint64_t offset) {
+    void add_key(const hash128_t& key_hash, uint64_t offset, uint64_t ordinal) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
@@ -412,36 +426,32 @@ class RecSplit {
         uint64_t bucket_id = hash128_to_bucket(key_hash);
         auto bucket_key = key_hash.second;
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
-        }
-        // if (keys_added_ > 0) {  // unused
-        //     const auto delta = offset - previous_offset_;
-        //     if (keys_added_ == 1 || delta < min_delta_) {
-        //         min_delta_ = delta;
-        //     }
-        // }
+        set_max(max_offset_, offset);
 
         ensure(bucket_id < bucket_count_, "bucket_id out of range");
         Bucket& bucket = buckets_[bucket_id];
 
         if (double_enum_index_) {
+            std::lock_guard<std::mutex> lock{*bucket.mutex_};
             offsets_.push_back(offset);
 
-            auto current_key_count = keys_added_;
-
             bucket.keys_.emplace_back(bucket_key);
-            bucket.values_.emplace_back(current_key_count);
+            bucket.values_.emplace_back(ordinal);
         } else {
+            std::lock_guard<std::mutex> lock{*bucket.mutex_};
             bucket.keys_.emplace_back(bucket_key);
             bucket.values_.emplace_back(offset);
         }
 
         keys_added_++;
-        // previous_offset_ = offset;
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+        uint64_t ordinal = keys_added_;
+        add_key(key_data, key_length, offset, ordinal);
+    }
+
+    void add_key(const void* key_data, const size_t key_length, uint64_t offset, uint64_t ordinal) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
@@ -451,7 +461,7 @@ class RecSplit {
         }
 
         const auto key_hash = murmur_hash_3(key_data, key_length);
-        add_key(key_hash, offset);
+        add_key(key_hash, offset, ordinal);
     }
 
     void add_key(const std::string& key, uint64_t offset) {
@@ -487,7 +497,7 @@ class RecSplit {
         SILK_DEBUG << "[index] written number of keys: " << keys_added_;
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(max_offset_) + 7) / 8;
+        bytes_per_record_ = (std::bit_width(max_offset_.load()) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
@@ -1049,7 +1059,7 @@ class RecSplit {
     std::filesystem::path index_path_;
 
     //! The number of keys currently added
-    uint64_t keys_added_{0};
+    std::atomic<uint64_t> keys_added_{0};
 
     //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
     // uint64_t min_delta_{0};  // unused
@@ -1058,7 +1068,7 @@ class RecSplit {
     // uint64_t previous_offset_{0};  // unused
 
     //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
-    uint64_t max_offset_{0};
+    std::atomic<uint64_t> max_offset_{0};
 
     //! Number of bytes used per index record
     uint8_t bytes_per_record_{0};

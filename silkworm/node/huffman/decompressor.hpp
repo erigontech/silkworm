@@ -183,11 +183,12 @@ class Decompressor {
     class Iterator {
       public:
         explicit Iterator(const Decompressor* decoder);
+        explicit Iterator(const Decompressor* decoder, uint64_t start_offset, uint64_t end_offset);
 
         [[nodiscard]] std::size_t data_size() const { return decoder_->words_length_; }
 
         //! Check if any next word is present in the data stream
-        [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
+        [[nodiscard]] bool has_next() const { return word_offset_ < end_offset_; }
 
         //! Check if the word at the current offset has the specified prefix (this does not move offset to the next)
         [[nodiscard]] bool has_prefix(ByteView prefix);
@@ -232,6 +233,8 @@ class Decompressor {
         //! Position of current word in the data file
         uint64_t word_offset_{0};
 
+        uint64_t end_offset_{0};
+
         //! Bit position [0..7] in current word of the data file
         uint8_t bit_position_{0};
     };
@@ -247,6 +250,8 @@ class Decompressor {
 
     [[nodiscard]] uint64_t words_count() const { return words_count_; }
 
+    [[nodiscard]] uint64_t data_size() const { return words_length_; }
+
     [[nodiscard]] uint64_t empty_words_count() const { return empty_words_count_; }
 
     [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
@@ -261,6 +266,7 @@ class Decompressor {
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order
     bool read_ahead(ReadAheadFuncRef fn);
+    bool read_ahead(uint64_t start_offset, uint64_t end_offset, ReadAheadFuncRef fn);
 
     //! Get an iterator to the compressed data
     [[nodiscard]] Iterator make_iterator() const { return Iterator{this}; }

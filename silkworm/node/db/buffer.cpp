@@ -66,11 +66,11 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
     auto it{accounts_.find(address)};
     if (it != accounts_.end()) {
-        batch_state_size_ -= it->second.has_value() ? sizeof(Account) : 0;
-        batch_state_size_ += (current ? sizeof(Account) : 0);
+        batch_state_size_ -= it->second.has_value() ? it->second->encoding_length_for_storage() : 0;
+        batch_state_size_ += (current ? current->encoding_length_for_storage() : 0);
         it->second = current;
     } else {
-        batch_state_size_ += kAddressLength + (current ? sizeof(Account) : 0);
+        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
         accounts_[address] = current;
     }
 
@@ -397,7 +397,7 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
         touched_accounts.insert(recipient);
     }
 
-    if (not touched_accounts.empty()) {
+    if (!touched_accounts.empty()) {
         batch_history_size_ += sizeof(BlockNum);
     }
     absl::btree_set<Bytes> values;
@@ -482,8 +482,6 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
         return it->second;
     }
     auto db_account{db::read_account(txn_, address, historical_block_)};
-    accounts_[address] = db_account;
-    batch_state_size_ += kAddressLength + db_account.value_or(Account()).encoding_length_for_storage();
     return db_account;
 }
 
@@ -501,19 +499,14 @@ ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& location) const noexcept {
-    size_t payload_length{kAddressLength + kIncarnationLength + kLocationLength + kHashLength};
     if (auto it1{storage_.find(address)}; it1 != storage_.end()) {
-        payload_length -= kAddressLength;
         if (auto it2{it1->second.find(incarnation)}; it2 != it1->second.end()) {
-            payload_length -= kIncarnationLength;
             if (auto it3{it2->second.find(location)}; it3 != it2->second.end()) {
                 return it3->second;
             }
         }
     }
     auto db_storage{db::read_storage(txn_, address, incarnation, location, historical_block_)};
-    storage_[address][incarnation][location] = db_storage;
-    batch_state_size_ += payload_length;
     return db_storage;
 }
 

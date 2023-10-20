@@ -200,8 +200,8 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     return number;
 }
 
-std::string human_size(uint64_t bytes) {
-    static const char* suffix[]{"B", "KB", "MB", "GB", "TB"};
+std::string human_size(uint64_t bytes, const char* unit) {
+    static const char* suffix[]{"", "K", "M", "G", "T"};
     static const uint32_t items{sizeof(suffix) / sizeof(suffix[0])};
     uint32_t index{0};
     double value{static_cast<double>(bytes)};
@@ -213,7 +213,7 @@ std::string human_size(uint64_t bytes) {
     }
     static constexpr size_t kBufferSize{64};
     SILKWORM_THREAD_LOCAL char output[kBufferSize];
-    SILKWORM_ASSERT(std::snprintf(output, kBufferSize, "%.02lf %s", value, suffix[index]) > 0);
+    SILKWORM_ASSERT(std::snprintf(output, kBufferSize, "%.02lf %s%s", value, suffix[index], unit) > 0);
     return output;
 }
 

@@ -381,9 +381,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         AnalysisCache analysis_cache{kCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
 
-        // Transform batch size limit into gas units (Ggas = Giga gas, Tgas = Tera gas)
-        const size_t gas_max_history_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
-        const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
+        // Transform batch size limit into gas units (Ggas = Giga gas)
+        const size_t gas_max_batch_size{batch_size * 1_Kibi * 2};          // batch size 256MB -> 512Ggas roughly
+        const size_t gas_max_history_batch_size{batch_size * 1_Kibi * 2};  // batch size 256MB -> 512Ggas roughly
 
         // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
         static constexpr size_t kMaxPrefetchedBlocks{10240};
@@ -447,13 +447,21 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
             prefetched_blocks.pop_front();
 
-            // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
-            if (gas_batch_size >= gas_max_batch_size) {
-                SILK_TRACE << log::Args{"buffer", "state", "size", human_size(state_buffer.current_batch_state_size())};
+            // Flush current state and state history if we've reached the target batch size, otherwise just state history
+            if (state_buffer.current_batch_state_size() >= batch_size) {
+                log::Info{"[4/12 Execution] Flushing state + history",  // NOLINT(*-unused-raii)
+                          log::Args{"state", human_size(state_buffer.current_batch_state_size()),
+                                    "history", human_size(state_buffer.current_batch_history_size()),
+                                    "block", std::to_string(block.header.number)}};
                 state_buffer.write_to_db(write_change_sets);
                 gas_batch_size = 0;
-            } else if (gas_history_size >= gas_max_history_size) {
-                SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_history_size())};
+                gas_history_size = 0;
+            }
+            if (state_buffer.current_batch_history_size() >= batch_size) {
+                log::Info{"[4/12 Execution] Flushing history",  // NOLINT(*-unused-raii)
+                          log::Args{"state", human_size(state_buffer.current_batch_state_size()),
+                                    "history", human_size(state_buffer.current_batch_history_size()),
+                                    "block", std::to_string(block.header.number)}};
                 state_buffer.write_history_to_db(write_change_sets);
                 gas_history_size = 0;
             }
@@ -467,7 +475,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
             if (log_time <= now) {
                 progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
-                progress.gas_history_perc = float(gas_history_size) / float(gas_max_history_size);
+                progress.gas_history_perc = float(gas_history_size) / float(gas_max_history_batch_size);
                 progress.end_time = now;
                 log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
                           log_args_for_exec_progress(progress, block.header.number)};
@@ -475,6 +483,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
         }
 
+        log::Info{"[4/12 Execution] Flushing state + history",  // NOLINT(*-unused-raii)
+                  log::Args{"state", human_size(state_buffer.current_batch_state_size()),
+                            "history", human_size(state_buffer.current_batch_history_size()),
+                            "block", std::to_string(max_block)}};
         state_buffer.write_to_db(write_change_sets);
         return SILKWORM_OK;
     } catch (const mdbx::exception& e) {

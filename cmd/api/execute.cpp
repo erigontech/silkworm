@@ -350,23 +350,31 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
         if (!snapshot)
             throw std::runtime_error("Snapshot not found in the repository:" + raw_snapshot_path);
 
+        auto path = snapshot->fs_path().string();
+        char* raw_path = new char[path.length() + 1];
+        std::strcpy(raw_path, path.c_str());
+
         auto mmf = new SilkwormMemoryMappedFile();
-        mmf->file_path = raw_snapshot_path.c_str();
+        mmf->file_path = raw_path;
         mmf->memory_address = snapshot->memory_file_address();
         mmf->memory_length = snapshot->memory_file_size();
         snapshot_files.push_back(mmf);
+    }
 
-        // Call api to build indexes
-        const auto start_time{std::chrono::high_resolution_clock::now()};
-        const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
-        if (status_code != SILKWORM_OK) return status_code;
-        auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-        SILK_INFO << "Building indexes for snapshots done in "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
-        // Free memory mapped files
-        for (auto snapshot_mmf : snapshot_files) {
-            delete snapshot_mmf;
-        }
+    // Call api to build indexes
+    const auto start_time{std::chrono::high_resolution_clock::now()};
+
+    const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
+    if (status_code != SILKWORM_OK) return status_code;
+
+    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+    SILK_INFO << "Building indexes for snapshots done in "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
+
+    // Free memory mapped files
+    for (auto snapshot : snapshot_files) {
+        delete[] snapshot->file_path;
+        delete snapshot;
     }
 
     return SILKWORM_OK;

@@ -108,7 +108,7 @@ struct GlazeJsonLogItem {
 };
 
 struct GlazeJsonLog {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
@@ -142,7 +142,7 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
         for (const auto& t : l.topics) {
             item.topics.push_back(silkworm::to_hex(t, true));
         }
-        log_json_data.log_json_list.push_back(item);
+        log_json_data.log_json_list.push_back(std::move(item));
     }
 
     glz::write_json(log_json_data, reply);

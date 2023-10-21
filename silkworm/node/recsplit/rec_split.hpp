@@ -270,6 +270,9 @@ class RecSplit {
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
         GolombRiceVector::LazyBuilder gr_builder_;
 
+        //! The local max index used in Golomb parameter array
+        uint16_t golomb_param_max_index_{0};
+
         //! Helper index output stream
         std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
 
@@ -534,6 +537,8 @@ class RecSplit {
 
             SILKWORM_ASSERT(bucket_size_accumulator_[i + 1] >= bucket_size_accumulator_[i]);
             SILKWORM_ASSERT(bucket_position_accumulator_[i + 1] >= bucket_position_accumulator_[i]);
+
+            golomb_param_max_index_ = std::max(golomb_param_max_index_, buckets_[i].golomb_param_max_index_);
         }
 
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
@@ -746,8 +751,14 @@ class RecSplit {
 
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
-    static constexpr uint64_t golomb_param(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) {
-        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
+    static constexpr uint64_t golomb_param(const std::size_t m,
+                                           const std::array<uint32_t, kMaxBucketSize>& memo,
+                                           uint16_t& golomb_param_max_index) {
+        if (m > golomb_param_max_index) golomb_param_max_index = m;
+        return memo[m] >> 27;
+    }
+    static constexpr uint64_t golomb_param(const std::size_t m,
+                                           const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
 
@@ -818,7 +829,7 @@ class RecSplit {
             buffer_offsets.resize(bucket.values_.size());
 
             recsplit(bucket.keys_, bucket.values_, buffer_keys, buffer_offsets, bucket.gr_builder_,
-                     bucket.index_ofs, bytes_per_record);
+                     bucket.index_ofs, bucket.golomb_param_max_index_, bytes_per_record);
 
         } else {
             for (const auto offset : bucket.values_) {
@@ -839,6 +850,7 @@ class RecSplit {
                          std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
                          GolombRiceVector::LazyBuilder& gr_builder,
                          std::ostream& index_ofs,
+                         uint16_t& golomb_param_max_index,
                          uint8_t bytes_per_record) {
         // SILK_INFO << "PROBE par-vers - keys: " << prettyPrint(keys);
         // SILK_INFO << "PROBE par-vers - offsets: " << prettyPrint(offsets);
@@ -846,7 +858,7 @@ class RecSplit {
         // SILK_INFO << "PROBE par-vers - buffer_offsets_: " << prettyPrint(buffer_offsets_);
 
         recsplit(/*.level=*/0, keys, offsets, buffer_keys, buffer_offsets, /*.start=*/0, /*.end=*/keys.size(),
-                 gr_builder, index_ofs, bytes_per_record);
+                 gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
     }
 
     static void recsplit(int level,
@@ -858,6 +870,7 @@ class RecSplit {
                          std::size_t end,
                          GolombRiceVector::LazyBuilder& gr_builder,
                          std::ostream& index_ofs,
+                         uint16_t& golomb_param_max_index,
                          uint8_t bytes_per_record) {
         uint64_t salt = kStartSeed[level];
         const uint16_t m = end - start;
@@ -899,7 +912,7 @@ class RecSplit {
                 // }
             }
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo);
+            const auto log2golomb = golomb_param(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
         } else {
@@ -941,10 +954,10 @@ class RecSplit {
 
             std::size_t i;
             for (i = 0; i < m - unit; i += unit) {
-                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, start + i + unit, gr_builder, index_ofs, bytes_per_record);
+                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, start + i + unit, gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
             }
             if (m - i > 1) {
-                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, end, gr_builder, index_ofs, bytes_per_record);
+                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, end, gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
             } else if (m - i == 1) {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
@@ -1002,7 +1015,7 @@ class RecSplit {
     static const std::size_t kUpperAggregationBound;
 
     //! The max index used in Golomb parameter array
-    static inline uint16_t golomb_param_max_index_{0};
+    uint16_t golomb_param_max_index_{0};
 
     //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
     //! skip in the fixed part of the tree (lower 24 bits).

@@ -159,7 +159,7 @@ struct GlazeJsonTransaction {
 };
 
 struct GlazeJsonBlockItem {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     char block_number[int64Size];
     char hash[hashSize];
@@ -218,7 +218,7 @@ struct GlazeJsonBlockItem {
 };
 
 struct GlazeJsonBlock {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     GlazeJsonBlockItem result;
 
@@ -232,7 +232,7 @@ struct GlazeJsonBlock {
 };
 
 struct GlazeJsonNullBlock {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     std::monostate result;
 
@@ -293,18 +293,18 @@ void make_glaze_json_transaction_content(GlazeJsonTransaction& item, const silkw
         item.chain_id = std::make_optional(to_quantity(*transaction.chain_id));
         to_quantity(std::span(item.v), uint64_t(transaction.odd_y_parity));
 
-        std::vector<GlazeJsonAccessList> access_list;
-        access_list.reserve(transaction.access_list.size());
-        for (std::size_t z{0}; z < transaction.access_list.size(); z++) {
+        std::vector<GlazeJsonAccessList> glaze_access_list;
+        glaze_access_list.reserve(transaction.access_list.size());
+        for (const auto& access_list : transaction.access_list) {
             GlazeJsonAccessList access_list_item;
-            to_hex(std::span(access_list_item.address), transaction.access_list[z].account.bytes);
-            for (std::size_t j{0}; j < transaction.access_list[z].storage_keys.size(); j++) {
-                auto key_hash = silkworm::to_bytes32({transaction.access_list[z].storage_keys[j].bytes, silkworm::kHashLength});
+            to_hex(std::span(access_list_item.address), access_list.account.bytes);
+            for (const auto& storage_key : access_list.storage_keys) {
+                auto key_hash = silkworm::to_bytes32({storage_key.bytes, silkworm::kHashLength});
                 access_list_item.storage_keys.push_back(silkworm::to_hex(key_hash.bytes));
             }
-            access_list.push_back(std::move(access_list_item));
+            glaze_access_list.push_back(std::move(access_list_item));
         }
-        item.access_list = std::make_optional(std::move(access_list));
+        item.access_list = std::make_optional(std::move(glaze_access_list));
 
         //  Erigon currently at 2.48.1 does not yet support yParity field
         if (not rpc::compatibility::is_erigon_json_api_compatibility_required()) {
@@ -376,16 +376,16 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
     } else {
         std::vector<std::string> transaction_hashes;
         transaction_hashes.reserve(block.transactions.size());
-        for (std::size_t i{0}; i < block.transactions.size(); i++) {
-            auto ethash_hash{hash_of_transaction(block.transactions[i])};
+        for (const auto& transaction : block.transactions) {
+            auto ethash_hash{hash_of_transaction(transaction)};
             auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
             transaction_hashes.push_back("0x" + silkworm::to_hex(bytes32_hash));
         }
         result.transaction_hashes = std::make_optional(std::move(transaction_hashes));
     }
     result.ommers_hashes.reserve(block.ommers.size());
-    for (std::size_t i{0}; i < block.ommers.size(); i++) {
-        result.ommers_hashes.push_back("0x" + silkworm::to_hex(block.ommers[i].hash()));
+    for (const auto& ommer : block.ommers) {
+        result.ommers_hashes.push_back("0x" + silkworm::to_hex(ommer.hash()));
     }
 
     if (block.withdrawals) {

@@ -300,7 +300,7 @@ void make_glaze_json_transaction_content(GlazeJsonTransaction& item, const silkw
             to_hex(std::span(access_list_item.address), access_list.account.bytes);
             for (const auto& storage_key : access_list.storage_keys) {
                 auto key_hash = silkworm::to_bytes32({storage_key.bytes, silkworm::kHashLength});
-                access_list_item.storage_keys.push_back(silkworm::to_hex(key_hash.bytes));
+                access_list_item.storage_keys.push_back("0x" + silkworm::to_hex(key_hash.bytes));
             }
             glaze_access_list.push_back(std::move(access_list_item));
         }

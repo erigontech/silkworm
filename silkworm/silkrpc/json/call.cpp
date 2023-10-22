@@ -95,18 +95,18 @@ struct GlazeJsonCallResultAsString {
     };
 };
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result) {
+void make_glaze_json_content(uint32_t id, const silkworm::Bytes& call_result, std::string& json_reply) {
     if (call_result.size() * 2 + 2 + 1 > ethCallResultFixedSize) {
         GlazeJsonCallResultAsString log_json_data{};
         log_json_data.result.reserve(call_result.size() * 2 + 2);
         log_json_data.id = id;
         log_json_data.result = "0x" + silkworm::to_hex(call_result);
-        glz::write_json(std::move(log_json_data), reply);
+        glz::write_json(std::move(log_json_data), json_reply);
     } else {
         GlazeJsonCall log_json_data{};
         log_json_data.id = id;
         to_hex(log_json_data.result, call_result);
-        glz::write_json(std::move(log_json_data), reply);
+        glz::write_json(std::move(log_json_data), json_reply);
     }
 }
 

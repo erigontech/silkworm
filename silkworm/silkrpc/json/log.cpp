@@ -120,7 +120,7 @@ struct GlazeJsonLog {
     };
 };
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
+void make_glaze_json_content(uint32_t id, const Logs& logs, std::string& json_reply) {
     GlazeJsonLog log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
 
@@ -145,7 +145,7 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
         log_json_data.log_json_list.push_back(std::move(item));
     }
 
-    glz::write_json(log_json_data, reply);
+    glz::write_json(log_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

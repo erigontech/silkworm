@@ -158,9 +158,7 @@ struct GlazeJsonTransaction {
     };
 };
 
-struct GlazeJsonBlockItem {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
-    uint32_t id;
+struct GlazeJsonBlock {
     char block_number[int64Size];
     char hash[hashSize];
     char parent_hash[hashSize];
@@ -182,13 +180,13 @@ struct GlazeJsonBlockItem {
     char extra_data[dataSize];
     std::optional<std::string> base_fee_per_gas;
     std::optional<std::vector<std::string>> transaction_hashes;
-    std::optional<std::vector<GlazeJsonTransaction>> transactions_data;
+    std::optional<std::vector<GlazeJsonTransaction>> transactions;
 
     std::vector<std::string> ommers_hashes;
     std::optional<std::vector<GlazeJsonWithdrawals>> withdrawals;
 
     struct glaze {
-        using T = GlazeJsonBlockItem;
+        using T = GlazeJsonBlock;
         static constexpr auto value = glz::object(
             "number", &T::block_number,
             "hash", &T::hash,
@@ -211,19 +209,19 @@ struct GlazeJsonBlockItem {
             "baseFeePerGas", &T::base_fee_per_gas,
             "gasUsed", &T::gas_used,
             "transactions", &T::transaction_hashes,
-            "transactions", &T::transactions_data,
+            "transactions", &T::transactions,
             "uncles", &T::ommers_hashes,
             "withdrawals", &T::withdrawals);
     };
 };
 
-struct GlazeJsonBlock {
+struct GlazeJsonBlockReply {
     char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
-    GlazeJsonBlockItem result;
+    GlazeJsonBlock result;
 
     struct glaze {
-        using T = GlazeJsonBlock;
+        using T = GlazeJsonBlockReply;
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
@@ -231,13 +229,13 @@ struct GlazeJsonBlock {
     };
 };
 
-struct GlazeJsonNullBlock {
+struct GlazeJsonNullBlockReply {
     char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     std::monostate result;
 
     struct glaze {
-        using T = GlazeJsonNullBlock;
+        using T = GlazeJsonNullBlockReply;
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
@@ -245,7 +243,7 @@ struct GlazeJsonNullBlock {
     };
 };
 
-void make_glaze_json_withdrawls_content(GlazeJsonBlock& block_json_data, const BlockBody& block) {
+void make_glaze_json_withdrawals(const BlockBody& block, GlazeJsonBlockReply& json_block) {
     std::vector<GlazeJsonWithdrawals> withdrawals;
     withdrawals.reserve(block.withdrawals->size());
     for (std::size_t i{0}; i < block.withdrawals->size(); i++) {
@@ -256,77 +254,77 @@ void make_glaze_json_withdrawls_content(GlazeJsonBlock& block_json_data, const B
         to_hex(std::span(item.address), (*(block.withdrawals))[i].address.bytes);
         withdrawals.push_back(std::move(item));
     }
-    block_json_data.result.withdrawals = make_optional(std::move(withdrawals));
+    json_block.result.withdrawals = make_optional(std::move(withdrawals));
 }
 
-void make_glaze_json_null_content(std::string& reply, uint32_t id) {
-    GlazeJsonNullBlock block_json_data{};
+void make_glaze_json_null_content(uint32_t id, std::string& json_reply) {
+    GlazeJsonNullBlockReply block_json_data{};
     block_json_data.id = id;
 
-    glz::write<glz::opts{.skip_null_members = false}>(block_json_data, reply);
+    glz::write<glz::opts{.skip_null_members = false}>(block_json_data, json_reply);
 }
 
-void make_glaze_json_transaction_content(GlazeJsonTransaction& item, const silkworm::Transaction& transaction) {
-    if (!transaction.from) {
-        (const_cast<silkworm::Transaction&>(transaction)).recover_sender();
+void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTransaction& json_tx) {
+    if (!tx.from) {
+        (const_cast<silkworm::Transaction&>(tx)).recover_sender();
     }
-    if (transaction.from) {
-        to_hex(std::span(item.from), transaction.from.value().bytes);
+    if (tx.from) {
+        to_hex(std::span(json_tx.from), tx.from.value().bytes);
     }
 
-    if (transaction.to) {
-        item.to = std::make_optional("0x" + silkworm::to_hex(transaction.to.value().bytes));
+    if (tx.to) {
+        json_tx.to = std::make_optional("0x" + silkworm::to_hex(tx.to.value().bytes));
     } else {
         std::monostate null_value{};
-        item.nullto = std::make_optional(std::move(null_value));
+        json_tx.nullto = std::make_optional(std::move(null_value));
     }
-    to_quantity(std::span(item.gas), transaction.gas_limit);
-    auto ethash_hash{hash_of_transaction(transaction)};
+    to_quantity(std::span(json_tx.gas), tx.gas_limit);
+    auto ethash_hash{hash_of_transaction(tx)};
     auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
-    to_hex(std::span(item.hash), bytes32_hash.bytes);
-    item.input.reserve(transaction.data.size() * 2 + 3);
-    item.input = "0x" + silkworm::to_hex(transaction.data);
-    to_quantity(std::span(item.nonce), transaction.nonce);
-    to_quantity(std::span(item.type), uint64_t(transaction.type));
+    to_hex(std::span(json_tx.hash), bytes32_hash.bytes);
+    json_tx.input.reserve(tx.data.size() * 2 + 3);
+    json_tx.input = "0x" + silkworm::to_hex(tx.data);
+    to_quantity(std::span(json_tx.nonce), tx.nonce);
+    to_quantity(std::span(json_tx.type), uint64_t(tx.type));
 
-    if (transaction.type != silkworm::TransactionType::kLegacy) {
-        item.chain_id = std::make_optional(to_quantity(*transaction.chain_id));
-        to_quantity(std::span(item.v), uint64_t(transaction.odd_y_parity));
+    if (tx.type != silkworm::TransactionType::kLegacy) {
+        json_tx.chain_id = std::make_optional(to_quantity(*tx.chain_id));
+        to_quantity(std::span(json_tx.v), uint64_t(tx.odd_y_parity));
 
         std::vector<GlazeJsonAccessList> glaze_access_list;
-        glaze_access_list.reserve(transaction.access_list.size());
-        for (const auto& access_list : transaction.access_list) {
-            GlazeJsonAccessList access_list_item;
-            to_hex(std::span(access_list_item.address), access_list.account.bytes);
+        glaze_access_list.reserve(tx.access_list.size());
+        for (const auto& access_list : tx.access_list) {
+            GlazeJsonAccessList access_list_json_tx;
+            to_hex(std::span(access_list_json_tx.address), access_list.account.bytes);
             for (const auto& storage_key : access_list.storage_keys) {
                 auto key_hash = silkworm::to_bytes32({storage_key.bytes, silkworm::kHashLength});
-                access_list_item.storage_keys.push_back("0x" + silkworm::to_hex(key_hash.bytes));
+                access_list_json_tx.storage_keys.push_back("0x" + silkworm::to_hex(key_hash.bytes));
             }
-            glaze_access_list.push_back(std::move(access_list_item));
+            glaze_access_list.push_back(std::move(access_list_json_tx));
         }
-        item.access_list = std::make_optional(std::move(glaze_access_list));
+        json_tx.access_list = std::make_optional(std::move(glaze_access_list));
 
         //  Erigon currently at 2.48.1 does not yet support yParity field
         if (not rpc::compatibility::is_erigon_json_api_compatibility_required()) {
-            item.yparity = std::make_optional(rpc::to_quantity(transaction.odd_y_parity));
+            json_tx.yparity = std::make_optional(rpc::to_quantity(tx.odd_y_parity));
         }
-    } else if (transaction.chain_id) {
-        item.chain_id = std::make_optional(to_quantity(*transaction.chain_id));
-        to_quantity(std::span(item.v), silkworm::endian::to_big_compact(transaction.v()));
+    } else if (tx.chain_id) {
+        json_tx.chain_id = std::make_optional(to_quantity(*tx.chain_id));
+        to_quantity(std::span(json_tx.v), silkworm::endian::to_big_compact(tx.v()));
     } else {
-        rpc::to_quantity(std::span(item.v), silkworm::endian::to_big_compact(transaction.v()));
+        rpc::to_quantity(std::span(json_tx.v), silkworm::endian::to_big_compact(tx.v()));
     }
-    if (transaction.type == silkworm::TransactionType::kDynamicFee) {
-        item.max_pri_fee_per_gas = std::make_optional(rpc::to_quantity(transaction.max_priority_fee_per_gas));
-        item.max_fee_per_gas = std::make_optional(rpc::to_quantity(transaction.max_fee_per_gas));
+    if (tx.type == silkworm::TransactionType::kDynamicFee) {
+        json_tx.max_pri_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_priority_fee_per_gas));
+        json_tx.max_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_fee_per_gas));
     }
-    to_quantity(std::span(item.value), transaction.value);
-    to_quantity(std::span(item.r), silkworm::endian::to_big_compact(transaction.r));
-    to_quantity(std::span(item.s), silkworm::endian::to_big_compact(transaction.s));
+    to_quantity(std::span(json_tx.value), tx.value);
+    to_quantity(std::span(json_tx.r), silkworm::endian::to_big_compact(tx.r));
+    to_quantity(std::span(json_tx.s), silkworm::endian::to_big_compact(tx.s));
 }
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
-    GlazeJsonBlock block_json_data{};
+void make_glaze_json_content(uint32_t id, const Block& b, std::string& json_reply) {
+    GlazeJsonBlockReply block_json_data{};
     auto& block = b.block;
     auto& header = block.header;
     auto& result = block_json_data.result;
@@ -369,10 +367,10 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
             to_quantity(std::span(item.block_number), header.number);
             to_hex(std::span(item.block_hash), b.hash.bytes);
             to_quantity(std::span(item.gas_price), transaction.effective_gas_price(header.base_fee_per_gas.value_or(0)));
-            make_glaze_json_transaction_content(item, transaction);
+            make_glaze_json_transaction(transaction, item);
             transaction_data_list.push_back(std::move(item));
         }
-        result.transactions_data = make_optional(std::move(transaction_data_list));
+        result.transactions = make_optional(std::move(transaction_data_list));
     } else {
         std::vector<std::string> transaction_hashes;
         transaction_hashes.reserve(block.transactions.size());
@@ -389,9 +387,9 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Block& b) {
     }
 
     if (block.withdrawals) {
-        make_glaze_json_withdrawls_content(block_json_data, block);
+        make_glaze_json_withdrawals(block, block_json_data);
     }
-    glz::write_json(block_json_data, reply);
+    glz::write_json(block_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

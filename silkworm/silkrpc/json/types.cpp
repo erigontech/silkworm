@@ -505,12 +505,12 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
+void make_glaze_json_error(uint32_t id, const int code, const std::string& message, std::string& json_reply) {
     GlazeJsonErrorRsp glaze_json_error;
     glaze_json_error.id = id;
     glaze_json_error.json_error.code = code;
     std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
-    glz::write_json(glaze_json_error, reply);
+    glz::write_json(glaze_json_error, json_reply);
 }
 
 struct GlazeJsonRevert {
@@ -539,7 +539,7 @@ struct GlazeJsonRevertError {
     };
 };
 
-void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error) {
+void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert;
     glaze_json_revert.id = id;
     glaze_json_revert.revert_data.code = error.code;

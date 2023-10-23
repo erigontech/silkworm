@@ -216,7 +216,7 @@ struct GlazeJsonBlock {
 };
 
 struct GlazeJsonBlockReply {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     GlazeJsonBlock result;
 
@@ -230,7 +230,7 @@ struct GlazeJsonBlockReply {
 };
 
 struct GlazeJsonNullBlockReply {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     std::monostate result;
 

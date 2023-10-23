@@ -108,7 +108,7 @@ struct GlazeJsonLogItem {
 };
 
 struct GlazeJsonLog {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {

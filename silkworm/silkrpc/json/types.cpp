@@ -493,7 +493,7 @@ struct GlazeJsonError {
 };
 
 struct GlazeJsonErrorRsp {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     GlazeJsonError json_error;
     struct glaze {
@@ -527,7 +527,7 @@ struct GlazeJsonRevert {
 };
 
 struct GlazeJsonRevertError {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     GlazeJsonRevert revert_data;
     struct glaze {

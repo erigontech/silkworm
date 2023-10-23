@@ -190,7 +190,7 @@ See [LICENSE](LICENSE) for more information.
 
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon Thorax architecture]: https://github.com/ledgerwatch/erigon#key-features
+[Erigon Thorax architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
 [staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md

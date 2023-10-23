@@ -428,7 +428,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
 Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
     std::unique_lock log_lck(log_mtx_);
-    incremental_ = true;
+    incremental_ = false;
     current_source_.clear();
     current_target_.clear();
     log_lck.unlock();

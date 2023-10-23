@@ -881,11 +881,9 @@ std::vector<std::string> HashState::get_log_progress() {
                                  "mode", (incremental_ ? "incr" : "full")};
     if (operation_ == OperationType::None) {
         return ret;
-    } else if (operation_ != OperationType::Forward) {
-        ret.insert(ret.end(), {"op", std::string(magic_enum::enum_name<OperationType>(operation_.load()))});
     }
     if (loading_) {
-        if (!incremental_) {
+        if (!incremental_ && !collector_->get_load_key().empty()) {
             current_key_ = abridge(collector_->get_load_key(), kAddressLength * 2 + 2);
         }
         ret.insert(ret.end(), {"to", current_target_, "key", current_key_});

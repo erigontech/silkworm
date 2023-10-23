@@ -45,6 +45,13 @@ class Index {
   protected:
     virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
+    struct Slice {
+        uint64_t ordinal;
+        uint64_t offset;
+    };
+
+    static std::vector<Slice> prefetch_offsets(huffman::Decompressor& decoder);
+
     ThreadPool thread_pool_{std::thread::hardware_concurrency()};
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;

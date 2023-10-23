@@ -241,7 +241,7 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
     });
 }
 
-std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
+std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(/*std::vector<Slice> offsets*/) {
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
 
     const bool read_ok = for_each_body([&](BlockNum number, const StoredBlockBody* body) {
@@ -252,6 +252,11 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
             last_tx_id = body->base_txn_id;
             last_txs_amount = body->txn_count;
         }
+        /*
+        if (number % 1000 == 0) {
+            offsets.emplace_back(number, offset);
+        }
+        */
         return true;
     });
     if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.path().string()};

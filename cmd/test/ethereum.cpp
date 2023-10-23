@@ -95,8 +95,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         return Status::kFailed;
     }
 
-    bool check_state_root{invalid && json_block["expectException"].get<std::string>() == "InvalidStateRoot"};
-
+    const bool check_state_root{true};
     if (ValidationResult err{blockchain.insert_block(block, check_state_root)}; err != ValidationResult::kOk) {
         if (invalid) {
             return Status::kPassed;

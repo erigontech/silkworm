@@ -103,7 +103,7 @@ TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {
     std::string json;
     const char* data_hex{"c68341b58302d066"};
     silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
-    make_glaze_json_content(json, 1, data_bytes);
+    make_glaze_json_content(1, data_bytes, json);
     CHECK(strcmp(json.c_str(),
                  "{\"jsonrpc\":\"2.0\",\
                   \"id\":1,\

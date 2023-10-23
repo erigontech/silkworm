@@ -121,7 +121,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_syncing] = &commands::RpcApi::handle_eth_syncing;
     method_handlers_[http::method::k_eth_gasPrice] = &commands::RpcApi::handle_eth_gas_price;
     method_handlers_[http::method::k_eth_getBlockByHash] = &commands::RpcApi::handle_eth_get_block_by_hash;
-    method_handlers_[http::method::k_eth_getBlockByNumber] = &commands::RpcApi::handle_eth_get_block_by_number;
     method_handlers_[http::method::k_eth_getBlockTransactionCountByHash] = &commands::RpcApi::handle_eth_get_block_transaction_count_by_hash;
     method_handlers_[http::method::k_eth_getBlockTransactionCountByNumber] = &commands::RpcApi::handle_eth_get_block_transaction_count_by_number;
     method_handlers_[http::method::k_eth_getUncleByBlockHashAndIndex] = &commands::RpcApi::handle_eth_get_uncle_by_block_hash_and_index;
@@ -169,6 +168,7 @@ void RpcApiTable::add_eth_handlers() {
     // GLAZE methods
     method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
     method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
+    method_handlers_glaze_[http::method::k_eth_getBlockByNumber] = &commands::RpcApi::handle_eth_get_block_by_number;
 }
 
 void RpcApiTable::add_net_handlers() {

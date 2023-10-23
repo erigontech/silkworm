@@ -464,20 +464,20 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses) {
 }
 
 nlohmann::json make_json_content(uint32_t id) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", nullptr}};
+    return {{"jsonrpc", jsonVersion}, {"id", id}, {"result", nullptr}};
 }
 
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", result}};
+    return {{"jsonrpc", jsonVersion}, {"id", id}, {"result", result}};
 }
 
 nlohmann::json make_json_error(uint32_t id, int code, const std::string& message) {
     const Error error{code, message};
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
+    return {{"jsonrpc", jsonVersion}, {"id", id}, {"error", error}};
 }
 
 nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
+    return {{"jsonrpc", jsonVersion}, {"id", id}, {"error", error}};
 }
 
 static constexpr auto errorMessageSize = 1024;
@@ -493,7 +493,7 @@ struct GlazeJsonError {
 };
 
 struct GlazeJsonErrorRsp {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     GlazeJsonError json_error;
     struct glaze {
@@ -505,12 +505,12 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
+void make_glaze_json_error(uint32_t id, const int code, const std::string& message, std::string& json_reply) {
     GlazeJsonErrorRsp glaze_json_error;
     glaze_json_error.id = id;
     glaze_json_error.json_error.code = code;
     std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
-    glz::write_json(glaze_json_error, reply);
+    glz::write_json(glaze_json_error, json_reply);
 }
 
 struct GlazeJsonRevert {
@@ -527,7 +527,7 @@ struct GlazeJsonRevert {
 };
 
 struct GlazeJsonRevertError {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    char jsonrpc[jsonVersionSize] = jsonVersion;
     uint32_t id;
     GlazeJsonRevert revert_data;
     struct glaze {
@@ -539,7 +539,7 @@ struct GlazeJsonRevertError {
     };
 };
 
-void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error) {
+void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert;
     glaze_json_revert.id = id;
     glaze_json_revert.revert_data.code = error.code;

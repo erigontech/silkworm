@@ -446,10 +446,12 @@ class RecSplit {
         keys_added_++;
     }
 
+    /* correct only on serial invocation but this use cannot be checked here
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
         uint64_t ordinal = keys_added_;
         add_key(key_data, key_length, offset, ordinal);
     }
+    */
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset, uint64_t ordinal) {
         if (built_) {
@@ -761,16 +763,17 @@ class RecSplit {
 
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
-    static constexpr uint64_t golomb_param(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo,
-                                           uint16_t& golomb_param_max_index) {
-        if (m > golomb_param_max_index) golomb_param_max_index = m;
-        return memo[m] >> 27;
-    }
-    static constexpr uint64_t golomb_param(const std::size_t m,
+    static inline uint64_t golomb_param(const std::size_t m,
                                            const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
+    static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
+                                           const std::array<uint32_t, kMaxBucketSize>& memo,
+                                           uint16_t& golomb_param_max_index) {
+        if (m > golomb_param_max_index) golomb_param_max_index = m;
+        return golomb_param(m, memo);
+    }
+
 
     // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
@@ -922,7 +925,7 @@ class RecSplit {
                 // }
             }
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo, golomb_param_max_index);
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
         } else {
@@ -958,7 +961,7 @@ class RecSplit {
             std::copy(buffer_offsets.data(), buffer_offsets.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo);
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
 

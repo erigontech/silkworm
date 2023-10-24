@@ -78,6 +78,18 @@ static log::Args log_args_for_version() {
     };
 }
 
+//! Generate log arguments for execution flush at specified block
+static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_t current_block) {
+    return {
+        "state",
+        human_size(state_buffer.current_batch_state_size()),
+        "history",
+        human_size(state_buffer.current_batch_history_size()),
+        "block",
+        std::to_string(current_block)
+    };
+}
+
 static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
     // treat as char8_t so that filesystem::path assumes UTF-8 encoding of the input path
     auto begin = reinterpret_cast<const char8_t*>(data_dir_path);
@@ -449,12 +461,14 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
             // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
             if (gas_batch_size >= gas_max_batch_size) {
-                SILK_TRACE << log::Args{"buffer", "state", "size", human_size(state_buffer.current_batch_state_size())};
+                log::Info{"[4/12 Execution] Flushing state+history",  // NOLINT(*-unused-raii)
+                          log_args_for_exec_flush(state_buffer, block.header.number)};
                 state_buffer.write_to_db(write_change_sets);
                 gas_batch_size = 0;
                 gas_history_size = 0;
             } else if (gas_history_size >= gas_max_history_batch_size) {
-                SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_history_size())};
+                log::Info{"[4/12 Execution] Flushing history",  // NOLINT(*-unused-raii)
+                          log_args_for_exec_flush(state_buffer, block.header.number)};
                 state_buffer.write_history_to_db(write_change_sets);
                 gas_history_size = 0;
             }
@@ -476,10 +490,8 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
         }
 
-        log::Info{"[4/12 Execution] Flushing state + history",  // NOLINT(*-unused-raii)
-                  log::Args{"state", human_size(state_buffer.current_batch_state_size()),
-                            "history", human_size(state_buffer.current_batch_history_size()),
-                            "block", std::to_string(max_block)}};
+        log::Info{"[4/12 Execution] Flushing state+history",  // NOLINT(*-unused-raii)
+                  log_args_for_exec_flush(state_buffer, max_block)};
         state_buffer.write_to_db(write_change_sets);
         return SILKWORM_OK;
     } catch (const mdbx::exception& e) {

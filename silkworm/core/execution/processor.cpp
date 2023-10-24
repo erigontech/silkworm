@@ -60,16 +60,18 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         state_.access_account(evm_.beneficiary);
     }
 
+    const BlockHeader& header{evm_.block().header};
+
     const intx::uint256 sender_initial_balance{state_.get_balance(*txn.from)};
     const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
 
     // EIP-1559 normal gas cost
-    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 
     // EIP-4844 blob gas cost (calc_data_fee)
-    const intx::uint256 blob_gas_price{evm_.block().header.blob_gas_price().value_or(0)};
+    const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
     state_.subtract_from_balance(*txn.from, txn.total_blob_gas() * blob_gas_price);
 
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
@@ -83,9 +85,12 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
     state_.add_to_balance(evm_.beneficiary, amount);
 
-    if (rev >= EVMC_LONDON && evm_.config().eip1559_fee_collector) {
-        const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
-        state_.add_to_balance(*evm_.config().eip1559_fee_collector, would_be_burnt);
+    if (rev >= EVMC_LONDON) {
+        const std::optional<evmc::address> burnt_contract{evm_.config().get_burnt_contract(header.number)};
+        if (burnt_contract) {
+            const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
+            state_.add_to_balance(*burnt_contract, would_be_burnt);
+        }
     }
 
     rule_set_.add_fee_transfer_log(state_, amount, *txn.from, sender_initial_balance,

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include <set>
+#include <string>
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/overloaded.hpp>
@@ -75,6 +76,15 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "berlinBlock", berlin_block);
     member_to_json(ret, "londonBlock", london_block);
+
+    if (!burnt_contract.empty()) {
+        nlohmann::json burnt_contract_json = nlohmann::json::object();
+        for (const auto& [from, contract] : burnt_contract) {
+            burnt_contract_json[std::to_string(from)] = address_to_hex(contract);
+        }
+        ret["burntContract"] = burnt_contract_json;
+    }
+
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
@@ -86,10 +96,6 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "mergeNetsplitBlock", merge_netsplit_block);
     member_to_json(ret, "shanghaiTime", shanghai_time);
     member_to_json(ret, "cancunTime", cancun_time);
-
-    if (eip1559_fee_collector) {
-        ret["eip1559FeeCollector"] = address_to_hex(*eip1559_fee_collector);
-    }
 
     if (genesis_hash.has_value()) {
         ret["genesisBlockHash"] = to_hex(*genesis_hash, /*with_prefix=*/true);
@@ -131,6 +137,15 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "berlinBlock", config.berlin_block);
     read_json_config_member(json, "londonBlock", config.london_block);
+
+    if (json.contains("burntContract")) {
+        for (const auto& item : json["burntContract"].items()) {
+            const BlockNum from{std::stoull(item.key(), nullptr, 0)};
+            const evmc::address contract{hex_to_address(item.value().get<std::string>())};
+            config.burnt_contract.emplace(from, contract);
+        }
+    }
+
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
     read_json_config_member(json, "grayGlacierBlock", config.gray_glacier_block);
 
@@ -152,11 +167,6 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "mergeNetsplitBlock", config.merge_netsplit_block);
     read_json_config_member(json, "shanghaiTime", config.shanghai_time);
     read_json_config_member(json, "cancunTime", config.cancun_time);
-
-    if (json.contains("eip1559FeeCollector")) {
-        const auto eip1559_fee_collector{json["eip1559FeeCollector"].get<std::string>()};
-        config.eip1559_fee_collector = hex_to_address(eip1559_fee_collector);
-    }
 
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
@@ -227,6 +237,10 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
     return points;
 }
 
+std::optional<evmc::address> ChainConfig::get_burnt_contract(BlockNum block_number) const {
+    return protocol::bor_config_lookup(burnt_contract, block_number);
+}
+
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const uint64_t chain_id) noexcept {
@@ -261,7 +275,7 @@ std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     return ret;
 }
 
-SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
+const ChainConfig kMainnetConfig{
     .chain_id = 1,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
@@ -281,7 +295,7 @@ SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
+const ChainConfig kGoerliConfig{
     .chain_id = 5,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -297,7 +311,7 @@ SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
     .rule_set_config = protocol::CliqueConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
+const ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -327,7 +341,9 @@ const ChainConfig kPolygonConfig{
     .muir_glacier_block = 3'395'000,
     .berlin_block = 14'750'000,
     .london_block = 23'850'000,
-    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .burnt_contract = {
+        {23850000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+    },
     .rule_set_config = protocol::BorConfig{
         .sprint = {{0, 64}, {38189056, 16}},
         .jaipur_block = 23'850'000,
@@ -346,7 +362,10 @@ const ChainConfig kMumbaiConfig{
     .muir_glacier_block = 2'722'000,
     .berlin_block = 13'996'000,
     .london_block = 22'640'000,
-    .eip1559_fee_collector = 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address,
+    .burnt_contract = {
+        {22640000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+        {41824608, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
+    },
     .rule_set_config = protocol::BorConfig{
         .sprint = {{0, 64}, {29638656, 16}},
         .jaipur_block = 22'770'000,

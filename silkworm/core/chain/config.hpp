@@ -73,6 +73,10 @@ struct ChainConfig {
     std::optional<BlockNum> muir_glacier_block{std::nullopt};
     std::optional<BlockNum> berlin_block{std::nullopt};
     std::optional<BlockNum> london_block{std::nullopt};
+
+    // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
+    std::map<BlockNum, evmc::address> burnt_contract{};
+
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};
 
@@ -85,20 +89,19 @@ struct ChainConfig {
     std::optional<BlockTime> shanghai_time{std::nullopt};
     std::optional<BlockTime> cancun_time{std::nullopt};
 
-    // In some chains (e.g. Polygon) EIP-1559 fees are not burnt but rather sent to the collector
-    std::optional<evmc::address> eip1559_fee_collector{std::nullopt};
-
     //! \brief Returns the config of the (pre-Merge) protocol rule set
     protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
     //! returns whether specific HF have occurred
-    [[nodiscard]] evmc_revision revision(uint64_t block_number, uint64_t block_time) const noexcept;
+    [[nodiscard]] evmc_revision revision(BlockNum block_number, uint64_t block_time) const noexcept;
 
     [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
     [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
     [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
+
+    [[nodiscard]] std::optional<evmc::address> get_burnt_contract(BlockNum block_number) const;
 
     //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;
@@ -128,13 +131,13 @@ struct ChainConfig {
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kMainnetConfig;
+extern const ChainConfig kMainnetConfig;
 
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kGoerliConfig;
+extern const ChainConfig kGoerliConfig;
 
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
+extern const ChainConfig kSepoliaConfig;
 
 inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
 extern const ChainConfig kPolygonConfig;

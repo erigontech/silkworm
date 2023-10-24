@@ -46,7 +46,6 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 static log::Settings kLogSettingsLikeErigon{
     .log_utc = false,       // display local time
     .log_timezone = false,  // no timezone ID
-    .log_nocolor = false,   // use colors
     .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 

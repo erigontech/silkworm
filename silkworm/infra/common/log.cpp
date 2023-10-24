@@ -152,7 +152,7 @@ void BufferBase::flush() {
 
     bool colorized{true};
     std::string line{ss_.str()};
-    if (settings_.log_nocolor) {
+    if (!settings_.log_colors) {
         line = std::regex_replace(line, color_pattern, "");
         colorized = false;
     }

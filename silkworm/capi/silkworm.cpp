@@ -74,8 +74,7 @@ static log::Args log_args_for_version() {
         "git_tag",
         std::string(build_info->project_version),
         "git_commit",
-        std::string(build_info->git_commit_hash),
-    };
+        std::string(build_info->git_commit_hash)};
 }
 
 //! Generate log arguments for execution flush at specified block
@@ -130,8 +129,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
         "gasState",
         float_to_string(progress.gas_state_perc),
         "gasHistory",
-        float_to_string(progress.gas_history_perc),
-    };
+        float_to_string(progress.gas_history_perc)};
 }
 
 //! A signal handler guard using RAII pattern to acquire/release signal handling

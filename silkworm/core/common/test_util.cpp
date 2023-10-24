@@ -21,11 +21,11 @@
 
 namespace silkworm::test {
 
-const ChainConfig kFrontierConfig{
+constinit const ChainConfig kFrontierConfig{
     .chain_id = 1,
 };
 
-const ChainConfig kLondonConfig{
+constinit const ChainConfig kLondonConfig{
     .chain_id = 1,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -38,7 +38,7 @@ const ChainConfig kLondonConfig{
     .london_block = 0,
 };
 
-const ChainConfig kShanghaiConfig{
+constinit const ChainConfig kShanghaiConfig{
     .chain_id = 1,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

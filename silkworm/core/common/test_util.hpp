@@ -24,13 +24,13 @@
 namespace silkworm::test {
 
 //! Always Frontier rules.
-extern const ChainConfig kFrontierConfig;
+constinit extern const ChainConfig kFrontierConfig;
 
 //! Enables London from genesis.
-extern const ChainConfig kLondonConfig;
+constinit extern const ChainConfig kLondonConfig;
 
 //! Enables Shanghai from genesis.
-extern const ChainConfig kShanghaiConfig;
+constinit extern const ChainConfig kShanghaiConfig;
 
 static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Frontier", test::kFrontierConfig},

@@ -20,7 +20,9 @@
 #include <map>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -75,7 +77,7 @@ struct ChainConfig {
     std::optional<BlockNum> london_block{std::nullopt};
 
     // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
-    std::map<BlockNum, evmc::address> burnt_contract{};
+    std::vector<std::pair<BlockNum, evmc::address>> burnt_contract{};
 
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};
@@ -131,13 +133,13 @@ struct ChainConfig {
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-extern const ChainConfig kMainnetConfig;
+constinit extern const ChainConfig kMainnetConfig;
 
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
-extern const ChainConfig kGoerliConfig;
+constinit extern const ChainConfig kGoerliConfig;
 
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
-extern const ChainConfig kSepoliaConfig;
+constinit extern const ChainConfig kSepoliaConfig;
 
 inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
 extern const ChainConfig kPolygonConfig;

@@ -43,7 +43,7 @@ TEST_CASE("BorConfig JSON") {
 }
 
 TEST_CASE("bor_config_lookup") {
-    std::map<BlockNum, uint64_t> config{{0, 64}, {10, 16}, {20, 12}};
+    std::vector<std::pair<BlockNum, uint64_t>> config{{0, 64}, {10, 16}, {20, 12}};
     CHECK(bor_config_lookup(config, 0) == 64);
     CHECK(bor_config_lookup(config, 1) == 64);
     CHECK(bor_config_lookup(config, 9) == 64);

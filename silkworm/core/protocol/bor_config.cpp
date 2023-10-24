@@ -48,7 +48,7 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
     if (json.contains("sprint")) {
         for (const auto& item : json["sprint"].items()) {
             const BlockNum from{std::stoull(item.key(), nullptr, 0)};
-            config.sprint.emplace(from, item.value().get<uint64_t>());
+            config.sprint.emplace_back(from, item.value().get<uint64_t>());
         }
     }
     config.jaipur_block = json["jaipurBlock"].get<BlockNum>();

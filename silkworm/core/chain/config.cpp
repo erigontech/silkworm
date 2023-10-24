@@ -142,7 +142,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         for (const auto& item : json["burntContract"].items()) {
             const BlockNum from{std::stoull(item.key(), nullptr, 0)};
             const evmc::address contract{hex_to_address(item.value().get<std::string>())};
-            config.burnt_contract.emplace(from, contract);
+            config.burnt_contract.emplace_back(from, contract);
         }
     }
 
@@ -267,6 +267,7 @@ std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_cha
     return std::make_pair(it->first, it->second);
 }
 
+// TODO(yperbasis): rework with constexpr maps
 std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     std::map<std::string, uint64_t> ret;
     as_range::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
@@ -275,7 +276,7 @@ std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     return ret;
 }
 
-const ChainConfig kMainnetConfig{
+constinit const ChainConfig kMainnetConfig{
     .chain_id = 1,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
@@ -295,7 +296,7 @@ const ChainConfig kMainnetConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-const ChainConfig kGoerliConfig{
+constinit const ChainConfig kGoerliConfig{
     .chain_id = 5,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -311,7 +312,7 @@ const ChainConfig kGoerliConfig{
     .rule_set_config = protocol::CliqueConfig{},
 };
 
-const ChainConfig kSepoliaConfig{
+constinit const ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <map>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -26,7 +27,7 @@
 namespace silkworm::protocol {
 
 struct BorConfig {
-    std::map<BlockNum, uint64_t> sprint;  // from block -> sprint size
+    std::vector<std::pair<BlockNum, uint64_t>> sprint;  // from block -> sprint size
 
     BlockNum jaipur_block{0};
 
@@ -43,12 +44,19 @@ struct BorConfig {
 // config is a càdlàg map of starting_from_block -> value.
 // Similar to borKeyValueConfigHelper in Erigon.
 template <typename T>
-std::optional<T> bor_config_lookup(const std::map<BlockNum, T>& config, BlockNum number) noexcept {
-    auto it{config.upper_bound(number)};
-    if (it == config.begin()) {
+std::optional<T> bor_config_lookup(const std::vector<std::pair<BlockNum, T>>& config, BlockNum number) noexcept {
+    // TODO(yperbasis): replace with constexpr map sorted by block number
+    if (config.empty() || config.front().first > number) {
         return std::nullopt;
     }
-    return (--it)->second;
+
+    for (size_t i{0}; i < config.size() - 1; ++i) {
+        if (config[i].first <= number && number < config[i + 1].first) {
+            return config[i].second;
+        }
+    }
+
+    return config.back().second;
 }
 
 }  // namespace silkworm::protocol

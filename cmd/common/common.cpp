@@ -59,7 +59,7 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
         ->transform(CLI::Transformer(level_mapping, CLI::ignore_case))
         ->default_val(log_settings.log_verbosity);
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
-    log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
+    log_opts.add_flag("--log.colors", log_settings.log_colors, "Enable colors on log lines");
     log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
     log_opts.add_flag("--log.threads", log_settings.log_threads, "Prints thread ids");
     log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");

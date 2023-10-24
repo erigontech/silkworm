@@ -18,14 +18,10 @@
 
 #include <string>
 
-#include <silkworm/core/common/assert.hpp>
-
 namespace silkworm::protocol {
 
 uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
-    auto it{sprint.upper_bound(number)};
-    SILKWORM_ASSERT(it != sprint.begin());
-    return (--it)->second;
+    return bor_config_lookup(sprint, number);
 }
 
 nlohmann::json BorConfig::to_json() const noexcept {

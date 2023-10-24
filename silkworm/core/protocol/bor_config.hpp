@@ -21,6 +21,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm::protocol {
@@ -38,5 +39,15 @@ struct BorConfig {
 
     bool operator==(const BorConfig&) const = default;
 };
+
+// Lookups a config value as of a given block number.
+// config is a càdlàg map of starting_from_block -> value.
+// Similar to borKeyValueConfigHelper in Erigon.
+template <typename T>
+const T& bor_config_lookup(const std::map<BlockNum, T>& config, BlockNum number) noexcept {
+    auto it{config.upper_bound(number)};
+    SILKWORM_ASSERT(it != config.begin());
+    return (--it)->second;
+}
 
 }  // namespace silkworm::protocol

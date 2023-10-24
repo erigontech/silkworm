@@ -86,8 +86,7 @@ static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_
         "history",
         human_size(state_buffer.current_batch_history_size()),
         "block",
-        std::to_string(current_block)
-    };
+        std::to_string(current_block)};
 }
 
 static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {

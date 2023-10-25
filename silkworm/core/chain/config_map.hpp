@@ -53,7 +53,7 @@ class ConfigMap {
     template <std::input_iterator InputIt>
     constexpr ConfigMap(InputIt first, InputIt last) {
         for (InputIt it{first}; it != last; ++it) {
-            SILKWORM_ASSERT(size_ <= kMaxSize);
+            SILKWORM_ASSERT(size_ < kMaxSize);
             data_[size_++] = *it;
         }
         sort();

@@ -28,6 +28,7 @@
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/bor_config.hpp>
@@ -77,7 +78,7 @@ struct ChainConfig {
     std::optional<BlockNum> london_block{std::nullopt};
 
     // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
-    std::vector<std::pair<BlockNum, evmc::address>> burnt_contract{};
+    ConfigMap<evmc::address> burnt_contract{};
 
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};
@@ -102,8 +103,6 @@ struct ChainConfig {
     [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
     [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
     [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
-
-    [[nodiscard]] std::optional<evmc::address> get_burnt_contract(BlockNum block_number) const;
 
     //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;

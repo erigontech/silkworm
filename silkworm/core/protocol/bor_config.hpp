@@ -39,23 +39,4 @@ struct BorConfig {
     bool operator==(const BorConfig&) const = default;
 };
 
-// Lookups a config value as of a given block number.
-// config is a càdlàg map of starting_from_block -> value.
-// Similar to borKeyValueConfigHelper in Erigon.
-template <typename T>
-std::optional<T> bor_config_lookup(const std::vector<std::pair<BlockNum, T>>& config, BlockNum number) noexcept {
-    // TODO(yperbasis): replace with constexpr map sorted by block number
-    if (config.empty() || config.front().first > number) {
-        return std::nullopt;
-    }
-
-    for (size_t i{0}; i < config.size() - 1; ++i) {
-        if (config[i].first <= number && number < config[i + 1].first) {
-            return config[i].second;
-        }
-    }
-
-    return config.back().second;
-}
-
 }  // namespace silkworm::protocol

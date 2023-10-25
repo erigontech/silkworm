@@ -139,11 +139,13 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "londonBlock", config.london_block);
 
     if (json.contains("burntContract")) {
+        std::vector<std::pair<BlockNum, evmc::address>> burnt_contract;
         for (const auto& item : json["burntContract"].items()) {
             const BlockNum from{std::stoull(item.key(), nullptr, 0)};
             const evmc::address contract{hex_to_address(item.value().get<std::string>())};
-            config.burnt_contract.emplace_back(from, contract);
+            burnt_contract.emplace_back(from, contract);
         }
+        config.burnt_contract = ConfigMap<evmc::address>(burnt_contract.begin(), burnt_contract.end());
     }
 
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
@@ -235,10 +237,6 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
     std::move(times.begin(), times.end(), points.begin() + (numbers.end() - numbers.begin()));
 
     return points;
-}
-
-std::optional<evmc::address> ChainConfig::get_burnt_contract(BlockNum block_number) const {
-    return protocol::bor_config_lookup(burnt_contract, block_number);
 }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

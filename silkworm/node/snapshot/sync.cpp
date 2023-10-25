@@ -29,6 +29,7 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/snapshot/config.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {

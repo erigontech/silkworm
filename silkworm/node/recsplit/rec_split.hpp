@@ -88,6 +88,85 @@
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
 
+inline void sortKeysMaintainingValuesOrder(std::vector<uint64_t>& keys, std::vector<uint64_t>& values) {
+    // Ensure both vectors have the same size
+    if (keys.size() != values.size()) {
+        throw std::runtime_error("The two vectors have different sizes!");
+    }
+
+    // Create a vector of indices to sort
+    std::vector<size_t> indices(keys.size());
+    for (size_t i = 0; i < keys.size(); ++i) {
+        indices[i] = i;
+    }
+
+    // Sort the indices based on the keys
+    std::sort(indices.begin(), indices.end(),
+              [&keys](size_t i1, size_t i2) { return keys[i1] < keys[i2]; });
+
+    // Rearrange the keys and values vectors based on the sorted indices
+    std::vector<uint64_t> sortedKeys(keys.size());
+    std::vector<uint64_t> sortedValues(values.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+        sortedKeys[i] = keys[indices[i]];
+        sortedValues[i] = values[indices[i]];
+    }
+
+    // Assign the sorted vectors back to the original keys and values
+    keys = sortedKeys;
+    values = sortedValues;
+}
+
+// merge_sorted_vectors merges multiple sorted vectors into a single sorted vector
+// The input vectors must be sorted in ascending order
+// The output vector is sorted in ascending order
+// The input vectors must not contain duplicates
+// The output vector does not contain duplicates
+// The input can be constructed moving all the vectors in all_vector
+// otherwise we have to use an all_vector made by std::vector<std::reference_wrapper<const std::vector<int>>>
+template <typename T>
+std::vector<T> merge_sorted_vectors(const std::vector<std::vector<T>>& all_vectors) {
+    // Calculate total size for reservation
+    size_t total_size = 0;
+    for (const auto& vec : all_vectors) {
+        total_size += vec.size();
+    }
+
+    std::vector<T> result;
+    result.reserve(total_size);  // Reserve space
+
+    struct Element {
+        T val;
+        size_t vec_index;   // Index of the original vector
+        size_t next_index;  // Index of the next element in the original vector
+
+        // Comparator for min heap
+        bool operator>(const Element& other) const {
+            return val > other.val;
+        }
+    };
+
+    std::priority_queue<Element, std::vector<Element>, std::greater<>> min_heap;
+    for (size_t i = 0; i < all_vectors.size(); ++i) {
+        if (!all_vectors[i].empty()) {
+            min_heap.push({all_vectors[i][0], i, 1});
+        }
+    }
+
+    while (!min_heap.empty()) {
+        Element current = min_heap.top();
+        min_heap.pop();
+
+        result.push_back(current.val);
+
+        if (current.next_index < all_vectors[current.vec_index].size()) {
+            min_heap.push({all_vectors[current.vec_index][current.next_index], current.vec_index, current.next_index + 1});
+        }
+    }
+
+    return result;
+}
+
 // prettyPrint a vector, used for debugging
 // usage: prettyPrint(vi);
 // usage: prettyPrint(vi, "{", ", ", "}");
@@ -257,16 +336,33 @@ class RecSplit {
     using DoubleEliasFano = DoubleEliasFanoList16;
 
     struct Bucket {
-        Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id}, mutex_{new std::mutex} {
+        Bucket(uint64_t bucket_id, std::size_t bucket_size, bool double_enum) : bucket_id_{bucket_id}, double_enum_{double_enum}, mutex_{new std::mutex} {
             keys_.reserve(bucket_size);
             values_.reserve(bucket_size);
+            if (double_enum_) offsets_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
-        Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)}, gr_builder_{std::move(other.gr_builder_)}, mutex_{other.mutex_} {
+        Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)},
+                                          offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)}, double_enum_{other.double_enum_},
+                                          mutex_{other.mutex_} {
             other.mutex_ = nullptr;
         }
         ~Bucket() {
             delete mutex_;
+        }
+
+        void add_key(uint64_t bucket_key, uint64_t offset, uint64_t ordinal) {
+            std::lock_guard<std::mutex> lock{*mutex_};
+
+            if (double_enum_) {
+                offsets_.push_back(offset);
+
+                keys_.emplace_back(bucket_key);
+                values_.emplace_back(ordinal);
+            } else {
+                keys_.emplace_back(bucket_key);
+                values_.emplace_back(offset);
+            }
         }
 
         //! Identifier of the current bucket being accumulated
@@ -275,25 +371,31 @@ class RecSplit {
         //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
         std::vector<uint64_t> keys_;
 
-        //! Index offsets for the current bucket
+        //! Index ordinals or offsets for the current bucket
         std::vector<uint64_t> values_;
+
+        //! Index offsets for the current bucket
+        std::vector<uint64_t> offsets_;
 
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
         GolombRiceVector::LazyBuilder gr_builder_;
 
-        //!
-        std::mutex* mutex_;
-
         //! The local max index used in Golomb parameter array
         uint16_t golomb_param_max_index_{0};
 
+        bool double_enum_{false};
+
         //! Helper index output stream
         std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
+
+        //!
+        std::mutex* mutex_;
 
         void clear() {
             // bucket_id_ = 0;
             keys_.clear();
             values_.clear();
+            offsets_.clear();
             gr_builder_.clear();
             index_ofs.clear();
         }
@@ -314,7 +416,7 @@ class RecSplit {
         // Prepare backets
         buckets_.reserve(bucket_count_);
         for (int i = 0; i < bucket_count_; i++)
-            buckets_.emplace_back(i, bucket_size_);
+            buckets_.emplace_back(i, bucket_size_, double_enum_index_);
         if (double_enum_index_)
             offsets_.reserve(key_count_);
     }
@@ -419,10 +521,6 @@ class RecSplit {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
-        if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
-        }
-
         uint64_t bucket_id = hash128_to_bucket(key_hash);
         auto bucket_key = key_hash.second;
 
@@ -431,9 +529,11 @@ class RecSplit {
         ensure(bucket_id < bucket_count_, "bucket_id out of range");
         Bucket& bucket = buckets_[bucket_id];
 
+        bucket.add_key(bucket_key, offset, ordinal);
+        /*
         if (double_enum_index_) {
             std::lock_guard<std::mutex> lock{*bucket.mutex_};
-            offsets_.push_back(offset);
+            bucket.offsets_.push_back(offset);
 
             bucket.keys_.emplace_back(bucket_key);
             bucket.values_.emplace_back(ordinal);
@@ -442,7 +542,7 @@ class RecSplit {
             bucket.keys_.emplace_back(bucket_key);
             bucket.values_.emplace_back(offset);
         }
-
+        */
         keys_added_++;
     }
 
@@ -466,8 +566,8 @@ class RecSplit {
         add_key(key_hash, offset, ordinal);
     }
 
-    void add_key(const std::string& key, uint64_t offset) {
-        add_key(key.c_str(), key.size(), offset);
+    void add_key(const std::string& key, uint64_t offset, uint64_t ordinal) {
+        add_key(key.c_str(), key.size(), offset, ordinal);
     }
 
     [[nodiscard]] bool build() {  // for test
@@ -565,7 +665,12 @@ class RecSplit {
 
         // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
-            std::sort(offsets_.begin(), offsets_.end());
+            std::vector<std::vector<uint64_t>> all_vectors;
+            for (size_t i = 0; i < bucket_count_; i++) {
+                all_vectors.push_back(std::move(buckets_[i].offsets_));
+            }
+            offsets_ = merge_sorted_vectors(all_vectors);
+            //std::sort(offsets_.begin(), offsets_.end());
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
             for (auto offset : offsets_) {
                 ef_offsets_->add_offset(offset);
@@ -836,6 +941,8 @@ class RecSplit {
                 return true;
             }
 
+            sortKeysMaintainingValuesOrder(bucket.keys_, bucket.values_);  // ###### todo(mike): remove
+
             std::vector<uint64_t> buffer_keys;     // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets
             buffer_keys.resize(bucket.keys_.size());
@@ -852,6 +959,8 @@ class RecSplit {
                 SILK_DEBUG << "[index] written offset: " << offset;
             }
         }
+
+        std::sort(bucket.offsets_.begin(), bucket.offsets_.end());
 
         return false;
     }

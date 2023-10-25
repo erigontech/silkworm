@@ -40,7 +40,7 @@ struct Settings {
     bool log_std_out{false};            // Whether console logging goes to std::cout or std::cerr (default)
     bool log_utc{true};                 // Whether timestamps should be in UTC or imbue local timezone
     bool log_timezone{true};            // Whether timestamps should include the timezone identifier
-    bool log_colors{false};             // Whether to enable colorized output
+    bool log_nocolor{false};            // Whether to disable colorized output
     bool log_trim{false};               // Whether to trim log level
     bool log_threads{false};            // Whether to print thread ids in log lines
     Level log_verbosity{Level::kInfo};  // Log verbosity level

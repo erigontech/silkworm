@@ -43,6 +43,8 @@ void init(Settings& settings) {
     settings_ = settings;
     if (!settings_.log_file.empty()) {
         tee_file(std::filesystem::path(settings.log_file));
+        // Forcibly disable colorized output to avoid escape char sequences into log file
+        settings_.log_nocolor = true;
     }
     if (settings.log_grpc) {
         gpr_set_log_function(gpr_silkworm_log);
@@ -152,7 +154,7 @@ void BufferBase::flush() {
 
     bool colorized{true};
     std::string line{ss_.str()};
-    if (!settings_.log_colors) {
+    if (settings_.log_nocolor) {
         line = std::regex_replace(line, color_pattern, "");
         colorized = false;
     }

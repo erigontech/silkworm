@@ -154,7 +154,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     // Force logging options to have consistent format with Silkworm API library (matching Erigon in turns)
     settings.log_settings.log_utc = false;
     settings.log_settings.log_timezone = false;
-    settings.log_settings.log_nocolor = false;
     settings.log_settings.log_trim = true;
 
     // check subcommand presence

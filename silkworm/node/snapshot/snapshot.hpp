@@ -94,6 +94,8 @@ class Snapshot {
 
     void close();
 
+    static bool for_each_item(huffman::Decompressor& decoder, uint64_t start_offset, uint64_t end_offset, uint64_t start_ordinal, const WordItemFunc& fn);
+
   protected:
     void close_segment();
     virtual void close_index() = 0;
@@ -148,7 +150,8 @@ class BodySnapshot : public Snapshot {
     bool for_each_body(const Walker& walker);
     [[nodiscard]] std::optional<StoredBlockBody> next_body(uint64_t offset) const;
 
-    std::pair<uint64_t, uint64_t> compute_txs_amount();
+    std::pair<uint64_t, uint64_t> compute_txs_amount(
+        std::function<bool(BlockNum number, const StoredBlockBody* body, WordItem item)> additional_work = nullptr);
 
     [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
 

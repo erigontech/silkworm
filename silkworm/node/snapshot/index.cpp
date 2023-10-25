@@ -26,10 +26,11 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/test/snapshots.hpp>
+#include <silkworm/node/snapshot/snapshot.hpp>
+
 
 namespace silkworm::snapshot {
-
+/*
 std::vector<Index::Slice> Index::prefetch_offsets(huffman::Decompressor& decoder) {
     std::vector<Index::Slice> prefetched_offsets;
     uint64_t slice_size = decoder.words_count() / std::thread::hardware_concurrency();
@@ -53,6 +54,37 @@ std::vector<Index::Slice> Index::prefetch_offsets(huffman::Decompressor& decoder
     });
 
     return prefetched_offsets;
+}
+*/
+
+std::vector<Index::Slice> Index::prefetch_offsets(huffman::Decompressor& decoder, ExtractOrdinal extract_ordinal) {
+    std::vector<Index::Slice> prefetched_offsets;
+    uint64_t slice_size = decoder.words_count() / std::thread::hardware_concurrency();
+    uint64_t last_slice = slice_size * (std::thread::hardware_concurrency() - 1);
+    auto offsets = decoder.offset_range();
+    Snapshot::for_each_item(decoder, offsets.start, offsets.end, 0, [&](Snapshot::WordItem& item) {
+        if (item.position % slice_size == 0) {
+            uint64_t ordinal = extract_ordinal ? extract_ordinal(item) : item.position;
+            prefetched_offsets.push_back({.ordinal = ordinal, .offset = item.offset});
+        }
+        return item.position < last_slice ? true : false;  // avoid processing last slice
+    });
+    if (prefetched_offsets.back().offset != decoder.data_size()) {
+        prefetched_offsets.push_back({.ordinal = decoder.words_count(), .offset = offsets.end});
+    }
+    return prefetched_offsets;
+}
+
+uint64_t Index::closest_offset(const std::vector<Index::Slice>& sorted_slices, uint64_t target_ordinal) {
+    auto comp = [](const Index::Slice& slice, uint64_t ordinal) {
+        return slice.ordinal < ordinal;
+    };
+
+    auto it = std::lower_bound(sorted_slices.begin(), sorted_slices.end(), target_ordinal, comp);
+
+    if (it == sorted_slices.begin()) return it->offset;  // no lesser ordinal
+    if (it != sorted_slices.end() && it->ordinal == target_ordinal) return it->offset;  // exact match
+    return (--it)->offset;  // get the closest but lesser ordinal
 }
 
 void Index::build() {
@@ -151,7 +183,17 @@ void TransactionIndex::build() {
 
     uint64_t first_tx_id;
     uint64_t expected_tx_count;
+    /*
+    std::vector<Slice> body_block_number_offsets;
+    auto and_compute_slices = [&](BlockNum number, const StoredBlockBody*, const BodySnapshot::WordItem& item) {
+        if (number % 1000 == 0) {
+            body_block_number_offsets.emplace_back(number, item.offset);
+        }
+        return true;
+    };
+    */
     std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount();
+
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
     huffman::Decompressor txs_decoder{segment_path_.path(), segment_region_};
@@ -192,11 +234,16 @@ void TransactionIndex::build() {
 
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset, const DoubleReadAheadFunc& fn) -> bool {
+
         return txs_decoder.read_ahead(start_offset, end_offset, [fn, &bodies_decoder](auto tx_it) -> bool {
+            //auto [bodies_start_offset, bodies_end_offset] = bodies_decoder.offset_range();
+            //bodies_start_offset = closest_offset(body_block_number_offsets, tx_it.position());
+            //return bodies_decoder.read_ahead(bodies_start_offset, bodies_end_offset, [fn, &tx_it](auto body_it) {
             return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {
                 return fn(tx_it, body_it);
             });
         });
+
     };
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
@@ -204,7 +251,6 @@ void TransactionIndex::build() {
     std::vector<Slice> prefetched_offsets = prefetch_offsets(txs_decoder);
 
     uint64_t iterations{0};
-    Hash tx_hash;
     bool collision_detected;
     do {
         iterations++;
@@ -214,13 +260,16 @@ void TransactionIndex::build() {
             uint64_t start_offset = prefetched_offsets[i].offset;
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
+            uint64_t start_block_num = first_block_num;  // actually we read body snapshot from scratch
 
-            thread_pool_.push_task([&, first_tx_id, start_offset, end_offset, start_ordinal]() {
-                double_read_ahead(start_offset, end_offset,
-                                  [&, first_tx_id, start_offset, start_ordinal](auto tx_it, auto body_it) -> bool {
-                    BlockNum block_number = first_block_num;
+            thread_pool_.push_task([&, start_block_num, first_tx_id, start_offset, end_offset, start_ordinal]() {
 
+                bool ok = double_read_ahead(
+                        start_offset, end_offset,
+                        [&, start_block_num, first_tx_id, start_offset, start_ordinal](auto tx_it, auto body_it) -> bool {
+                    Hash tx_hash;
                     db::detail::BlockBodyForStorage body;
+                    BlockNum block_number{start_block_num};
 
                     Bytes tx_buffer{}, body_buffer{};
                     tx_buffer.reserve(kPageSize);
@@ -240,7 +289,10 @@ void TransactionIndex::build() {
                     while (tx_it.has_next()) {
                         uint64_t next_position = tx_it.next(tx_buffer);
                         while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
-                            if (!body_it.has_next()) return false;
+                            if (!body_it.has_next()) {
+                                SILK_ERROR << "body not found on block " << block_number;
+                                return false;
+                            }
                             body_it.next(body_buffer);
                             body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
                             decode_result = db::detail::decode_stored_block_body(body_rlp, body);
@@ -280,8 +332,8 @@ void TransactionIndex::build() {
                             const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};  // todo(mike): avoid copy
                             const auto h256{keccak256(tx_payload)};
                             std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
-                            SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)
-                                       << " h256: " << to_hex(h256.bytes, kHashLength);
+                            //SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)
+                            //           << " h256: " << to_hex(h256.bytes, kHashLength);
                             tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset, i);
                             tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number, i);
                         }
@@ -290,9 +342,19 @@ void TransactionIndex::build() {
                         offset = next_position;
                         tx_buffer.clear();
                     }
+                    // SILK_TRACE << " start_ordinal: " << start_ordinal << " end_ordinal(excl.): " << i
+                    //            << " expected end_offset: " << end_offset << " actual end_offset " << offset
+                    //            << " first block number: " << first_tx_id + start_ordinal << " last block number: " << block_number
+                    //            << "\n";
+
+                    //if (i != expected_tx_count) {
+                    //    throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
+                    //                             " got=" + std::to_string(i)};
+                    //}
 
                     return true;
                 });
+                if (!ok) read_ok = false;
             });
         }
         thread_pool_.wait_for_tasks();

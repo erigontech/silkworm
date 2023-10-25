@@ -23,6 +23,7 @@
 #include <silkworm/node/huffman/decompressor.hpp>
 #include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/snapshot/path.hpp>
+#include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {
 
@@ -50,7 +51,10 @@ class Index {
         uint64_t offset;
     };
 
-    static std::vector<Slice> prefetch_offsets(huffman::Decompressor& decoder);
+    using ExtractOrdinal = std::function<uint64_t(Snapshot::WordItem&)>;
+    std::vector<Index::Slice> prefetch_offsets(huffman::Decompressor& decoder, ExtractOrdinal = nullptr);
+
+    static uint64_t closest_offset(const std::vector<Index::Slice>& sorted_slices, uint64_t target_ordinal);
 
     ThreadPool thread_pool_{std::thread::hardware_concurrency()};
     SnapshotPath segment_path_;

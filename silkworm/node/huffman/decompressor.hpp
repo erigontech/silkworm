@@ -170,6 +170,11 @@ class PositionTable : public DecodingTable {
     friend std::ostream& operator<<(std::ostream& out, const PositionTable& pt);
 };
 
+struct OffsetRange {
+    uint64_t start;
+    uint64_t end;
+};
+
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
   public:
@@ -270,6 +275,8 @@ class Decompressor {
 
     //! Get an iterator to the compressed data
     [[nodiscard]] Iterator make_iterator() const { return Iterator{this}; }
+
+    OffsetRange offset_range() { return {0, words_length_}; }
 
     void close();
 

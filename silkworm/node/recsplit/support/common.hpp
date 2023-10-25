@@ -266,7 +266,7 @@ inline uint64_t nu(uint64_t word) { return static_cast<uint64_t>(__builtin_popco
  *
  */
 inline uint64_t select64(uint64_t x, uint64_t k) {
-#ifndef __haswell__
+#ifndef __BMI2__
     constexpr uint64_t kOnesStep4 = 0x1111111111111111ULL;
     constexpr uint64_t kOnesStep8 = 0x0101010101010101ULL;
     constexpr uint64_t kLAMBDAsStep8 = 0x80ULL * kOnesStep8;

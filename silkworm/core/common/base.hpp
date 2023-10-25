@@ -26,6 +26,12 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+#if defined(_MSC_VER)
+#define SILKWORM_CONSTINIT
+#else
+#define SILKWORM_CONSTINIT constinit
+#endif
+
 #if defined(__wasm__)
 #define SILKWORM_THREAD_LOCAL static
 #else

@@ -23,7 +23,7 @@
 namespace silkworm::protocol {
 
 uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
-    const std::optional<uint64_t> size{bor_config_lookup(sprint, number)};
+    const std::optional<uint64_t> size{sprint.value(number)};
     SILKWORM_ASSERT(size);
     return *size;
 }
@@ -46,10 +46,12 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
 
     BorConfig config;
     if (json.contains("sprint")) {
+        std::vector<std::pair<BlockNum, uint64_t>> sprint;
         for (const auto& item : json["sprint"].items()) {
             const BlockNum from{std::stoull(item.key(), nullptr, 0)};
-            config.sprint.emplace_back(from, item.value().get<uint64_t>());
+            sprint.emplace_back(from, item.value().get<uint64_t>());
         }
+        config.sprint = ConfigMap<uint64_t>(sprint.begin(), sprint.end());
     }
     config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
     return config;

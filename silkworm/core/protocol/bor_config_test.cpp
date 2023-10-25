@@ -42,17 +42,4 @@ TEST_CASE("BorConfig JSON") {
     CHECK(config->to_json() == json);
 }
 
-TEST_CASE("bor_config_lookup") {
-    std::vector<std::pair<BlockNum, uint64_t>> config{{0, 64}, {10, 16}, {20, 12}};
-    CHECK(bor_config_lookup(config, 0) == 64);
-    CHECK(bor_config_lookup(config, 1) == 64);
-    CHECK(bor_config_lookup(config, 9) == 64);
-    CHECK(bor_config_lookup(config, 10) == 16);
-    CHECK(bor_config_lookup(config, 11) == 16);
-    CHECK(bor_config_lookup(config, 19) == 16);
-    CHECK(bor_config_lookup(config, 20) == 12);
-    CHECK(bor_config_lookup(config, 21) == 12);
-    CHECK(bor_config_lookup(config, 100) == 12);
-}
-
 }  // namespace silkworm::protocol

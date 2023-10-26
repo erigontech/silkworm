@@ -132,7 +132,7 @@ void Fork::reduce_down_to(BlockId unwind_point) {
            "reducing down to a block above the fork head");
 
     // we do not handle differently the case where unwind_point.number > last_verified_head_.number
-    // assuming pipeline unwind can handle it correclty
+    // assuming pipeline unwind can handle it correctly
 
     auto unwind_result = pipeline_.unwind(memory_tx_, unwind_point.number);
     success_or_throw(unwind_result);  // unwind must complete with success

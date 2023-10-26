@@ -948,7 +948,7 @@ class RecSplit {
             std::copy(buffer_offsets.data(), buffer_offsets.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo);
+            const auto log2golomb = golomb_param(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
 

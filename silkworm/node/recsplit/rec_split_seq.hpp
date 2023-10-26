@@ -416,6 +416,7 @@ class RecSplit {
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
     [[nodiscard]] bool build(ThreadPool&) {
+        SILK_INFO << "Recsplit SEQUENTIAL version";
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
@@ -693,9 +694,13 @@ class RecSplit {
 
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
-    static constexpr uint64_t golomb_param(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) {
-        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
+    inline uint64_t golomb_param(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) const {
         return memo[m] >> 27;
+    }
+
+    inline uint64_t golomb_param_with_max_updating(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) {
+        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
+        return golomb_param(m, memo);
     }
 
     // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
@@ -791,8 +796,8 @@ class RecSplit {
         // Clear for the next bucket
         current_bucket_.clear();
         current_bucket_offsets_.clear();
-        buffer_bucket_.clear();   // todo(mike): IMO this must be added
-        buffer_offsets_.clear();  // todo(mike): IMO this must be added
+        buffer_bucket_.clear();
+        buffer_offsets_.clear();
         return false;
     }
 
@@ -856,7 +861,7 @@ class RecSplit {
                 // }
             }
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo);
+            const auto log2golomb = golomb_param_with_max_updating(m, memo);
             gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
         } else {
@@ -892,7 +897,7 @@ class RecSplit {
             std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo);
+            const auto log2golomb = golomb_param_with_max_updating(m, memo);
             gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
 
@@ -959,7 +964,7 @@ class RecSplit {
     static const std::size_t kUpperAggregationBound;
 
     //! The max index used in Golomb parameter array
-    static inline uint16_t golomb_param_max_index_{0};
+    uint16_t golomb_param_max_index_{0};
 
     //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
     //! skip in the fixed part of the tree (lower 24 bits).

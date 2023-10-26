@@ -138,7 +138,7 @@ TEST_CASE("deserialize topics", "[silkrpc][from_json]") {
 TEST_CASE("make empty glaze Log", "[make_glaze_content(Log)]") {
     std::string json;
     std::vector<Log> log{};
-    make_glaze_json_content(json, 1, log);
+    make_glaze_json_content(1, log, json);
     CHECK(strcmp(json.c_str(),
                  "[{\"jsonrpc\":\"2.0\",\
                   \"id\":1,\

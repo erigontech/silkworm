@@ -185,12 +185,12 @@ Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, n
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbyhash
-Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        make_glaze_json_error(request["id"], 100, error_msg, reply);
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
@@ -209,18 +209,18 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
             const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
-            reply = make_json_content(request["id"], extended_block);
+            make_glaze_json_content(request["id"], extended_block, reply);
         } else {
-            reply = make_json_content(request["id"], {});
+            make_glaze_json_null_content(request["id"], reply);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request["id"], {});
+        make_glaze_json_null_content(request["id"], reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(request["id"], 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(request["id"], 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -228,12 +228,12 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbynumber
-Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, std::string& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        make_glaze_json_error(request["id"], 100, error_msg, reply);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -252,18 +252,18 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
             const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
 
-            reply = make_json_content(request["id"], extended_block);
+            make_glaze_json_content(request["id"], extended_block, reply);
         } else {
-            reply = make_json_content(request["id"], {});
+            make_glaze_json_null_content(request["id"], reply);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request["id"], {});
+        make_glaze_json_null_content(request["id"], reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(request["id"], 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(request["id"], 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1136,14 +1136,14 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        make_glaze_json_error(request["id"], -32602, error_msg, reply);
         co_return;
     }
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_call params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        make_glaze_json_error(request["id"], -32602, error_msg, reply);
         co_return;
     }
     const auto call = params[0].get<Call>();
@@ -1163,7 +1163,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (!block_with_hash) {
-            make_glaze_json_error(reply, request["id"], 100, "block not found");
+            make_glaze_json_error(request["id"], 100, "block not found", reply);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -1177,21 +1177,21 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
             });
 
         if (execution_result.success()) {
-            make_glaze_json_content(reply, request["id"], execution_result.data);
+            make_glaze_json_content(request["id"], execution_result.data, reply);
         } else {
             const auto error_message = execution_result.error_message();
             if (execution_result.data.empty()) {
-                make_glaze_json_error(reply, request["id"], -32000, error_message);
+                make_glaze_json_error(request["id"], -32000, error_message, reply);
             } else {
-                make_glaze_json_error(reply, request["id"], RevertError{{3, error_message}, execution_result.data});
+                make_glaze_json_error(request["id"], RevertError{{3, error_message}, execution_result.data}, reply);
             }
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(reply, request["id"], 100, e.what());
+        make_glaze_json_error(request["id"], 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
+        make_glaze_json_error(request["id"], 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1727,14 +1727,14 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        make_glaze_json_error(request["id"], -32602, error_msg, reply);
         co_return;
     }
     auto params = request["params"];
     if (params.size() > 1) {
         auto error_msg = "too many arguments, want at most 1";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        make_glaze_json_error(request["id"], -32602, error_msg, reply);
         co_return;
     }
 
@@ -1759,16 +1759,16 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
         std::vector<Log> logs;
         co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, logs);
 
-        make_glaze_json_content(reply, request["id"], logs);
+        make_glaze_json_content(request["id"], logs, reply);
     } catch (const std::invalid_argument& iv) {
         std::vector<silkworm::rpc::Log> log{};
-        make_glaze_json_content(reply, request["id"], log);
+        make_glaze_json_content(request["id"], log, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(reply, request["id"], 100, e.what());
+        make_glaze_json_error(request["id"], 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
+        make_glaze_json_error(request["id"], 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

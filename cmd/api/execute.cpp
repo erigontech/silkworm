@@ -65,7 +65,7 @@ using SilkwormBuildRecSplitIndexes = int(SilkwormHandle*, SilkwormMemoryMappedFi
 using SilkwormAddSnapshotSig = int(SilkwormHandle*, SilkwormChainSnapshot*);
 
 //! Function signature for silkworm_start_rpcdaemon C API
-using SilkwormStartRpcDaemonSig = int(SilkwormHandle*);
+using SilkwormStartRpcDaemonSig = int(SilkwormHandle*, MDBX_env*);
 
 //! Function signature for silkworm_stop_rpcdaemon C API
 using SilkwormStopRpcDaemonSig = int(SilkwormHandle*);
@@ -106,8 +106,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     add_logging_options(app, settings.log_settings);
 
     // repository
-    app.add_option("--lib_path", silkworm_api_lib_path, "Path to silkworm_lib");
-    app.add_option("--data_dir", settings.data_folder, "Path to data directory");
+    app.add_option("--libpath", silkworm_api_lib_path, "Path to silkworm_lib");
+    app.add_option("--datadir", settings.data_folder, "Path to data directory");
 
     // execute sub-command
     auto cmd_execute = app.add_subcommand("execute", "Execute blocks");
@@ -145,7 +145,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     // rpcdaemon sub-command
     auto cmd_rpcdaemon = app.add_subcommand("rpcdaemon", "Start RPC Daemon");
 
-    rpc::DaemonSettings rpcdaemon_settings;
+    rpc::DaemonSettings rpcdaemon_settings{
+        .datadir = settings.data_folder};
 
     // parse command line
     app.parse(argc, argv);
@@ -153,7 +154,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     // Force logging options to have consistent format with Silkworm API library (matching Erigon in turns)
     settings.log_settings.log_utc = false;
     settings.log_settings.log_timezone = false;
-    settings.log_settings.log_nocolor = false;
     settings.log_settings.log_trim = true;
 
     // check subcommand presence
@@ -168,8 +168,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
 
 const char* make_path(const snapshot::SnapshotPath& p) {
     const auto path_string{p.path().string()};
-    char* path = new char[path_string.size()];
-    std::memcpy(path, path_string.data(), path_string.size());
+    char* path = new char[path_string.size() + 1];
+    std::strcpy(path, path_string.c_str());
     return path;
 }
 
@@ -351,28 +351,32 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
             throw std::runtime_error("Snapshot not found in the repository:" + raw_snapshot_path);
 
         auto mmf = new SilkwormMemoryMappedFile();
-        mmf->file_path = raw_snapshot_path.c_str();
+        mmf->file_path = make_path(snapshot->path());
         mmf->memory_address = snapshot->memory_file_address();
         mmf->memory_length = snapshot->memory_file_size();
         snapshot_files.push_back(mmf);
+    }
 
-        // Call api to build indexes
-        const auto start_time{std::chrono::high_resolution_clock::now()};
-        const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
-        if (status_code != SILKWORM_OK) return status_code;
-        auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-        SILK_INFO << "Building indexes for snapshots done in "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
-        // Free memory mapped files
-        for (auto snapshot_mmf : snapshot_files) {
-            delete snapshot_mmf;
-        }
+    // Call api to build indexes
+    const auto start_time{std::chrono::high_resolution_clock::now()};
+
+    const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
+    if (status_code != SILKWORM_OK) return status_code;
+
+    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+    SILK_INFO << "Building indexes for snapshots done in "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
+
+    // Free memory mapped files
+    for (auto snapshot : snapshot_files) {
+        delete[] snapshot->file_path;
+        delete snapshot;
     }
 
     return SILKWORM_OK;
 }
 
-int start_rpcdaemon(SilkwormHandle* handle, rpc::DaemonSettings /*settings*/) {
+int start_rpcdaemon(SilkwormHandle* handle, rpc::DaemonSettings /*settings*/, const DataDirectory& data_dir) {
     // Import the silkworm_start_rpcdaemon symbol from Silkworm API library
     const auto silkworm_start_rpcdaemon{
         boost::dll::import_symbol<SilkwormStartRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStartRpcDaemonSymbol)};
@@ -394,7 +398,14 @@ int start_rpcdaemon(SilkwormHandle* handle, rpc::DaemonSettings /*settings*/) {
         }
     });
 
-    const int status_code{silkworm_start_rpcdaemon(handle)};
+    // Open chain database
+    silkworm::db::EnvConfig config{
+        .path = data_dir.chaindata().path().string(),
+        .readonly = false,
+        .exclusive = true};
+    ::mdbx::env_managed env{silkworm::db::open_env(config)};
+
+    const int status_code{silkworm_start_rpcdaemon(handle, &*env)};
     if (status_code != SILKWORM_OK) {
         SILK_ERROR << "silkworm_start_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
     }
@@ -418,7 +429,7 @@ int main(int argc, char* argv[]) {
         const auto pid = boost::this_process::get_id();
         SILK_INFO << "Execute starting [pid=" << std::to_string(pid) << "]";
 
-        if (not silkworm_api_lib_path.empty())
+        if (!silkworm_api_lib_path.empty())
             kSilkwormApiLibPath = silkworm_api_lib_path;
 
         DataDirectory data_dir{
@@ -455,7 +466,7 @@ int main(int argc, char* argv[]) {
             status_code = build_indices(handle, std::move(*settings.build_indices_settings), repository);
         } else if (settings.rpcdaemon_settings) {
             // Start RPC Daemon using Silkworm API library
-            status_code = start_rpcdaemon(handle, std::move(*settings.rpcdaemon_settings));
+            status_code = start_rpcdaemon(handle, std::move(*settings.rpcdaemon_settings), data_dir);
         }
 
         // Finalize Silkworm API library

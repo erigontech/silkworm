@@ -192,7 +192,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::InvalidBlockHash;
         }
-        log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        log::Trace() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
 
         auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};

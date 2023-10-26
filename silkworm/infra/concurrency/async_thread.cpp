@@ -47,9 +47,9 @@ Task<void> async_thread(
     boost::thread thread{attributes, [run = std::move(run), name = name, &run_exception, &thread_finished_notifier] {
                              log::set_thread_name(name);
                              try {
-                                 log::Info() << "Async thread [" << name << "] run started";
+                                 log::Trace() << "Async thread [" << name << "] run started";
                                  run();
-                                 log::Info() << "Async thread [" << name << "] run completed";
+                                 log::Trace() << "Async thread [" << name << "] run completed";
                              } catch (...) {
                                  run_exception = std::current_exception();
                              }

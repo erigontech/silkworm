@@ -20,7 +20,6 @@
 #include <array>
 #include <initializer_list>
 #include <iterator>
-#include <optional>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -66,16 +65,16 @@ class ConfigMap {
 
     // Looks up a config value as of a given block number.
     // Similar to borKeyValueConfigHelper in Erigon.
-    [[nodiscard]] constexpr std::optional<T> value(BlockNum number) const noexcept {
+    [[nodiscard]] constexpr const T* value(BlockNum number) const noexcept {
         if (empty() || data_[0].first > number) {
-            return std::nullopt;
+            return nullptr;
         }
         for (size_t i{0}; i < size_ - 1; ++i) {
             if (data_[i].first <= number && number < data_[i + 1].first) {
-                return data_[i].second;
+                return &data_[i].second;
             }
         }
-        return data_[size_ - 1].second;
+        return &data_[size_ - 1].second;
     }
 
     [[nodiscard]] constexpr bool empty() const noexcept {

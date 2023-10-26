@@ -23,15 +23,15 @@ namespace silkworm {
 TEST_CASE("ConfigMap value") {
     static constexpr ConfigMap<uint64_t> config{{10, 16}, {0, 64}, {20, 12}};
 
-    static_assert(config.value(0) == 64);
-    static_assert(config.value(1) == 64);
-    static_assert(config.value(9) == 64);
-    static_assert(config.value(10) == 16);
-    static_assert(config.value(11) == 16);
-    static_assert(config.value(19) == 16);
-    static_assert(config.value(20) == 12);
-    static_assert(config.value(21) == 12);
-    static_assert(config.value(100) == 12);
+    static_assert(*config.value(0) == 64);
+    static_assert(*config.value(1) == 64);
+    static_assert(*config.value(9) == 64);
+    static_assert(*config.value(10) == 16);
+    static_assert(*config.value(11) == 16);
+    static_assert(*config.value(19) == 16);
+    static_assert(*config.value(20) == 12);
+    static_assert(*config.value(21) == 12);
+    static_assert(*config.value(100) == 12);
 }
 
 }  // namespace silkworm

@@ -86,7 +86,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     state_.add_to_balance(evm_.beneficiary, amount);
 
     if (rev >= EVMC_LONDON) {
-        const std::optional<evmc::address> burnt_contract{evm_.config().burnt_contract.value(header.number)};
+        const evmc::address* burnt_contract{evm_.config().burnt_contract.value(header.number)};
         if (burnt_contract) {
             const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
             state_.add_to_balance(*burnt_contract, would_be_burnt);

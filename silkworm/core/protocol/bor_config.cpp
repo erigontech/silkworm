@@ -23,7 +23,7 @@
 namespace silkworm::protocol {
 
 uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
-    const std::optional<uint64_t> size{sprint.value(number)};
+    const uint64_t* size{sprint.value(number)};
     SILKWORM_ASSERT(size);
     return *size;
 }

@@ -81,11 +81,11 @@ class ConfigMap {
         return size_ == 0;
     }
 
-    [[nodiscard]] constexpr const ValueType* begin() const noexcept {
+    [[nodiscard]] constexpr auto begin() const noexcept {
         return data_.begin();
     }
 
-    [[nodiscard]] constexpr const ValueType* end() const noexcept {
+    [[nodiscard]] constexpr auto end() const noexcept {
         return begin() + size_;
     }
 

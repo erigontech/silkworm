@@ -82,7 +82,7 @@ class ConfigMap {
     }
 
     [[nodiscard]] constexpr const ValueType* begin() const noexcept {
-        return data_.begin();
+        return &*data_.begin();
     }
 
     [[nodiscard]] constexpr const ValueType* end() const noexcept {

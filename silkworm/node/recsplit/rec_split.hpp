@@ -234,7 +234,7 @@ class RecSplit {
     explicit RecSplit(std::filesystem::path index_path, std::optional<MemoryMappedRegion> index_region = {})
         : index_path_{index_path},
           encoded_file_{std::make_optional<MemoryMappedFile>(std::move(index_path), std::move(index_region))} {
-        SILK_DEBUG << "RecSplit encoded file path: " << encoded_file_->path();
+        SILK_TRACE << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 
         const auto address = encoded_file_->address();
@@ -246,7 +246,7 @@ class RecSplit {
         key_count_ = endian::load_big_u64(address + kBaseDataIdLength);
         bytes_per_record_ = address[kBaseDataIdLength + kKeyCountLength];
         record_mask_ = (uint64_t(1) << (8 * bytes_per_record_)) - 1;
-        SILK_DEBUG << "Base data ID: " << base_data_id_ << " key count: " << key_count_
+        SILK_TRACE << "Base data ID: " << base_data_id_ << " key count: " << key_count_
                    << " bytes per record: " << bytes_per_record_ << " record mask: " << record_mask_;
 
         // Compute offset for variable metadata header fields
@@ -332,7 +332,7 @@ class RecSplit {
         }
 
         if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
+            SILK_TRACE << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
         }
 
         Bytes bucket_key(16, '\0');
@@ -370,7 +370,7 @@ class RecSplit {
         }
 
         if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key: " << to_hex(ByteView{reinterpret_cast<const uint8_t*>(key_data), key_length});
+            SILK_TRACE << "[index] add key: " << to_hex(ByteView{reinterpret_cast<const uint8_t*>(key_data), key_length});
         }
 
         const auto key_hash = murmur_hash_3(key_data, key_length);
@@ -392,23 +392,23 @@ class RecSplit {
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
-        SILK_DEBUG << "[index] creating temporary index file: " << tmp_index_path.string();
+        SILK_TRACE << "[index] creating temporary index file: " << tmp_index_path.string();
 
         // Write minimal app-specific data ID in the index file
         Bytes uint64_buffer(8, '\0');
         endian::store_big_u64(uint64_buffer.data(), base_data_id_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
+        SILK_TRACE << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
         endian::store_big_u64(uint64_buffer.data(), keys_added_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written number of keys: " << keys_added_;
+        SILK_TRACE << "[index] written number of keys: " << keys_added_;
 
         // Write number of bytes per index record
         bytes_per_record_ = (std::bit_width(max_offset_) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
-        SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
+        SILK_TRACE << "[index] written bytes per record: " << int(bytes_per_record_);
 
         current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
 
@@ -470,31 +470,31 @@ class RecSplit {
         // Write out bucket count, bucket size, leaf size
         endian::store_big_u64(uint64_buffer.data(), bucket_count_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written bucket count: " << bucket_count_;
+        SILK_TRACE << "[index] written bucket count: " << bucket_count_;
 
         endian::store_big_u16(uint64_buffer.data(), bucket_size_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written bucket size: " << bucket_size_;
+        SILK_TRACE << "[index] written bucket size: " << bucket_size_;
 
         endian::store_big_u16(uint64_buffer.data(), LEAF_SIZE);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written leaf size: " << LEAF_SIZE;
+        SILK_TRACE << "[index] written leaf size: " << LEAF_SIZE;
 
         // Write out salt
         endian::store_big_u32(uint64_buffer.data(), salt_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
+        SILK_TRACE << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
 
         // Write out start seeds
         constexpr uint8_t start_seed_length = kStartSeed.size();
         index_output_stream.write(reinterpret_cast<const char*>(&start_seed_length), sizeof(uint8_t));
-        SILK_DEBUG << "[index] written start seed length: " << int(start_seed_length);
+        SILK_TRACE << "[index] written start seed length: " << int(start_seed_length);
 
         for (const uint64_t s : kStartSeed) {
             endian::store_big_u64(uint64_buffer.data(), s);
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         }
-        SILK_DEBUG << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
+        SILK_TRACE << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
 
         // Write out index flag
         const uint8_t enum_index_flag = double_enum_index_ ? 1 : 0;
@@ -503,14 +503,14 @@ class RecSplit {
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
             index_output_stream << *ef_offsets_;
-            SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
         }
 
         // Write out the number of Golomb-Rice codes used i.e. the max index used plus one
         endian::store_big_u16(uint64_buffer.data(), golomb_param_max_index_ + 1);
         // Erigon writes 4-instead-of-2 bytes here: 2 spurious come from previous buffer content, i.e. last seed value
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << golomb_rice_codes_.size();
+        SILK_TRACE << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << golomb_rice_codes_.size();
 
         // Write out Golomb-Rice code
         index_output_stream << golomb_rice_codes_;
@@ -520,7 +520,7 @@ class RecSplit {
 
         index_output_stream.close();
 
-        SILK_DEBUG << "[index] renaming " << tmp_index_path.string() << " as " << index_path_.string();
+        SILK_TRACE << "[index] renaming " << tmp_index_path.string() << " as " << index_path_.string();
         std::filesystem::rename(tmp_index_path, index_path_);
 
         return false;
@@ -740,7 +740,7 @@ class RecSplit {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offset);
                 index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
-                SILK_DEBUG << "[index] written offset: " << offset;
+                SILK_TRACE << "[index] written offset: " << offset;
             }
         }
         // Extend bucket position accumulator to accommodate current bucket index + 1
@@ -776,10 +776,10 @@ class RecSplit {
         if (m <= LEAF_SIZE) {
             // No need to build aggregation levels - just find bijection
             if (level == 7) {
-                SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
+                SILK_TRACE << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
                            << " current_bucket_id_=" << current_bucket_id_;
                 for (std::size_t j = 0; j < m; j++) {
-                    SILK_DEBUG << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << bucket[start + j];
+                    SILK_TRACE << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << bucket[start + j];
                 }
             }
             while (true) {
@@ -805,7 +805,7 @@ class RecSplit {
                 endian::store_big_u64(uint64_buffer.data(), buffer_offsets_[i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
                 if (level == 0) {
-                    SILK_DEBUG << "[index] written offset: " << buffer_offsets_[i];
+                    SILK_TRACE << "[index] written offset: " << buffer_offsets_[i];
                 }
             }
             salt -= kStartSeed[level];
@@ -815,7 +815,7 @@ class RecSplit {
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
+            SILK_TRACE << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
 
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
             count_.resize(fanout);
@@ -859,7 +859,7 @@ class RecSplit {
                 endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
                 if (level == 0) {
-                    SILK_DEBUG << "[index] written offset: " << offsets[start + i];
+                    SILK_TRACE << "[index] written offset: " << offsets[start + i];
                 }
             }
         }

@@ -43,6 +43,8 @@ void init(Settings& settings) {
     settings_ = settings;
     if (!settings_.log_file.empty()) {
         tee_file(std::filesystem::path(settings.log_file));
+        // Forcibly disable colorized output to avoid escape char sequences into log file
+        settings_.log_nocolor = true;
     }
     if (settings.log_grpc) {
         gpr_set_log_function(gpr_silkworm_log);

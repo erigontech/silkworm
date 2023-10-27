@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     int retvar{0};
 
     // Note: If Erigon is actively syncing its database (syncing), it is important not to create
-    // long-running datbase reads transactions even though that may make your processing faster.
+    // long-running database reads transactions even though that may make your processing faster.
     // Uncomment the following line (and comment the line below) only if you're certain Erigon is not
     // running on the same machine.
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};

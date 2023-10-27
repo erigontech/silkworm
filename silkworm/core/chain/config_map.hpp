@@ -95,7 +95,7 @@ class ConfigMap {
                   [](const ValueType& a, const ValueType& b) { return a.first < b.first; });
     }
 
-    std::array<ValueType, kMaxSize> data_;
+    std::array<ValueType, kMaxSize> data_{};
     std::size_t size_{0};
 };
 

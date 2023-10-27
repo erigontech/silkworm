@@ -90,7 +90,7 @@ static std::string EMPTY_MEMORY(64, '0');
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
     for (int i = int(stack_size - 1); i >= 0; --i) {
-        vect.push_back(std::move(uint256_to_hex(stack[-i])));
+        vect.push_back(uint256_to_hex(stack[-i]));
     }
 }
 
@@ -100,7 +100,7 @@ void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory)
 
     const auto data = memory.data();
     for (std::size_t start = 0; start < memory.size(); start += len) {
-        vect.push_back(std::move(silkworm::to_hex({data + start, len})));
+        vect.push_back(silkworm::to_hex({data + start, len}));
     }
 }
 

@@ -55,6 +55,7 @@ const std::map<uint64_t, const Config*> Config::kKnownSnapshotConfigs{
     {kGoerliConfig.chain_id, &kGoerliSnapshotConfig},
     {kMainnetConfig.chain_id, &kMainnetSnapshotConfig},
     {kSepoliaConfig.chain_id, &kSepoliaSnapshotConfig},
+    // TODO(yperbasis): add Polygon
 };
 
 struct NullDeleter {

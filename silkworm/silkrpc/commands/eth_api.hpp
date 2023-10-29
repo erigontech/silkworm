@@ -71,8 +71,6 @@ class EthereumRpcApi {
     Task<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_syncing(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_gas_price(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_eth_get_block_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_block_transaction_count_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_block_transaction_count_by_number(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply);
@@ -118,6 +116,8 @@ class EthereumRpcApi {
     // GLAZE format routine
     Task<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);
     Task<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
+    Task<void> handle_eth_get_block_by_number(const nlohmann::json& request, std::string& reply);
+    Task<void> handle_eth_get_block_by_hash(const nlohmann::json& request, std::string& reply);
 
     boost::asio::io_context& io_context_;
     BlockCache* block_cache_;

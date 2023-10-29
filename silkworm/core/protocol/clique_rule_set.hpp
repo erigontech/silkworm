@@ -35,7 +35,8 @@ class CliqueRuleSet : public BaseRuleSet {
 
     evmc::address get_beneficiary(const BlockHeader& header) final;
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) final { return 1; }
+  protected:
+    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const final { return 1; }
 };
 
 }  // namespace silkworm::protocol

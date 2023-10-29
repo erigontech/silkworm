@@ -46,7 +46,6 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 static log::Settings kLogSettingsLikeErigon{
     .log_utc = false,       // display local time
     .log_timezone = false,  // no timezone ID
-    .log_nocolor = false,   // use colors
     .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 
@@ -273,22 +272,31 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* env) SILKWORM_NOEXCEPT {
     if (handle != instance.handle) {
         return SILKWORM_INSTANCE_NOT_FOUND;
     }
+    if (instance.rpcdaemon) {
+        return SILKWORM_RPCDAEMON_ALREADY_STARTED;
+    }
+
+    struct EnvUnmanaged : public ::mdbx::env {
+        explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
+    } unmanaged_env{env};
 
     // TODO(canepat) add RPC options in API and convert them
     rpc::DaemonSettings settings{
+        .engine_end_point = "",  // disable end-point for Engine RPC API
         .skip_protocol_check = true,
-        .erigon_json_rpc_compatibility = true};
+        .erigon_json_rpc_compatibility = true,
+    };
 
     // Create the one-and-only Silkrpc daemon
-    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings);
+    instance.rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
 
     // Check protocol version compatibility with Core Services
-    if (not settings.skip_protocol_check) {
-        SILK_INFO << "[RPC] Checking protocol version compatibility with core services...";
+    if (!settings.skip_protocol_check) {
+        SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
 
         const auto checklist = instance.rpcdaemon->run_checklist();
         for (const auto& protocol_check : checklist.protocol_checklist) {
@@ -296,10 +304,10 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NO
         }
         checklist.success_or_throw();
     } else {
-        SILK_TRACE << "[RPC] Skip protocol version compatibility check with core services";
+        SILK_TRACE << "[Silkworm RPC] Skip protocol version compatibility check with core services";
     }
 
-    SILK_INFO << "[RPC] Starting ETH API at " << settings.eth_end_point << " ENGINE API at " << settings.engine_end_point;
+    SILK_INFO << "[Silkworm RPC] Starting ETH API at " << settings.eth_end_point;
     instance.rpcdaemon->start();
 
     return SILKWORM_OK;
@@ -309,11 +317,15 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOE
     if (handle != instance.handle) {
         return SILKWORM_INSTANCE_NOT_FOUND;
     }
+    if (!instance.rpcdaemon) {
+        return SILKWORM_RPCDAEMON_NOT_STARTED;
+    }
 
     instance.rpcdaemon->stop();
-    SILK_INFO << "[RPC] Exiting...";
+    SILK_INFO << "[Silkworm RPC] Exiting...";
     instance.rpcdaemon->join();
-    SILK_INFO << "[RPC] Stopped";
+    SILK_INFO << "[Silkworm RPC] Stopped";
+    instance.rpcdaemon.reset();
 
     return SILKWORM_OK;
 }

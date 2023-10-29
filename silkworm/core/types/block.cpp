@@ -91,7 +91,7 @@ namespace rlp {
         rlp_head.payload_length += length(header.gas_used);                                // gas_used
         rlp_head.payload_length += length(header.timestamp);                               // timestamp
         if (exclude_extra_data_sig) {
-            const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - kExtraSealSize);
+            const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - protocol::kExtraSealSize);
             rlp_head.payload_length += length(extra_data_no_signature);  // extra_data -signature
         } else {
             rlp_head.payload_length += length(header.extra_data);  // extra_data
@@ -139,7 +139,8 @@ namespace rlp {
         encode(to, header.gas_used);
         encode(to, header.timestamp);
         if (exclude_extra_data_sig) {
-            const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - kExtraSealSize);
+            SILKWORM_ASSERT(header.extra_data.length() >= protocol::kExtraSealSize);
+            const ByteView extra_data_no_signature{header.extra_data.data(), header.extra_data.length() - protocol::kExtraSealSize};
             encode(to, extra_data_no_signature);
         } else {
             encode(to, header.extra_data);

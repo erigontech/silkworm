@@ -35,6 +35,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/os.hpp>
 
 namespace silkworm::db {
 
@@ -358,25 +359,25 @@ using WalkFuncRef = absl::FunctionRef<void(ByteView key, ByteView value)>;
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
-    bool create{false};          // Whether db file must be created
-    bool readonly{false};        // Whether db should be opened in RO mode
-    bool exclusive{false};       // Whether this process has exclusive access
-    bool in_memory{false};       // Whether this db is in memory
-    bool shared{false};          // Whether this process opens a db already opened by another process
-    bool read_ahead{false};      // Whether to enable mdbx read ahead
-    bool write_map{false};       // Whether to enable mdbx write map
-    size_t page_size{4_Kibi};    // Mdbx page size
-    size_t max_size{3_Tebi};     // Mdbx max map size
-    size_t growth_size{2_Gibi};  // Increment size for each extension
-    uint32_t max_tables{128};    // Default max number of named tables
-    uint32_t max_readers{100};   // Default max number of readers
+    bool create{false};                 // Whether db file must be created
+    bool readonly{false};               // Whether db should be opened in RO mode
+    bool exclusive{false};              // Whether this process has exclusive access
+    bool in_memory{false};              // Whether this db is in memory
+    bool shared{false};                 // Whether this process opens a db already opened by another process
+    bool read_ahead{false};             // Whether to enable mdbx read ahead
+    bool write_map{false};              // Whether to enable mdbx write map
+    size_t page_size{os::page_size()};  // Mdbx page size
+    size_t max_size{3_Tebi};            // Mdbx max map size
+    size_t growth_size{2_Gibi};         // Increment size for each extension
+    uint32_t max_tables{128};           // Default max number of named tables
+    uint32_t max_readers{100};          // Default max number of readers
 };
 
 //! \brief Opens an mdbx environment using the provided environment config
 //! \param [in] config : A structure containing essential environment settings
 //! \return A handler to mdbx::env_managed class
 //! \remarks May throw exceptions
-::mdbx::env_managed open_env(const EnvConfig& config);
+::mdbx::env_managed open_env(EnvConfig& config);
 
 //! \brief Opens an mdbx "map" (aka table)
 //! \param [in] tx : a reference to a valid mdbx transaction

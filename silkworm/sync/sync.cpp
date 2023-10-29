@@ -25,7 +25,7 @@
 namespace silkworm::chainsync {
 
 Sync::Sync(boost::asio::any_io_executor executor,
-           mdbx::env_managed& chaindata_env,
+           mdbx::env chaindata_env,
            execution::Client& execution,
            const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
@@ -50,13 +50,7 @@ Sync::Sync(boost::asio::any_io_executor executor,
             .num_workers = 1,  // single-client so just one worker should be OK
             .jwt_secret_file = rpc_settings.jwt_secret_file,
         };
-        // TODO(canepat) replace customized std::shared_ptr by using ::mdbx::env instead of
-        //  std::shared_ptr<::mdbx::env_managed> in silkrpc classes (e.g. LocalState)
-        struct env_custom_deleter {
-            void operator()(mdbx::env_managed*) {}
-        };
-        std::shared_ptr<mdbx::env_managed> env_ptr{&chaindata_env, env_custom_deleter{}};
-        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, env_ptr);
+        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, chaindata_env);
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_unique<PoSSync>(block_exchange_, execution);

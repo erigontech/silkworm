@@ -45,19 +45,19 @@ namespace silkworm {
 
 std::string_view read_genesis_data(ChainId chain_id) {
     switch (chain_id) {
-        case kMainnetConfig.chain_id:
+        case 1:
             assert(sizeof_genesis_mainnet_data() != 0);
             return {genesis_mainnet_data(), sizeof_genesis_mainnet_data()};
-        case kGoerliConfig.chain_id:
+        case 5:
             assert(sizeof_genesis_goerli_data() != 0);
             return {genesis_goerli_data(), sizeof_genesis_goerli_data()};
-        case kSepoliaConfig.chain_id:
+        case 11155111:
             assert(sizeof_genesis_sepolia_data() != 0);
             return {genesis_sepolia_data(), sizeof_genesis_sepolia_data()};
-        case kPolygonConfig.chain_id:
+        case 137:
             assert(sizeof_genesis_polygon_data() != 0);
             return {genesis_polygon_data(), sizeof_genesis_polygon_data()};
-        case kMumbaiConfig.chain_id:
+        case 80001:
             assert(sizeof_genesis_mumbai_data() != 0);
             return {genesis_mumbai_data(), sizeof_genesis_mumbai_data()};
         default:

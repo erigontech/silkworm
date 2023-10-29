@@ -330,7 +330,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     return ret;
 }
 
-void do_scan(const db::EnvConfig& config) {
+void do_scan(db::EnvConfig& config) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     auto env{silkworm::db::open_env(config)};

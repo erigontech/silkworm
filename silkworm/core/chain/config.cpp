@@ -19,8 +19,10 @@
 #include <algorithm>
 #include <functional>
 #include <set>
+#include <string>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/overloaded.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
@@ -55,19 +57,13 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     ret["chainId"] = chain_id;
 
     nlohmann::json empty_object(nlohmann::json::value_t::object);
-    switch (protocol_rule_set) {
-        case protocol::RuleSetType::kEthash:
-            ret.emplace("ethash", empty_object);
-            break;
-        case protocol::RuleSetType::kClique:
-            ret.emplace("clique", empty_object);
-            break;
-        case protocol::RuleSetType::kBor:
-            ret.emplace("bor", empty_object);
-            break;
-        default:
-            break;
-    }
+    std::visit(
+        Overloaded{
+            [&](const protocol::EthashConfig& x) { if (x.validate_seal) ret.emplace("ethash", empty_object); },
+            [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
+            [&](const protocol::BorConfig& x) { ret.emplace("bor", x.to_json()); },
+        },
+        rule_set_config);
 
     member_to_json(ret, "homesteadBlock", homestead_block);
     member_to_json(ret, "daoForkBlock", dao_block);
@@ -80,21 +76,26 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "berlinBlock", berlin_block);
     member_to_json(ret, "londonBlock", london_block);
+
+    if (!burnt_contract.empty()) {
+        nlohmann::json burnt_contract_json = nlohmann::json::object();
+        for (const auto& [from, contract] : burnt_contract) {
+            burnt_contract_json[std::to_string(from)] = address_to_hex(contract);
+        }
+        ret["burntContract"] = burnt_contract_json;
+    }
+
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
     if (terminal_total_difficulty) {
-        // TODO(yperbasis) geth probably treats terminalTotalDifficulty as a JSON number
+        // TODO(yperbasis): geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
     member_to_json(ret, "mergeNetsplitBlock", merge_netsplit_block);
     member_to_json(ret, "shanghaiTime", shanghai_time);
     member_to_json(ret, "cancunTime", cancun_time);
-
-    if (eip1559_fee_collector) {
-        ret["eip1559FeeCollector"] = address_to_hex(*eip1559_fee_collector);
-    }
 
     if (genesis_hash.has_value()) {
         ret["genesisBlockHash"] = to_hex(*genesis_hash, /*with_prefix=*/true);
@@ -112,13 +113,17 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     config.chain_id = json["chainId"].get<uint64_t>();
 
     if (json.contains("ethash")) {
-        config.protocol_rule_set = protocol::RuleSetType::kEthash;
+        config.rule_set_config = protocol::EthashConfig{};
     } else if (json.contains("clique")) {
-        config.protocol_rule_set = protocol::RuleSetType::kClique;
+        config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
-        config.protocol_rule_set = protocol::RuleSetType::kBor;
+        std::optional<protocol::BorConfig> bor_config{protocol::BorConfig::from_json(json["bor"])};
+        if (!bor_config) {
+            return std::nullopt;
+        }
+        config.rule_set_config = *bor_config;
     } else {
-        config.protocol_rule_set = protocol::RuleSetType::kNoProof;
+        config.rule_set_config = protocol::EthashConfig{.validate_seal = false};
     }
 
     read_json_config_member(json, "homesteadBlock", config.homestead_block);
@@ -132,6 +137,17 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "berlinBlock", config.berlin_block);
     read_json_config_member(json, "londonBlock", config.london_block);
+
+    if (json.contains("burntContract")) {
+        std::vector<std::pair<BlockNum, evmc::address>> burnt_contract;
+        for (const auto& item : json["burntContract"].items()) {
+            const BlockNum from{std::stoull(item.key(), nullptr, 0)};
+            const evmc::address contract{hex_to_address(item.value().get<std::string>())};
+            burnt_contract.emplace_back(from, contract);
+        }
+        config.burnt_contract = ConfigMap<evmc::address>(burnt_contract.begin(), burnt_contract.end());
+    }
+
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
     read_json_config_member(json, "grayGlacierBlock", config.gray_glacier_block);
 
@@ -153,11 +169,6 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "mergeNetsplitBlock", config.merge_netsplit_block);
     read_json_config_member(json, "shanghaiTime", config.shanghai_time);
     read_json_config_member(json, "cancunTime", config.cancun_time);
-
-    if (json.contains("eip1559FeeCollector")) {
-        const auto eip1559_fee_collector{json["eip1559FeeCollector"].get<std::string>()};
-        config.eip1559_fee_collector = hex_to_address(eip1559_fee_collector);
-    }
 
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
@@ -254,6 +265,7 @@ std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_cha
     return std::make_pair(it->first, it->second);
 }
 
+// TODO(yperbasis): rework with constexpr maps
 std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     std::map<std::string, uint64_t> ret;
     as_range::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
@@ -261,5 +273,102 @@ std::map<std::string, uint64_t> get_known_chains_map() noexcept {
     });
     return ret;
 }
+
+SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
+    .chain_id = 1,
+    .homestead_block = 1'150'000,
+    .dao_block = 1'920'000,
+    .tangerine_whistle_block = 2'463'000,
+    .spurious_dragon_block = 2'675'000,
+    .byzantium_block = 4'370'000,
+    .constantinople_block = 7'280'000,
+    .petersburg_block = 7'280'000,
+    .istanbul_block = 9'069'000,
+    .muir_glacier_block = 9'200'000,
+    .berlin_block = 12'244'000,
+    .london_block = 12'965'000,
+    .arrow_glacier_block = 13'773'000,
+    .gray_glacier_block = 15'050'000,
+    .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
+    .shanghai_time = 1681338455,
+    .rule_set_config = protocol::EthashConfig{},
+};
+
+SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
+    .chain_id = 5,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 1'561'651,
+    .berlin_block = 4'460'644,
+    .london_block = 5'062'605,
+    .terminal_total_difficulty = 10790000,
+    .shanghai_time = 1678832736,
+    .rule_set_config = protocol::CliqueConfig{},
+};
+
+SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
+    .chain_id = 11155111,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 0,
+    .muir_glacier_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .terminal_total_difficulty = 17000000000000000,
+    .merge_netsplit_block = 1'735'371,
+    .shanghai_time = 1677557088,
+    .rule_set_config = protocol::EthashConfig{},
+};
+
+const ChainConfig kPolygonConfig{
+    .chain_id = 137,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 3'395'000,
+    .muir_glacier_block = 3'395'000,
+    .berlin_block = 14'750'000,
+    .london_block = 23'850'000,
+    .burnt_contract = {
+        {23850000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+    },
+    .rule_set_config = protocol::BorConfig{
+        .sprint = {{0, 64}, {38189056, 16}},
+        .jaipur_block = 23'850'000,
+    },
+};
+
+const ChainConfig kMumbaiConfig{
+    .chain_id = 80001,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 2'722'000,
+    .muir_glacier_block = 2'722'000,
+    .berlin_block = 13'996'000,
+    .london_block = 22'640'000,
+    .burnt_contract = {
+        {22640000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+        {41824608, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
+    },
+    .rule_set_config = protocol::BorConfig{
+        .sprint = {{0, 64}, {29638656, 16}},
+        .jaipur_block = 22'770'000,
+    },
+};
 
 }  // namespace silkworm

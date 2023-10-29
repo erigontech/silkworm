@@ -39,9 +39,9 @@
 extern "C" {
 #endif
 
-typedef struct MDBX_txn MDBX_txn;
+// Silkworm library error codes (SILKWORM_OK indicates no error, i.e. success)
 
-#define SILKWORM_OK 0 /* Successful result */
+#define SILKWORM_OK 0
 #define SILKWORM_INTERNAL_ERROR 1
 #define SILKWORM_UNKNOWN_ERROR 2
 #define SILKWORM_INVALID_HANDLE 3
@@ -57,20 +57,17 @@ typedef struct MDBX_txn MDBX_txn;
 #define SILKWORM_TOO_MANY_INSTANCES 13
 #define SILKWORM_INSTANCE_NOT_FOUND 14
 #define SILKWORM_TERMINATION_SIGNAL 15
+#define SILKWORM_RPCDAEMON_ALREADY_STARTED 16
+#define SILKWORM_RPCDAEMON_NOT_STARTED 17
 
+typedef struct MDBX_env MDBX_env;
+typedef struct MDBX_txn MDBX_txn;
 typedef struct SilkwormHandle SilkwormHandle;
-
-/**
- * \brief Initialize the Silkworm C API library.
- * \param[in,out] handle Silkworm instance handle returned on successful initialization.
- * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
- */
-SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
 
 struct SilkwormMemoryMappedFile {
     const char* file_path;
     uint8_t* memory_address;
-    size_t memory_length;
+    uint64_t memory_length;
 };
 
 struct SilkwormHeadersSnapshot {
@@ -96,6 +93,13 @@ struct SilkwormChainSnapshot {
 };
 
 /**
+ * \brief Initialize the Silkworm C API library.
+ * \param[in,out] handle Silkworm instance handle returned on successful initialization.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
+
+/**
  * \brief Build a set of indexes for the given snapshots.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] snapshots An array of snapshots to index.
@@ -110,12 +114,24 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
  * \brief Notify Silkworm about a new snapshot to use.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] snapshot A snapshot to use.
- * \return A non-zero error value on failure and SILKWORM_OK (=0) on success.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
+/**
+ * \brief Start Silkworm RPC daemon.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.Must not be zero.
+ * \param[in] env An valid MDBX environment. Must not be zero.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* env) SILKWORM_NOEXCEPT;
 
+/**
+ * \brief Stop Silkworm RPC daemon and wait for its termination.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init. Must not be zero.
+ * \param[in] snapshot A snapshot to use.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
 SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
 
 /**

@@ -21,20 +21,33 @@
 namespace silkworm::protocol {
 
 // Warning: most Bor logic is not implemented yet.
-// TODO(yperbasis) implement
+// TODO(yperbasis): implement
 class BorRuleSet : public BaseRuleSet {
   public:
     explicit BorRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/true) {}
 
-    ValidationResult validate_seal(const BlockHeader&) final {
-        return ValidationResult::kOk;
-    }
+    ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
+                                           bool with_future_timestamp_check) override;
 
-    void initialize(EVM&) final {}
+    ValidationResult validate_seal(const BlockHeader&) override;
 
-    void finalize(IntraBlockState&, const Block&) final {}
+    void initialize(EVM&) override {}
 
-    intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) final { return 1; }
+    void finalize(IntraBlockState&, const Block&) override {}
+
+    evmc::address get_beneficiary(const BlockHeader& header) override;
+
+    void add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
+                              const intx::uint256& sender_initial_balance, const evmc::address& recipient,
+                              const intx::uint256& recipient_initial_balance) override;
+
+  protected:
+    ValidationResult validate_extra_data(const BlockHeader& header) const override;
+
+    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
+
+  private:
+    [[nodiscard]] const BorConfig& config() const;
 };
 
 }  // namespace silkworm::protocol

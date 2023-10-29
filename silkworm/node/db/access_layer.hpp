@@ -264,6 +264,9 @@ class DataModel {
     //! Get the highest block number
     [[nodiscard]] BlockNum highest_block_number() const;
 
+    //! Get the highest block number frozen into snapshots
+    [[nodiscard]] BlockNum highest_frozen_block_number() const;
+
     //! Read block header with the specified key (block number, hash)
     [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
 

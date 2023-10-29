@@ -319,15 +319,18 @@ class RWTxnManaged : public RWTxn {
 };
 
 //! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
+//! is not created by this class, but can be committed or aborted.
 class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
   public:
     explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
+    ~RWTxnUnmanaged() override;
 
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
+    void abort() override;
+    void commit_and_renew() override;
+    void commit_and_stop() override;
+
+  private:
+    void commit();
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access

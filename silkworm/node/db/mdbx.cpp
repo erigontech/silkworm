@@ -252,6 +252,49 @@ void RWTxnManaged::commit_and_stop() {
     }
 }
 
+RWTxnUnmanaged::~RWTxnUnmanaged() {
+    abort();
+}
+
+void RWTxnUnmanaged::abort() {
+    const ::mdbx::error err = static_cast<MDBX_error_t>(::mdbx_txn_abort(handle_));
+    if (err.code() != MDBX_THREAD_MISMATCH) {
+        handle_ = nullptr;
+    }
+    if (err.code() != MDBX_SUCCESS) {
+        err.throw_exception();
+    }
+}
+
+void RWTxnUnmanaged::commit_and_renew() {
+    if (commit_disabled_) {
+        return;
+    }
+    mdbx::env env = db();
+    commit();
+    // Renew transaction
+    ::mdbx::error::success_or_throw(
+        ::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &handle_));
+    SILKWORM_ASSERT(handle_);
+}
+
+void RWTxnUnmanaged::commit_and_stop() {
+    if (commit_disabled_) {
+        return;
+    }
+    commit();
+}
+
+void RWTxnUnmanaged::commit() {
+    const ::mdbx::error err = static_cast<MDBX_error_t>(::mdbx_txn_commit(handle_));
+    if (err.code() != MDBX_THREAD_MISMATCH) {
+        handle_ = nullptr;
+    }
+    if (err.code() != MDBX_SUCCESS) {
+        err.throw_exception();
+    }
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
 
 PooledCursor::PooledCursor() {

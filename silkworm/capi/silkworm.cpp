@@ -29,6 +29,7 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -49,6 +50,7 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
 static log::Settings kLogSettingsLikeErigon{
     .log_utc = false,       // display local time
     .log_timezone = false,  // no timezone ID
+    .log_nocolor = true,    // use colors
     .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 
@@ -463,6 +465,11 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 state_buffer.write_to_db(write_change_sets);
                 gas_batch_size = 0;
                 gas_history_size = 0;
+                StopWatch sw{/*auto_start=*/true};
+                txn.commit_and_renew();
+                const auto [elapsed, _]{sw.stop()};
+                log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                          {"in", StopWatch::format(sw.since_start(elapsed))});
             } else if (gas_history_size >= gas_max_history_batch_size) {
                 log::Info{"[4/12 Execution] Flushing history",  // NOLINT(*-unused-raii)
                           log_args_for_exec_flush(state_buffer, block.header.number)};
@@ -490,6 +497,11 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         log::Info{"[4/12 Execution] Flushing state+history",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_block)};
         state_buffer.write_to_db(write_change_sets);
+        StopWatch sw{/*auto_start=*/true};
+        txn.commit_and_renew();
+        const auto [elapsed, _]{sw.stop()};
+        log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                  {"in", StopWatch::format(sw.since_start(elapsed))});
         return SILKWORM_OK;
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {

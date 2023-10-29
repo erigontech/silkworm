@@ -128,8 +128,8 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 }
 
 bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
-    if (state.number_of_accounts() != expected.size()) {
-        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size()
+    if (state.accounts().size() != expected.size()) {
+        std::cout << "Account number mismatch: " << state.accounts().size() << " != " << expected.size()
                   << std::endl;
         return false;
     }

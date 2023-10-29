@@ -95,6 +95,9 @@ struct ChainConfig {
     //! \brief Returns the config of the (pre-Merge) protocol rule set
     protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
 
+    // The Shanghai hard fork has withdrawals, but Agra does not
+    [[nodiscard]] bool withdrawals_activated(uint64_t block_time) const noexcept;
+
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
     //! returns whether specific HF have occurred

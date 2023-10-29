@@ -36,6 +36,9 @@ nlohmann::json BorConfig::to_json() const noexcept {
     nlohmann::json ret;
     ret["sprint"] = sprint_json;
     ret["jaipurBlock"] = jaipur_block;
+    if (agra_block) {
+        ret["agraBlock"] = *agra_block;
+    }
     return ret;
 }
 
@@ -54,6 +57,9 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
         config.sprint = ConfigMap<uint64_t>(sprint.begin(), sprint.end());
     }
     config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
+    if (json.contains("agraBlock")) {
+        config.agra_block = json["agraBlock"].get<BlockNum>();
+    }
     return config;
 }
 

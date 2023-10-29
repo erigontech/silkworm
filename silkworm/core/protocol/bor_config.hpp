@@ -30,6 +30,9 @@ struct BorConfig {
 
     BlockNum jaipur_block{0};
 
+    // https://forum.polygon.technology/t/pip-28-agra-hardfork
+    std::optional<BlockNum> agra_block{std::nullopt};
+
     [[nodiscard]] uint64_t sprint_size(BlockNum number) const noexcept;
 
     [[nodiscard]] nlohmann::json to_json() const noexcept;

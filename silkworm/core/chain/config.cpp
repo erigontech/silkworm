@@ -176,9 +176,16 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     return config;
 }
 
+[[nodiscard]] bool ChainConfig::withdrawals_activated(uint64_t block_time) const noexcept {
+    return shanghai_time && block_time >= shanghai_time;
+}
+
 evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
+
+    const protocol::BorConfig* bor{std::get_if<protocol::BorConfig>(&rule_set_config)};
+    if (bor && bor->agra_block && block_number >= bor->agra_block) return EVMC_SHANGHAI;
 
     if (london_block && block_number >= london_block) return EVMC_LONDON;
     if (berlin_block && block_number >= berlin_block) return EVMC_BERLIN;
@@ -368,6 +375,7 @@ const ChainConfig kMumbaiConfig{
     .rule_set_config = protocol::BorConfig{
         .sprint = {{0, 64}, {29638656, 16}},
         .jaipur_block = 22'770'000,
+        .agra_block = 41'824'608,
     },
 };
 

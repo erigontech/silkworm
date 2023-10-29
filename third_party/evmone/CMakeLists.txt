@@ -45,7 +45,7 @@ add_library(
   evmone/lib/evmone/vm.cpp
   evmone/lib/evmone/vm.hpp
 )
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0")
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.11.0-dev")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone

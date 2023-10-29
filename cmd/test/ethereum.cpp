@@ -63,16 +63,6 @@ static const std::vector<fs::path> kSlowTests{
 // TODO(yperbasis) make them pass
 static const std::vector<fs::path> kFailingTests{
     kBlockchainDir / "cancun" / "eip4844_blobs",
-    kBlockchainDir / "cancun" / "eip5656_mcopy",
-};
-
-// TODO(yperbasis) remove me
-static const std::vector<fs::path> kSkipCancunTests{
-    kBlockchainDir / "frontier",
-    kBlockchainDir / "homestead",
-    kBlockchainDir / "istanbul",
-    kBlockchainDir / "merge",
-    kBlockchainDir / "shanghai",
 };
 
 static constexpr size_t kColumnWidth{80};
@@ -218,11 +208,8 @@ struct [[nodiscard]] RunResults {
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-RunResults blockchain_test(const nlohmann::json& json_test, bool skip_cancun) {
+RunResults blockchain_test(const nlohmann::json& json_test) {
     const auto network{json_test["network"].get<std::string>()};
-    if (skip_cancun && network == "Cancun") {
-        return Status::kSkipped;
-    }
     const auto config_it{test::kNetworkConfig.find(network)};
     if (config_it == test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;
@@ -286,9 +273,9 @@ std::atomic<size_t> total_passed{0};
 std::atomic<size_t> total_failed{0};
 std::atomic<size_t> total_skipped{0};
 
-using RunnerFunc = RunResults (*)(const nlohmann::json&, bool skip_cancun);
+using RunnerFunc = RunResults (*)(const nlohmann::json&);
 
-void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancun) {
+void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -304,7 +291,7 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancu
     RunResults total;
 
     for (const auto& test : json.items()) {
-        const RunResults r{runner(test.value(), skip_cancun)};
+        const RunResults r{runner(test.value())};
         total += r;
         if (r.failed || r.skipped) {
             print_test_status(test.key(), r);
@@ -317,7 +304,7 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancu
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-RunResults transaction_test(const nlohmann::json& j, bool) {
+RunResults transaction_test(const nlohmann::json& j) {
     Transaction txn;
     bool decoded{false};
 
@@ -433,7 +420,7 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
     }
 }
 
-RunResults difficulty_tests(const nlohmann::json& outer, bool) {
+RunResults difficulty_tests(const nlohmann::json& outer) {
     RunResults res;
 
     for (const auto& network : outer.items()) {
@@ -456,15 +443,6 @@ bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow
     const auto path_fits = [&p, &root_dir](const fs::path& e) { return root_dir / e == p; };
     return as_range::any_of(kFailingTests, path_fits) ||
            (!include_slow_tests && as_range::any_of(kSlowTests, path_fits));
-}
-
-bool skip_cancun(const fs::path& p, const fs::path& root_dir) {
-    for (const fs::path& e : kSkipCancunTests) {
-        if (p.string().starts_with((root_dir / e).string())) {
-            return true;
-        }
-    }
-    return false;
 }
 
 int main(int argc, char* argv[]) {
@@ -524,8 +502,7 @@ int main(int argc, char* argv[]) {
                 i.disable_recursion_pending();
             } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                 const fs::path path{*i};
-                const bool no_cancun{skip_cancun(path, root_dir)};
-                thread_pool.push_task([=]() { run_test_file(path, runner, no_cancun); });
+                thread_pool.push_task([=]() { run_test_file(path, runner); });
             }
         }
     }

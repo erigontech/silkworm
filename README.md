@@ -62,7 +62,7 @@ or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 14.3)
 
 Conan requires Python, and can be installed using:
 
-    pip3 install --user conan==1.58.0 chardet
+    pip3 install --user conan==1.60.0 chardet
 
 and adding its binary to PATH:
 
@@ -190,7 +190,7 @@ See [LICENSE](LICENSE) for more information.
 
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon Thorax architecture]: https://github.com/ledgerwatch/erigon#key-features
+[Erigon Thorax architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
 [staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md

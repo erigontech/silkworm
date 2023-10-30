@@ -80,7 +80,7 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.58.0 chardet
+          command: sudo pip3 install conan==1.60.0 chardet
       - run:
           name: "Select Conan profile"
           command: |
@@ -303,7 +303,7 @@ jobs:
             sudo apt-get install -y texinfo libtinfo5
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.58.0 chardet
+          command: sudo pip3 install conan==1.60.0 chardet
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2

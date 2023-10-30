@@ -81,7 +81,7 @@ void to_json(nlohmann::json& json, const BlockHeader& ommer);
 
 namespace silkworm::rpc {
 
-#define jsonVersion "2.0"
+inline constexpr std::string_view jsonVersion{"2.0"};
 inline constexpr auto jsonVersionSize = 8;
 inline constexpr auto addressSize = 64;
 inline constexpr auto hashSize = 128;

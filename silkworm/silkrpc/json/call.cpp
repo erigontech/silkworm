@@ -70,7 +70,7 @@ void from_json(const nlohmann::json& json, Call& call) {
 }
 
 struct GlazeJsonCall {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     char result[2048];
     struct glaze {
@@ -83,7 +83,7 @@ struct GlazeJsonCall {
 };
 
 struct GlazeJsonCallResultAsString {
-    char jsonrpc[jsonVersionSize] = jsonVersion;
+    std::string_view jsonrpc = jsonVersion;
     uint32_t id;
     std::string result;
     struct glaze {

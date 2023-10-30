@@ -83,6 +83,23 @@ std::vector<Slice> prefetch_offsets(huffman::Decompressor& decoder, ExtractOrdin
 }
 
 /*
+ TEST_CASE("getClosestOffset") {
+    std::vector<Slice> slices = {
+            {1, 100},
+            {3, 300},
+            {5, 500},
+            {7, 700}
+        };
+
+    std::cout << getClosestOffset(slices, 0) << std::endl;  // Expected output: 100
+    std::cout << getClosestOffset(slices, 2) << std::endl;  // Expected output: 100
+    std::cout << getClosestOffset(slices, 5) << std::endl;  // Expected output: 500 (because it matches)
+    std::cout << getClosestOffset(slices, 4) << std::endl;  // Expected output: 300
+    std::cout << getClosestOffset(slices, 10) << std::endl; // Expected output: 700
+
+    std::cout << getClosestOffset(slices, 8) << std::endl; // Expected output: 700
+ }
+
 uint64_t closest_offset(const std::vector<Slice>& sorted_slices, uint64_t target_ordinal) {
     auto comp = [](const Slice& slice, uint64_t ordinal) {
         return slice.ordinal < ordinal;
@@ -94,6 +111,7 @@ uint64_t closest_offset(const std::vector<Slice>& sorted_slices, uint64_t target
     if (it != sorted_slices.end() && it->ordinal == target_ordinal) return it->offset;  // exact match
     return (--it)->offset;  // get the closest but lesser ordinal
 }
+
 */
 
 void Index::build() {
@@ -171,9 +189,9 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
 }
 
 bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
-    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer_);
-    rec_split.add_key(uint64_buffer_.data(), size, offset, i);
-    uint64_buffer_.clear();
+    Bytes uint64_buffer;
+    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer);
+    rec_split.add_key(uint64_buffer.data(), size, offset, i);
     return true;
 }
 
@@ -195,6 +213,7 @@ void TransactionIndex::build() {
 
     std::vector<Slice> prefetched_offsets = prefetch_offsets(txs_decoder);
 
+    /*
     std::vector<Slice> body_block_number_offsets;
     auto and_compute_body_slices = [&](BlockNum block_num, const StoredBlockBody& body, uint64_t base_tx_id, const BodySnapshot::WordItem& item) {
         static size_t curr_tx_pos = 0;
@@ -208,10 +227,11 @@ void TransactionIndex::build() {
         }
        return true;
     };
-
+    */
     uint64_t first_tx_id;
     uint64_t expected_tx_count;
-    std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
+    //std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
+    std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount();
 
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 

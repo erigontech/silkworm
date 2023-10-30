@@ -275,7 +275,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
 }
 
 TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
@@ -298,7 +298,7 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
 }
 
 TEST_CASE("RecSplit8: add keys from multiple threads", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     std::size_t keys_count = 100;
     RecSplitSettings settings{
@@ -315,9 +315,10 @@ TEST_CASE("RecSplit8: add keys from multiple threads", "[silkworm][node][recspli
         uint64_t start = chunk_size * j;
         uint64_t end = j + 1 == concurrency ? keys_count : chunk_size * (j + 1);
         thread_pool.push_task([&, start, end]() {
+            // SILK_INFO << "new task " << start << " " << end;
             for (size_t i{start}; i < end; ++i) {
                 rs1.add_key("key " + std::to_string(i), i * 17, i);
-                //SILK_INFO << "key " + std::to_string(i) << " " << i * 17 << ", " << i;
+                // SILK_INFO << "key " + std::to_string(i) << " " << i * 17 << ", " << i;
             }
         });
     }
@@ -327,6 +328,7 @@ TEST_CASE("RecSplit8: add keys from multiple threads", "[silkworm][node][recspli
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {
+        // SILK_INFO << "key " + std::to_string(i) << " -> " << rs2("key " + std::to_string(i));
         const auto enumeration_index = rs2.lookup("key " + std::to_string(i));
         CHECK(enumeration_index == i);
         CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
@@ -468,6 +470,7 @@ TEST_CASE("RecSplit8 SEQ: double index lookup", "[silkworm][node][recsplit][igno
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {
+        // SILK_INFO << "key " + std::to_string(i) << " -> " << rs2("key " + std::to_string(i));
         const auto enumeration_index = rs2.lookup("key " + std::to_string(i));
         CHECK(enumeration_index == i);
         CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);

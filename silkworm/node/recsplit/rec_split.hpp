@@ -343,8 +343,8 @@ class RecSplit {
         }
         Bucket(const Bucket&) = delete;
         Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)},
-                                          offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)}, double_enum_{other.double_enum_},
-                                          mutex_{other.mutex_} {
+                                          offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)},
+                                          double_enum_{other.double_enum_}, index_ofs{std::move(other.index_ofs)}, mutex_{other.mutex_} {
             other.mutex_ = nullptr;
         }
         ~Bucket() {
@@ -841,6 +841,25 @@ class RecSplit {
         return endian::load_big_u64(address + position) & record_mask_;
     }
 
+    // dump lookup table on a text file
+    void dump_lookup_table() {
+        // compute file name from index path changing extension to .txt
+        std::filesystem::path lookup_table_path{index_path_};
+        lookup_table_path.replace_extension(".txt");
+        // write dump file
+        std::ofstream ofs("lookup_table.txt");
+        for(size_t record = 0; record < key_count_; record++) {
+            const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
+            const auto address = encoded_file_->address();
+            ensure(position + sizeof(uint64_t) < encoded_file_->length(),
+                   "position: " + std::to_string(position) + " plus 8 exceeds file length");
+            const auto offset = endian::load_big_u64(address + position) & record_mask_;
+            //SILK_INFO << "record: " << record << " offset: " << offset;
+            ofs << record << " -> " << offset << std::endl;
+        }
+        ofs.close();
+    }
+
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
     std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
@@ -941,7 +960,7 @@ class RecSplit {
                 return true;
             }
 
-            sortKeysMaintainingValuesOrder(bucket.keys_, bucket.values_);  // ###### todo(mike): remove
+            //sortKeysMaintainingValuesOrder(bucket.keys_, bucket.values_);  // unnecessary
 
             std::vector<uint64_t> buffer_keys;     // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets

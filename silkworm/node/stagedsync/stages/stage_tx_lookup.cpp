@@ -120,9 +120,9 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
         }
 
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
-        db::DataModel access_layer{txn};
-        if (access_layer.highest_frozen_block_number() > to) {
-            to = access_layer.highest_frozen_block_number();
+        const auto highest_frozen_block_number{db::DataModel{txn}.highest_frozen_block_number()};
+        if (highest_frozen_block_number > to) {
+            to = highest_frozen_block_number;
         }
 
         reset_log_progress();

@@ -71,7 +71,7 @@ inline constexpr uint64_t kBlobGasPriceUpdateFraction{3338477};
 // EIP-4788: Beacon block root in the EVM
 inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
-inline constexpr auto kBeaconRootsAddress{0x0b_address};  // TODO(yperbasis) change to the proper one
+inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
 
 // Used in Bor & Clique
 inline constexpr size_t kExtraSealSize{65};

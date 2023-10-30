@@ -434,10 +434,15 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 }
 
 bool EvmHost::selfdestruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
-    const bool recorded{evm_.state().record_suicide(address)};
-    evm_.state().add_to_balance(beneficiary, evm_.state().get_balance(address));
-    evm_.state().set_balance(address, 0);
-    return recorded;
+    const intx::uint256 balance{evm_.state().get_balance(address)};
+    evm_.state().add_to_balance(beneficiary, balance);
+    if (evm_.revision() >= EVMC_CANCUN && !evm_.state().created().contains(address)) {
+        evm_.state().subtract_from_balance(address, balance);
+        return false;
+    } else {
+        evm_.state().set_balance(address, 0);
+        return evm_.state().record_suicide(address);
+    }
 }
 
 evmc::Result EvmHost::call(const evmc_message& message) noexcept {

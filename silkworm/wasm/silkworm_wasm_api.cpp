@@ -157,8 +157,6 @@ static evmc::address address_from_ptr(const uint8_t* ptr) { return bytes_to_addr
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
 
-size_t state_number_of_accounts(const InMemoryState* state) { return state->number_of_accounts(); }
-
 size_t state_storage_size(const InMemoryState* state, const uint8_t* address, const Account* account) {
     return state->storage_size(address_from_ptr(address), account->incarnation);
 }

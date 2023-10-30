@@ -20,12 +20,15 @@
 #include <map>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/bor_config.hpp>
@@ -73,6 +76,10 @@ struct ChainConfig {
     std::optional<BlockNum> muir_glacier_block{std::nullopt};
     std::optional<BlockNum> berlin_block{std::nullopt};
     std::optional<BlockNum> london_block{std::nullopt};
+
+    // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
+    ConfigMap<evmc::address> burnt_contract{};
+
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};
 
@@ -85,16 +92,13 @@ struct ChainConfig {
     std::optional<BlockTime> shanghai_time{std::nullopt};
     std::optional<BlockTime> cancun_time{std::nullopt};
 
-    // In some chains (e.g. Polygon) EIP-1559 fees are not burnt but rather sent to the collector
-    std::optional<evmc::address> eip1559_fee_collector{std::nullopt};
-
     //! \brief Returns the config of the (pre-Merge) protocol rule set
     protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
     //! returns whether specific HF have occurred
-    [[nodiscard]] evmc_revision revision(uint64_t block_number, uint64_t block_time) const noexcept;
+    [[nodiscard]] evmc_revision revision(BlockNum block_number, uint64_t block_time) const noexcept;
 
     [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
     [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;

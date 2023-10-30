@@ -16,17 +16,17 @@
 
 #pragma once
 
-#include <map>
 #include <optional>
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm::protocol {
 
 struct BorConfig {
-    std::map<BlockNum, uint64_t> sprint;  // from block -> sprint size
+    ConfigMap<uint64_t> sprint;  // from block -> sprint size
 
     BlockNum jaipur_block{0};
 
@@ -34,7 +34,7 @@ struct BorConfig {
 
     [[nodiscard]] nlohmann::json to_json() const noexcept;
 
-    static std::optional<BorConfig> from_json(const nlohmann::json& json) noexcept;
+    [[nodiscard]] static std::optional<BorConfig> from_json(const nlohmann::json& json) noexcept;
 
     bool operator==(const BorConfig&) const = default;
 };

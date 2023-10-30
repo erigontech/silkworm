@@ -18,6 +18,8 @@
 
 #include <bit>
 
+#include <ethash/keccak.hpp>
+
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
@@ -54,6 +56,10 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
     } else if (obj->current == std::nullopt) {
         journal_.emplace_back(new state::UpdateDelta{address, *obj});
         obj->current = Account{};
+
+        if (obj->initial) {
+            obj->current->incarnation = obj->initial->incarnation;
+        }
     }
 
     return *obj;

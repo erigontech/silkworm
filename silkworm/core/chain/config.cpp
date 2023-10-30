@@ -348,10 +348,10 @@ const ChainConfig kPolygonConfig{
     .berlin_block = 14'750'000,
     .london_block = 23'850'000,
     .burnt_contract = {
-        {23850000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+        {23'850'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
     },
     .rule_set_config = protocol::BorConfig{
-        .sprint = {{0, 64}, {38189056, 16}},
+        .sprint = {{0, 64}, {38'189'056, 16}},
         .jaipur_block = 23'850'000,
     },
 };
@@ -369,13 +369,13 @@ const ChainConfig kMumbaiConfig{
     .berlin_block = 13'996'000,
     .london_block = 22'640'000,
     .burnt_contract = {
-        {22640000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
-        {41824608, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
+        {22'640'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
+        {41'874'000, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
     },
     .rule_set_config = protocol::BorConfig{
-        .sprint = {{0, 64}, {29638656, 16}},
+        .sprint = {{0, 64}, {29'638'656, 16}},
         .jaipur_block = 22'770'000,
-        .agra_block = 41'824'608,
+        .agra_block = 41'874'000,
     },
 };
 

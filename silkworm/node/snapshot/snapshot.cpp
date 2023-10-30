@@ -261,8 +261,7 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
     });
 }
 
-std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(
-    std::function<bool(BlockNum number, const StoredBlockBody* body, WordItem item)> additional_work) {
+std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(AdditionalWork additional_work) {
 
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
 
@@ -280,7 +279,7 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(
         }
 
         if (additional_work) {
-            if (!additional_work(number, &body, item)) {
+            if (!additional_work(number, body, first_tx_id, item)) {
                 return false;
             }
         }

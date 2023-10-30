@@ -45,6 +45,16 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
                                  " greater than Execution progress " + std::to_string(target_progress));
         }
 
+        // Snapshots already have TxLookup index, so we must start after max frozen block here
+        const auto highest_frozen_block_number{db::DataModel{txn}.highest_frozen_block_number()};
+        if (highest_frozen_block_number > previous_progress) {
+            previous_progress = highest_frozen_block_number;
+            // If pruning is enabled, make it start from max frozen block as well
+            if (node_settings_->prune_mode->tx_index().enabled()) {
+                set_prune_progress(txn, highest_frozen_block_number);
+            }
+        }
+
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
@@ -94,7 +104,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_point.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_point.value()};
+    BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     try {
@@ -107,6 +117,12 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
+        }
+
+        // Snapshots already have TxLookup index, so we must stop before max frozen block here
+        const auto highest_frozen_block_number{db::DataModel{txn}.highest_frozen_block_number()};
+        if (highest_frozen_block_number > to) {
+            to = highest_frozen_block_number;
         }
 
         reset_log_progress();
@@ -220,7 +236,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
 void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
-    loading_ = false;
+    loading_.store(false);
     collector_ = std::make_unique<etl::Collector>(node_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
@@ -231,7 +247,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/false);
 
     log_lck.lock();
-    loading_ = true;
+    loading_.store(true);
     current_target_ = std::string(db::table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
@@ -241,7 +257,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
                      target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
-    loading_ = false;
+    loading_.store(false);
     current_source_.clear();
     current_target_.clear();
     current_key_.clear();
@@ -252,7 +268,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
 void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Unwind;
-    loading_ = false;
+    loading_.store(false);
     collector_ = std::make_unique<etl::Collector>(node_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
@@ -263,7 +279,7 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
-    loading_ = true;
+    loading_.store(true);
     current_target_ = std::string(db::table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
@@ -272,7 +288,7 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
-    loading_ = false;
+    loading_.store(false);
     current_source_.clear();
     current_target_.clear();
     current_key_.clear();
@@ -285,7 +301,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Prune;
-    loading_ = false;
+    loading_.store(false);
     collector_ = std::make_unique<etl::Collector>(node_settings_);
     current_source_ = std::string(source_config.name);
     current_target_.clear();
@@ -296,7 +312,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
-    loading_ = true;
+    loading_.store(true);
     current_target_ = std::string(db::table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
@@ -305,7 +321,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
-    loading_ = false;
+    loading_.store(false);
     current_source_.clear();
     current_target_.clear();
     current_key_.clear();

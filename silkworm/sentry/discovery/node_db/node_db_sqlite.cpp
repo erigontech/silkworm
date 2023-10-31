@@ -373,7 +373,7 @@ class NodeDbSqliteImpl : public NodeDb {
         if (value) {
             statement.bindNoCopy(1, value->data(), static_cast<int>(value->size()));
         } else {
-            statement.bind(0);
+            statement.bind(1);
         }
         statement.bind(2, id.hex());
         statement.exec();

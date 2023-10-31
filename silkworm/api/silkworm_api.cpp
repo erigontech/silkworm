@@ -27,6 +27,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
+#include <silkworm/infra/concurrency/thread_safe_queue.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
@@ -86,7 +87,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT {
 }
 
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
-    const int kNeededIndexesToBuildInParallel = 2;
+    const int kNeededIndexesToBuildInParallel = 4;
 
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -126,35 +127,53 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
         needed_indexes.push_back(index);
     }
 
+    // measure method execution time
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {
-        // sequential build
+        // one build at time - threads are only used within the build to parallelize add-key & recsplit algos
+        ThreadPool builders{std::thread::hardware_concurrency()};  // N thread pools
         for (const auto& index : needed_indexes) {
-            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-            index->build();
-            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+            SILK_INFO << "Snapshot: build index: " << index->path().filename() << " start";
+            index->build(builders);
+            SILK_INFO << "Snapshot: build index: " << index->path().filename() << " end";
         }
     } else {
-        // parallel build
-        ThreadPool workers;
+        // parallel build - threads are used to do many builds in parallel and within each build to parallelize its algos
+        ThreadPool workers{std::thread::hardware_concurrency() / 2};  // 1 thread pool
+        ThreadSafeQueue<std::shared_ptr<snapshot::Index>> tasks;
 
-        // Create worker tasks for missing indexes
-        for (const auto& index : needed_indexes) {
-            workers.push_task([=]() {
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-                index->build();
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+        // add needed indexes to task queue
+        for(const auto& index : needed_indexes) {
+            tasks.push(index);
+        }
+
+        // Starts workers to build indexes in parallel
+        for (size_t i = 0; i < workers.get_thread_count(); ++i) {
+            workers.push_task([&]() {
+                ThreadPool builders{std::thread::hardware_concurrency()};  // N thread pools
+                while (not tasks.empty()) {
+                    std::shared_ptr<snapshot::Index> index;
+                    bool task_present = tasks.timed_wait_and_pop(index, 100ms);
+                    if (!task_present) continue;
+
+                    SILK_INFO << "Snapshot: build index: " << index->path().filename() << " start";
+                    index->build(builders);
+                    SILK_INFO << "Snapshot: build index: " << index->path().filename() << " end";
+                }
+                builders.wait_for_tasks();
+                SILK_INFO << "Snapshot: worker ended";
             });
         }
 
         // Wait for all missing indexes to be built or stop request
-        while (workers.get_tasks_total()) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-
-        // Wait for any already-started-but-unfinished work in case of stop request
-        workers.pause();
         workers.wait_for_tasks();
     }
+
+    // Log elapsed time
+    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+    SILK_INFO << "Snapshot: build indexes elapsed time: "
+              << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() << " s";
 
     return SILKWORM_OK;
 }

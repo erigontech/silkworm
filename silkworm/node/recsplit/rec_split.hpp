@@ -956,7 +956,7 @@ class RecSplit {
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (bucket.keys_.size() > 1) {
             if (containsDuplicate(bucket.keys_)) {
-                SILK_ERROR << "collision detected";
+                SILK_TRACE << "collision detected";
                 return true;
             }
 

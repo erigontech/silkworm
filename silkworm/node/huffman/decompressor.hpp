@@ -73,7 +73,7 @@ class CodeWord {
     uint8_t code_length_{0};
     ByteView pattern_;
     std::unique_ptr<PatternTable> table_;
-    CodeWord* next_;
+    CodeWord* next_;  // todo(mike): problems on concurrent access
 };
 
 struct Pattern {
@@ -125,7 +125,7 @@ class PatternTable : public DecodingTable {
 
     std::vector<CodeWord*> codewords_;
     std::vector<std::unique_ptr<CodeWord>> codewords_list_;
-    mutable CodeWord* head_{nullptr};
+    mutable CodeWord* head_{nullptr};  // todo(mike): problems on concurrent access
 
     friend std::ostream& operator<<(std::ostream& out, const PatternTable& pt);
 };

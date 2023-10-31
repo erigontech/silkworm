@@ -197,6 +197,8 @@ const CodeWord* PatternTable::search_condensed(uint16_t code) const {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
         return codeword(code);
     } else {
+        SILK_INFO << "search_condensed";
+
         CodeWord* previous{nullptr};
         for (auto* current = head_; current != nullptr; previous = current, current = current->next()) {
             if (current->code() == code) {

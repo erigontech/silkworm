@@ -114,7 +114,7 @@ uint64_t closest_offset(const std::vector<Slice>& sorted_slices, uint64_t target
 
 */
 
-void Index::build() {
+void Index::build(ThreadPool& thread_pool_) {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
 
     huffman::Decompressor decoder{segment_path_.path(), segment_region_};
@@ -195,7 +195,7 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
     return true;
 }
 
-void TransactionIndex::build() {
+void TransactionIndex::build(ThreadPool& thread_pool_) {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
     const SnapshotPath bodies_segment_path = SnapshotPath::from(segment_path_.path().parent_path(),

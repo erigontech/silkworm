@@ -25,9 +25,17 @@ namespace silkworm::stagedsync {
 Stage::Stage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings)
     : sync_context_{sync_context}, stage_name_{stage_name}, node_settings_{node_settings} {}
 
-BlockNum Stage::get_progress(db::ROTxn& txn) { return db::stages::read_stage_progress(txn, stage_name_); }
+BlockNum Stage::get_progress(db::ROTxn& txn) {
+    return db::stages::read_stage_progress(txn, stage_name_);
+}
 
-BlockNum Stage::get_prune_progress(db::ROTxn& txn) { return db::stages::read_stage_prune_progress(txn, stage_name_); }
+BlockNum Stage::get_prune_progress(db::ROTxn& txn) {
+    return db::stages::read_stage_prune_progress(txn, stage_name_);
+}
+
+void Stage::set_prune_progress(db::RWTxn& txn, BlockNum progress) {
+    db::stages::write_stage_prune_progress(txn, stage_name_, progress);
+}
 
 void Stage::update_progress(db::RWTxn& txn, BlockNum progress) {
     db::stages::write_stage_progress(txn, stage_name_, progress);

@@ -113,6 +113,8 @@ class IntraBlockState {
 
     const FlatHashSet<evmc::address>& touched() const noexcept { return touched_; }
 
+    const FlatHashSet<evmc::address>& created() const noexcept { return created_; }
+
     evmc::bytes32 get_transient_storage(const evmc::address& address, const evmc::bytes32& key);
 
     void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value);
@@ -151,6 +153,7 @@ class IntraBlockState {
     FlatHashSet<evmc::address> self_destructs_;
     std::vector<Log> logs_;
     FlatHashSet<evmc::address> touched_;
+    FlatHashSet<evmc::address> created_;  // required for EIP-6780
     // EIP-2929 substate
     FlatHashSet<evmc::address> accessed_addresses_;
     FlatHashMap<evmc::address, FlatHashSet<evmc::bytes32>> accessed_storage_keys_;

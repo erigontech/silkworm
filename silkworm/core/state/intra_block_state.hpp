@@ -29,6 +29,8 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/log.hpp>
 
+extern bool silkworm_extra_log;
+
 namespace silkworm {
 
 class IntraBlockState {

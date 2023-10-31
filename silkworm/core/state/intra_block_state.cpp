@@ -17,10 +17,13 @@
 #include "intra_block_state.hpp"
 
 #include <bit>
+#include <iostream>
 
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/util.hpp>
+
+bool silkworm_extra_log = false;
 
 namespace silkworm {
 
@@ -79,6 +82,10 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
 }
 
 void IntraBlockState::create_contract(const evmc::address& address) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] create_contract " << to_hex(address.bytes) << std::endl;
+    }
+
     created_.insert(address);
     state::Object created{};
     created.current = Account{};
@@ -127,6 +134,10 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
 }
 
 bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] record_suicide " << to_hex(address.bytes) << std::endl;
+    }
+
     const bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
         journal_.emplace_back(new state::SuicideDelta{address});
@@ -164,6 +175,10 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const n
 }
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] set_balance " << to_hex(address.bytes) << " " << to_string(value) << std::endl;
+    }
+
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance = value;
@@ -171,6 +186,10 @@ void IntraBlockState::set_balance(const evmc::address& address, const intx::uint
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] add_to_balance " << to_hex(address.bytes) << " " << to_string(addend) << std::endl;
+    }
+
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance += addend;
@@ -178,6 +197,10 @@ void IntraBlockState::add_to_balance(const evmc::address& address, const intx::u
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] subtract_from_balance " << to_hex(address.bytes) << " " << to_string(subtrahend) << std::endl;
+    }
+
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance -= subtrahend;
@@ -190,6 +213,10 @@ uint64_t IntraBlockState::get_nonce(const evmc::address& address) const noexcept
 }
 
 void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] set_nonce " << to_hex(address.bytes) << " " << nonce << std::endl;
+    }
+
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->nonce = nonce;
@@ -226,6 +253,10 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 }
 
 void IntraBlockState::set_code(const evmc::address& address, ByteView code) noexcept {
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] set_code " << to_hex(address.bytes) << " " << to_hex(code) << std::endl;
+    }
+
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
@@ -301,6 +332,9 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     evmc::bytes32 prev{get_current_storage(address, key)};
     if (prev == value) {
         return;
+    }
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] set_storage " << to_hex(address.bytes) << " " << to_hex(key.bytes) << to_hex(value.bytes) << std::endl;
     }
     storage_[address].current[key] = value;
     journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});

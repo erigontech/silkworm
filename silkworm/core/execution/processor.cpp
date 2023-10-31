@@ -135,15 +135,24 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     cumulative_gas_used_ = 0;
 
     const Block& block{evm_.block()};
+    silkworm_extra_log = block.header.number == 116525;
+
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
     for (const auto& txn : block.transactions) {
+        if (silkworm_extra_log) {
+            std::cerr << "[XXX] txn " << to_hex(txn.hash().bytes) << std::endl;
+        }
         const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
         if (err != ValidationResult::kOk) {
             return err;
         }
         execute_transaction(txn, *receipt_it);
         ++receipt_it;
+    }
+
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] finalize" << std::endl;
     }
 
     state_.clear_journal_and_substate();

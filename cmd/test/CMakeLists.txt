@@ -44,15 +44,29 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
+    # Silkworm RpcDaemon Problem Investigation
+    find_package(nlohmann_json REQUIRED)
+    find_package(asio-grpc REQUIRED)
+    add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
+    target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=address,leak,fuzzer)
+    target_link_libraries(rpcdaemon_fuzzer_investigation 
+      PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
+      PRIVATE -fsanitize=address,leak,fuzzer)
+    # add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
+    # target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=fuzzer,address,undefined,leak)
+    # target_link_libraries(rpcdaemon_fuzzer_investigation 
+    #   PUBLIC nlohmann_json::nlohmann_json silkworm_node silkworm_core silkworm_interfaces
+    #   PRIVATE -fsanitize=fuzzer,address,undefined,leak)
+
     # Silkworm RpcDaemon Fuzz Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)
-    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address)
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address,undefined,leak)
+    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address,undefined,leak)
 
     # Silkworm RpcDaemon Fuzz Debug Executable
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined)
-    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11 -fsanitize=address,undefined)
+    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined,leak)
+    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11 -fsanitize=address,undefined,leak)
   endif()
 
   # Silkworm Sync Tests

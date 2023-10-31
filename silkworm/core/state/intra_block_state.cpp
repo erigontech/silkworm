@@ -65,6 +65,10 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
         }
     }
 
+    if (silkworm_extra_log) {
+        std::cerr << "[XXX] get_or_create_object " << to_hex(address.bytes) << " " << obj->current->incarnation << std::endl;
+    }
+
     return *obj;
 }
 

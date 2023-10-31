@@ -89,9 +89,9 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
 }
 
 bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
-    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer_);
-    rec_split.add_key(uint64_buffer_.data(), size, offset);
-    uint64_buffer_.clear();
+    Bytes uint64_buffer;
+    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer);
+    rec_split.add_key(uint64_buffer.data(), size, offset);
     return true;
 }
 

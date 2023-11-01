@@ -458,10 +458,6 @@ class RecSplit {
         add_key(key.c_str(), key.size(), offset);
     }
 
-    [[nodiscard]] bool build() {  // for test
-        ThreadPool thread_pool{std::thread::hardware_concurrency()};
-        return build(thread_pool);
-    }
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
     [[nodiscard]] bool build(ThreadPool& thread_pool) {
@@ -751,16 +747,17 @@ class RecSplit {
 
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
-    static constexpr uint64_t golomb_param(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo,
-                                           uint16_t& golomb_param_max_index) {
-        if (m > golomb_param_max_index) golomb_param_max_index = m;
-        return memo[m] >> 27;
-    }
-    static constexpr uint64_t golomb_param(const std::size_t m,
+    static inline uint64_t golomb_param(const std::size_t m,
                                            const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
+    static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
+                                           const std::array<uint32_t, kMaxBucketSize>& memo,
+                                           uint16_t& golomb_param_max_index) {
+        if (m > golomb_param_max_index) golomb_param_max_index = m;
+        return golomb_param(m, memo);
+    }
+
 
     // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
@@ -819,7 +816,7 @@ class RecSplit {
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (bucket.keys_.size() > 1) {
             if (containsDuplicate(bucket.keys_)) {
-                SILK_ERROR << "collision detected";
+                SILK_TRACE << "collision detected";
                 return true;
             }
 
@@ -912,7 +909,7 @@ class RecSplit {
                 // }
             }
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo, golomb_param_max_index);
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
         } else {
@@ -948,7 +945,7 @@ class RecSplit {
             std::copy(buffer_offsets.data(), buffer_offsets.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param(m, memo, golomb_param_max_index);
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
 

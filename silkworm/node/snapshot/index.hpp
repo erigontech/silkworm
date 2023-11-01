@@ -40,12 +40,11 @@ class Index {
 
     [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
 
-    virtual void build();
+    virtual void build(ThreadPool& thread_pool);
 
   protected:
     virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
-    ThreadPool thread_pool_{std::thread::hardware_concurrency()};
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;
 };
@@ -73,7 +72,7 @@ class TransactionIndex : public Index {
     explicit TransactionIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
         : Index(std::move(segment_path), std::move(segment_region)) {}
 
-    void build() override;
+    void build(ThreadPool& thread_pool) override;
 
   protected:
     bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;

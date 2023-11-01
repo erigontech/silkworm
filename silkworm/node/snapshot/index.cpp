@@ -213,25 +213,22 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
     std::vector<Slice> prefetched_offsets = prefetch_offsets(txs_decoder);
 
-    /*
     std::vector<Slice> body_block_number_offsets;
     auto and_compute_body_slices = [&](BlockNum block_num, const StoredBlockBody& body, uint64_t base_tx_id, const BodySnapshot::WordItem& item) {
         static size_t curr_tx_pos = 0;
         auto curr_prefetched_tx_id = base_tx_id + prefetched_offsets[curr_tx_pos].ordinal;
 
-        if (body.base_txn_id <= curr_prefetched_tx_id) {
-            ensure(curr_prefetched_tx_id < body.base_txn_id + body.txn_count, "curr_prefetched_tx_id out of range");
+        if (body.base_txn_id <= curr_prefetched_tx_id && curr_prefetched_tx_id < body.base_txn_id + body.txn_count) {
             // store the block-num corresponding to the current prefetched tx_id
             body_block_number_offsets.push_back({block_num, item.offset});
             curr_tx_pos++;
         }
        return true;
     };
-    */
+
     uint64_t first_tx_id;
     uint64_t expected_tx_count;
-    //std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
-    std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount();
+    std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
 
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
@@ -267,15 +264,18 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
+    auto body_offsets = bodies_decoder.offset_range();
+    if (body_block_number_offsets.back().offset != body_offsets.end) {
+        prefetched_offsets.push_back({.ordinal = bodies_decoder.words_count(), .offset = body_offsets.end});
+    }
 
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
-    auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset, const DoubleReadAheadFunc& fn) -> bool {
+    auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset,
+                                                             uint64_t body_start_offset, uint64_t body_end_offset,
+                                                             const DoubleReadAheadFunc& fn) -> bool {
 
-        return txs_decoder.read_ahead(start_offset, end_offset, [fn, &bodies_decoder](auto tx_it) -> bool {
-            //auto [bodies_start_offset, bodies_end_offset] = bodies_decoder.offset_range();
-            //bodies_start_offset = closest_offset(body_block_number_offsets, tx_it.position());
-            //return bodies_decoder.read_ahead(bodies_start_offset, bodies_end_offset, [fn, &tx_it](auto body_it) {
-            return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {
+        return txs_decoder.read_ahead(start_offset, end_offset, [body_start_offset, body_end_offset, fn, &bodies_decoder](auto tx_it) -> bool {
+            return bodies_decoder.read_ahead(body_start_offset, body_end_offset, [fn, &tx_it](auto body_it) {
                 return fn(tx_it, body_it);
             });
         });
@@ -294,13 +294,17 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
             uint64_t start_offset = prefetched_offsets[i].offset;
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
-            uint64_t start_block_num = first_block_num;  // actually we read body snapshot from scratch
+
+            uint64_t body_start_offset = body_block_number_offsets[i].offset;
+            uint64_t start_block_num = body_block_number_offsets[i].ordinal;
+            uint64_t body_end_offset = body_block_number_offsets[i + 1].offset;
 
             thread_pool_.push_task([&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok,
-                                    bn=start_block_num, f=first_tx_id, s=start_offset, e=end_offset, so=start_ordinal]() {
+                                    e=end_offset, bs=body_start_offset, be=body_end_offset,
+                                    bn=start_block_num, f=first_tx_id, s=start_offset, so=start_ordinal]() {
 
                 bool ok = double_read_ahead(
-                        s, e,
+                        s, e, bs, be,
                         [&tx_hash_rs, &tx_hash_to_block_rs,
                      start_block_num=bn, first_tx_id=f, start_offset=s, start_ordinal=so](auto tx_it, auto body_it) -> bool {
                     Hash tx_hash;

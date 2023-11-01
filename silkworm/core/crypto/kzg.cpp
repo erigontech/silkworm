@@ -39,17 +39,16 @@ using Fr = blst_fr;
 ///////////////////////////////////////////////////////////////////////////////
 
 // KZG_SETUP_G2[1] printed by cmd/dev/kzg_g2_uncompress
-// See https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#trusted-setup
-// TODO(yperbasis): change to the final value when known
+// See https://github.com/ethereum/consensus-specs/blob/dev/presets/mainnet/trusted_setups/trusted_setup_4096.json
 static const G2 kKzgSetupG2_1{
-    {{{0x57ee3e7f2b4817eb, 0xe61eec73bb684409, 0x651e001e8be0fed2,
-       0xa86dd531eb3991eb, 0x73aee61923311169, 0x15d24210c18e21e1},
-      {0xaa1c7af524931654, 0xc8492a795edd5a9b, 0x21160d62281ac3d8,
-       0x74b356ec685b46d0, 0xec4e19dc1c70ab1b, 0x0a7585bb89c521db}}},
-    {{{0xf8392151cc9ea4eb, 0x3f5dbc5c415dc116, 0x04277d627c535612,
-       0x80e47d8b4f6aa39c, 0x94f98aaaa51992dd, 0x11ca124795b42aa6},
-      {0xc8ef082d01dd91f0, 0x60ffb1ff3b68181b, 0xbe8fd29c330052c4,
-       0x76bfa7c828ad413d, 0xc2093d5f14400af7, 0x0df447bdd716da6d}}},
+    {{{0x6120a2099b0379f9, 0xa2df815cb8210e4e, 0xcb57be5577bd3d4f,
+       0x62da0ea89a0c93f8, 0x02e0ee16968e150d, 0x171f09aea833acd5},
+      {0x11a3670749dfd455, 0x04991d7b3abffadc, 0x85446a8e14437f41,
+       0x27174e7b4e76e3f2, 0x7bfa6dd397f60a20, 0x02fcc329ac07080f}}},
+    {{{0xaa130838793b2317, 0xe236dd220f891637, 0x6502782925760980,
+       0xd05c25f60557ec89, 0x6095767a44064474, 0x185693917080d405},
+      {0x549f9e175b03dc0a, 0x32c0c95a77106cfe, 0x64a74eae5705d080,
+       0x53deeaf56659ed9e, 0x09a1d368508afb93, 0x12cf3a4525b5e9bd}}},
     {{{0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba,
        0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493},
       {0x0000000000000000, 0x0000000000000000, 0x0000000000000000,

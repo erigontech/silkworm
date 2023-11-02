@@ -210,6 +210,21 @@ bool SnapshotSync::stop() {
 }
 
 void SnapshotSync::build_missing_indexes() {
+    ThreadPool builders{std::thread::hardware_concurrency()};
+
+    // Determine the missing indexes and build them in parallel
+    const auto missing_indexes = repository_->missing_indexes();
+    for (const auto& index : missing_indexes) {
+
+        SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+        index->build(builders);
+        SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+
+    }
+
+}
+/*
+void SnapshotSync::build_missing_indexes() {
     ThreadPool workers{std::thread::hardware_concurrency() / 2};  // 1 thread pool
     ThreadSafeQueue<std::shared_ptr<Index>> tasks;
 
@@ -254,7 +269,7 @@ void SnapshotSync::build_missing_indexes() {
     SILK_INFO << "SnapshotSync: build_missing_indexes elapsed time: "
               << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() << " s";
 }
-
+*/
 void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available) {
     update_block_headers(txn, max_block_available);
     update_block_bodies(txn, max_block_available);

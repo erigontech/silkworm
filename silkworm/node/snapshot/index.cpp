@@ -230,6 +230,10 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     uint64_t expected_tx_count;
     std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
 
+    if (body_block_number_offsets.empty()) {
+        SILK_ERROR << "body_block_number_offsets is empty (1)";
+    }
+
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
     const auto tx_count = txs_decoder.words_count();
@@ -265,9 +269,16 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
     auto body_offsets = bodies_decoder.offset_range();
+    if (body_block_number_offsets.empty()) {
+        SILK_ERROR << "body_block_number_offsets is empty (2)";
+        throw std::runtime_error{"body_block_number_offsets is empty"};
+    }
     if (body_block_number_offsets.back().offset != body_offsets.end) {
         body_block_number_offsets.push_back({.ordinal = bodies_decoder.words_count(), .offset = body_offsets.end});
     }
+    ensure(body_block_number_offsets.size() == prefetched_offsets.size(),
+           "body_block_number_offsets.size()=" + std::to_string(body_block_number_offsets.size()) +
+               " prefetched_offsets.size()=" + std::to_string(prefetched_offsets.size()));
 
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset,

@@ -29,11 +29,16 @@ uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
 }
 
 nlohmann::json BorConfig::to_json() const noexcept {
-    nlohmann::json sprint_json = nlohmann::json::object();
-    for (const auto& [from, size] : sprint) {
-        sprint_json[std::to_string(from)] = size;
-    }
     nlohmann::json ret;
+    nlohmann::json period_json = nlohmann::json::object();
+    for (const auto& [from, val] : period) {
+        period_json[std::to_string(from)] = val;
+    }
+    ret["period"] = period_json;
+    nlohmann::json sprint_json = nlohmann::json::object();
+    for (const auto& [from, val] : sprint) {
+        sprint_json[std::to_string(from)] = val;
+    }
     ret["sprint"] = sprint_json;
     ret["jaipurBlock"] = jaipur_block;
     if (agra_block) {
@@ -48,14 +53,21 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
     }
 
     BorConfig config;
-    if (json.contains("sprint")) {
-        std::vector<std::pair<BlockNum, uint64_t>> sprint;
-        for (const auto& item : json["sprint"].items()) {
-            const BlockNum from{std::stoull(item.key(), nullptr, 0)};
-            sprint.emplace_back(from, item.value().get<uint64_t>());
-        }
-        config.sprint = ConfigMap<uint64_t>(sprint.begin(), sprint.end());
+
+    std::vector<std::pair<BlockNum, uint64_t>> period;
+    for (const auto& item : json["period"].items()) {
+        const BlockNum from{std::stoull(item.key(), nullptr, 0)};
+        period.emplace_back(from, item.value().get<uint64_t>());
     }
+    config.period = ConfigMap<uint64_t>(period.begin(), period.end());
+
+    std::vector<std::pair<BlockNum, uint64_t>> sprint;
+    for (const auto& item : json["sprint"].items()) {
+        const BlockNum from{std::stoull(item.key(), nullptr, 0)};
+        sprint.emplace_back(from, item.value().get<uint64_t>());
+    }
+    config.sprint = ConfigMap<uint64_t>(sprint.begin(), sprint.end());
+
     config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
     if (json.contains("agraBlock")) {
         config.agra_block = json["agraBlock"].get<BlockNum>();

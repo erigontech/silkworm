@@ -21,7 +21,12 @@
 namespace silkworm::protocol {
 
 TEST_CASE("BorConfig JSON") {
-    const auto json = nlohmann::json::parse(R"({    
+    const auto json = nlohmann::json::parse(R"({
+            "period": {
+                "0": 2,
+                "25275000": 5,
+                "29638656": 2
+            },
             "sprint": {
                 "0": 64,
                 "38189056": 16
@@ -33,6 +38,11 @@ TEST_CASE("BorConfig JSON") {
 
     REQUIRE(config);
     CHECK(config == BorConfig{
+                        .period = {
+                            {0, 2},
+                            {25'275'000, 5},
+                            {29'638'656, 2},
+                        },
                         .sprint = {
                             {0, 64},
                             {38189056, 16},

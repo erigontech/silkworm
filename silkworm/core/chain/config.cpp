@@ -351,7 +351,11 @@ const ChainConfig kPolygonConfig{
         {23'850'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
     },
     .rule_set_config = protocol::BorConfig{
-        .sprint = {{0, 64}, {38'189'056, 16}},
+        .period = {{0, 2}},
+        .sprint = {
+            {0, 64},
+            {38'189'056, 16},
+        },
         .jaipur_block = 23'850'000,
     },
 };
@@ -373,7 +377,15 @@ const ChainConfig kMumbaiConfig{
         {41'874'000, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
     },
     .rule_set_config = protocol::BorConfig{
-        .sprint = {{0, 64}, {29'638'656, 16}},
+        .period = {
+            {0, 2},
+            {25'275'000, 5},
+            {29'638'656, 2},
+        },
+        .sprint = {
+            {0, 64},
+            {29'638'656, 16},
+        },
         .jaipur_block = 22'770'000,
         .agra_block = 41'874'000,
     },

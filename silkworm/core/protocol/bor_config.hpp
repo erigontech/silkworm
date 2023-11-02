@@ -26,7 +26,8 @@
 namespace silkworm::protocol {
 
 struct BorConfig {
-    ConfigMap<uint64_t> sprint;  // from block -> sprint size
+    ConfigMap<uint64_t> period;
+    ConfigMap<uint64_t> sprint;
 
     BlockNum jaipur_block{0};
 

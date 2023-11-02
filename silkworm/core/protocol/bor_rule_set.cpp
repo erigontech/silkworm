@@ -32,10 +32,23 @@ static bool is_sprint_start(BlockNum number, uint64_t sprint_size) {
 
 ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) {
+    ValidationResult res{BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check)};
+    if (res != ValidationResult::kOk) {
+        return res;
+    }
+
     if (!is_zero(header.prev_randao)) {
         return ValidationResult::kInvalidMixDigest;
     }
-    return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
+
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    const uint64_t* period{config().period.value(header.number)};
+    SILKWORM_ASSERT(period);
+    if (parent->timestamp + *period > header.timestamp) {
+        return ValidationResult::kInvalidTimestamp;
+    }
+
+    return ValidationResult::kOk;
 }
 
 // validate_extra_data validates that the extra-data contains both the vanity and signature.

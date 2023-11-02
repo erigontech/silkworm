@@ -48,7 +48,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         brew install gmp
-        pip3 install --user conan==1.60.0 chardet
+        pip3 install --user conan==1.61.0 chardet
         echo "$HOME/Library/Python/$(ls $HOME/Library/Python)/bin" >> "$GITHUB_PATH"
 
     - name: Create Build Environment

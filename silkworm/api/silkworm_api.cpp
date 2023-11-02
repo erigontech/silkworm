@@ -127,9 +127,6 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
         needed_indexes.push_back(index);
     }
 
-    // measure method execution time
-    auto start_time = std::chrono::high_resolution_clock::now();
-
     if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {
         // one build at time - threads are only used within the build to parallelize add-key & recsplit algos
         ThreadPool builders{std::thread::hardware_concurrency()};  // N thread pools
@@ -169,11 +166,6 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
         // Wait for all missing indexes to be built or stop request
         workers.wait_for_tasks();
     }
-
-    // Log elapsed time
-    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-    SILK_INFO << "Snapshot: build indexes elapsed time: "
-              << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() << " s";
 
     return SILKWORM_OK;
 }

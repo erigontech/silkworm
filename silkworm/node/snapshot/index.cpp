@@ -266,7 +266,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     bodies_decoder.open();
     auto body_offsets = bodies_decoder.offset_range();
     if (body_block_number_offsets.back().offset != body_offsets.end) {
-        prefetched_offsets.push_back({.ordinal = bodies_decoder.words_count(), .offset = body_offsets.end});
+        body_block_number_offsets.push_back({.ordinal = bodies_decoder.words_count(), .offset = body_offsets.end});
     }
 
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
@@ -297,7 +297,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
             uint64_t body_start_offset = body_block_number_offsets[i].offset;
             uint64_t start_block_num = body_block_number_offsets[i].ordinal;
-            uint64_t body_end_offset = body_block_number_offsets[i + 1].offset;
+            uint64_t body_end_offset = body_offsets.end; /*body_block_number_offsets[i + 1].offset*/;
 
             thread_pool_.push_task([&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok,
                                     e=end_offset, bs=body_start_offset, be=body_end_offset,

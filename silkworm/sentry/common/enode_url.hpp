@@ -17,6 +17,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include <boost/asio/ip/address.hpp>
 
@@ -26,7 +27,7 @@ namespace silkworm::sentry {
 
 class EnodeUrl {
   public:
-    explicit EnodeUrl(const std::string& url_str);
+    explicit EnodeUrl(std::string_view url_str);
 
     EnodeUrl(EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port_disc, uint16_t port_rlpx)
         : public_key_(std::move(public_key)),

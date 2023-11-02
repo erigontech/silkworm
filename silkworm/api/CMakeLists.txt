@@ -44,6 +44,7 @@ set(SILKWORM_API_PRIVATE_LIBS
     silkworm_core
     silkworm_infra
     silkworm_node
+    silkworm_sentry
     silkrpc
 )
 

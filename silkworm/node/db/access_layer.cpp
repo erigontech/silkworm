@@ -1001,6 +1001,11 @@ BlockNum DataModel::highest_block_number() const {
     return repository_ ? repository_->max_block_available() : 0;
 }
 
+BlockNum DataModel::highest_frozen_block_number() const {
+    // Ask the snapshot repository (if any) for highest block
+    return repository_ ? repository_->max_block_available() : 0;
+}
+
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsArray block_hash) const {
     return read_header(block_number, Hash(block_hash));
 }

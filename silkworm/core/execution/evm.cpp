@@ -485,6 +485,10 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     }
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
     intx::be::store(context.block_base_fee.bytes, base_fee_per_gas);
+    const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
+    intx::be::store(context.blob_base_fee.bytes, blob_gas_price);
+    context.blob_hashes = evm_.txn_->blob_versioned_hashes.data();
+    context.blob_hashes_count = evm_.txn_->blob_versioned_hashes.size();
     return context;
 }
 

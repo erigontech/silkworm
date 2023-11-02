@@ -211,7 +211,8 @@ bool containsDuplicate(const std::vector<T>& items) {
 template <typename T>
 void set_max(std::atomic<T>& atom, T v) {
     T current = atom.load();
-    while (v > current && !atom.compare_exchange_weak(current, v));
+    while (v > current && !atom.compare_exchange_weak(current, v))
+        ;
 }
 
 namespace silkworm::succinct {
@@ -342,9 +343,7 @@ class RecSplit {
             if (double_enum_) offsets_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
-        Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)},
-                                          offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)},
-                                          double_enum_{other.double_enum_}, index_ofs{std::move(other.index_ofs)}, mutex_{other.mutex_} {
+        Bucket(Bucket&& other) noexcept : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)}, offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)}, double_enum_{other.double_enum_}, index_ofs{std::move(other.index_ofs)}, mutex_{other.mutex_} {
             other.mutex_ = nullptr;
         }
         ~Bucket() {
@@ -670,7 +669,7 @@ class RecSplit {
                 all_vectors.push_back(std::move(buckets_[i].offsets_));
             }
             offsets_ = merge_sorted_vectors(all_vectors);
-            //std::sort(offsets_.begin(), offsets_.end());
+            // std::sort(offsets_.begin(), offsets_.end());
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
             for (auto offset : offsets_) {
                 ef_offsets_->add_offset(offset);
@@ -848,13 +847,13 @@ class RecSplit {
         lookup_table_path.replace_extension(".txt");
         // write dump file
         std::ofstream ofs("lookup_table.txt");
-        for(size_t record = 0; record < key_count_; record++) {
+        for (size_t record = 0; record < key_count_; record++) {
             const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
             const auto address = encoded_file_->address();
             ensure(position + sizeof(uint64_t) < encoded_file_->length(),
                    "position: " + std::to_string(position) + " plus 8 exceeds file length");
             const auto offset = endian::load_big_u64(address + position) & record_mask_;
-            //SILK_INFO << "record: " << record << " offset: " << offset;
+            // SILK_INFO << "record: " << record << " offset: " << offset;
             ofs << record << " -> " << offset << std::endl;
         }
         ofs.close();
@@ -888,16 +887,15 @@ class RecSplit {
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
     static inline uint64_t golomb_param(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo) {
+                                        const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
     static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo,
-                                           uint16_t& golomb_param_max_index) {
+                                                             const std::array<uint32_t, kMaxBucketSize>& memo,
+                                                             uint16_t& golomb_param_max_index) {
         if (m > golomb_param_max_index) golomb_param_max_index = m;
         return golomb_param(m, memo);
     }
-
 
     // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
@@ -960,7 +958,7 @@ class RecSplit {
                 return true;
             }
 
-            //sortKeysMaintainingValuesOrder(bucket.keys_, bucket.values_);  // unnecessary
+            // sortKeysMaintainingValuesOrder(bucket.keys_, bucket.values_);  // unnecessary
 
             std::vector<uint64_t> buffer_keys;     // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets

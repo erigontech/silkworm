@@ -311,7 +311,7 @@ TEST_CASE("RecSplit8: add keys from multiple threads", "[silkworm][node][recspli
     unsigned concurrency = 4;
     size_t chunk_size = keys_count / concurrency;
     ThreadPool thread_pool{concurrency};
-    for(size_t j = 0; j < concurrency; ++j) {
+    for (size_t j = 0; j < concurrency; ++j) {
         uint64_t start = chunk_size * j;
         uint64_t end = j + 1 == concurrency ? keys_count : chunk_size * (j + 1);
         thread_pool.push_task([&, start, end]() {

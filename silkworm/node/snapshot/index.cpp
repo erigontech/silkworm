@@ -138,29 +138,29 @@ void Index::build(ThreadPool& thread_pool_) {
         iterations++;
         std::atomic_bool read_ok{true};
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        for(size_t i = 0; i < prefetched_offsets.size() - 1; ++i) {
+        for (size_t i = 0; i < prefetched_offsets.size() - 1; ++i) {
             uint64_t start_offset = prefetched_offsets[i].offset;
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
             thread_pool_.push_task([&, start_offset, end_offset, start_ordinal]() {
                 decoder.read_ahead(start_offset, end_offset,
                                    [start_offset, start_ordinal, &read_ok, &rec_split, this](huffman::Decompressor::Iterator it) {
-                    //SILK_INFO << "offset: " << start_offset;
-                    Bytes word{};
-                    word.reserve(kPageSize);
-                    uint64_t i{start_ordinal}, offset{start_offset};
-                    while (it.has_next()) {
-                        uint64_t next_position = it.next(word);
-                        if (bool ok = walk(rec_split, i, offset, word); !ok) {
-                            read_ok = false;
-                            return false;
-                        }
-                        ++i;
-                        offset = next_position;
-                        word.clear();
-                    }
-                    return true;
-                });
+                                       // SILK_INFO << "offset: " << start_offset;
+                                       Bytes word{};
+                                       word.reserve(kPageSize);
+                                       uint64_t i{start_ordinal}, offset{start_offset};
+                                       while (it.has_next()) {
+                                           uint64_t next_position = it.next(word);
+                                           if (bool ok = walk(rec_split, i, offset, word); !ok) {
+                                               read_ok = false;
+                                               return false;
+                                           }
+                                           ++i;
+                                           offset = next_position;
+                                           word.clear();
+                                       }
+                                       return true;
+                                   });
             });
         }
         thread_pool_.wait_for_tasks();
@@ -223,7 +223,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
             body_block_number_offsets.push_back({block_num, item.offset});
             curr_tx_pos++;
         }
-       return true;
+        return true;
     };
 
     uint64_t first_tx_id;
@@ -284,13 +284,11 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset,
                                                              uint64_t body_start_offset, uint64_t body_end_offset,
                                                              const DoubleReadAheadFunc& fn) -> bool {
-
         return txs_decoder.read_ahead(start_offset, end_offset, [body_start_offset, body_end_offset, fn, &bodies_decoder](auto tx_it) -> bool {
             return bodies_decoder.read_ahead(body_start_offset, body_end_offset, [fn, &tx_it](auto body_it) {
                 return fn(tx_it, body_it);
             });
         });
-
     };
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
@@ -301,110 +299,110 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
         iterations++;
         std::atomic_bool read_ok{true};
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        for(size_t i = 0; i < prefetched_offsets.size() - 1; ++i) {
+        for (size_t i = 0; i < prefetched_offsets.size() - 1; ++i) {
             uint64_t start_offset = prefetched_offsets[i].offset;
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
 
             uint64_t body_start_offset = body_block_number_offsets[i].offset;
             uint64_t start_block_num = body_block_number_offsets[i].ordinal;
-            uint64_t body_end_offset = body_offsets.end; /*body_block_number_offsets[i + 1].offset*/;
+            uint64_t body_end_offset = body_offsets.end; /*body_block_number_offsets[i + 1].offset*/
+            ;
 
             thread_pool_.push_task([&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok,
-                                    e=end_offset, bs=body_start_offset, be=body_end_offset,
-                                    bn=start_block_num, f=first_tx_id, s=start_offset, so=start_ordinal]() {
-
+                                    e = end_offset, bs = body_start_offset, be = body_end_offset,
+                                    bn = start_block_num, f = first_tx_id, s = start_offset, so = start_ordinal]() {
                 bool ok = double_read_ahead(
-                        s, e, bs, be,
-                        [&tx_hash_rs, &tx_hash_to_block_rs,
-                     start_block_num=bn, first_tx_id=f, start_offset=s, start_ordinal=so](auto tx_it, auto body_it) -> bool {
-                    Hash tx_hash;
-                    db::detail::BlockBodyForStorage body;
-                    BlockNum block_number{start_block_num};
+                    s, e, bs, be,
+                    [&tx_hash_rs, &tx_hash_to_block_rs,
+                     start_block_num = bn, first_tx_id = f, start_offset = s, start_ordinal = so](auto tx_it, auto body_it) -> bool {
+                        Hash tx_hash;
+                        db::detail::BlockBodyForStorage body;
+                        BlockNum block_number{start_block_num};
 
-                    Bytes tx_buffer{}, body_buffer{};
-                    tx_buffer.reserve(kPageSize);
-                    body_buffer.reserve(kPageSize);
+                        Bytes tx_buffer{}, body_buffer{};
+                        tx_buffer.reserve(kPageSize);
+                        body_buffer.reserve(kPageSize);
 
-                    body_it.next(body_buffer);
-                    ByteView body_rlp{body_buffer.data(), body_buffer.length()};
-                    SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
-                    auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                    if (!decode_result) {
-                        SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " error: " << magic_enum::enum_name(decode_result.error());
-                        return false;
-                    }
-                    body_buffer.clear();
-
-                    uint64_t i{start_ordinal}, offset{start_offset};
-                    while (tx_it.has_next()) {
-                        uint64_t next_position = tx_it.next(tx_buffer);
-                        while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
-                            if (!body_it.has_next()) {
-                                SILK_ERROR << "body not found on block " << block_number;
-                                return false;
-                            }
-                            body_it.next(body_buffer);
-                            body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
-                            decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                            if (!decode_result) {
-                                SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
-                                return false;
-                            }
-                            body_buffer.clear();
-                            ++block_number;
+                        body_it.next(body_buffer);
+                        ByteView body_rlp{body_buffer.data(), body_buffer.length()};
+                        SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
+                        auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                        if (!decode_result) {
+                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " error: " << magic_enum::enum_name(decode_result.error());
+                            return false;
                         }
-                        const bool is_system_tx{tx_buffer.empty()};
-                        if (is_system_tx) {
-                            // system-txs: hash:pad32(txnID)
-                            endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
+                        body_buffer.clear();
 
-                            tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset, i);
-                            tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number, i);
-                        } else {
-                            // Skip tx hash first byte plus address length for transaction decoding
-                            constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-                            const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};  // todo(mike): avoid copy
-                            ByteView tx_envelope_view{tx_envelope};
-
-                            rlp::Header tx_header;
-                            TransactionType tx_type;
-                            decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
-                            if (!decode_result) {
-                                SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
-                                return false;
+                        uint64_t i{start_ordinal}, offset{start_offset};
+                        while (tx_it.has_next()) {
+                            uint64_t next_position = tx_it.next(tx_buffer);
+                            while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
+                                if (!body_it.has_next()) {
+                                    SILK_ERROR << "body not found on block " << block_number;
+                                    return false;
+                                }
+                                body_it.next(body_buffer);
+                                body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
+                                decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                                if (!decode_result) {
+                                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
+                                    return false;
+                                }
+                                body_buffer.clear();
+                                ++block_number;
                             }
-                            const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+                            const bool is_system_tx{tx_buffer.empty()};
+                            if (is_system_tx) {
+                                // system-txs: hash:pad32(txnID)
+                                endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
 
-                            if (i % 100'000 == 0) {
-                                SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;
+                                tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset, i);
+                                tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number, i);
+                            } else {
+                                // Skip tx hash first byte plus address length for transaction decoding
+                                constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+                                const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};  // todo(mike): avoid copy
+                                ByteView tx_envelope_view{tx_envelope};
+
+                                rlp::Header tx_header;
+                                TransactionType tx_type;
+                                decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
+                                if (!decode_result) {
+                                    SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
+                                    return false;
+                                }
+                                const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+
+                                if (i % 100'000 == 0) {
+                                    SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;
+                                }
+
+                                const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};  // todo(mike): avoid copy
+                                const auto h256{keccak256(tx_payload)};
+                                std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
+                                // SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)
+                                //            << " h256: " << to_hex(h256.bytes, kHashLength);
+                                tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset, i);
+                                tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number, i);
                             }
 
-                            const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};  // todo(mike): avoid copy
-                            const auto h256{keccak256(tx_payload)};
-                            std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
-                            //SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)
-                            //           << " h256: " << to_hex(h256.bytes, kHashLength);
-                            tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset, i);
-                            tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number, i);
+                            ++i;
+                            offset = next_position;
+                            tx_buffer.clear();
                         }
+                        // SILK_TRACE << " start_ordinal: " << start_ordinal << " end_ordinal(excl.): " << i
+                        //            << " expected end_offset: " << end_offset << " actual end_offset " << offset
+                        //            << " first block number: " << first_tx_id + start_ordinal << " last block number: " << block_number
+                        //            << "\n";
 
-                        ++i;
-                        offset = next_position;
-                        tx_buffer.clear();
-                    }
-                    // SILK_TRACE << " start_ordinal: " << start_ordinal << " end_ordinal(excl.): " << i
-                    //            << " expected end_offset: " << end_offset << " actual end_offset " << offset
-                    //            << " first block number: " << first_tx_id + start_ordinal << " last block number: " << block_number
-                    //            << "\n";
+                        // if (i != expected_tx_count) {
+                        //     throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
+                        //                              " got=" + std::to_string(i)};
+                        // }
 
-                    //if (i != expected_tx_count) {
-                    //    throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
-                    //                             " got=" + std::to_string(i)};
-                    //}
-
-                    return true;
-                });
+                        return true;
+                    });
                 if (!ok) read_ok = false;
             });
         }

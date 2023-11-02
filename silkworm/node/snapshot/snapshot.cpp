@@ -91,8 +91,8 @@ bool Snapshot::for_each_item(huffman::Decompressor& decoder, uint64_t start_offs
         while (it.has_next()) {
             const uint64_t next_offset = it.next(item.value);
             item.position = word_count;
-            //SILK_TRACE << "for_each_item item: offset=" << item.offset << " position=" << item.position
-            //           << " value=" << to_hex(item.value);
+            // SILK_TRACE << "for_each_item item: offset=" << item.offset << " position=" << item.position
+            //            << " value=" << to_hex(item.value);
             const bool result = fn(item);
             if (!result) return false;
             ++word_count;
@@ -262,7 +262,6 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
 }
 
 std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(AdditionalWork additional_work) {
-
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
 
     const bool read_ok = for_each_item([&](const WordItem& item) -> bool {

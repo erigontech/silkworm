@@ -230,7 +230,7 @@ void SnapshotSync::build_missing_indexes() {
 
     // Determine the missing indexes and add them to task queue
     const auto missing_indexes = repository_->missing_indexes();
-    for(const auto& index : missing_indexes) {
+    for (const auto& index : missing_indexes) {
         tasks.push(index);
     }
 

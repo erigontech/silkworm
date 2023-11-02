@@ -27,13 +27,13 @@ namespace silkworm::sentry {
 
 using namespace std;
 
-EnodeUrl::EnodeUrl(const string& url_str)
+EnodeUrl::EnodeUrl(string_view url_str)
     : public_key_(Bytes{}) {
     regex url_regex(
         R"(enode://([0-9a-f]+)@((?:\d+\.){3}\d+)\:(\d+))",
         regex::icase);
-    smatch match;
-    if (!regex_match(url_str, match, url_regex)) {
+    match_results<std::string_view::const_iterator> match;
+    if (!regex_match(url_str.cbegin(), url_str.cend(), match, url_regex)) {
         throw invalid_argument("Invalid enode URL format");
     }
 

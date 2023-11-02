@@ -22,6 +22,7 @@
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
@@ -46,7 +47,7 @@ class TestException : public std::runtime_error {
 
 TEST_CASE("awaitable future") {
     asio::io_context io;
-    asio::io_context::work work{io};
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard{io.get_executor()};
     AwaitablePromise<int> promise{io.get_executor()};
 
     SECTION("trivial use") {

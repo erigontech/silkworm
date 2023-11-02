@@ -259,7 +259,7 @@ Task<void> SentryImpl::run_grpc_server() {
     }
 }
 
-static std::string make_client_id(const buildinfo& info) {
+std::string Sentry::make_client_id(const buildinfo& info) {
     return std::string(info.project_name) +
            "/v" + info.project_version +
            "/" + info.system_name + "-" + info.system_processor +
@@ -267,9 +267,7 @@ static std::string make_client_id(const buildinfo& info) {
 }
 
 std::string SentryImpl::client_id() const {
-    if (settings_.build_info)
-        return make_client_id(*settings_.build_info);
-    return "silkworm";
+    return settings_.client_id;
 }
 
 EnodeUrl SentryImpl::make_node_url() const {

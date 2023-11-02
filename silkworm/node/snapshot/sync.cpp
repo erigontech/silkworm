@@ -215,13 +215,10 @@ void SnapshotSync::build_missing_indexes() {
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_->missing_indexes();
     for (const auto& index : missing_indexes) {
-
         SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
         index->build(builders);
         SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
-
     }
-
 }
 /*
 void SnapshotSync::build_missing_indexes() {

@@ -82,7 +82,7 @@ class Server {
         server_ = builder.BuildAndStart();
         SILK_TRACE << "Server " << this << " bound at selected port: " << selected_port;
         if (server_ == nullptr) {
-            SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";
+            SILK_ERROR << "Server " << this << " BuildAndStart failed. Cannot start gRPC server at [" << settings_.address_uri << "] Port is probably in use!";
             throw std::runtime_error("cannot start gRPC server at " + settings_.address_uri);
         }
 

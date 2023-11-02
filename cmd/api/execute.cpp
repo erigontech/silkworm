@@ -87,8 +87,7 @@ struct ExecuteBlocksSettings {
 };
 
 struct BuildIdxesSettings {
-    std::string snapshot_path;
-    std::vector<std::string> snapshot_paths;
+    std::vector<std::string> snapshot_names;
 };
 
 struct Settings {
@@ -140,7 +139,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
     auto cmd_build_idxes = app.add_subcommand("build_idxes", "Build indexes");
 
     BuildIdxesSettings build_idxes_settings;
-    cmd_build_idxes->add_option("--snapshot_paths", build_idxes_settings.snapshot_paths, "Snapshot to index")->delimiter(',')->required();
+    cmd_build_idxes->add_option("--snapshot_names", build_idxes_settings.snapshot_names, "Snapshot to index")->delimiter(',')->required();
 
     // rpcdaemon sub-command
     auto cmd_rpcdaemon = app.add_subcommand("rpcdaemon", "Start RPC Daemon");
@@ -317,16 +316,17 @@ int execute_blocks(SilkwormHandle* handle, ExecuteBlocksSettings settings, const
     return status_code;
 }
 
-int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const SnapshotRepository& repository) {
+int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
     // Import the silkworm_build_recsplit_indexes symbol from Silkworm API library
     const auto silkworm_build_recsplit_indexes{
         boost::dll::import_symbol<SilkwormBuildRecSplitIndexes>(kSilkwormApiLibPath, kSilkwormBuildRecSplitIndexes)};
 
-    SILK_INFO << "Building indexes for snapshots: " << settings.snapshot_paths;
+    SILK_INFO << "Building indexes for snapshots: " << settings.snapshot_names;
 
-    std::vector<SilkwormMemoryMappedFile*> snapshot_files;
+    std::vector<SilkwormMemoryMappedFile*> snapshots;
     // Parse snapshot paths and create memory mapped files
-    for (auto& raw_snapshot_path : settings.snapshot_paths) {
+    for (auto& snapshot_name : settings.snapshot_names) {
+        auto raw_snapshot_path = data_dir.snapshots().path() / snapshot_name;
         auto snapshot_path = SnapshotPath::parse(raw_snapshot_path);
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
@@ -348,19 +348,19 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
         }
 
         if (!snapshot)
-            throw std::runtime_error("Snapshot not found in the repository:" + raw_snapshot_path);
+            throw std::runtime_error("Snapshot not found in the repository:" + snapshot_name);
 
         auto mmf = new SilkwormMemoryMappedFile();
         mmf->file_path = make_path(snapshot->path());
         mmf->memory_address = snapshot->memory_file_address();
         mmf->memory_length = snapshot->memory_file_size();
-        snapshot_files.push_back(mmf);
+        snapshots.push_back(mmf);
     }
 
     // Call api to build indexes
     const auto start_time{std::chrono::high_resolution_clock::now()};
 
-    const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
+    const int status_code = silkworm_build_recsplit_indexes(handle, snapshots.data(), snapshots.size());
     if (status_code != SILKWORM_OK) return status_code;
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
@@ -368,7 +368,7 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
               << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
 
     // Free memory mapped files
-    for (auto snapshot : snapshot_files) {
+    for (auto snapshot : snapshots) {
         delete[] snapshot->file_path;
         delete snapshot;
     }
@@ -463,7 +463,7 @@ int main(int argc, char* argv[]) {
             status_code = execute_blocks(handle, std::move(*settings.execute_blocks_settings), repository, data_dir);
         } else if (settings.build_indices_settings) {
             // Build index for a specific snapshot using Silkworm API library
-            status_code = build_indices(handle, std::move(*settings.build_indices_settings), repository);
+            status_code = build_indices(handle, std::move(*settings.build_indices_settings), repository, data_dir);
         } else if (settings.rpcdaemon_settings) {
             // Start RPC Daemon using Silkworm API library
             status_code = start_rpcdaemon(handle, std::move(*settings.rpcdaemon_settings), data_dir);

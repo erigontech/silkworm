@@ -49,6 +49,8 @@ jobs:
       run: |
         brew install gmp
         pip3 install --user conan==1.60.2 chardet
+        echo "which python: $(which python)"
+        echo "which python3: $(which python3)"
         echo "$HOME/Library/Python/$(ls $HOME/Library/Python)/bin" >> "$GITHUB_PATH"
 
     - name: Create Build Environment

@@ -144,10 +144,10 @@ inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7
 SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
 
 inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
-extern const ChainConfig kPolygonConfig;
+SILKWORM_CONSTINIT extern const ChainConfig kPolygonConfig;
 
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
-extern const ChainConfig kMumbaiConfig;
+SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 
 //! \brief Looks up a known chain config provided its chain ID
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;

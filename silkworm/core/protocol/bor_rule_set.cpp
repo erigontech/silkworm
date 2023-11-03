@@ -32,13 +32,13 @@ static bool is_sprint_start(BlockNum number, uint64_t sprint_size) {
 
 ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) {
+    if (!is_zero(header.prev_randao)) {
+        return ValidationResult::kInvalidMixDigest;
+    }
+
     ValidationResult res{BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check)};
     if (res != ValidationResult::kOk) {
         return res;
-    }
-
-    if (!is_zero(header.prev_randao)) {
-        return ValidationResult::kInvalidMixDigest;
     }
 
     const std::optional<BlockHeader> parent{get_parent_header(state, header)};

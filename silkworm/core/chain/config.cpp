@@ -335,7 +335,7 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-const ChainConfig kPolygonConfig{
+SILKWORM_CONSTINIT const ChainConfig kPolygonConfig{
     .chain_id = 137,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -360,7 +360,7 @@ const ChainConfig kPolygonConfig{
     },
 };
 
-const ChainConfig kMumbaiConfig{
+SILKWORM_CONSTINIT const ChainConfig kMumbaiConfig{
     .chain_id = 80001,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

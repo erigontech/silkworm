@@ -17,6 +17,7 @@
 #pragma once
 
 #include <optional>
+#include <string_view>
 
 #include <nlohmann/json.hpp>
 
@@ -28,6 +29,8 @@ namespace silkworm::protocol {
 struct BorConfig {
     SmallMap<BlockNum, uint64_t> period;
     SmallMap<BlockNum, uint64_t> sprint;
+
+    SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>> rewrite_code;
 
     BlockNum jaipur_block{0};
 

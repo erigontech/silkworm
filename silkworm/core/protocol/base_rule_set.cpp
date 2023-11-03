@@ -129,13 +129,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kGasAboveLimit;
     }
 
-    if (header.gas_limit < 5000) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // EIP-1985: Sane limits for certain EVM parameters
-    if (header.gas_limit > INT64_MAX) {
+    if (header.gas_limit < kMinGasLimit || header.gas_limit > kMaxGasLimit) {
         return ValidationResult::kInvalidGasLimit;
     }
 

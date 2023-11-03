@@ -145,7 +145,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
             const evmc::address contract{hex_to_address(item.value().get<std::string>())};
             burnt_contract.emplace_back(from, contract);
         }
-        config.burnt_contract = ConfigMap<evmc::address>(burnt_contract.begin(), burnt_contract.end());
+        config.burnt_contract = SmallMap<BlockNum, evmc::address>(burnt_contract.begin(), burnt_contract.end());
     }
 
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);

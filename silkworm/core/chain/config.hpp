@@ -28,8 +28,8 @@
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/bor_config.hpp>
 
@@ -78,7 +78,7 @@ struct ChainConfig {
     std::optional<BlockNum> london_block{std::nullopt};
 
     // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
-    ConfigMap<evmc::address> burnt_contract{};
+    SmallMap<BlockNum, evmc::address> burnt_contract{};
 
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};

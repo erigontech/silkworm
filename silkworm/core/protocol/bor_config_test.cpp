@@ -16,6 +16,8 @@
 
 #include "bor_config.hpp"
 
+#include <string_view>
+
 #include <catch2/catch.hpp>
 
 namespace silkworm::protocol {
@@ -50,6 +52,24 @@ TEST_CASE("BorConfig JSON") {
                         .jaipur_block = 123,
                     });
     CHECK(config->to_json() == json);
+}
+
+TEST_CASE("bor_config_value_lookup") {
+    using namespace std::literals;
+    static constexpr SmallMap<BlockNum, std::string_view> config{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
+
+    static_assert(!bor_config_value_lookup(config, 0));
+    static_assert(!bor_config_value_lookup(config, 1));
+    static_assert(!bor_config_value_lookup(config, 9));
+    static_assert(*bor_config_value_lookup(config, 10) == "a"sv);
+    static_assert(*bor_config_value_lookup(config, 11) == "a"sv);
+    static_assert(*bor_config_value_lookup(config, 19) == "a"sv);
+    static_assert(*bor_config_value_lookup(config, 20) == "b"sv);
+    static_assert(*bor_config_value_lookup(config, 21) == "b"sv);
+    static_assert(*bor_config_value_lookup(config, 29) == "b"sv);
+    static_assert(*bor_config_value_lookup(config, 30) == "c"sv);
+    static_assert(*bor_config_value_lookup(config, 31) == "c"sv);
+    static_assert(*bor_config_value_lookup(config, 100) == "c"sv);
 }
 
 }  // namespace silkworm::protocol

@@ -18,31 +18,25 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <initializer_list>
 #include <iterator>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/base.hpp>
 
 namespace silkworm {
 
-// ConfigMap is a càdlàg map of starting_from_block -> value.
-// For example, ConfigMap<std::string>{{0, "a"}, {10, "b"}, {20, "c"}}
-// means that the config value is "a" for blocks 0–9,
-// "b" for blocks 10–19, and "c" for block 20 and above.
-// N.B. This class is constexpr-friendly.
-template <typename T>
-class ConfigMap {
+// SmallMap is a constexpr-friendly map suitable for a small number of elements.
+template <std::totally_ordered Key, typename T, std::size_t MaxSize = 8>
+class SmallMap {
   public:
-    using ValueType = std::pair<BlockNum, T>;
+    using ValueType = std::pair<Key, T>;
 
-    static constexpr std::size_t kMaxSize{8};
+    constexpr SmallMap() noexcept = default;
 
-    constexpr ConfigMap() noexcept = default;
-
-    constexpr ConfigMap(std::initializer_list<ValueType> init) : size_(init.size()) {
-        SILKWORM_ASSERT(size_ <= kMaxSize);
+    constexpr SmallMap(std::initializer_list<ValueType> init) : size_(init.size()) {
+        SILKWORM_ASSERT(size_ <= MaxSize);
         for (size_t i{0}; i < size_; ++i) {
             data_[i] = *(std::data(init) + i);
         }
@@ -50,32 +44,18 @@ class ConfigMap {
     }
 
     template <std::input_iterator InputIt>
-    constexpr ConfigMap(InputIt first, InputIt last) {
+    constexpr SmallMap(InputIt first, InputIt last) {
         for (InputIt it{first}; it != last; ++it) {
-            SILKWORM_ASSERT(size_ < kMaxSize);
+            SILKWORM_ASSERT(size_ < MaxSize);
             data_[size_++] = *it;
         }
         sort();
     }
 
-    constexpr ConfigMap(const ConfigMap& other) = default;
-    constexpr ConfigMap& operator=(const ConfigMap& other) = default;
+    constexpr SmallMap(const SmallMap& other) = default;
+    constexpr SmallMap& operator=(const SmallMap& other) = default;
 
-    constexpr bool operator==(const ConfigMap&) const = default;
-
-    // Looks up a config value as of a given block number.
-    // Similar to borKeyValueConfigHelper in Erigon.
-    [[nodiscard]] constexpr const T* value(BlockNum number) const noexcept {
-        if (empty() || data_[0].first > number) {
-            return nullptr;
-        }
-        for (size_t i{0}; i < size_ - 1; ++i) {
-            if (data_[i].first <= number && number < data_[i + 1].first) {
-                return &data_[i].second;
-            }
-        }
-        return &data_[size_ - 1].second;
-    }
+    constexpr bool operator==(const SmallMap&) const = default;
 
     [[nodiscard]] constexpr bool empty() const noexcept {
         return size_ == 0;
@@ -95,7 +75,7 @@ class ConfigMap {
                   [](const ValueType& a, const ValueType& b) { return a.first < b.first; });
     }
 
-    std::array<ValueType, kMaxSize> data_{};
+    std::array<ValueType, MaxSize> data_{};
     std::size_t size_{0};
 };
 

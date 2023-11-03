@@ -42,7 +42,7 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
     }
 
     const std::optional<BlockHeader> parent{get_parent_header(state, header)};
-    const uint64_t* period{config().period.value(header.number)};
+    const uint64_t* period{bor_config_value_lookup(config().period, header.number)};
     SILKWORM_ASSERT(period);
     if (parent->timestamp + *period > header.timestamp) {
         return ValidationResult::kInvalidTimestamp;

@@ -52,6 +52,7 @@ jobs:
         echo "which python: $(which python)"
         echo "which python3: $(which python3)"
         echo "$(pip3 show conan)"
+        echo "python bin: $(python3 -m site --user-base)/bin"
         echo "$HOME/Library/Python/$(ls $HOME/Library/Python)/bin" >> "$GITHUB_PATH"
 
     - name: Create Build Environment

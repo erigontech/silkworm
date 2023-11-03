@@ -55,7 +55,7 @@ TEST_CASE("BorConfig JSON") {
 }
 
 TEST_CASE("bor_config_value_lookup") {
-    using namespace std::literals;
+    using namespace std::string_view_literals;
     static constexpr SmallMap<BlockNum, std::string_view> config{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
 
     static_assert(!bor_config_value_lookup(config, 0));

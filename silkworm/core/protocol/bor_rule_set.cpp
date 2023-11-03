@@ -48,6 +48,9 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kInvalidTimestamp;
     }
 
+    // TODO(yperbasis): verify validators
+    // https://github.com/maticnetwork/bor/blob/v1.1.0-beta4/consensus/bor/bor.go#L465
+
     return ValidationResult::kOk;
 }
 
@@ -101,10 +104,18 @@ static std::optional<evmc::address> ecrecover(const BlockHeader& header, const B
     return beneficiary;
 }
 
-ValidationResult BorRuleSet::validate_seal(const BlockHeader& header) {
+void BorRuleSet::finalize(IntraBlockState&, const Block&) {
+    // TODO(yperbasis): implement
+}
+
+ValidationResult BorRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {
     if (!ecrecover(header, config().jaipur_block)) {
         return ValidationResult::kInvalidSignature;
     }
+
+    // TODO(yperbasis): implement
+    // https://github.com/maticnetwork/bor/blob/v1.1.0-beta4/consensus/bor/bor.go#L654
+
     return ValidationResult::kOk;
 }
 

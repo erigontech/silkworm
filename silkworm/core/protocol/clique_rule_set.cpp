@@ -22,7 +22,7 @@
 
 namespace silkworm::protocol {
 
-ValidationResult CliqueRuleSet::validate_seal(const BlockHeader&) {
+ValidationResult CliqueRuleSet::validate_difficulty_and_seal(const BlockHeader&, const BlockHeader&) {
     return ValidationResult::kOk;
 }
 

@@ -24,7 +24,13 @@
 namespace silkworm::protocol {
 
 // Ethash ProofOfWork verification
-ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
+ValidationResult EthashRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) {
+    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
+    if (header.difficulty != difficulty(header.number, header.timestamp, parent.difficulty,
+                                        parent.timestamp, parent_has_uncles, chain_config_)) {
+        return ValidationResult::kWrongDifficulty;
+    }
+
     if (!std::get<EthashConfig>(chain_config_.rule_set_config).validate_seal) {
         return ValidationResult::kOk;
     }
@@ -56,12 +62,6 @@ ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) c
     }
 
     return BaseRuleSet::validate_extra_data(header);
-}
-
-intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHeader& parent) const {
-    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
-    return difficulty(header.number, header.timestamp, parent.difficulty,
-                      parent.timestamp, parent_has_uncles, chain_config_);
 }
 
 void EthashRuleSet::initialize(EVM& evm) {

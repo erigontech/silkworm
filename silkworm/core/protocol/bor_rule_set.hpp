@@ -20,8 +20,7 @@
 
 namespace silkworm::protocol {
 
-// Warning: most Bor logic is not implemented yet.
-// TODO(yperbasis): implement
+// See https://github.com/maticnetwork/bor/blob/master/consensus/bor/bor.go
 class BorRuleSet : public BaseRuleSet {
   public:
     explicit BorRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/true) {}
@@ -29,11 +28,9 @@ class BorRuleSet : public BaseRuleSet {
     ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
-    ValidationResult validate_seal(const BlockHeader&) override;
-
     void initialize(EVM&) override {}
 
-    void finalize(IntraBlockState&, const Block&) override {}
+    void finalize(IntraBlockState&, const Block&) override;
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
@@ -44,7 +41,7 @@ class BorRuleSet : public BaseRuleSet {
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) const override;
 
-    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const override { return 1; }
+    ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
     [[nodiscard]] const BorConfig& config() const;

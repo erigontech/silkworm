@@ -29,9 +29,6 @@ class EthashRuleSet : public BaseRuleSet {
   public:
     explicit EthashRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/false) {}
 
-    //! \brief Validates the seal of the header
-    ValidationResult validate_seal(const BlockHeader& header) override;
-
     void initialize(EVM& evm) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
@@ -51,7 +48,7 @@ class EthashRuleSet : public BaseRuleSet {
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) const override;
 
-    [[nodiscard]] intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) const override;
+    ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};

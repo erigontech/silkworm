@@ -53,9 +53,6 @@ class IRuleSet {
     virtual ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) = 0;
 
-    //! \brief Validates the seal of the header
-    virtual ValidationResult validate_seal(const BlockHeader& header) = 0;
-
     //! \brief Performs validation of block ommers only.
     //! \brief See [YP] Sections 11.1 "Ommer Validation".
     //! \param [in] block: block to validate.

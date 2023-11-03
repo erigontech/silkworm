@@ -167,10 +167,6 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.difficulty != difficulty(header, *parent)) {
-        return ValidationResult::kWrongDifficulty;
-    }
-
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
     if (rev < EVMC_LONDON) {
@@ -209,7 +205,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         }
     }
 
-    return validate_seal(header);
+    return validate_difficulty_and_seal(header, *parent);
 }
 
 ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) const {

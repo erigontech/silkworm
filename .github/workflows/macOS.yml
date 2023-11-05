@@ -44,7 +44,7 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: "0"
-    - uses: actions/setup-python@v4 # Explicitly avoiding Python 3.12 can be removed when Conan 1.62 will be available
+    - uses: actions/setup-python@v4 # Hopefully this step can be removed when Conan 1.62 will be available
       with:
         python-version: '<3.12' 
 

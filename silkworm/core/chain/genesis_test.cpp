@@ -33,7 +33,8 @@ void test_genesis_config(const ChainConfig& x) {
     REQUIRE(genesis_json.contains("config"));
     REQUIRE(genesis_json["config"].is_object());
     const std::optional<ChainConfig> config{ChainConfig::from_json(genesis_json["config"])};
-    CHECK(config == x);
+    REQUIRE(config);
+    CHECK(*config == x);
 }
 
 TEST_CASE("unknown genesis") {

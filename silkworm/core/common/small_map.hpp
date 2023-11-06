@@ -28,7 +28,7 @@
 namespace silkworm {
 
 // SmallMap is a constexpr-friendly map suitable for a small number of elements.
-template <std::totally_ordered Key, typename T, std::size_t MaxSize = 8>
+template <std::totally_ordered Key, std::default_initializable T, std::size_t MaxSize = 8>
 class SmallMap {
   public:
     using ValueType = std::pair<Key, T>;
@@ -52,8 +52,25 @@ class SmallMap {
         sort();
     }
 
-    constexpr SmallMap(const SmallMap& other) = default;
-    constexpr SmallMap& operator=(const SmallMap& other) = default;
+    constexpr SmallMap(const SmallMap& other) {
+        size_ = other.size_;
+        for (size_t i{0}; i < size_; ++i) {
+            data_[i] = other.data_[i];
+        }
+        for (size_t i{size_}; i < MaxSize; ++i) {
+            data_[i] = {};
+        }
+    }
+    constexpr SmallMap& operator=(const SmallMap& other) {
+        size_ = other.size_;
+        for (size_t i{0}; i < size_; ++i) {
+            data_[i] = other.data_[i];
+        }
+        for (size_t i{size_}; i < MaxSize; ++i) {
+            data_[i] = {};
+        }
+        return *this;
+    }
 
     constexpr bool operator==(const SmallMap&) const = default;
 

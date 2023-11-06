@@ -62,7 +62,7 @@ or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 14.3)
 
 Conan requires Python, and can be installed using:
 
-    pip3 install --user conan==1.60.0 chardet
+    pip3 install --user conan==1.60.2 chardet
 
 and adding its binary to PATH:
 

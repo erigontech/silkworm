@@ -369,7 +369,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     SILK_TRACE << "trace_filter: " << trace_filter;
 
     stream.open_object();
-    stream.write_field("id", request["id"]);
+    stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
     auto tx = co_await database_->begin();
@@ -385,12 +385,12 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
 
         const Error error{100, e.what()};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
 
         const Error error{100, "unexpected exception"};
-        stream.write_field("error", error);
+        stream.write_json_field("error", error);
     }
 
     stream.close_object();

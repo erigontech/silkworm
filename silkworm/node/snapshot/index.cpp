@@ -145,22 +145,22 @@ void Index::build(ThreadPool& thread_pool_) {
             thread_pool_.push_task([&, start_offset, end_offset, start_ordinal]() {
                 decoder.read_ahead(start_offset, end_offset,
                                    [start_offset, start_ordinal, &read_ok, &rec_split, this](huffman::Decompressor::Iterator it) {
-                                       // SILK_INFO << "offset: " << start_offset;
-                                       Bytes word{};
-                                       word.reserve(kPageSize);
-                                       uint64_t i{start_ordinal}, offset{start_offset};
-                                       while (it.has_next()) {
-                                           uint64_t next_position = it.next(word);
-                                           if (bool ok = walk(rec_split, i, offset, word); !ok) {
-                                               read_ok = false;
-                                               return false;
-                                           }
-                                           ++i;
-                                           offset = next_position;
-                                           word.clear();
-                                       }
-                                       return true;
-                                   });
+                    // SILK_INFO << "offset: " << start_offset;
+                    Bytes word{};
+                    word.reserve(kPageSize);
+                    uint64_t i{start_ordinal}, offset{start_offset};
+                    while (it.has_next()) {
+                        uint64_t next_position = it.next(word);
+                        if (bool ok = walk(rec_split, i, offset, word); !ok) {
+                            read_ok = false;
+                            return false;
+                        }
+                        ++i;
+                        offset = next_position;
+                        word.clear();
+                    }
+                    return true;
+                });
             });
         }
         thread_pool_.wait_for_tasks();
@@ -213,6 +213,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
     std::vector<Slice> prefetched_offsets = prefetch_offsets(txs_decoder);
 
+    /* [[body-slicing]]
     std::vector<Slice> body_block_number_offsets;
     auto and_compute_body_slices = [&](BlockNum block_num, const StoredBlockBody& body, uint64_t base_tx_id, const BodySnapshot::WordItem& item) {
         static size_t curr_tx_pos = 0;
@@ -231,8 +232,14 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount(and_compute_body_slices);
 
     if (body_block_number_offsets.empty()) {
-        SILK_ERROR << "body_block_number_offsets is empty (1)";
+        SILK_ERROR << "body_block_number_offsets is empty";
+        throw std::runtime_error{"body_block_number_offsets is empty"};
     }
+    */
+
+    uint64_t first_tx_id;
+    uint64_t expected_tx_count;
+    std::tie(first_tx_id, expected_tx_count) = bodies_snapshot.compute_txs_amount();
 
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
@@ -269,10 +276,8 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
     auto body_offsets = bodies_decoder.offset_range();
-    if (body_block_number_offsets.empty()) {
-        SILK_ERROR << "body_block_number_offsets is empty (2)";
-        throw std::runtime_error{"body_block_number_offsets is empty"};
-    }
+
+    /* [[body-slicing]]
     if (body_block_number_offsets.back().offset != body_offsets.end) {
         body_block_number_offsets.push_back({.ordinal = bodies_decoder.words_count(), .offset = body_offsets.end});
     }
@@ -290,6 +295,17 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
             });
         });
     };
+    */
+    using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
+    auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset, const DoubleReadAheadFunc& fn) -> bool {
+
+        return txs_decoder.read_ahead(start_offset, end_offset, [fn, &bodies_decoder](auto tx_it) -> bool {
+            return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {
+                return fn(tx_it, body_it);
+            });
+        });
+
+    };
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
 
@@ -304,16 +320,19 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
 
+            uint64_t start_block_num = first_block_num;
+            /* [[body-slicing]]
             uint64_t body_start_offset = body_block_number_offsets[i].offset;
             uint64_t start_block_num = body_block_number_offsets[i].ordinal;
-            uint64_t body_end_offset = body_offsets.end; /*body_block_number_offsets[i + 1].offset*/
-            ;
+            uint64_t body_end_offset = body_offsets.end; //body_block_number_offsets[i + 1].offset
+            */
 
             thread_pool_.push_task([&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok,
-                                    e = end_offset, bs = body_start_offset, be = body_end_offset,
-                                    bn = start_block_num, f = first_tx_id, s = start_offset, so = start_ordinal]() {
+                                    s = start_offset, e = end_offset,
+                                    /*bs = body_start_offset, be = body_end_offset, [[body-slicing]] */
+                                    bn = start_block_num, f = first_tx_id, so = start_ordinal]() {
                 bool ok = double_read_ahead(
-                    s, e, bs, be,
+                    s, e, /*bs, be, [[body-slicing]] */
                     [&tx_hash_rs, &tx_hash_to_block_rs,
                      start_block_num = bn, first_tx_id = f, start_offset = s, start_ordinal = so](auto tx_it, auto body_it) -> bool {
                         Hash tx_hash;

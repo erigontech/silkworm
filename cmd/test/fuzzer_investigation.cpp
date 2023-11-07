@@ -69,7 +69,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
 
         result.get();
 
-        io_context.reset();
+        io_context.restart();
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

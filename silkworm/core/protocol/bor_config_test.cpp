@@ -20,6 +20,8 @@
 
 #include <catch2/catch.hpp>
 
+using namespace std::string_view_literals;
+
 namespace silkworm::protocol {
 
 TEST_CASE("BorConfig JSON") {
@@ -32,6 +34,18 @@ TEST_CASE("BorConfig JSON") {
             "sprint": {
                 "0": 64,
                 "38189056": 16
+            },
+            "blockAlloc": {
+                "22244000": {
+                    "0x0000000000000000000000000000000000001010": {
+                        "code": "0x60806040526004361061019c"
+                    }
+                },
+                "41874000": {
+                    "0x0000000000000000000000000000000000001001": {
+                        "code": "0x60806040523482"
+                    }
+                }
             },
             "jaipurBlock": 123
         })");
@@ -49,13 +63,28 @@ TEST_CASE("BorConfig JSON") {
                             {0, 64},
                             {38189056, 16},
                         },
+                        .rewrite_code = {
+                            {
+                                22244000,
+                                {{
+                                    0x0000000000000000000000000000000000001010_address,
+                                    "\x60\x80\x60\x40\x52\x60\x04\x36\x10\x61\x01\x9c"sv,
+                                }},
+                            },
+                            {
+                                41874000,
+                                {{
+                                    0x0000000000000000000000000000000000001001_address,
+                                    "\x60\x80\x60\x40\x52\x34\x82"sv,
+                                }},
+                            },
+                        },
                         .jaipur_block = 123,
                     });
     CHECK(config->to_json() == json);
 }
 
 TEST_CASE("bor_config_value_lookup") {
-    using namespace std::string_view_literals;
     static constexpr SmallMap<BlockNum, std::string_view> config{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
 
     static_assert(!bor_config_value_lookup(config, 0));

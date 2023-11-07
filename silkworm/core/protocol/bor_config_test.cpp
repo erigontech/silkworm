@@ -51,36 +51,38 @@ TEST_CASE("BorConfig JSON") {
         })");
 
     const std::optional<BorConfig> config{BorConfig::from_json(json)};
-
     REQUIRE(config);
-    CHECK(config == BorConfig{
-                        .period = {
-                            {0, 2},
-                            {25'275'000, 5},
-                            {29'638'656, 2},
-                        },
-                        .sprint = {
-                            {0, 64},
-                            {38189056, 16},
-                        },
-                        .rewrite_code = {
-                            {
-                                22244000,
-                                {{
-                                    0x0000000000000000000000000000000000001010_address,
-                                    "\x60\x80\x60\x40\x52\x60\x04\x36\x10\x61\x01\x9c"sv,
-                                }},
-                            },
-                            {
-                                41874000,
-                                {{
-                                    0x0000000000000000000000000000000000001001_address,
-                                    "\x60\x80\x60\x40\x52\x34\x82"sv,
-                                }},
-                            },
-                        },
-                        .jaipur_block = 123,
-                    });
+
+    static constexpr BorConfig expected_config{
+        .period = {
+            {0, 2},
+            {25'275'000, 5},
+            {29'638'656, 2},
+        },
+        .sprint = {
+            {0, 64},
+            {38189056, 16},
+        },
+        .rewrite_code = {
+            {
+                22244000,
+                {{
+                    0x0000000000000000000000000000000000001010_address,
+                    "\x60\x80\x60\x40\x52\x60\x04\x36\x10\x61\x01\x9c"sv,
+                }},
+            },
+            {
+                41874000,
+                {{
+                    0x0000000000000000000000000000000000001001_address,
+                    "\x60\x80\x60\x40\x52\x34\x82"sv,
+                }},
+            },
+        },
+        .jaipur_block = 123,
+    };
+
+    CHECK(config == expected_config);
     CHECK(config->to_json() == json);
 }
 

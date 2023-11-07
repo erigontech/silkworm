@@ -24,6 +24,7 @@
 #pragma once
 
 #include <exception>
+#include <memory>
 #include <type_traits>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
@@ -149,20 +150,26 @@ template <typename Handler, typename Executor, typename = void>
 class co_spawn_cancellation_handler {
   public:
     co_spawn_cancellation_handler(const Handler&, const Executor& ex)
-        : ex_(ex) {
+        : signal_(std::make_shared<cancellation_signal>()),
+          ex_(ex) {
     }
 
     cancellation_slot slot() {
-        return signal_.slot();
+        return signal_->slot();
     }
 
     void operator()(cancellation_type_t type) {
-        cancellation_signal* sig = &signal_;
-        boost::asio::dispatch(ex_, [sig, type] { sig->emit(type); });
+        auto signal_weak_ptr = std::weak_ptr<cancellation_signal>(signal_);
+        boost::asio::dispatch(ex_, [signal_weak_ptr = std::move(signal_weak_ptr), type] {
+            auto signal = signal_weak_ptr.lock();
+            if (signal) {
+                signal->emit(type);
+            }
+        });
     }
 
   private:
-    cancellation_signal signal_;
+    std::shared_ptr<cancellation_signal> signal_;
     Executor ex_;
 };
 

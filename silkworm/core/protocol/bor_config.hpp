@@ -28,7 +28,7 @@ namespace silkworm::protocol {
 
 struct BorConfig {
     SmallMap<BlockNum, uint64_t> period;
-    SmallMap<BlockNum, uint64_t> sprint;
+    SmallMap<BlockNum, uint64_t> sprint;  // from block -> sprint size
 
     SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>> rewrite_code;
 

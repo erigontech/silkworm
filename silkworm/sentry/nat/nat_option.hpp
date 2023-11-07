@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <boost/asio/ip/address.hpp>
 
@@ -35,5 +36,6 @@ struct NatOption {
 };
 
 bool lexical_cast(const std::string& input, NatOption& value);
+bool lexical_cast(std::string_view input, NatOption& value);
 
 }  // namespace silkworm::sentry::nat

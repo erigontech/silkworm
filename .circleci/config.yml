@@ -121,7 +121,7 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.60.0 chardet
+          command: sudo pip3 install conan==1.60.2 chardet
       - run:
           name: "Select Conan profile"
           command: |
@@ -168,7 +168,7 @@ commands:
       - run:
           name: "Execution spec tests"
           working_directory: ~/build
-          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec
+          command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
 
   fuzz-test:
     steps:
@@ -295,7 +295,7 @@ jobs:
           command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
       - run:
           name: "Execution spec tests"
-          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/tests/execution-spec
+          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
       - run:
           name: "Coverage"
           command: |
@@ -374,7 +374,7 @@ jobs:
             sudo apt-get install -y texinfo libtinfo5
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.60.0 chardet
+          command: sudo pip3 install conan==1.60.2 chardet
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2

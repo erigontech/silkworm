@@ -44,12 +44,16 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: "0"
+    - uses: actions/setup-python@v4 # Hopefully this step can be removed when Conan 1.62 will be available
+      with:
+        python-version: '<3.12' 
 
     - name: Install Prerequisites
       run: |
         brew install gmp
-        pip3 install --user conan==1.60.0 chardet
-        echo "$HOME/Library/Python/$(ls $HOME/Library/Python)/bin" >> "$GITHUB_PATH"
+        pip3 install --user conan==1.60.2 chardet
+        echo "$(python3 -m site --user-base)/bin" >> $GITHUB_PATH
+        echo "$($(python3 -m site --user-base)/bin/conan --version)"
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory

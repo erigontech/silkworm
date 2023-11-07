@@ -55,10 +55,9 @@ extern "C" {
 #define SILKWORM_INVALID_BLOCK 11
 #define SILKWORM_DECODING_ERROR 12
 #define SILKWORM_TOO_MANY_INSTANCES 13
-#define SILKWORM_INSTANCE_NOT_FOUND 14
+#define SILKWORM_INVALID_SETTINGS 14
 #define SILKWORM_TERMINATION_SIGNAL 15
-#define SILKWORM_RPCDAEMON_ALREADY_STARTED 16
-#define SILKWORM_RPCDAEMON_NOT_STARTED 17
+#define SILKWORM_SERVICE_ALREADY_STARTED 16
 
 typedef struct MDBX_env MDBX_env;
 typedef struct MDBX_txn MDBX_txn;
@@ -92,12 +91,22 @@ struct SilkwormChainSnapshot {
     struct SilkwormTransactionsSnapshot transactions;
 };
 
+#define SILKWORM_PATH_SIZE 260
+
+struct SilkwormSettings {
+    //! Data directory path in UTF-8.
+    char data_dir_path[SILKWORM_PATH_SIZE];
+};
+
 /**
  * \brief Initialize the Silkworm C API library.
  * \param[in,out] handle Silkworm instance handle returned on successful initialization.
+ * \param[in] settings General Silkworm settings.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_init(SilkwormHandle** handle) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_init(
+    SilkwormHandle** handle,
+    const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Build a set of indexes for the given snapshots.
@@ -133,6 +142,28 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
+
+#define SILKWORM_SENTRY_SETTINGS_CLIENT_ID_SIZE 128
+#define SILKWORM_SENTRY_SETTINGS_NAT_SIZE 50
+#define SILKWORM_SENTRY_SETTINGS_NODE_KEY_SIZE 32
+#define SILKWORM_SENTRY_SETTINGS_PEERS_MAX 128
+#define SILKWORM_SENTRY_SETTINGS_PEER_URL_SIZE 200
+
+struct SilkwormSentrySettings {
+    char client_id[SILKWORM_SENTRY_SETTINGS_CLIENT_ID_SIZE];
+    uint16_t api_port;
+    uint16_t port;
+    char nat[SILKWORM_SENTRY_SETTINGS_NAT_SIZE];
+    uint64_t network_id;
+    uint8_t node_key[SILKWORM_SENTRY_SETTINGS_NODE_KEY_SIZE];
+    char static_peers[SILKWORM_SENTRY_SETTINGS_PEERS_MAX][SILKWORM_SENTRY_SETTINGS_PEER_URL_SIZE];
+    char bootnodes[SILKWORM_SENTRY_SETTINGS_PEERS_MAX][SILKWORM_SENTRY_SETTINGS_PEER_URL_SIZE];
+    bool no_discover;
+    size_t max_peers;
+};
+
+SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle* handle, const struct SilkwormSentrySettings* settings) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle* handle) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Execute a batch of blocks and write resulting changes into the database.

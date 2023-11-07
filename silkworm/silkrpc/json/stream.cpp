@@ -17,6 +17,8 @@
 #include "stream.hpp"
 
 #include <algorithm>
+#include <array>
+#include <charconv>
 #include <string>
 
 namespace silkworm::rpc::json {
@@ -80,14 +82,20 @@ void Stream::write_json(const nlohmann::json& json) {
     writer_.write(content);
 }
 
-void Stream::write_field(const std::string& name) {
+void Stream::write_field(std::string_view name) {
     ensure_separator();
 
     write_string(name);
     writer_.write(":");
 }
 
-void Stream::write_field(const std::string& name, const nlohmann::json& value) {
+void Stream::write_entry(std::string_view value) {
+    ensure_separator();
+
+    write_string(value);
+}
+
+void Stream::write_json_field(std::string_view name, const nlohmann::json& value) {
     ensure_separator();
 
     const auto content = value.dump(/*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
@@ -97,8 +105,109 @@ void Stream::write_field(const std::string& name, const nlohmann::json& value) {
     writer_.write(content);
 }
 
-void Stream::write_string(const std::string& str) {
-    writer_.write("\"" + str + "\"");
+void Stream::write_field(std::string_view name, std::string_view value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+    write_string(value);
+}
+
+void Stream::write_field(std::string_view name, bool value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+    writer_.write(value ? "true" : "false");
+}
+
+void Stream::write_field(std::string_view name, const char* value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+    write_string(std::string_view(value, strlen(value)));
+}
+
+void Stream::write_field(std::string_view name, std::int32_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 10> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_field(std::string_view name, std::uint32_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 10> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_field(std::string_view name, std::int64_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 19> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_field(std::string_view name, std::uint64_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 19> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_field(std::string_view name, std::float_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 30> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_field(std::string_view name, std::double_t value) {
+    ensure_separator();
+    write_string(name);
+    writer_.write(":");
+
+    std::array<char, 30> str;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+    } else {
+        writer_.write("Invalid value");
+    }
+}
+
+void Stream::write_string(std::string_view str) {
+    writer_.write("\"");
+    writer_.write(str);
+    writer_.write("\"");
 }
 
 void Stream::ensure_separator() {

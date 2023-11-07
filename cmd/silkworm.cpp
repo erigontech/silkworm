@@ -284,6 +284,7 @@ int main(int argc, char* argv[]) {
         };
 
         // Sentry: the peer-2-peer proxy server
+        settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
         db::EthStatusDataProvider eth_status_data_provider{db::ROAccess{chaindata_db}, node_settings.chain_config.value()};

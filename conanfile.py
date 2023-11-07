@@ -48,7 +48,9 @@ class SilkwormRecipe(ConanFile):
         self.options['asio-grpc'].local_allocator = 'boost_container'
 
         # Currently Conan Center has Windows binaries built only with msvc 16 only and mimalloc built only with option override=False
-        # In order to build mimalloc with override=True we need to switch to msvc 17 compiler but this would trigger a full rebuild from sources
-        # of all dependencies wasting a lot of time, so we prefer to turn off mimalloc override
+        # In order to build mimalloc with override=True we need to switch to msvc 17 compiler but this would trigger a full rebuild from
+        # sources of all dependencies wasting a lot of time, so we prefer to turn off mimalloc override
+        # The same applies also for boost with option asio_no_deprecated
         if self.settings.os != 'Windows':
+            self.options['boost'].asio_no_deprecated = True
             self.options['mimalloc'].override = True

@@ -167,6 +167,10 @@ TEST_CASE("NodeDbSqlite") {
         auto actual_value = runner.run(db.find_eth1_fork_id(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(*actual_value == expected_value);
+
+        runner.run(db.update_eth1_fork_id(test_id, std::nullopt));
+        auto actual_value_null = runner.run(db.find_eth1_fork_id(test_id));
+        CHECK_FALSE(actual_value_null.has_value());
     }
 
     SECTION("find_ping_candidates.default") {

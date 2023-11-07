@@ -112,7 +112,7 @@ TEST_CASE("JsonStream calls") {
     }
     SECTION("simple object 1") {
         stream.open_object();
-        stream.write_field("null", JSON_NULL);
+        stream.write_json_field("null", JSON_NULL);
         stream.close_object();
         stream.close();
 
@@ -120,7 +120,7 @@ TEST_CASE("JsonStream calls") {
     }
     SECTION("simple object 2") {
         stream.open_object();
-        stream.write_field("array", EMPTY_ARRAY);
+        stream.write_json_field("array", EMPTY_ARRAY);
         stream.close_object();
         stream.close();
 
@@ -150,7 +150,7 @@ TEST_CASE("JsonStream calls") {
 
         stream.open_object();
         stream.write_field("name1", "value1");
-        stream.write_field("name2", json);
+        stream.write_json_field("name2", json);
         stream.close_object();
         stream.close();
 
@@ -163,7 +163,7 @@ TEST_CASE("JsonStream calls") {
 
         stream.open_object();
         stream.write_field("name1", "value1");
-        stream.write_field("name2", json);
+        stream.write_json_field("name2", json);
         stream.close_object();
         stream.close();
 
@@ -194,8 +194,8 @@ TEST_CASE("JsonStream calls") {
         ])"_json;
 
         stream.open_object();
-        stream.write_field("name1", json_obj);
-        stream.write_field("name2", json_array);
+        stream.write_json_field("name1", json_obj);
+        stream.write_json_field("name2", json_array);
         stream.close_object();
         stream.close();
 
@@ -211,8 +211,8 @@ TEST_CASE("JsonStream calls") {
         ])"_json;
 
         stream.open_object();
-        stream.write_field("name1", json_obj);
-        stream.write_field("name2", json_array);
+        stream.write_json_field("name1", json_obj);
+        stream.write_json_field("name2", json_array);
         stream.close_object();
         stream.close();
 

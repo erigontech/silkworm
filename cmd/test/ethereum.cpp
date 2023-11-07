@@ -60,10 +60,7 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-// TODO(yperbasis) make them pass
-static const std::vector<fs::path> kFailingTests{
-    kBlockchainDir / "cancun" / "eip4844_blobs",
-};
+static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 
@@ -98,8 +95,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         return Status::kFailed;
     }
 
-    bool check_state_root{invalid && json_block["expectException"].get<std::string>() == "InvalidStateRoot"};
-
+    const bool check_state_root{true};
     if (ValidationResult err{blockchain.insert_block(block, check_state_root)}; err != ValidationResult::kOk) {
         if (invalid) {
             return Status::kPassed;

@@ -54,20 +54,14 @@ class SmallMap {
 
     constexpr SmallMap(const SmallMap& other) {
         size_ = other.size_;
-        for (size_t i{0}; i < size_; ++i) {
+        for (size_t i{0}; i < MaxSize; ++i) {
             data_[i] = other.data_[i];
-        }
-        for (size_t i{size_}; i < MaxSize; ++i) {
-            data_[i] = {};
         }
     }
     constexpr SmallMap& operator=(const SmallMap& other) {
         size_ = other.size_;
-        for (size_t i{0}; i < size_; ++i) {
+        for (size_t i{0}; i < MaxSize; ++i) {
             data_[i] = other.data_[i];
-        }
-        for (size_t i{size_}; i < MaxSize; ++i) {
-            data_[i] = {};
         }
         return *this;
     }

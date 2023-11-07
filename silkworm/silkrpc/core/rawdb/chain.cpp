@@ -173,7 +173,8 @@ Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_nu
     const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
     if (data.empty()) {
-        throw std::runtime_error("Invalid empty receipts data");    }
+        throw std::runtime_error("Invalid empty receipts data");
+    }
     Receipts receipts{};
     const bool decoding_ok{cbor_decode(data, receipts)};
     if (!decoding_ok) {

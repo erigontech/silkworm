@@ -35,7 +35,7 @@
 #include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
-#include "handle.hpp"
+#include "instance.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
@@ -130,7 +130,7 @@ class SignalHandlerGuard {
 };
 
 SILKWORM_EXPORT int silkworm_init(
-    SilkwormHandle** handle,
+    SilkwormHandle* handle,
     const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -152,7 +152,7 @@ SILKWORM_EXPORT int silkworm_init(
     auto snapshot_repository = std::make_unique<snapshot::SnapshotRepository>();
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
-    *handle = new SilkwormHandle{
+    *handle = new SilkwormInstance{
         {},  // context_pool_settings
         make_path(settings->data_dir_path),
         std::move(snapshot_repository),
@@ -163,7 +163,7 @@ SILKWORM_EXPORT int silkworm_init(
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
     const int kNeededIndexesToBuildInParallel = 2;
 
     if (!handle) {
@@ -235,7 +235,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
     if (!handle || !handle->snapshot_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -290,7 +290,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* env) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* env) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -331,7 +331,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle* handle, MDBX_env* e
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -349,7 +349,7 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle* handle) SILKWORM_NOE
 }
 
 SILKWORM_EXPORT
-int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
+int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
                             uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
                             uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
@@ -490,7 +490,7 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     }
 }
 
-SILKWORM_EXPORT int silkworm_fini(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }

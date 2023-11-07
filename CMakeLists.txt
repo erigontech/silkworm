@@ -31,6 +31,7 @@ if(NOT SILKWORM_HAS_PARENT)
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake
         CACHE FILEPATH "" FORCE
     )
+    include("${CMAKE_TOOLCHAIN_FILE}")
   endif()
 endif()
 

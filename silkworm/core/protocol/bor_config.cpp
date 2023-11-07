@@ -82,7 +82,10 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
             const BlockNum num{std::stoull(outer.key(), nullptr, 0)};
             std::vector<std::pair<evmc::address, std::string_view>> inner_vec;
             for (const auto& inner : outer.value().items()) {
-                const evmc::address contract{hex_to_address(inner.key())};
+                const evmc::address contract{hex_to_address(inner.key(), /*return_zero_on_err=*/true)};
+                if (is_zero(contract)) {
+                    return std::nullopt;
+                }
                 const std::optional<Bytes> code{from_hex(inner.value()["code"].get<std::string>())};
                 if (!code) {
                     return std::nullopt;

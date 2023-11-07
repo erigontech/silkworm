@@ -17,6 +17,7 @@
 #include "bor_rule_set.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
@@ -104,8 +105,22 @@ static std::optional<evmc::address> ecrecover(const BlockHeader& header, const B
     return beneficiary;
 }
 
-void BorRuleSet::finalize(IntraBlockState&, const Block&) {
+static void rewrite_code_if_needed(const SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>>& rewrite_code,
+                                   IntraBlockState& state, BlockNum block_num) {
+    const SmallMap<evmc::address, std::string_view>* rewrites{rewrite_code.find(block_num)};
+    if (!rewrites) {
+        return;
+    }
+    for (const auto& [address, code] : *rewrites) {
+        state.set_code(address, string_view_to_byte_view(code));
+    }
+}
+
+void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
     // TODO(yperbasis): implement
+    // https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L819
+
+    rewrite_code_if_needed(config().rewrite_code, state, block.header.number);
 }
 
 ValidationResult BorRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {

@@ -86,6 +86,16 @@ class SmallMap {
         return begin() + size_;
     }
 
+    [[nodiscard]] constexpr const T* find(const Key& key) const noexcept {
+        // linear search is faster than binary for small sizes
+        for (size_t i{0}; i < size_; ++i) {
+            if (data_[i].first == key) {
+                return &data_[i].second;
+            }
+        }
+        return nullptr;
+    }
+
   private:
     constexpr void sort() {
         std::sort(data_.begin(), data_.begin() + size_,

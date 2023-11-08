@@ -65,10 +65,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(-g1)
-  endif()
-
   # coroutines support
   if(NOT SILKWORM_WASM_API)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
@@ -79,10 +75,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
   if(SILKWORM_CLANG_COVERAGE)
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
-  endif()
-
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(-gline-tables-only)
   endif()
 
   # coroutines support

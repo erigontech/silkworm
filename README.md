@@ -5,6 +5,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 [![Linux](https://circleci.com/gh/erigontech/silkworm.svg?style=shield)](https://circleci.com/gh/erigontech/silkworm)
 [![macOS](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml)
 [![Windows](https://github.com/erigontech/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/windows.yml)
+[![codecov](https://codecov.io/gh/erigontech/silkworm/graph/badge.svg?token=89IPVJGR4Q)](https://codecov.io/gh/erigontech/silkworm)
 
 ## Table of Contents
 

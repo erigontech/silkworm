@@ -143,7 +143,7 @@ struct GlazeJsonTransaction {
             "chainId", &T::chain_id,
             "maxPriorityFeePerGas", &T::max_pri_fee_per_gas,
             "maxFeePerGas", &T::max_fee_per_gas,
-            "accesslist", &T::access_list,
+            "accessList", &T::access_list,
             "to", &T::to,
             "to", &T::nullto,
             "value", &T::value,

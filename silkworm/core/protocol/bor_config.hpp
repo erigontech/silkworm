@@ -17,18 +17,25 @@
 #pragma once
 
 #include <optional>
+#include <string_view>
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/small_map.hpp>
 
 namespace silkworm::protocol {
 
 struct BorConfig {
-    ConfigMap<uint64_t> sprint;  // from block -> sprint size
+    SmallMap<BlockNum, uint64_t> period;
+    SmallMap<BlockNum, uint64_t> sprint;  // from block -> sprint size
+
+    SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>> rewrite_code;
 
     BlockNum jaipur_block{0};
+
+    // https://forum.polygon.technology/t/pip-28-agra-hardfork
+    std::optional<BlockNum> agra_block{std::nullopt};
 
     [[nodiscard]] uint64_t sprint_size(BlockNum number) const noexcept;
 
@@ -38,5 +45,26 @@ struct BorConfig {
 
     bool operator==(const BorConfig&) const = default;
 };
+
+// Looks up a config value as of a given block number.
+// The assumption here is that config is a càdlàg map of starting_from_block -> value.
+// For example, config of {{0, "a"}, {10, "b"}, {20, "c"}}
+// means that the config value is "a" for blocks 0–9,
+// "b" for blocks 10–19, and "c" for block 20 and above.
+//
+// N.B. Similar to borKeyValueConfigHelper in Erigon.
+template <typename T>
+[[nodiscard]] constexpr const T* bor_config_value_lookup(const SmallMap<BlockNum, T>& config, BlockNum number) noexcept {
+    auto it{config.begin()};
+    if (config.empty() || it->first > number) {
+        return nullptr;
+    }
+    for (; (it + 1) != config.end(); ++it) {
+        if (it->first <= number && number < (it + 1)->first) {
+            return &(it->second);
+        }
+    }
+    return &(it->second);
+}
 
 }  // namespace silkworm::protocol

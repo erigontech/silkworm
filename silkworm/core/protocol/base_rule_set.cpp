@@ -35,11 +35,14 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
         return err;
     }
 
-    if (rev < EVMC_SHANGHAI && block.withdrawals) {
-        return ValidationResult::kFieldBeforeFork;
-    }
-    if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
-        return ValidationResult::kMissingField;
+    if (chain_config_.withdrawals_activated(header.timestamp)) {
+        if (!block.withdrawals) {
+            return ValidationResult::kMissingField;
+        }
+    } else {
+        if (block.withdrawals) {
+            return ValidationResult::kFieldBeforeFork;
+        }
     }
 
     const std::optional<evmc::bytes32> withdrawals_root{compute_withdrawals_root(block)};
@@ -126,13 +129,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kGasAboveLimit;
     }
 
-    if (header.gas_limit < 5000) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // EIP-1985: Sane limits for certain EVM parameters
-    if (header.gas_limit > INT64_MAX) {
+    if (header.gas_limit < kMinGasLimit || header.gas_limit > kMaxGasLimit) {
         return ValidationResult::kInvalidGasLimit;
     }
 
@@ -164,10 +161,6 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.difficulty != difficulty(header, *parent)) {
-        return ValidationResult::kWrongDifficulty;
-    }
-
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
     if (rev < EVMC_LONDON) {
@@ -183,13 +176,13 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         }
     }
 
-    if (rev < EVMC_SHANGHAI) {
-        if (header.withdrawals_root) {
-            return ValidationResult::kFieldBeforeFork;
-        }
-    } else {
+    if (chain_config_.withdrawals_activated(header.timestamp)) {
         if (!header.withdrawals_root) {
             return ValidationResult::kMissingField;
+        }
+    } else {
+        if (header.withdrawals_root) {
+            return ValidationResult::kFieldBeforeFork;
         }
     }
 
@@ -206,7 +199,7 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         }
     }
 
-    return validate_seal(header);
+    return validate_difficulty_and_seal(header, *parent);
 }
 
 ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) const {

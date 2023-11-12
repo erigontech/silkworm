@@ -58,8 +58,6 @@ class DummyRuleSet : public protocol::IRuleSet {
 
     ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override { return ValidationResult::kOk; }
 
-    ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
-
     void initialize(EVM&) override {}
 
     void finalize(IntraBlockState&, const Block&) override {}

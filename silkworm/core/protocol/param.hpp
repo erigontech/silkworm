@@ -42,6 +42,11 @@ namespace fee {
 
 }  // namespace fee
 
+inline constexpr uint64_t kMinGasLimit{5000};
+// https://github.com/ethereum/go-ethereum/blob/v1.13.4/params/protocol_params.go#L28
+// EIP-1985: Sane limits for certain EVM parameters
+inline constexpr uint64_t kMaxGasLimit{INT64_MAX};  // 2^63-1
+
 inline constexpr size_t kMaxCodeSize{0x6000};                // EIP-170
 inline constexpr size_t kMaxInitCodeSize{2 * kMaxCodeSize};  // EIP-3860
 

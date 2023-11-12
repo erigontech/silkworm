@@ -19,6 +19,8 @@
 #include <optional>
 #include <utility>
 
+#include <silkworm/core/common/assert.hpp>
+
 #include "param.hpp"
 
 namespace silkworm::protocol {
@@ -65,10 +67,8 @@ ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, 
     return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
 }
 
-ValidationResult MergeRuleSet::validate_seal(const BlockHeader& header) {
-    if (header.difficulty != 0) {
-        return pre_merge_rule_set_->validate_seal(header);
-    }
+ValidationResult MergeRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {
+    SILKWORM_ASSERT(header.difficulty == 0);
     return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
 }
 
@@ -123,10 +123,6 @@ ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockSt
         return pre_merge_rule_set_->validate_ommers(block, state);
     }
     return BaseRuleSet::validate_ommers(block, state);
-}
-
-intx::uint256 MergeRuleSet::difficulty(const BlockHeader&, const BlockHeader&) const {
-    return 0;
 }
 
 BlockReward MergeRuleSet::compute_reward(const Block& block) {

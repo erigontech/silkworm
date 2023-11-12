@@ -14,24 +14,21 @@
    limitations under the License.
 */
 
-#include "config_map.hpp"
+#include "small_map.hpp"
 
 #include <catch2/catch.hpp>
 
 namespace silkworm {
 
-TEST_CASE("ConfigMap value") {
-    static constexpr ConfigMap<uint64_t> config{{10, 16}, {0, 64}, {20, 12}};
-
-    static_assert(*config.value(0) == 64);
-    static_assert(*config.value(1) == 64);
-    static_assert(*config.value(9) == 64);
-    static_assert(*config.value(10) == 16);
-    static_assert(*config.value(11) == 16);
-    static_assert(*config.value(19) == 16);
-    static_assert(*config.value(20) == 12);
-    static_assert(*config.value(21) == 12);
-    static_assert(*config.value(100) == 12);
+TEST_CASE("SmallMap find") {
+    static constexpr SmallMap<int, double> config{{20, 20.20}, {10, 10.10}, {30, 30.30}};
+    static_assert(!config.find(0));
+    static_assert(*config.find(10) == 10.10);
+    static_assert(!config.find(15));
+    static_assert(*config.find(20) == 20.20);
+    static_assert(!config.find(25));
+    static_assert(*config.find(30) == 30.30);
+    static_assert(!config.find(100));
 }
 
 }  // namespace silkworm

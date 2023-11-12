@@ -28,8 +28,8 @@
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/chain/config_map.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/bor_config.hpp>
 
@@ -78,7 +78,7 @@ struct ChainConfig {
     std::optional<BlockNum> london_block{std::nullopt};
 
     // (Optional) contract where EIP-1559 fees will be sent to that otherwise would be burnt since the London fork
-    ConfigMap<evmc::address> burnt_contract{};
+    SmallMap<BlockNum, evmc::address> burnt_contract{};
 
     std::optional<BlockNum> arrow_glacier_block{std::nullopt};
     std::optional<BlockNum> gray_glacier_block{std::nullopt};
@@ -94,6 +94,9 @@ struct ChainConfig {
 
     //! \brief Returns the config of the (pre-Merge) protocol rule set
     protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
+
+    // The Shanghai hard fork has withdrawals, but Agra does not
+    [[nodiscard]] bool withdrawals_activated(uint64_t block_time) const noexcept;
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
@@ -141,10 +144,10 @@ inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7
 SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
 
 inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
-extern const ChainConfig kPolygonConfig;
+SILKWORM_CONSTINIT extern const ChainConfig kPolygonConfig;
 
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
-extern const ChainConfig kMumbaiConfig;
+SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 
 //! \brief Looks up a known chain config provided its chain ID
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;

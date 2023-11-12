@@ -26,9 +26,6 @@ class CliqueRuleSet : public BaseRuleSet {
   public:
     explicit CliqueRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, false) {}
 
-    //! \brief Validates the seal of the header
-    ValidationResult validate_seal(const BlockHeader& header) final;
-
     void initialize(EVM&) final {}
 
     void finalize(IntraBlockState&, const Block&) final {}
@@ -36,7 +33,7 @@ class CliqueRuleSet : public BaseRuleSet {
     evmc::address get_beneficiary(const BlockHeader& header) final;
 
   protected:
-    [[nodiscard]] intx::uint256 difficulty(const BlockHeader&, const BlockHeader&) const final { return 1; }
+    ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) final;
 };
 
 }  // namespace silkworm::protocol

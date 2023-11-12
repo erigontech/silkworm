@@ -26,6 +26,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+// TODO(yperbasis): get rid of this hack
 #if defined(_MSC_VER)
 #define SILKWORM_CONSTINIT
 #else

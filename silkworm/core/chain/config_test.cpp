@@ -105,6 +105,14 @@ TEST_CASE("Config revision") {
     CHECK(test::kShanghaiConfig.revision(0, 0) == EVMC_SHANGHAI);
 }
 
+// For Polygon the Agra hard fork (=Shanghai without withdrawals) is activated based on the block number
+// rather than timestamp.
+TEST_CASE("Agra revision") {
+    CHECK(kMumbaiConfig.revision(41'874'000 - 1, 0) == EVMC_LONDON);
+    CHECK(kMumbaiConfig.revision(41'874'000, 0) == EVMC_SHANGHAI);
+    CHECK(kMumbaiConfig.revision(41'874'000 + 1, 0) == EVMC_SHANGHAI);
+}
+
 TEST_CASE("distinct_fork_points") {
     const std::vector<BlockNum> kExpectedMainnetForkNumbers{
         1'150'000,

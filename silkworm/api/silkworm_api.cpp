@@ -236,14 +236,12 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
 }
 
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
-    if (!handle) {
+    if (!handle || !handle->snapshot_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!snapshot) {
         return SILKWORM_INVALID_SNAPSHOT;
     }
-    const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
-
     const SilkwormHeadersSnapshot& hs = snapshot->headers;
     const auto headers_segment_path = snapshot::SnapshotPath::parse(hs.segment.file_path);
     if (!headers_segment_path) {
@@ -288,7 +286,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
         .bodies_snapshot = std::move(bodies_snapshot),
         .tx_snapshot_path = *transactions_segment_path,
         .tx_snapshot = std::move(transactions_snapshot)};
-    snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 

@@ -1,3 +1,4 @@
+
 /*
    Copyright 2023 The Silkworm Authors
 
@@ -16,34 +17,21 @@
 
 #pragma once
 
-#include <iostream>
-#include <vector>
-
-#include <evmc/evmc.hpp>
-
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/bytes.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <glaze/glaze.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm::rpc {
 
-struct Log {
-    /* raw fields */
-    evmc::address address;
-    std::vector<evmc::bytes32> topics;
-    silkworm::Bytes data;
-
-    /* derived fields */
-    BlockNum block_number{0};
-    evmc::bytes32 tx_hash;
-    uint32_t tx_index{0};
-    evmc::bytes32 block_hash;
-    uint32_t index{0};
-    bool removed{false};
-    std::optional<uint64_t> timestamp{std::nullopt};
-};
-
-typedef std::vector<Log> Logs;
-
-std::ostream& operator<<(std::ostream& out, const Log& log);
+inline constexpr std::string_view jsonVersion{"2.0"};
+inline constexpr auto jsonVersionSize = 8;
+inline constexpr auto addressSize = 64;
+inline constexpr auto hashSize = 128;
+inline constexpr auto bloomSize = 1024;
+inline constexpr auto int64Size = 32;
+inline constexpr auto dataSize = 4096;
+inline constexpr auto ethCallResultFixedSize = 2048;
 
 }  // namespace silkworm::rpc

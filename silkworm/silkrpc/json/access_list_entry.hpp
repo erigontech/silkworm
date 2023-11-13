@@ -19,6 +19,21 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/json/glaze.hpp>
+
+namespace silkworm::rpc {
+struct GlazeJsonAccessList {
+    char address[addressSize];
+    std::vector<std::string> storage_keys;
+    struct glaze {
+        using T = GlazeJsonAccessList;
+        static constexpr auto value = glz::object(
+            "address", &T::address,
+            "storageKeys", &T::storage_keys);
+    };
+};
+
+}  // namespace silkworm::rpc
 
 namespace silkworm {
 

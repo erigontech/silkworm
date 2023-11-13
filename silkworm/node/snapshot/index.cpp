@@ -275,7 +275,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
-    auto body_offsets = bodies_decoder.offset_range();
+    //auto body_offsets = bodies_decoder.offset_range();
 
     /* [[body-slicing]]
     if (body_block_number_offsets.back().offset != body_offsets.end) {

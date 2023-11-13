@@ -210,6 +210,7 @@ bool SnapshotSync::stop() {
 }
 
 void SnapshotSync::build_missing_indexes() {
+#if defined(SEQUENTIAL_INDEX_BUILD)
     ThreadPool builders{std::thread::hardware_concurrency()};
 
     // Determine the missing indexes and build them in parallel
@@ -219,9 +220,7 @@ void SnapshotSync::build_missing_indexes() {
         index->build(builders);
         SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
     }
-}
-/*
-void SnapshotSync::build_missing_indexes() {
+#else
     ThreadPool workers{std::thread::hardware_concurrency() / 2};  // 1 thread pool
     ThreadSafeQueue<std::shared_ptr<Index>> tasks;
 
@@ -237,7 +236,7 @@ void SnapshotSync::build_missing_indexes() {
     // Starts workers to build indexes in parallel
     for (size_t i = 0; i < workers.get_thread_count(); ++i) {
         workers.push_task([&]() {
-            ThreadPool builders{std::thread::hardware_concurrency()};  // N thread pools
+            ThreadPool builders{std::thread::hardware_concurrency() / 2};  // N thread pools
             while (not tasks.empty() and not is_stopping()) {
                 std::shared_ptr<Index> index;
                 bool task_present = tasks.timed_wait_and_pop(index, kCheckCompletionInterval);
@@ -265,8 +264,9 @@ void SnapshotSync::build_missing_indexes() {
     auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
     SILK_INFO << "SnapshotSync: build_missing_indexes elapsed time: "
               << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() << " s";
+#endif
 }
-*/
+
 void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available) {
     update_block_headers(txn, max_block_available);
     update_block_bodies(txn, max_block_available);

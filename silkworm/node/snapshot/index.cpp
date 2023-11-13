@@ -145,22 +145,22 @@ void Index::build(ThreadPool& thread_pool_) {
             thread_pool_.push_task([&, start_offset, end_offset, start_ordinal]() {
                 decoder.read_ahead(start_offset, end_offset,
                                    [start_offset, start_ordinal, &read_ok, &rec_split, this](huffman::Decompressor::Iterator it) {
-                    // SILK_INFO << "offset: " << start_offset;
-                    Bytes word{};
-                    word.reserve(kPageSize);
-                    uint64_t i{start_ordinal}, offset{start_offset};
-                    while (it.has_next()) {
-                        uint64_t next_position = it.next(word);
-                        if (bool ok = walk(rec_split, i, offset, word); !ok) {
-                            read_ok = false;
-                            return false;
-                        }
-                        ++i;
-                        offset = next_position;
-                        word.clear();
-                    }
-                    return true;
-                });
+                                       // SILK_INFO << "offset: " << start_offset;
+                                       Bytes word{};
+                                       word.reserve(kPageSize);
+                                       uint64_t i{start_ordinal}, offset{start_offset};
+                                       while (it.has_next()) {
+                                           uint64_t next_position = it.next(word);
+                                           if (bool ok = walk(rec_split, i, offset, word); !ok) {
+                                               read_ok = false;
+                                               return false;
+                                           }
+                                           ++i;
+                                           offset = next_position;
+                                           word.clear();
+                                       }
+                                       return true;
+                                   });
             });
         }
         thread_pool_.wait_for_tasks();
@@ -275,7 +275,7 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
-    //auto body_offsets = bodies_decoder.offset_range();
+    // auto body_offsets = bodies_decoder.offset_range();
 
     /* [[body-slicing]]
     if (body_block_number_offsets.back().offset != body_offsets.end) {
@@ -298,13 +298,11 @@ void TransactionIndex::build(ThreadPool& thread_pool_) {
     */
     using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](uint64_t start_offset, uint64_t end_offset, const DoubleReadAheadFunc& fn) -> bool {
-
         return txs_decoder.read_ahead(start_offset, end_offset, [fn, &bodies_decoder](auto tx_it) -> bool {
             return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {
                 return fn(tx_it, body_it);
             });
         });
-
     };
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";

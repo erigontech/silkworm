@@ -222,7 +222,7 @@ void SnapshotSync::build_missing_indexes() {
     }
 #else
     ThreadPool workers{std::thread::hardware_concurrency() / 2};  // 1 thread pool
-    ThreadSafeQueue<std::shared_ptr<Index>> tasks;
+    ThreadSafeQueue<std::shared_ptr<Index> > tasks;
 
     // Determine the missing indexes and add them to task queue
     const auto missing_indexes = repository_->missing_indexes();

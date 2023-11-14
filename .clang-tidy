@@ -2,9 +2,6 @@ FormatStyle: file
 HeaderFilterRegex: 'silkworm\/.+\.hpp$'
 WarningsAsErrors: '-*'
 Checks: >
-# google-explicit-constructor,
-# modernize-use-nodiscard,
-  -*,
   bugprone-argument-comment,
   bugprone-assert-side-effect,
   bugprone-bad-signal-to-kill-thread,
@@ -68,6 +65,7 @@ Checks: >
   clang-analyzer-*,
   -clang-analyzer-core.CallAndMessage,
   -clang-analyzer-core.NullDereference,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
   clang-diagnostic-*,
   cppcoreguidelines-interfaces-global-init,
   cppcoreguidelines-narrowing-conversions,

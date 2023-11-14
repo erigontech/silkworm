@@ -32,13 +32,13 @@ namespace silkworm::etl {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
-                                        db::RWCursorDupSort&, MDBX_put_flags_t)>;
+                                      db::RWCursorDupSort&, MDBX_put_flags_t)>;
 
 inline const Bytes& key(const std::pair<Bytes, Bytes>& entry) { return entry.first; }
 inline const Bytes& value(const std::pair<Bytes, Bytes>& entry) { return entry.second; }
 
 // An adaptor to use map as a collector storage
-struct MapStorage: public std::map<Bytes, Bytes> {
+struct MapStorage : public std::map<Bytes, Bytes> {
     void reserve(size_t) {}  // does nothing, std::map doesn't need to reserve space
     void emplace(const Bytes& key, const Bytes& value) { std::map<Bytes, Bytes>::emplace(key, value); }
     void emplace(Bytes&& key, Bytes&& value) { std::map<Bytes, Bytes>::emplace(std::move(key), std::move(value)); }
@@ -46,7 +46,7 @@ struct MapStorage: public std::map<Bytes, Bytes> {
 };
 
 // An adaptor to use vector as a collector storage
-struct VectorStorage: public std::vector<std::pair<Bytes, Bytes>> {
+struct VectorStorage : public std::vector<std::pair<Bytes, Bytes>> {
     void reserve(size_t size) { std::vector<std::pair<Bytes, Bytes>>::reserve(size); }
     void emplace(const Bytes& key, const Bytes& value) { emplace_back(key, value); }
     void emplace(Bytes&& key, Bytes&& value) { emplace_back(std::move(key), std::move(value)); }

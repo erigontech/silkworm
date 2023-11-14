@@ -98,7 +98,7 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
         size_t found_items{0};
         db::PooledCursor from{context.rw_txn(), db::table::kHeaderNumbers};
         auto data = from.to_first();
-        while(data) {
+        while (data) {
             auto key = db::from_slice(data.key);
             auto value = db::from_slice(data.value);
             found_items++;

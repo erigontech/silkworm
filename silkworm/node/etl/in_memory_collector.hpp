@@ -163,7 +163,9 @@ class InMemoryCollector {
 
     CollectorStorage entries_;
 
-    void sort_entries() {}  // does nothing, std::map is always sorted
+    void sort_entries() {
+        entries_.sort();
+    }
 
     // for progress tracking only
     void set_loading_key(ByteView key) {

@@ -62,7 +62,7 @@ std::string uint256_to_hex(const evmone::uint256& x) {
     bool leading_zeros = true;
     const uint64_t* px = &x[0];
     for (int i = 3; i >= 0; i--) {
-        if (px[i] == 0) {
+        if (px[i] == 0 && leading_zeros) {
             continue;
         }
         if (leading_zeros) {

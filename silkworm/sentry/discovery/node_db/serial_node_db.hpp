@@ -29,7 +29,7 @@ class SerialNodeDb : public NodeDb {
         NodeDb& db,
         boost::asio::any_io_executor executor)
         : db_(db),
-          strand_(std::move(executor)) {}
+          strand_(boost::asio::make_strand(std::move(executor))) {}
     ~SerialNodeDb() override = default;
 
     Task<bool> upsert_node_address(NodeId id, NodeAddress address) override;
@@ -75,7 +75,7 @@ class SerialNodeDb : public NodeDb {
 
   private:
     NodeDb& db_;
-    boost::asio::any_io_executor strand_;
+    boost::asio::strand<boost::asio::any_io_executor> strand_;
 };
 
 }  // namespace silkworm::sentry::discovery::node_db

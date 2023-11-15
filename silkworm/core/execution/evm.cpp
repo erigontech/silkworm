@@ -26,7 +26,6 @@
 #include <ethash/keccak.hpp>
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
-#include <evmone/vm.hpp>
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/precompile.hpp>
@@ -64,7 +63,7 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{evmc_create_evmone()} {}
+      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())} {}
 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
@@ -307,11 +306,9 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     gsl::owner<evmone::ExecutionState*> state{acquire_state()};
     state->reset(message, rev, host.get_interface(), host.to_context(), code, {});
 
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-    evmc_result res{evmone::baseline::execute(*vm, message.gas, *state, *analysis)};
+    evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, *analysis)};
 
     release_state(state);
-
     return res;
 }
 
@@ -320,8 +317,7 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-    vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
 }
 

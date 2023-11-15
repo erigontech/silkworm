@@ -94,16 +94,16 @@ void HashBuilder::add_leaf(Bytes key, ByteView value) {
     value_ = Bytes{value};
 }
 
-void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
-    SILKWORM_ASSERT(key > key_ || (key_.empty() && key.empty()));
+void HashBuilder::add_branch_node(Bytes nibbled_key, const evmc::bytes32& hash, bool is_in_db_trie) {
+    SILKWORM_ASSERT(nibbled_key > key_ || (key_.empty() && nibbled_key.empty()));
     if (!key_.empty()) {
-        gen_struct_step(key_, key);
-    } else if (key.empty()) {
+        gen_struct_step(key_, nibbled_key);
+    } else if (nibbled_key.empty()) {
         // known root hash
-        stack_.push_back(wrap_hash(value.bytes));
+        stack_.push_back(wrap_hash(hash.bytes));
     }
-    key_ = std::move(key);
-    value_ = value;
+    key_ = std::move(nibbled_key);
+    value_ = hash;
     is_in_db_trie_ = is_in_db_trie;
 }
 

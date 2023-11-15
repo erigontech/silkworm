@@ -63,7 +63,8 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())} {}
+      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+{}
 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 

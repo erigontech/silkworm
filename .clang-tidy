@@ -1,5 +1,5 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm\/.+\.hpp$'
+HeaderFilterRegex: 'silkworm/api/|silkworm/core/|silkworm/infra/|silkworm/node/|silkworm/sentry/|silkworm/silkrpc/|silkworm/sync/'
 WarningsAsErrors: '-*'
 Checks: >
   bugprone-argument-comment,
@@ -78,7 +78,6 @@ Checks: >
   hicpp-multiway-paths-covered,
   misc-misplaced-const,
   misc-new-delete-overloads,
-  misc-no-recursion,
   misc-non-copyable-objects,
   misc-throw-by-value-catch-by-reference,
   misc-unconventional-assign-operator,

@@ -44,6 +44,8 @@ class EvmTracer {
   public:
     virtual ~EvmTracer() = default;
 
+    virtual void on_block_start(const Block& /*block*/) noexcept {}
+
     virtual void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept = 0;
 
     virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
@@ -58,6 +60,10 @@ class EvmTracer {
                                     const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_self_destruct(const evmc::address& /*address*/, const evmc::address& /*beneficiary*/) noexcept {}
+
+    virtual void on_block_end(const Block& /*block*/) noexcept {}
 };
 
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;

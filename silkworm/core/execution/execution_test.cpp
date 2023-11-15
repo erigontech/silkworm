@@ -30,17 +30,16 @@
 
 namespace silkworm {
 
+static constexpr auto kMiner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+static constexpr auto kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+
 TEST_CASE("Execute two blocks") {
     // ---------------------------------------
     // Prepare
     // ---------------------------------------
-
-    uint64_t block_number{1};
-    auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
-
     Block block{};
-    block.header.number = block_number;
-    block.header.beneficiary = miner;
+    block.header.number = 1;
+    block.header.beneficiary = kMiner;
     block.header.gas_limit = 100'000;
     block.header.gas_used = 98'824;
 
@@ -50,8 +49,7 @@ TEST_CASE("Execute two blocks") {
     };
     block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
-    // This contract initially sets its 0th storage to 0x2a
-    // and its 1st storage to 0x01c9.
+    // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
     // When called, it updates its 0th storage to the input provided.
     Bytes contract_code{*from_hex("600035600055")};
     Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
@@ -63,23 +61,21 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].max_priority_fee_per_gas = 0;
     block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
-    auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].r = 1;  // dummy
     block.transactions[0].s = 1;  // dummy
-    block.transactions[0].from = sender;
+    block.transactions[0].from = kSender;
 
     InMemoryState state;
     Account sender_account{};
     sender_account.balance = kEther;
-    state.update_account(sender, std::nullopt, sender_account);
+    state.update_account(kSender, std::nullopt, sender_account);
 
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-
     REQUIRE(execute_block(block, state, test::kLondonConfig) == ValidationResult::kOk);
 
-    auto contract_address{create_address(sender, /*nonce=*/0)};
+    auto contract_address{create_address(kSender, /*nonce=*/0)};
     std::optional<Account> contract_account{state.read_account(contract_address)};
     REQUIRE(contract_account != std::nullopt);
 
@@ -94,18 +90,16 @@ TEST_CASE("Execute two blocks") {
     evmc::bytes32 storage1{state.read_storage(contract_address, kDefaultIncarnation, storage_key1)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
-    std::optional<Account> miner_account{state.read_account(miner)};
+    std::optional<Account> miner_account{state.read_account(kMiner)};
     REQUIRE(miner_account);
     CHECK(miner_account->balance == protocol::kBlockRewardConstantinople);
 
     // ---------------------------------------
     // Execute second block
     // ---------------------------------------
-
     std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
 
-    block_number = 2;
-    block.header.number = block_number;
+    block.header.number = 2;
     block.header.gas_used = 26'149;
     receipts[0].cumulative_gas_used = block.header.gas_used;
     block.header.receipts_root = trie::root_hash(receipts, kEncoder);
@@ -120,9 +114,71 @@ TEST_CASE("Execute two blocks") {
     storage0 = state.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
 
-    miner_account = state.read_account(miner);
+    miner_account = state.read_account(kMiner);
     REQUIRE(miner_account != std::nullopt);
     CHECK(miner_account->balance > 2 * protocol::kBlockRewardConstantinople);
     CHECK(miner_account->balance < 3 * protocol::kBlockRewardConstantinople);
 }
+
+class BlockTracer : public EvmTracer {
+  public:
+    explicit BlockTracer() = default;
+
+    void on_block_start(const silkworm::Block &) noexcept override {
+        block_start_called_ = true;
+    }
+    void on_block_end(const silkworm::Block &) noexcept override {
+        block_end_called_ = true;
+    }
+    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override {}
+    void on_instruction_start(uint32_t, const intx::uint256*, int,
+                              int64_t, const evmone::ExecutionState&,
+                              const IntraBlockState&) noexcept override {}
+    void on_execution_end(const evmc_result&, const IntraBlockState&) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const CallResult& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
+
+    [[nodiscard]] bool block_start_called() const { return block_start_called_; }
+    [[nodiscard]] bool block_end_called() const { return block_end_called_; }
+
+  private:
+    bool block_start_called_{false};
+    bool block_end_called_{false};
+};
+
+TEST_CASE("Execute block with tracing") {
+    // ---------------------------------------
+    // Prepare
+    // ---------------------------------------
+    Block block{};
+    block.header.number = 1;
+    block.header.beneficiary = kMiner;
+    block.header.gas_limit = 100'000;
+    block.header.gas_used = 0;
+
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    block.header.receipts_root = trie::root_hash(std::vector<Receipt>{}, kEncoder);
+
+    InMemoryState state;
+    Account sender_account{};
+    sender_account.balance = kEther;
+    state.update_account(kSender, std::nullopt, sender_account);
+
+    // ---------------------------------------
+    // Execute block
+    // ---------------------------------------
+    const auto chain_config{test::kLondonConfig};
+    std::vector<Receipt> receipts;
+    const auto rule_set{protocol::rule_set_factory(chain_config)};
+    REQUIRE(rule_set);
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
+
+    BlockTracer block_tracer{};
+    processor.evm().add_tracer(block_tracer);
+    REQUIRE(processor.execute_and_write_block(receipts) == ValidationResult::kOk);
+
+    CHECK((block_tracer.block_start_called() && block_tracer.block_end_called()));
+}
+
 }  // namespace silkworm

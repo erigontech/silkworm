@@ -136,6 +136,8 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     cumulative_gas_used_ = 0;
 
     const Block& block{evm_.block()};
+    notify_block_execution_start(block);
+
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
     for (const auto& txn : block.transactions) {
@@ -150,6 +152,8 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     state_.clear_journal_and_substate();
     rule_set_.finalize(state_, block);
     state_.finalize_transaction(rev);
+
+    notify_block_execution_end(block);
 
     return ValidationResult::kOk;
 }
@@ -184,6 +188,20 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
     state_.write_to_db(header.number);
 
     return ValidationResult::kOk;
+}
+
+//! \brief Notify the registered tracers at the start of block execution.
+void ExecutionProcessor::notify_block_execution_start(const Block& block) {
+    for (auto& tracer : evm_.tracers()) {
+        tracer.get().on_block_start(block);
+    }
+}
+
+//! \brief Notify the registered tracers at the end of block execution.
+void ExecutionProcessor::notify_block_execution_end(const Block& block) {
+    for (auto& tracer : evm_.tracers()) {
+        tracer.get().on_block_end(block);
+    }
 }
 
 }  // namespace silkworm

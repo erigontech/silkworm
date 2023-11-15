@@ -59,6 +59,12 @@ class ExecutionProcessor {
      */
     [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
+    //! \brief Notify the registered tracers at the start of block execution.
+    void notify_block_execution_start(const Block& block);
+
+    //! \brief Notify the registered tracers at the end of block execution.
+    void notify_block_execution_end(const Block& block);
+
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t refund_gas) noexcept;
 
     uint64_t cumulative_gas_used_{0};

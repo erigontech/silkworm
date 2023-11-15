@@ -35,11 +35,11 @@ struct GlazeJsonTransaction {
     char gas[kInt64HexSize];
     char hash[kHashHexSize];
     char nonce[kInt64HexSize];
-    char value[kInt64HexSize];
+    char value[kInt256HexSize];
     char type[kInt64HexSize];
-    char v[kHashHexSize];
-    char r[kHashHexSize];
-    char s[kHashHexSize];
+    char v[kInt256HexSize];
+    char r[kInt256HexSize];
+    char s[kInt256HexSize];
     char transaction_index[kInt64HexSize];
     char block_hash[kHashHexSize];
     char block_number[kInt64HexSize];

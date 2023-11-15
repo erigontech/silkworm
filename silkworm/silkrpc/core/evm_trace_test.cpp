@@ -161,7 +161,23 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
                     "storage":{}
                 }
             },
-            "trace": [],
+            "trace":[
+                {
+                    "action":{
+                        "callType":"call",
+                        "from":"0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030",
+                        "gas":"0x7148",
+                        "input":"0x",
+                        "to":"0x0000000000000000000000000000000000000009",
+                        "value":"0x0"
+                    },
+                    "error":"",
+                    "result":null,
+                    "subtraces":0,
+                    "traceAddress":[],
+                    "type":"call"
+                }
+            ],
             "vmTrace": {
                 "code": "0x",
                 "ops": []

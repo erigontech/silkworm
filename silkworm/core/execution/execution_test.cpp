@@ -124,10 +124,10 @@ class BlockTracer : public EvmTracer {
   public:
     explicit BlockTracer() = default;
 
-    void on_block_start(const silkworm::Block &) noexcept override {
+    void on_block_start(const silkworm::Block&) noexcept override {
         block_start_called_ = true;
     }
-    void on_block_end(const silkworm::Block &) noexcept override {
+    void on_block_end(const silkworm::Block&) noexcept override {
         block_end_called_ = true;
     }
     void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override {}

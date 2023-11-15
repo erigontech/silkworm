@@ -124,20 +124,24 @@ class BlockTracer : public EvmTracer {
   public:
     explicit BlockTracer() = default;
 
-    void on_block_start(const silkworm::Block&) noexcept override {
+    void on_block_start(const silkworm::Block& /*block*/) noexcept override {
         block_start_called_ = true;
     }
-    void on_block_end(const silkworm::Block&) noexcept override {
+    void on_block_end(const silkworm::Block& /*block*/) noexcept override {
         block_end_called_ = true;
     }
-    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override {}
+    void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/,
+                            evmone::bytes_view /*code*/) noexcept override {}
     void on_instruction_start(uint32_t, const intx::uint256*, int,
                               int64_t, const evmone::ExecutionState&,
                               const IntraBlockState&) noexcept override {}
     void on_execution_end(const evmc_result&, const IntraBlockState&) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const CallResult& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/,
+                               const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
+                            const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const CallResult& /*result*/,
+                           const IntraBlockState& /*intra_block_state*/) noexcept override {}
 
     [[nodiscard]] bool block_start_called() const { return block_start_called_; }
     [[nodiscard]] bool block_end_called() const { return block_end_called_; }

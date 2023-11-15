@@ -34,9 +34,6 @@ namespace silkworm::etl {
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
                                       db::RWCursorDupSort&, MDBX_put_flags_t)>;
 
-inline const Bytes& key(const std::pair<Bytes, Bytes>& entry) { return entry.first; }
-inline const Bytes& value(const std::pair<Bytes, Bytes>& entry) { return entry.second; }
-
 // An adaptor to use map as a collector storage
 struct MapStorage : public std::map<Bytes, Bytes> {
     void reserve(size_t) {}  // does nothing, std::map doesn't need to reserve space
@@ -47,7 +44,6 @@ struct MapStorage : public std::map<Bytes, Bytes> {
 
 // An adaptor to use vector as a collector storage
 struct VectorStorage : public std::vector<std::pair<Bytes, Bytes>> {
-    void reserve(size_t size) { std::vector<std::pair<Bytes, Bytes>>::reserve(size); }
     void emplace(const Bytes& key, const Bytes& value) { emplace_back(key, value); }
     void emplace(Bytes&& key, Bytes&& value) { emplace_back(std::move(key), std::move(value)); }
     void sort() { std::sort(begin(), end()); }
@@ -111,22 +107,24 @@ class InMemoryCollector {
         sort_entries();
 
         for (const auto& entry : entries_) {
+            const auto [key, value]{entry};
+
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 if (SignalHandler::signalled()) {
                     throw std::runtime_error("Operation cancelled");
                 }
-                set_loading_key(key(entry));
+                set_loading_key(key);
                 log_time = now + kLogInterval;
             }
 
             if (load_func) {
-                load_func(key(entry), value(entry), target, flags);
+                load_func(key, value, target, flags);
             } else {
-                mdbx::slice k{db::to_slice(key(entry))};
-                if (value(entry).empty()) {
+                mdbx::slice k{db::to_slice(key)};
+                if (value.empty()) {
                     target.erase(k);
                 } else {
-                    mdbx::slice v{db::to_slice(value(entry))};
+                    mdbx::slice v{db::to_slice(value)};
                     mdbx::error::success_or_throw(target.put(k, &v, flags));
                 }
             }

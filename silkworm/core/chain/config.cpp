@@ -185,7 +185,7 @@ evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) 
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
 
     const protocol::BorConfig* bor{std::get_if<protocol::BorConfig>(&rule_set_config)};
-    if (bor && bor->agra_block && block_number >= bor->agra_block) return EVMC_SHANGHAI;
+    if (bor && block_number >= bor->agra_block) return EVMC_SHANGHAI;
 
     if (london_block && block_number >= london_block) return EVMC_LONDON;
     if (berlin_block && block_number >= berlin_block) return EVMC_BERLIN;
@@ -218,6 +218,10 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     ret.insert(arrow_glacier_block.value_or(0));
     ret.insert(gray_glacier_block.value_or(0));
     ret.insert(merge_netsplit_block.value_or(0));
+
+    if (const protocol::BorConfig * bor{std::get_if<protocol::BorConfig>(&rule_set_config)}; bor) {
+        ret.insert(bor->agra_block);
+    }
 
     ret.erase(0);  // Block 0 is not a fork number
     return {ret.cbegin(), ret.cend()};

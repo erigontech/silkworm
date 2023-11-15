@@ -47,7 +47,8 @@ TEST_CASE("BorConfig JSON") {
                     }
                 }
             },
-            "jaipurBlock": 123
+            "jaipurBlock": 123,
+            "agraBlock": 789
         })");
 
     const std::optional<BorConfig> config{BorConfig::from_json(json)};
@@ -80,6 +81,7 @@ TEST_CASE("BorConfig JSON") {
             },
         },
         .jaipur_block = 123,
+        .agra_block = 789,
     };
 
     CHECK(config == expected_config);

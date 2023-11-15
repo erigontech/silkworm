@@ -26,8 +26,8 @@ namespace silkworm::rpc {
 
 inline constexpr std::string_view kJsonVersion{"2.0"};
 inline constexpr auto kAddressHexSize = 43; /*  2 + 2*20 + 1 */
-inline constexpr auto kHashHexSize = 67; /* 2 + 2*32 +  1 */
-inline constexpr auto kBloomSize = 1024; 
+inline constexpr auto kHashHexSize = 67;    /* 2 + 2*32 +  1 */
+inline constexpr auto kBloomSize = 1024;
 inline constexpr auto kInt64HexSize = 19; /* 2 + 2*8 + 1 */
 inline constexpr auto kDataSize = 4096;
 inline constexpr auto kEthCallResultFixedSize = 2048;

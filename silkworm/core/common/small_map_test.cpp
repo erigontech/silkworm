@@ -31,4 +31,10 @@ TEST_CASE("SmallMap find") {
     static_assert(!config.find(100));
 }
 
+TEST_CASE("SmallMap to_std_map") {
+    static constexpr SmallMap<int, double> small_map{{20, 20.20}, {10, 10.10}, {30, 30.30}};
+    static const std::map<int, double> std_map{{20, 20.20}, {10, 10.10}, {30, 30.30}};
+    CHECK(small_map.to_std_map() == std_map);
+}
+
 }  // namespace silkworm

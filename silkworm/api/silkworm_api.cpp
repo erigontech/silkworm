@@ -361,11 +361,11 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
     }
-    const auto chain_info = lookup_known_chain(chain_id);
+    const auto chain_info = kKnownChainConfigs.find(chain_id);
     if (!chain_info) {
         return SILKWORM_UNKNOWN_CHAIN_ID;
     }
-    const ChainConfig* chain_config{chain_info->second};
+    const ChainConfig* chain_config{*chain_info};
 
     SignalHandlerGuard signal_guard;
     try {

@@ -67,7 +67,7 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
 
 void add_option_chain(CLI::App& cli, uint64_t& network_id) {
     cli.add_option("--chain", network_id, "Name or ID of the network to join (default: \"mainnet\")")
-        ->transform(CLI::Transformer(get_known_chains_map(), CLI::ignore_case));
+        ->transform(CLI::Transformer(kKnownChainNameToId.to_std_map<std::string>(), CLI::ignore_case));
 }
 
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {

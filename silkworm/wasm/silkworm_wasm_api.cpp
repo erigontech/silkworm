@@ -50,14 +50,6 @@ intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) { 
 
 void delete_uint256(intx::uint256* x) { delete x; }
 
-const ChainConfig* lookup_config(uint64_t chain_id) {
-    const auto chain{lookup_known_chain(chain_id)};
-    if (!chain.has_value()) {
-        return nullptr;
-    }
-    return chain->second;
-}
-
 ChainConfig* new_config(uint64_t chain_id) {
     auto out{new ChainConfig};
     out->chain_id = chain_id;

@@ -56,7 +56,7 @@ const char* kSilkwormFiniSymbol = "silkworm_fini";
 auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
 
 //! Function signature for silkworm_init C API
-using SilkwormInitSig = int(SilkwormHandle**);
+using SilkwormInitSig = int(SilkwormHandle**, const struct SilkwormSettings* settings);
 
 //! Function signature for silkworm_build_recsplit_indexes C API
 using SilkwormBuildRecSplitIndexes = int(SilkwormHandle*, SilkwormMemoryMappedFile*[], int len);
@@ -445,7 +445,16 @@ int main(int argc, char* argv[]) {
 
         // Initialize Silkworm API library
         SilkwormHandle* handle{nullptr};
-        const int init_status_code = silkworm_init(&handle);
+
+        SilkwormSettings silkworm_settings;
+        std::string data_dir_path = data_dir.path().string();
+        if (data_dir_path.size() >= SILKWORM_PATH_SIZE) {
+            SILK_ERROR << "datadir path too long [data_dir_path=" << data_dir_path << "]";
+            return -1;
+        }
+        strncpy(silkworm_settings.data_dir_path, data_dir_path.c_str(), SILKWORM_PATH_SIZE - 1);
+
+        const int init_status_code = silkworm_init(&handle, &silkworm_settings);
         if (init_status_code != SILKWORM_OK) {
             SILK_ERROR << "silkworm_init failed [code=" << std::to_string(init_status_code) << "]";
             return init_status_code;

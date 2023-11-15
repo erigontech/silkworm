@@ -28,6 +28,7 @@
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -64,7 +65,6 @@ struct ExecutionProgress {
     size_t processed_transactions{0};
     size_t processed_gas{0};
     float gas_state_perc{0.0};
-    float gas_history_perc{0.0};
 };
 
 //! Generate log arguments for Silkworm library version
@@ -83,11 +83,18 @@ static log::Args log_args_for_version() {
 static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_t current_block) {
     return {
         "state",
-        human_size(state_buffer.current_batch_state_size()),
-        "history",
-        human_size(state_buffer.current_batch_history_size()),
+        std::to_string(state_buffer.current_batch_state_size()),
         "block",
         std::to_string(current_block)};
+}
+
+//! Generate log arguments for execution commit at specified block
+static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std::filesystem::path& db_path) {
+    return {
+        "in",
+        StopWatch::format(elapsed),
+        "chaindata",
+        std::to_string(Directory{db_path}.size())};
 }
 
 static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
@@ -129,9 +136,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
         "Mgas/s",
         float_to_string(speed_mgas),
         "gasState",
-        float_to_string(progress.gas_state_perc),
-        "gasHistory",
-        float_to_string(progress.gas_history_perc)};
+        float_to_string(progress.gas_state_perc)};
 }
 
 //! A signal handler guard using RAII pattern to acquire/release signal handling
@@ -384,6 +389,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
     try {
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
+        const auto db_path{txn.db().get_path()};
 
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
@@ -392,9 +398,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         AnalysisCache analysis_cache{kCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
 
-        // Transform batch size limit into gas units (Ggas = Giga gas, Tgas = Tera gas)
-        const size_t gas_max_history_batch_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
-        const size_t gas_max_batch_size{gas_max_history_batch_size * 20};  // 256Ggas -> 5Tgas roughly
+        const size_t max_batch_size{batch_size};
+
+        // Transform batch size limit into gas units (Ggas = Giga gas)
+        const size_t gas_max_batch_size{batch_size * 2_Kibi};  // 256MB -> 512Ggas roughly
 
         // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
         static constexpr size_t kMaxPrefetchedBlocks{10240};
@@ -404,7 +411,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         auto signal_check_time{progress.start_time};
         auto log_time{progress.start_time};
 
-        size_t gas_batch_size{0}, gas_history_size{0};
+        size_t gas_batch_size{0};
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             if (prefetched_blocks.empty()) {
                 const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
@@ -454,27 +461,23 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             progress.processed_transactions += block.transactions.size();
             progress.processed_gas += block.header.gas_used;
             gas_batch_size += block.header.gas_used;
-            gas_history_size += block.header.gas_used;
 
             prefetched_blocks.pop_front();
 
-            // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
-            if (gas_batch_size >= gas_max_batch_size) {
-                log::Info{"[4/12 Execution] Flushing state+history",  // NOLINT(*-unused-raii)
+            // Always flush history for single processed block (no batching)
+            state_buffer.write_history_to_db(write_change_sets);
+
+            // Flush state buffer if we've reached the target batch size
+            if (state_buffer.current_batch_state_size() >= max_batch_size) {
+                log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                           log_args_for_exec_flush(state_buffer, block.header.number)};
-                state_buffer.write_to_db(write_change_sets);
+                state_buffer.write_state_to_db();
                 gas_batch_size = 0;
-                gas_history_size = 0;
                 StopWatch sw{/*auto_start=*/true};
                 txn.commit_and_renew();
                 const auto [elapsed, _]{sw.stop()};
                 log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                          {"in", StopWatch::format(sw.since_start(elapsed))});
-            } else if (gas_history_size >= gas_max_history_batch_size) {
-                log::Info{"[4/12 Execution] Flushing history",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_flush(state_buffer, block.header.number)};
-                state_buffer.write_history_to_db(write_change_sets);
-                gas_history_size = 0;
+                          log_args_for_exec_commit(sw.since_start(elapsed), db_path));
             }
 
             const auto now{std::chrono::steady_clock::now()};
@@ -486,7 +489,6 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
             if (log_time <= now) {
                 progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
-                progress.gas_history_perc = float(gas_history_size) / float(gas_max_history_batch_size);
                 progress.end_time = now;
                 log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
                           log_args_for_exec_progress(progress, block.header.number)};
@@ -494,14 +496,14 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
         }
 
-        log::Info{"[4/12 Execution] Flushing state+history",  // NOLINT(*-unused-raii)
+        log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_block)};
-        state_buffer.write_to_db(write_change_sets);
+        state_buffer.write_state_to_db();
         StopWatch sw{/*auto_start=*/true};
         txn.commit_and_renew();
         const auto [elapsed, _]{sw.stop()};
         log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                  {"in", StopWatch::format(sw.since_start(elapsed))});
+                  log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         return SILKWORM_OK;
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {

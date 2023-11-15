@@ -130,10 +130,10 @@ class Buffer : public State {
     //! @param write_change_sets flag indicating if state changes should be written or not (default: true)
     void write_history_to_db(bool write_change_sets = true);
 
-  private:
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
 
+  private:
     RWTxn& txn_;
     db::DataModel access_layer_;
     uint64_t prune_history_threshold_;
@@ -148,9 +148,9 @@ class Buffer : public State {
     mutable absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value
-    mutable absl::flat_hash_map<evmc::address,
-                                absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
-        storage_;
+    using Storage = absl::flat_hash_map<evmc::bytes32, evmc::bytes32>;
+    using StorageByIncarnation = absl::btree_map<uint64_t, Storage>;
+    mutable absl::flat_hash_map<evmc::address, StorageByIncarnation> storage_;
 
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;

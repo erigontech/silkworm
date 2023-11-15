@@ -242,8 +242,8 @@ void Buffer::write_history_to_db(bool write_change_sets) {
 
     batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
-    log::Info("Flushed history",
-              {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
+    log::Trace("Flushed history",
+               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
 }
 
 void Buffer::write_state_to_db() {
@@ -399,21 +399,22 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
 
     if (!touched_accounts.empty()) {
         batch_history_size_ += sizeof(BlockNum);
-    }
-    absl::btree_set<Bytes> values;
-    for (const auto& account : touched_accounts) {
-        Bytes value(kAddressLength + 1, '\0');
-        std::memcpy(value.data(), account.bytes, kAddressLength);
-        if (traces.senders.contains(account)) {
-            value[kAddressLength] |= 1;
+
+        absl::btree_set<Bytes> values;
+        for (const auto& account : touched_accounts) {
+            Bytes value(kAddressLength + 1, '\0');
+            std::memcpy(value.data(), account.bytes, kAddressLength);
+            if (traces.senders.contains(account)) {
+                value[kAddressLength] |= 1;
+            }
+            if (traces.recipients.contains(account)) {
+                value[kAddressLength] |= 2;
+            }
+            batch_history_size_ += value.size();
+            values.insert(std::move(value));
         }
-        if (traces.recipients.contains(account)) {
-            value[kAddressLength] |= 2;
-        }
-        batch_history_size_ += value.size();
-        values.insert(std::move(value));
+        call_traces_.emplace(block_number, values);
     }
-    call_traces_.emplace(block_number, values);
 }
 
 evmc::bytes32 Buffer::state_root_hash() const {

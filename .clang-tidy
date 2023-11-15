@@ -1,5 +1,5 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm/api/|silkworm/core/|silkworm/infra/|silkworm/node/|silkworm/sentry/|silkworm/silkrpc/|silkworm/sync/'
+HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|silkrpc|sync)/.+\.hpp$'
 WarningsAsErrors: '-*'
 Checks: >
   bugprone-argument-comment,

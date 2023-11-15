@@ -23,7 +23,7 @@
 
 namespace silkworm::rpc {
 struct GlazeJsonAccessList {
-    char address[addressSize];
+    char address[kAddressHexSize];
     std::vector<std::string> storage_keys;
     struct glaze {
         using T = GlazeJsonAccessList;

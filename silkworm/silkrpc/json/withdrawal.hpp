@@ -25,10 +25,10 @@
 namespace silkworm::rpc {
 
 struct GlazeJsonWithdrawals {
-    char index[int64Size];
-    char validator_index[int64Size];
-    char address[addressSize];
-    char amount[int64Size];
+    char index[kInt64HexSize];
+    char validator_index[kInt64HexSize];
+    char address[kAddressHexSize];
+    char amount[kInt64HexSize];
 
     struct glaze {
         using T = GlazeJsonWithdrawals;

@@ -31,11 +31,22 @@ void to_json(nlohmann::json& json, const Transaction& transaction);
 namespace silkworm::rpc {
 
 struct GlazeJsonTransaction {
-    char from[addressSize];
-    char gas[int64Size];
-    char hash[hashSize];
+    char from[kAddressHexSize];
+    char gas[kInt64HexSize];
+    char hash[kHashHexSize];
+    char nonce[kInt64HexSize];
+    char value[kInt64HexSize];
+    char type[kInt64HexSize];
+    char v[kHashHexSize];
+    char r[kHashHexSize];
+    char s[kHashHexSize];
+    char transaction_index[kInt64HexSize];
+    char block_hash[kHashHexSize];
+    char block_number[kInt64HexSize];
+    char gas_price[kInt64HexSize];
+
     std::string input;
-    char nonce[int64Size];
+
     std::optional<std::string> yparity;
     std::optional<std::string> chain_id;
     std::optional<std::string> max_fee_per_gas;
@@ -43,16 +54,6 @@ struct GlazeJsonTransaction {
     std::optional<std::vector<GlazeJsonAccessList>> access_list;
     std::optional<std::string> to;
     std::optional<std::monostate> nullto;
-    char value[int64Size];
-    char type[int64Size];
-    char v[hashSize];
-    char r[hashSize];
-    char s[hashSize];
-
-    char transaction_index[int64Size];
-    char block_hash[hashSize];
-    char block_number[int64Size];
-    char gas_price[int64Size];
 
     struct glaze {
         using T = GlazeJsonTransaction;

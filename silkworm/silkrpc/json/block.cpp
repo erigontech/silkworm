@@ -235,7 +235,7 @@ void make_glaze_json_content(uint32_t id, const Block& b, std::string& json_repl
     }
 
     if (block.withdrawals) {
-        result.withdrawals = std::move(make_glaze_json_withdrawals(block));
+        result.withdrawals = make_glaze_json_withdrawals(block);
     }
     glz::write_json(block_json_data, json_reply);
 }

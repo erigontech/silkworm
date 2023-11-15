@@ -94,8 +94,8 @@ struct GlazeJsonBlock {
     char gas_limit[kInt64HexSize];
     char gas_used[kInt64HexSize];
     char timestamp[kInt64HexSize];
-    char difficulty[kInt64HexSize];
-    char total_difficulty[kInt64HexSize];
+    char difficulty[kInt256HexSize];
+    char total_difficulty[kInt256HexSize];
     char mix_hash[kHashHexSize];
     char extra_data[kDataSize];
 

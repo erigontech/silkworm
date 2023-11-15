@@ -80,31 +80,31 @@ void to_json(nlohmann::json& json, const Block& b) {
 }
 
 struct GlazeJsonBlock {
-    char block_number[int64Size];
-    char hash[hashSize];
-    char parent_hash[hashSize];
-    char nonce[int64Size];
-    char sha3Uncles[hashSize];
-    char logs_bloom[bloomSize];
-    char transactions_root[hashSize];
-    std::optional<std::string> withdrawals_root;
-    char state_root[hashSize];
-    char receipts_root[hashSize];
-    char miner[addressSize];
-    char size[int64Size];
-    char gas_limit[int64Size];
-    char gas_used[int64Size];
-    char timestamp[int64Size];
-    char difficulty[int64Size];
-    char total_difficulty[int64Size];
-    char mix_hash[hashSize];
-    char extra_data[dataSize];
+    char block_number[kInt64HexSize];
+    char hash[kHashHexSize];
+    char parent_hash[kHashHexSize];
+    char nonce[kInt64HexSize];
+    char sha3Uncles[kHashHexSize];
+    char logs_bloom[kBloomSize];
+    char transactions_root[kHashHexSize];
+    char state_root[kHashHexSize];
+    char receipts_root[kHashHexSize];
+    char miner[kAddressHexSize];
+    char size[kInt64HexSize];
+    char gas_limit[kInt64HexSize];
+    char gas_used[kInt64HexSize];
+    char timestamp[kInt64HexSize];
+    char difficulty[kInt64HexSize];
+    char total_difficulty[kInt64HexSize];
+    char mix_hash[kHashHexSize];
+    char extra_data[kDataSize];
+
+    std::vector<std::string> ommers_hashes;
     std::optional<std::string> base_fee_per_gas;
     std::optional<std::vector<std::string>> transaction_hashes;
     std::optional<std::vector<GlazeJsonTransaction>> transactions;
-
-    std::vector<std::string> ommers_hashes;
     std::optional<std::vector<GlazeJsonWithdrawals>> withdrawals;
+    std::optional<std::string> withdrawals_root;
 
     struct glaze {
         using T = GlazeJsonBlock;
@@ -137,7 +137,7 @@ struct GlazeJsonBlock {
 };
 
 struct GlazeJsonBlockReply {
-    std::string_view jsonrpc = jsonVersion;
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     GlazeJsonBlock result;
 
@@ -151,7 +151,7 @@ struct GlazeJsonBlockReply {
 };
 
 struct GlazeJsonNullBlockReply {
-    std::string_view jsonrpc = jsonVersion;
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     std::monostate result;
 

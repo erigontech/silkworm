@@ -16,17 +16,15 @@
 
 #pragma once
 
+#include <limits>
 #include <random>
 
 namespace silkworm {
 
 class RandomNumber {
   public:
-    // Use to generate uniformly distributed uint64
-    RandomNumber() {}
-
     // Use to generate integers uniformly distributed on the closed interval [a, b]
-    RandomNumber(uint64_t a, uint64_t b) : distr_(a, b) {}
+    RandomNumber(uint64_t a = 0, uint64_t b = std::numeric_limits<uint64_t>::max()) : distr_(a, b) {}
 
     // Not copyable nor movable
     RandomNumber(const RandomNumber&) = delete;

@@ -36,7 +36,7 @@ class AwaitableConditionVariableImpl {
         }
 
         return [this, waiter_version]() -> Task<void> {
-            auto executor = co_await boost::asio::this_coro::executor;
+            auto executor = co_await boost::asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
 
             decltype(waiters_)::iterator waiter;
             {

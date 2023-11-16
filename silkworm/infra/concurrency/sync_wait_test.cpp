@@ -32,7 +32,7 @@ namespace silkworm {
 namespace asio = boost::asio;
 
 Task<void> dummy_task() {
-    auto executor = co_await asio::this_coro::executor;
+    auto executor = co_await asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
 
     asio::steady_timer timer{executor};
     timer.expires_after(std::chrono::milliseconds(1));

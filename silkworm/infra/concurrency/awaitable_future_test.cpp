@@ -206,7 +206,7 @@ TEST_CASE("awaitable future") {
 
         int value;
         auto lambda = [&](AwaitableFuture<int>&& moved_future) -> Task<void> {
-            value = co_await moved_future.get_async();
+            value = co_await moved_future.get_async();  // NOLINT(clang-analyzer-core.NullDereference)
             io.stop();
         };
 

@@ -1,4 +1,4 @@
-2# Silkworm - C++ Ethereum Execution Client
+# Silkworm - C++ Ethereum Execution Client
 
 C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
 

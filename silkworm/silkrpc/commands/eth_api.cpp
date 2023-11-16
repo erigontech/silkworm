@@ -560,12 +560,12 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
                 } else {
                     const auto error_msg = "invalid RLP decoding for tx hash: " + silkworm::to_hex(transaction_hash);
                     SILK_ERROR << error_msg;
-                    reply = make_json_error(request["id"], 100, error_msg);
+                    reply = make_json_content(request["id"], {});
                 }
             } else {
                 const auto error_msg = "tx hash: " + silkworm::to_hex(transaction_hash) + " does not exist in pool";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request["id"], 100, error_msg);
+                reply = make_json_content(request["id"], {});
             }
         } else {
             reply = make_json_content(request["id"], tx_with_block->transaction);

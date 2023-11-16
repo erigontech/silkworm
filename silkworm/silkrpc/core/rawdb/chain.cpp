@@ -207,8 +207,8 @@ Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::Block
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
     auto optional_receipts = co_await read_raw_receipts(reader, block_number);
-    std::vector<Receipt> receipts {};
-    if (optional_receipts.has_value()){
+    std::vector<Receipt> receipts{};
+    if (optional_receipts.has_value()) {
         receipts = optional_receipts.value();
     }
 

@@ -16,34 +16,23 @@
 
 #pragma once
 
-#include <iostream>
-#include <vector>
-
-#include <evmc/evmc.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <glaze/glaze.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::rpc {
 
-struct Log {
-    /* raw fields */
-    evmc::address address;
-    std::vector<evmc::bytes32> topics;
-    silkworm::Bytes data;
-
-    /* derived fields */
-    BlockNum block_number{0};
-    evmc::bytes32 tx_hash;
-    uint32_t tx_index{0};
-    evmc::bytes32 block_hash;
-    uint32_t index{0};
-    bool removed{false};
-    std::optional<uint64_t> timestamp{std::nullopt};
-};
-
-typedef std::vector<Log> Logs;
-
-std::ostream& operator<<(std::ostream& out, const Log& log);
+inline constexpr std::string_view kJsonVersion{"2.0"};
+inline constexpr auto kAddressHexSize = 2 + 2 * kAddressLength + 1;
+inline constexpr auto kHashHexSize = 2 + 2 * kHashLength + 1;
+inline constexpr auto kBloomSize = 1024;
+inline constexpr auto kInt64HexSize = 2 + 2 * 8 + 1;
+inline constexpr auto kInt256HexSize = 2 + 2 * 32 + 1;
+inline constexpr auto kDataSize = 4096;
+inline constexpr auto kEthCallResultFixedSize = 2048;
 
 }  // namespace silkworm::rpc

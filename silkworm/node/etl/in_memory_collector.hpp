@@ -106,9 +106,7 @@ class InMemoryCollector {
 
         sort_entries();
 
-        for (const auto& entry : entries_) {
-            const auto& [key, value]{entry};
-
+        for (const auto& [key, value] : entries_) {
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 if (SignalHandler::signalled()) {
                     throw std::runtime_error("Operation cancelled");

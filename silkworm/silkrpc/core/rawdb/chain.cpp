@@ -175,15 +175,17 @@ Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, Bl
     if (data.empty()) {
         co_return std::nullopt;
     }
+
     Receipts receipts{};
     const bool decoding_ok{cbor_decode(data, receipts)};
     if (!decoding_ok) {
         throw std::runtime_error("cannot decode raw receipts in block: " + std::to_string(block_number));
     }
-    SILK_DEBUG << "#receipts: " << receipts.size();
+    SILK_TRACE << "#receipts: " << receipts.size();
     if (receipts.empty()) {
         co_return receipts;
     }
+
     auto log_key = silkworm::db::log_key(block_number, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
     Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
@@ -208,12 +210,11 @@ Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, Bl
 Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
-    auto raw_receipts = co_await read_raw_receipts(reader, block_number);
+    const auto raw_receipts = co_await read_raw_receipts(reader, block_number);
     if (!raw_receipts || raw_receipts->empty()) {
         co_return raw_receipts;
     }
-
-    auto receipts = raw_receipts.value();
+    auto receipts = *raw_receipts;
 
     // Add derived fields to the receipts
     auto transactions = block_with_hash.block.transactions;

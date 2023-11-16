@@ -53,8 +53,8 @@ size_t get_mem_usage(bool resident) {
     FILE* file = fopen("/proc/self/statm", "r");
     if (file) {
         unsigned long vm = 0, rm = 0;
-        if (fscanf(file, "%lu %lu", &vm, &rm) == 2) {  // NOLINT(cert-err34-c)
-            // the first 2 num: vm size, resident set size
+        // NOLINTNEXTLINE(cert-err34-c)
+        if (fscanf(file, "%lu %lu", &vm, &rm) == 2) {  // the first 2 num: vm size, resident set size
             vm_size = vm * static_cast<size_t>(getpagesize());
             rm_size = rm * static_cast<size_t>(getpagesize());
         }

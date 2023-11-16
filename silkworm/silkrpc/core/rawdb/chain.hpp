@@ -54,7 +54,7 @@ Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, B
 
 Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number);
 
-Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
+Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
 
 Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, BlockNum block_number);
 

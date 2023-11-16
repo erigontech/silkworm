@@ -262,12 +262,22 @@ TEST_CASE("read_raw_receipts") {
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
-    SECTION("zero receipts") {
+    SECTION("null receipts") {
         const uint64_t block_number{0};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
-        // CHECK(result.get() == Receipts{}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().empty());
+        CHECK(!result.get().has_value());
+    }
+
+    SECTION("zero receipts") {
+        const uint64_t block_number{0};
+        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        const auto receipts = result.get();
+        CHECK(receipts.has_value());
+        if (receipts) {
+            CHECK(receipts.value().empty());
+        }
     }
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
@@ -303,7 +313,7 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().size() == Receipts{Receipt{}}.size());
+        CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
     }
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
@@ -353,7 +363,7 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().size() == Receipts{Receipt{}, Receipt{}}.size());
+        CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
 
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
@@ -389,7 +399,7 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
-        const Receipts receipts = result.get();
+        const Receipts receipts = result.get().value();
         CHECK(receipts.size() == 1);
         CHECK(receipts[0].logs.empty());
     }
@@ -400,12 +410,23 @@ TEST_CASE("read_receipts") {
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
-    SECTION("zero receipts w/ zero transactions") {
+    SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
-        // CHECK(result.get() == Receipts{}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().empty());
+        const auto receipts = result.get();
+        CHECK(!receipts.has_value());
+    }
+
+    SECTION("zero receipts w/ zero transactions") {
+        const silkworm::BlockWithHash block_with_hash{};
+        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
+        auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
+        const auto receipts = result.get();
+        CHECK(receipts.has_value());
+        if (receipts) {
+            CHECK(receipts.value().empty());
+        }
     }
 
 #ifdef TEST_DELETED

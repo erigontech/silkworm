@@ -168,20 +168,23 @@ Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::by
     co_return co_await reader.get_one(db::table::kBlockBodiesName, block_key);
 }
 
-Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
+Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
     if (data.empty()) {
-        co_return Receipts{};  // TODO(canepat): use std::null_opt with Task<std::optional<Receipts>>?
+        co_return std::nullopt;
     }
+
     Receipts receipts{};
     const bool decoding_ok{cbor_decode(data, receipts)};
     if (!decoding_ok) {
-        SILK_WARN << "cannot decode raw receipts in block: " << block_number;
+        throw std::runtime_error("cannot decode raw receipts in block: " + std::to_string(block_number));
+    }
+    SILK_TRACE << "#receipts: " << receipts.size();
+    if (receipts.empty()) {
         co_return receipts;
     }
-    SILK_DEBUG << "#receipts: " << receipts.size();
 
     auto log_key = silkworm::db::log_key(block_number, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
@@ -204,10 +207,14 @@ Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_nu
     co_return receipts;
 }
 
-Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash) {
+Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
-    auto receipts = co_await read_raw_receipts(reader, block_number);
+    const auto raw_receipts = co_await read_raw_receipts(reader, block_number);
+    if (!raw_receipts || raw_receipts->empty()) {
+        co_return raw_receipts;
+    }
+    auto receipts = *raw_receipts;
 
     // Add derived fields to the receipts
     auto transactions = block_with_hash.block.transactions;

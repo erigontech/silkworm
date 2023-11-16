@@ -452,10 +452,14 @@ class TestTracer : public EvmTracer {
                             const IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const CallResult& /*result*/,
                            const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_self_destruct(const evmc::address& /*address*/, const evmc::address& /*beneficiary*/) noexcept override {
+        self_destruct_called_ = true;
+    }
 
     [[nodiscard]] bool execution_start_called() const { return execution_start_called_; }
     [[nodiscard]] bool execution_end_called() const { return execution_end_called_; }
     [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
+    [[nodiscard]] bool self_destruct_called() const { return self_destruct_called_; }
     [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
     [[nodiscard]] const evmc_revision& rev() const { return rev_; }
     [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
@@ -468,6 +472,7 @@ class TestTracer : public EvmTracer {
     bool execution_start_called_{false};
     bool execution_end_called_{false};
     bool creation_completed_called_{false};
+    bool self_destruct_called_{false};
     std::optional<evmc::address> contract_address_;
     std::optional<evmc::bytes32> key_;
     evmc_revision rev_;
@@ -793,6 +798,54 @@ TEST_CASE("Smart contract creation w/ insufficient balance") {
     uint64_t gas = 50'000;
     CallResult res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
+}
+
+TEST_CASE("Tracing destruction of smart contract") {
+    // Deployed code compiled using solc 0.8.19+commit.4fc1097e
+    const Bytes deployed_code{*from_hex(
+        "6080604052348015600f57600080fd5b506004361060285760003560e01c8063"
+        "41c0e1b514602d575b600080fd5b60336035565b005b600073ffffffffffffff"
+        "ffffffffffffffffffffffffff16fffea2646970667358221220c08c48851b75"
+        "79ee6720e88f475624478fb5b0287b58e91a51315b243356fb9264736f6c6343"
+        "0008130033")};
+    // pragma solidity 0.8.19;
+    //
+    // contract TestContract {
+    //     constructor() {}
+    //
+    //     function kill() public {
+    //         selfdestruct(payable(address(0)));
+    //     }
+    // }
+
+    // Bytecode contains SHR opcode so requires EIP-145, hence at least Constantinople HF
+    const auto chain_config{kMainnetConfig};
+    REQUIRE(chain_config.constantinople_block);
+
+    Block block{};
+    block.header.number = *chain_config.constantinople_block;
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address contract_address{create_address(caller, 0)};
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    state.set_code(contract_address, deployed_code);
+
+    EVM evm{block, state, chain_config};
+    REQUIRE(evm.revision() >= EVMC_CONSTANTINOPLE);
+    TestTracer tracer;
+    evm.add_tracer(tracer);
+    CHECK(evm.tracers().size() == 1);
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.to = contract_address;
+    txn.data = ByteView{*from_hex("41c0e1b5")};  // methodID for kill
+
+    uint64_t gas = {100'000};
+    CallResult res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_SUCCESS);
+    CHECK(tracer.self_destruct_called());
 }
 
 }  // namespace silkworm

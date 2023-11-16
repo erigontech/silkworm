@@ -232,7 +232,10 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         }
         // Explicitly notify registered tracers (if any)
         for (auto tracer : tracers_) {
+            const ByteView empty_code{};  // Any precompile code is empty
+            tracer.get().on_execution_start(rev, message, empty_code);
             tracer.get().on_precompiled_run(res.raw(), message.gas, state_);
+            tracer.get().on_execution_end(res.raw(), state_);
         }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
@@ -434,13 +437,17 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 bool EvmHost::selfdestruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     const intx::uint256 balance{evm_.state().get_balance(address)};
     evm_.state().add_to_balance(beneficiary, balance);
+    bool recorded{false};
     if (evm_.revision() >= EVMC_CANCUN && !evm_.state().created().contains(address)) {
         evm_.state().subtract_from_balance(address, balance);
-        return false;
     } else {
         evm_.state().set_balance(address, 0);
-        return evm_.state().record_suicide(address);
+        recorded = evm_.state().record_suicide(address);
     }
+    for (auto tracer : evm_.tracers()) {
+        tracer.get().on_self_destruct(address, beneficiary);
+    }
+    return recorded;
 }
 
 evmc::Result EvmHost::call(const evmc_message& message) noexcept {

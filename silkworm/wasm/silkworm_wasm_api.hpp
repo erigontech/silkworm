@@ -51,8 +51,6 @@ SILKWORM_EXPORT size_t bytes_length(const silkworm::Bytes* str);
 SILKWORM_EXPORT intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 SILKWORM_EXPORT void delete_uint256(intx::uint256* x);
 
-SILKWORM_EXPORT const silkworm::ChainConfig* lookup_config(uint64_t chain_id);
-
 SILKWORM_EXPORT silkworm::ChainConfig* new_config(uint64_t chain_id);
 SILKWORM_EXPORT void delete_config(silkworm::ChainConfig* x);
 

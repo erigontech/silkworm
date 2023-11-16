@@ -22,6 +22,7 @@
 
 #include <evmone/baseline.hpp>
 #include <evmone/execution_state.hpp>
+#include <evmone/vm.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -76,8 +77,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config)
-    noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
 
     ~EVM();
 
@@ -125,7 +125,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
-    evmc_vm* evm1_{nullptr};
+    evmone::VM* evm1_{nullptr};
 };
 
 class EvmHost : public evmc::Host {

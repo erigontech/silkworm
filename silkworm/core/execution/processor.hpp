@@ -65,7 +65,7 @@ class ExecutionProcessor {
     //! \brief Notify the registered tracers at the end of block execution.
     void notify_block_execution_end(const Block& block);
 
-    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t refund_gas) noexcept;
+    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept;
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;

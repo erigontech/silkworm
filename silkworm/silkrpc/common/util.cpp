@@ -196,9 +196,11 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
 
 const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
     // TODO(canepat) we should read chain config from db
-    const auto chain_info = silkworm::lookup_known_chain(chain_id);
-    if (!chain_info) throw std::runtime_error{"unknown chain ID: " + std::to_string(chain_id)};
-    return chain_info->second;
+    const auto chain_config = kKnownChainConfigs.find(chain_id);
+    if (!chain_config) {
+        throw std::runtime_error{"unknown chain ID: " + std::to_string(chain_id)};
+    }
+    return *chain_config;
 }
 
 }  // namespace silkworm

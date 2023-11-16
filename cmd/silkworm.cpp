@@ -58,7 +58,6 @@ using silkworm::BlockExchange;
 using silkworm::BlockNum;
 using silkworm::DataDirectory;
 using silkworm::human_size;
-using silkworm::lookup_known_chain;
 using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;

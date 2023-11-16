@@ -26,7 +26,6 @@
 #include <ethash/keccak.hpp>
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
-#include <evmone/vm.hpp>
 
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/precompile.hpp>
@@ -64,7 +63,8 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{evmc_create_evmone()} {}
+      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+{}
 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
@@ -159,7 +159,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
         if (rev >= EVMC_SPURIOUS_DRAGON && code_len > protocol::kMaxCodeSize) {
             // EIP-170: Contract code size limit
-            evm_res.status_code = EVMC_OUT_OF_GAS;
+            evm_res.status_code = EVMC_ARGUMENT_OUT_OF_RANGE;
         } else if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {
             // EIP-3541: Reject new contract code starting with the 0xEF byte
             evm_res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
@@ -258,14 +258,15 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::bytes32* code_hash) noexcept {
+evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
 
     if (exo_evm) {
         EvmHost host{*this};
-        return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
+        return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &message,
+                                code.data(), code.size());
     } else {
-        return execute_with_baseline_interpreter(rev, msg, code, code_hash);
+        return execute_with_baseline_interpreter(rev, message, code, code_hash);
     }
 }
 
@@ -288,7 +289,7 @@ void EVM::release_state(gsl::owner<evmone::ExecutionState*> state) const noexcep
     }
 }
 
-evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                    const evmc::bytes32* code_hash) noexcept {
     std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
     const bool use_cache{code_hash && analysis_cache};
@@ -307,13 +308,11 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     EvmHost host{*this};
     gsl::owner<evmone::ExecutionState*> state{acquire_state()};
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code, {});
+    state->reset(message, rev, host.get_interface(), host.to_context(), code, {});
 
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-    evmc_result res{evmone::baseline::execute(*vm, msg.gas, *state, *analysis)};
+    evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, *analysis)};
 
     release_state(state);
-
     return res;
 }
 
@@ -322,8 +321,7 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-    vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
 }
 
@@ -355,14 +353,14 @@ evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::byt
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
-                                         const evmc::bytes32& new_val) noexcept {
+                                         const evmc::bytes32& value) noexcept {
     const evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
 
-    if (current_val == new_val) {
+    if (current_val == value) {
         return EVMC_STORAGE_ASSIGNED;
     }
 
-    evm_.state().set_storage(address, key, new_val);
+    evm_.state().set_storage(address, key, value);
 
     // https://eips.ethereum.org/EIPS/eip-1283
     const evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
@@ -372,7 +370,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
             return EVMC_STORAGE_ADDED;
         }
         // !is_zero(original_val)
-        if (is_zero(new_val)) {
+        if (is_zero(value)) {
             return EVMC_STORAGE_DELETED;
         } else {
             return EVMC_STORAGE_MODIFIED;
@@ -381,25 +379,25 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
     // original_val != current_val
     if (!is_zero(original_val)) {
         if (is_zero(current_val)) {
-            if (original_val == new_val) {
+            if (original_val == value) {
                 return EVMC_STORAGE_DELETED_RESTORED;
             } else {
                 return EVMC_STORAGE_DELETED_ADDED;
             }
         }
         // !is_zero(current_val)
-        if (is_zero(new_val)) {
+        if (is_zero(value)) {
             return EVMC_STORAGE_MODIFIED_DELETED;
         }
-        // !is_zero(new_val)
-        if (original_val == new_val) {
+        // !is_zero(value)
+        if (original_val == value) {
             return EVMC_STORAGE_MODIFIED_RESTORED;
         } else {
             return EVMC_STORAGE_ASSIGNED;
         }
     }
     // is_zero(original_val)
-    if (original_val == new_val) {
+    if (original_val == value) {
         return EVMC_STORAGE_ADDED_DELETED;
     } else {
         return EVMC_STORAGE_ASSIGNED;
@@ -499,11 +497,11 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     return context;
 }
 
-evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
-    assert(n >= 0);
+evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
+    assert(block_number >= 0);
     const uint64_t current_block_num{evm_.block_.header.number};
-    assert(static_cast<uint64_t>(n) < current_block_num);
-    const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(n)};
+    assert(static_cast<uint64_t>(block_number) < current_block_num);
+    const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_number)};
     assert(std::in_range<std::size_t>(new_size_u64));
     const size_t new_size{static_cast<size_t>(new_size_u64)};
 

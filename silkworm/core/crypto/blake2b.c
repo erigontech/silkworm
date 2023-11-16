@@ -52,16 +52,16 @@ static inline uint64_t load64(const void* src) {
 
 static inline uint64_t rotr64(const uint64_t w, const unsigned c) { return (w >> c) | (w << (64 - c)); }
 
-#define G(r, i, a, b, c, d)                         \
-    do {                                            \
-        a = a + b + m[blake2b_sigma[r][2 * i + 0]]; \
-        d = rotr64(d ^ a, 32);                      \
-        c = c + d;                                  \
-        b = rotr64(b ^ c, 24);                      \
-        a = a + b + m[blake2b_sigma[r][2 * i + 1]]; \
-        d = rotr64(d ^ a, 16);                      \
-        c = c + d;                                  \
-        b = rotr64(b ^ c, 63);                      \
+#define G(r, i, a, b, c, d)                                   \
+    do {                                                      \
+        (a) = (a) + (b) + m[blake2b_sigma[(r)][2 * (i) + 0]]; \
+        (d) = rotr64((d) ^ (a), 32);                          \
+        (c) = (c) + (d);                                      \
+        (b) = rotr64((b) ^ (c), 24);                          \
+        (a) = (a) + (b) + m[blake2b_sigma[(r)][2 * (i) + 1]]; \
+        (d) = rotr64((d) ^ (a), 16);                          \
+        (c) = (c) + (d);                                      \
+        (b) = rotr64((b) ^ (c), 63);                          \
     } while (0)
 
 #define ROUND(r)                           \

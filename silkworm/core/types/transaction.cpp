@@ -146,8 +146,9 @@ namespace rlp {
         encode(to, txn.data);
     }
 
-    static void eip2718_encode_for_signing(Bytes& to, const UnsignedTransaction& txn, const Header h, bool wrap_into_array) {
-        if (wrap_into_array) {
+    static void eip2718_encode_for_signing(Bytes& to, const UnsignedTransaction& txn, const Header h,
+                                           bool wrap_eip2718_into_string) {
+        if (wrap_eip2718_into_string) {
             auto rlp_len{static_cast<size_t>(length_of_length(h.payload_length) + h.payload_length)};
             encode_header(to, {false, rlp_len + 1});
         }
@@ -284,7 +285,7 @@ namespace rlp {
         return decode_items(from, to.odd_y_parity, to.r, to.s);
     }
 
-    DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping allowed,
+    DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping accepted_typed_txn_wrapping,
                                       Leftover mode) noexcept {
         to.from.reset();
 
@@ -293,7 +294,7 @@ namespace rlp {
         }
 
         if (0 < from[0] && from[0] < kEmptyStringCode) {  // Raw serialization of a typed transaction
-            if (allowed == Eip2718Wrapping::kString) {
+            if (accepted_typed_txn_wrapping == Eip2718Wrapping::kString) {
                 return tl::unexpected{DecodingError::kUnexpectedEip2718Serialization};
             }
 
@@ -329,7 +330,7 @@ namespace rlp {
 
         // String-wrapped typed transaction
 
-        if (allowed == Eip2718Wrapping::kNone) {
+        if (accepted_typed_txn_wrapping == Eip2718Wrapping::kNone) {
             return tl::unexpected{DecodingError::kUnexpectedEip2718Serialization};
         }
 

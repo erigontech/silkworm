@@ -21,7 +21,7 @@
 namespace silkworm {
 
 // Error codes for RLP and other decoding
-enum class [[nodiscard]] DecodingError{
+enum class [[nodiscard]] DecodingError {
     kOverflow,
     kLeadingZero,
     kInputTooShort,

@@ -53,7 +53,7 @@ struct SyncContext {
 //! prune
 class Stage : public Stoppable {
   public:
-    enum class [[nodiscard]] Result{
+    enum class [[nodiscard]] Result {
         kSuccess,                 // valid chain
         kUnknownChainId,          //
         kUnknownProtocolRuleSet,  //

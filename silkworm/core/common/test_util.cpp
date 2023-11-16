@@ -21,38 +21,6 @@
 
 namespace silkworm::test {
 
-const ChainConfig kFrontierConfig{
-    .chain_id = 1,
-};
-
-const ChainConfig kLondonConfig{
-    .chain_id = 1,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 0,
-    .berlin_block = 0,
-    .london_block = 0,
-};
-
-const ChainConfig kShanghaiConfig{
-    .chain_id = 1,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 0,
-    .berlin_block = 0,
-    .london_block = 0,
-    .terminal_total_difficulty = 0,
-    .shanghai_time = 0,
-};
-
 std::vector<Transaction> sample_transactions() {
     std::vector<Transaction> transactions;
     transactions.resize(2);

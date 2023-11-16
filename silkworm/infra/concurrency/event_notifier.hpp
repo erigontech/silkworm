@@ -31,7 +31,7 @@ namespace silkworm::concurrency {
 // Only one waiter is supported.
 class EventNotifier {
   public:
-    explicit EventNotifier(boost::asio::any_io_executor executor) : channel_(std::move(executor), 1) {}
+    explicit EventNotifier(const boost::asio::any_io_executor& executor) : channel_(executor, 1) {}
 
     Task<void> wait() {
         co_await channel_.receive();

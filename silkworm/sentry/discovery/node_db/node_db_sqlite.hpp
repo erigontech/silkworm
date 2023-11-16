@@ -29,7 +29,7 @@ class NodeDbSqliteImpl;
 
 class NodeDbSqlite {
   public:
-    explicit NodeDbSqlite(boost::asio::any_io_executor executor);
+    explicit NodeDbSqlite(const boost::asio::any_io_executor& executor);
     ~NodeDbSqlite();
 
     void setup(const std::filesystem::path& db_dir_path);

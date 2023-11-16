@@ -44,7 +44,7 @@ namespace silkworm::sentry {
 class PeerManagerApi : public PeerManagerObserver {
   public:
     explicit PeerManagerApi(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         PeerManager& peer_manager)
         : peer_manager_(peer_manager),
           peer_count_calls_channel_(executor),

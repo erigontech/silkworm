@@ -87,8 +87,8 @@ class AwaitablePromise {
     using AsyncChannel = typename AwaitableFuture<T>::AsyncChannel;
 
   public:
-    explicit AwaitablePromise(boost::asio::any_io_executor executor)
-        : channel_(std::make_shared<AsyncChannel>(std::move(executor), 1)) {}
+    explicit AwaitablePromise(const boost::asio::any_io_executor& executor)
+        : channel_(std::make_shared<AsyncChannel>(executor, 1)) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise& operator=(const AwaitablePromise&) = delete;

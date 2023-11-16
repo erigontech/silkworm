@@ -27,9 +27,9 @@ class SerialNodeDb : public NodeDb {
   public:
     SerialNodeDb(
         NodeDb& db,
-        boost::asio::any_io_executor executor)
+        const boost::asio::any_io_executor& executor)
         : db_(db),
-          strand_(boost::asio::make_strand(std::move(executor))) {}
+          strand_(boost::asio::make_strand(executor)) {}
     ~SerialNodeDb() override = default;
 
     Task<bool> upsert_node_address(NodeId id, NodeAddress address) override;

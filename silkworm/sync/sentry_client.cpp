@@ -39,7 +39,7 @@ namespace silkworm {
 using namespace boost::asio;
 
 SentryClient::SentryClient(
-    boost::asio::any_io_executor executor,
+    const boost::asio::any_io_executor& executor,
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client)
     : executor_{executor},
       sentry_client_{std::move(sentry_client)},

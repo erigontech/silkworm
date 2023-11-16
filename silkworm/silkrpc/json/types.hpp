@@ -34,7 +34,6 @@
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
-#include <silkworm/silkrpc/json/glaze.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
@@ -131,10 +130,6 @@ nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
 nlohmann::json make_json_error(uint32_t id, int code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
-
-// GLAZE
-void make_glaze_json_error(uint32_t id, int error_id, const std::string& message, std::string& reply);
-void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply);
 
 }  // namespace silkworm::rpc
 

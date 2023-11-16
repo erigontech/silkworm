@@ -175,7 +175,7 @@ TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][c
     cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
     cp.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
     std::exception_ptr run_exception;
-    cp.set_exception_handler([&](std::exception_ptr eptr) {
+    cp.set_exception_handler([&](std::exception_ptr eptr) {  // NOLINT(performance-unnecessary-value-param)
         run_exception = eptr;
         // In case of any loop exception in any thread, close down the pool
         cp.stop();

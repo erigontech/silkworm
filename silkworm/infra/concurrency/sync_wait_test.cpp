@@ -46,7 +46,7 @@ class DummyEngine {
   public:
     DummyEngine(asio::io_context& io) : io_{io} {}
 
-    Task<int> do_work() {
+    static Task<int> do_work() {
         co_return 42;
     }
 
@@ -73,7 +73,7 @@ TEST_CASE("sync wait") {
 
         DummyEngine engine{io};
 
-        auto value = sync_wait(in(engine), engine.do_work());
+        auto value = sync_wait(in(engine), DummyEngine::do_work());
 
         CHECK(value == 42);
 

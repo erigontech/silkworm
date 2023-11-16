@@ -31,8 +31,8 @@ inline constexpr std::string_view kJsonVersion{"2.0"};
 inline constexpr auto kAddressHexSize = 2 + 2 * kAddressLength + 1;
 inline constexpr auto kHashHexSize = 2 + 2 * kHashLength + 1;
 inline constexpr auto kBloomSize = 1024;
-inline constexpr auto kInt64HexSize = 2 + 2 * sizeof(uint64_t) / 8 + 1;
-inline constexpr auto kInt256HexSize = 2 + 2 * sizeof(intx::uint256) / 8 + 1;
+inline constexpr auto kInt64HexSize = 2 + 2 * sizeof(uint64_t) + 1;
+inline constexpr auto kInt256HexSize = 2 + 2 * sizeof(intx::uint256) + 1;
 inline constexpr auto kDataSize = 4096;
 inline constexpr auto kEthCallResultFixedSize = 2048;
 

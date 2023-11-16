@@ -70,7 +70,7 @@ void from_json(const nlohmann::json& json, Call& call) {
 }
 
 struct GlazeJsonCall {
-    std::string_view jsonrpc = jsonVersion;
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     char result[2048];
     struct glaze {
@@ -83,7 +83,7 @@ struct GlazeJsonCall {
 };
 
 struct GlazeJsonCallResultAsString {
-    std::string_view jsonrpc = jsonVersion;
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     std::string result;
     struct glaze {
@@ -96,7 +96,7 @@ struct GlazeJsonCallResultAsString {
 };
 
 void make_glaze_json_content(uint32_t id, const silkworm::Bytes& call_result, std::string& json_reply) {
-    if (call_result.size() * 2 + 2 + 1 > ethCallResultFixedSize) {
+    if (call_result.size() * 2 + 2 + 1 > kEthCallResultFixedSize) {
         GlazeJsonCallResultAsString log_json_data{};
         log_json_data.result.reserve(call_result.size() * 2 + 2);
         log_json_data.id = id;

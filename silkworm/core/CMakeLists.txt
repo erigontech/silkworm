@@ -24,6 +24,10 @@ else()
   add_compile_options(-fno-exceptions)
 endif()
 
+if(SILKWORM_CLANG_TIDY)
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
+endif()
+
 file(
   GLOB_RECURSE
   SILKWORM_CORE_SRC

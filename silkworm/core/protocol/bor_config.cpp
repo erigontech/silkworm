@@ -48,9 +48,7 @@ nlohmann::json BorConfig::to_json() const noexcept {
         }
     }
     ret["jaipurBlock"] = jaipur_block;
-    if (agra_block) {
-        ret["agraBlock"] = *agra_block;
-    }
+    ret["agraBlock"] = agra_block;
     return ret;
 }
 
@@ -102,9 +100,7 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
     }
 
     config.jaipur_block = json["jaipurBlock"].get<BlockNum>();
-    if (json.contains("agraBlock")) {
-        config.agra_block = json["agraBlock"].get<BlockNum>();
-    }
+    config.agra_block = json["agraBlock"].get<BlockNum>();
     return config;
 }
 

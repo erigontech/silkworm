@@ -31,7 +31,7 @@ class State : public BlockState {
     State(State&& other) = default;
     State& operator=(State&& other) = default;
 
-    virtual ~State() = default;
+    ~State() override = default;
 
     /** @name Readers */
     //!@{

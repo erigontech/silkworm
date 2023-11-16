@@ -27,6 +27,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/ipv6_unsupported_error.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
 
@@ -139,6 +140,10 @@ Task<PingCheckResult> ping_check(
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled)
             throw;
+        log::Debug("disc_v4") << "ping_check failed to send_ping"
+                              << " to " << endpoint
+                              << " due to exception: " << ex.what();
+    } catch (const IPV6UnsupportedError& ex) {
         log::Debug("disc_v4") << "ping_check failed to send_ping"
                               << " to " << endpoint
                               << " due to exception: " << ex.what();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,24 +16,13 @@
 
 #pragma once
 
-#include <optional>
+#include <stdexcept>
 
-#include <silkworm/core/types/bloom.hpp>
-#include <silkworm/core/types/log.hpp>
-#include <silkworm/core/types/transaction.hpp>
+namespace silkworm::sentry::discovery::disc_v4 {
 
-namespace silkworm {
-
-struct Receipt {
-    TransactionType type{TransactionType::kLegacy};
-    bool success{false};
-    uint64_t cumulative_gas_used{0};
-    Bloom bloom{};
-    std::vector<Log> logs;
+class IPV6UnsupportedError : public std::runtime_error {
+  public:
+    IPV6UnsupportedError() : std::runtime_error("IPv6 is not supported") {}
 };
 
-namespace rlp {
-    void encode(Bytes& to, const Receipt&);
-}
-
-}  // namespace silkworm
+}  // namespace silkworm::sentry::discovery::disc_v4

@@ -42,6 +42,7 @@
 namespace silkworm {
 
 using namespace evmc::literals;
+using namespace std::string_view_literals;
 
 template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||

@@ -27,7 +27,7 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class [[nodiscard]] ValidationResult{
+enum class [[nodiscard]] ValidationResult {
     kOk,  // All checks passed
 
     kUnknownProtocolRuleSet,  // Unsupported protocol rule set

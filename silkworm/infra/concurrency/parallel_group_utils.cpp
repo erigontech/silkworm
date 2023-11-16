@@ -113,7 +113,7 @@ void rethrow_first_exception_if_any(
     }
 }
 
-Task<void> generate_parallel_group_task(size_t count, std::function<Task<void>(size_t)> task_factory) {
+Task<void> generate_parallel_group_task(size_t count, absl::FunctionRef<Task<void>(size_t)> task_factory) {
     if (count == 0) {
         co_return;
     }

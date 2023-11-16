@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "mem_usage.hpp"
+
 #include <memory>
 
 #ifdef __linux__
@@ -34,6 +36,8 @@
 // clang-format on
 #endif
 
+namespace silkworm::os {
+
 // Inspired by: https://stackoverflow.com/questions/372484/how-do-i-programmatically-check-memory-use-in-a-fairly-portable-way-c-c
 
 // The amount of memory currently being used by this process, in bytes.
@@ -49,7 +53,8 @@ size_t get_mem_usage(bool resident) {
     FILE* file = fopen("/proc/self/statm", "r");
     if (file) {
         unsigned long vm = 0, rm = 0;
-        if (fscanf(file, "%lu %lu", &vm, &rm) == 2) {  // the first 2 num: vm size, resident set size
+        if (fscanf(file, "%lu %lu", &vm, &rm) == 2) {  // NOLINT(cert-err34-c)
+            // the first 2 num: vm size, resident set size
             vm_size = vm * static_cast<size_t>(getpagesize());
             rm_size = rm * static_cast<size_t>(getpagesize());
         }
@@ -78,3 +83,5 @@ size_t get_mem_usage(bool resident) {
     return 0;
 #endif
 }
+
+}  // namespace silkworm::os

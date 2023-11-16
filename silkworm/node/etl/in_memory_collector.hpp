@@ -107,7 +107,7 @@ class InMemoryCollector {
         sort_entries();
 
         for (const auto& entry : entries_) {
-            const auto [key, value]{entry};
+            const auto& [key, value]{entry};
 
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 if (SignalHandler::signalled()) {

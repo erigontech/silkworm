@@ -168,7 +168,7 @@ Task<silkworm::Bytes> read_body_rlp(const DatabaseReader& reader, const evmc::by
     co_return co_await reader.get_one(db::table::kBlockBodiesName, block_key);
 }
 
-Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
+Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
@@ -206,7 +206,11 @@ Task<Receipts> read_raw_receipts(const DatabaseReader& reader, BlockNum block_nu
 Task<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
-    auto receipts = co_await read_raw_receipts(reader, block_number);
+    auto optional_receipts = co_await read_raw_receipts(reader, block_number);
+    std::vector<Receipt> receipts {};
+    if (optional_receipts.has_value()){
+        receipts = optional_receipts.value();
+    }
 
     // Add derived fields to the receipts
     auto transactions = block_with_hash.block.transactions;

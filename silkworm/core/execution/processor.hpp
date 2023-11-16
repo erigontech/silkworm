@@ -59,7 +59,7 @@ class ExecutionProcessor {
      */
     [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
-    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t refund_gas) noexcept;
+    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept;
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;

@@ -149,13 +149,22 @@ SILKWORM_CONSTINIT extern const ChainConfig kPolygonConfig;
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 
-//! \brief Looks up a known chain config provided its chain ID
-std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;
+//! \brief Known chain IDs mapped to their respective chain configs
+inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
+    {1, &kMainnetConfig},
+    {5, &kGoerliConfig},
+    {11155111, &kSepoliaConfig},
+    {137, &kPolygonConfig},
+    {80001, &kMumbaiConfig},
+};
 
-//! \brief Looks up a known chain config provided its chain identifier (eg. "mainnet")
-std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(std::string_view identifier) noexcept;
-
-//! \brief Returns a map known chains names mapped to their respective chain ids
-std::map<std::string, uint64_t> get_known_chains_map() noexcept;
+//! \brief Known chain names mapped to their respective chain IDs
+inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
+    {"mainnet"sv, 1},
+    {"goerli"sv, 5},
+    {"sepolia"sv, 11155111},
+    {"polygon"sv, 137},
+    {"mumbai"sv, 80001},
+};
 
 }  // namespace silkworm

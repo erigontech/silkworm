@@ -274,7 +274,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 14
+          compiler_version: 15
       - run:
           name: "Generate report"
           command: |

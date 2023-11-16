@@ -831,7 +831,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
 
 TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.chain_config = *(silkworm::lookup_known_chain("mainnet")->second);
+    node_settings.chain_config = kMainnetConfig;
     node_settings.etherbase = evmc::address{};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     auto backend_client = *test.backend_client;

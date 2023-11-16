@@ -28,14 +28,6 @@
 
 namespace silkworm {
 
-static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {"mainnet", &kMainnetConfig},
-    {"goerli", &kGoerliConfig},
-    {"sepolia", &kSepoliaConfig},
-    {"polygon", &kPolygonConfig},
-    {"mumbai", &kMumbaiConfig},
-};
-
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
@@ -248,39 +240,6 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
-std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const uint64_t chain_id) noexcept {
-    auto it{
-        as_range::find_if(kKnownChainConfigs, [&chain_id](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-            return x.second->chain_id == chain_id;
-        })};
-
-    if (it == kKnownChainConfigs.end()) {
-        return std::nullopt;
-    }
-    return std::make_pair(it->first, it->second);
-}
-
-std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const std::string_view identifier) noexcept {
-    auto it{
-        as_range::find_if(kKnownChainConfigs, [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-            return iequals(x.first, identifier);
-        })};
-
-    if (it == kKnownChainConfigs.end()) {
-        return std::nullopt;
-    }
-    return std::make_pair(it->first, it->second);
-}
-
-// TODO(yperbasis): rework with constexpr maps
-std::map<std::string, uint64_t> get_known_chains_map() noexcept {
-    std::map<std::string, uint64_t> ret;
-    as_range::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
-        ret[x.first] = x.second->chain_id;
-    });
-    return ret;
-}
-
 SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .chain_id = 1,
     .homestead_block = 1'150'000,
@@ -334,8 +293,6 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .shanghai_time = 1677557088,
     .rule_set_config = protocol::EthashConfig{},
 };
-
-using namespace std::string_view_literals;
 
 SILKWORM_CONSTINIT const ChainConfig kPolygonConfig{
     .chain_id = 137,

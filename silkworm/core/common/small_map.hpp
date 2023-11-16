@@ -21,6 +21,7 @@
 #include <concepts>
 #include <initializer_list>
 #include <iterator>
+#include <map>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -72,6 +73,10 @@ class SmallMap {
         return size_ == 0;
     }
 
+    [[nodiscard]] constexpr std::size_t size() const noexcept {
+        return size_;
+    }
+
     [[nodiscard]] constexpr auto begin() const noexcept {
         return data_.begin();
     }
@@ -88,6 +93,15 @@ class SmallMap {
             }
         }
         return nullptr;
+    }
+
+    template <std::constructible_from<Key> NewKeyType = Key>
+    [[nodiscard]] std::map<NewKeyType, T> to_std_map() const {
+        std::map<NewKeyType, T> ret;
+        for (const auto& [key, val] : *this) {
+            ret[NewKeyType(key)] = val;
+        }
+        return ret;
     }
 
   private:

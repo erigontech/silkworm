@@ -258,7 +258,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
     __m128i MSG, TMP;
     __m128i MSG0, MSG1, MSG2, MSG3;
     __m128i ABEF_SAVE, CDGH_SAVE;
-    const __m128i MASK = _mm_set_epi64x(0x0c0d0e0f08090a0bULL, 0x0405060700010203ULL);
+    const __m128i MASK = _mm_set_epi64x(0x0c0d0e0f08090a0bULL, 0x0405060700010203ULL);  // NOLINT
 
     /* Load initial values */
     TMP = _mm_loadu_si128((const __m128i*)&h[0]);
@@ -283,7 +283,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         /* Rounds 0-3 */
         MSG = _mm_loadu_si128((const __m128i*)(chunk + 0));
         MSG0 = _mm_shuffle_epi8(MSG, MASK);
-        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0xE9B5DBA5B5C0FBCFULL, 0x71374491428A2F98ULL));
+        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0xE9B5DBA5B5C0FBCFULL, 0x71374491428A2F98ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         MSG = _mm_shuffle_epi32(MSG, 0x0E);
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
@@ -291,7 +291,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         /* Rounds 4-7 */
         MSG1 = _mm_loadu_si128((const __m128i*)(chunk + 16));
         MSG1 = _mm_shuffle_epi8(MSG1, MASK);
-        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0xAB1C5ED5923F82A4ULL, 0x59F111F13956C25BULL));
+        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0xAB1C5ED5923F82A4ULL, 0x59F111F13956C25BULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         MSG = _mm_shuffle_epi32(MSG, 0x0E);
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
@@ -300,7 +300,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         /* Rounds 8-11 */
         MSG2 = _mm_loadu_si128((const __m128i*)(chunk + 32));
         MSG2 = _mm_shuffle_epi8(MSG2, MASK);
-        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x550C7DC3243185BEULL, 0x12835B01D807AA98ULL));
+        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x550C7DC3243185BEULL, 0x12835B01D807AA98ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         MSG = _mm_shuffle_epi32(MSG, 0x0E);
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
@@ -309,7 +309,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         /* Rounds 12-15 */
         MSG3 = _mm_loadu_si128((const __m128i*)(chunk + 48));
         MSG3 = _mm_shuffle_epi8(MSG3, MASK);
-        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC19BF1749BDC06A7ULL, 0x80DEB1FE72BE5D74ULL));
+        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC19BF1749BDC06A7ULL, 0x80DEB1FE72BE5D74ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG3, MSG2, 4);
         MSG0 = _mm_add_epi32(MSG0, TMP);
@@ -319,7 +319,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG2 = _mm_sha256msg1_epu32(MSG2, MSG3);
 
         /* Rounds 16-19 */
-        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x240CA1CC0FC19DC6ULL, 0xEFBE4786E49B69C1ULL));
+        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x240CA1CC0FC19DC6ULL, 0xEFBE4786E49B69C1ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG0, MSG3, 4);
         MSG1 = _mm_add_epi32(MSG1, TMP);
@@ -329,7 +329,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG3 = _mm_sha256msg1_epu32(MSG3, MSG0);
 
         /* Rounds 20-23 */
-        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x76F988DA5CB0A9DCULL, 0x4A7484AA2DE92C6FULL));
+        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x76F988DA5CB0A9DCULL, 0x4A7484AA2DE92C6FULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG1, MSG0, 4);
         MSG2 = _mm_add_epi32(MSG2, TMP);
@@ -339,7 +339,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG0 = _mm_sha256msg1_epu32(MSG0, MSG1);
 
         /* Rounds 24-27 */
-        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0xBF597FC7B00327C8ULL, 0xA831C66D983E5152ULL));
+        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0xBF597FC7B00327C8ULL, 0xA831C66D983E5152ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG2, MSG1, 4);
         MSG3 = _mm_add_epi32(MSG3, TMP);
@@ -349,7 +349,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG1 = _mm_sha256msg1_epu32(MSG1, MSG2);
 
         /* Rounds 28-31 */
-        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x1429296706CA6351ULL, 0xD5A79147C6E00BF3ULL));
+        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x1429296706CA6351ULL, 0xD5A79147C6E00BF3ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG3, MSG2, 4);
         MSG0 = _mm_add_epi32(MSG0, TMP);
@@ -359,7 +359,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG2 = _mm_sha256msg1_epu32(MSG2, MSG3);
 
         /* Rounds 32-35 */
-        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x53380D134D2C6DFCULL, 0x2E1B213827B70A85ULL));
+        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x53380D134D2C6DFCULL, 0x2E1B213827B70A85ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG0, MSG3, 4);
         MSG1 = _mm_add_epi32(MSG1, TMP);
@@ -369,7 +369,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG3 = _mm_sha256msg1_epu32(MSG3, MSG0);
 
         /* Rounds 36-39 */
-        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x92722C8581C2C92EULL, 0x766A0ABB650A7354ULL));
+        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x92722C8581C2C92EULL, 0x766A0ABB650A7354ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG1, MSG0, 4);
         MSG2 = _mm_add_epi32(MSG2, TMP);
@@ -379,7 +379,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG0 = _mm_sha256msg1_epu32(MSG0, MSG1);
 
         /* Rounds 40-43 */
-        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0xC76C51A3C24B8B70ULL, 0xA81A664BA2BFE8A1ULL));
+        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0xC76C51A3C24B8B70ULL, 0xA81A664BA2BFE8A1ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG2, MSG1, 4);
         MSG3 = _mm_add_epi32(MSG3, TMP);
@@ -389,7 +389,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG1 = _mm_sha256msg1_epu32(MSG1, MSG2);
 
         /* Rounds 44-47 */
-        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x106AA070F40E3585ULL, 0xD6990624D192E819ULL));
+        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x106AA070F40E3585ULL, 0xD6990624D192E819ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG3, MSG2, 4);
         MSG0 = _mm_add_epi32(MSG0, TMP);
@@ -399,7 +399,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG2 = _mm_sha256msg1_epu32(MSG2, MSG3);
 
         /* Rounds 48-51 */
-        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x34B0BCB52748774CULL, 0x1E376C0819A4C116ULL));
+        MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0x34B0BCB52748774CULL, 0x1E376C0819A4C116ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG0, MSG3, 4);
         MSG1 = _mm_add_epi32(MSG1, TMP);
@@ -409,7 +409,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG3 = _mm_sha256msg1_epu32(MSG3, MSG0);
 
         /* Rounds 52-55 */
-        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x682E6FF35B9CCA4FULL, 0x4ED8AA4A391C0CB3ULL));
+        MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0x682E6FF35B9CCA4FULL, 0x4ED8AA4A391C0CB3ULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG1, MSG0, 4);
         MSG2 = _mm_add_epi32(MSG2, TMP);
@@ -418,7 +418,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
 
         /* Rounds 56-59 */
-        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x8CC7020884C87814ULL, 0x78A5636F748F82EEULL));
+        MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x8CC7020884C87814ULL, 0x78A5636F748F82EEULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         TMP = _mm_alignr_epi8(MSG2, MSG1, 4);
         MSG3 = _mm_add_epi32(MSG3, TMP);
@@ -427,7 +427,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
 
         /* Rounds 60-63 */
-        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC67178F2BEF9A3F7ULL, 0xA4506CEB90BEFFFAULL));
+        MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC67178F2BEF9A3F7ULL, 0xA4506CEB90BEFFFAULL));  // NOLINT
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
         MSG = _mm_shuffle_epi32(MSG, 0x0E);
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
@@ -450,7 +450,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
 #pragma GCC diagnostic pop
 
 // https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
-static void cpuid(int info[4], int InfoType) {
+static void cpuid(int info[4], int InfoType) {  // NOLINT(readability-non-const-parameter)
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
 

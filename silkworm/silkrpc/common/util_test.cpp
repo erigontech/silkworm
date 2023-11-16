@@ -253,8 +253,7 @@ TEST_CASE("decoding_result_to_string(kInvalidMasksSubsets)", "[silkrpc][common][
 
 TEST_CASE("lookup_chain_config", "[silkrpc][common][util]") {
     SECTION("lookup known chain") {
-        const auto known_chains{silkworm::get_known_chains_map()};
-        for (const auto& [_, known_chain_id] : known_chains) {
+        for (const auto& [_, known_chain_id] : kKnownChainNameToId) {
             CHECK_NOTHROW(lookup_chain_config(known_chain_id) != nullptr);
         }
     }

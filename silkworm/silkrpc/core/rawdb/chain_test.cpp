@@ -271,7 +271,7 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("zero receipts") {
         const uint64_t block_number{0};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6");  }));
+        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());

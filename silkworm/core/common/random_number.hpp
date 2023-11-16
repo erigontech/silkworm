@@ -22,6 +22,9 @@ namespace silkworm {
 
 class RandomNumber {
   public:
+    // Use to generate uniformly distributed uint64
+    RandomNumber() {}
+
     // Use to generate integers uniformly distributed on the closed interval [a, b]
     RandomNumber(uint64_t a, uint64_t b) : distr_(a, b) {}
 

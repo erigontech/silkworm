@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "rec_split_seq.hpp"
+#include "rec_split.hpp"
 
 namespace silkworm::succinct_seq {
 

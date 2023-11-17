@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "rec_split.hpp"
+
 #include <fstream>
 #include <iomanip>  // for std::setw and std::setfill
 #include <vector>
@@ -25,7 +27,6 @@
 #include <silkworm/node/test/xoroshiro128pp.hpp>
 
 #include "rec_split_par.hpp"
-#include "rec_split_seq.hpp"
 
 void hexDump(std::string out_file_name, std::ifstream& file) {
     std::ofstream out(out_file_name);

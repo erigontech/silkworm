@@ -71,22 +71,24 @@ namespace silkworm::succinct::parallel {
 //! Make the MPHF predictable just for testing
 constexpr int kTestSalt{1};
 
-TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8-Par: key_count=0", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
     RecSplitSettings settings{
         .keys_count = 0,
         .bucket_size = 10,
         .index_path = index_file.path(),
         .base_data_id = 0};
     RecSplit8 rs{settings, /*.salt=*/kTestSalt};
-    CHECK_THROWS_AS(rs.build(), std::logic_error);
+    CHECK_THROWS_AS(rs.build(thread_pool), std::logic_error);
     CHECK_THROWS_AS(rs("first_key"), std::logic_error);
 }
 
-TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8-Par: key_count=1", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
     RecSplitSettings settings{
         .keys_count = 1,
         .bucket_size = 10,
@@ -94,13 +96,14 @@ TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
         .base_data_id = 0};
     RecSplit8 rs{settings, /*.salt=*/kTestSalt};
     CHECK_NOTHROW(rs.add_key("first_key", 0));
-    CHECK_NOTHROW(rs.build());
+    CHECK_NOTHROW(rs.build(thread_pool));
     CHECK_NOTHROW(rs("first_key"));
 }
 
-TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8-Par key_count=2", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
     RecSplitSettings settings{
         .keys_count = 2,
         .bucket_size = 10,
@@ -110,10 +113,10 @@ TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
 
     SECTION("keys") {
         CHECK_NOTHROW(rs.add_key("first_key", 0));
-        CHECK_THROWS_AS(rs.build(), std::logic_error);
+        CHECK_THROWS_AS(rs.build(thread_pool), std::logic_error);
         CHECK_THROWS_AS(rs("first_key"), std::logic_error);
         CHECK_NOTHROW(rs.add_key("second_key", 0));
-        CHECK(rs.build() == false /*collision_detected*/);
+        CHECK(rs.build(thread_pool) == false /*collision_detected*/);
         CHECK_NOTHROW(rs("first_key"));
         CHECK_NOTHROW(rs("second_key"));
     }
@@ -121,7 +124,7 @@ TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
     SECTION("duplicated keys") {
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_NOTHROW(rs.add_key("first_key", 0));
-        CHECK(rs.build() == true /*collision_detected*/);
+        CHECK(rs.build(thread_pool) == true /*collision_detected*/);
     }
 }
 
@@ -157,9 +160,10 @@ const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 
-TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
 
     constexpr int kTestNumKeys{1'000};
     constexpr int kTestBucketSize{128};
@@ -190,14 +194,15 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
         for (const auto& hk : hashed_keys) {
             rs.add_key(hk, 0);
         }
-        CHECK(rs.build() == false /*collision_detected*/);
+        CHECK(rs.build(thread_pool) == false /*collision_detected*/);
         check_bijection(rs, hashed_keys);
     }
 }
 
-TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
 
     struct RecSplitParams {
         std::size_t key_count{0};
@@ -227,7 +232,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
             for (const auto& hk : hashed_keys) {
                 rs.add_key(hk, 0);
             }
-            CHECK(rs.build() == false /*collision_detected*/);
+            CHECK(rs.build(thread_pool) == false /*collision_detected*/);
             check_bijection(rs, hashed_keys);
 
             RecSplit4 rs_index{index_file.path()};
@@ -242,9 +247,10 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
+TEST_CASE("RecSplit8-Par: index lookup", "[silkworm][node][recsplit][ignore]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
     RecSplitSettings settings{
         .keys_count = 100,
         .bucket_size = 10,
@@ -256,7 +262,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     for (size_t i{0}; i < settings.keys_count; ++i) {
         rs1.add_key("key " + std::to_string(i), i * 17);
     }
-    CHECK(rs1.build() == false /*collision_detected*/);
+    CHECK(rs1.build(thread_pool) == false /*collision_detected*/);
 
     // std::ifstream f(index_file.path(), std::ios::binary);
     // hexDump("par_hexdump.txt", f);
@@ -269,9 +275,10 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     }
 }
 
-TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]") {
+TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit][ignore]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
     test::TemporaryFile index_file;
+    ThreadPool thread_pool{2};
     RecSplitSettings settings{
         .keys_count = 100,
         .bucket_size = 10,
@@ -282,7 +289,7 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
     for (size_t i{0}; i < settings.keys_count; ++i) {
         rs1.add_key("key " + std::to_string(i), i * 17);
     }
-    CHECK(rs1.build() == false /*collision_detected*/);
+    CHECK(rs1.build(thread_pool) == false /*collision_detected*/);
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {

@@ -30,7 +30,7 @@
 
 namespace silkworm::snapshot {
 
-void Index::build(ThreadPool& thread_pool) {
+void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
 
     huffman::Decompressor decoder{segment_path_.path(), segment_region_};
@@ -68,7 +68,7 @@ void Index::build(ThreadPool& thread_pool) {
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_TRACE << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = rec_split.build(thread_pool);
+        collision_detected = rec_split.build();
         SILK_DEBUG << "Build RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
         if (collision_detected) rec_split.reset_new_salt();
     } while (collision_detected);
@@ -95,7 +95,7 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
     return true;
 }
 
-void TransactionIndex::build(ThreadPool& thread_pool) {
+void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
     const SnapshotPath bodies_segment_path = SnapshotPath::from(segment_path_.path().parent_path(),
@@ -247,11 +247,11 @@ void TransactionIndex::build(ThreadPool& thread_pool) {
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_TRACE << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_rs.build(thread_pool);
+        collision_detected = tx_hash_rs.build();
         SILK_TRACE << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected |= tx_hash_to_block_rs.build(thread_pool);
+        collision_detected |= tx_hash_to_block_rs.build();
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {

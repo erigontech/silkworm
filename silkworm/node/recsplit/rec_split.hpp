@@ -409,13 +409,9 @@ class RecSplit {
         add_key(key.c_str(), key.size(), offset);
     }
 
-    [[nodiscard]] bool build() {  // for test
-        ThreadPool thread_pool{std::thread::hardware_concurrency()};
-        return build(thread_pool);
-    }
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
-    [[nodiscard]] bool build(ThreadPool&) {
+    [[nodiscard]] bool build() {
         SILK_INFO << "Recsplit SEQUENTIAL version";
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};

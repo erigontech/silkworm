@@ -210,33 +210,15 @@ bool SnapshotSync::stop() {
 }
 
 void SnapshotSync::build_missing_indexes() {
-    ThreadPool workers{std::thread::hardware_concurrency() / 2};  // 1 thread pool
-    ThreadSafeQueue<std::shared_ptr<Index>> tasks;
+    ThreadPool workers;
 
-    // Determine the missing indexes and add them to task queue
+    // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_->missing_indexes();
-    for(const auto& index : missing_indexes) {
-        tasks.push(index);
-    }
-
-    // measure method execution time
-    auto start_time = std::chrono::high_resolution_clock::now();
-
-    // Starts workers to build indexes in parallel
-    for (size_t i = 0; i < workers.get_thread_count(); ++i) {
-        workers.push_task([&]() {
-            ThreadPool builders{std::thread::hardware_concurrency()};  // N thread pools
-            while (not tasks.empty() and not is_stopping()) {
-                std::shared_ptr<Index> index;
-                bool task_present = tasks.timed_wait_and_pop(index, kCheckCompletionInterval);
-                if (!task_present) continue;
-
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-                index->build(builders);
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
-            }
-            builders.wait_for_tasks();
-            SILK_INFO << "SnapshotSync: worker ended";
+    for (const auto& index : missing_indexes) {
+        workers.push_task([=]() {
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+            index->build();
+            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
         });
     }
 
@@ -244,15 +226,9 @@ void SnapshotSync::build_missing_indexes() {
     while (workers.get_tasks_total() and not is_stopping()) {
         std::this_thread::sleep_for(kCheckCompletionInterval);
     }
-
     // Wait for any already-started-but-unfinished work in case of stop request
     workers.pause();
     workers.wait_for_tasks();
-
-    // Log elapsed time
-    auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
-    SILK_INFO << "SnapshotSync: build_missing_indexes elapsed time: "
-              << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() << " s";
 }
 
 void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available) {

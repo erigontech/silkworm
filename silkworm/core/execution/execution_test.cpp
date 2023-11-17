@@ -20,6 +20,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -168,9 +169,16 @@ TEST_CASE("Execute block with tracing") {
 
     BlockTracer block_tracer{};
     processor.evm().add_tracer(block_tracer);
+    CallTraces call_traces{};
+    CallTracer call_tracer{call_traces};
+    processor.evm().add_tracer(call_tracer);
+
     REQUIRE(processor.execute_and_write_block(receipts) == ValidationResult::kOk);
 
     CHECK((block_tracer.block_start_called() && block_tracer.block_end_called()));
+    CHECK(call_traces.senders.empty());
+    CHECK(call_traces.recipients.size() == 1);
+    CHECK(call_traces.recipients.contains(kMiner));  // header beneficiary
 }
 
 }  // namespace silkworm

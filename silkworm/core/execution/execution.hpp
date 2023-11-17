@@ -19,7 +19,6 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>

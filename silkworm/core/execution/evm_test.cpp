@@ -272,6 +272,10 @@ TEST_CASE("DELEGATECALL") {
 
     EVM evm{block, state, kMainnetConfig};
 
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+
     Transaction txn{};
     txn.from = caller_address;
     txn.to = caller_address;
@@ -284,6 +288,11 @@ TEST_CASE("DELEGATECALL") {
 
     evmc::bytes32 key0{};
     CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_hex(caller_address));
+    CHECK(call_traces.senders.size() == 1);
+    CHECK(call_traces.recipients.size() == 2);
+    CHECK(call_traces.senders.contains(caller_address));     // call from caller to self
+    CHECK(call_traces.recipients.contains(caller_address));  // call from caller to self
+    CHECK(call_traces.recipients.contains(callee_address));  // delegate call from caller to callee
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
@@ -514,8 +523,6 @@ TEST_CASE("Tracing smart contract with storage") {
     txn.data = code;
 
     CHECK(evm.tracers().empty());
-
-    // TODO(canepat) use 3 SECTIONS
 
     // First execution: out of gas
     TestTracer tracer1;
@@ -826,9 +833,12 @@ TEST_CASE("Tracing destruction of smart contract") {
 
     EVM evm{block, state, chain_config};
     REQUIRE(evm.revision() >= EVMC_CONSTANTINOPLE);
-    TestTracer tracer;
-    evm.add_tracer(tracer);
-    CHECK(evm.tracers().size() == 1);
+    TestTracer test_tracer;
+    evm.add_tracer(test_tracer);
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+    CHECK(evm.tracers().size() == 2);
 
     Transaction txn{};
     txn.from = caller;
@@ -838,7 +848,13 @@ TEST_CASE("Tracing destruction of smart contract") {
     uint64_t gas = {100'000};
     CallResult res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
-    CHECK(tracer.self_destruct_called());
+    CHECK(test_tracer.self_destruct_called());
+    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.recipients.size() == 2);
+    CHECK(call_traces.senders.contains(caller));               // external tx
+    CHECK(call_traces.recipients.contains(contract_address));  // external tx
+    CHECK(call_traces.senders.contains(contract_address));     // self-destruct
+    CHECK(call_traces.recipients.contains(evmc::address{}));   // self-destruct
 }
 
 }  // namespace silkworm

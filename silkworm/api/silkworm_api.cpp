@@ -25,6 +25,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>

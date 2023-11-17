@@ -307,7 +307,9 @@ void DebugTracer::write_log(const DebugLog& log) {
         stream_.close_object();
     }
     if (log.error) {
-        stream_.write_field("error", "{}");
+        stream_.write_field("error");
+        stream_.open_object();
+        stream_.close_object();
     }
 
     stream_.close_object();

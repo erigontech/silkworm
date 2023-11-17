@@ -1526,7 +1526,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             prefix_len = db::kHashedStoragePrefixLength;
         }
 
-        SILK_INFO << "Checking ..." << log::Args {"source", source, "state", (with_state_coverage ? "true" : "false")};
+        SILK_INFO << "Checking ..." << log::Args{"source", source, "state", (with_state_coverage ? "true" : "false")};
 
         auto data1{trie_cursor1.to_first(false)};
 

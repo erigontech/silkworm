@@ -21,7 +21,7 @@
 
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
-#include <silkworm/node/recsplit/rec_split.hpp>
+#include <silkworm/node/recsplit/rec_split_par.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {

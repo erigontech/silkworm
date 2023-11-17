@@ -19,7 +19,7 @@
 #include <utility>
 
 #include <silkworm/core/common/decoding_result.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

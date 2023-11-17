@@ -19,8 +19,8 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {

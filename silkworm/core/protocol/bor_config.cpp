@@ -22,7 +22,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 
 namespace silkworm::protocol {
 

@@ -19,8 +19,8 @@
 #include <stdexcept>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/address.hpp>
 
 #include "tables.hpp"
 

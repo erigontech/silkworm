@@ -22,10 +22,10 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 #include "y_parity_and_chain_id.hpp"

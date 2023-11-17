@@ -26,9 +26,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-
-#include "address.hpp"
 
 namespace silkworm {
 

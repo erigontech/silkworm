@@ -20,9 +20,9 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>

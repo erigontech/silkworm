@@ -26,8 +26,8 @@
 #include <silkworm/core/chain/genesis_sepolia.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {

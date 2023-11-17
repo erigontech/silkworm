@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 

@@ -20,11 +20,11 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 

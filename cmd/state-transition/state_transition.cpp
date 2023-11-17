@@ -26,12 +26,12 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 

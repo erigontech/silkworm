@@ -27,9 +27,9 @@
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/types/address.hpp>
 
 namespace silkworm {
 

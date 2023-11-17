@@ -25,8 +25,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>

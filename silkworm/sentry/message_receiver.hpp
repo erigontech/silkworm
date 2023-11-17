@@ -38,7 +38,7 @@ namespace silkworm::sentry {
 
 class MessageReceiver : public PeerManagerObserver {
   public:
-    MessageReceiver(boost::asio::any_io_executor executor, size_t max_peers)
+    MessageReceiver(const boost::asio::any_io_executor& executor, size_t max_peers)
         : message_calls_channel_(executor),
           strand_(boost::asio::make_strand(executor)),
           peer_tasks_(strand_, max_peers),

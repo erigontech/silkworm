@@ -26,6 +26,7 @@
 #include <exception>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -149,9 +150,9 @@ awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
 template <typename Handler, typename Executor, typename = void>
 class co_spawn_cancellation_handler {
   public:
-    co_spawn_cancellation_handler(const Handler&, const Executor& ex)
+    co_spawn_cancellation_handler(const Handler&, Executor ex)
         : signal_(std::make_shared<cancellation_signal>()),
-          ex_(ex) {
+          ex_(std::move(ex)) {
     }
 
     cancellation_slot slot() {
@@ -200,8 +201,8 @@ class initiate_co_spawn {
     typedef Executor executor_type;
 
     template <typename OtherExecutor>
-    explicit initiate_co_spawn(const OtherExecutor& ex)
-        : ex_(ex) {
+    explicit initiate_co_spawn(OtherExecutor ex)
+        : ex_(std::move(ex)) {
     }
 
     executor_type get_executor() const BOOST_ASIO_NOEXCEPT {

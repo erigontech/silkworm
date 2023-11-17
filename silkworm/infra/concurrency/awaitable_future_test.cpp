@@ -34,8 +34,8 @@ namespace asio = boost::asio;
 using concurrency::AwaitableFuture;
 using concurrency::AwaitablePromise;
 
-auto create_promise_and_set_value(asio::any_io_executor executor, int value) {
-    concurrency::AwaitablePromise<int> promise{std::move(executor)};
+auto create_promise_and_set_value(const asio::any_io_executor& executor, int value) {
+    concurrency::AwaitablePromise<int> promise{executor};
     promise.set_value(value);
     return promise.get_future();
 }
@@ -206,7 +206,7 @@ TEST_CASE("awaitable future") {
 
         int value;
         auto lambda = [&](AwaitableFuture<int>&& moved_future) -> Task<void> {
-            value = co_await moved_future.get_async();
+            value = co_await moved_future.get_async();  // NOLINT(clang-analyzer-core.NullDereference)
             io.stop();
         };
 

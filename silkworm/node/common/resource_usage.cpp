@@ -42,7 +42,7 @@ Task<void> ResourceUsageLog::run() {
             timer_.expires_after(kResourceUsageInterval);
             co_await timer_.async_wait(boost::asio::use_awaitable);
 
-            log::Info("Resource usage", {"mem", human_size(get_mem_usage()),
+            log::Info("Resource usage", {"mem", human_size(os::get_mem_usage()),
                                          "chain", human_size(settings_.data_directory->chaindata().size()),
                                          "etl-tmp", human_size(settings_.data_directory->etl().size()),
                                          "uptime", StopWatch::format(steady_clock::now() - start_time)});

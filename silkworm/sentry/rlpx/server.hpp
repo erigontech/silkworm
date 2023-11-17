@@ -37,7 +37,7 @@ namespace silkworm::sentry::rlpx {
 class Server final {
   public:
     Server(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         uint16_t port);
 
     Task<void> run(

@@ -29,8 +29,8 @@ namespace silkworm::sentry {
 
 class StatusManager {
   public:
-    StatusManager(boost::asio::any_io_executor executor)
-        : status_channel_(std::move(executor)),
+    StatusManager(const boost::asio::any_io_executor& executor)
+        : status_channel_(executor),
           status_(eth::StatusData{}) {}
 
     Task<void> wait_for_status();

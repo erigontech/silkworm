@@ -66,7 +66,7 @@ namespace silkworm::concurrency {
  */
 class TaskGroup {
   public:
-    TaskGroup(boost::asio::any_io_executor executor, std::size_t max_tasks)
+    TaskGroup(const boost::asio::any_io_executor& executor, std::size_t max_tasks)
         : completions_(executor, max_tasks),
           exceptions_(executor, 1) {}
 
@@ -79,7 +79,7 @@ class TaskGroup {
     };
 
     //! Similar to co_spawn, but also adds the task to this group until it completes.
-    void spawn(boost::asio::any_io_executor executor, Task<void> task);
+    void spawn(const boost::asio::any_io_executor& executor, Task<void> task);
 
     //! Waits until a cancellation signal. then cancels all pending tasks, and waits for them to complete.
     Task<void> wait();

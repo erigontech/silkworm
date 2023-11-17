@@ -220,7 +220,7 @@ TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][c
 
     ClientContextPool cp{3};
     std::exception_ptr run_exception;
-    cp.set_exception_handler([&](std::exception_ptr eptr) {
+    cp.set_exception_handler([&](std::exception_ptr eptr) {  // NOLINT(performance-unnecessary-value-param)
         run_exception = eptr;
         // In case of any loop exception in any thread, close down the pool
         cp.stop();

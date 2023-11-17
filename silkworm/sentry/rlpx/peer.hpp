@@ -46,7 +46,7 @@ namespace silkworm::sentry::rlpx {
 class Peer {
   public:
     Peer(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         SocketStream stream,
         EccKeyPair node_key,
         std::string client_id,

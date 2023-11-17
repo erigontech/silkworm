@@ -37,7 +37,7 @@ class SendMessageCall final {
     SendMessageCall(
         sentry::Message message,
         PeerFilter peer_filter,
-        boost::asio::any_io_executor& executor)
+        const boost::asio::any_io_executor& executor)
         : message_(std::move(message)),
           peer_filter_(std::move(peer_filter)),
           result_promise_(std::make_shared<concurrency::AwaitablePromise<PeerKeys>>(executor)) {}

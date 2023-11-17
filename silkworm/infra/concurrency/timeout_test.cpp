@@ -150,7 +150,7 @@ TEST_CASE("Timeout.wait_for_one.ok_or_timeout") {
 
 TEST_CASE("Timeout.wait_for_one.timeout_or_ok") {
     using namespace awaitable_wait_for_one;
-    auto result = run(simple_timeout() || async_ok());
+    auto result = run(simple_timeout() || async_ok());  // NOLINT(clang-analyzer-core.CallAndMessage)
     CHECK(std::get<bool>(result));
 }
 
@@ -232,7 +232,7 @@ TEST_CASE("Timeout.wait_for_all.bad_cancel_and_throw") {
 TEST_CASE("Timeout.wait_for_all.throw_and_bad_cancel") {
     using namespace awaitable_wait_for_all;
     try {
-        run(async_throw() && wait_until_cancelled_bad());
+        run(async_throw() && wait_until_cancelled_bad());  // NOLINT(clang-analyzer-core.CallAndMessage)
         CHECK(false);
     } catch (const std::exception& ex) {
         CHECK(std::string(ex.what()) == "BadCancelException");

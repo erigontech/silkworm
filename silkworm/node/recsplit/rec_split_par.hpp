@@ -84,9 +84,9 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
-#include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/recsplit/encoding/elias_fano.hpp>
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
+#include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
 
 // prettyPrint a vector, used for debugging
@@ -644,16 +644,15 @@ class RecSplit {
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
     static inline uint64_t golomb_param(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo) {
+                                        const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
     static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
-                                           const std::array<uint32_t, kMaxBucketSize>& memo,
-                                           uint16_t& golomb_param_max_index) {
+                                                             const std::array<uint32_t, kMaxBucketSize>& memo,
+                                                             uint16_t& golomb_param_max_index) {
         if (m > golomb_param_max_index) golomb_param_max_index = m;
         return golomb_param(m, memo);
     }
-
 
     // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree

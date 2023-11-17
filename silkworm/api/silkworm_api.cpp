@@ -144,7 +144,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
         ThreadSafeQueue<std::shared_ptr<snapshot::Index>> tasks;
 
         // add needed indexes to task queue
-        for(const auto& index : needed_indexes) {
+        for (const auto& index : needed_indexes) {
             tasks.push(index);
         }
 

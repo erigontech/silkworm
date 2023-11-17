@@ -84,6 +84,7 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
+#include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/recsplit/encoding/elias_fano.hpp>
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
@@ -129,114 +130,9 @@ bool containsDuplicate(const std::vector<T>& items) {
     return false;  // No duplicate found
 }
 
-namespace silkworm::succinct {
+namespace silkworm::succinct::parallel {
 
 using namespace std::chrono;
-
-//! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
-static const int kMaxBucketSize = 3000;
-
-//! Assumed *maximum* size of splitting tree leaves
-static const int kMaxLeafSize = 24;
-
-//! Assumed *maximum* size of splitting tree fanout
-static const int kMaxFanout = 32;
-
-//! Starting seed at given distance from the root (extracted at random)
-static constexpr std::array<uint64_t, 20> kStartSeed = {
-    0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
-    0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
-    0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
-
-//! David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
-//! 13th variant of the 64-bit finalizer function in Austin Appleby's MurmurHash3 (https://github.com/aappleby/smhasher)
-//! @param z a 64-bit integer
-//! @return a 64-bit integer obtained by mixing the bits of `z`
-uint64_t inline remix(uint64_t z) {
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-    return z ^ (z >> 31);
-}
-
-//! 128-bit hash used in the construction of RecSplit (first of all keys are hashed using MurmurHash3)
-//! Moreover, it is possible to build and query RecSplit instances using 128-bit random hashes (mainly for test purposes)
-struct hash128_t {
-    uint64_t first;   // The high 64-bit hash half
-    uint64_t second;  // The low 64-bit hash half
-
-    bool operator<(const hash128_t& o) const { return first < o.first || second < o.second; }
-};
-
-// Quick replacements for min/max on not-so-large integers
-static constexpr inline uint64_t min(int64_t x, int64_t y) { return static_cast<uint64_t>(y + ((x - y) & ((x - y) >> 63))); }
-static constexpr inline uint64_t max(int64_t x, int64_t y) { return static_cast<uint64_t>(x - ((x - y) & ((x - y) >> 63))); }
-
-// Optimal Golomb-Rice parameters for leaves
-static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
-
-//! The splitting strategy of Recsplit algorithm is embedded into the generation code, which uses only the public fields
-//! SplittingStrategy::lower_aggr and SplittingStrategy::upper_aggr.
-template <std::size_t LEAF_SIZE>
-class SplittingStrategy {
-    static_assert(1 <= LEAF_SIZE && LEAF_SIZE <= kMaxLeafSize);
-
-  public:
-    //! The lower bound for primary (lower) key aggregation
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * max(2, ceil(0.35 * LEAF_SIZE + 1. / 2));
-
-    //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : ceil(0.21 * LEAF_SIZE + 9. / 10));
-
-    static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
-        std::size_t fanout{0}, unit{0};
-        if (m > kUpperAggregationBound) {  // High-level aggregation (fanout 2)
-            unit = kUpperAggregationBound * (uint16_t((m + 1) / 2 + kUpperAggregationBound - 1) / kUpperAggregationBound);
-            fanout = 2;
-        } else if (m > kLowerAggregationBound) {  // Second-level aggregation
-            unit = kLowerAggregationBound;
-            fanout = uint16_t(m + kLowerAggregationBound - 1) / kLowerAggregationBound;
-        } else {  // First-level aggregation
-            unit = LEAF_SIZE;
-            fanout = uint16_t(m + LEAF_SIZE - 1) / LEAF_SIZE;
-        }
-        return {fanout, unit};
-    }
-};
-
-//! Size in bytes of 1st fixed metadata header fields in RecSplit-encoded file
-static constexpr std::size_t kBaseDataIdLength{sizeof(uint64_t)};
-static constexpr std::size_t kKeyCountLength{sizeof(uint64_t)};
-static constexpr std::size_t kBytesPerRecordLength{sizeof(uint8_t)};
-
-//! Size in bytes of 1st fixed metadata header in RecSplit-encoded file
-constexpr std::size_t kFirstMetadataHeaderLength{
-    kBaseDataIdLength + kKeyCountLength + kBytesPerRecordLength};
-
-//! Size in bytes of 2nd fixed metadata header fields in RecSplit-encoded file
-static constexpr std::size_t kBucketCountLength{sizeof(uint64_t)};
-static constexpr std::size_t kBucketSizeLength{sizeof(uint16_t)};
-static constexpr std::size_t kLeafSizeLength{sizeof(uint16_t)};
-static constexpr std::size_t kSaltSizeLength{sizeof(uint32_t)};
-static constexpr std::size_t kStartSeedSizeLength{sizeof(uint8_t)};
-
-static constexpr std::size_t kDoubleIndexFlagLength{sizeof(uint8_t)};
-static constexpr std::size_t kGolombParamSizeLength{sizeof(uint32_t)};  // Erigon writes 4-instead-of-2 bytes
-static constexpr std::size_t kEliasFano32CountLength{sizeof(uint64_t)};
-static constexpr std::size_t kEliasFano32ULength{sizeof(uint64_t)};
-
-//! Size in bytes of 2nd fixed metadata header in RecSplit-encoded file
-constexpr std::size_t kSecondMetadataHeaderLength{
-    kBucketCountLength + kBucketSizeLength + kLeafSizeLength + kSaltSizeLength + kStartSeedSizeLength};
-
-//! Parameters for modified Recursive splitting (RecSplit) algorithm.
-struct RecSplitSettings {
-    std::size_t keys_count;                                 // The total number of keys in the RecSplit
-    std::size_t bucket_size;                                // The number of keys in each bucket (except probably last one)
-    std::filesystem::path index_path;                       // The path of the generated RecSplit index file
-    uint64_t base_data_id;                                  // Application-specific base data ID written in index header
-    bool double_enum_index{true};                           // Flag indicating if 2-level index is required
-    std::size_t etl_optimal_size{etl::kOptimalBufferSize};  // Optimal size for offset and bucket ETL collectors
-};
 
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
@@ -1093,6 +989,6 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
 
-}  // namespace silkworm::succinct
+}  // namespace silkworm::succinct::parallel
 
 #pragma GCC diagnostic pop

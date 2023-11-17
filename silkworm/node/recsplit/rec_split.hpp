@@ -105,7 +105,7 @@ std::string prettyPrint_seq(const std::vector<T>& v, const std::string& prefix =
     return oss.str();
 }
 
-namespace silkworm::succinct_seq {
+namespace silkworm::succinct {
 
 using succinct::DoubleEliasFanoList16;
 using succinct::EliasFanoList32;
@@ -288,7 +288,7 @@ class RecSplit {
         SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
         offset += kLeafSizeLength;
 
-        const uint16_t primary_aggr_bound = leaf_size * succinct_seq::max(2, std::ceil(0.35 * leaf_size + 1. / 2));
+        const uint16_t primary_aggr_bound = leaf_size * succinct::max(2, std::ceil(0.35 * leaf_size + 1. / 2));
         SILKWORM_ASSERT(primary_aggr_bound == kLowerAggregationBound);
         const uint16_t secondary_aggr_bound = primary_aggr_bound * (leaf_size < 7 ? 2 : ceil(0.21 * leaf_size + 9. / 10));
         SILKWORM_ASSERT(secondary_aggr_bound == kUpperAggregationBound);
@@ -1069,6 +1069,6 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
 
-}  // namespace silkworm::succinct_seq
+}  // namespace silkworm::succinct
 
 #pragma GCC diagnostic pop

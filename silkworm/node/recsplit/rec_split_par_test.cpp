@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "rec_split.hpp"
+#include "rec_split_par.hpp"
 
 #include <fstream>
 #include <iomanip>  // for std::setw and std::setfill
@@ -26,7 +26,44 @@
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/xoroshiro128pp.hpp>
 
-namespace silkworm::succinct {
+void hexDump(std::string out_file_name, std::ifstream& file) {
+    std::ofstream out(out_file_name);
+    constexpr size_t bytesPerLine = 16;
+    size_t lineNumber = 0;
+
+    while (file) {
+        out << std::hex << std::setw(4) << std::setfill('0') << lineNumber << ": ";
+        std::vector<unsigned char> line(bytesPerLine, 0);
+
+        file.read(reinterpret_cast<char*>(line.data()), bytesPerLine);
+        size_t bytesRead = static_cast<size_t>(file.gcount());
+
+        for (size_t i = 0; i < bytesPerLine; ++i) {
+            if (i < bytesRead) {
+                unsigned char byte = line[i];
+                out << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
+            } else {
+                out << "   ";
+            }
+        }
+
+        out << "| ";
+
+        for (size_t i = 0; i < bytesRead; ++i) {
+            unsigned char byte = line[i];
+            if (std::isprint(byte)) {
+                out << static_cast<char>(byte);
+            } else {
+                out << ".";
+            }
+        }
+
+        out << "\n";
+        lineNumber += bytesPerLine;
+    }
+}
+
+namespace silkworm::succinct::parallel {
 
 // Exclude tests from Windows build due to access issues with files in OS temporary dir
 #ifndef _WIN32
@@ -257,4 +294,4 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
 
 #endif  // _WIN32
 
-}  // namespace silkworm::succinct
+}  // namespace silkworm::succinct::parallel

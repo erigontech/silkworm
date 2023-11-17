@@ -34,6 +34,7 @@
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
+#include <silkworm/silkrpc/json/glaze.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>

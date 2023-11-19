@@ -28,14 +28,14 @@ namespace silkworm::stagedsync {
 class ExecutionPipeline : public Stoppable {
   public:
     explicit ExecutionPipeline(NodeSettings*);
-    ~ExecutionPipeline() = default;
+    ~ExecutionPipeline() override = default;
 
     Stage::Result forward(db::RWTxn&, BlockNum target_height);
     Stage::Result unwind(db::RWTxn&, BlockNum unwind_point);
     Stage::Result prune(db::RWTxn&);
 
-    BlockNum head_header_number();
-    Hash head_header_hash();
+    BlockNum head_header_number() const;
+    Hash head_header_hash() const;
     std::optional<BlockNum> unwind_point();
     std::optional<Hash> bad_block();
 

@@ -408,8 +408,8 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
         if (traces.recipients.contains(account)) {
             value[kAddressLength] |= 2;
         }
-        values.insert(std::move(value));
         batch_history_size_ += value.size();
+        values.insert(std::move(value));
     }
     call_traces_.emplace(block_number, values);
 }

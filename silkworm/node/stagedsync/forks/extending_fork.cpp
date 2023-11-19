@@ -80,15 +80,15 @@ void ExtendingFork::close() {
     if (thread_.joinable()) thread_.join();
 }
 
-void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
+void ExtendingFork::extend_with(Hash head_hash, const Block& head) {
     propagate_exception_if_any();
 
-    current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
+    current_head_ = {head.header.number, head_hash};  // setting this here is important, same as above
 
     post(*executor_, [this, block]() {
         try {
             if (exception_) return;
-            fork_->extend_with(block);
+            fork_->extend_with(head);
         } catch (...) {
             save_exception(std::current_exception());
         }

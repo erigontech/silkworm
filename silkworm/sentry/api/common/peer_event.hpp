@@ -29,7 +29,7 @@ enum class PeerEventId {
 
 struct PeerEvent {
     std::optional<sentry::EccPublicKey> peer_public_key;
-    PeerEventId event_id;
+    PeerEventId event_id{};
 };
 
 }  // namespace silkworm::sentry::api

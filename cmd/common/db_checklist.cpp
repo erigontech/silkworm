@@ -68,17 +68,20 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
 
         if (!node_settings.chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain configuration");
-        } else if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
-            throw std::runtime_error("Incompatible network id. Command line expects " +
-                                     std::to_string(node_settings.network_id) + "; Database has " +
-                                     std::to_string(node_settings.chain_config.value().chain_id));
         }
 
-        const auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
-        if (known_chain.has_value() && *(known_chain->second) != *(node_settings.chain_config)) {
+        const ChainId chain_id{node_settings.chain_config->chain_id};
+        if (chain_id != node_settings.network_id) {
+            throw std::runtime_error("Incompatible network id. Command line expects " +
+                                     std::to_string(node_settings.network_id) + "; Database has " +
+                                     std::to_string(chain_id));
+        }
+
+        const auto known_chain{kKnownChainConfigs.find(chain_id)};
+        if (known_chain && **known_chain != *(node_settings.chain_config)) {
             // If loaded config is known we must ensure is up-to-date with hardcoded one
             // Loop all respective JSON members to find discrepancies
-            auto known_chain_config_json{known_chain->second->to_json()};
+            auto known_chain_config_json{(*known_chain)->to_json()};
             auto active_chain_config_json{node_settings.chain_config->to_json()};
             bool new_members_added{false};
             bool old_members_changed(false);
@@ -152,9 +155,9 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             }
 
             if (new_members_added || old_members_changed) {
-                db::update_chain_config(tx, *(known_chain->second));
+                db::update_chain_config(tx, **known_chain);
                 tx.commit_and_renew();
-                node_settings.chain_config = *(known_chain->second);
+                node_settings.chain_config = **known_chain;
             }
         }
 
@@ -163,7 +166,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
         if (!node_settings.chain_config->genesis_hash.has_value())
             throw std::runtime_error("Could not load genesis hash");
 
-        log::Info("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
+        log::Info("Starting Silkworm", {"chain", (known_chain ? std::to_string(chain_id) : "unknown/custom"),
                                         "config", node_settings.chain_config->to_json().dump()});
     }
 

@@ -31,6 +31,7 @@ if(NOT SILKWORM_HAS_PARENT)
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake
         CACHE FILEPATH "" FORCE
     )
+    include("${CMAKE_TOOLCHAIN_FILE}")
   endif()
 endif()
 
@@ -89,6 +90,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 if(SILKWORM_CLANG_TIDY)
   find_program(CLANG_TIDY clang-tidy REQUIRED)
+  set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
   set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()
 

@@ -24,13 +24,13 @@
 
 namespace silkworm::chainsync {
 
-Sync::Sync(boost::asio::any_io_executor executor,
+Sync::Sync(const boost::asio::any_io_executor& executor,
            mdbx::env chaindata_env,
            execution::Client& execution,
            const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
            const EngineRpcSettings& rpc_settings)
-    : sync_sentry_client_{std::move(executor), sentry_client},
+    : sync_sentry_client_{executor, sentry_client},
       block_exchange_{sync_sentry_client_, db::ROAccess{chaindata_env}, config} {
     // If terminal total difficulty is present in chain config, the network will use Proof-of-Stake sooner or later
     if (config.terminal_total_difficulty) {

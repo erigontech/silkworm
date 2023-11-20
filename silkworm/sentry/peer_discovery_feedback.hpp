@@ -34,7 +34,7 @@ namespace silkworm::sentry {
 
 class PeerDiscoveryFeedback : public PeerManagerObserver {
   public:
-    PeerDiscoveryFeedback(boost::asio::any_io_executor executor, size_t max_peers)
+    PeerDiscoveryFeedback(const boost::asio::any_io_executor& executor, size_t max_peers)
         : peer_disconnected_events_(executor, max_peers) {}
 
     static Task<void> run(

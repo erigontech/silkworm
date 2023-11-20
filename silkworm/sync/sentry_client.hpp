@@ -43,7 +43,7 @@ namespace silkworm {
 class SentryClient {
   public:
     explicit SentryClient(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client);
 
     SentryClient(const SentryClient&) = delete;

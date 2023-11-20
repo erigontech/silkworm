@@ -26,6 +26,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+// TODO(yperbasis): get rid of this hack
 #if defined(_MSC_VER)
 #define SILKWORM_CONSTINIT
 #else
@@ -41,10 +42,11 @@
 namespace silkworm {
 
 using namespace evmc::literals;
+using namespace std::string_view_literals;
 
 template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
-    std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
+                           std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using BlockNum = uint64_t;
 using BlockNumRange = std::pair<BlockNum, BlockNum>;

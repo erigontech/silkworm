@@ -33,9 +33,9 @@ namespace silkworm::concurrency {
 template <typename T>
 class Channel {
   public:
-    explicit Channel(boost::asio::any_io_executor executor) : channel_(std::move(executor)) {}
-    Channel(boost::asio::any_io_executor executor, std::size_t max_buffer_size)
-        : channel_(std::move(executor), max_buffer_size) {}
+    explicit Channel(const boost::asio::any_io_executor& executor) : channel_(executor) {}
+    Channel(const boost::asio::any_io_executor& executor, std::size_t max_buffer_size)
+        : channel_(executor, max_buffer_size) {}
 
     Task<void> send(T value) {
         try {

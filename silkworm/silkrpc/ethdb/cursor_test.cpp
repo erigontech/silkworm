@@ -24,7 +24,7 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
 namespace silkworm::rpc::ethdb {

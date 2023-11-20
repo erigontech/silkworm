@@ -30,7 +30,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -560,12 +560,12 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
                 } else {
                     const auto error_msg = "invalid RLP decoding for tx hash: " + silkworm::to_hex(transaction_hash);
                     SILK_ERROR << error_msg;
-                    reply = make_json_error(request["id"], 100, error_msg);
+                    reply = make_json_content(request["id"], {});
                 }
             } else {
                 const auto error_msg = "tx hash: " + silkworm::to_hex(transaction_hash) + " does not exist in pool";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request["id"], 100, error_msg);
+                reply = make_json_content(request["id"], {});
             }
         } else {
             reply = make_json_content(request["id"], tx_with_block->transaction);

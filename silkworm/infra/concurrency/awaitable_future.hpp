@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 #include "task.hpp"
 
@@ -68,7 +69,7 @@ class AwaitableFuture {
 
     using AsyncChannel = boost::asio::experimental::concurrent_channel<void(std::exception_ptr, std::optional<T>)>;
 
-    explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(channel) {}
+    explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(std::move(channel)) {}
 
     void close_and_throw_if_cancelled(const boost::system::system_error& ex) {
         // Convert channel cancelled into operation cancelled to allow just one catch clause at call site
@@ -87,8 +88,8 @@ class AwaitablePromise {
     using AsyncChannel = typename AwaitableFuture<T>::AsyncChannel;
 
   public:
-    explicit AwaitablePromise(boost::asio::any_io_executor executor)
-        : channel_(std::make_shared<AsyncChannel>(std::move(executor), 1)) {}
+    explicit AwaitablePromise(const boost::asio::any_io_executor& executor)
+        : channel_(std::make_shared<AsyncChannel>(executor, 1)) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise& operator=(const AwaitablePromise&) = delete;

@@ -21,7 +21,7 @@
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
@@ -80,16 +80,16 @@ void from_json(const nlohmann::json& json, Log& log) {
 }
 
 struct GlazeJsonLogItem {
-    char address[addressSize];
-    char tx_hash[hashSize];
-    char block_hash[hashSize];
-    char block_number[int64Size];
-    char tx_index[int64Size];
-    char index[int64Size];
-    char data[dataSize];
+    char address[kAddressHexSize];
+    char tx_hash[kHashHexSize];
+    char block_hash[kHashHexSize];
+    char block_number[kInt64HexSize];
+    char tx_index[kInt64HexSize];
+    char index[kInt64HexSize];
+    char data[kDataSize];
     bool removed;
-    std::optional<std::string> timestamp;
     std::vector<std::string> topics;
+    std::optional<std::string> timestamp;
 
     struct glaze {
         using T = GlazeJsonLogItem;
@@ -108,7 +108,7 @@ struct GlazeJsonLogItem {
 };
 
 struct GlazeJsonLog {
-    std::string_view jsonrpc = jsonVersion;
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {

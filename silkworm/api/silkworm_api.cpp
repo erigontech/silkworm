@@ -25,6 +25,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -236,14 +237,12 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle* handle, stru
 }
 
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
-    if (!handle) {
+    if (!handle || !handle->snapshot_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!snapshot) {
         return SILKWORM_INVALID_SNAPSHOT;
     }
-    const auto snapshot_repository = reinterpret_cast<snapshot::SnapshotRepository*>(handle);
-
     const SilkwormHeadersSnapshot& hs = snapshot->headers;
     const auto headers_segment_path = snapshot::SnapshotPath::parse(hs.segment.file_path);
     if (!headers_segment_path) {
@@ -288,7 +287,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle* handle, SilkwormChainS
         .bodies_snapshot = std::move(bodies_snapshot),
         .tx_snapshot_path = *transactions_segment_path,
         .tx_snapshot = std::move(transactions_snapshot)};
-    snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 
@@ -363,11 +362,11 @@ int silkworm_execute_blocks(SilkwormHandle* handle, MDBX_txn* mdbx_txn, uint64_t
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
     }
-    const auto chain_info = lookup_known_chain(chain_id);
+    const auto chain_info = kKnownChainConfigs.find(chain_id);
     if (!chain_info) {
         return SILKWORM_UNKNOWN_CHAIN_ID;
     }
-    const ChainConfig* chain_config{chain_info->second};
+    const ChainConfig* chain_config{*chain_info};
 
     SignalHandlerGuard signal_guard;
     try {

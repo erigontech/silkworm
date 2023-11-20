@@ -31,6 +31,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/ipv6_unsupported_error.hpp>
 
 #include "common/packet_type.hpp"
 #include "message_codec.hpp"
@@ -169,6 +170,10 @@ class ServerImpl {
     Task<void> send_packet(Bytes data, ip::udp::endpoint recipient) {
         using namespace std::chrono_literals;
         using namespace concurrency::awaitable_wait_for_one;
+
+        if (ip_.is_v4() && recipient.address().is_v6()) {
+            throw IPV6UnsupportedError();
+        }
 
         co_await (socket_.async_send_to(buffer(data), recipient, use_awaitable) || concurrency::timeout(1s));
     }

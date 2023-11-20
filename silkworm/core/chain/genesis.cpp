@@ -17,49 +17,33 @@
 #include "genesis.hpp"
 
 #include <bit>
-#include <cassert>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/genesis_goerli.hpp>
+#include <silkworm/core/chain/genesis_mainnet.hpp>
+#include <silkworm/core/chain/genesis_mumbai.hpp>
+#include <silkworm/core/chain/genesis_polygon.hpp>
+#include <silkworm/core/chain/genesis_sepolia.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-
-extern const char* genesis_mainnet_data();
-extern size_t sizeof_genesis_mainnet_data();
-
-extern const char* genesis_goerli_data();
-extern size_t sizeof_genesis_goerli_data();
-
-extern const char* genesis_sepolia_data();
-extern size_t sizeof_genesis_sepolia_data();
-
-extern const char* genesis_polygon_data();
-extern size_t sizeof_genesis_polygon_data();
-
-extern const char* genesis_mumbai_data();
-extern size_t sizeof_genesis_mumbai_data();
 
 namespace silkworm {
 
 std::string_view read_genesis_data(ChainId chain_id) {
     switch (chain_id) {
-        case 1:
-            assert(sizeof_genesis_mainnet_data() != 0);
-            return {genesis_mainnet_data(), sizeof_genesis_mainnet_data()};
-        case 5:
-            assert(sizeof_genesis_goerli_data() != 0);
-            return {genesis_goerli_data(), sizeof_genesis_goerli_data()};
-        case 11155111:
-            assert(sizeof_genesis_sepolia_data() != 0);
-            return {genesis_sepolia_data(), sizeof_genesis_sepolia_data()};
-        case 137:
-            assert(sizeof_genesis_polygon_data() != 0);
-            return {genesis_polygon_data(), sizeof_genesis_polygon_data()};
-        case 80001:
-            assert(sizeof_genesis_mumbai_data() != 0);
-            return {genesis_mumbai_data(), sizeof_genesis_mumbai_data()};
+        case *kKnownChainNameToId.find("mainnet"sv):
+            return genesis_mainnet_json;
+        case *kKnownChainNameToId.find("goerli"sv):
+            return genesis_goerli_json;
+        case *kKnownChainNameToId.find("sepolia"sv):
+            return genesis_sepolia_json;
+        case *kKnownChainNameToId.find("polygon"sv):
+            return genesis_polygon_json;
+        case *kKnownChainNameToId.find("mumbai"sv):
+            return genesis_mumbai_json;
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }

@@ -35,7 +35,7 @@ class DiscoveryImpl;
 class Discovery {
   public:
     Discovery(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         uint16_t server_port,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,

@@ -133,6 +133,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
 
     SECTION("Settings disable colorized output if log file present") {
         // Default output is colorized
+        // NOLINTNEXTLINE(bugprone-unused-raii)
         LogBuffer_ForTest<Level::kInfo>{"test0", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output0{string_cerr.str()};
         CHECK(cerr_output0.find("test0") != std::string::npos);
@@ -151,6 +152,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
             .log_file = temp_file.string(),
         };
         init(log_settings1);
+        // NOLINTNEXTLINE(bugprone-unused-raii)
         LogBuffer_ForTest<Level::kInfo>{"test1", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output1{string_cerr.str()};
         CHECK(cerr_output1.find("test1") != std::string::npos);
@@ -169,6 +171,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
             .log_file = temp_file.string(),
         };
         init(log_settings2);
+        // NOLINTNEXTLINE(bugprone-unused-raii)
         LogBuffer_ForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
         const auto cerr_output2{string_cerr.str()};
         CHECK(cerr_output2.find("test2") != std::string::npos);

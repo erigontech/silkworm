@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 version: 2.1
+orbs:
+  codecov: codecov/codecov@3.3.0
 
 commands:
   checkout_with_submodules:
@@ -302,6 +304,8 @@ jobs:
             llvm-profdata merge *.profraw -o profdata
             llvm-cov export -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
             llvm-cov report -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+      - codecov/upload:
+          file: /tmp/silkworm.lcov
       - store_artifacts:
           path: /tmp/silkworm.lcov
       - store_artifacts:
@@ -325,7 +329,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 14
+          compiler_version: 15
       - run:
           name: "Generate report"
           command: |

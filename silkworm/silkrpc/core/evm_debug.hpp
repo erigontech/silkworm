@@ -71,7 +71,7 @@ struct DebugLog {
     Storage storage;
 };
 
-class DebugTracer : public silkworm::EvmTracer {
+class DebugTracer : public EvmTracer {
   public:
     explicit DebugTracer(json::Stream& stream, const DebugConfig& config = {})
         : stream_(stream), config_(config) {}
@@ -80,13 +80,12 @@ class DebugTracer : public silkworm::EvmTracer {
     DebugTracer& operator=(const DebugTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
-                              const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+                              const evmone::ExecutionState& execution_state,
+                              const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& result, int64_t gas,
+                            const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
     void flush_logs();
 
@@ -102,21 +101,14 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
-class AccountTracer : public silkworm::EvmTracer {
+class AccountTracer : public EvmTracer {
   public:
     explicit AccountTracer(const evmc::address& address) : address_{address} {}
 
     AccountTracer(const AccountTracer&) = delete;
     AccountTracer& operator=(const AccountTracer&) = delete;
 
-    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override{};
-
-    void on_instruction_start(uint32_t, const intx::uint256*, int, int64_t,
-                              const evmone::ExecutionState&, const silkworm::IntraBlockState&) noexcept override{};
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result&, int64_t, const silkworm::IntraBlockState&) noexcept override{};
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
   private:
     const evmc::address& address_;
@@ -173,4 +165,5 @@ class DebugExecutor {
     ethdb::Transaction& tx_;
     DebugConfig config_;
 };
+
 }  // namespace silkworm::rpc::debug

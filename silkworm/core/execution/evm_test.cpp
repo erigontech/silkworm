@@ -26,9 +26,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-
-#include "address.hpp"
 
 namespace silkworm {
 
@@ -214,7 +213,7 @@ TEST_CASE("Maximum call depth") {
 
     EVM evm{block, state, kMainnetConfig};
 
-    AnalysisCache analysis_cache{/*maxSize=*/16};
+    AnalysisCache analysis_cache{/*max_size=*/16};
     evm.analysis_cache = &analysis_cache;
 
     Transaction txn{};
@@ -273,6 +272,10 @@ TEST_CASE("DELEGATECALL") {
 
     EVM evm{block, state, kMainnetConfig};
 
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+
     Transaction txn{};
     txn.from = caller_address;
     txn.to = caller_address;
@@ -285,6 +288,11 @@ TEST_CASE("DELEGATECALL") {
 
     evmc::bytes32 key0{};
     CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0).bytes), true) == address_to_hex(caller_address));
+    CHECK(call_traces.senders.size() == 1);
+    CHECK(call_traces.recipients.size() == 2);
+    CHECK(call_traces.senders.contains(caller_address));     // call from caller to self
+    CHECK(call_traces.recipients.contains(caller_address));  // call from caller to self
+    CHECK(call_traces.recipients.contains(callee_address));  // delegate call from caller to callee
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
@@ -443,19 +451,17 @@ class TestTracer : public EvmTracer {
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-
     void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {
         creation_completed_called_ = true;
     }
-
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
-                            const IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const CallResult& /*result*/,
-                           const IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_self_destruct(const evmc::address& /*address*/, const evmc::address& /*beneficiary*/) noexcept override {
+        self_destruct_called_ = true;
+    }
 
     [[nodiscard]] bool execution_start_called() const { return execution_start_called_; }
     [[nodiscard]] bool execution_end_called() const { return execution_end_called_; }
     [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
+    [[nodiscard]] bool self_destruct_called() const { return self_destruct_called_; }
     [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
     [[nodiscard]] const evmc_revision& rev() const { return rev_; }
     [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
@@ -468,6 +474,7 @@ class TestTracer : public EvmTracer {
     bool execution_start_called_{false};
     bool execution_end_called_{false};
     bool creation_completed_called_{false};
+    bool self_destruct_called_{false};
     std::optional<evmc::address> contract_address_;
     std::optional<evmc::bytes32> key_;
     evmc_revision rev_;
@@ -516,8 +523,6 @@ TEST_CASE("Tracing smart contract with storage") {
     txn.data = code;
 
     CHECK(evm.tracers().empty());
-
-    // TODO(canepat) use 3 SECTIONS
 
     // First execution: out of gas
     TestTracer tracer1;
@@ -793,6 +798,63 @@ TEST_CASE("Smart contract creation w/ insufficient balance") {
     uint64_t gas = 50'000;
     CallResult res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
+}
+
+TEST_CASE("Tracing destruction of smart contract") {
+    // Deployed code compiled using solc 0.8.19+commit.4fc1097e
+    const Bytes deployed_code{*from_hex(
+        "6080604052348015600f57600080fd5b506004361060285760003560e01c8063"
+        "41c0e1b514602d575b600080fd5b60336035565b005b600073ffffffffffffff"
+        "ffffffffffffffffffffffffff16fffea2646970667358221220c08c48851b75"
+        "79ee6720e88f475624478fb5b0287b58e91a51315b243356fb9264736f6c6343"
+        "0008130033")};
+    // pragma solidity 0.8.19;
+    //
+    // contract TestContract {
+    //     constructor() {}
+    //
+    //     function kill() public {
+    //         selfdestruct(payable(address(0)));
+    //     }
+    // }
+
+    // Bytecode contains SHR opcode so requires EIP-145, hence at least Constantinople HF
+    const auto chain_config{kMainnetConfig};
+    REQUIRE(chain_config.constantinople_block);
+
+    Block block{};
+    block.header.number = *chain_config.constantinople_block;
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address contract_address{create_address(caller, 0)};
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    state.set_code(contract_address, deployed_code);
+
+    EVM evm{block, state, chain_config};
+    REQUIRE(evm.revision() >= EVMC_CONSTANTINOPLE);
+    TestTracer test_tracer;
+    evm.add_tracer(test_tracer);
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+    CHECK(evm.tracers().size() == 2);
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.to = contract_address;
+    txn.data = ByteView{*from_hex("41c0e1b5")};  // methodID for kill
+
+    uint64_t gas = {100'000};
+    CallResult res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_SUCCESS);
+    CHECK(test_tracer.self_destruct_called());
+    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.recipients.size() == 2);
+    CHECK(call_traces.senders.contains(caller));               // external tx
+    CHECK(call_traces.recipients.contains(contract_address));  // external tx
+    CHECK(call_traces.senders.contains(contract_address));     // self-destruct
+    CHECK(call_traces.recipients.contains(evmc::address{}));   // self-destruct
 }
 
 }  // namespace silkworm

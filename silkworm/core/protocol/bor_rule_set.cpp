@@ -17,6 +17,7 @@
 #include "bor_rule_set.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
@@ -35,7 +36,23 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
     if (!is_zero(header.prev_randao)) {
         return ValidationResult::kInvalidMixDigest;
     }
-    return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
+
+    ValidationResult res{BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check)};
+    if (res != ValidationResult::kOk) {
+        return res;
+    }
+
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    const uint64_t* period{bor_config_value_lookup(config().period, header.number)};
+    SILKWORM_ASSERT(period);
+    if (parent->timestamp + *period > header.timestamp) {
+        return ValidationResult::kInvalidTimestamp;
+    }
+
+    // TODO(yperbasis): verify validators
+    // https://github.com/maticnetwork/bor/blob/v1.1.0-beta4/consensus/bor/bor.go#L465
+
+    return ValidationResult::kOk;
 }
 
 // validate_extra_data validates that the extra-data contains both the vanity and signature.
@@ -88,10 +105,32 @@ static std::optional<evmc::address> ecrecover(const BlockHeader& header, const B
     return beneficiary;
 }
 
-ValidationResult BorRuleSet::validate_seal(const BlockHeader& header) {
+static void rewrite_code_if_needed(const SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>>& rewrite_code,
+                                   IntraBlockState& state, BlockNum block_num) {
+    const SmallMap<evmc::address, std::string_view>* rewrites{rewrite_code.find(block_num)};
+    if (!rewrites) {
+        return;
+    }
+    for (const auto& [address, code] : *rewrites) {
+        state.set_code(address, string_view_to_byte_view(code));
+    }
+}
+
+void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
+    // TODO(yperbasis): implement
+    // https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L819
+
+    rewrite_code_if_needed(config().rewrite_code, state, block.header.number);
+}
+
+ValidationResult BorRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {
     if (!ecrecover(header, config().jaipur_block)) {
         return ValidationResult::kInvalidSignature;
     }
+
+    // TODO(yperbasis): implement
+    // https://github.com/maticnetwork/bor/blob/v1.1.0-beta4/consensus/bor/bor.go#L654
+
     return ValidationResult::kOk;
 }
 

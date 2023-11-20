@@ -48,7 +48,7 @@ struct PeerManagerObserver;
 class PeerManager {
   public:
     PeerManager(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         size_t max_peers,
         concurrency::ExecutorPool& executor_pool)
         : max_peers_(max_peers),

@@ -44,12 +44,12 @@ class Timer {
     //! \param call_back [in] : the call back function to be called
     //! \param auto_start [in] : whether to start the timer immediately
     explicit Timer(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         uint32_t interval,
         std::function<bool()> call_back,
         bool auto_start = false)
         : interval_(interval),
-          timer_(std::move(executor)),
+          timer_(executor),
           call_back_(std::move(call_back)) {
         SILKWORM_ASSERT(interval > 0);
         if (auto_start) {

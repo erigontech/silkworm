@@ -25,7 +25,6 @@ namespace silkworm::trie {
 
 TEST_CASE("Prefix set - no prefix") {
     PrefixSet ps;
-    REQUIRE(ps.size() == 0);
     REQUIRE(ps.empty());
     CHECK(!ps.contains(string_view_to_byte_view("")));
     CHECK(!ps.contains(string_view_to_byte_view("a")));

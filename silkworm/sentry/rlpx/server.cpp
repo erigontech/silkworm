@@ -29,11 +29,11 @@ namespace silkworm::sentry::rlpx {
 using namespace boost::asio;
 
 Server::Server(
-    any_io_executor executor,
+    const any_io_executor& executor,
     uint16_t port)
     : ip_(ip::address{ip::address_v4::any()}),
       port_(port),
-      peer_channel_(std::move(executor)) {}
+      peer_channel_(executor) {}
 
 ip::tcp::endpoint Server::listen_endpoint() const {
     return ip::tcp::endpoint{ip_, port_};

@@ -36,14 +36,4 @@ TEST_CASE("Rule Set factory") {
     CHECK(rule_set != nullptr);
 }
 
-TEST_CASE("Rule Set Seal") {
-    const ChainConfig validate_config{.rule_set_config = EthashConfig{.validate_seal = true}};
-    RuleSetPtr rule_set{rule_set_factory(validate_config)};
-    BlockHeader fake_header{};
-    CHECK(rule_set->validate_seal(fake_header) != ValidationResult::kOk);
-    const ChainConfig no_proof_config{.rule_set_config = EthashConfig{.validate_seal = false}};
-    rule_set = rule_set_factory(no_proof_config);
-    CHECK(rule_set->validate_seal(fake_header) == ValidationResult::kOk);
-}
-
 }  // namespace silkworm::protocol

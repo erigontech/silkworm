@@ -27,9 +27,9 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>

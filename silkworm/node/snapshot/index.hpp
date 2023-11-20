@@ -28,7 +28,7 @@ namespace silkworm::snapshot {
 class Index {
   public:
     static constexpr uint64_t kPageSize{4096};
-    static constexpr std::size_t kBucketSize{2'048};
+    static constexpr std::size_t kBucketSize{2'000};
 
     explicit Index(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
         : segment_path_(std::move(segment_path)), segment_region_{std::move(segment_region)} {}

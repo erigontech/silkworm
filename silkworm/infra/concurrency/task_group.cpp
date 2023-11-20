@@ -32,7 +32,7 @@ namespace silkworm::concurrency {
 
 using namespace boost::asio;
 
-void TaskGroup::spawn(any_io_executor executor, Task<void> task) {
+void TaskGroup::spawn(const any_io_executor& executor, Task<void> task) {
     std::scoped_lock lock(mutex_);
 
     if (is_closed_) {
@@ -59,7 +59,7 @@ Task<void> TaskGroup::wait() {
     // wait until cancelled or a task throws an exception
     std::exception_ptr ex_ptr;
     try {
-        ex_ptr = co_await exceptions_.receive();
+        ex_ptr = co_await exceptions_.receive();  // NOLINT(clang-analyzer-core.NullDereference)
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
             ex_ptr = std::current_exception();

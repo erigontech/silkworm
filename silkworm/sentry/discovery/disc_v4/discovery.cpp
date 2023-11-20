@@ -44,7 +44,7 @@ namespace silkworm::sentry::discovery::disc_v4 {
 class DiscoveryImpl : private MessageHandler {
   public:
     DiscoveryImpl(
-        boost::asio::any_io_executor executor,
+        const boost::asio::any_io_executor& executor,
         uint16_t server_port,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
@@ -224,13 +224,13 @@ class DiscoveryImpl : private MessageHandler {
 };
 
 Discovery::Discovery(
-    boost::asio::any_io_executor executor,
+    const boost::asio::any_io_executor& executor,
     uint16_t server_port,
     std::function<EccKeyPair()> node_key,
     std::function<EnodeUrl()> node_url,
     std::function<discovery::enr::EnrRecord()> node_record,
     node_db::NodeDb& node_db)
-    : p_impl_(std::make_unique<DiscoveryImpl>(std::move(executor), server_port, std::move(node_key), std::move(node_url), std::move(node_record), node_db)) {}
+    : p_impl_(std::make_unique<DiscoveryImpl>(executor, server_port, std::move(node_key), std::move(node_url), std::move(node_record), node_db)) {}
 
 Discovery::~Discovery() {
     log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";

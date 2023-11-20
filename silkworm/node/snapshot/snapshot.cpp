@@ -19,7 +19,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>

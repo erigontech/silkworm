@@ -144,8 +144,6 @@ class VmTraceTracer : public silkworm::EvmTracer {
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
   private:
     VmTrace& vm_trace_;
@@ -224,7 +222,6 @@ class TraceTracer : public silkworm::EvmTracer {
                               int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
@@ -295,9 +292,7 @@ class StateDiffTracer : public silkworm::EvmTracer {
                               int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
   private:
     StateDiff& state_diff_;
@@ -370,14 +365,7 @@ class IntraBlockStateTracer : public silkworm::EvmTracer {
     IntraBlockStateTracer(const IntraBlockStateTracer&) = delete;
     IntraBlockStateTracer& operator=(const IntraBlockStateTracer&) = delete;
 
-    void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override {}
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
-                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
   private:
     StateAddresses& state_addresses_;
@@ -391,13 +379,7 @@ class CreateTracer : public silkworm::EvmTracer {
     CreateTracer& operator=(const CreateTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
-                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
     bool found() const { return found_; }
 
   private:
@@ -414,13 +396,7 @@ class EntryTracer : public silkworm::EvmTracer {
     EntryTracer& operator=(const EntryTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
-                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
     TraceEntriesResult result() const { return result_; }
 
   private:
@@ -436,13 +412,7 @@ class OperationTracer : public silkworm::EvmTracer {
     OperationTracer& operator=(const OperationTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
-                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
     TraceOperationsResult result() const { return result_; }
 
   private:
@@ -458,13 +428,7 @@ class TouchTracer : public silkworm::EvmTracer {
     TouchTracer& operator=(const TouchTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
-                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
     bool found() const { return found_; }
 
   private:

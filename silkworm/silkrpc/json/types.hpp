@@ -34,6 +34,7 @@
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
+#include <silkworm/silkrpc/json/glaze.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
@@ -80,15 +81,6 @@ void to_json(nlohmann::json& json, const BlockHeader& ommer);
 }  // namespace silkworm
 
 namespace silkworm::rpc {
-
-inline constexpr std::string_view jsonVersion{"2.0"};
-inline constexpr auto jsonVersionSize = 8;
-inline constexpr auto addressSize = 64;
-inline constexpr auto hashSize = 128;
-inline constexpr auto bloomSize = 1024;
-inline constexpr auto int64Size = 32;
-inline constexpr auto dataSize = 4096;
-inline constexpr auto ethCallResultFixedSize = 2048;
 
 void to_json(nlohmann::json& json, const PeerInfo& peer_info);
 
@@ -139,10 +131,6 @@ nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
 nlohmann::json make_json_error(uint32_t id, int code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
-
-// GLAZE
-void make_glaze_json_error(uint32_t id, int error_id, const std::string& message, std::string& reply);
-void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply);
 
 }  // namespace silkworm::rpc
 

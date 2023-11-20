@@ -38,7 +38,7 @@ class MessagesCall final {
 
     MessagesCall(
         MessageIdSet message_id_filter,
-        boost::asio::any_io_executor& executor)
+        const boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
           result_promise_(std::make_shared<concurrency::AwaitablePromise<TResult>>(executor)),
           unsubscribe_signal_(std::make_shared<concurrency::EventNotifier>(executor)) {}

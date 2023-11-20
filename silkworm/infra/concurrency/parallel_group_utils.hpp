@@ -18,10 +18,11 @@
 
 #include <array>
 #include <exception>
-#include <functional>
 #include <vector>
 
 #include "task.hpp"
+
+#include <absl/functional/function_ref.h>
 
 namespace silkworm::concurrency {
 
@@ -52,6 +53,6 @@ void rethrow_first_exception_if_any(
  * [task_factory(0), task_factory(1), ... task_factory(count - 1)].
  * If one of the subtasks throws, the rest are cancelled and the exception is rethrown.
  */
-Task<void> generate_parallel_group_task(size_t count, std::function<Task<void>(size_t)> task_factory);
+Task<void> generate_parallel_group_task(size_t count, absl::FunctionRef<Task<void>(size_t)> task_factory);
 
 }  // namespace silkworm::concurrency

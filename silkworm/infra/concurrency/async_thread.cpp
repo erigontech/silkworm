@@ -36,7 +36,7 @@ Task<void> async_thread(
     std::optional<std::size_t> stack_size) {
     std::exception_ptr run_exception;
 
-    auto executor = co_await boost::asio::this_coro::executor;
+    auto executor = co_await boost::asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
     EventNotifier thread_finished_notifier{executor};
 
     boost::thread::attributes attributes;

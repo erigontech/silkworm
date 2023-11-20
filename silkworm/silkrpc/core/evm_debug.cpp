@@ -28,7 +28,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -62,7 +62,7 @@ std::string uint256_to_hex(const evmone::uint256& x) {
     bool leading_zeros = true;
     const uint64_t* px = &x[0];
     for (int i = 3; i >= 0; i--) {
-        if (px[i] == 0) {
+        if (px[i] == 0 && leading_zeros) {
             continue;
         }
         if (leading_zeros) {
@@ -307,7 +307,9 @@ void DebugTracer::write_log(const DebugLog& log) {
         stream_.close_object();
     }
     if (log.error) {
-        stream_.write_field("error", "{}");
+        stream_.write_field("error");
+        stream_.open_object();
+        stream_.close_object();
     }
 
     stream_.close_object();

@@ -85,7 +85,7 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& head) {
 
     current_head_ = {head.header.number, head_hash};  // setting this here is important, same as above
 
-    post(*executor_, [this, block]() {
+    post(*executor_, [this, head]() {
         try {
             if (exception_) return;
             fork_->extend_with(head);

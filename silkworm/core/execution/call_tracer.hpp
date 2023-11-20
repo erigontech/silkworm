@@ -34,6 +34,8 @@ class CallTracer : public EvmTracer {
     CallTracer& operator=(const CallTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
+    void on_block_end(const silkworm::Block& block) noexcept override;
 
   private:
     CallTraces& traces_;

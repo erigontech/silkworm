@@ -18,12 +18,16 @@
 
 #include <vector>
 
+#include <silkworm/core/chain/config.hpp>
+
+// TODO(yperbasis): add polygon boot nodes
+
 namespace silkworm::sentry::discovery {
 
 enum class NetworkId : uint64_t {
-    kMainnet = 1,
-    kGoerli = 5,
-    kSepolia = 11155111,
+    kMainnet = *kKnownChainNameToId.find("mainnet"sv),
+    kGoerli = *kKnownChainNameToId.find("goerli"sv),
+    kSepolia = *kKnownChainNameToId.find("sepolia"sv),
 };
 
 // MainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on

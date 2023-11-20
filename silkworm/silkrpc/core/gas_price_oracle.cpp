@@ -70,8 +70,7 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
 
     const auto block_with_hash = co_await block_provider_(block_number);
     if (!block_with_hash) {
-        SILK_ERROR << "GasPriceOracle::load_block_prices invalid block: " << block_number << "\n";
-        throw std::invalid_argument("get_block_number::Invalid Block Id");
+        throw std::invalid_argument("GasPriceOracle::load_block_prices invalid block number");
     }
 
     const auto& base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);

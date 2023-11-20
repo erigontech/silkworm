@@ -43,8 +43,8 @@ class Fork {
 
     // extension & contraction
     void extend_with(const std::list<std::shared_ptr<Block>>&);
-    void extend_with(const Block&);         // put block over the head of the fork (need verify_chain() to add state)
-    void reduce_down_to(BlockId new_head);  // remove blocks & state down to the specified head
+    void extend_with(const Block&);             // put block over the head of the fork (need verify_chain() to add state)
+    void reduce_down_to(BlockId unwind_point);  // remove blocks & state down to the specified head
 
     // verification
     // verify chain up to current head

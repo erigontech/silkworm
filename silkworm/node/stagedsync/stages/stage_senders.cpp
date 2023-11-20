@@ -445,7 +445,7 @@ void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context)
     collect_senders();
 
     const auto [end, _] = sw.lap();
-    log::Trace(log_prefix_, {"op", "recover_batch", "elapsed", sw.format(end - start)});
+    log::Trace(log_prefix_, {"op", "recover_batch", "elapsed", StopWatch::format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }
@@ -490,7 +490,7 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
         value.clear();
     }
     const auto [end, _] = sw.lap();
-    log::Trace(log_prefix_, {"op", "store_senders", "elapsed", sw.format(end - start)});
+    log::Trace(log_prefix_, {"op", "store_senders", "elapsed", StopWatch::format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }

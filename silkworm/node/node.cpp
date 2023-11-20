@@ -80,7 +80,7 @@ class NodeImpl final {
 
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
     : settings_{settings},
-      chaindata_db_{chaindata_db},
+      chaindata_db_{std::move(chaindata_db)},
       snapshot_repository_{settings_.snapshot_settings},
       execution_server_{settings_, db::RWAccess{chaindata_db_}},
       execution_local_client_{execution_server_},
@@ -179,7 +179,7 @@ Task<void> NodeImpl::start_execution_log_timer() {
 }
 
 Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
-    : p_impl_(std::make_unique<NodeImpl>(settings, std::move(sentry_client), chaindata_db)) {}
+    : p_impl_(std::make_unique<NodeImpl>(settings, std::move(sentry_client), std::move(chaindata_db))) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;

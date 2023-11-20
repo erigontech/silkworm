@@ -528,28 +528,28 @@ enum class CursorMoveDirection {
 
 //! \brief Executes a function on each record reachable by the provided cursor
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_each(ROCursor& cursor, WalkFuncRef func,
+size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker,
                        CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] prefix : The prefix each key must start with
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
-size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef func,
+size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef walker,
                          CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] max_count : Max number of iterations
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
@@ -557,7 +557,7 @@ size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef func,
 //! reached either the end or the beginning of table earlier
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_count(ROCursor& cursor, WalkFuncRef func, size_t max_count,
+size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t max_count,
                         CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found

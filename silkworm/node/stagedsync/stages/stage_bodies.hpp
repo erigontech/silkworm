@@ -30,7 +30,7 @@ class BodiesStage : public Stage {
     BodiesStage(NodeSettings*, SyncContext*);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
-    ~BodiesStage() = default;
+    ~BodiesStage() override = default;
 
     Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height

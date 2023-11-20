@@ -70,11 +70,11 @@ ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     load_stages();
 }
 
-BlockNum ExecutionPipeline::head_header_number() {
+BlockNum ExecutionPipeline::head_header_number() const {
     return head_header_number_;
 }
 
-Hash ExecutionPipeline::head_header_hash() {
+Hash ExecutionPipeline::head_header_hash() const {
     return head_header_hash_;
 }
 
@@ -201,7 +201,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             if (start_stage_name) {
                 // Stage is not the start one, skip it and continue
                 if (start_stage_name != stage_id) {
-                    log::Info("Skipping " + std::string(stage_id) + "...", {"START_AT_STAGE", start_stage_name->c_str(), "hit", "true"});
+                    log::Info("Skipping " + std::string(stage_id) + "...", {"START_AT_STAGE", *start_stage_name, "hit", "true"});
                     continue;
                 } else {
                     // Start stage just found, avoid skipping next stages
@@ -211,7 +211,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
             // Check if we have to stop due to environment variable
             if (stop_stage_name && stop_stage_name == stage_id) {
-                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name->c_str(), "hit", "true"});
+                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", *stop_stage_name, "hit", "true"});
                 result = Stage::Result::kStoppedByEnv;
                 break;
             }

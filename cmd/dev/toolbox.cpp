@@ -126,7 +126,7 @@ struct DbTableInfo {
     [[nodiscard]] size_t size() const noexcept { return pages() * stat.ms_psize; }
 };
 
-[[nodiscard]] constexpr bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
+[[nodiscard]] bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
     return lhs.name == rhs.name;
 }
 

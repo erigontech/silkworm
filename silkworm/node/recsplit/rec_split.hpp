@@ -88,23 +88,6 @@
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
 
-// prettyPrint a vector, used for debugging
-// usage: prettyPrint(vi);
-// usage: prettyPrint(vi, "{", ", ", "}");
-template <typename T>
-std::string prettyPrint(const std::vector<T>& v, const std::string& prefix = "[", const std::string& separator = ", ", const std::string& suffix = "]") {
-    std::ostringstream oss;
-    oss << prefix;
-    for (size_t i = 0; i < v.size(); ++i) {
-        oss << v[i];
-        if (i < v.size() - 1) {
-            oss << separator;
-        }
-    }
-    oss << suffix;
-    return oss.str();
-}
-
 namespace silkworm::succinct {
 
 using succinct::DoubleEliasFanoList16;
@@ -226,7 +209,7 @@ struct RecSplitSettings {
 //! space and faster evaluation
 //! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
 template <std::size_t LEAF_SIZE, template <class> class BUILDING_STRATEGY>
-class RecSplit {
+class RecSplit: public BUILDING_STRATEGY<RecSplit<LEAF_SIZE, BUILDING_STRATEGY>> {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
@@ -241,7 +224,7 @@ class RecSplit {
           base_data_id_(settings.base_data_id),
           index_path_(settings.index_path),
           double_enum_index_(settings.double_enum_index),
-          building_policy_(bucket_size_, bucket_count_, key_count_,
+          BuildingStrategy(bucket_size_, bucket_count_, key_count_,
                            settings.etl_optimal_size, settings.double_enum_index)
     {
         // Generate random salt for murmur3 hash
@@ -354,7 +337,7 @@ class RecSplit {
         uint64_t bucket_id = hash128_to_bucket(key_hash);
         auto bucket_key = key_hash.second;
 
-        building_policy_->add_key(bucket_id, bucket_key, offset);
+        BuildingStrategy::add_key(bucket_id, bucket_key, offset);
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
@@ -372,14 +355,14 @@ class RecSplit {
 
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
-    [[nodiscard]] bool build() {
+    [[nodiscard]] bool build_template() {
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
 
-        if (building_policy_->keys_added_ != key_count_) {
+        if (BuildingStrategy::keys_added_ != key_count_) {
             throw std::logic_error{"keys expected: " + std::to_string(key_count_) +
-                                   " added: " + std::to_string(building_policy_.keys_added_)};
+                                   " added: " + std::to_string(BuildingStrategy::keys_added_)};
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
@@ -392,12 +375,12 @@ class RecSplit {
         SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
-        endian::store_big_u64(uint64_buffer.data(), building_policy_->keys_added_);
+        endian::store_big_u64(uint64_buffer.data(), BuildingStrategy::keys_added_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written number of keys: " << building_policy_->keys_added_;
+        SILK_DEBUG << "[index] written number of keys: " << BuildingStrategy::keys_added_;
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(building_policy_->max_offset_) + 7) / 8;
+        bytes_per_record_ = (std::bit_width(BuildingStrategy::max_offset_) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
 
@@ -405,11 +388,11 @@ class RecSplit {
 
         // Calc Minimal Perfect Hashes using recsplit algorithm
         // & write table: mph-output -> ordinal
-        bool collision = building_policy_->build_mph(index_output_stream, golomb_rice_codes_, double_ef_index_, bytes_per_record_);
+        bool collision = BuildingStrategy::build_mph(index_output_stream, golomb_rice_codes_, double_ef_index_, bytes_per_record_);
         if (collision) return true;
 
         if (double_enum_index_) {
-            building_policy_->build_double_enum_index(ef_offsets_, double_ef_index_);
+            BuildingStrategy::build_double_enum_index(ef_offsets_, double_ef_index_);
         }
 
         built_ = true;
@@ -477,7 +460,7 @@ class RecSplit {
 
     void reset_new_salt() {
         built_ = false;
-        building_policy_->clear();
+        BuildingStrategy::clear();
         salt_++;
         hasher_->reset_seed(salt_);
     }
@@ -791,7 +774,7 @@ class RecSplit {
         }
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE>& rs) {
+    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE, BUILDING_STRATEGY>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         os.write(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
@@ -875,8 +858,6 @@ class RecSplit {
 
     //! The memory-mapped RecSplit-encoded file when opening existing index for read
     std::optional<MemoryMappedFile> encoded_file_;
-
-    BuildingStrategy building_policy_;
 };
 
 template <typename RECSPLIT>
@@ -885,9 +866,9 @@ struct BuildingStrategy {
 
 template <typename RECSPLIT>
 struct SequentialBuildingStrategy: public BuildingStrategy<RECSPLIT> {
-    using EliasFano = RECSPLIT::EliasFano;
-    using DoubleEliasFano = RECSPLIT::DoubleEliasFano;
-    using GolombRiceBuilder = RECSPLIT::GolombRiceBuilder;
+    using EliasFano = typename RECSPLIT::EliasFano;
+    using DoubleEliasFano = typename RECSPLIT::DoubleEliasFano;
+    using GolombRiceBuilder = typename RECSPLIT::GolombRiceBuilder;
 
     //! Identifier of the current bucket being accumulated
     uint64_t current_bucket_id_{0};
@@ -991,6 +972,11 @@ struct SequentialBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         // previous_offset_ = offset;
     }
 
+    [[nodiscard]] bool build() {
+        RECSPLIT::build_template();
+    }
+
+  protected:
     bool build_mph(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) {
         // SILK_INFO << "seq-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
         //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
@@ -1050,15 +1036,15 @@ struct SequentialBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         return false;  // no collision
     }
 
-    void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets_) {
+    void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets) {
         // Build Elias-Fano index for offsets (if any)
-        ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         db::PooledCursor empty_cursor{};
         offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
             const uint64_t offset = endian::load_big_u64(entry.key.data());
-            ef_offsets_->add_offset(offset);
+            ef_offsets->add_offset(offset);
         });
-        ef_offsets_->build();
+        ef_offsets->build();
     }
 
     //! Compute and store the splittings and bijections of the current bucket
@@ -1133,6 +1119,11 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
 
+/*
+    RecSplitIndex recsplit;
+    recsplit.build();
+
+ */
 
 }  // namespace silkworm::succinct
 

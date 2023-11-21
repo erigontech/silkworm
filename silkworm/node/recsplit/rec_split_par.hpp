@@ -139,7 +139,7 @@ using namespace std::chrono;
 //! space and faster evaluation
 //! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
 template <std::size_t LEAF_SIZE, template <class> class BUILDING_STRATEGY>
-class RecSplit {
+class RecSplit: public BUILDING_STRATEGY<RecSplit<LEAF_SIZE, BUILDING_STRATEGY>> {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
@@ -154,7 +154,7 @@ class RecSplit {
           base_data_id_(settings.base_data_id),
           index_path_(settings.index_path),
           double_enum_index_(settings.double_enum_index),
-          building_policy_(bucket_size_, bucket_count_, key_count_,
+          BuildingStrategy(bucket_size_, bucket_count_, key_count_,
                            settings.etl_optimal_size, settings.double_enum_index)
     {
         // Generate random salt for murmur3 hash
@@ -267,7 +267,7 @@ class RecSplit {
         uint64_t bucket_id = hash128_to_bucket(key_hash);
         auto bucket_key = key_hash.second;
 
-        building_policy_->add_key(bucket_id, bucket_key, offset);
+        BuildingStrategy::add_key(bucket_id, bucket_key, offset);
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
@@ -285,14 +285,14 @@ class RecSplit {
 
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
-    [[nodiscard]] bool build(ThreadPool& thread_pool) {
+    [[nodiscard]] bool build_template() {
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
 
-        if (building_policy_->keys_added_ != key_count_) {
+        if (BuildingStrategy::keys_added_ != key_count_) {
             throw std::logic_error{"keys expected: " + std::to_string(key_count_) +
-                                   " added: " + std::to_string(building_policy_.keys_added_)};
+                                   " added: " + std::to_string(BuildingStrategy::keys_added_)};
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
@@ -305,12 +305,12 @@ class RecSplit {
         SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
-        endian::store_big_u64(uint64_buffer.data(), building_policy_->keys_added_);
+        endian::store_big_u64(uint64_buffer.data(), BuildingStrategy::keys_added_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written number of keys: " << building_policy_->keys_added_;
+        SILK_DEBUG << "[index] written number of keys: " << BuildingStrategy::keys_added_;
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(building_policy_->max_offset_) + 7) / 8;
+        bytes_per_record_ = (std::bit_width(BuildingStrategy::max_offset_) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
 
@@ -318,11 +318,11 @@ class RecSplit {
 
         // Calc Minimal Perfect Hashes using recsplit algorithm
         // & write table: mph-output -> ordinal
-        bool collision = building_policy_->build_mph(index_output_stream, golomb_rice_codes_, double_ef_index_, bytes_per_record_, thread_pool);
+        bool collision = BuildingStrategy::build_mph(index_output_stream, golomb_rice_codes_, double_ef_index_, bytes_per_record_);
         if (collision) return true;
 
         if (double_enum_index_) {
-            building_policy_->build_double_enum_index(ef_offsets_, double_ef_index_);
+            BuildingStrategy::build_double_enum_index(ef_offsets_, double_ef_index_);
         }
 
         built_ = true;
@@ -390,7 +390,7 @@ class RecSplit {
 
     void reset_new_salt() {
         built_ = false;
-        building_policy_->clear();
+        BuildingStrategy::clear();
         salt_++;
         hasher_->reset_seed(salt_);
     }
@@ -704,7 +704,7 @@ class RecSplit {
         }
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE>& rs) {
+    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE, BUILDING_STRATEGY>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         os.write(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
@@ -788,8 +788,6 @@ class RecSplit {
 
     //! The memory-mapped RecSplit-encoded file when opening existing index for read
     std::optional<MemoryMappedFile> encoded_file_;
-
-    BuildingStrategy building_policy_;
 };
 
 template <typename RECSPLIT>
@@ -867,6 +865,8 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
     //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
     // uint64_t previous_offset_{0};  // unused
 
+    ThreadPool* thread_pool_{nullptr};
+
     ParallelBuildingStrategy(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count,
                              [[maybe_unused]] std::size_t etl_optimal_size, bool double_enum_index)
         : bucket_count_{bucket_count}, double_enum_index_(double_enum_index)
@@ -915,8 +915,13 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         // previous_offset_ = offset;
     }
 
-    bool build_mph(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record,
-                   ThreadPool& thread_pool) {
+    [[nodiscard]] bool build(ThreadPool& thread_pool) {
+        thread_pool_ = &thread_pool;
+        RECSPLIT::build_template();
+    }
+
+  protected:
+    bool build_mph(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) {
         // SILK_INFO << "par-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
         //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
         //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
@@ -924,14 +929,14 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};
         for (auto& bucket : buckets_) {
-            thread_pool.push_task([&]() noexcept(false) {
+            thread_pool_->push_task([&]() noexcept(false) {
                 if (collision) return;  // skip work if collision detected
                 bool local_collision = recsplit_bucket(bucket, bytes_per_record);
                 if (local_collision) collision = true;
                 // SILK_INFO << "processed " << bucket.bucket_id_;
             });
         }
-        thread_pool.wait_for_tasks();
+        thread_pool_->wait_for_tasks();
         if (collision) {
             SILK_WARN << "[index] collision detected";
             return true;
@@ -984,14 +989,14 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         return false;  // no collision
     }
 
-     void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets_, DoubleEliasFano& double_ef_index_) {
+    void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets) {
         // Build Elias-Fano index for offsets (if any)
         std::sort(offsets_.begin(), offsets_.end());
-        ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         for (auto offset : offsets_) {
-            ef_offsets_->add_offset(offset);
+            ef_offsets->add_offset(offset);
         }
-        ef_offsets_->build();
+        ef_offsets->build();
     }
 
     //! Compute and store the splittings and bijections of the current bucket
@@ -1043,6 +1048,12 @@ template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
+
+/*
+    parallel::RecSplitIndex recsplit;
+    recsplit.build(thread_pool);
+
+ */
 
 }  // namespace silkworm::succinct::parallel
 

@@ -638,7 +638,7 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     to_quantity(std::span(result.full_block.number), b.header.number);
     to_hex(std::span(result.full_block.parent_hash), b.header.parent_hash.bytes);
     to_hex(std::span(result.full_block.receipts_root), b.header.receipts_root.bytes);
-    to_hex(std::span(result.full_block.sha3Uncles),b.header.ommers_hash.bytes);
+    to_hex(std::span(result.full_block.sha3Uncles), b.header.ommers_hash.bytes);
     to_quantity(std::span(result.full_block.size), b.block_size);
     to_hex(std::span(result.full_block.state_root), b.header.state_root.bytes);
     to_quantity(std::span(result.full_block.timestamp), b.header.timestamp);
@@ -646,7 +646,7 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     to_quantity(std::span(result.full_block.transaction_count), b.transaction_count);
 
     to_hex(std::span(result.full_block.transactions_root), b.header.transactions_root.bytes);
-    //result.full_block.logs_bloom = nullptr;
+    // result.full_block.logs_bloom = nullptr;
 
     std::vector<GlazeJsonTransaction> transaction_data_list;
     transaction_data_list.reserve(b.transactions.size());
@@ -671,13 +671,13 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     std::vector<GlazeJsonReceipt> receipt_data_list;
     receipt_data_list.reserve(b.receipts.size());
     for (std::size_t i{0}; i < b.receipts.size(); i++) {
-        const auto & receipt = b.receipts.at(i);
+        const auto& receipt = b.receipts.at(i);
         GlazeJsonReceipt item{};
         to_quantity(std::span(item.block_number), b.header.number);
         to_hex(std::span(item.block_hash), b.hash.bytes);
 
-        //item.logs = nullptr;
-        //item.logsBloom = nullptr;
+        // item.logs = nullptr;
+        // item.logsBloom = nullptr;
         to_quantity(std::span(item.effective_gas_price), b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
 
         make_glaze_json_receipt(receipt, item);

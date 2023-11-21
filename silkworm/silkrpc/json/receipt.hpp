@@ -63,8 +63,7 @@ struct GlazeJsonReceipt {
             "status", &T::status,
             "transactionHash", &T::transaction_hash,
             "transactionIndex", &T::transaction_index,
-            "type", &T::type
-        );
+            "type", &T::type);
     };
 };
 

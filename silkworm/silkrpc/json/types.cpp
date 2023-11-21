@@ -557,9 +557,8 @@ struct GlazeJsonFullBlock {
     char total_difficulty[kInt64HexSize];
     char mix_hash[kHashHexSize];
     char extra_data[kDataSize];
-
-    char transaction_count[kInt64HexSize];
-    std::optional<std::string> logs_bloom;
+    int transaction_count;
+    std::optional<std::monostate> logs_bloom;
     std::optional<std::vector<GlazeJsonTransaction>> transactions;
     std::vector<std::string> ommers_hashes;
 
@@ -627,7 +626,7 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     GlazeJsonOtsBlockTransactionsReply block_json_data{};
     auto& result = block_json_data.result;
     block_json_data.id = id;
-    to_quantity(std::span(result.full_block.difficulty), silkworm::endian::to_big_compact(b.header.difficulty));
+    to_quantity(std::span(result.full_block.difficulty),silkworm::endian::to_big_compact(b.header.difficulty));
     to_hex(std::span(result.full_block.extra_data), b.header.extra_data);
     to_quantity(std::span(result.full_block.gas_limit), b.header.gas_limit);
     to_quantity(std::span(result.full_block.gas_used), b.header.gas_used);
@@ -643,22 +642,23 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     to_hex(std::span(result.full_block.state_root), b.header.state_root.bytes);
     to_quantity(std::span(result.full_block.timestamp), b.header.timestamp);
     to_quantity(std::span(result.full_block.total_difficulty), silkworm::endian::to_big_compact(b.total_difficulty));
-    to_quantity(std::span(result.full_block.transaction_count), b.transaction_count);
-
+    result.full_block.transaction_count = b.transaction_count;
     to_hex(std::span(result.full_block.transactions_root), b.header.transactions_root.bytes);
-    // result.full_block.logs_bloom = nullptr;
+
+    std::monostate null_value{};
+    result.full_block.logs_bloom = std::make_optional(std::move(null_value));
 
     std::vector<GlazeJsonTransaction> transaction_data_list;
     transaction_data_list.reserve(b.transactions.size());
     for (std::size_t i{0}; i < b.transactions.size(); i++) {
         const silkworm::Transaction& transaction = b.transactions[i];
         GlazeJsonTransaction item{};
-        to_quantity(std::span(item.transaction_index), i);
+        make_glaze_json_transaction(transaction, item);
+        to_quantity(std::span(item.transaction_index), b.receipts.at(i).tx_index);
         to_quantity(std::span(item.block_number), b.header.number);
         to_hex(std::span(item.block_hash), b.hash.bytes);
-        to_hex(std::span(item.input), b.transactions[i].data.substr(0, 4));
+        item.input = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0, 4));
         to_quantity(std::span(item.gas_price), transaction.effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
-        make_glaze_json_transaction(transaction, item);
         transaction_data_list.push_back(std::move(item));
     }
     block_json_data.result.full_block.transactions = make_optional(std::move(transaction_data_list));
@@ -673,19 +673,18 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     for (std::size_t i{0}; i < b.receipts.size(); i++) {
         const auto& receipt = b.receipts.at(i);
         GlazeJsonReceipt item{};
+        make_glaze_json_receipt(receipt, item);
         to_quantity(std::span(item.block_number), b.header.number);
         to_hex(std::span(item.block_hash), b.hash.bytes);
-
-        // item.logs = nullptr;
-        // item.logsBloom = nullptr;
+        item.logs = std::make_optional(std::move(null_value));
+        item.logsBloom = std::make_optional(std::move(null_value));
         to_quantity(std::span(item.effective_gas_price), b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
-
-        make_glaze_json_receipt(receipt, item);
         receipt_data_list.push_back(std::move(item));
     }
 
     block_json_data.result.receipts = make_optional(std::move(receipt_data_list));
     glz::write_json(block_json_data, json_reply);
+    //glz::write<glz::opts{.skip_null_members = false}>(block_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

@@ -38,8 +38,8 @@ struct GlazeJsonReceipt {
     char cumulative_gas_used[kInt64HexSize];
     char effective_gas_price[kInt64HexSize];
     char gas_used[kInt64HexSize];
-    std::optional<std::string> logs;
-    std::optional<std::string> logsBloom;
+    std::optional<std::monostate> logs;
+    std::optional<std::monostate> logsBloom;
     char status[kInt64HexSize];
     char transaction_hash[kHashHexSize];
     char transaction_index[kInt64HexSize];

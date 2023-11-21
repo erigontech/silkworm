@@ -180,12 +180,12 @@ CodeWord* PatternTable::insert_word(CodeWord* codeword) {
     } else {
         codeword->set_next(nullptr);
         if (head_ == nullptr) {
-            codewords_.push_back(std::move(codeword));
+            codewords_.push_back(codeword);
             head_ = codewords_.front();
             inserted = head_;
         } else {
             SILKWORM_ASSERT(!codewords_.empty());
-            codewords_.push_back(std::move(codeword));
+            codewords_.push_back(codeword);
             inserted = codewords_.back();
         }
     }
@@ -297,7 +297,7 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
 }
 
 Decompressor::Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region)
-    : compressed_path_(std::move(compressed_path)), compressed_region_{std::move(compressed_region)} {}
+    : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region} {}
 
 Decompressor::~Decompressor() {
     close();

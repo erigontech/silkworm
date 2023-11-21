@@ -42,13 +42,13 @@ void EthStatusDataProvider::HeadInfo::debug_log() const {
         });
 }
 
-EthStatusDataProvider::HeadInfo EthStatusDataProvider::read_head_info(ROTxn& db_tx_) {
+EthStatusDataProvider::HeadInfo EthStatusDataProvider::read_head_info(ROTxn& txn) {
     HeadInfo head_info;
 
-    BlockNum head_height = db::stages::read_stage_progress(db_tx_, db::stages::kBlockBodiesKey);
+    BlockNum head_height = db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey);
     head_info.block_num = head_height;
 
-    auto head_hash = db::read_canonical_hash(db_tx_, head_height);
+    auto head_hash = db::read_canonical_hash(txn, head_height);
     if (head_hash) {
         head_info.hash = head_hash.value();
     } else {
@@ -56,7 +56,7 @@ EthStatusDataProvider::HeadInfo EthStatusDataProvider::read_head_info(ROTxn& db_
         return head_info;
     }
 
-    auto head_total_difficulty = db::read_total_difficulty(db_tx_, head_height, *head_hash);
+    auto head_total_difficulty = db::read_total_difficulty(txn, head_height, *head_hash);
     if (head_total_difficulty) {
         head_info.total_difficulty = head_total_difficulty.value();
     } else {

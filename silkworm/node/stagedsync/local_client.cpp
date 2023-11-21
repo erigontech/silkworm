@@ -86,7 +86,7 @@ Task<std::vector<BlockHeader>> LocalClient::get_last_headers(BlockNum limit) {
 }
 
 Task<std::optional<TotalDifficulty>> LocalClient::get_header_td(Hash h, std::optional<BlockNum> bn) {
-    co_return co_await local_server_.get_header_td(h, bn);
+    co_return co_await local_server_.get_header_td(h, bn);  // NOLINT(clang-analyzer-core.CallAndMessage)
 }
 
 }  // namespace silkworm::execution

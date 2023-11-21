@@ -44,26 +44,21 @@
 
 #pragma once
 
-/* clang-format off */
-#define _USE_MATH_DEFINES
-#include <cmath>
-#if !defined(M_PI) && defined(_MSC_VER)
-#include <corecrt_math_defines.h>
-#endif
-/* clang-format on */
-
 #include <array>
 #include <bit>
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <limits>
+#include <numbers>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <gsl/narrow>
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
@@ -233,7 +228,7 @@ class RecSplit {
 
     explicit RecSplit(std::filesystem::path index_path, std::optional<MemoryMappedRegion> index_region = {})
         : index_path_{index_path},
-          encoded_file_{std::make_optional<MemoryMappedFile>(std::move(index_path), std::move(index_region))} {
+          encoded_file_{std::make_optional<MemoryMappedFile>(std::move(index_path), index_region)} {
         SILK_TRACE << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 
@@ -262,9 +257,11 @@ class RecSplit {
         SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
         offset += kLeafSizeLength;
 
-        const uint16_t primary_aggr_bound = leaf_size * succinct::max(2, std::ceil(0.35 * leaf_size + 1. / 2));
+        const uint16_t primary_aggr_bound = leaf_size *
+                                            succinct::max(2, gsl::narrow<int64_t>(std::ceil(0.35 * leaf_size + 0.5)));
         SILKWORM_ASSERT(primary_aggr_bound == kLowerAggregationBound);
-        const uint16_t secondary_aggr_bound = primary_aggr_bound * (leaf_size < 7 ? 2 : ceil(0.21 * leaf_size + 9. / 10));
+        const uint16_t secondary_aggr_bound = primary_aggr_bound *
+                                              (leaf_size < 7 ? 2 : gsl::narrow<uint16_t>(std::ceil(0.21 * leaf_size + 0.9)));
         SILKWORM_ASSERT(secondary_aggr_bound == kUpperAggregationBound);
 
         // Read salt
@@ -277,7 +274,7 @@ class RecSplit {
         offset += kStartSeedSizeLength;
         SILKWORM_ASSERT(start_seed_length == kStartSeed.size());
         check_minimum_length(offset + start_seed_length * sizeof(uint64_t));
-        std::array<uint64_t, kStartSeed.size()> start_seed;
+        std::array<uint64_t, kStartSeed.size()> start_seed{};
         for (std::size_t i{0}; i < start_seed_length; ++i) {
             start_seed[i] = endian::load_big_u64(address + offset);
             offset += sizeof(uint64_t);
@@ -679,8 +676,8 @@ class RecSplit {
             sqrt_prod *= sqrt(k[i]);
         }
 
-        const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
-        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
+        const double p = sqrt(m) / (pow(2 * std::numbers::pi, (fanout - 1.) * 0.5) * sqrt_prod);
+        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p))));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;

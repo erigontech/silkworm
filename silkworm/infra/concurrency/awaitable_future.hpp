@@ -46,6 +46,7 @@ class AwaitableFuture {
 
     Task<T> get_async() {
         try {
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
             std::optional<T> result = co_await channel_->async_receive(boost::asio::use_awaitable);
             co_return std::move(result.value());
         } catch (const boost::system::system_error& ex) {

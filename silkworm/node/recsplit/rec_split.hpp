@@ -92,7 +92,7 @@
 // usage: prettyPrint(vi);
 // usage: prettyPrint(vi, "{", ", ", "}");
 template <typename T>
-std::string prettyPrint_seq(const std::vector<T>& v, const std::string& prefix = "[", const std::string& separator = ", ", const std::string& suffix = "]") {
+std::string prettyPrint(const std::vector<T>& v, const std::string& prefix = "[", const std::string& separator = ", ", const std::string& suffix = "]") {
     std::ostringstream oss;
     oss << prefix;
     for (size_t i = 0; i < v.size(); ++i) {
@@ -225,13 +225,14 @@ struct RecSplitSettings {
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
 //! space and faster evaluation
 //! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
-template <std::size_t LEAF_SIZE>
+template <std::size_t LEAF_SIZE, template <class> class BUILDING_STRATEGY>
 class RecSplit {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
+    using BuildingStrategy = BUILDING_STRATEGY<RecSplit<LEAF_SIZE, BUILDING_STRATEGY>>;
 
     explicit RecSplit(const RecSplitSettings& settings, uint32_t salt = 0)
         : bucket_size_(settings.bucket_size),
@@ -240,16 +241,9 @@ class RecSplit {
           base_data_id_(settings.base_data_id),
           index_path_(settings.index_path),
           double_enum_index_(settings.double_enum_index),
-          offset_collector_(settings.etl_optimal_size),
-          bucket_collector_(settings.etl_optimal_size) {
-        bucket_size_accumulator_.reserve(bucket_count_ + 1);
-        bucket_position_accumulator_.reserve(bucket_count_ + 1);
-        bucket_size_accumulator_.resize(1);      // Start with 0 as bucket accumulated size
-        bucket_position_accumulator_.resize(1);  // Start with 0 as bucket accumulated position
-        current_bucket_.reserve(bucket_size_);
-        current_bucket_offsets_.reserve(bucket_size_);
-        count_.reserve(kLowerAggregationBound);
-
+          building_policy_(bucket_size_, bucket_count_, key_count_,
+                           settings.etl_optimal_size, settings.double_enum_index)
+    {
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
@@ -357,48 +351,15 @@ class RecSplit {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
-        if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
-        }
-
-        Bytes bucket_key(16, '\0');
-
         uint64_t bucket_id = hash128_to_bucket(key_hash);
-        endian::store_big_u64(bucket_key.data(), bucket_id);
-        endian::store_big_u64(bucket_key.data() + sizeof(uint64_t), key_hash.second);
-        Bytes offset_key(8, '\0');
-        endian::store_big_u64(offset_key.data(), offset);
+        auto bucket_key = key_hash.second;
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
-        }
-        if (keys_added_ > 0) {
-            const auto delta = offset - previous_offset_;
-            if (keys_added_ == 1 || delta < min_delta_) {
-                min_delta_ = delta;
-            }
-        }
-
-        if (double_enum_index_) {
-            offset_collector_.collect(offset_key, {});
-
-            Bytes current_key_count(8, '\0');
-            endian::store_big_u64(current_key_count.data(), keys_added_);
-            bucket_collector_.collect(bucket_key, current_key_count);
-        } else {
-            bucket_collector_.collect(bucket_key, offset_key);
-        }
-        keys_added_++;
-        previous_offset_ = offset;
+        building_policy_->add_key(bucket_id, bucket_key, offset);
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
-        }
-
-        if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key: " << to_hex(ByteView{reinterpret_cast<const uint8_t*>(key_data), key_length});
         }
 
         const auto key_hash = murmur_hash_3(key_data, key_length);
@@ -412,12 +373,13 @@ class RecSplit {
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
     //! \warning duplicate keys will cause this method to never return
     [[nodiscard]] bool build() {
-        SILK_INFO << "Recsplit SEQUENTIAL version";
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
-        if (keys_added_ != key_count_) {
-            throw std::logic_error{"keys expected: " + std::to_string(key_count_) + " added: " + std::to_string(keys_added_)};
+
+        if (building_policy_->keys_added_ != key_count_) {
+            throw std::logic_error{"keys expected: " + std::to_string(key_count_) +
+                                   " added: " + std::to_string(building_policy_.keys_added_)};
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
@@ -430,82 +392,29 @@ class RecSplit {
         SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
-        endian::store_big_u64(uint64_buffer.data(), keys_added_);
+        endian::store_big_u64(uint64_buffer.data(), building_policy_->keys_added_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written number of keys: " << keys_added_;
+        SILK_DEBUG << "[index] written number of keys: " << building_policy_->keys_added_;
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(max_offset_) + 7) / 8;
+        bytes_per_record_ = (std::bit_width(building_policy_->max_offset_) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
 
-        // SILK_INFO << "seq-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
-        //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
-        //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
-
-        current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
-
-        [[maybe_unused]] auto _ = gsl::finally([&]() { bucket_collector_.clear(); });
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
 
-        // We use an exception for collision error condition because ETL currently does not support loading errors
-        // TODO(canepat) refactor ETL to support errors in LoadFunc and propagate them to caller to get rid of CollisionError
-        struct CollisionError : public std::runtime_error {
-            explicit CollisionError(uint64_t _bucket_id) : runtime_error("collision"), bucket_id(_bucket_id) {}
-            uint64_t bucket_id;
-        };
-        try {
-            // Passing a void cursor is valid case for ETL when DB modification is not expected
-            db::PooledCursor empty_cursor{};
-            bucket_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
-                // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
-                const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
-                SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
-                if (current_bucket_id_ != bucket_id) {
-                    if (current_bucket_id_ != std::numeric_limits<uint64_t>::max()) {
-                        bool collision = recsplit_current_bucket(index_output_stream);
-                        if (collision) throw CollisionError{bucket_id};
-                    }
-                    current_bucket_id_ = bucket_id;
-                }
-                current_bucket_.emplace_back(endian::load_big_u64(entry.key.data() + sizeof(uint64_t)));
-                current_bucket_offsets_.emplace_back(endian::load_big_u64(entry.value.data()));
-            });
-        } catch (const CollisionError& error) {
-            SILK_WARN << "[index] collision detected for bucket=" << error.bucket_id;
-            return true;
-        }
-        if (!current_bucket_.empty()) {
-            bool collision_detected = recsplit_current_bucket(index_output_stream);
-            if (collision_detected) return true;
-        }
-        gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
+        // Calc Minimal Perfect Hashes using recsplit algorithm
+        // & write table: mph-output -> ordinal
+        bool collision = building_policy_->build_mph(index_output_stream, golomb_rice_codes_, double_ef_index_, bytes_per_record_);
+        if (collision) return true;
 
-        // SILK_INFO << "seq-vers - sizes: " << prettyPrint_seq(bucket_size_accumulator_);
-        // SILK_INFO << "seq-vers - positions: " << prettyPrint_seq(bucket_position_accumulator_);
-
-        // Concatenate the representation of each bucket
-        golomb_rice_codes_ = gr_builder_.build();
-
-        // SILK_INFO << "seq-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
-
-        // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
-            ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
-            db::PooledCursor empty_cursor{};
-            offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
-                const uint64_t offset = endian::load_big_u64(entry.key.data());
-                ef_offsets_->add_offset(offset);
-            });
-            ef_offsets_->build();
+            building_policy_->build_double_enum_index(ef_offsets_, double_ef_index_);
         }
-
-        // Construct double Elias-Fano index for bucket cumulative keys and bit positions
-        std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
-        std::vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
-        double_ef_index_.build(cumulative_keys, positions);
 
         built_ = true;
+
+        // SILK_INFO << "written bytes so far " << index_output_stream.tellp();
 
         // Write out bucket count, bucket size, leaf size
         endian::store_big_u64(uint64_buffer.data(), bucket_count_);
@@ -568,14 +477,7 @@ class RecSplit {
 
     void reset_new_salt() {
         built_ = false;
-        keys_added_ = 0;
-        bucket_collector_.clear();
-        offset_collector_.clear();
-        current_bucket_.clear();
-        current_bucket_offsets_.clear();
-        max_offset_ = 0;
-        bucket_size_accumulator_.resize(1);
-        bucket_position_accumulator_.resize(1);
+        building_policy_->clear();
         salt_++;
         hasher_->reset_seed(salt_);
     }
@@ -690,12 +592,14 @@ class RecSplit {
 
     static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
 
-    inline uint64_t golomb_param(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) const {
+    static inline uint64_t golomb_param(const std::size_t m,
+                                        const std::array<uint32_t, kMaxBucketSize>& memo) {
         return memo[m] >> 27;
     }
-
-    inline uint64_t golomb_param_with_max_updating(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) {
-        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
+    static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
+                                                             const std::array<uint32_t, kMaxBucketSize>& memo,
+                                                             uint16_t& golomb_param_max_index) {
+        if (m > golomb_param_max_index) golomb_param_max_index = m;
         return golomb_param(m, memo);
     }
 
@@ -750,79 +654,37 @@ class RecSplit {
         return memo;
     }
 
-    //! Compute and store the splittings and bijections of the current bucket
-    bool recsplit_current_bucket(std::ofstream& index_output_stream) {
-        // Extend bucket size accumulator to accommodate current bucket index + 1
-        while (bucket_size_accumulator_.size() <= (current_bucket_id_ + 1)) {
-            bucket_size_accumulator_.push_back(bucket_size_accumulator_.back());
-        }
-        bucket_size_accumulator_.back() += current_bucket_.size();
-        SILKWORM_ASSERT(bucket_size_accumulator_.back() >= bucket_size_accumulator_[current_bucket_id_]);
-
-        // Sets of size 0 and 1 are not further processed, just write them to index
-        if (current_bucket_.size() > 1) {
-            for (std::size_t i{1}; i < current_bucket_.size(); ++i) {
-                if (current_bucket_[i] == current_bucket_[i - 1]) {
-                    SILK_ERROR << "collision detected key=" << current_bucket_[i - 1];
-                    return true;
-                }
-            }
-            buffer_bucket_.reserve(current_bucket_.size());
-            buffer_offsets_.reserve(current_bucket_offsets_.size());
-            buffer_bucket_.resize(current_bucket_.size());
-            buffer_offsets_.resize(current_bucket_.size());
-
-            std::vector<uint32_t> unary;
-            recsplit(current_bucket_, current_bucket_offsets_, unary, index_output_stream);
-            gr_builder_.append_unary_all(unary);
-        } else {
-            for (const auto offset : current_bucket_offsets_) {
-                Bytes uint64_buffer(8, '\0');
-                endian::store_big_u64(uint64_buffer.data(), offset);
-                index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
-                SILK_DEBUG << "[index] written offset: " << offset;
-            }
-        }
-        // Extend bucket position accumulator to accommodate current bucket index + 1
-        while (bucket_position_accumulator_.size() <= current_bucket_id_ + 1) {
-            bucket_position_accumulator_.push_back(bucket_position_accumulator_.back());
-        }
-        bucket_position_accumulator_.back() = gr_builder_.get_bits();
-        SILKWORM_ASSERT(bucket_position_accumulator_.back() >= bucket_position_accumulator_[current_bucket_id_]);
-        // Clear for the next bucket
-        current_bucket_.clear();
-        current_bucket_offsets_.clear();
-        buffer_bucket_.clear();
-        buffer_offsets_.clear();
-        return false;
-    }
-
     //! Apply the RecSplit algorithm to the given bucket
-    void recsplit(std::vector<uint64_t>& bucket,
-                  std::vector<uint64_t>& offsets,
-                  std::vector<uint32_t>& unary,
-                  std::ofstream& index_ofs) {
-        // SILK_INFO << "seq-vers - bucket: " << prettyPrint_seq(bucket);
-        // SILK_INFO << "seq-vers - offsets: " << prettyPrint_seq(offsets);
-        // SILK_INFO << "seq-vers - buffer_bucket_: " << prettyPrint_seq(buffer_bucket_);
-        // SILK_INFO << "seq-vers - buffer_offsets_: " << prettyPrint_seq(buffer_offsets_);
-
-        recsplit(/*.level=*/0, bucket, offsets, /*.start=*/0, /*.end=*/bucket.size(), unary, index_ofs);
+    template <typename GRBUILDER>
+    static void recsplit(std::vector<uint64_t>& keys,
+                         std::vector<uint64_t>& offsets,
+                         std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
+                         std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
+                         GRBUILDER& gr_builder,
+                         std::ostream& index_ofs,
+                         uint16_t& golomb_param_max_index,
+                         uint8_t bytes_per_record) {
+        recsplit(/*.level=*/0, keys, offsets, buffer_keys, buffer_offsets, /*.start=*/0, /*.end=*/keys.size(),
+                 gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
     }
 
-    void recsplit(int level,
-                  std::vector<uint64_t>& bucket,
-                  std::vector<uint64_t>& offsets,
-                  std::size_t start,
-                  std::size_t end,
-                  std::vector<uint32_t>& unary,
-                  std::ofstream& index_ofs) {
+    static void recsplit(int level,
+                         std::vector<uint64_t>& keys,
+                         std::vector<uint64_t>& offsets,         // aka values
+                         std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
+                         std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
+                         std::size_t start,
+                         std::size_t end,
+                         GolombRiceVector::LazyBuilder& gr_builder,
+                         std::ostream& index_ofs,
+                         uint16_t& golomb_param_max_index,
+                         uint8_t bytes_per_record) {
         uint64_t salt = kStartSeed[level];
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
-            // SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             // No need to build aggregation levels - just find bijection
+            // SILK_INFO << "PROBE [index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             // if (level == 7) {
             //    SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
             //               << " current_bucket_id_=" << current_bucket_id_;
@@ -834,7 +696,7 @@ class RecSplit {
                 uint32_t mask{0};
                 bool fail{false};
                 for (uint16_t i{0}; !fail && i < m; i++) {
-                    uint32_t bit = uint32_t(1) << remap16(remix(bucket[start + i] + salt), m);
+                    uint32_t bit = uint32_t(1) << remap16(remix(keys[start + i] + salt), m);
                     if ((mask & bit) != 0) {
                         fail = true;
                     } else {
@@ -845,68 +707,68 @@ class RecSplit {
                 salt++;
             }
             for (std::size_t i{0}; i < m; i++) {
-                std::size_t j = remap16(remix(bucket[start + i] + salt), m);
-                buffer_offsets_[j] = offsets[start + i];
+                std::size_t j = remap16(remix(keys[start + i] + salt), m);
+                buffer_offsets[j] = offsets[start + i];
             }
             Bytes uint64_buffer(8, '\0');
             for (auto i{0}; i < m; i++) {
-                endian::store_big_u64(uint64_buffer.data(), buffer_offsets_[i]);
-                index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
+                endian::store_big_u64(uint64_buffer.data(), buffer_offsets[i]);
+                index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
                 // if (level == 0) {
                 //     SILK_DEBUG << "[index] written offset: " << buffer_offsets_[i];
                 // }
             }
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param_with_max_updating(m, memo);
-            gr_builder_.append_fixed(salt, log2golomb);
-            unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
+            gr_builder.append_fixed(salt, log2golomb);
+            gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            // SILK_INFO << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
+            // SILK_INFO << "PROBE [index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
             // SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
-
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
-            count_.resize(fanout);
+
+            std::vector<std::size_t> count(fanout, 0);  // temporary counters of key remapped occurrences
             while (true) {
-                std::fill(count_.begin(), count_.end(), 0);
+                std::fill(count.begin(), count.end(), 0);
                 for (std::size_t i{0}; i < m; i++) {
-                    count_[uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit]++;
+                    count[uint16_t(remap16(remix(keys[start + i] + salt), m)) / unit]++;
                 }
                 bool broken{false};
                 for (std::size_t i = 0; i < fanout - 1; i++) {
-                    broken = broken || (count_[i] != unit);
+                    broken = broken || (count[i] != unit);
                 }
                 if (!broken) break;
                 salt++;
             }
             for (std::size_t i{0}, c{0}; i < fanout; i++, c += unit) {
-                count_[i] = c;
+                count[i] = c;
             }
             for (std::size_t i{0}; i < m; i++) {
-                auto j = uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit;
-                buffer_bucket_[count_[j]] = bucket[start + i];
-                buffer_offsets_[count_[j]] = offsets[start + i];
-                count_[j]++;
+                auto j = uint16_t(remap16(remix(keys[start + i] + salt), m)) / unit;
+                buffer_keys[count[j]] = keys[start + i];
+                buffer_offsets[count[j]] = offsets[start + i];
+                count[j]++;
             }
-            std::copy(buffer_bucket_.data(), buffer_bucket_.data() + m, bucket.data() + start);
-            std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
+            std::copy(buffer_keys.data(), buffer_keys.data() + m, keys.data() + start);
+            std::copy(buffer_offsets.data(), buffer_offsets.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
-            const auto log2golomb = golomb_param_with_max_updating(m, memo);
-            gr_builder_.append_fixed(salt, log2golomb);
-            unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
+            const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
+            gr_builder.append_fixed(salt, log2golomb);
+            gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
 
             std::size_t i;
             for (i = 0; i < m - unit; i += unit) {
-                recsplit(level + 1, bucket, offsets, start + i, start + i + unit, unary, index_ofs);
+                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, start + i + unit, gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
             }
             if (m - i > 1) {
-                recsplit(level + 1, bucket, offsets, start + i, end, unary, index_ofs);
+                recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, end, gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
             } else if (m - i == 1) {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
-                index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
+                index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
                 // if (level == 0) {
                 //    SILK_DEBUG << "[index] written offset: " << offsets[start + i];
                 // }
@@ -939,7 +801,7 @@ class RecSplit {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE>& rs) {
+    friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE, BUILDING_STRATEGY>& rs) {
         size_t leaf_size;
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         if (leaf_size != LEAF_SIZE) {
@@ -978,9 +840,6 @@ class RecSplit {
     //! The Golomb-Rice (GR) codes of splitting and bijection indices
     GolombRiceVector golomb_rice_codes_;
 
-    //! Helper to build GR codes of splitting and bijection indices
-    GolombRiceBuilder gr_builder_;
-
     //! Double Elias-Fano (EF) index for bucket cumulative keys and bit positions
     DoubleEliasFano double_ef_index_;
 
@@ -993,23 +852,42 @@ class RecSplit {
     //! The path of the index file generated
     std::filesystem::path index_path_;
 
-    //! The number of keys currently added
-    uint64_t keys_added_{0};
-
-    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    uint64_t min_delta_{0};
-
-    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    uint64_t previous_offset_{0};
-
-    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
-    uint64_t max_offset_{0};
-
     //! Number of bytes used per index record
     uint8_t bytes_per_record_{0};
 
     //! The bitmask to be used to interpret record data
     uint64_t record_mask_{0};
+
+    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+    bool double_enum_index_{true};
+
+    //! Flag indicating that the MPHF has been built and no more keys can be added
+    bool built_{false};
+
+    //! The offset collector for Elias-Fano encoding of "enum -> offset" index
+    std::vector<uint64_t> offsets_;
+
+    //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
+    uint32_t salt_{0};
+
+    //! Murmur3 hash factory
+    std::unique_ptr<Murmur3> hasher_;
+
+    //! The memory-mapped RecSplit-encoded file when opening existing index for read
+    std::optional<MemoryMappedFile> encoded_file_;
+
+    BuildingStrategy building_policy_;
+};
+
+template <typename RECSPLIT>
+struct BuildingStrategy {
+};
+
+template <typename RECSPLIT>
+struct SequentialBuildingStrategy: public BuildingStrategy<RECSPLIT> {
+    using EliasFano = RECSPLIT::EliasFano;
+    using DoubleEliasFano = RECSPLIT::DoubleEliasFano;
+    using GolombRiceBuilder = RECSPLIT::GolombRiceBuilder;
 
     //! Identifier of the current bucket being accumulated
     uint64_t current_bucket_id_{0};
@@ -1019,12 +897,6 @@ class RecSplit {
 
     //! Index offsets for the current bucket
     std::vector<uint64_t> current_bucket_offsets_;
-
-    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
-    bool double_enum_index_{true};
-
-    //! Flag indicating that the MPHF has been built and no more keys can be added
-    bool built_{false};
 
     //! The ETL collector sorting keys by offset
     etl::Collector offset_collector_{};
@@ -1044,26 +916,223 @@ class RecSplit {
     //! Temporary buffer for current offsets
     std::vector<uint64_t> buffer_offsets_;
 
-    //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
-    uint32_t salt_{0};
+    //! The number of buckets for this Recsplit algorithm instance
+    std::size_t bucket_count_;
 
-    //! Murmur3 hash factory
-    std::unique_ptr<Murmur3> hasher_;
+    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
+    uint64_t max_offset_{0};
 
-    //! Temporary counters of key remapped occurrences
-    std::vector<std::size_t> count_;
+    //! The number of keys currently added
+    uint64_t keys_added_{0};
 
-    //! The memory-mapped RecSplit-encoded file when opening existing index for read
-    std::optional<MemoryMappedFile> encoded_file_;
+    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+    bool double_enum_index_{true};
+
+    //! Helper to build GR codes of splitting and bijection indices
+    GolombRiceBuilder gr_builder_;
+
+    //! The max index used in Golomb parameter array
+    uint16_t golomb_param_max_index_{0};
+
+    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
+    // uint64_t min_delta_{0};  // unused
+
+    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
+    // uint64_t previous_offset_{0};  // unused
+
+    SequentialBuildingStrategy(std::size_t bucket_size, std::size_t bucket_count, [[maybe_unused]] std::size_t key_count,
+                               std::size_t etl_optimal_size, bool double_enum_index)
+        : offset_collector_(etl_optimal_size), bucket_collector_(etl_optimal_size),
+          bucket_count_{bucket_count}, double_enum_index_(double_enum_index)
+    {
+        bucket_size_accumulator_.reserve(bucket_count_ + 1);
+        bucket_position_accumulator_.reserve(bucket_count_ + 1);
+        bucket_size_accumulator_.resize(1);      // Start with 0 as bucket accumulated size
+        bucket_position_accumulator_.resize(1);  // Start with 0 as bucket accumulated position
+        current_bucket_.reserve(bucket_size);
+        current_bucket_offsets_.reserve(bucket_size);
+    }
+
+    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) {
+        if (keys_added_ % 100'000 == 0) {
+            SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
+        }
+
+        if (offset > max_offset_) {
+            max_offset_ = offset;
+        }
+
+        // if (keys_added_ > 0) {  // unused
+        //     const auto delta = offset - previous_offset_;
+        //     if (keys_added_ == 1 || delta < min_delta_) {
+        //         min_delta_ = delta;
+        //     }
+        // }
+
+        Bytes collector_key(16, '\0');
+
+        endian::store_big_u64(collector_key.data(), bucket_id);
+        endian::store_big_u64(collector_key.data() + sizeof(uint64_t), bucket_key);
+        Bytes offset_key(8, '\0');
+        endian::store_big_u64(offset_key.data(), offset);
+
+
+        if (double_enum_index_) {
+            offset_collector_.collect(offset_key, {});
+
+            Bytes current_key_count(8, '\0');
+            endian::store_big_u64(current_key_count.data(), keys_added_);
+            bucket_collector_.collect(collector_key, current_key_count);
+        } else {
+            bucket_collector_.collect(collector_key, offset_key);
+        }
+
+        keys_added_++;
+        // previous_offset_ = offset;
+    }
+
+    bool build_mph(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) {
+        // SILK_INFO << "seq-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
+        //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
+        //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
+
+        current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
+
+        [[maybe_unused]] auto _ = gsl::finally([&]() { bucket_collector_.clear(); });
+
+        // We use an exception for collision error condition because ETL currently does not support loading errors
+        // TODO(canepat) refactor ETL to support errors in LoadFunc and propagate them to caller to get rid of CollisionError
+        struct CollisionError : public std::runtime_error {
+            explicit CollisionError(uint64_t _bucket_id) : runtime_error("collision"), bucket_id(_bucket_id) {}
+            uint64_t bucket_id;
+        };
+        try {
+            // Passing a void cursor is valid case for ETL when DB modification is not expected
+            db::PooledCursor empty_cursor{};
+            bucket_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
+                // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
+                const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
+                SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
+                if (current_bucket_id_ != bucket_id) {
+                    if (current_bucket_id_ != std::numeric_limits<uint64_t>::max()) {
+                        bool collision = recsplit_current_bucket(index_output_stream, bytes_per_record);
+                        if (collision) throw CollisionError{bucket_id};
+                    }
+                    current_bucket_id_ = bucket_id;
+                }
+                current_bucket_.emplace_back(endian::load_big_u64(entry.key.data() + sizeof(uint64_t)));
+                current_bucket_offsets_.emplace_back(endian::load_big_u64(entry.value.data()));
+            });
+        } catch (const CollisionError& error) {
+            SILK_WARN << "[index] collision detected for bucket=" << error.bucket_id;
+            return true;
+        }
+        if (!current_bucket_.empty()) {
+            bool collision_detected = recsplit_current_bucket(index_output_stream);
+            if (collision_detected) return true;
+        }
+
+        // SILK_INFO << "seq-vers - sizes: " << prettyPrint_seq(bucket_size_accumulator_);
+        // SILK_INFO << "seq-vers - positions: " << prettyPrint_seq(bucket_position_accumulator_);
+
+        gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
+
+        // Concatenate the representation of each bucket
+        golomb_rice_codes = gr_builder_.build();
+
+        // SILK_INFO << "seq-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
+
+        // Construct double Elias-Fano index for bucket cumulative keys and bit positions
+        std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
+        std::vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
+        double_ef_index.build(cumulative_keys, positions);
+
+        return false;  // no collision
+    }
+
+    void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets_) {
+        // Build Elias-Fano index for offsets (if any)
+        ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        db::PooledCursor empty_cursor{};
+        offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
+            const uint64_t offset = endian::load_big_u64(entry.key.data());
+            ef_offsets_->add_offset(offset);
+        });
+        ef_offsets_->build();
+    }
+
+    //! Compute and store the splittings and bijections of the current bucket
+    bool recsplit_current_bucket(std::ofstream& index_output_stream, uint8_t bytes_per_record) {
+        // Extend bucket size accumulator to accommodate current bucket index + 1
+        while (bucket_size_accumulator_.size() <= (current_bucket_id_ + 1)) {
+            bucket_size_accumulator_.push_back(bucket_size_accumulator_.back());
+        }
+        bucket_size_accumulator_.back() += current_bucket_.size();
+        SILKWORM_ASSERT(bucket_size_accumulator_.back() >= bucket_size_accumulator_[current_bucket_id_]);
+
+        // Sets of size 0 and 1 are not further processed, just write them to index
+        if (current_bucket_.size() > 1) {
+            for (std::size_t i{1}; i < current_bucket_.size(); ++i) {
+                if (current_bucket_[i] == current_bucket_[i - 1]) {
+                    SILK_ERROR << "collision detected key=" << current_bucket_[i - 1];
+                    return true;
+                }
+            }
+            buffer_bucket_.reserve(current_bucket_.size());
+            buffer_offsets_.reserve(current_bucket_offsets_.size());
+            buffer_bucket_.resize(current_bucket_.size());
+            buffer_offsets_.resize(current_bucket_.size());
+
+            //std::vector<uint32_t> unary;
+            recsplit(current_bucket_, current_bucket_offsets_, buffer_bucket_, buffer_offsets_, gr_builder_,
+                     index_output_stream, golomb_param_max_index_, bytes_per_record);
+            gr_builder_.append_collected_unaries();
+        } else {
+            for (const auto offset : current_bucket_offsets_) {
+                Bytes uint64_buffer(8, '\0');
+                endian::store_big_u64(uint64_buffer.data(), offset);
+                index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
+                SILK_DEBUG << "[index] written offset: " << offset;
+            }
+        }
+        // Extend bucket position accumulator to accommodate current bucket index + 1
+        while (bucket_position_accumulator_.size() <= current_bucket_id_ + 1) {
+            bucket_position_accumulator_.push_back(bucket_position_accumulator_.back());
+        }
+        bucket_position_accumulator_.back() = gr_builder_.get_bits();
+        SILKWORM_ASSERT(bucket_position_accumulator_.back() >= bucket_position_accumulator_[current_bucket_id_]);
+
+        // Clear for the next bucket
+        current_bucket_.clear();
+        current_bucket_offsets_.clear();
+        buffer_bucket_.clear();
+        buffer_offsets_.clear();
+        return false;
+    }
+
+    void clear() {
+        bucket_collector_.clear();
+        offset_collector_.clear();
+        current_bucket_.clear();
+        current_bucket_offsets_.clear();
+        bucket_size_accumulator_.resize(1);
+        bucket_position_accumulator_.resize(1);
+        keys_added_ = 0;
+        max_offset_ = 0;
+    }
+
 };
 
+
+
 constexpr std::size_t kLeafSize{8};
-using RecSplit8 = RecSplit<kLeafSize>;
+using RecSplit8 = RecSplit<kLeafSize, SequentialBuildingStrategy>;
 
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
+
 
 }  // namespace silkworm::succinct
 

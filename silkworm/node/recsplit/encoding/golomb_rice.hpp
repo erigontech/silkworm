@@ -111,12 +111,23 @@ class GolombRiceVector {
             return GolombRiceVector{std::move(data)};
         }
 
+        void append_unary(uint32_t unary) {
+            temp_unaries.push_back(unary);
+        }
+
+        void append_collected_unaries() {
+            append_unary_all(temp_unaries);
+            temp_unaries.clear();
+        }
+
       private:
         Uint64Sequence data;
         std::size_t bit_count{0};
+
+        Uint32Sequence temp_unaries;
     };
 
-    class LazyBuilder {  // todo(mike): find a better solution
+    class LazyBuilder {
       public:
         static constexpr std::size_t kDefaultAllocatedWords{16};
 

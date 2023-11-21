@@ -26,7 +26,7 @@
 #include <silkworm/node/snapshot/repository.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
-struct SilkwormHandle {
+struct SilkwormInstance {
     silkworm::concurrency::ContextPoolSettings context_pool_settings;
     std::filesystem::path data_dir_path;
     std::unique_ptr<silkworm::snapshot::SnapshotRepository> snapshot_repository;

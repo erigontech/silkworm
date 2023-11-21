@@ -5,14 +5,13 @@
 
 ## Build & Run
 1. build the silkworm_capi library
-2. go to the sample-go-client directory and build the go application specifying the path of the silkworm library:
+2. go to the sample-go-client directory and run:
 
 ```bash
-go build
+go run main.go
 ```
 
-3. run the application with the environment variable DYLD_LIBRARY_PATH set to find the silkworm library:
-
+on macOS:
 ```bash
-DYLD_LIBRARY_PATH=../../../build/silkworm/capi ./sample-go-client
+CGO_LDFLAGS=-mmacosx-version-min=13.3 go run main.go
 ```

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "silkworm_api.h"
+#include "silkworm.h"
 
 #include <charconv>
 #include <chrono>

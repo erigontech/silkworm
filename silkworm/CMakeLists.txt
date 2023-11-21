@@ -18,13 +18,13 @@
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(api)
   add_subdirectory(interfaces)
   add_subdirectory(infra)
   add_subdirectory(sentry)
   add_subdirectory(sync)
   add_subdirectory(node)
   add_subdirectory(silkrpc)
+  add_subdirectory(capi)
 endif()
 
 if(SILKWORM_WASM_API)

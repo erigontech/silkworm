@@ -30,7 +30,7 @@
 #include <mdbx.h++>
 #pragma GCC diagnostic pop
 
-#include <silkworm/api/silkworm_api.h>
+#include <silkworm/capi/silkworm.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -44,7 +44,7 @@ using namespace silkworm;
 using namespace silkworm::snapshot;
 using namespace silkworm::cmd::common;
 
-const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/api/silkworm_api";
+const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/capi/silkworm_capi";
 const char* kSilkwormInitSymbol = "silkworm_init";
 const char* kSilkwormBuildRecSplitIndexes = "silkworm_build_recsplit_indexes";
 const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
@@ -98,14 +98,14 @@ struct Settings {
     std::optional<rpc::DaemonSettings> rpcdaemon_settings;
 };
 
-void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silkworm_api_lib_path, Settings& settings) {
+void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silkworm_lib_path, Settings& settings) {
     app.require_subcommand(1);  // At least 1 subcommand is required
 
     // logging
     add_logging_options(app, settings.log_settings);
 
     // repository
-    app.add_option("--libpath", silkworm_api_lib_path, "Path to silkworm_lib");
+    app.add_option("--libpath", silkworm_lib_path, "Path to silkworm_lib");
     app.add_option("--datadir", settings.data_folder, "Path to data directory");
 
     // execute sub-command
@@ -420,17 +420,17 @@ int main(int argc, char* argv[]) {
 
     try {
         log::Settings log_settings;
-        std::string silkworm_api_lib_path;
+        std::string silkworm_lib_path;
         Settings settings;
-        parse_command_line(argc, argv, app, silkworm_api_lib_path, settings);
+        parse_command_line(argc, argv, app, silkworm_lib_path, settings);
 
         log::init(settings.log_settings);
 
         const auto pid = boost::this_process::get_id();
         SILK_INFO << "Execute starting [pid=" << std::to_string(pid) << "]";
 
-        if (!silkworm_api_lib_path.empty())
-            kSilkwormApiLibPath = silkworm_api_lib_path;
+        if (!silkworm_lib_path.empty())
+            kSilkwormApiLibPath = silkworm_lib_path;
 
         DataDirectory data_dir{
             settings.data_folder.empty() ? DataDirectory::get_default_storage_path() : std::filesystem::path(settings.data_folder)};

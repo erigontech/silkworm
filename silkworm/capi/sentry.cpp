@@ -31,7 +31,7 @@
 #include <silkworm/sentry/settings.hpp>
 
 #include "instance.hpp"
-#include "silkworm_api.h"
+#include "silkworm.h"
 
 using namespace silkworm;
 using namespace silkworm::sentry;

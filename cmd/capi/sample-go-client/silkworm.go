@@ -3,11 +3,11 @@ package main
 /*
 // compiler flags:
 //#cgo CXXFLAGS: -std=c++14
-#cgo CFLAGS: -I${SRCDIR}/../../../silkworm/api
+#cgo CFLAGS: -I${SRCDIR}/../../../silkworm/capi
 // linker flags: it is better to specify LDFLAGS at build time because the silkworm build dir is user specific
-// #cgo LDFLAGS: -L${SRCDIR}/../../../build_debug/silkworm/api -lsilkworm_api -lstdc++ -ldl
+// #cgo LDFLAGS: -L${SRCDIR}/../../../build/silkworm/capi -lsilkworm_capi -lstdc++ -ldl
 
-#include "silkworm_api.h"
+#include "silkworm.h"
 
 #include <stdlib.h>
 

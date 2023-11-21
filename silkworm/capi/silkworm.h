@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_API_H_
-#define SILKWORM_API_H_
+#ifndef SILKWORM_H_
+#define SILKWORM_H_
 
 // C API exported by Silkworm to be used in Erigon.
 
@@ -205,4 +205,4 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 }
 #endif
 
-#endif  // SILKWORM_API_H_
+#endif  // SILKWORM_H_

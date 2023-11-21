@@ -626,7 +626,7 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
     GlazeJsonOtsBlockTransactionsReply block_json_data{};
     auto& result = block_json_data.result;
     block_json_data.id = id;
-    to_quantity(std::span(result.full_block.difficulty),silkworm::endian::to_big_compact(b.header.difficulty));
+    to_quantity(std::span(result.full_block.difficulty), silkworm::endian::to_big_compact(b.header.difficulty));
     to_hex(std::span(result.full_block.extra_data), b.header.extra_data);
     to_quantity(std::span(result.full_block.gas_limit), b.header.gas_limit);
     to_quantity(std::span(result.full_block.gas_used), b.header.gas_used);
@@ -684,7 +684,7 @@ void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, st
 
     block_json_data.result.receipts = make_optional(std::move(receipt_data_list));
     glz::write_json(block_json_data, json_reply);
-    //glz::write<glz::opts{.skip_null_members = false}>(block_json_data, json_reply);
+    // glz::write<glz::opts{.skip_null_members = false}>(block_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

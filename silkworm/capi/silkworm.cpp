@@ -164,7 +164,7 @@ SILKWORM_EXPORT int silkworm_init(
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], size_t len) SILKWORM_NOEXCEPT {
     const int kNeededIndexesToBuildInParallel = 2;
 
     if (!handle) {
@@ -172,7 +172,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
     }
 
     std::vector<std::shared_ptr<snapshot::Index>> needed_indexes;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;

@@ -119,7 +119,7 @@ SILKWORM_EXPORT int silkworm_init(
  * \param[in] len The number of snapshots and paths.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure on some or all indexes.
  */
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], int len) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], size_t len) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Notify Silkworm about a new snapshot to use.

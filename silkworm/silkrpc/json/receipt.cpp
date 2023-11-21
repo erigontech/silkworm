@@ -79,4 +79,33 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
     }
 }
 
+void make_glaze_json_receipt(const Receipt& receipt, GlazeJsonReceipt& json_receipt) {
+    to_quantity(std::span(json_receipt.block_number), receipt.block_number);
+    to_hex(std::span(json_receipt.block_hash), receipt.block_hash.bytes);
+    to_hex(std::span(json_receipt.transaction_hash), receipt.tx_hash.bytes);
+    to_quantity(std::span(json_receipt.transaction_index), receipt.tx_index);
+    to_hex(std::span(json_receipt.from), receipt.from.value_or(evmc::address{}).bytes);
+
+    if (receipt.to) {
+        json_receipt.to = std::make_optional("0x" + silkworm::to_hex(receipt.to.value().bytes));
+    } else {
+        std::monostate null_value{};
+        json_receipt.nullto = std::make_optional(std::move(null_value));
+    }
+
+    to_quantity(std::span(json_receipt.type), receipt.type ? receipt.type.value() : 0);
+    to_quantity(std::span(json_receipt.gas_used), receipt.gas_used);
+    to_quantity(std::span(json_receipt.cumulative_gas_used), receipt.cumulative_gas_used);
+    to_quantity(std::span(json_receipt.effective_gas_price), receipt.effective_gas_price);
+
+    if (receipt.contract_address) {
+        json_receipt.contract_address = std::make_optional("0x" + silkworm::to_hex(receipt.contract_address.bytes));
+    } else {
+        std::monostate null_value{};
+        json_receipt.nullcontract_address = std::make_optional(std::move(null_value));
+    }
+
+    to_quantity(std::span(json_receipt.status), receipt.success ? 1 : 0);
+}
+
 }  // namespace silkworm::rpc

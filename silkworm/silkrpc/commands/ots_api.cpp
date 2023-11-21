@@ -191,12 +191,12 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     co_return;
 }
 
-Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& request, std::string& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        make_glaze_json_error(request["id"], 100, error_msg, reply);
         co_return;
     }
 
@@ -243,19 +243,19 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
 
-            reply = make_json_content(request["id"], block_transactions);
+            make_glaze_json_content(request["id"], block_transactions, reply);
         } else {
-            reply = make_json_content(request["id"], {});
+            make_glaze_json_null_content(request["id"], reply);
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        make_glaze_json_null_content(request["id"], reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(request["id"], 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(request["id"], 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

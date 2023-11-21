@@ -239,7 +239,6 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
     method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_get_block_details;
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_get_block_details_by_hash;
-    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_get_block_transactions;
     method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_get_transaction_by_sender_and_nonce;
     method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_get_contract_creator;
     method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
@@ -247,6 +246,9 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getInternalOperations] = &commands::RpcApi::handle_ots_get_internal_operations;
     method_handlers_[http::method::k_ots_search_transactions_before] = &commands::RpcApi::handle_ots_search_transactions_before;
     method_handlers_[http::method::k_ots_search_transactions_after] = &commands::RpcApi::handle_ots_search_transactions_after;
+
+    // GLAZE METHODS
+    method_handlers_glaze_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_get_block_transactions;
 }
 
 }  // namespace silkworm::rpc::commands

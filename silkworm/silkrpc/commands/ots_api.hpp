@@ -205,7 +205,6 @@ class OtsRpcApi {
     Task<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply);
@@ -213,6 +212,9 @@ class OtsRpcApi {
     Task<void> handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
+
+    // BLAZE
+    Task<void> handle_ots_get_block_transactions(const nlohmann::json& request, std::string& reply);
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;

@@ -135,6 +135,7 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 // GLAZE
 void make_glaze_json_error(uint32_t id, int error_id, const std::string& message, std::string& reply);
 void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply);
+void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, std::string& json_reply);
 
 }  // namespace silkworm::rpc
 

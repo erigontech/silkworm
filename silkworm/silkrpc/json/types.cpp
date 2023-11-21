@@ -539,6 +539,81 @@ struct GlazeJsonRevertError {
     };
 };
 
+struct GlazeJsonFullBlock {
+    char number[kInt64HexSize];
+    char hash[kHashHexSize];
+    char parent_hash[kHashHexSize];
+    char nonce[kInt64HexSize];
+    char sha3Uncles[kHashHexSize];
+    char transactions_root[kHashHexSize];
+    char state_root[kHashHexSize];
+    char receipts_root[kHashHexSize];
+    char miner[kAddressHexSize];
+    char size[kInt64HexSize];
+    char gas_limit[kInt64HexSize];
+    char gas_used[kInt64HexSize];
+    char timestamp[kInt64HexSize];
+    char difficulty[kInt64HexSize];
+    char total_difficulty[kInt64HexSize];
+    char mix_hash[kHashHexSize];
+    char extra_data[kDataSize];
+
+    char transaction_count[kInt64HexSize];
+    std::optional<std::string> logs_bloom;
+    std::optional<std::vector<GlazeJsonTransaction>> transactions;
+    std::vector<std::string> ommers_hashes;
+
+    struct glaze {
+        using T = GlazeJsonFullBlock;
+        static constexpr auto value = glz::object(
+            "number", &T::number,
+            "hash", &T::hash,
+            "parentHash", &T::parent_hash,
+            "nonce", &T::nonce,
+            "sha3Uncles", &T::sha3Uncles,
+            "logsBloom", &T::logs_bloom,
+            "transactionsRoot", &T::transactions_root,
+            "stateRoot", &T::state_root,
+            "receiptsRoot", &T::receipts_root,
+            "miner", &T::miner,
+            "size", &T::size,
+            "gasLimit", &T::gas_limit,
+            "timestamp", &T::timestamp,
+            "difficulty", &T::difficulty,
+            "totalDifficulty", &T::total_difficulty,
+            "mixHash", &T::mix_hash,
+            "extraData", &T::extra_data,
+            "transactionCount", &T::transaction_count,
+            "gasUsed", &T::gas_used,
+            "transactions", &T::transactions,
+            "uncles", &T::ommers_hashes);
+    };
+};
+
+struct GlazeJsonFullBlockWithReceipt {
+    GlazeJsonFullBlock full_block;
+    std::optional<std::vector<GlazeJsonReceipt>> receipts;
+    struct glaze {
+        using T = GlazeJsonFullBlockWithReceipt;
+        static constexpr auto value = glz::object(
+            "fullblock", &T::full_block,
+            "receipts", &T::receipts);
+    };
+};
+
+struct GlazeJsonOtsBlockTransactionsReply {
+    std::string_view jsonrpc = kJsonVersion;
+    uint32_t id;
+    GlazeJsonFullBlockWithReceipt result;
+    struct glaze {
+        using T = GlazeJsonOtsBlockTransactionsReply;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::result);
+    };
+};
+
 void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert;
     glaze_json_revert.id = id;
@@ -546,6 +621,71 @@ void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& r
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
     glz::write_json(glaze_json_revert, reply);
+}
+
+void make_glaze_json_content(uint32_t id, const BlockTransactionsResponse& b, std::string& json_reply) {
+    GlazeJsonOtsBlockTransactionsReply block_json_data{};
+    auto& result = block_json_data.result;
+    block_json_data.id = id;
+    to_quantity(std::span(result.full_block.difficulty), silkworm::endian::to_big_compact(b.header.difficulty));
+    to_hex(std::span(result.full_block.extra_data), b.header.extra_data);
+    to_quantity(std::span(result.full_block.gas_limit), b.header.gas_limit);
+    to_quantity(std::span(result.full_block.gas_used), b.header.gas_used);
+    to_hex(std::span(result.full_block.hash), b.hash.bytes);
+    to_hex(std::span(result.full_block.miner), b.header.beneficiary.bytes);
+    to_hex(std::span(result.full_block.mix_hash), b.header.prev_randao.bytes);
+    to_hex(std::span(result.full_block.nonce), {b.header.nonce.data(), b.header.nonce.size()});
+    to_quantity(std::span(result.full_block.number), b.header.number);
+    to_hex(std::span(result.full_block.parent_hash), b.header.parent_hash.bytes);
+    to_hex(std::span(result.full_block.receipts_root), b.header.receipts_root.bytes);
+    to_hex(std::span(result.full_block.sha3Uncles),b.header.ommers_hash.bytes);
+    to_quantity(std::span(result.full_block.size), b.block_size);
+    to_hex(std::span(result.full_block.state_root), b.header.state_root.bytes);
+    to_quantity(std::span(result.full_block.timestamp), b.header.timestamp);
+    to_quantity(std::span(result.full_block.total_difficulty), silkworm::endian::to_big_compact(b.total_difficulty));
+    to_quantity(std::span(result.full_block.transaction_count), b.transaction_count);
+
+    to_hex(std::span(result.full_block.transactions_root), b.header.transactions_root.bytes);
+    //result.full_block.logs_bloom = nullptr;
+
+    std::vector<GlazeJsonTransaction> transaction_data_list;
+    transaction_data_list.reserve(b.transactions.size());
+    for (std::size_t i{0}; i < b.transactions.size(); i++) {
+        const silkworm::Transaction& transaction = b.transactions[i];
+        GlazeJsonTransaction item{};
+        to_quantity(std::span(item.transaction_index), i);
+        to_quantity(std::span(item.block_number), b.header.number);
+        to_hex(std::span(item.block_hash), b.hash.bytes);
+        to_hex(std::span(item.input), b.transactions[i].data.substr(0, 4));
+        to_quantity(std::span(item.gas_price), transaction.effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
+        make_glaze_json_transaction(transaction, item);
+        transaction_data_list.push_back(std::move(item));
+    }
+    block_json_data.result.full_block.transactions = make_optional(std::move(transaction_data_list));
+
+    result.full_block.ommers_hashes.reserve(b.ommers.size());
+    for (const auto& ommer : b.ommers) {
+        result.full_block.ommers_hashes.push_back("0x" + silkworm::to_hex(ommer.hash()));
+    }
+
+    std::vector<GlazeJsonReceipt> receipt_data_list;
+    receipt_data_list.reserve(b.receipts.size());
+    for (std::size_t i{0}; i < b.receipts.size(); i++) {
+        const auto & receipt = b.receipts.at(i);
+        GlazeJsonReceipt item{};
+        to_quantity(std::span(item.block_number), b.header.number);
+        to_hex(std::span(item.block_hash), b.hash.bytes);
+
+        //item.logs = nullptr;
+        //item.logsBloom = nullptr;
+        to_quantity(std::span(item.effective_gas_price), b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
+
+        make_glaze_json_receipt(receipt, item);
+        receipt_data_list.push_back(std::move(item));
+    }
+
+    block_json_data.result.receipts = make_optional(std::move(receipt_data_list));
+    glz::write_json(block_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

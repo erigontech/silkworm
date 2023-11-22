@@ -67,8 +67,6 @@ class SmallMap {
         return *this;
     }
 
-    constexpr bool operator==(const SmallMap&) const = default;
-
     [[nodiscard]] constexpr bool empty() const noexcept {
         return size_ == 0;
     }
@@ -113,5 +111,10 @@ class SmallMap {
     std::array<ValueType, MaxSize> data_{};
     std::size_t size_{0};
 };
+
+template <std::totally_ordered Key, std::equality_comparable T>
+constexpr bool operator==(const SmallMap<Key, T>& a, const SmallMap<Key, T>& b) {
+    return std::equal(a.begin(), a.end(), b.begin(), b.end());
+}
 
 }  // namespace silkworm

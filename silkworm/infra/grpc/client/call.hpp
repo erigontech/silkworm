@@ -67,6 +67,7 @@ Task<Response> unary_rpc(
 
     Response reply;
     grpc::Status status;
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
 
     if (!status.ok()) {

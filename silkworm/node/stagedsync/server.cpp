@@ -69,10 +69,12 @@ Task<BlockId> Server::last_fork_choice() {
     return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Task<void> Server::insert_headers(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_headers not implemented"};
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Task<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
 }
@@ -87,7 +89,7 @@ Task<void> Server::insert_blocks(const BlockVector& blocks) {
 Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
     auto lambda = [](Server* me, Hash h) -> Task<ValidationResult> {
         auto future_result = me->exec_engine_.verify_chain(h);
-        auto verification = co_await future_result.get_async();
+        auto verification = co_await future_result.get_async();  // NOLINT(clang-analyzer-core.NullDereference)
 
         ValidationResult validation;
         if (std::holds_alternative<stagedsync::ValidChain>(verification)) {
@@ -108,6 +110,7 @@ Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
         }
         co_return validation;
     };
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     return asio::co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
 }
 

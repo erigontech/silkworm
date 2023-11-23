@@ -30,7 +30,7 @@ Task<void> timeout(
     std::chrono::milliseconds duration,
     const char* source_file_path,
     int source_file_line) {
-    auto executor = co_await boost::asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
+    auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::steady_timer timer(executor);
     timer.expires_after(duration);
 

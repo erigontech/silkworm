@@ -89,7 +89,7 @@ Task<void> Server::insert_blocks(const BlockVector& blocks) {
 Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
     auto lambda = [](Server* me, Hash h) -> Task<ValidationResult> {
         auto future_result = me->exec_engine_.verify_chain(h);
-        auto verification = co_await future_result.get_async();  // NOLINT(clang-analyzer-core.NullDereference)
+        auto verification = co_await future_result.get_async();
 
         ValidationResult validation;
         if (std::holds_alternative<stagedsync::ValidChain>(verification)) {
@@ -110,7 +110,6 @@ Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
         }
         co_return validation;
     };
-    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     return asio::co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
 }
 

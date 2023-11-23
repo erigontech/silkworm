@@ -106,7 +106,6 @@ void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
                        [&backend](auto&&... args) -> Task<void> {
-                           // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
                            co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     SILK_TRACE << "BackEndKvServer::register_kv_request_calls END";

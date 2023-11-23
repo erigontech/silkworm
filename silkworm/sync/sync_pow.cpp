@@ -16,7 +16,8 @@
 
 #include "sync_pow.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
+#include <algorithm>
+
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -40,7 +41,7 @@ PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left o
     block_exchange_.initial_state(last_headers);
 
     // We calculate a provisional head based on the previous headers
-    as_range::for_each(last_headers, [&, this](const auto& header) {
+    std::ranges::for_each(last_headers, [&, this](const auto& header) {
         auto hash = header.hash();
         auto td = sync_wait(in(exec_engine_), exec_engine_.get_header_td(hash, std::nullopt));
         chain_fork_view_.add(header, *td);  // add to cache & compute a new canonical head
@@ -92,7 +93,7 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
         Blocks announcements_to_do;
 
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [&, this](const auto& block) {
+        std::ranges::for_each(blocks, [&, this](const auto& block) {
             block->td = chain_fork_view_.add(block->header);
             block_progress = std::max(block_progress, block->header.number);
             if (block->to_announce) announcements_to_do.push_back(block);

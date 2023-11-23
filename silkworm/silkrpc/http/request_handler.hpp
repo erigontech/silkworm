@@ -55,7 +55,7 @@ class RequestHandler {
     Task<void> handle(const http::Request& request);
 
   protected:
-    Task<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
     virtual Task<void> do_write(http::Reply& reply);
 
   private:

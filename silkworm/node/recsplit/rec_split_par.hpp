@@ -132,11 +132,8 @@ bool containsDuplicate(const std::vector<T>& items) {
 
 namespace silkworm::succinct::parallel {
 
-template <typename RECSPLIT>
-struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
-    using EliasFano = RECSPLIT::EliasFano;
-    using DoubleEliasFano = RECSPLIT::DoubleEliasFano;
-    using GolombRiceBuilder = RECSPLIT::GolombRiceBuilder;
+template <std::size_t LEAF_SIZE>
+struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
 
     struct Bucket {
         Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id} {
@@ -173,29 +170,14 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         }
     };
 
-    //! The number of buckets for this Recsplit algorithm instance
-    std::size_t bucket_count_;
-
     //! The buckets of the RecSplit algorithm
     std::vector<Bucket> buckets_;
 
     //! The offset collector for Elias-Fano encoding of "enum -> offset" index
     std::vector<uint64_t> offsets_;
 
-    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
-    uint64_t max_offset_{0};
-
-    //! The number of keys currently added
-    uint64_t keys_added_{0};
-
-    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
-    bool double_enum_index_{true};
-
     //! Helper to build GR codes of splitting and bijection indices
     GolombRiceBuilder gr_builder_;
-
-    //! The max index used in Golomb parameter array
-    uint16_t golomb_param_max_index_{0};
 
     //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
     // uint64_t min_delta_{0};  // unused
@@ -205,27 +187,28 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
 
     ThreadPool* thread_pool_{nullptr};
 
-    ParallelBuildingStrategy(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count,
-                             [[maybe_unused]] std::size_t etl_optimal_size, bool double_enum_index)
-        : bucket_count_{bucket_count}, double_enum_index_(double_enum_index)
-    {
+    ParallelBuildingStrategy(ThreadPool& thread_pool) : thread_pool_{&thread_pool} {
+    }
+
+    virtual void params(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count,
+                        std::size_t, bool double_enum_index) override {
         // Prepare backets
-        buckets_.reserve(bucket_count_);
-        for (int i = 0; i < bucket_count_; i++)
+        buckets_.reserve(bucket_count);
+        for (int i = 0; i < bucket_count; i++)
             buckets_.emplace_back(i, bucket_size);
-        if (double_enum_index_)
+        if (double_enum_index)
             offsets_.reserve(key_count);
     }
 
     void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) {
         ensure(bucket_id < buckets_.size(), "bucket_id out of range");
 
-        if (keys_added_ % 100'000 == 0) {
+        if (this->keys_added_ % 100'000 == 0) {
             SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
+        if (offset > this->max_offset_) {
+            this->max_offset_ = offset;
         }
 
         // if (keys_added_ > 0) {  // unused
@@ -237,10 +220,10 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
 
         Bucket& bucket = buckets_[bucket_id];
 
-        if (double_enum_index_) {
+        if (this->double_enum_index_) {
             offsets_.push_back(offset);
 
-            auto current_key_count = keys_added_;
+            auto current_key_count = this->keys_added_;
 
             bucket.keys_.emplace_back(bucket_key);
             bucket.values_.emplace_back(current_key_count);
@@ -249,13 +232,8 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
             bucket.values_.emplace_back(offset);
         }
 
-        keys_added_++;
+        this->keys_added_++;
         // previous_offset_ = offset;
-    }
-
-    [[nodiscard]] bool build(ThreadPool& thread_pool) {
-        thread_pool_ = &thread_pool;
-        RECSPLIT::build_template();
     }
 
   protected:
@@ -281,11 +259,11 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         }
 
         // Store prefix sums of bucket sizes and bit positions
-        std::vector<int64_t> bucket_size_accumulator_(bucket_count_ + 1);      // accumulator for size of every bucket
-        std::vector<int64_t> bucket_position_accumulator_(bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
+        std::vector<int64_t> bucket_size_accumulator_(this->bucket_count_ + 1);      // accumulator for size of every bucket
+        std::vector<int64_t> bucket_position_accumulator_(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
         bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
-        for (size_t i = 0; i < bucket_count_; i++) {
+        for (size_t i = 0; i < this->bucket_count_; i++) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
             // auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
@@ -306,7 +284,7 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
             SILKWORM_ASSERT(bucket_size_accumulator_[i + 1] >= bucket_size_accumulator_[i]);
             SILKWORM_ASSERT(bucket_position_accumulator_[i + 1] >= bucket_position_accumulator_[i]);
 
-            golomb_param_max_index_ = std::max(golomb_param_max_index_, buckets_[i].golomb_param_max_index_);
+            this->golomb_param_max_index_ = std::max(this->golomb_param_max_index_, buckets_[i].golomb_param_max_index_);
         }
 
         // SILK_INFO << "PROBE par-vers - sizes: " << prettyPrint(bucket_size_accumulator_);
@@ -330,7 +308,7 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
     void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets) {
         // Build Elias-Fano index for offsets (if any)
         std::sort(offsets_.begin(), offsets_.end());
-        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        ef_offsets = std::make_unique<EliasFano>(this->keys_added_, this->max_offset_);
         for (auto offset : offsets_) {
             ef_offsets->add_offset(offset);
         }
@@ -372,25 +350,23 @@ struct ParallelBuildingStrategy: public BuildingStrategy<RECSPLIT> {
         for (auto& bucket : buckets_) {
             bucket.clear();
         }
-        keys_added_ = 0;
-        max_offset_ = 0;
+        this->keys_added_ = 0;
+        this->max_offset_ = 0;
     }
 
 };
 
 
 constexpr std::size_t kLeafSize{8};
-using RecSplit8 = RecSplit<kLeafSize, ParallelBuildingStrategy>;
-
-template <>
-const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
+using RecSplit8 = RecSplit<kLeafSize>;
 
 using RecSplitIndex = RecSplit8;
 
-/*
-    parallel::RecSplitIndex recsplit;
-    recsplit.build(thread_pool);
+using ParallelBuildingStrategy8 = ParallelBuildingStrategy<kLeafSize>;
 
+/*
+   RecSplit8 recsplit{settings, new ParallelBuildingStrategy8(thread_pool)};
+   auto collision = recsplit.build();
  */
 
 }  // namespace silkworm::succinct::parallel

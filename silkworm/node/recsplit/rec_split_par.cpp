@@ -18,11 +18,6 @@
 
 namespace silkworm::succinct::parallel {
 
-template <>
-const std::size_t RecSplit8::kLowerAggregationBound = RecSplit8::SplitStrategy::kLowerAggregationBound;
-template <>
-const std::size_t RecSplit8::kUpperAggregationBound = RecSplit8::SplitStrategy::kUpperAggregationBound;
-template <>
-const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo = RecSplit8::fill_golomb_rice();
+
 
 }  // namespace silkworm::succinct::parallel

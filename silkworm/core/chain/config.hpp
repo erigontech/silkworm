@@ -149,15 +149,6 @@ SILKWORM_CONSTINIT extern const ChainConfig kPolygonConfig;
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 
-//! \brief Known chain IDs mapped to their respective chain configs
-inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
-    {1, &kMainnetConfig},
-    {5, &kGoerliConfig},
-    {11155111, &kSepoliaConfig},
-    {137, &kPolygonConfig},
-    {80001, &kMumbaiConfig},
-};
-
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
     {"mainnet"sv, 1},
@@ -165,6 +156,15 @@ inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
     {"sepolia"sv, 11155111},
     {"polygon"sv, 137},
     {"mumbai"sv, 80001},
+};
+
+//! \brief Known chain IDs mapped to their respective chain configs
+inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
+    {*kKnownChainNameToId.find("mainnet"sv), &kMainnetConfig},
+    {*kKnownChainNameToId.find("goerli"sv), &kGoerliConfig},
+    {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
+    {*kKnownChainNameToId.find("polygon"sv), &kPolygonConfig},
+    {*kKnownChainNameToId.find("mumbai"sv), &kMumbaiConfig},
 };
 
 }  // namespace silkworm

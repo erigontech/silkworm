@@ -82,7 +82,7 @@ BitTorrentClient::~BitTorrentClient() {
     stop();
 }
 
-void BitTorrentClient::add_info_hash(const std::string& name, const std::string& info_hash) {
+void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash) {
     lt::sha1_hash sha1_info_hash;
     lt::aux::from_hex(info_hash, sha1_info_hash.data());
     lt::info_hash_t info_hashes{sha1_info_hash};

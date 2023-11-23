@@ -18,6 +18,7 @@
 
 #include <stdexcept>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/util.hpp>
 
 namespace silkworm::db {
@@ -31,6 +32,21 @@ namespace detail {
         dump.append(" bool(value)=");
         dump.append(std::to_string(bool(result.value)));
         return dump;
+    }
+
+    log::Args log_args_for_commit_latency(const MDBX_commit_latency& commit_latency) {
+        return {
+            "preparation",
+            std::to_string(commit_latency.preparation),
+            "write",
+            std::to_string(commit_latency.write),
+            "sync",
+            std::to_string(commit_latency.sync),
+            "ending",
+            std::to_string(commit_latency.ending),
+            "whole",
+            std::to_string(commit_latency.whole),
+        };
     }
 }  // namespace detail
 
@@ -286,13 +302,15 @@ void RWTxnUnmanaged::commit_and_stop() {
 }
 
 void RWTxnUnmanaged::commit() {
-    const ::mdbx::error err = static_cast<MDBX_error_t>(::mdbx_txn_commit(handle_));
+    MDBX_commit_latency commit_latency{};
+    const ::mdbx::error err = static_cast<MDBX_error_t>(::mdbx_txn_commit_ex(handle_, &commit_latency));
     if (err.code() != MDBX_THREAD_MISMATCH) {
         handle_ = nullptr;
     }
     if (err.code() != MDBX_SUCCESS) {
         err.throw_exception();
     }
+    SILK_TRACE << "Commit latency" << detail::log_args_for_commit_latency(commit_latency);
 }
 
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};

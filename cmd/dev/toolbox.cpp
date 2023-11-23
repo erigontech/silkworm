@@ -979,7 +979,7 @@ static void print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDup
                 std::cout << "v1=" << v1_hex << " v2=" << v2_hex << "\n";
                 ++diff_count;
                 if (diff_count % 100 == 0) {
-                    if (!user_confirmation("Do you need more diff?")) {
+                    if (!user_confirmation("Do you need any more diffs?")) {
                         return;
                     }
                 }
@@ -993,6 +993,7 @@ static void print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDup
 }
 
 static void print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* cursor2) {
+    size_t diff_count{0};
     auto result1{cursor1->to_first()};
     auto result2{cursor2->to_first()};
     while (result1.done && result2.done) {
@@ -1015,6 +1016,12 @@ static void print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* cursor2
             const auto v1_hex{silkworm::to_hex({static_cast<const uint8_t*>(value1.data()), value1.size()})};
             const auto v2_hex{silkworm::to_hex({static_cast<const uint8_t*>(value2.data()), value2.size()})};
             std::cout << "v1=" << v1_hex << " v2=" << v2_hex << "\n";
+            ++diff_count;
+            if (diff_count % 100 == 0) {
+                if (!user_confirmation("Do you need any more diffs?")) {
+                    return;
+                }
+            }
         }
         result1 = cursor1->to_next(/*throw_notfound=*/false);
         result2 = cursor2->to_next(/*throw_notfound=*/false);

@@ -366,9 +366,9 @@ workflows:
           requires:
             - lint
       - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: <<pipeline.parameters.clang_version_min>>
           ethereum_tests: false
           requires:
             - lint

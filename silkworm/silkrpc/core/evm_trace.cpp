@@ -1130,7 +1130,12 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
 Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
     std::vector<Trace> traces;
 
-    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, {false, true, false});
+    const TraceConfig trace_block_config{
+        .vm_trace = false,
+        .trace = true,
+        .state_diff = false,
+    };
+    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
     for (std::uint64_t pos = 0; pos < trace_call_results.size(); pos++) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
         if (!transaction.from) {

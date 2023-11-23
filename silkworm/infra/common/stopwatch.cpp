@@ -18,7 +18,7 @@
 
 namespace silkworm {
 
-StopWatch::TimePoint StopWatch::start(bool with_reset) noexcept {
+StopWatch::TimePoint StopWatch::start(bool with_reset) {
     using namespace std::chrono_literals;
     if (with_reset) {
         reset();
@@ -41,7 +41,7 @@ StopWatch::TimePoint StopWatch::start(bool with_reset) noexcept {
     return start_time_;
 }
 
-std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
+std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() {
     if (!started_ || laps_.empty()) {
         return {};
     }
@@ -62,7 +62,7 @@ StopWatch::Duration StopWatch::since_start() noexcept {
     return since_start(std::chrono::high_resolution_clock::now());
 }
 
-std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() noexcept {
+std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() {
     if (!started_) {
         return {};
     }
@@ -71,13 +71,13 @@ std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() noexcept 
     return ret;
 }
 
-void StopWatch::reset() noexcept {
+void StopWatch::reset() {
     (void)stop();
     start_time_ = TimePoint();
     std::vector<std::pair<TimePoint, Duration>>().swap(laps_);
 }
 
-std::string StopWatch::format(Duration duration) noexcept {
+std::string StopWatch::format(Duration duration) {
     using namespace std::chrono_literals;
     using days = std::chrono::duration<int, std::ratio<86400>>;
 

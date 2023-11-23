@@ -30,7 +30,7 @@
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
-#include "handle.hpp"
+#include "instance.hpp"
 #include "silkworm_api.h"
 
 using namespace silkworm;
@@ -102,7 +102,7 @@ static void sentry_run(
     const boost::asio::cancellation_slot& sentry_stop_signal_slot,
     std::latch& sentry_started);
 
-SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle* handle, const struct SilkwormSentrySettings* c_settings) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct SilkwormSentrySettings* c_settings) SILKWORM_NOEXCEPT {
     try {
         if (!handle) {
             return SILKWORM_INVALID_HANDLE;
@@ -181,7 +181,7 @@ static void sentry_run(
     context_pool.join();
 }
 
-SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle* handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     try {
         if (!handle) {
             return SILKWORM_INVALID_HANDLE;

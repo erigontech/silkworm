@@ -56,26 +56,26 @@ const char* kSilkwormFiniSymbol = "silkworm_fini";
 auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
 
 //! Function signature for silkworm_init C API
-using SilkwormInitSig = int(SilkwormHandle**, const struct SilkwormSettings* settings);
+using SilkwormInitSig = int(SilkwormHandle*, const struct SilkwormSettings* settings);
 
 //! Function signature for silkworm_build_recsplit_indexes C API
-using SilkwormBuildRecSplitIndexes = int(SilkwormHandle*, SilkwormMemoryMappedFile*[], int len);
+using SilkwormBuildRecSplitIndexes = int(SilkwormHandle, SilkwormMemoryMappedFile*[], int len);
 
 //! Function signature for silkworm_add_snapshot C API
-using SilkwormAddSnapshotSig = int(SilkwormHandle*, SilkwormChainSnapshot*);
+using SilkwormAddSnapshotSig = int(SilkwormHandle, SilkwormChainSnapshot*);
 
 //! Function signature for silkworm_start_rpcdaemon C API
-using SilkwormStartRpcDaemonSig = int(SilkwormHandle*, MDBX_env*);
+using SilkwormStartRpcDaemonSig = int(SilkwormHandle, MDBX_env*);
 
 //! Function signature for silkworm_stop_rpcdaemon C API
-using SilkwormStopRpcDaemonSig = int(SilkwormHandle*);
+using SilkwormStopRpcDaemonSig = int(SilkwormHandle);
 
 //! Function signature for silkworm_execute_blocks C API
 using SilkwormExecuteBlocksSig =
-    int(SilkwormHandle*, MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, bool, bool, uint64_t*, int*);
+    int(SilkwormHandle, MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, bool, bool, uint64_t*, int*);
 
 //! Function signature for silkworm_fini C API
-using SilkwormFiniSig = int(SilkwormHandle*);
+using SilkwormFiniSig = int(SilkwormHandle);
 
 struct ExecuteBlocksSettings {
     BlockNum start_block{1};
@@ -247,7 +247,7 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     return snapshot_sequence;
 }
 
-int execute_blocks(SilkwormHandle* handle, ExecuteBlocksSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
+int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
     // Import the silkworm_add_snapshot symbol from Silkworm API library
     const auto silkworm_add_snapshot{
         boost::dll::import_symbol<SilkwormAddSnapshotSig>(kSilkwormApiLibPath, kSilkwormAddSnapshotSymbol)};
@@ -316,7 +316,7 @@ int execute_blocks(SilkwormHandle* handle, ExecuteBlocksSettings settings, const
     return status_code;
 }
 
-int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
+int build_indices(SilkwormHandle handle, BuildIdxesSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
     // Import the silkworm_build_recsplit_indexes symbol from Silkworm API library
     const auto silkworm_build_recsplit_indexes{
         boost::dll::import_symbol<SilkwormBuildRecSplitIndexes>(kSilkwormApiLibPath, kSilkwormBuildRecSplitIndexes)};
@@ -376,7 +376,7 @@ int build_indices(SilkwormHandle* handle, BuildIdxesSettings settings, const Sna
     return SILKWORM_OK;
 }
 
-int start_rpcdaemon(SilkwormHandle* handle, rpc::DaemonSettings /*settings*/, const DataDirectory& data_dir) {
+int start_rpcdaemon(SilkwormHandle handle, rpc::DaemonSettings /*settings*/, const DataDirectory& data_dir) {
     // Import the silkworm_start_rpcdaemon symbol from Silkworm API library
     const auto silkworm_start_rpcdaemon{
         boost::dll::import_symbol<SilkwormStartRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStartRpcDaemonSymbol)};
@@ -444,7 +444,7 @@ int main(int argc, char* argv[]) {
             boost::dll::import_symbol<SilkwormFiniSig>(kSilkwormApiLibPath, kSilkwormFiniSymbol)};
 
         // Initialize Silkworm API library
-        SilkwormHandle* handle{nullptr};
+        SilkwormHandle handle{nullptr};
 
         SilkwormSettings silkworm_settings;
         std::string data_dir_path = data_dir.path().string();

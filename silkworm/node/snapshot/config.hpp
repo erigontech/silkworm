@@ -16,28 +16,26 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
+#include <span>
 #include <string>
-#include <string_view>
 #include <vector>
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/small_map.hpp>
+#include <silkworm/node/snapshot/config/bor_mainnet.hpp>
+#include <silkworm/node/snapshot/config/goerli.hpp>
+#include <silkworm/node/snapshot/config/mainnet.hpp>
+#include <silkworm/node/snapshot/config/mumbai.hpp>
+#include <silkworm/node/snapshot/config/sepolia.hpp>
+#include <silkworm/node/snapshot/entry.hpp>
 
 namespace silkworm::snapshot {
 
-struct PreverifiedEntry {
-    std::string file_name;
-    std::string torrent_hash;
-};
-
-using PreverifiedList = std::vector<PreverifiedEntry>;
-
-PreverifiedList from_toml(std::string_view preverified_toml_doc);
+using PreverifiedList = std::vector<Entry>;
 
 class Config {
   public:
-    static std::shared_ptr<const Config> lookup_known_config(uint64_t chain_id, const std::vector<std::string>& whitelist);
+    static Config lookup_known_config(ChainId chain_id, const std::vector<std::string>& whitelist);
 
     explicit Config(PreverifiedList preverified_snapshots);
 
@@ -45,16 +43,18 @@ class Config {
     [[nodiscard]] BlockNum max_block_number() const { return max_block_number_; }
 
   private:
-    static const Config kGoerliSnapshotConfig;
-    static const Config kMainnetSnapshotConfig;
-    static const Config kSepoliaSnapshotConfig;
-
-    static const std::map<uint64_t, const Config*> kKnownSnapshotConfigs;
-
     BlockNum compute_max_block();
 
     PreverifiedList preverified_snapshots_;
     BlockNum max_block_number_;
+};
+
+inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownSnapshotConfigs{
+    {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("goerli"sv), {kGoerliSnapshots.data(), kGoerliSnapshots.size()}},
+    {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
+    {*kKnownChainNameToId.find("polygon"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},
 };
 
 }  // namespace silkworm::snapshot

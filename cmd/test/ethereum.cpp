@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <iostream>
@@ -29,7 +30,6 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
@@ -437,8 +437,8 @@ RunResults difficulty_tests(const nlohmann::json& outer) {
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow_tests) {
     const auto path_fits = [&p, &root_dir](const fs::path& e) { return root_dir / e == p; };
-    return as_range::any_of(kFailingTests, path_fits) ||
-           (!include_slow_tests && as_range::any_of(kSlowTests, path_fits));
+    return std::ranges::any_of(kFailingTests, path_fits) ||
+           (!include_slow_tests && std::ranges::any_of(kSlowTests, path_fits));
 }
 
 int main(int argc, char* argv[]) {

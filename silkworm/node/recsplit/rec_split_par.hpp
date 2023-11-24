@@ -373,6 +373,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     // uint64_t previous_offset_{0};  // unused
 };
 
+inline auto par_build_strategy(ThreadPool& tp) { return std::make_unique<RecSplit8::ParallelBuildingStrategy>(tp); }
+
 /*
     RecSplit8 recsplit{RecSplitSettings{}, std::make_unique<RecSplit8::ParallelBuildingStrategy>(thread_pool)};
     auto collision = recsplit.build();

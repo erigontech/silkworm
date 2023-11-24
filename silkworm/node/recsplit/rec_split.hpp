@@ -1130,6 +1130,8 @@ using RecSplit8 = RecSplit<kLeafSize>;
 
 using RecSplitIndex = RecSplit8;
 
+inline auto seq_build_strategy() { return std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl::kOptimalBufferSize); }
+
 /* Example usage:
     RecSplit8 recsplit{RecSplitSettings{}, std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl::kOptimalBufferSize)};
     auto collision = recsplit.build();

@@ -130,11 +130,14 @@ bool containsDuplicate(const std::vector<T>& items) {
     return false;  // No duplicate found
 }
 
-namespace silkworm::succinct::parallel {
+namespace silkworm::succinct {
 
 template <std::size_t LEAF_SIZE>
-struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
+struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
+    ParallelBuildingStrategy(ThreadPool& tp) : thread_pool_{tp} {
+    }
 
+  protected:
     struct Bucket {
         Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id} {
             keys_.reserve(bucket_size);
@@ -170,29 +173,11 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
         }
     };
 
-    //! The buckets of the RecSplit algorithm
-    std::vector<Bucket> buckets_;
+    void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count, bool double_enum_index) override {
+        double_enum_index_ = double_enum_index;
+        bucket_count_ = bucket_count;
 
-    //! The offset collector for Elias-Fano encoding of "enum -> offset" index
-    std::vector<uint64_t> offsets_;
-
-    //! Helper to build GR codes of splitting and bijection indices
-    GolombRiceBuilder gr_builder_;
-
-    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    // uint64_t min_delta_{0};  // unused
-
-    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    // uint64_t previous_offset_{0};  // unused
-
-    ThreadPool* thread_pool_{nullptr};
-
-    ParallelBuildingStrategy(ThreadPool& thread_pool) : thread_pool_{&thread_pool} {
-    }
-
-    virtual void params(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count,
-                        std::size_t, bool double_enum_index) override {
-        // Prepare backets
+        // Prepare buckets
         buckets_.reserve(bucket_count);
         for (int i = 0; i < bucket_count; i++)
             buckets_.emplace_back(i, bucket_size);
@@ -200,15 +185,15 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
             offsets_.reserve(key_count);
     }
 
-    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) {
+    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) override {
         ensure(bucket_id < buckets_.size(), "bucket_id out of range");
 
-        if (this->keys_added_ % 100'000 == 0) {
+        if (keys_added_ % 100'000 == 0) {
             SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
-        if (offset > this->max_offset_) {
-            this->max_offset_ = offset;
+        if (offset > max_offset_) {
+            max_offset_ = offset;
         }
 
         // if (keys_added_ > 0) {  // unused
@@ -223,7 +208,7 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
         if (this->double_enum_index_) {
             offsets_.push_back(offset);
 
-            auto current_key_count = this->keys_added_;
+            auto current_key_count = keys_added_;
 
             bucket.keys_.emplace_back(bucket_key);
             bucket.values_.emplace_back(current_key_count);
@@ -232,27 +217,22 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
             bucket.values_.emplace_back(offset);
         }
 
-        this->keys_added_++;
+        keys_added_++;
         // previous_offset_ = offset;
     }
 
-  protected:
-    bool build_mph(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) {
-        // SILK_INFO << "par-ver - GEN - Base data ID: " << base_data_id_ << " key count: " << key_count_
-        //          << " keys_added: " << keys_added_ << " bytes per record: " << int(bytes_per_record_)
-        //          << " record mask: " << record_mask_ << " max_hoffset: " << max_offset_ << " bucket_count: " << bucket_count_;
-
+    bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, uint16_t golomb_param_max_index,
+                         DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) override {
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};
         for (auto& bucket : buckets_) {
-            thread_pool_->push_task([&]() noexcept(false) {
+            thread_pool_.push_task([&]() noexcept(false) {
                 if (collision) return;  // skip work if collision detected
                 bool local_collision = recsplit_bucket(bucket, bytes_per_record);
                 if (local_collision) collision = true;
-                // SILK_INFO << "processed " << bucket.bucket_id_;
             });
         }
-        thread_pool_->wait_for_tasks();
+        thread_pool_.wait_for_tasks();
         if (collision) {
             SILK_WARN << "[index] collision detected";
             return true;
@@ -270,10 +250,10 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
             // if (!is_empty(underlying_buffer))
             //     index_output_stream << underlying_buffer;
             char byte;
-            while (buckets_[i].index_ofs.get(byte)) {  // todo(mike): avoid this, use a buffer in place of index_ofs
+            while (buckets_[i].index_ofs.get(byte)) {  // maybe it is better to avoid this and use a buffer in place of index_ofs
                 index_output_stream.put(byte);
             }
-            // index_output_stream << buckets_[i].index_ofs.rdbuf();  // todo(mike): better but fails when rdbuf() is empty
+            // index_output_stream << buckets_[i].index_ofs.rdbuf();  // better but fails when rdbuf() is empty
 
             if (buckets_[i].keys_.size() > 1) {
                 buckets_[i].gr_builder_.append_to(gr_builder_);
@@ -284,7 +264,7 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
             SILKWORM_ASSERT(bucket_size_accumulator_[i + 1] >= bucket_size_accumulator_[i]);
             SILKWORM_ASSERT(bucket_position_accumulator_[i + 1] >= bucket_position_accumulator_[i]);
 
-            this->golomb_param_max_index_ = std::max(this->golomb_param_max_index_, buckets_[i].golomb_param_max_index_);
+            golomb_param_max_index = std::max(golomb_param_max_index, buckets_[i].golomb_param_max_index_);
         }
 
         // SILK_INFO << "PROBE par-vers - sizes: " << prettyPrint(bucket_size_accumulator_);
@@ -305,10 +285,10 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
         return false;  // no collision
     }
 
-    void build_double_enum_index(std::unique_ptr<EliasFano>& ef_offsets) {
+    void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
         // Build Elias-Fano index for offsets (if any)
         std::sort(offsets_.begin(), offsets_.end());
-        ef_offsets = std::make_unique<EliasFano>(this->keys_added_, this->max_offset_);
+        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         for (auto offset : offsets_) {
             ef_offsets->add_offset(offset);
         }
@@ -330,45 +310,74 @@ struct ParallelBuildingStrategy: public BuildingStrategy<LEAF_SIZE> {
             buffer_keys.resize(bucket.keys_.size());
             buffer_offsets.resize(bucket.values_.size());
 
-            recsplit(bucket.keys_, bucket.values_, buffer_keys, buffer_offsets, bucket.gr_builder_,
-                     bucket.index_ofs, bucket.golomb_param_max_index_, bytes_per_record);
-
+            RecSplit<LEAF_SIZE>::recsplit(
+                bucket.keys_, bucket.values_, buffer_keys, buffer_offsets, bucket.gr_builder_,
+                bucket.index_ofs, bucket.golomb_param_max_index_, bytes_per_record);
         } else {
             for (const auto offset : bucket.values_) {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offset);
                 bucket.index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
-                SILK_DEBUG << "[index] written offset: " << offset;
+                SILK_TRACE << "[index] written offset: " << offset;
             }
         }
 
         return false;
     }
 
-    void clear() {
+    void clear() override {
         offsets_.clear();
         for (auto& bucket : buckets_) {
             bucket.clear();
         }
-        this->keys_added_ = 0;
-        this->max_offset_ = 0;
+        keys_added_ = 0;
+        max_offset_ = 0;
     }
 
+    virtual uint64_t keys_added() override {
+        return keys_added_;
+    }
+
+    virtual uint64_t max_offset() override {
+        return max_offset_;
+    }
+
+    //! The thread pool used for parallel processing
+    ThreadPool& thread_pool_;
+
+    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+    bool double_enum_index_;
+
+    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
+    uint64_t max_offset_{0};
+
+    //! The number of keys currently added
+    uint64_t keys_added_{0};
+
+    //! The number of buckets for this Recsplit algorithm instance
+    std::size_t bucket_count_;
+
+    //! The buckets of the RecSplit algorithm
+    std::vector<Bucket> buckets_;
+
+    //! The offset collector for Elias-Fano encoding of "enum -> offset" index
+    std::vector<uint64_t> offsets_;
+
+    //! Helper to build GR codes of splitting and bijection indices
+    GolombRiceBuilder gr_builder_;
+
+    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
+    // uint64_t min_delta_{0};  // unused
+
+    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
+    // uint64_t previous_offset_{0};  // unused
 };
 
-
-constexpr std::size_t kLeafSize{8};
-using RecSplit8 = RecSplit<kLeafSize>;
-
-using RecSplitIndex = RecSplit8;
-
-using ParallelBuildingStrategy8 = ParallelBuildingStrategy<kLeafSize>;
-
 /*
-   RecSplit8 recsplit{settings, new ParallelBuildingStrategy8(thread_pool)};
-   auto collision = recsplit.build();
- */
+    RecSplit8 recsplit{RecSplitSettings{}, std::make_unique<RecSplit8::ParallelBuildingStrategy>(thread_pool)};
+    auto collision = recsplit.build();
+*/
 
-}  // namespace silkworm::succinct::parallel
+}  // namespace silkworm::succinct
 
 #pragma GCC diagnostic pop

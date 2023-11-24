@@ -42,7 +42,7 @@ void Index::build() {
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
         .base_data_id = index_file.block_from()};
-    RecSplit8 rec_split{rec_split_settings};
+    RecSplit8 rec_split{rec_split_settings, std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl::kOptimalBufferSize)};
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
@@ -128,9 +128,8 @@ void TransactionIndex::build() {
         .bucket_size = kBucketSize,
         .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
-        .double_enum_index = true,
-        .etl_optimal_size = etl::kOptimalBufferSize};
-    RecSplit8 tx_hash_rs{tx_hash_rs_settings};
+        .double_enum_index = true};
+    RecSplit8 tx_hash_rs{tx_hash_rs_settings, std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl::kOptimalBufferSize)};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
     SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
@@ -139,9 +138,8 @@ void TransactionIndex::build() {
         .bucket_size = kBucketSize,
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
-        .double_enum_index = false,
-        .etl_optimal_size = etl::kOptimalBufferSize};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings};
+        .double_enum_index = false};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl::kOptimalBufferSize)};
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();

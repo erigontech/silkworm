@@ -928,13 +928,13 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             offset_collector_->collect(offset_key, {});
 
             Bytes current_key_count(8, '\0');
-            endian::store_big_u64(current_key_count.data(), this->keys_added_);
+            endian::store_big_u64(current_key_count.data(), keys_added_);
             bucket_collector_->collect(collector_key, current_key_count);
         } else {
             bucket_collector_->collect(collector_key, offset_key);
         }
 
-        this->keys_added_++;
+        keys_added_++;
         // previous_offset_ = offset;
     }
 
@@ -996,7 +996,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
     void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
         // Build Elias-Fano index for offsets (if any)
-        ef_offsets = std::make_unique<EliasFano>(this->keys_added_, this->max_offset_);
+        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         db::PooledCursor empty_cursor{};
         offset_collector_->load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
             const uint64_t offset = endian::load_big_u64(entry.key.data());
@@ -1006,7 +1006,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     }
 
     //! Compute and store the splittings and bijections of the current bucket
-    bool recsplit_current_bucket(std::ofstream& index_output_stream, uint16_t golomb_param_max_index, uint8_t bytes_per_record) {
+    bool recsplit_current_bucket(std::ofstream& index_output_stream, uint16_t& golomb_param_max_index, uint8_t bytes_per_record) {
         // Extend bucket size accumulator to accommodate current bucket index + 1
         while (bucket_size_accumulator_.size() <= (current_bucket_id_ + 1)) {
             bucket_size_accumulator_.push_back(bucket_size_accumulator_.back());
@@ -1062,8 +1062,8 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         current_bucket_offsets_.clear();
         bucket_size_accumulator_.resize(1);
         bucket_position_accumulator_.resize(1);
-        this->keys_added_ = 0;
-        this->max_offset_ = 0;
+        keys_added_ = 0;
+        max_offset_ = 0;
     }
 
     virtual uint64_t keys_added() override {

@@ -221,7 +221,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         // previous_offset_ = offset;
     }
 
-    bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, uint16_t golomb_param_max_index,
+    bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
                          DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) override {
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};

@@ -223,8 +223,8 @@ class RecSplit {
         virtual ~BuildingStrategy() = default;
 
         virtual void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) = 0;
-        virtual bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes,
-                                     uint16_t golomb_param_max_index, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) = 0;
+        virtual bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector& golomb_rice_codes,
+                                     uint16_t& golomb_param_max_index, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) = 0;
         virtual void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) = 0;
         virtual void clear() = 0;
 
@@ -938,7 +938,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         // previous_offset_ = offset;
     }
 
-    bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector golomb_rice_codes, uint16_t golomb_param_max_index,
+    bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
                          DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) override {
         current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
 

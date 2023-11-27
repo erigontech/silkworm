@@ -19,5 +19,5 @@
 #include <string_view>
 
 namespace silkworm {
-constinit extern const std::string_view genesis_polygon_json;
+constinit extern const std::string_view genesis_bor_mainnet_json;
 }

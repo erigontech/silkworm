@@ -297,7 +297,7 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kPolygonConfig{
+SILKWORM_CONSTINIT const ChainConfig kBorMainnetConfig{
     .chain_id = 137,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

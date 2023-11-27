@@ -46,11 +46,11 @@ TEST_CASE("Database genesis initialization") {
         REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kSepoliaConfig);
     }
-    SECTION("Initialize with Polygon") {
-        auto source_data{read_genesis_data(kPolygonConfig.chain_id)};
+    SECTION("Initialize with Polygon PoS") {
+        auto source_data{read_genesis_data(kBorMainnetConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
         REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
-        CHECK(read_chain_config(txn) == kPolygonConfig);
+        CHECK(read_chain_config(txn) == kBorMainnetConfig);
     }
     SECTION("Initialize with Mumbai") {
         auto source_data{read_genesis_data(kMumbaiConfig.chain_id)};

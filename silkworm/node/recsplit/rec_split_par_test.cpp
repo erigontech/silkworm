@@ -161,7 +161,6 @@ const std::size_t RecSplit4::kUpperAggregationBound;
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo;
 
-
 auto par_build_strategy_4(ThreadPool& tp) { return std::make_unique<RecSplit4::ParallelBuildingStrategy>(tp); }
 
 TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
@@ -305,4 +304,4 @@ TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit][igno
 
 #endif  // _WIN32
 
-}  // namespace silkworm::succinct::parallel
+}  // namespace silkworm::succinct

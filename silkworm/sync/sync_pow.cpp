@@ -158,7 +158,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
-            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(new_height.hash));
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(new_height.hash, std::nullopt));
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
 
@@ -179,7 +179,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, head=" << to_hex(invalid_chain.latest_valid_head);
-            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(invalid_chain.latest_valid_head));
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(invalid_chain.latest_valid_head, std::nullopt));
 
         } else if (std::holds_alternative<ValidationError>(verification)) {
             // if it returned a validation error, raise an exception

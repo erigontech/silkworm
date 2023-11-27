@@ -311,7 +311,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             }
 
             total_collected_senders += block_body.transactions.size();
-            success_or_throw(add_to_batch(current_block_num, std::make_shared<Hash>(*current_hash), std::move(block_body.transactions)));
+            success_or_throw(add_to_batch(current_block_num, *current_hash, std::move(block_body.transactions)));
 
             // Process batch in parallel if max size has been reached
             if (batch_->size() >= max_batch_size_) {
@@ -363,7 +363,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result Senders::add_to_batch(BlockNum block_num, std::shared_ptr<Hash> block_hash, std::vector<Transaction>&& transactions) {
+Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, std::vector<Transaction>&& transactions) {
     if (is_stopping()) {
         return Stage::Result::kAborted;
     }
@@ -478,7 +478,7 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
                 key.clear();
                 value.clear();
             }
-            key = db::block_key(package.block_num, package.block_hash->bytes);
+            key = db::block_key(package.block_num, package.block_hash.bytes);
             value.clear();
             block_num = package.block_num;
         }

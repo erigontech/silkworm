@@ -59,7 +59,7 @@ Task<void> TaskGroup::wait() {
     // wait until cancelled or a task throws an exception
     std::exception_ptr ex_ptr;
     try {
-        ex_ptr = co_await exceptions_.receive();  // NOLINT(clang-analyzer-core.NullDereference)
+        ex_ptr = co_await exceptions_.receive();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
             ex_ptr = std::current_exception();

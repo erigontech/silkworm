@@ -59,7 +59,7 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
-    bool insert_block(std::shared_ptr<Block> block);
+    bool insert_block(const std::shared_ptr<Block>& block);
 
     concurrency::AwaitableFuture<VerificationResult> verify_chain(Hash head_block_hash);
 

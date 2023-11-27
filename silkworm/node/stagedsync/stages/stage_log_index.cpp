@@ -16,6 +16,8 @@
 
 #include "stage_log_index.hpp"
 
+#include <utility>
+
 #include <gsl/narrow>
 #include <magic_enum.hpp>
 
@@ -23,34 +25,36 @@
 
 namespace silkworm::stagedsync {
 
-//! LogBitmapBuilder is a CBOR consumer which builds address and topic roaring bitmaps from the CBOR
-//! representation of a sequence of Logs
-class LogBitmapBuilder : public LogCborConsumer {
-  public:
-    using AddressHandler = std::function<void(std::span<const uint8_t, kAddressLength>)>;
-    using TopicHandler = std::function<void(HashAsSpan)>;
+namespace {
+    //! LogBitmapBuilder is a CBOR consumer which builds address and topic roaring bitmaps from the CBOR
+    //! representation of a sequence of Logs
+    class LogBitmapBuilder : public LogCborConsumer {
+      public:
+        using AddressHandler = std::function<void(std::span<const uint8_t, kAddressLength>)>;
+        using TopicHandler = std::function<void(HashAsSpan)>;
 
-    LogBitmapBuilder(AddressHandler address_callback, TopicHandler topic_callback)
-        : address_callback_{address_callback}, topic_callback_{topic_callback} {}
+        LogBitmapBuilder(AddressHandler address_callback, TopicHandler topic_callback)
+            : address_callback_{std::move(address_callback)}, topic_callback_{std::move(topic_callback)} {}
 
-    void on_num_logs(std::size_t /*num_logs*/) override {}
+        void on_num_logs(std::size_t /*num_logs*/) override {}
 
-    void on_address(std::span<const uint8_t, kAddressLength> address) override {
-        address_callback_(address);
-    }
+        void on_address(std::span<const uint8_t, kAddressLength> address) override {
+            address_callback_(address);
+        }
 
-    void on_num_topics(std::size_t /*num_topics*/) override {}
+        void on_num_topics(std::size_t /*num_topics*/) override {}
 
-    void on_topic(HashAsSpan topic) override {
-        topic_callback_(topic);
-    }
+        void on_topic(HashAsSpan topic) override {
+            topic_callback_(topic);
+        }
 
-    void on_data(std::span<const uint8_t> /*data*/) override {}
+        void on_data(std::span<const uint8_t> /*data*/) override {}
 
-  private:
-    AddressHandler address_callback_;
-    TopicHandler topic_callback_;
-};
+      private:
+        AddressHandler address_callback_;
+        TopicHandler topic_callback_;
+    };
+}  // namespace
 
 Stage::Result LogIndex::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};

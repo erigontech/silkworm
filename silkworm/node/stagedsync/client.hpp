@@ -40,7 +40,7 @@ class Client {
 
     virtual Task<ValidationResult> validate_chain(Hash head_block_hash) = 0;
 
-    virtual Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) = 0;
+    virtual Task<ForkChoiceApplication> update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) = 0;
 
     // state
     virtual Task<BlockNum> block_progress() = 0;

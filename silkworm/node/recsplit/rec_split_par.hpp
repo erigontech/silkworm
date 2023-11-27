@@ -111,7 +111,7 @@ std::string prettyPrint(const std::vector<T>& v, const std::string& prefix = "["
 template <typename T>
 bool containsDuplicate(const std::vector<T>& items) {
     // Create an index vector
-    std::vector<int> indices(items.size());
+    std::vector<size_t> indices(items.size());
     for (size_t i = 0; i < items.size(); ++i) {
         indices[i] = i;
     }
@@ -134,7 +134,7 @@ namespace silkworm::succinct {
 
 template <std::size_t LEAF_SIZE>
 struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
-    ParallelBuildingStrategy(ThreadPool& tp) : thread_pool_{tp} {
+    explicit ParallelBuildingStrategy(ThreadPool& tp) : thread_pool_{tp} {
     }
 
   protected:
@@ -334,11 +334,11 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         max_offset_ = 0;
     }
 
-    virtual uint64_t keys_added() override {
+    uint64_t keys_added() override {
         return keys_added_;
     }
 
-    virtual uint64_t max_offset() override {
+    uint64_t max_offset() override {
         return max_offset_;
     }
 
@@ -346,7 +346,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     ThreadPool& thread_pool_;
 
     //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
-    bool double_enum_index_;
+    bool double_enum_index_{false};
 
     //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
     uint64_t max_offset_{0};
@@ -355,7 +355,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     uint64_t keys_added_{0};
 
     //! The number of buckets for this Recsplit algorithm instance
-    std::size_t bucket_count_;
+    std::size_t bucket_count_{0};
 
     //! The buckets of the RecSplit algorithm
     std::vector<Bucket> buckets_;

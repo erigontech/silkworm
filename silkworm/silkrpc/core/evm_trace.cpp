@@ -33,6 +33,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -562,6 +563,10 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
     }
+    if (precompile::is_precompile(msg.code_address, rev)) {
+        is_precompile_ = true;
+        return;
+    }
 
     start_gas_.push(msg.gas);
 
@@ -663,6 +668,10 @@ void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, c
 }
 
 void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+    if (is_precompile_) {
+        is_precompile_ = false;
+        return;
+    }
     auto& vm_trace = traces_stack_.top().get();
     traces_stack_.pop();
 
@@ -709,6 +718,11 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
+    }
+
+    if (precompile::is_precompile(msg.code_address, rev)) {
+        is_precompile_ = true;
+        return;
     }
 
     auto sender = evmc::address{msg.sender};
@@ -806,6 +820,10 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack
 }
 
 void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+    if (is_precompile_) {
+        is_precompile_ = false;
+        return;
+    }
     auto index = index_stack_.top();
     auto start_gas = start_gas_.top();
 
@@ -962,6 +980,10 @@ void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& 
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
     }
+    if (precompile::is_precompile(msg.code_address, rev)) {
+        is_precompile_ = true;
+        return;
+    }
 
     auto recipient = evmc::address{msg.recipient};
     code_[recipient] = code;
@@ -1002,6 +1024,10 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
 }
 
 void StateDiffTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+    if (is_precompile_) {
+        is_precompile_ = false;
+        return;
+    }
     SILK_DEBUG << "StateDiffTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
                << ", gas_left: " << std::dec << result.gas_left;
@@ -1130,7 +1156,12 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
 Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
     std::vector<Trace> traces;
 
-    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, {false, true, false});
+    const TraceConfig trace_block_config{
+        .vm_trace = false,
+        .trace = true,
+        .state_diff = false,
+    };
+    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
     for (std::uint64_t pos = 0; pos < trace_call_results.size(); pos++) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
         if (!transaction.from) {

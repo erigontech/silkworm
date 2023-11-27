@@ -43,6 +43,7 @@ namespace silkworm::rpc::http {
 Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
+    bool send_reply{true};
     http::Reply reply;
     if (request.content.empty()) {
         reply.content = "";
@@ -61,7 +62,7 @@ Task<void> RequestHandler::handle(const http::Request& request) {
                     reply.status = http::StatusType::bad_request;
                     reply.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
                 } else {
-                    co_await handle_request_and_create_reply(request_json, reply);
+                    send_reply = co_await handle_request_and_create_reply(request_json, reply);
                     reply.content += "\n";
                 }
             } else {
@@ -77,7 +78,7 @@ Task<void> RequestHandler::handle(const http::Request& request) {
                         batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
                     } else {
                         http::Reply single_reply;
-                        co_await handle_request_and_create_reply(item.value(), single_reply);
+                        send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
                         batch_reply_content << single_reply.content;
                     }
                 }
@@ -89,7 +90,9 @@ Task<void> RequestHandler::handle(const http::Request& request) {
         }
     }
 
-    co_await do_write(reply);
+    if (send_reply) {
+        co_await do_write(reply);
+    }
 
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
@@ -127,19 +130,19 @@ bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
     return true;
 }
 
-Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
+Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
     const auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
-        co_return;
+        co_return true;
     }
 
     const auto method = request_json["method"].get<std::string>();
     if (method.empty()) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
-        co_return;
+        co_return true;
     }
 
     // Dispatch JSON handlers in this order: 1) glaze JSON 2) nlohmann JSON 3) JSON streaming
@@ -148,27 +151,27 @@ Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
         SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_glaze_handler, request_json, reply);
         SILK_TRACE << "<-- handle RPC request: " << method;
-        co_return;
+        co_return true;
     }
     const auto json_handler = rpc_api_table_.find_json_handler(method);
     if (json_handler) {
         SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_handler, request_json, reply);
         SILK_TRACE << "<-- handle RPC request: " << method;
-        co_return;
+        co_return true;
     }
     const auto stream_handler = rpc_api_table_.find_stream_handler(method);
     if (stream_handler) {
         SILK_TRACE << "--> handle RPC stream request: " << method;
         co_await handle_request(*stream_handler, request_json);
         SILK_TRACE << "<-- handle RPC stream request: " << method;
-        co_return;
+        co_return false;
     }
 
     reply.content = make_json_error(request_id, -32601, "the method " + method + " does not exist/is not available").dump();
     reply.status = http::StatusType::not_implemented;
 
-    co_return;
+    co_return true;
 }
 
 Task<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {

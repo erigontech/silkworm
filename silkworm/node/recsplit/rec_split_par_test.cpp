@@ -63,7 +63,7 @@ void hexDump(std::string out_file_name, std::ifstream& file) {
     }
 }
 
-namespace silkworm::succinct::parallel {
+namespace silkworm::succinct {
 
 // Exclude tests from Windows build due to access issues with files in OS temporary dir
 #ifndef _WIN32
@@ -153,6 +153,14 @@ static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
 constexpr int kTestLeaf{4};
 
 using RecSplit4 = RecSplit<kTestLeaf>;
+
+template <>
+const std::size_t RecSplit4::kLowerAggregationBound;
+template <>
+const std::size_t RecSplit4::kUpperAggregationBound;
+template <>
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo;
+
 
 auto par_build_strategy_4(ThreadPool& tp) { return std::make_unique<RecSplit4::ParallelBuildingStrategy>(tp); }
 

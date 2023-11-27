@@ -113,6 +113,15 @@ static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
 constexpr int kTestLeaf{4};
 
 using RecSplit4 = RecSplit<kTestLeaf>;
+template <>
+const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::kLowerAggregationBound;
+template <>
+const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
+template <>
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
+
+
+using RecSplit4 = RecSplit<kTestLeaf>;
 auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(etl::kOptimalBufferSize); }
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {

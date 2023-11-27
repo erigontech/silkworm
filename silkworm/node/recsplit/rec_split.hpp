@@ -91,13 +91,6 @@
 
 namespace silkworm::succinct {
 
-using succinct::DoubleEliasFanoList16;
-using succinct::EliasFanoList32;
-using succinct::GolombRiceVector;
-using succinct::Murmur3;
-using succinct::remap128;
-using succinct::remap16;
-
 using namespace std::chrono;
 
 //! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
@@ -384,23 +377,23 @@ class RecSplit {
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
-        SILK_DEBUG << "[index] creating temporary index file: " << tmp_index_path.string();
+        SILK_TRACE << "[index] creating temporary index file: " << tmp_index_path.string();
 
         // Write minimal app-specific data ID in the index file
         Bytes uint64_buffer(8, '\0');
         endian::store_big_u64(uint64_buffer.data(), base_data_id_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
+        SILK_TRACE << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
         endian::store_big_u64(uint64_buffer.data(), building_strategy_->keys_added());
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written number of keys: " << building_strategy_->keys_added();
+        SILK_TRACE << "[index] written number of keys: " << building_strategy_->keys_added();
 
         // Write number of bytes per index record
         bytes_per_record_ = (std::bit_width(building_strategy_->max_offset()) + 7) / 8;
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
-        SILK_DEBUG << "[index] written bytes per record: " << int(bytes_per_record_);
+        SILK_TRACE << "[index] written bytes per record: " << int(bytes_per_record_);
 
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
 
@@ -410,6 +403,7 @@ class RecSplit {
                                                              double_ef_index_, bytes_per_record_);
         if (collision) return true;
 
+        // Compute table: ordinal -> offset
         if (double_enum_index_) {
             building_strategy_->build_enum_index(ef_offsets_);
         }
@@ -820,16 +814,16 @@ class RecSplit {
         return is;
     }
 
-    static inline const std::size_t kLowerAggregationBound = SplitStrategy::kLowerAggregationBound;
+    static const std::size_t kLowerAggregationBound;
 
-    static inline const std::size_t kUpperAggregationBound = SplitStrategy::kUpperAggregationBound;
+    static const std::size_t kUpperAggregationBound;
 
     //! The max index used in Golomb parameter array
     uint16_t golomb_param_max_index_{0};
 
     //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
     //! skip in the fixed part of the tree (lower 24 bits).
-    static inline const std::array<uint32_t, kMaxBucketSize> memo = fill_golomb_rice();
+    static const std::array<uint32_t, kMaxBucketSize> memo;
 
     //! The size in bytes of each Recsplit bucket (possibly except the last one)
     std::size_t bucket_size_;
@@ -918,7 +912,6 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         // }
 
         Bytes collector_key(16, '\0');
-
         endian::store_big_u64(collector_key.data(), bucket_id);
         endian::store_big_u64(collector_key.data() + sizeof(uint64_t), bucket_key);
         Bytes offset_key(8, '\0');
@@ -976,15 +969,15 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             if (collision_detected) return true;
         }
 
-        // SILK_INFO << "seq-vers - sizes: " << prettyPrint_seq(bucket_size_accumulator_);
-        // SILK_INFO << "seq-vers - positions: " << prettyPrint_seq(bucket_position_accumulator_);
+        // SILK_INFO << "sizes: " << prettyPrint(bucket_size_accumulator_);
+        // SILK_INFO << "positions: " << prettyPrint(bucket_position_accumulator_);
 
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
 
         // Concatenate the representation of each bucket
         golomb_rice_codes = gr_builder_.build();
 
-        // SILK_INFO << "seq-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
+        // SILK_INFO << "golomb_rice_codes: size " << golomb_rice_codes.size() << ", content " << golomb_rice_codes;
 
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
         std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
@@ -1127,6 +1120,9 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 constexpr std::size_t kLeafSize{8};
 
 using RecSplit8 = RecSplit<kLeafSize>;
+
+template <>
+const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 using RecSplitIndex = RecSplit8;
 

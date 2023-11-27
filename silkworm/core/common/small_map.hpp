@@ -53,8 +53,7 @@ class SmallMap {
         sort();
     }
 
-    constexpr SmallMap(const SmallMap& other) {
-        size_ = other.size_;
+    constexpr SmallMap(const SmallMap& other) : size_{other.size_} {
         for (size_t i{0}; i < MaxSize; ++i) {
             data_[i] = other.data_[i];
         }

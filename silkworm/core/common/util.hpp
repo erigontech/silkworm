@@ -105,7 +105,7 @@ inline constexpr Int from_string_sci(const char* str) {
     int num_digits = 0;
     int num_decimal_digits = 0;
     bool count_decimals{false};
-    char c;
+    char c = 0;
     while ((c = *s++)) {
         if (c == '.') {
             count_decimals = true;

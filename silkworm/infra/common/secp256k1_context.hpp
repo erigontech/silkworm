@@ -79,7 +79,7 @@ class SecP256K1Context final {
 
     std::pair<Bytes, uint8_t> serialize_recoverable_signature(const secp256k1_ecdsa_recoverable_signature* signature) {
         Bytes data(64, 0);
-        int recovery_id;
+        int recovery_id{0};
         secp256k1_ecdsa_recoverable_signature_serialize_compact(context_, data.data(), &recovery_id, signature);
         return {data, static_cast<uint8_t>(recovery_id)};
     }

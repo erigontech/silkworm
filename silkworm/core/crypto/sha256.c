@@ -131,7 +131,7 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state* state) {
     if (space_in_chunk >= TOTAL_LEN_LEN) {
         const size_t left = space_in_chunk - TOTAL_LEN_LEN;
         size_t len = state->total_len;
-        int i;
+        int i = 0;
         memset(chunk, 0x00, left);
         chunk += left;
 
@@ -171,7 +171,7 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
     uint8_t chunk[CHUNK_SIZE];
 
     while (calc_chunk(chunk, &state)) {
-        unsigned i, j;
+        unsigned i = 0, j = 0;
 
         uint32_t ah[8];
         /* Initialize working variables to current hash value: */

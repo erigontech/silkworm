@@ -29,7 +29,7 @@ namespace silkworm::concurrency {
 class AwaitableConditionVariableImpl {
   public:
     std::function<Task<void>()> waiter() {
-        size_t waiter_version;
+        size_t waiter_version{0};
         {
             std::scoped_lock lock(mutex_);
             waiter_version = version_;
@@ -78,7 +78,7 @@ AwaitableConditionVariable::AwaitableConditionVariable() : p_impl_(std::make_uni
 }
 
 AwaitableConditionVariable::~AwaitableConditionVariable() {
-    [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
+    [[maybe_unused]] int non_trivial_destructor{0};  // silent clang-tidy
 }
 
 std::function<Task<void>()> AwaitableConditionVariable::waiter() {

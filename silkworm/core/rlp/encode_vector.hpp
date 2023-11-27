@@ -126,7 +126,7 @@ struct RlpBytes {
 
 //! see RlpBytes
 struct RlpByteView {
-    const ByteView data;
+    ByteView data;
     explicit RlpByteView(ByteView data1) : data(data1) {}
 };
 

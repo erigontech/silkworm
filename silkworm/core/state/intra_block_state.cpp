@@ -41,6 +41,7 @@ const state::Object* IntraBlockState::get_object(const evmc::address& address) c
 
 state::Object* IntraBlockState::get_object(const evmc::address& address) noexcept {
     const auto& self{*this};
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<state::Object*>(self.get_object(address));
 }
 

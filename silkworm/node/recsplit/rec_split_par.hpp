@@ -44,37 +44,6 @@
 
 #pragma once
 
-/* clang-format off */
-#define _USE_MATH_DEFINES
-#include <cmath>
-#if !defined(M_PI) && defined(_MSC_VER)
-#include <corecrt_math_defines.h>
-#endif
-/* clang-format on */
-
-#include <array>
-#include <bit>
-#include <cassert>
-#include <chrono>
-#include <execution>
-#include <fstream>
-#include <limits>
-#include <random>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <gsl/util>
-
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/endian.hpp>
-#include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/common/memory_mapped_file.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/etl/collector.hpp>
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -84,30 +53,10 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
-#include <silkworm/node/recsplit/encoding/elias_fano.hpp>
-#include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/rec_split.hpp>
-#include <silkworm/node/recsplit/support/murmur_hash3.hpp>
-
-// prettyPrint a vector, used for debugging
-// usage: prettyPrint(vi);
-// usage: prettyPrint(vi, "{", ", ", "}");
-template <typename T>
-std::string prettyPrint(const std::vector<T>& v, const std::string& prefix = "[", const std::string& separator = ", ", const std::string& suffix = "]") {
-    std::ostringstream oss;
-    oss << prefix;
-    for (size_t i = 0; i < v.size(); ++i) {
-        oss << v[i];
-        if (i < v.size() - 1) {
-            oss << separator;
-        }
-    }
-    oss << suffix;
-    return oss.str();
-}
 
 // Check if the vector contains duplicates without altering the original vector order
-// Used here to check the keys vector (whose elements are related to the element of values vector at the same index)
+// Used here to check the keys vector (whose elements are related to the elements of values vector at the same index)
 template <typename T>
 bool containsDuplicate(const std::vector<T>& items) {
     // Create an index vector
@@ -267,15 +216,10 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             golomb_param_max_index = std::max(golomb_param_max_index, buckets_[i].golomb_param_max_index_);
         }
 
-        // SILK_INFO << "PROBE par-vers - sizes: " << prettyPrint(bucket_size_accumulator_);
-        // SILK_INFO << "PROBE par-vers - positions: " << prettyPrint(bucket_position_accumulator_);
-
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
 
         // Concatenate the representation of each bucket
         golomb_rice_codes = gr_builder_.build();
-
-        // SILK_INFO << "PROBE par-vers - golomb_rice_codes: size " << golomb_rice_codes_.size() << ", content " << golomb_rice_codes_;
 
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
         std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
@@ -376,6 +320,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 inline auto par_build_strategy(ThreadPool& tp) { return std::make_unique<RecSplit8::ParallelBuildingStrategy>(tp); }
 
 /*
+ Example usage:
     RecSplit8 recsplit{RecSplitSettings{}, std::make_unique<RecSplit8::ParallelBuildingStrategy>(thread_pool)};
     auto collision = recsplit.build();
 */

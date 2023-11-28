@@ -415,31 +415,31 @@ class RecSplit {
         // Write out bucket count, bucket size, leaf size
         endian::store_big_u64(uint64_buffer.data(), bucket_count_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written bucket count: " << bucket_count_;
+        SILK_TRACE << "[index] written bucket count: " << bucket_count_;
 
         endian::store_big_u16(uint64_buffer.data(), bucket_size_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written bucket size: " << bucket_size_;
+        SILK_TRACE << "[index] written bucket size: " << bucket_size_;
 
         endian::store_big_u16(uint64_buffer.data(), LEAF_SIZE);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written leaf size: " << LEAF_SIZE;
+        SILK_TRACE << "[index] written leaf size: " << LEAF_SIZE;
 
         // Write out salt
         endian::store_big_u32(uint64_buffer.data(), salt_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
+        SILK_TRACE << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
 
         // Write out start seeds
         constexpr uint8_t start_seed_length = kStartSeed.size();
         index_output_stream.write(reinterpret_cast<const char*>(&start_seed_length), sizeof(uint8_t));
-        SILK_DEBUG << "[index] written start seed length: " << int(start_seed_length);
+        SILK_TRACE << "[index] written start seed length: " << int(start_seed_length);
 
         for (const uint64_t s : kStartSeed) {
             endian::store_big_u64(uint64_buffer.data(), s);
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         }
-        SILK_DEBUG << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
+        SILK_TRACE << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
 
         // Write out index flag
         const uint8_t enum_index_flag = double_enum_index_ ? 1 : 0;
@@ -448,14 +448,14 @@ class RecSplit {
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
             index_output_stream << *ef_offsets_;
-            SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
         }
 
         // Write out the number of Golomb-Rice codes used i.e. the max index used plus one
         endian::store_big_u16(uint64_buffer.data(), golomb_param_max_index_ + 1);
         // Erigon writes 4-instead-of-2 bytes here: 2 spurious come from previous buffer content, i.e. last seed value
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << golomb_rice_codes_.size();
+        SILK_TRACE << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << golomb_rice_codes_.size();
 
         // Write out Golomb-Rice code
         index_output_stream << golomb_rice_codes_;
@@ -465,7 +465,7 @@ class RecSplit {
 
         index_output_stream.close();
 
-        SILK_DEBUG << "[index] renaming " << tmp_index_path.string() << " as " << index_path_.string();
+        SILK_TRACE << "[index] renaming " << tmp_index_path.string() << " as " << index_path_.string();
         std::filesystem::rename(tmp_index_path, index_path_);
 
         return false;
@@ -681,7 +681,7 @@ class RecSplit {
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
             // No need to build aggregation levels - just find bijection
-            // SILK_INFO << "PROBE [index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
+            // SILK_DEBUG << "PROBE [index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             // if (level == 7) {
             //    SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
             //               << " current_bucket_id_=" << current_bucket_id_;
@@ -722,8 +722,7 @@ class RecSplit {
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            // SILK_INFO << "PROBE [index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
-            // SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
+            // SILK_DEBUG << "PROBE [index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
 
             std::vector<std::size_t> count(fanout, 0);  // temporary counters of key remapped occurrences
@@ -969,15 +968,10 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             if (collision_detected) return true;
         }
 
-        // SILK_INFO << "sizes: " << prettyPrint(bucket_size_accumulator_);
-        // SILK_INFO << "positions: " << prettyPrint(bucket_position_accumulator_);
-
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
 
         // Concatenate the representation of each bucket
         golomb_rice_codes = gr_builder_.build();
-
-        // SILK_INFO << "golomb_rice_codes: size " << golomb_rice_codes.size() << ", content " << golomb_rice_codes;
 
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
         std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};

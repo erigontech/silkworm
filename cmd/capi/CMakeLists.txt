@@ -14,18 +14,18 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers filesystem system)
-find_package(CLI11 REQUIRED)
+find_package(Boost REQUIRED headers)
 
 add_executable(execute execute.cpp)
-target_link_libraries(
-  execute
-  PRIVATE Boost::headers
-          Boost::filesystem
-          Boost::system
-          CLI11::CLI11
-          glaze::glaze
-          mdbx-static
-          silkworm_node
-          cmd_common
+
+set(PRIVATE_LIBS
+    Boost::headers
+    mdbx-static
+    silkworm_infra
+    silkworm_node
+    silkrpc
+    silkworm_capi
+    cmd_common
 )
+
+target_link_libraries(execute PRIVATE ${PRIVATE_LIBS})

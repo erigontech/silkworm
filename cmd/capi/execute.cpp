@@ -19,9 +19,9 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/dll.hpp>
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -30,7 +30,7 @@
 #include <mdbx.h++>
 #pragma GCC diagnostic pop
 
-#include <silkworm/api/silkworm_api.h>
+#include <silkworm/capi/silkworm.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -44,39 +44,6 @@ using namespace silkworm;
 using namespace silkworm::snapshot;
 using namespace silkworm::cmd::common;
 
-const char* kSilkwormApiLibUndecoratedPath = "../../silkworm/api/silkworm_api";
-const char* kSilkwormInitSymbol = "silkworm_init";
-const char* kSilkwormBuildRecSplitIndexes = "silkworm_build_recsplit_indexes";
-const char* kSilkwormAddSnapshotSymbol = "silkworm_add_snapshot";
-const char* kSilkwormStartRpcDaemonSymbol = "silkworm_start_rpcdaemon";
-const char* kSilkwormStopRpcDaemonSymbol = "silkworm_stop_rpcdaemon";
-const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
-const char* kSilkwormFiniSymbol = "silkworm_fini";
-
-auto kSilkwormApiLibPath{boost::dll::shared_library::decorate(kSilkwormApiLibUndecoratedPath)};
-
-//! Function signature for silkworm_init C API
-using SilkwormInitSig = int(SilkwormHandle*, const struct SilkwormSettings* settings);
-
-//! Function signature for silkworm_build_recsplit_indexes C API
-using SilkwormBuildRecSplitIndexes = int(SilkwormHandle, SilkwormMemoryMappedFile*[], int len);
-
-//! Function signature for silkworm_add_snapshot C API
-using SilkwormAddSnapshotSig = int(SilkwormHandle, SilkwormChainSnapshot*);
-
-//! Function signature for silkworm_start_rpcdaemon C API
-using SilkwormStartRpcDaemonSig = int(SilkwormHandle, MDBX_env*);
-
-//! Function signature for silkworm_stop_rpcdaemon C API
-using SilkwormStopRpcDaemonSig = int(SilkwormHandle);
-
-//! Function signature for silkworm_execute_blocks C API
-using SilkwormExecuteBlocksSig =
-    int(SilkwormHandle, MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, bool, bool, uint64_t*, int*);
-
-//! Function signature for silkworm_fini C API
-using SilkwormFiniSig = int(SilkwormHandle);
-
 struct ExecuteBlocksSettings {
     BlockNum start_block{1};
     BlockNum max_block{1};
@@ -86,7 +53,7 @@ struct ExecuteBlocksSettings {
     bool write_call_traces{true};
 };
 
-struct BuildIdxesSettings {
+struct BuildIndexesSettings {
     std::vector<std::string> snapshot_names;
 };
 
@@ -94,18 +61,17 @@ struct Settings {
     log::Settings log_settings;
     std::string data_folder;
     std::optional<ExecuteBlocksSettings> execute_blocks_settings;
-    std::optional<BuildIdxesSettings> build_indices_settings;
+    std::optional<BuildIndexesSettings> build_indexes_settings;
     std::optional<rpc::DaemonSettings> rpcdaemon_settings;
 };
 
-void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silkworm_api_lib_path, Settings& settings) {
+void parse_command_line(int argc, char* argv[], CLI::App& app, Settings& settings) {
     app.require_subcommand(1);  // At least 1 subcommand is required
 
     // logging
     add_logging_options(app, settings.log_settings);
 
     // repository
-    app.add_option("--libpath", silkworm_api_lib_path, "Path to silkworm_lib");
     app.add_option("--datadir", settings.data_folder, "Path to data directory");
 
     // execute sub-command
@@ -135,11 +101,11 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
         ->description("Flag indicating if execution call traces must be written or not")
         ->capture_default_str();
 
-    // build-indexes sub-command
-    auto cmd_build_idxes = app.add_subcommand("build_idxes", "Build indexes");
+    // build indexes sub-command
+    auto cmd_build_indexes = app.add_subcommand("build_indexes", "Build indexes");
 
-    BuildIdxesSettings build_idxes_settings;
-    cmd_build_idxes->add_option("--snapshot_names", build_idxes_settings.snapshot_names, "Snapshot to index")->delimiter(',')->required();
+    BuildIndexesSettings build_indexes_settings;
+    cmd_build_indexes->add_option("--snapshot_names", build_indexes_settings.snapshot_names, "Snapshot to index")->delimiter(',')->required();
 
     // rpcdaemon sub-command
     auto cmd_rpcdaemon = app.add_subcommand("rpcdaemon", "Start RPC Daemon");
@@ -157,9 +123,9 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, std::string& silk
 
     // check subcommand presence
     if (app.got_subcommand(cmd_execute)) {
-        settings.execute_blocks_settings = std::move(exec_blocks_settings);
-    } else if (app.got_subcommand(cmd_build_idxes)) {
-        settings.build_indices_settings = std::move(build_idxes_settings);
+        settings.execute_blocks_settings = exec_blocks_settings;
+    } else if (app.got_subcommand(cmd_build_indexes)) {
+        settings.build_indexes_settings = std::move(build_indexes_settings);
     } else if (app.got_subcommand(cmd_rpcdaemon)) {
         settings.rpcdaemon_settings = std::move(rpcdaemon_settings);
     }
@@ -239,23 +205,16 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     snapshot_sequence.reserve(headers_snapshot_sequence.size());
     for (std::size_t i{0}; i < headers_snapshot_sequence.size(); ++i) {
         SilkwormChainSnapshot chain_snapshot{
-            std::move(headers_snapshot_sequence[i]),
-            std::move(bodies_snapshot_sequence[i]),
-            std::move(transactions_snapshot_sequence[i])};
+            headers_snapshot_sequence[i],
+            bodies_snapshot_sequence[i],
+            transactions_snapshot_sequence[i],
+        };
         snapshot_sequence.push_back(chain_snapshot);
     }
     return snapshot_sequence;
 }
 
 int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
-    // Import the silkworm_add_snapshot symbol from Silkworm API library
-    const auto silkworm_add_snapshot{
-        boost::dll::import_symbol<SilkwormAddSnapshotSig>(kSilkwormApiLibPath, kSilkwormAddSnapshotSymbol)};
-
-    // Import the silkworm_execute_blocks symbol from Silkworm API library
-    const auto silkworm_execute_blocks{
-        boost::dll::import_symbol<SilkwormExecuteBlocksSig>(kSilkwormApiLibPath, kSilkwormExecuteBlocksSymbol)};
-
     // Open chain database
     silkworm::db::EnvConfig config{
         .path = data_dir.chaindata().path().string(),
@@ -316,11 +275,7 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
     return status_code;
 }
 
-int build_indices(SilkwormHandle handle, BuildIdxesSettings settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
-    // Import the silkworm_build_recsplit_indexes symbol from Silkworm API library
-    const auto silkworm_build_recsplit_indexes{
-        boost::dll::import_symbol<SilkwormBuildRecSplitIndexes>(kSilkwormApiLibPath, kSilkwormBuildRecSplitIndexes)};
-
+int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const SnapshotRepository& repository, const DataDirectory& data_dir) {
     SILK_INFO << "Building indexes for snapshots: " << settings.snapshot_names;
 
     std::vector<SilkwormMemoryMappedFile*> snapshots;
@@ -331,7 +286,7 @@ int build_indices(SilkwormHandle handle, BuildIdxesSettings settings, const Snap
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
 
-        const Snapshot* snapshot{nullptr};
+        const Snapshot* snapshot;
         switch (snapshot_path->type()) {
             case headers:
                 snapshot = repository.get_header_segment(*snapshot_path);
@@ -376,15 +331,7 @@ int build_indices(SilkwormHandle handle, BuildIdxesSettings settings, const Snap
     return SILKWORM_OK;
 }
 
-int start_rpcdaemon(SilkwormHandle handle, rpc::DaemonSettings /*settings*/, const DataDirectory& data_dir) {
-    // Import the silkworm_start_rpcdaemon symbol from Silkworm API library
-    const auto silkworm_start_rpcdaemon{
-        boost::dll::import_symbol<SilkwormStartRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStartRpcDaemonSymbol)};
-
-    // Import the silkworm_stop_rpcdaemon symbol from Silkworm API library
-    const auto silkworm_stop_rpcdaemon{
-        boost::dll::import_symbol<SilkwormStopRpcDaemonSig>(kSilkwormApiLibPath, kSilkwormStopRpcDaemonSymbol)};
-
+int start_rpcdaemon(SilkwormHandle handle, const rpc::DaemonSettings& /*settings*/, const DataDirectory& data_dir) {
     // Start execution context dedicated to handling termination signals
     boost::asio::io_context signal_context;
     boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
@@ -420,33 +367,21 @@ int main(int argc, char* argv[]) {
 
     try {
         log::Settings log_settings;
-        std::string silkworm_api_lib_path;
         Settings settings;
-        parse_command_line(argc, argv, app, silkworm_api_lib_path, settings);
+        parse_command_line(argc, argv, app, settings);
 
         log::init(settings.log_settings);
 
         const auto pid = boost::this_process::get_id();
         SILK_INFO << "Execute starting [pid=" << std::to_string(pid) << "]";
 
-        if (!silkworm_api_lib_path.empty())
-            kSilkwormApiLibPath = silkworm_api_lib_path;
-
         DataDirectory data_dir{
             settings.data_folder.empty() ? DataDirectory::get_default_storage_path() : std::filesystem::path(settings.data_folder)};
-
-        // Import the silkworm_init symbol from Silkworm API library
-        const auto silkworm_init{
-            boost::dll::import_symbol<SilkwormInitSig>(kSilkwormApiLibPath, kSilkwormInitSymbol)};
-
-        // Import the silkworm_fini symbol from Silkworm API library
-        const auto silkworm_fini{
-            boost::dll::import_symbol<SilkwormFiniSig>(kSilkwormApiLibPath, kSilkwormFiniSymbol)};
 
         // Initialize Silkworm API library
         SilkwormHandle handle{nullptr};
 
-        SilkwormSettings silkworm_settings;
+        SilkwormSettings silkworm_settings{};
         std::string data_dir_path = data_dir.path().string();
         if (data_dir_path.size() >= SILKWORM_PATH_SIZE) {
             SILK_ERROR << "datadir path too long [data_dir_path=" << data_dir_path << "]";
@@ -469,13 +404,13 @@ int main(int argc, char* argv[]) {
         int status_code = -1;
         if (settings.execute_blocks_settings) {
             // Execute specified block range using Silkworm API library
-            status_code = execute_blocks(handle, std::move(*settings.execute_blocks_settings), repository, data_dir);
-        } else if (settings.build_indices_settings) {
+            status_code = execute_blocks(handle, *settings.execute_blocks_settings, repository, data_dir);
+        } else if (settings.build_indexes_settings) {
             // Build index for a specific snapshot using Silkworm API library
-            status_code = build_indices(handle, std::move(*settings.build_indices_settings), repository, data_dir);
+            status_code = build_indexes(handle, *settings.build_indexes_settings, repository, data_dir);
         } else if (settings.rpcdaemon_settings) {
             // Start RPC Daemon using Silkworm API library
-            status_code = start_rpcdaemon(handle, std::move(*settings.rpcdaemon_settings), data_dir);
+            status_code = start_rpcdaemon(handle, *settings.rpcdaemon_settings, data_dir);
         }
 
         // Finalize Silkworm API library

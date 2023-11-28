@@ -19,7 +19,7 @@ add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
   # C API
-  add_subdirectory(api)
+  add_subdirectory(capi)
 
   # Benchmarks
   add_subdirectory(benchmark)

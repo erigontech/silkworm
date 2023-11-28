@@ -71,7 +71,7 @@ void from_json(const nlohmann::json& json, Call& call) {
 
 struct GlazeJsonCall {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
     char result[2048];
     struct glaze {
         using T = GlazeJsonCall;
@@ -84,7 +84,7 @@ struct GlazeJsonCall {
 
 struct GlazeJsonCallResultAsString {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
     std::string result;
     struct glaze {
         using T = GlazeJsonCallResultAsString;
@@ -95,16 +95,38 @@ struct GlazeJsonCallResultAsString {
     };
 };
 
-void make_glaze_json_content(uint32_t id, const silkworm::Bytes& call_result, std::string& json_reply) {
+void make_glaze_json_content(const nlohmann::json& request_json, const silkworm::Bytes& call_result, std::string& json_reply) {
     if (call_result.size() * 2 + 2 + 1 > kEthCallResultFixedSize) {
         GlazeJsonCallResultAsString log_json_data{};
         log_json_data.result.reserve(call_result.size() * 2 + 2);
-        log_json_data.id = id;
+        if (request_json.contains("id")) {
+            const auto& id = request_json["id"];
+            if (id.is_number()) {
+                log_json_data.id = id.get<std::uint32_t>();
+            } else if (id.is_string()) {
+                log_json_data.id = std::make_shared<std::string>(id.get<std::string>());
+            } else {
+                log_json_data.id = nullptr;
+            }
+        } else {
+            log_json_data.id = nullptr;
+        }
         log_json_data.result = "0x" + silkworm::to_hex(call_result);
         glz::write_json(std::move(log_json_data), json_reply);
     } else {
         GlazeJsonCall log_json_data{};
-        log_json_data.id = id;
+        if (request_json.contains("id")) {
+            const auto& id = request_json["id"];
+            if (id.is_number()) {
+                log_json_data.id = id.get<std::uint32_t>();
+            } else if (id.is_string()) {
+                log_json_data.id = std::make_shared<std::string>(id.get<std::string>());
+            } else {
+                log_json_data.id = nullptr;
+            }
+        } else {
+            log_json_data.id = nullptr;
+        }
         to_hex(log_json_data.result, call_result);
         glz::write_json(std::move(log_json_data), json_reply);
     }

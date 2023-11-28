@@ -138,7 +138,7 @@ struct GlazeJsonBlock {
 
 struct GlazeJsonBlockReply {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
     GlazeJsonBlock result;
 
     struct glaze {
@@ -152,7 +152,7 @@ struct GlazeJsonBlockReply {
 
 struct GlazeJsonNullBlockReply {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
     std::monostate result;
 
     struct glaze {
@@ -164,20 +164,43 @@ struct GlazeJsonNullBlockReply {
     };
 };
 
-void make_glaze_json_null_content(uint32_t id, std::string& json_reply) {
+void make_glaze_json_null_content(const nlohmann::json& request_json, std::string& json_reply) {
     GlazeJsonNullBlockReply block_json_data{};
-    block_json_data.id = id;
+    if (request_json.contains("id")) {
+        const auto& id = request_json["id"];
+        if (id.is_number()) {
+            block_json_data.id = id.get<std::uint32_t>();
+        } else if (id.is_string()) {
+            block_json_data.id = std::make_shared<std::string>(id.get<std::string>());
+        } else {
+            block_json_data.id = nullptr;
+        }
+    } else {
+        block_json_data.id = nullptr;
+    }
 
     glz::write<glz::opts{.skip_null_members = false}>(block_json_data, json_reply);
 }
 
-void make_glaze_json_content(uint32_t id, const Block& b, std::string& json_reply) {
+void make_glaze_json_content(const nlohmann::json& request_json, const Block& b, std::string& json_reply) {
     GlazeJsonBlockReply block_json_data{};
     auto& block = b.block;
     auto& header = block.header;
     auto& result = block_json_data.result;
 
-    block_json_data.id = id;
+    if (request_json.contains("id")) {
+        const auto& id = request_json["id"];
+        if (id.is_number()) {
+            block_json_data.id = id.get<std::uint32_t>();
+        } else if (id.is_string()) {
+            block_json_data.id = std::make_shared<std::string>(id.get<std::string>());
+        } else {
+            block_json_data.id = nullptr;
+        }
+    } else {
+        block_json_data.id = nullptr;
+    }
+
     to_quantity(std::span(result.block_number), header.number);
     to_hex(std::span(result.hash), b.hash.bytes);
     to_hex(std::span(result.parent_hash), header.parent_hash.bytes);

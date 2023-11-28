@@ -109,7 +109,7 @@ struct GlazeJsonLogItem {
 
 struct GlazeJsonLog {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
         using T = GlazeJsonLog;
@@ -120,11 +120,22 @@ struct GlazeJsonLog {
     };
 };
 
-void make_glaze_json_content(uint32_t id, const Logs& logs, std::string& json_reply) {
+void make_glaze_json_content(const nlohmann::json& request_json, const Logs& logs, std::string& json_reply) {
     GlazeJsonLog log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
 
-    log_json_data.id = id;
+    if (request_json.contains("id")) {
+        const auto& id = request_json["id"];
+        if (id.is_number()) {
+            log_json_data.id = id.get<std::uint32_t>();
+        } else if (id.is_string()) {
+            log_json_data.id = std::make_shared<std::string>(id.get<std::string>());
+        } else {
+            log_json_data.id = nullptr;
+        }
+    } else {
+        log_json_data.id = nullptr;
+    }
 
     for (const auto& l : logs) {
         GlazeJsonLogItem item{};

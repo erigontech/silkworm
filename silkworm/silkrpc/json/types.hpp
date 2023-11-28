@@ -127,10 +127,10 @@ void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
 void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
 
-nlohmann::json make_json_content(uint32_t id);
-nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
-nlohmann::json make_json_error(uint32_t id, int code, const std::string& message);
-nlohmann::json make_json_error(uint32_t id, const RevertError& error);
+nlohmann::json make_json_content(const nlohmann::json& request_json);
+nlohmann::json make_json_content(const nlohmann::json& request_json, const nlohmann::json& result);
+nlohmann::json make_json_error(const nlohmann::json& request_json, int code, const std::string& message);
+nlohmann::json make_json_error(const nlohmann::json& request_json, const RevertError& error);
 
 }  // namespace silkworm::rpc
 

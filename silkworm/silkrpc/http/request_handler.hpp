@@ -67,12 +67,10 @@ class RequestHandler {
     void set_cors(std::vector<Header>& headers);
 
     Task<void> handle_request(
-        uint32_t request_id,
         commands::RpcApiTable::HandleMethod handler,
         const nlohmann::json& request_json,
         http::Reply& reply);
     Task<void> handle_request(
-        uint32_t request_id,
         commands::RpcApiTable::HandleMethodGlaze handler,
         const nlohmann::json& request_json,
         http::Reply& reply);

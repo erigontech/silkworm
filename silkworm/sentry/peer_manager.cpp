@@ -20,6 +20,7 @@
 #include <boost/system/system_error.hpp>
 #include <gsl/util>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/co_spawn_sw.hpp>
@@ -35,6 +36,7 @@ using namespace boost::asio;
 Task<void> PeerManager::run(
     rlpx::Server& server,
     discovery::Discovery& discovery,
+    std::unique_ptr<rlpx::Protocol> protocol,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
     using namespace concurrency::awaitable_wait_for_all;
 
@@ -43,7 +45,7 @@ Task<void> PeerManager::run(
     auto run =
         run_in_strand(server.peer_channel()) &&
         run_in_strand(client_peer_channel_) &&
-        discover_peers(discovery, client_factory) &&
+        discover_peers(discovery, std::move(protocol), std::move(client_factory)) &&
         connect_peer_tasks_.wait() &&
         drop_peer_tasks_.wait() &&
         peer_tasks_.wait();
@@ -197,6 +199,7 @@ std::vector<EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlp
 
 Task<void> PeerManager::discover_peers(
     discovery::Discovery& discovery,
+    std::unique_ptr<rlpx::Protocol> protocol,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
     using namespace std::chrono_literals;
 
@@ -215,7 +218,21 @@ Task<void> PeerManager::discover_peers(
         ongoing_peers_urls.insert(ongoing_peers_urls.end(), handshaking_peer_urls.begin(), handshaking_peer_urls.end());
         ongoing_peers_urls.insert(ongoing_peers_urls.end(), connecting_peer_urls_.begin(), connecting_peer_urls_.end());
 
-        std::vector<EnodeUrl> discovered_peer_urls = co_await discovery.request_peer_urls(needed_count, ongoing_peers_urls);
+        auto discovered_peer_candidates = co_await discovery.request_peer_candidates(needed_count, ongoing_peers_urls);
+
+        std::vector<EnodeUrl> discovered_peer_urls;
+        for (auto& candidate : discovered_peer_candidates) {
+            if (candidate.eth1_fork_id_data) {
+                if (!protocol->is_compatible_enr_entry("eth", *candidate.eth1_fork_id_data)) {
+                    log::Debug("sentry") << "PeerManager::discover_peers excluding a peer with an incompatible ENR 'eth' entry;"
+                                         << " peer URL = '" << candidate.url.to_string() << "';"
+                                         << " entry data = '" << to_hex(*candidate.eth1_fork_id_data) << "';";
+                    co_await discovery.on_peer_useless(candidate.url.public_key());
+                    continue;
+                }
+            }
+            discovered_peer_urls.push_back(std::move(candidate.url));
+        }
 
         for (auto& peer_url : discovered_peer_urls) {
             connecting_peer_urls_.insert(peer_url);

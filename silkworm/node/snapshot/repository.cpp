@@ -17,6 +17,7 @@
 #include "repository.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -87,7 +88,7 @@ void SnapshotRepository::reopen_folder() {
 }
 
 void SnapshotRepository::close() {
-    SILK_DEBUG << "Close snapshot repository folder: " << settings_.repository_dir.string();
+    SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
     for (const auto& [_, header_seg] : this->header_segments_) {
         header_seg->close();
     }
@@ -116,7 +117,7 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
 
 bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
     for (const auto& [_, header_snapshot] : header_segments_) {
-        SILK_DEBUG << "for_each_header header_snapshot: " << header_snapshot->fs_path().string();
+        SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot->fs_path().string();
         const auto keep_going = header_snapshot->for_each_header([fn](const auto* header) {
             return fn(header);
         });
@@ -127,7 +128,7 @@ bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
 
 bool SnapshotRepository::for_each_body(const BodySnapshot::Walker& fn) {
     for (const auto& [_, body_snapshot] : body_segments_) {
-        SILK_DEBUG << "for_each_body body_snapshot: " << body_snapshot->fs_path().string();
+        SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot->fs_path().string();
         const auto keep_going = body_snapshot->for_each_body([fn](BlockNum number, const auto* body) {
             return fn(number, body);
         });
@@ -185,8 +186,8 @@ const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) 
 }
 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (auto it = tx_segments_.rbegin(); it != tx_segments_.rend(); ++it) {
-        const auto& snapshot = it->second;
+    for (const auto& it : std::ranges::reverse_view(tx_segments_)) {
+        const auto& snapshot = it.second;
         auto block = snapshot->block_num_by_txn_hash(txn_hash);
         if (block) {
             return block;
@@ -235,7 +236,7 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
     BlockNum segment_max_block{0};
     for (const auto& seg_file : segment_files) {
         try {
-            SILK_DEBUG << "Reopen segment file: " << seg_file.path().filename().string();
+            SILK_TRACE << "Reopen segment file: " << seg_file.path().filename().string();
             bool snapshot_valid{true};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {

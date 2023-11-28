@@ -107,18 +107,6 @@ static inline std::vector<char> test_resume_data() {
     return resume_data;
 }
 
-TEST_CASE("BitTorrentSettings", "[silkworm][snapshot][bittorrent]") {
-    BitTorrentSettings settings{};
-    CHECK(settings.repository_path == BitTorrentSettings::kDefaultTorrentRepoPath);
-    CHECK(!settings.magnets_file_path);
-    CHECK(settings.wait_between_alert_polls == BitTorrentSettings::kDefaultWaitBetweenAlertPolls);
-    CHECK(settings.resume_data_save_interval == BitTorrentSettings::kDefaultResumeDataSaveInterval);
-    CHECK(settings.seeding == BitTorrentSettings::kDefaultSeeding);
-    CHECK(settings.download_rate_limit == BitTorrentSettings::kDefaultDownloadRateLimit);
-    CHECK(settings.upload_rate_limit == BitTorrentSettings::kDefaultUploadRateLimit);
-    CHECK(settings.active_downloads == BitTorrentSettings::kDefaultActiveDownloads);
-}
-
 TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent]") {
     SECTION("default settings") {
         CHECK_NOTHROW(BitTorrentClient{BitTorrentSettings{}});

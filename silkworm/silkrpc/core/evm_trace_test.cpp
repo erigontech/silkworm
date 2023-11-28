@@ -161,7 +161,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
                     "storage":{}
                 }
             },
-            "trace": [],
+            "trace":[],
             "vmTrace": {
                 "code": "0x",
                 "ops": []

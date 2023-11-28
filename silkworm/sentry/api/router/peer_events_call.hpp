@@ -35,7 +35,7 @@ struct PeerEventsCall {
 
     PeerEventsCall() = default;
 
-    explicit PeerEventsCall(boost::asio::any_io_executor& executor)
+    explicit PeerEventsCall(const boost::asio::any_io_executor& executor)
         : result_promise(std::make_shared<concurrency::AwaitablePromise<TResult>>(executor)),
           unsubscribe_signal(std::make_shared<concurrency::EventNotifier>(executor)) {}
 };

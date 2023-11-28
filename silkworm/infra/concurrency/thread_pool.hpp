@@ -119,6 +119,7 @@ class [[nodiscard]] ThreadPool {
      */
     template <typename F, typename... A>
     void push_task(F&& task, A&&... args) {
+        // NOLINTNEXTLINE(modernize-avoid-bind)
         std::function<void()> task_function = std::bind(std::forward<F>(task), std::forward<A>(args)...);
         {
             const std::scoped_lock tasks_lock(tasks_mutex_);
@@ -144,6 +145,7 @@ class [[nodiscard]] ThreadPool {
      */
     template <typename F, typename... A, typename R = std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>>
     [[nodiscard]] std::future<R> submit(F&& task, A&&... args) {
+        // NOLINTNEXTLINE(modernize-avoid-bind)
         std::function<R()> task_function = std::bind(std::forward<F>(task), std::forward<A>(args)...);
         std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
         push_task(

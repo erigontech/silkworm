@@ -16,13 +16,13 @@
 
 #include "sync_pos.hpp"
 
+#include <algorithm>
 #include <iterator>
 
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -93,7 +93,7 @@ Task<void> PoSSync::download_blocks() {
         }
 
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [&, this](const auto& block) {
+        std::ranges::for_each(blocks, [&, this](const auto& block) {
             block->td = chain_fork_view_.add(block->header);
             block_progress = std::max(block_progress, block->header.number);
         });
@@ -192,7 +192,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::InvalidBlockHash;
         }
-        log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        log::Trace() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
 
         auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};

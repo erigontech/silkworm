@@ -70,11 +70,11 @@ ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     load_stages();
 }
 
-BlockNum ExecutionPipeline::head_header_number() {
+BlockNum ExecutionPipeline::head_header_number() const {
     return head_header_number_;
 }
 
-Hash ExecutionPipeline::head_header_hash() {
+Hash ExecutionPipeline::head_header_hash() const {
     return head_header_hash_;
 }
 
@@ -181,7 +181,10 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
-        auto stop_stage_name = Environment::get_stop_before_stage();  // force to stop at any particular stage ?
+
+        // We'll check if we're forced to start/stop at any particular stage for debugging purposes
+        auto start_stage_name{Environment::get_start_at_stage()};
+        const auto stop_stage_name{Environment::get_stop_before_stage()};
 
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -194,9 +197,21 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
 
-            // check if we have to stop due to environment variable
+            // Check if we have to start at specific stage due to environment variable
+            if (start_stage_name) {
+                // Stage is not the start one, skip it and continue
+                if (start_stage_name != stage_id) {
+                    log::Info("Skipping " + std::string(stage_id) + "...", {"START_AT_STAGE", *start_stage_name, "hit", "true"});
+                    continue;
+                } else {
+                    // Start stage just found, avoid skipping next stages
+                    start_stage_name = std::nullopt;
+                }
+            }
+
+            // Check if we have to stop due to environment variable
             if (stop_stage_name && stop_stage_name == stage_id) {
-                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name->c_str(), "hit", "true"});
+                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", *stop_stage_name, "hit", "true"});
                 result = Stage::Result::kStoppedByEnv;
                 break;
             }

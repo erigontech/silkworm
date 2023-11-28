@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#include <absl/functional/function_ref.h>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -131,17 +133,18 @@ std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, ByteView key);
 
 // See Erigon WriteTd
 void write_total_difficulty(RWTxn& txn, BlockNum, const evmc::bytes32& hash, const intx::uint256& total_difficulty);
-void write_total_difficulty(RWTxn& txn, BlockNum, const uint8_t (&hash)[kHashLength], const intx::uint256& td);
+void write_total_difficulty(RWTxn& txn, BlockNum, const uint8_t (&hash)[kHashLength],
+                            const intx::uint256& total_difficulty);
 void write_total_difficulty(RWTxn& txn, const Bytes& key, const intx::uint256& total_difficulty);
 
 // Reads canonical block; see Erigon ReadBlockByNumber.
 // Returns true on success and false on missing block.
-[[nodiscard]] bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& out);
+[[nodiscard]] bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block);
 
 // Reads a block; see Erigon ReadBlock.
 // Returns true on success and false on missing block.
 [[nodiscard]] bool read_block(ROTxn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number,
-                              bool read_senders, Block& out);
+                              bool read_senders, Block& block);
 [[nodiscard]] bool read_block(ROTxn& txn, const evmc::bytes32& hash, BlockNum number, Block& block);
 
 // See Erigon ReadSenders
@@ -158,7 +161,7 @@ void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, 
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
-bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& out);
+bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs);
 
 //! \brief Persist transactions into db's bucket table::kBlockTransactions.
 //! The key starts from base_id and is incremented by 1 for each transaction.
@@ -267,6 +270,9 @@ class DataModel {
     //! Get the highest block number
     [[nodiscard]] BlockNum highest_block_number() const;
 
+    //! Get the highest block number frozen into snapshots
+    [[nodiscard]] static BlockNum highest_frozen_block_number();
+
     //! Read block header with the specified key (block number, hash)
     [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
 
@@ -307,7 +313,7 @@ class DataModel {
     [[nodiscard]] bool has_body(BlockNum height, const Hash& hash) const;
 
     //! Read block returning true on success and false on missing block
-    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
+    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
     [[nodiscard]] bool read_block(BlockNum number, bool read_senders, Block& block) const;
 
@@ -322,7 +328,7 @@ class DataModel {
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
 
     //! Read all block headers up to limit in reverse order from last, processing each one via a user defined callback
-    void for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const;
+    void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const;
 
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
@@ -334,7 +340,7 @@ class DataModel {
     static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
                                                 bool read_senders, std::vector<Transaction>& txs);
     [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
-    [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
+    [[nodiscard]] static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
 
     static inline snapshot::SnapshotRepository* repository_{nullptr};
 

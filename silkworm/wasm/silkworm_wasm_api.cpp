@@ -19,9 +19,9 @@
 #include <cstdlib>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
@@ -49,14 +49,6 @@ size_t bytes_length(const Bytes* str) { return str->length(); }
 intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) { return new intx::uint256{a, b, c, d}; }
 
 void delete_uint256(intx::uint256* x) { delete x; }
-
-const ChainConfig* lookup_config(uint64_t chain_id) {
-    const auto chain{lookup_known_chain(chain_id)};
-    if (!chain.has_value()) {
-        return nullptr;
-    }
-    return chain->second;
-}
 
 ChainConfig* new_config(uint64_t chain_id) {
     auto out{new ChainConfig};
@@ -156,8 +148,6 @@ uint8_t* state_root_hash_new(const InMemoryState* state) {
 static evmc::address address_from_ptr(const uint8_t* ptr) { return bytes_to_address({ptr, kAddressLength}); }
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
-
-size_t state_number_of_accounts(const InMemoryState* state) { return state->number_of_accounts(); }
 
 size_t state_storage_size(const InMemoryState* state, const uint8_t* address, const Account* account) {
     return state->storage_size(address_from_ptr(address), account->incarnation);

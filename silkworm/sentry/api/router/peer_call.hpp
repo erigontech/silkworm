@@ -35,7 +35,7 @@ struct PeerCall {
 
     PeerCall(
         sentry::EccPublicKey peer_public_key1,
-        boost::asio::any_io_executor& executor)
+        const boost::asio::any_io_executor& executor)
         : peer_public_key(std::move(peer_public_key1)),
           result_promise(std::make_shared<concurrency::AwaitablePromise<std::optional<PeerInfo>>>(executor)) {}
 };

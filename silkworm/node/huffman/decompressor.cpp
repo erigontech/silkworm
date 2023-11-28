@@ -137,7 +137,7 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
 }
 
 std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
-    SILK_DEBUG << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
+    SILK_TRACE << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
                << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned int>(bits)) << " depth: " << depth;
     if (patterns.empty()) {
         return 0;
@@ -180,12 +180,12 @@ CodeWord* PatternTable::insert_word(CodeWord* codeword) {
     } else {
         codeword->set_next(nullptr);
         if (head_ == nullptr) {
-            codewords_.push_back(std::move(codeword));
+            codewords_.push_back(codeword);
             head_ = codewords_.front();
             inserted = head_;
         } else {
             SILKWORM_ASSERT(!codewords_.empty());
-            codewords_.push_back(std::move(codeword));
+            codewords_.push_back(codeword);
             inserted = codewords_.back();
         }
     }
@@ -243,7 +243,7 @@ int PositionTable::build(std::span<Position> positions) {
 }
 
 int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
-    SILK_DEBUG << "build_tree #positions: " << positions.size() << " highest_depth: " << highest_depth << " code: " << code
+    SILK_TRACE << "build_tree #positions: " << positions.size() << " highest_depth: " << highest_depth << " code: " << code
                << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned int>(bits)) << " depth: " << depth;
     if (positions.empty()) {
         return 0;
@@ -297,7 +297,7 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
 }
 
 Decompressor::Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region)
-    : compressed_path_(std::move(compressed_path)), compressed_region_{std::move(compressed_region)} {}
+    : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region} {}
 
 Decompressor::~Decompressor() {
     close();
@@ -316,18 +316,18 @@ void Decompressor::open() {
     // Read header from compressed file
     words_count_ = endian::load_big_u64(address);
     empty_words_count_ = endian::load_big_u64(address + kWordsCountSize);
-    SILK_DEBUG << "Decompress words count: " << words_count_ << " empty words count: " << empty_words_count_;
+    SILK_TRACE << "Decompress words count: " << words_count_ << " empty words count: " << empty_words_count_;
 
     // Read patterns from compressed file
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
-    SILK_DEBUG << "Decompress pattern dictionary length: " << pattern_dict_length;
+    SILK_TRACE << "Decompress pattern dictionary length: " << pattern_dict_length;
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
 
     // Read positions from compressed file
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
-    SILK_DEBUG << "Decompress position dictionary length: " << position_dict_length;
+    SILK_TRACE << "Decompress position dictionary length: " << position_dict_length;
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
@@ -336,7 +336,7 @@ void Decompressor::open() {
     words_start_ = address + positions_dict_offset + position_dict_length;
     words_length_ = compressed_file_->length() - (positions_dict_offset + position_dict_length);
     SILKWORM_ASSERT(address + compressed_file_->length() == words_start_ + words_length_);
-    SILK_DEBUG << "Decompressor words start offset: " << (words_start_ - address) << " words length: " << words_length_
+    SILK_TRACE << "Decompressor words start offset: " << (words_start_ - address) << " words length: " << words_length_
                << " total length: " << compressed_file_->length();
 
     compressed_file_->advise_random();
@@ -373,14 +373,14 @@ void Decompressor::read_patterns(ByteView dict) {
         if (!read_ok) {
             throw std::runtime_error{"pattern dict is invalid: depth read failed at " + std::to_string(coded_input.CurrentPosition())};
         }
-        SILK_DEBUG << "pattern depth: " << pattern_depth << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "pattern depth: " << pattern_depth << " coded input position: " << coded_input.CurrentPosition();
         if (pattern_depth > kMaxAllowedDepth) {
             throw std::runtime_error{"pattern dict is invalid: pattern depth " + std::to_string(pattern_depth) +
                                      " is greater than max allowed: " + std::to_string(kMaxAllowedDepth)};
         }
         if (pattern_depth > pattern_highest_depth) {
             pattern_highest_depth = pattern_depth;
-            SILK_DEBUG << "pattern highest depth: " << pattern_highest_depth;
+            SILK_TRACE << "pattern highest depth: " << pattern_highest_depth;
         }
 
         uint64_t pattern_data_length{0};
@@ -391,14 +391,14 @@ void Decompressor::read_patterns(ByteView dict) {
         if (pattern_data_length > std::numeric_limits<int>::max()) {
             throw std::runtime_error{"pattern data length is too long: " + std::to_string(pattern_data_length)};
         }
-        SILK_DEBUG << "pattern data length: " << pattern_data_length << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "pattern data length: " << pattern_data_length << " coded input position: " << coded_input.CurrentPosition();
 
         ByteView pattern_data{dict.data() + coded_input.CurrentPosition(), pattern_data_length};
         read_ok = coded_input.Skip(static_cast<int>(pattern_data_length));
         if (!read_ok) {
             throw std::runtime_error{"pattern dict is invalid: data skip failed at " + std::to_string(coded_input.CurrentPosition())};
         }
-        SILK_DEBUG << "count: " << patterns.size() << " data size: " << pattern_data.size() << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "count: " << patterns.size() << " data size: " << pattern_data.size() << " coded input position: " << coded_input.CurrentPosition();
 
         patterns.emplace_back(Pattern{pattern_depth, pattern_data});
     }
@@ -406,14 +406,14 @@ void Decompressor::read_patterns(ByteView dict) {
         throw std::runtime_error{"pattern stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_DEBUG << "Pattern count: " << patterns.size() << " highest depth: " << pattern_highest_depth;
+    SILK_TRACE << "Pattern count: " << patterns.size() << " highest depth: " << pattern_highest_depth;
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
     if (dict.length() > 0) {
         pattern_dict_->build_condensed({patterns.data(), patterns.size()});
     }
 
-    SILK_DEBUG << "#codewords: " << pattern_dict_->num_codewords();
+    SILK_TRACE << "#codewords: " << pattern_dict_->num_codewords();
     SILK_TRACE << *pattern_dict_;
 }
 
@@ -436,14 +436,14 @@ void Decompressor::read_positions(ByteView dict) {
         if (!read_ok) {
             throw std::runtime_error("position dict is invalid: depth read failed at " + std::to_string(coded_input.CurrentPosition()));
         }
-        SILK_DEBUG << "position depth: " << position_depth << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "position depth: " << position_depth << " coded input position: " << coded_input.CurrentPosition();
         if (position_depth > kMaxAllowedDepth) {
             throw std::runtime_error{"position dict is invalid: position depth " + std::to_string(position_depth) +
                                      " is greater than max allowed: " + std::to_string(kMaxAllowedDepth)};
         }
         if (position_depth > position_highest_depth) {
             position_highest_depth = position_depth;
-            SILK_DEBUG << "position highest depth: " << position_highest_depth;
+            SILK_TRACE << "position highest depth: " << position_highest_depth;
         }
 
         uint64_t position{0};
@@ -454,7 +454,7 @@ void Decompressor::read_positions(ByteView dict) {
         if (position > std::numeric_limits<int>::max()) {
             throw std::runtime_error("position is too long: " + std::to_string(position));
         }
-        SILK_DEBUG << "count: " << positions.size() << " position: " << position << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "count: " << positions.size() << " position: " << position << " coded input position: " << coded_input.CurrentPosition();
 
         positions.emplace_back(Position{position_depth, position});
     }
@@ -462,14 +462,14 @@ void Decompressor::read_positions(ByteView dict) {
         throw std::runtime_error{"position stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_DEBUG << "Position count: " << positions.size() << " highest depth: " << position_highest_depth;
+    SILK_TRACE << "Position count: " << positions.size() << " highest depth: " << position_highest_depth;
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
     if (dict.length() > 0) {
         position_dict_->build({positions.data(), positions.size()});
     }
 
-    SILK_DEBUG << "#positions: " << position_dict_->num_positions();
+    SILK_TRACE << "#positions: " << position_dict_->num_positions();
     SILK_TRACE << *position_dict_;
 }
 

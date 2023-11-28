@@ -67,13 +67,15 @@ TEST_CASE("NodeDbSqlite") {
     }
 
     SECTION("update_address") {
-        runner.run(db.upsert_node_address(test_id, test_address));
+        bool is_inserted = runner.run(db.upsert_node_address(test_id, test_address));
+        CHECK(is_inserted);
         NodeAddress test_address2{
             ip::make_address("10.0.1.17"),
             30306,
             30305,
         };
-        runner.run(db.upsert_node_address(test_id, test_address2));
+        is_inserted = runner.run(db.upsert_node_address(test_id, test_address2));
+        CHECK_FALSE(is_inserted);
         auto address = runner.run(db.find_node_address_v4(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address2);
@@ -147,6 +149,28 @@ TEST_CASE("NodeDbSqlite") {
         auto actual_value = runner.run(db.find_distance(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("update_and_find_enr_seq_num") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 123;
+        runner.run(db.update_enr_seq_num(test_id, expected_value));
+        auto actual_value = runner.run(db.find_enr_seq_num(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("update_and_find_eth1_fork_id") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        Bytes expected_value = {1, 2, 3};
+        runner.run(db.update_eth1_fork_id(test_id, expected_value));
+        auto actual_value = runner.run(db.find_eth1_fork_id(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+
+        runner.run(db.update_eth1_fork_id(test_id, std::nullopt));
+        auto actual_value_null = runner.run(db.find_eth1_fork_id(test_id));
+        CHECK_FALSE(actual_value_null.has_value());
     }
 
     SECTION("find_ping_candidates.default") {

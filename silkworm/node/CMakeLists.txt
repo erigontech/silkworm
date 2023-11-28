@@ -22,9 +22,10 @@ find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
-find_package(tomlplusplus REQUIRED)
 
-add_subdirectory(snapshot/config)
+if(SILKWORM_CLANG_TIDY)
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
+endif()
 
 file(
   GLOB_RECURSE
@@ -67,8 +68,6 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     evmone
     magic_enum::magic_enum
     silkworm_interfaces
-    silkworm_node_snapshot_config
-    tomlplusplus::tomlplusplus
 )
 # cmake-format: on
 if(MSVC)

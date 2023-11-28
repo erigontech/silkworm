@@ -23,9 +23,8 @@
 
 namespace silkworm::rpc::ethdb::file {
 
-LocalDatabase::LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env) {
+LocalDatabase::LocalDatabase(mdbx::env chaindata_env) : chaindata_env_{std::move(chaindata_env)} {
     SILK_TRACE << "LocalDatabase::ctor " << this;
-    chaindata_env_ = std::move(chaindata_env);
 }
 
 LocalDatabase::~LocalDatabase() {

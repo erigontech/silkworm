@@ -105,8 +105,33 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
                       << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
         }
 
+        // Activate the local chaindata and snapshot access (if required)
+        std::optional<mdbx::env_managed> chaindata_env;
+        std::unique_ptr<snapshot::SnapshotRepository> snapshot_repository;
+        if (settings.datadir) {
+            DataDirectory data_folder{*settings.datadir};
+
+            // Create a new local chaindata environment
+            chaindata_env = std::make_optional<mdbx::env_managed>();
+            silkworm::db::EnvConfig db_config{
+                .path = data_folder.chaindata().path().string(),
+                .in_memory = true,
+                .shared = true,
+                .max_readers = kDatabaseMaxReaders};
+            *chaindata_env = silkworm::db::open_env(db_config);
+
+            // Create a new snapshot repository
+            snapshot::SnapshotSettings snapshot_settings{
+                .repository_dir = data_folder.snapshots().path(),
+            };
+            snapshot_repository = std::make_unique<snapshot::SnapshotRepository>(std::move(snapshot_settings));
+            snapshot_repository->reopen_folder();
+
+            db::DataModel::set_snapshot_repository(snapshot_repository.get());
+        }
+
         // Create the one-and-only Silkrpc daemon
-        Daemon rpc_daemon{settings};
+        Daemon rpc_daemon{settings, chaindata_env};
 
         // Check protocol version compatibility with Core Services
         if (not settings.skip_protocol_check) {
@@ -172,57 +197,20 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(DaemonSettings settings,
-               std::shared_ptr<mdbx::env_managed> chaindata_env,
-               std::shared_ptr<snapshot::SnapshotRepository> snapshot_repository)
+Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
-    // Check pre-conditions
-    ensure(!settings_.datadir || !chaindata_env, "Daemon::Daemon datadir and chaindata_env are alternative");
-
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
     }
 
-    // Activate the local chaindata and snapshot access (if required)
-    if (settings_.datadir) {
-        DataDirectory data_folder{*settings_.datadir};
-
-        // Create a new local chaindata environment
-        chaindata_env_ = std::make_shared<mdbx::env_managed>();
-        silkworm::db::EnvConfig db_config{
-            .path = data_folder.chaindata().path().string(),
-            .in_memory = true,
-            .shared = true,
-            .max_readers = kDatabaseMaxReaders};
-        *chaindata_env_ = silkworm::db::open_env(db_config);
-
-        // Create a new snapshot repository
-        snapshot::SnapshotSettings snapshot_settings{
-            .repository_dir = data_folder.snapshots().path(),
-        };
-        snapshot_repository_ = std::make_shared<snapshot::SnapshotRepository>(std::move(snapshot_settings));
-    } else {
-        if (chaindata_env) {
-            // Use the existing chaindata environment
-            chaindata_env_ = std::move(chaindata_env);
-        }
-        if (snapshot_repository) {
-            // Use the existing snapshot repository
-            snapshot_repository_ = std::move(snapshot_repository);
-        }
-    }
-
-    if (snapshot_repository_) {
-        SILK_LOG << "snapshot: reopen folder invoked\n";
-        snapshot_repository_->reopen_folder();
-        SILK_LOG << "all snapshots loaded\n";
-
-        db::DataModel::set_snapshot_repository(snapshot_repository_.get());
+    if (chaindata_env) {
+        // Use the existing chaindata environment
+        chaindata_env_ = std::move(chaindata_env);
     }
 
     // Create private and shared state in execution contexts
@@ -248,7 +236,7 @@ void Daemon::add_private_services() {
 
         std::unique_ptr<ethdb::Database> database;
         if (chaindata_env_) {
-            database = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env_);
+            database = std::make_unique<ethdb::file::LocalDatabase>(*chaindata_env_);
         } else {
             database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel);
         }

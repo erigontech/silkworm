@@ -17,7 +17,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>

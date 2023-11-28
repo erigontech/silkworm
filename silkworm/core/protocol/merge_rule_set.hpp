@@ -33,8 +33,6 @@ class MergeRuleSet : public BaseRuleSet {
     ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
-    ValidationResult validate_seal(const BlockHeader& header) override;
-
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
 
     void initialize(EVM& evm) override;
@@ -46,7 +44,7 @@ class MergeRuleSet : public BaseRuleSet {
     BlockReward compute_reward(const Block& block) override;
 
   protected:
-    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+    ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
     intx::uint256 terminal_total_difficulty_;

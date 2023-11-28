@@ -243,7 +243,7 @@ class Decompressor {
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
 
-    [[nodiscard]] const std::string compressed_filename() const { return compressed_path_.filename().string(); }
+    [[nodiscard]] std::string compressed_filename() const { return compressed_path_.filename().string(); }
 
     [[nodiscard]] uint64_t words_count() const { return words_count_; }
 

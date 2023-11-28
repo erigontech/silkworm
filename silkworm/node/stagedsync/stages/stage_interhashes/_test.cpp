@@ -16,10 +16,10 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/etl/collector.hpp>
@@ -353,13 +353,13 @@ static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, std::filesyst
     auto computed_root{trie_loader.calculate_root()};
 
     // Save collected node changes
-    db::PooledCursor target(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
-    account_trie_node_collector.load(target, nullptr, flags);
+    db::PooledCursor account_cursor(txn, db::table::kTrieOfAccounts);
+    MDBX_put_flags_t flags{account_cursor.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+    account_trie_node_collector.load(account_cursor, nullptr, flags);
 
-    target.bind(txn, db::table::kTrieOfStorage);
-    flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
-    storage_trie_node_collector.load(target, nullptr, flags);
+    db::PooledCursor storage_cursor(txn, db::table::kTrieOfStorage);
+    flags = storage_cursor.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+    storage_trie_node_collector.load(storage_cursor, nullptr, flags);
 
     return computed_root;
 }

@@ -23,6 +23,7 @@
 #include "request_handler.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include <absl/strings/str_join.h>
@@ -42,6 +43,7 @@ namespace silkworm::rpc::http {
 Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
+    bool send_reply{true};
     http::Reply reply;
     if (request.content.empty()) {
         reply.content = "";
@@ -49,71 +51,98 @@ Task<void> RequestHandler::handle(const http::Request& request) {
     } else {
         SILK_TRACE << "handle HTTP request content #size: " << request.content.size();
 
-        const auto request_json = nlohmann::json::parse(request.content);
-
-        if (request_json.is_object()) {
-            if (!request_json.contains("id")) {
-                reply.content = "\n";
-                reply.status = http::StatusType::ok;
-            } else {
-                const auto request_id = request_json["id"].get<uint32_t>();
-                const auto auth_result = is_request_authorized(request);
-                if (!auth_result) {
-                    reply.content = make_json_error(request_id, 403, auth_result.error()).dump() + "\n";
-                    reply.status = http::StatusType::unauthorized;
+        const auto auth_result = is_request_authorized(request);
+        if (!auth_result) {
+            reply.content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
+            reply.status = http::StatusType::unauthorized;
+        } else {
+            const auto request_json = nlohmann::json::parse(request.content);
+            if (request_json.is_object()) {
+                if (!is_valid_jsonrpc(request_json)) {
+                    reply.status = http::StatusType::bad_request;
+                    reply.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
                 } else {
-                    co_await handle_request_and_create_reply(request_json, reply);
+                    send_reply = co_await handle_request_and_create_reply(request_json, reply);
                     reply.content += "\n";
                 }
-            }
-        } else {
-            std::string batch_reply_content = "[";
-            bool first_element = true;
-            for (auto& item : request_json.items()) {
-                const auto& item_json = item.value();
-                if (!item_json.contains("id")) {
-                    reply.content = "\n";
-                    reply.status = http::StatusType::ok;
-                } else {
-                    auto request_id = item_json["id"].get<uint32_t>();
-                    const auto auth_result = is_request_authorized(request);
-                    if (!auth_result) {
-                        reply.content = make_json_error(request_id, 403, auth_result.error()).dump() + "\n";
-                        reply.status = http::StatusType::unauthorized;
+            } else {
+                std::stringstream batch_reply_content;
+                batch_reply_content << "[";
+                int index = 0;
+                for (auto& item : request_json.items()) {
+                    if (index++ > 0) {
+                        batch_reply_content << ",";
+                    }
+
+                    if (!is_valid_jsonrpc(item.value())) {
+                        batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
                     } else {
-                        if (first_element) {
-                            first_element = false;
-                        } else {
-                            batch_reply_content += ",";
-                        }
-                        co_await handle_request_and_create_reply(item_json, reply);
-                        batch_reply_content += reply.content;
+                        http::Reply single_reply;
+                        send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
+                        batch_reply_content << single_reply.content;
                     }
                 }
+                batch_reply_content << "]\n";
+
+                reply.status = http::StatusType::ok;
+                reply.content = batch_reply_content.str();
             }
-            batch_reply_content += "]\n";
-            reply.content = batch_reply_content;
         }
     }
 
-    co_await do_write(reply);
+    if (send_reply) {
+        co_await do_write(reply);
+    }
 
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
+    const std::string valid_jsonrpc_version = "2.0";
+
+    // for each property in request_json
+    for (auto& property : request_json.items()) {
+        const auto& property_name = property.key();
+
+        SILK_TRACE << property_name << " : " << property.value().type_name() << " : " << property.value().dump();
+
+        if (property_name == "id") {
+            if (!property.value().is_number()) {
+                return false;
+            }
+        } else if (property_name == "jsonrpc") {
+            if (property.value() != valid_jsonrpc_version) {
+                return false;
+            }
+        } else if (property_name == "method") {
+            if (!property.value().is_string()) {
+                return false;
+            }
+        } else if (property_name == "params") {
+            if (!property.value().is_array()) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
     const auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
-        co_return;
+        co_return true;
     }
 
     const auto method = request_json["method"].get<std::string>();
     if (method.empty()) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
-        co_return;
+        co_return true;
     }
 
     // Dispatch JSON handlers in this order: 1) glaze JSON 2) nlohmann JSON 3) JSON streaming
@@ -122,27 +151,27 @@ Task<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
         SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_glaze_handler, request_json, reply);
         SILK_TRACE << "<-- handle RPC request: " << method;
-        co_return;
+        co_return true;
     }
     const auto json_handler = rpc_api_table_.find_json_handler(method);
     if (json_handler) {
         SILK_TRACE << "--> handle RPC request: " << method;
         co_await handle_request(request_id, *json_handler, request_json, reply);
         SILK_TRACE << "<-- handle RPC request: " << method;
-        co_return;
+        co_return true;
     }
     const auto stream_handler = rpc_api_table_.find_stream_handler(method);
     if (stream_handler) {
         SILK_TRACE << "--> handle RPC stream request: " << method;
         co_await handle_request(*stream_handler, request_json);
         SILK_TRACE << "<-- handle RPC stream request: " << method;
-        co_return;
+        co_return false;
     }
 
     reply.content = make_json_error(request_id, -32601, "the method " + method + " does not exist/is not available").dump();
     reply.status = http::StatusType::not_implemented;
 
-    co_return;
+    co_return true;
 }
 
 Task<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
@@ -189,7 +218,7 @@ Task<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiT
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         SocketWriter socket_writer(socket_);
-        ChunksWriter chunks_writer(socket_writer);
+        ChunksWriter chunks_writer(socket_writer, 0x1FFF);
         json::Stream stream(chunks_writer);
 
         co_await write_headers();

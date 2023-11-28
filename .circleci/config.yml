@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 version: 2.1
+orbs:
+  codecov: codecov/codecov@3.3.0
 
 commands:
   checkout_with_submodules:
@@ -80,7 +82,7 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.58.0 chardet
+          command: sudo pip3 install conan==1.60.2 chardet
       - run:
           name: "Select Conan profile"
           command: |
@@ -94,7 +96,7 @@ commands:
             cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>
@@ -126,7 +128,7 @@ commands:
       - run:
           name: "Execution spec tests"
           working_directory: ~/build
-          command: cmd/test/ethereum --tests $HOME/project/tests/execution-spec
+          command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
 
 jobs:
   lint:
@@ -240,13 +242,15 @@ jobs:
           command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
       - run:
           name: "Execution spec tests"
-          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/tests/execution-spec
+          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
       - run:
           name: "Coverage"
           command: |
             llvm-profdata merge *.profraw -o profdata
             llvm-cov export -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
             llvm-cov report -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+      - codecov/upload:
+          file: /tmp/silkworm.lcov
       - store_artifacts:
           path: /tmp/silkworm.lcov
       - store_artifacts:
@@ -270,7 +274,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 14
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
           name: "Generate report"
           command: |
@@ -283,7 +287,7 @@ jobs:
 
   linux-wasm-build:
     environment:
-      WASI_SDK_VERSION: 15
+      WASI_SDK_VERSION: 20
     machine:
       image: ubuntu-2204:2023.04.2
     steps:
@@ -303,7 +307,7 @@ jobs:
             sudo apt-get install -y texinfo libtinfo5
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.58.0 chardet
+          command: sudo pip3 install conan==1.60.2 chardet
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2
@@ -322,7 +326,6 @@ jobs:
           name: "Cmake"
           working_directory: ~/build
           command: |
-            sed -i.bak '/grpc/d' ../project/conanfile.txt # remove GRPC dependencies to avoid building them
             cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_CORE_USE_ABSEIL=OFF -DSILKWORM_WASM_API=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Release
       - run:
           name: "Build"
@@ -335,7 +338,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 14
+    default: 15
   clang_version_latest:
     type: integer
     default: 15
@@ -363,9 +366,9 @@ workflows:
           requires:
             - lint
       - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: <<pipeline.parameters.clang_version_min>>
           ethereum_tests: false
           requires:
             - lint
@@ -380,10 +383,6 @@ workflows:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_min>>
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
       - linux-gcc-thread-sanitizer
       - linux-clang-coverage
       - linux-clang-address-sanitizer

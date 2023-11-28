@@ -29,8 +29,8 @@ namespace silkworm::sentry {
 
 class MessageSender {
   public:
-    explicit MessageSender(boost::asio::any_io_executor executor)
-        : send_message_channel_(std::move(executor)) {}
+    explicit MessageSender(const boost::asio::any_io_executor& executor)
+        : send_message_channel_(executor) {}
 
     concurrency::Channel<api::router::SendMessageCall>& send_message_channel() {
         return send_message_channel_;

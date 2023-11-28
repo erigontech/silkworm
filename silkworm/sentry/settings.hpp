@@ -35,7 +35,7 @@ struct buildinfo;
 namespace silkworm::sentry {
 
 struct Settings {
-    const buildinfo* build_info{nullptr};
+    std::string client_id{"silkworm"};
     log::Settings log_settings;
 
     std::string api_address{"127.0.0.1:9091"};

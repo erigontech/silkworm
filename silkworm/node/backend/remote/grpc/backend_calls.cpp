@@ -16,7 +16,7 @@
 
 #include "backend_calls.hpp"
 
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>

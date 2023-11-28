@@ -16,27 +16,23 @@
 
 #include "rule_set.hpp"
 
+#include <silkworm/core/common/overloaded.hpp>
+
 #include "bor_rule_set.hpp"
 #include "clique_rule_set.hpp"
 #include "ethash_rule_set.hpp"
 #include "merge_rule_set.hpp"
-#include "no_proof_rule_set.hpp"
 
 namespace silkworm::protocol {
 
 static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
-    switch (chain_config.protocol_rule_set) {
-        case RuleSetType::kEthash:
-            return std::make_unique<EthashRuleSet>(chain_config);
-        case RuleSetType::kNoProof:
-            return std::make_unique<NoProofRuleSet>(chain_config);
-        case RuleSetType::kClique:
-            return std::make_unique<CliqueRuleSet>(chain_config);
-        case RuleSetType::kBor:
-            return std::make_unique<BorRuleSet>(chain_config);
-        default:
-            return nullptr;
-    }
+    return std::visit<RuleSetPtr>(
+        Overloaded{
+            [&](const EthashConfig&) { return std::make_unique<EthashRuleSet>(chain_config); },
+            [&](const CliqueConfig&) { return std::make_unique<CliqueRuleSet>(chain_config); },
+            [&](const BorConfig&) { return std::make_unique<BorRuleSet>(chain_config); },
+        },
+        chain_config.rule_set_config);
 }
 
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {

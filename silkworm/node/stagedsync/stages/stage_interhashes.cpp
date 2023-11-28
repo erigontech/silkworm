@@ -24,8 +24,8 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -428,7 +428,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
 Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
     std::unique_lock log_lck(log_mtx_);
-    incremental_ = true;
+    incremental_ = false;
     current_source_.clear();
     current_target_.clear();
     log_lck.unlock();

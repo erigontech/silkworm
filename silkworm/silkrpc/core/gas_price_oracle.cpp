@@ -21,7 +21,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
@@ -69,6 +69,10 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
     SILK_TRACE << "GasPriceOracle::load_block_prices processing block: " << block_number;
 
     const auto block_with_hash = co_await block_provider_(block_number);
+    if (!block_with_hash) {
+        throw std::invalid_argument("GasPriceOracle::load_block_prices invalid block number");
+    }
+
     const auto& base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);
     const auto& coinbase = block_with_hash->block.header.beneficiary;
 

@@ -26,23 +26,12 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
-TEST_CASE("Config lookup") {
-    CHECK(lookup_known_chain(0u).has_value() == false);
-    CHECK(lookup_known_chain(1u)->second == &kMainnetConfig);
-    CHECK(lookup_known_chain(kSepoliaConfig.chain_id)->second == &kSepoliaConfig);
-    CHECK(lookup_known_chain(12345u).has_value() == false);
-    CHECK(lookup_known_chain("mainnet")->second == &kMainnetConfig);
-    CHECK(lookup_known_chain("goErli")->second == &kGoerliConfig);
-    CHECK(lookup_known_chain("Sepolia")->second == &kSepoliaConfig);
-    CHECK(lookup_known_chain("xxxx").has_value() == false);
-
-    auto chains_map{get_known_chains_map()};
-    CHECK(chains_map.empty() == false);
-    for (auto& [name, id] : chains_map) {
-        REQUIRE(lookup_known_chain(name).has_value());
-        REQUIRE(lookup_known_chain(id).has_value());
-        REQUIRE(lookup_known_chain(name) == lookup_known_chain(id));
-        REQUIRE(lookup_known_chain(name)->second->chain_id == id);
+TEST_CASE("Known configs") {
+    static_assert(kKnownChainConfigs.size() == kKnownChainNameToId.size());
+    for (const auto& [_, id] : kKnownChainNameToId) {
+        const auto config{kKnownChainConfigs.find(id)};
+        REQUIRE(config);
+        CHECK((*config)->chain_id == id);
     }
 }
 
@@ -103,6 +92,14 @@ TEST_CASE("Config revision") {
 
     CHECK(test::kLondonConfig.revision(0, 0) == EVMC_LONDON);
     CHECK(test::kShanghaiConfig.revision(0, 0) == EVMC_SHANGHAI);
+}
+
+// For Polygon the Agra hard fork (=Shanghai without withdrawals) is activated based on the block number
+// rather than timestamp.
+TEST_CASE("Agra revision") {
+    CHECK(kMumbaiConfig.revision(41'874'000 - 1, 0) == EVMC_LONDON);
+    CHECK(kMumbaiConfig.revision(41'874'000, 0) == EVMC_SHANGHAI);
+    CHECK(kMumbaiConfig.revision(41'874'000 + 1, 0) == EVMC_SHANGHAI);
 }
 
 TEST_CASE("distinct_fork_points") {

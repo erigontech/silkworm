@@ -22,7 +22,7 @@
 #include <boost/endian/conversion.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>

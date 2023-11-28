@@ -195,6 +195,8 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {
     if (json.is_array()) {
         receipts = json.get<std::vector<Receipt>>();
         return true;
+    } else if (json.is_null()) {
+        return true;
     } else {
         SILK_ERROR << "cbor_decode<std::vector<Receipt>> unexpected json: " << json.dump();
         return false;

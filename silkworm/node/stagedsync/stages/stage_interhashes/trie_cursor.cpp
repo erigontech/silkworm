@@ -18,6 +18,8 @@
 
 #include <bit>
 
+#include <gsl/narrow>
+
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -64,8 +66,9 @@ void SubNode::parse(ByteView k, ByteView v) {
 
     success_or_throw(Node::decode_from_storage(v, *this));
 
-    child_id = static_cast<int8_t>(std::countr_zero(state_mask_)) - 1;
-    max_child_id = static_cast<int8_t>(std::bit_width(state_mask_));
+    // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions)
+    child_id = gsl::narrow<int8_t>(std::countr_zero(state_mask_)) - 1;
+    max_child_id = gsl::narrow<int8_t>(std::bit_width(state_mask_));
     hash_id = -1;
     deleted = false;
 }
@@ -174,7 +177,9 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
     while (!end_of_tree_) {
         auto& sub_node{sub_nodes_[level_]};
         ++sub_node.child_id;  // Advance to next child_id. (Note we start from -1 so "first next" is 0)
-        sub_node.hash_id += static_cast<int>(sub_node.has_hash());
+        if (sub_node.has_hash()) {
+            ++sub_node.hash_id;
+        }
 
         // On reach of max_child_id the node is completely traversed :
         // ascend one level, if possible, or mark the end of the tree (completely traversed)

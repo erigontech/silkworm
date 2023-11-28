@@ -20,6 +20,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
@@ -34,7 +35,7 @@ Task<void> dummy_task() {
     auto executor = co_await asio::this_coro::executor;
 
     asio::steady_timer timer{executor};
-    timer.expires_after(std::chrono::milliseconds(100));
+    timer.expires_after(std::chrono::milliseconds(1));
 
     co_await timer.async_wait(asio::use_awaitable);
 }
@@ -45,7 +46,7 @@ class DummyEngine {
   public:
     DummyEngine(asio::io_context& io) : io_{io} {}
 
-    Task<int> do_work() {
+    static Task<int> do_work() {
         co_return 42;
     }
 
@@ -56,7 +57,7 @@ class DummyEngine {
 
 TEST_CASE("sync wait") {
     asio::io_context io;
-    asio::io_context::work work{io};
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard{io.get_executor()};
 
     SECTION("wait for function") {
         std::thread io_execution([&io]() { io.run(); });
@@ -72,7 +73,7 @@ TEST_CASE("sync wait") {
 
         DummyEngine engine{io};
 
-        auto value = sync_wait(in(engine), engine.do_work());
+        auto value = sync_wait(in(engine), DummyEngine::do_work());
 
         CHECK(value == 42);
 

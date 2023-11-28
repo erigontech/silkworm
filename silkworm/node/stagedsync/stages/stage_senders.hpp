@@ -35,12 +35,12 @@ namespace silkworm::stagedsync {
 
 //! \brief The information to compute the sender address from transaction signature
 struct AddressRecovery {
-    BlockNum block_num{0};             // Number of block containing the transaction
-    std::shared_ptr<Hash> block_hash;  // Hash of the block containing the transaction
-    bool odd_y_parity{false};          // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
-    uint8_t tx_signature[64]{};        // Signature of the transaction
-    evmc::address tx_from;             // Recovered sender address
-    Bytes rlp;                         // RLP representation of the transaction
+    BlockNum block_num{0};       // Number of block containing the transaction
+    Hash block_hash;             // Hash of the block containing the transaction
+    bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
+    uint8_t tx_signature[64]{};  // Signature of the transaction
+    evmc::address tx_from;       // Recovered sender address
+    Bytes rlp;                   // RLP representation of the transaction
 };
 
 using AddressRecoveryBatch = std::vector<AddressRecovery>;
@@ -58,7 +58,7 @@ class Senders final : public Stage {
   private:
     Stage::Result parallel_recover(db::RWTxn& txn);
 
-    Stage::Result add_to_batch(BlockNum block_num, std::shared_ptr<Hash> block_hash, std::vector<Transaction>&& transactions);
+    Stage::Result add_to_batch(BlockNum block_num, const Hash& block_hash, std::vector<Transaction>&& transactions);
     void recover_batch(ThreadPool& worker_pool, secp256k1_context* context);
     void collect_senders();
     void collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch);

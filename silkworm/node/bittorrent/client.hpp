@@ -25,7 +25,7 @@
 #include <optional>
 #include <set>
 #include <span>
-#include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -70,7 +70,7 @@ class BitTorrentClient {
     [[nodiscard]] const std::vector<lt::stats_metric>& stats_metrics() const { return stats_metrics_; }
 
     //! Add the specified info hash to the download list
-    void add_info_hash(const std::string& name, const std::string& info_hash);
+    void add_info_hash(std::string_view name, std::string_view info_hash);
 
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
     void execute_loop();

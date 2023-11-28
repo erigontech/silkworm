@@ -25,10 +25,12 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {
+
+using RecSplitSettings = succinct::RecSplitSettings;
+using RecSplit8 = succinct::RecSplit8;
 
 void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";

@@ -42,6 +42,11 @@ namespace fee {
 
 }  // namespace fee
 
+inline constexpr uint64_t kMinGasLimit{5000};
+// https://github.com/ethereum/go-ethereum/blob/v1.13.4/params/protocol_params.go#L28
+// EIP-1985: Sane limits for certain EVM parameters
+inline constexpr uint64_t kMaxGasLimit{INT64_MAX};  // 2^63-1
+
 inline constexpr size_t kMaxCodeSize{0x6000};                // EIP-170
 inline constexpr size_t kMaxInitCodeSize{2 * kMaxCodeSize};  // EIP-3860
 
@@ -71,6 +76,9 @@ inline constexpr uint64_t kBlobGasPriceUpdateFraction{3338477};
 // EIP-4788: Beacon block root in the EVM
 inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
-inline constexpr auto kBeaconRootsAddress{0x0b_address};  // TODO(yperbasis) change to the proper one
+inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
+
+// Used in Bor & Clique
+inline constexpr size_t kExtraSealSize{65};
 
 }  // namespace silkworm::protocol

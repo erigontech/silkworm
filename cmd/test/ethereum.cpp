@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <iostream>
@@ -29,14 +30,13 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/common/terminal.hpp>
@@ -60,21 +60,7 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-// TODO(yperbasis) make them pass
-static const std::vector<fs::path> kFailingTests{
-    kBlockchainDir / "cancun" / "eip4844_blobs",
-    kBlockchainDir / "cancun" / "eip5656_mcopy",
-    kBlockchainDir / "cancun" / "eip6780_selfdestruct",
-};
-
-// TODO(yperbasis) remove me
-static const std::vector<fs::path> kSkipCancunTests{
-    kBlockchainDir / "frontier",
-    kBlockchainDir / "homestead",
-    kBlockchainDir / "istanbul",
-    kBlockchainDir / "merge",
-    kBlockchainDir / "shanghai",
-};
+static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 
@@ -109,8 +95,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         return Status::kFailed;
     }
 
-    bool check_state_root{invalid && json_block["expectException"].get<std::string>() == "InvalidStateRoot"};
-
+    const bool check_state_root{true};
     if (ValidationResult err{blockchain.insert_block(block, check_state_root)}; err != ValidationResult::kOk) {
         if (invalid) {
             return Status::kPassed;
@@ -129,8 +114,8 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 }
 
 bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
-    if (state.number_of_accounts() != expected.size()) {
-        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size()
+    if (state.accounts().size() != expected.size()) {
+        std::cout << "Account number mismatch: " << state.accounts().size() << " != " << expected.size()
                   << std::endl;
         return false;
     }
@@ -219,11 +204,8 @@ struct [[nodiscard]] RunResults {
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-RunResults blockchain_test(const nlohmann::json& json_test, bool skip_cancun) {
+RunResults blockchain_test(const nlohmann::json& json_test) {
     const auto network{json_test["network"].get<std::string>()};
-    if (skip_cancun && network == "Cancun") {
-        return Status::kSkipped;
-    }
     const auto config_it{test::kNetworkConfig.find(network)};
     if (config_it == test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;
@@ -287,9 +269,9 @@ std::atomic<size_t> total_passed{0};
 std::atomic<size_t> total_failed{0};
 std::atomic<size_t> total_skipped{0};
 
-using RunnerFunc = RunResults (*)(const nlohmann::json&, bool skip_cancun);
+using RunnerFunc = RunResults (*)(const nlohmann::json&);
 
-void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancun) {
+void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -305,7 +287,7 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancu
     RunResults total;
 
     for (const auto& test : json.items()) {
-        const RunResults r{runner(test.value(), skip_cancun)};
+        const RunResults r{runner(test.value())};
         total += r;
         if (r.failed || r.skipped) {
             print_test_status(test.key(), r);
@@ -318,7 +300,7 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner, bool skip_cancu
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-RunResults transaction_test(const nlohmann::json& j, bool) {
+RunResults transaction_test(const nlohmann::json& j) {
     Transaction txn;
     bool decoded{false};
 
@@ -434,7 +416,7 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
     }
 }
 
-RunResults difficulty_tests(const nlohmann::json& outer, bool) {
+RunResults difficulty_tests(const nlohmann::json& outer) {
     RunResults res;
 
     for (const auto& network : outer.items()) {
@@ -455,17 +437,8 @@ RunResults difficulty_tests(const nlohmann::json& outer, bool) {
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow_tests) {
     const auto path_fits = [&p, &root_dir](const fs::path& e) { return root_dir / e == p; };
-    return as_range::any_of(kFailingTests, path_fits) ||
-           (!include_slow_tests && as_range::any_of(kSlowTests, path_fits));
-}
-
-bool skip_cancun(const fs::path& p, const fs::path& root_dir) {
-    for (const fs::path& e : kSkipCancunTests) {
-        if (p.string().starts_with((root_dir / e).string())) {
-            return true;
-        }
-    }
-    return false;
+    return std::ranges::any_of(kFailingTests, path_fits) ||
+           (!include_slow_tests && std::ranges::any_of(kSlowTests, path_fits));
 }
 
 int main(int argc, char* argv[]) {
@@ -525,8 +498,7 @@ int main(int argc, char* argv[]) {
                 i.disable_recursion_pending();
             } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                 const fs::path path{*i};
-                const bool no_cancun{skip_cancun(path, root_dir)};
-                thread_pool.push_task([=]() { run_test_file(path, runner, no_cancun); });
+                thread_pool.push_task([=]() { run_test_file(path, runner); });
             }
         }
     }

@@ -27,9 +27,9 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/local_state.hpp>

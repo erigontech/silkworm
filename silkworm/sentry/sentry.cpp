@@ -201,7 +201,7 @@ Task<void> SentryImpl::run_tasks() {
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
-    return std::unique_ptr<rlpx::Protocol>(new eth::Protocol(status_manager_.status_provider()));
+    return std::make_unique<eth::Protocol>(status_manager_.status_provider());
 }
 
 std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() {
@@ -234,7 +234,7 @@ Task<void> SentryImpl::run_discovery() {
 }
 
 Task<void> SentryImpl::run_peer_manager() {
-    return peer_manager_.run(rlpx_server_, discovery_, client_factory());
+    return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
 }
 
 Task<void> SentryImpl::run_message_sender() {
@@ -259,7 +259,7 @@ Task<void> SentryImpl::run_grpc_server() {
     }
 }
 
-static std::string make_client_id(const buildinfo& info) {
+std::string Sentry::make_client_id(const buildinfo& info) {
     return std::string(info.project_name) +
            "/v" + info.project_version +
            "/" + info.system_name + "-" + info.system_processor +
@@ -267,9 +267,7 @@ static std::string make_client_id(const buildinfo& info) {
 }
 
 std::string SentryImpl::client_id() const {
-    if (settings_.build_info)
-        return make_client_id(*settings_.build_info);
-    return "silkworm";
+    return settings_.client_id;
 }
 
 EnodeUrl SentryImpl::make_node_url() const {

@@ -28,7 +28,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -311,6 +311,7 @@ void download(const BitTorrentSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     BitTorrentClient client{settings};
+    SILK_INFO << "Bittorrent download started in repo: " << settings.repository_path.string();
 
     boost::asio::io_context scheduler;
     ShutdownSignal shutdown_signal{scheduler.get_executor()};

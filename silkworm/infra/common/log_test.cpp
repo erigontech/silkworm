@@ -22,6 +22,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::log {
@@ -52,6 +53,14 @@ void check_log_not_empty() {
     CHECK(log_buffer.content().find("test") != std::string::npos);
 }
 
+//! Build the plain key-value pair
+static std::string key_value(const std::string& key, const std::string& value) {
+    std::string kv_pair{key};
+    kv_pair.append("=");
+    kv_pair.append(value);
+    return kv_pair;
+}
+
 //! Build the prettified key-value pair using color scheme
 static std::string prettified_key_value(const std::string& key, const std::string& value) {
     std::string kv_pair{kColorGreen};
@@ -59,15 +68,16 @@ static std::string prettified_key_value(const std::string& key, const std::strin
     kv_pair.append(kColorReset);
     kv_pair.append("=");
     kv_pair.append(kColorReset);
-    kv_pair.append(kColorWhiteHigh);
+    kv_pair.append(kColorWhite);
     kv_pair.append(value);
     return kv_pair;
 }
 
 TEST_CASE("LogBuffer", "[silkworm][common][log]") {
-    // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
-    test_util::StreamSwap cout_swap{std::cout, test_util::null_stream()};
-    test_util::StreamSwap cerr_swap{std::cerr, test_util::null_stream()};
+    // Temporarily override std::cout and std::cerr with string streams to avoid terminal output
+    std::stringstream string_cout, string_cerr;
+    test_util::StreamSwap cout_swap{std::cout, string_cout};
+    test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
 
     SECTION("LogBuffer stores nothing for verbosity higher than default") {
         check_log_empty<Level::kDebug>();
@@ -119,6 +129,53 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         auto log_buffer3 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer3 << "test";
         CHECK(log_buffer3.content().find(thread_id_stream.str()) == std::string::npos);
+    }
+
+    SECTION("Settings disable colorized output if log file present") {
+        // Default output is colorized
+        LogBuffer_ForTest<Level::kInfo>{"test0", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
+        const auto cerr_output0{string_cerr.str()};
+        CHECK(cerr_output0.find("test0") != std::string::npos);
+        CHECK(cerr_output0.find(key_value("key1", "value1")) == std::string::npos);
+        CHECK(cerr_output0.find(key_value("key2", "value2")) == std::string::npos);
+        CHECK(cerr_output0.find(prettified_key_value("key1", "value1")) != std::string::npos);
+        CHECK(cerr_output0.find(prettified_key_value("key2", "value2")) != std::string::npos);
+
+        // Reset cerr replacement stream
+        string_cerr.str("");
+        string_cerr.clear();
+
+        // Log file setting forcibly disables colors
+        const auto temp_file{TemporaryDirectory::get_unique_temporary_path()};
+        Settings log_settings1{
+            .log_file = temp_file.string(),
+        };
+        init(log_settings1);
+        LogBuffer_ForTest<Level::kInfo>{"test1", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
+        const auto cerr_output1{string_cerr.str()};
+        CHECK(cerr_output1.find("test1") != std::string::npos);
+        CHECK(cerr_output1.find(key_value("key1", "value1")) != std::string::npos);
+        CHECK(cerr_output1.find(key_value("key2", "value2")) != std::string::npos);
+        CHECK(cerr_output1.find(prettified_key_value("key1", "value1")) == std::string::npos);
+        CHECK(cerr_output1.find(prettified_key_value("key2", "value2")) == std::string::npos);
+
+        // Reset cerr replacement stream
+        string_cerr.str("");
+        string_cerr.clear();
+
+        // Log file setting forcibly disables colors even if explicitly set
+        Settings log_settings2{
+            .log_nocolor = false,  // try to enable colorized output
+            .log_file = temp_file.string(),
+        };
+        init(log_settings2);
+        LogBuffer_ForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
+        const auto cerr_output2{string_cerr.str()};
+        CHECK(cerr_output2.find("test2") != std::string::npos);
+        CHECK(cerr_output2.find(key_value("key3", "value3")) != std::string::npos);
+        CHECK(cerr_output2.find(key_value("key4", "value4")) != std::string::npos);
+        CHECK(cerr_output2.find(prettified_key_value("key3", "value3")) == std::string::npos);
+        CHECK(cerr_output2.find(prettified_key_value("key4", "value4")) == std::string::npos);
     }
 
     SECTION("Variable arguments: constructor") {

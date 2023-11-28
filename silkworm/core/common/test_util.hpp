@@ -26,13 +26,11 @@ namespace silkworm::test {
 //! Always Frontier rules.
 inline constexpr ChainConfig kFrontierConfig{
     .chain_id = 1,
-    .protocol_rule_set = protocol::RuleSetType::kNoProof,
 };
 
 //! Enables London from genesis.
 inline constexpr ChainConfig kLondonConfig{
     .chain_id = 1,
-    .protocol_rule_set = protocol::RuleSetType::kNoProof,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -47,7 +45,6 @@ inline constexpr ChainConfig kLondonConfig{
 //! Enables Shanghai from genesis.
 inline constexpr ChainConfig kShanghaiConfig{
     .chain_id = 1,
-    .protocol_rule_set = protocol::RuleSetType::kNoProof,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -61,45 +58,39 @@ inline constexpr ChainConfig kShanghaiConfig{
     .shanghai_time = 0,
 };
 
-static const std::map<std::string, ChainConfig> kNetworkConfig{
+inline const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Frontier", test::kFrontierConfig},
     {"Homestead",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
      }},
     {"FrontierToHomesteadAt5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 5,
      }},
     {"HomesteadToDaoAt5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .dao_block = 5,
      }},
     {"EIP150",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
      }},
     {"HomesteadToEIP150At5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 5,
      }},
     {"EIP158",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -107,7 +98,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Byzantium",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -116,7 +106,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"EIP158ToByzantiumAt5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -125,7 +114,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Constantinople",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -135,7 +123,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ConstantinopleFix",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -146,7 +133,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ByzantiumToConstantinopleFixAt5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -157,7 +143,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Istanbul",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -169,7 +154,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"EIP2384",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -182,7 +166,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Berlin",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -197,7 +180,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"BerlinToLondonAt5",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -212,7 +194,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ArrowGlacier",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -227,7 +208,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"GrayGlacier",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -242,7 +222,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Merge",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -257,7 +236,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -274,7 +252,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"MergeToShanghaiAtTime15k",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -290,7 +267,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Cancun",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -307,7 +283,6 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ShanghaiToCancunAtTime15k",
      {
          .chain_id = 1,
-         .protocol_rule_set = protocol::RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,

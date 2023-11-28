@@ -21,7 +21,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
@@ -253,8 +253,7 @@ TEST_CASE("decoding_result_to_string(kInvalidMasksSubsets)", "[silkrpc][common][
 
 TEST_CASE("lookup_chain_config", "[silkrpc][common][util]") {
     SECTION("lookup known chain") {
-        const auto known_chains{silkworm::get_known_chains_map()};
-        for (const auto& [_, known_chain_id] : known_chains) {
+        for (const auto& [_, known_chain_id] : kKnownChainNameToId) {
             CHECK_NOTHROW(lookup_chain_config(known_chain_id) != nullptr);
         }
     }

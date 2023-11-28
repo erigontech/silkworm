@@ -27,11 +27,9 @@
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
@@ -60,7 +58,6 @@ using silkworm::BlockExchange;
 using silkworm::BlockNum;
 using silkworm::DataDirectory;
 using silkworm::human_size;
-using silkworm::lookup_known_chain;
 using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
@@ -286,6 +283,7 @@ int main(int argc, char* argv[]) {
         };
 
         // Sentry: the peer-2-peer proxy server
+        settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
         db::EthStatusDataProvider eth_status_data_provider{db::ROAccess{chaindata_db}, node_settings.chain_config.value()};

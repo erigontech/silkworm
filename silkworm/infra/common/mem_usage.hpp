@@ -18,4 +18,8 @@
 
 #include <cstddef>
 
+namespace silkworm::os {
+
 size_t get_mem_usage(bool resident = true);
+
+}

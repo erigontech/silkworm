@@ -19,8 +19,8 @@
 #include <stdexcept>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/address.hpp>
 
 #include "tables.hpp"
 
@@ -52,7 +52,7 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
                 if (!chain_config.has_value()) {
                     ret.second.emplace_back("Incomplete / Wrong genesis config member");
                 } else {
-                    if (chain_config->protocol_rule_set == protocol::RuleSetType::kEthash) {
+                    if (std::holds_alternative<protocol::EthashConfig>(chain_config->rule_set_config)) {
                         if (!genesis_json.contains("mixHash") || !genesis_json["mixHash"].is_string() ||
                             !genesis_json.contains("nonce") || !genesis_json["nonce"].is_string()) {
                             ret.second.emplace_back("Missing mixHash and or nonce member for ethash PoW chain");

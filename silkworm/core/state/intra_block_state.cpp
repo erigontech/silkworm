@@ -18,8 +18,6 @@
 
 #include <bit>
 
-#include <ethash/keccak.hpp>
-
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
@@ -56,10 +54,6 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
     } else if (obj->current == std::nullopt) {
         journal_.emplace_back(new state::UpdateDelta{address, *obj});
         obj->current = Account{};
-
-        if (obj->initial) {
-            obj->current->incarnation = obj->initial->incarnation;
-        }
     }
 
     return *obj;
@@ -79,6 +73,7 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
 }
 
 void IntraBlockState::create_contract(const evmc::address& address) noexcept {
+    created_.insert(address);
     state::Object created{};
     created.current = Account{};
 
@@ -178,10 +173,6 @@ void IntraBlockState::add_to_balance(const evmc::address& address, const intx::u
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
     auto& obj{get_or_create_object(address)};
-    if (subtrahend == 0) {
-        // See https://github.com/ethereum/go-ethereum/blob/v1.13.0/core/state/state_object.go#L419
-        return;
-    }
     journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance -= subtrahend;
     touch(address);
@@ -391,6 +382,7 @@ void IntraBlockState::clear_journal_and_substate() {
     self_destructs_.clear();
     logs_.clear();
     touched_.clear();
+    created_.clear();
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();

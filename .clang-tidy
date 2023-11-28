@@ -1,10 +1,7 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm\/.+\.hpp$'
+HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|silkrpc|sync)/.+\.hpp$'
 WarningsAsErrors: '-*'
 Checks: >
-# google-explicit-constructor,
-# modernize-use-nodiscard,
-  -*,
   bugprone-argument-comment,
   bugprone-assert-side-effect,
   bugprone-bad-signal-to-kill-thread,
@@ -52,7 +49,6 @@ Checks: >
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-self-assignment,
-  bugprone-unused-raii,
   bugprone-unused-return-value,
   bugprone-use-after-move,
   bugprone-virtual-near-miss,
@@ -65,9 +61,7 @@ Checks: >
   cert-msc50-cpp,
   cert-msc51-cpp,
   cert-str34-c,
-  clang-analyzer-*,
-  -clang-analyzer-core.CallAndMessage,
-  -clang-analyzer-core.NullDereference,
+  -clang-analyzer-*,
   clang-diagnostic-*,
   cppcoreguidelines-interfaces-global-init,
   cppcoreguidelines-narrowing-conversions,
@@ -80,7 +74,6 @@ Checks: >
   hicpp-multiway-paths-covered,
   misc-misplaced-const,
   misc-new-delete-overloads,
-  misc-no-recursion,
   misc-non-copyable-objects,
   misc-throw-by-value-catch-by-reference,
   misc-unconventional-assign-operator,

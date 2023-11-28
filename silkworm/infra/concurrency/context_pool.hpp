@@ -22,6 +22,7 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
@@ -195,11 +196,11 @@ class ContextPool : public ExecutorPool {
     }
 
     void set_exception_handler(ExceptionHandler exception_handler) {
-        exception_handler_ = exception_handler;
+        exception_handler_ = std::move(exception_handler);
     }
 
   protected:
-    static void termination_handler(std::exception_ptr) {
+    static void termination_handler(std::exception_ptr) {  // NOLINT(performance-unnecessary-value-param)
         std::terminate();
     }
 

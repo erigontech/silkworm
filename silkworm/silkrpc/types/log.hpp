@@ -20,11 +20,7 @@
 #include <vector>
 
 #include <evmc/evmc.hpp>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#include <glaze/glaze.hpp>
-#pragma GCC diagnostic pop
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 

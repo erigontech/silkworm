@@ -49,17 +49,20 @@ class RequestHandler {
           allowed_origins_(allowed_origins) {}
 
     RequestHandler(const RequestHandler&) = delete;
+    virtual ~RequestHandler() = default;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
     Task<void> handle(const http::Request& request);
 
   protected:
-    Task<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
+    virtual Task<void> do_write(http::Reply& reply);
 
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
     AuthorizationResult is_request_authorized(const http::Request& request);
+    bool is_valid_jsonrpc(const nlohmann::json& request_json);
 
     void set_cors(std::vector<Header>& headers);
 
@@ -74,7 +77,6 @@ class RequestHandler {
         const nlohmann::json& request_json,
         http::Reply& reply);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
-    Task<void> do_write(http::Reply& reply);
     Task<void> write_headers();
 
     commands::RpcApi& rpc_api_;

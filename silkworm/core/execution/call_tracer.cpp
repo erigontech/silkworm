@@ -22,8 +22,24 @@
 namespace silkworm {
 
 void CallTracer::on_execution_start(evmc_revision /*rev*/, const evmc_message& msg, evmone::bytes_view /*code*/) noexcept {
-    traces_.senders.emplace(msg.sender);
-    traces_.recipients.emplace(msg.recipient);
+    traces_.senders.insert(msg.sender);
+    if (msg.kind == EVMC_CALLCODE || msg.kind == EVMC_DELEGATECALL) {
+        traces_.recipients.insert(msg.code_address);
+    } else {
+        traces_.recipients.insert(msg.recipient);
+    }
+}
+
+void CallTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    traces_.senders.insert(address);
+    traces_.recipients.insert(beneficiary);
+}
+
+void CallTracer::on_block_end(const silkworm::Block& block) noexcept {
+    traces_.recipients.insert(block.header.beneficiary);
+    for (const auto& ommer : block.ommers) {
+        traces_.recipients.insert(ommer.beneficiary);
+    }
 }
 
 }  // namespace silkworm

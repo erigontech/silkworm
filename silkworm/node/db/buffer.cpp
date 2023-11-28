@@ -408,8 +408,8 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
         if (traces.recipients.contains(account)) {
             value[kAddressLength] |= 2;
         }
-        values.insert(std::move(value));
         batch_history_size_ += value.size();
+        values.insert(std::move(value));
     }
     call_traces_.emplace(block_number, values);
 }
@@ -438,7 +438,7 @@ void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
     Bytes key{block_key(block_number, hash.bytes)};
     headers_[key] = block.header;
-    bodies_[key] = block;
+    bodies_[key] = block;  // NOLINT(cppcoreguidelines-slicing)
 
     if (block_number == 0) {
         difficulty_[key] = 0;
@@ -466,13 +466,13 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return access_layer_.read_header(block_number, block_hash.bytes);
 }
 
-bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& body) const noexcept {
+bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
-        body = it->second;
+        out = it->second;
         return true;
     }
-    return access_layer_.read_body(block_number, block_hash.bytes, /*read_senders=*/false, body);
+    return access_layer_.read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

@@ -35,6 +35,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/os.hpp>
 
 namespace silkworm::db {
 
@@ -358,25 +359,25 @@ using WalkFuncRef = absl::FunctionRef<void(ByteView key, ByteView value)>;
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
-    bool create{false};          // Whether db file must be created
-    bool readonly{false};        // Whether db should be opened in RO mode
-    bool exclusive{false};       // Whether this process has exclusive access
-    bool in_memory{false};       // Whether this db is in memory
-    bool shared{false};          // Whether this process opens a db already opened by another process
-    bool read_ahead{false};      // Whether to enable mdbx read ahead
-    bool write_map{false};       // Whether to enable mdbx write map
-    size_t page_size{4_Kibi};    // Mdbx page size
-    size_t max_size{3_Tebi};     // Mdbx max map size
-    size_t growth_size{2_Gibi};  // Increment size for each extension
-    uint32_t max_tables{128};    // Default max number of named tables
-    uint32_t max_readers{100};   // Default max number of readers
+    bool create{false};                 // Whether db file must be created
+    bool readonly{false};               // Whether db should be opened in RO mode
+    bool exclusive{false};              // Whether this process has exclusive access
+    bool in_memory{false};              // Whether this db is in memory
+    bool shared{false};                 // Whether this process opens a db already opened by another process
+    bool read_ahead{false};             // Whether to enable mdbx read ahead
+    bool write_map{false};              // Whether to enable mdbx write map
+    size_t page_size{os::page_size()};  // Mdbx page size
+    size_t max_size{3_Tebi};            // Mdbx max map size
+    size_t growth_size{2_Gibi};         // Increment size for each extension
+    uint32_t max_tables{128};           // Default max number of named tables
+    uint32_t max_readers{100};          // Default max number of readers
 };
 
 //! \brief Opens an mdbx environment using the provided environment config
 //! \param [in] config : A structure containing essential environment settings
 //! \return A handler to mdbx::env_managed class
 //! \remarks May throw exceptions
-::mdbx::env_managed open_env(const EnvConfig& config);
+::mdbx::env_managed open_env(EnvConfig& config);
 
 //! \brief Opens an mdbx "map" (aka table)
 //! \param [in] tx : a reference to a valid mdbx transaction
@@ -527,28 +528,28 @@ enum class CursorMoveDirection {
 
 //! \brief Executes a function on each record reachable by the provided cursor
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_each(ROCursor& cursor, WalkFuncRef func,
+size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker,
                        CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] prefix : The prefix each key must start with
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
-size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef func,
+size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef walker,
                          CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] func : A reference to a function with the code to execute on records. Note the return value of the
+//! \param [in] walker : A reference to a function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] max_count : Max number of iterations
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
@@ -556,7 +557,7 @@ size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef func,
 //! reached either the end or the beginning of table earlier
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_count(ROCursor& cursor, WalkFuncRef func, size_t max_count,
+size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t max_count,
                         CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found

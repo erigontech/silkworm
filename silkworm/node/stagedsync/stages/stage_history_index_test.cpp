@@ -18,8 +18,8 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>

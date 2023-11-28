@@ -36,6 +36,22 @@ void Environment::set_stop_at_block(BlockNum block_num) {
     environment["STOP_AT_BLOCK"] = std::to_string(block_num);
 }
 
+std::optional<std::string> Environment::get_start_at_stage() {
+    std::optional<std::string> stage;
+    // User can specify to start staged execution at some stage
+    auto environment = boost::this_process::environment();
+    auto start_at_stage = environment["START_AT_STAGE"];
+    if (!start_at_stage.empty()) {
+        stage = start_at_stage.to_string();
+    }
+    return stage;
+}
+
+void Environment::set_start_at_stage(const std::string& stage_name) {
+    auto environment = boost::this_process::environment();
+    environment["START_AT_STAGE"] = stage_name;
+}
+
 std::optional<std::string> Environment::get_stop_before_stage() {
     std::optional<std::string> stage;
     // User can specify to stop staged execution before some stage

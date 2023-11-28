@@ -22,6 +22,7 @@
 
 #include <evmone/baseline.hpp>
 #include <evmone/execution_state.hpp>
+#include <evmone/vm.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -44,20 +45,26 @@ class EvmTracer {
   public:
     virtual ~EvmTracer() = default;
 
-    virtual void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept = 0;
+    virtual void on_block_start(const Block& /*block*/) noexcept {}
 
-    virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
-                                      int64_t gas, const evmone::ExecutionState& state,
-                                      const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept {}
 
-    virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                                      int64_t /*gas*/, const evmone::ExecutionState& /*state*/,
+                                      const IntraBlockState& /*intra_block_state*/) noexcept {}
 
-    virtual void on_creation_completed(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_execution_end(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
 
-    virtual void on_precompiled_run(const evmc_result& result, int64_t gas,
-                                    const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
 
-    virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
+                                    const IntraBlockState& /*intra_block_state*/) noexcept {}
+
+    virtual void on_reward_granted(const CallResult& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
+
+    virtual void on_self_destruct(const evmc::address& /*address*/, const evmc::address& /*beneficiary*/) noexcept {}
+
+    virtual void on_block_end(const Block& /*block*/) noexcept {}
 };
 
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
@@ -70,8 +77,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config)
-    noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
 
     ~EVM();
 
@@ -119,7 +125,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
-    evmc_vm* evm1_{nullptr};
+    evmone::VM* evm1_{nullptr};
 };
 
 class EvmHost : public evmc::Host {

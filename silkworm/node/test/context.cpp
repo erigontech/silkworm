@@ -26,12 +26,13 @@ Context::Context(bool with_create_tables, bool in_memory) {
     node_settings_.data_directory = std::make_unique<DataDirectory>(tmp_dir_.path(), /*create=*/true);
     node_settings_.chain_config = kMainnetConfig;
     node_settings_.chain_config->genesis_hash.emplace(kMainnetGenesisHash);
-    node_settings_.chaindata_env_config =
-        db::EnvConfig{.path = node_settings_.data_directory->chaindata().path().string(),
-                      .create = true,
-                      .readonly = false,
-                      .exclusive = false,
-                      .in_memory = in_memory};
+    node_settings_.chaindata_env_config = {
+        .path = node_settings_.data_directory->chaindata().path().string(),
+        .create = true,
+        .readonly = false,
+        .exclusive = false,
+        .in_memory = in_memory,
+    };
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
     txn_ = std::make_unique<db::RWTxnManaged>(env_);

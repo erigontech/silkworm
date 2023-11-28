@@ -21,7 +21,7 @@
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
@@ -80,16 +80,16 @@ void from_json(const nlohmann::json& json, Log& log) {
 }
 
 struct GlazeJsonLogItem {
-    char address[addressSize];
-    char tx_hash[hashSize];
-    char block_hash[hashSize];
-    char block_number[int64Size];
-    char tx_index[int64Size];
-    char index[int64Size];
-    char data[dataSize];
+    char address[kAddressHexSize];
+    char tx_hash[kHashHexSize];
+    char block_hash[kHashHexSize];
+    char block_number[kInt64HexSize];
+    char tx_index[kInt64HexSize];
+    char index[kInt64HexSize];
+    char data[kDataSize];
     bool removed;
-    std::optional<std::string> timestamp;
     std::vector<std::string> topics;
+    std::optional<std::string> timestamp;
 
     struct glaze {
         using T = GlazeJsonLogItem;
@@ -108,7 +108,7 @@ struct GlazeJsonLogItem {
 };
 
 struct GlazeJsonLog {
-    char jsonrpc[jsonVersionSize] = "2.0";
+    std::string_view jsonrpc = kJsonVersion;
     uint32_t id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
@@ -120,7 +120,7 @@ struct GlazeJsonLog {
     };
 };
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
+void make_glaze_json_content(uint32_t id, const Logs& logs, std::string& json_reply) {
     GlazeJsonLog log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
 
@@ -142,10 +142,10 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
         for (const auto& t : l.topics) {
             item.topics.push_back(silkworm::to_hex(t, true));
         }
-        log_json_data.log_json_list.push_back(item);
+        log_json_data.log_json_list.push_back(std::move(item));
     }
 
-    glz::write_json(log_json_data, reply);
+    glz::write_json(log_json_data, json_reply);
 }
 
 }  // namespace silkworm::rpc

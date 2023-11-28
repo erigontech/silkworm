@@ -60,9 +60,9 @@ void to_byte_array(fs::path& in, fs::path& out) {
     // Write bytes to output file
     std::string var_name{in.filename().replace_extension("").string()};
     std::ofstream out_stream{out.string()};
-    out_stream << "/* Generated from " << in.string() << " using silkworm's genesistool*/" << std::endl;
-    out_stream << "#include <stddef.h>" << std::endl;
-    out_stream << "static const char " << var_name << "_data_internal[] = {" << std::endl;
+    out_stream << "/* Generated from " << in.filename().string() << " using silkworm's genesistool*/" << std::endl;
+    out_stream << "#include \"" + var_name + ".hpp\"" << std::endl;
+    out_stream << "constexpr char " << var_name << "_data_internal[] = {" << std::endl;
 
     auto max{bytes.size()};
     auto count{1u};
@@ -72,10 +72,10 @@ void to_byte_array(fs::path& in, fs::path& out) {
         ++count;
     }
     out_stream << "};" << std::endl;
-    out_stream << "const char* " << var_name << "_data(){return &" << var_name << "_data_internal[0];}"
-               << std::endl;
-    out_stream << "size_t sizeof_" << var_name << "_data(){return sizeof(" << var_name << "_data_internal);}"
-               << std::endl;
+    out_stream << "namespace silkworm {" << std::endl;
+    out_stream << "constinit const std::string_view " << var_name << "_json{&" << var_name
+               << "_data_internal[0], sizeof(" << var_name << "_data_internal)};" << std::endl;
+    out_stream << "}" << std::endl;
     out_stream.close();
 }
 

@@ -48,7 +48,7 @@ AuthMessage::AuthMessage(
     // shared_secret ^= nonce_
     crypto::xor_bytes(shared_secret, nonce_);
 
-    signature_ = sign(shared_secret, ephemeral_key_pair.private_key());
+    signature_ = sign_recoverable(shared_secret, ephemeral_key_pair.private_key());
 }
 
 AuthMessage::AuthMessage(ByteView data, const EccKeyPair& recipient_key_pair)

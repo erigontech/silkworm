@@ -65,10 +65,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(-g1)
-  endif()
-
   # coroutines support
   if(NOT SILKWORM_WASM_API)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
@@ -81,13 +77,12 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
   endif()
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(-gline-tables-only)
-  endif()
-
   # coroutines support
   if(NOT SILKWORM_WASM_API)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+      add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_LIBCPP_ENABLE_EXPERIMENTAL>)
+    endif()
     link_libraries(c++)
     link_libraries(c++abi)
   endif()

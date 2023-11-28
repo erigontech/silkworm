@@ -24,7 +24,17 @@
 namespace silkworm::protocol {
 
 // Ethash ProofOfWork verification
-ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
+ValidationResult EthashRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) {
+    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
+    if (header.difficulty != difficulty(header.number, header.timestamp, parent.difficulty,
+                                        parent.timestamp, parent_has_uncles, chain_config_)) {
+        return ValidationResult::kWrongDifficulty;
+    }
+
+    if (!std::get<EthashConfig>(chain_config_.rule_set_config).validate_seal) {
+        return ValidationResult::kOk;
+    }
+
     const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
     if (!epoch_context_ || epoch_context_->epoch_number != epoch_number) {
         epoch_context_.reset();  // Firstly release the obsoleted context
@@ -41,10 +51,17 @@ ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 
-intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHeader& parent) {
-    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
-    return difficulty(header.number, header.timestamp, parent.difficulty,
-                      parent.timestamp, parent_has_uncles, chain_config_);
+ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) const {
+    // EIP-779: Hardfork Meta: DAO Fork
+    if (chain_config_.dao_block.has_value() && chain_config_.dao_block <= header.number &&
+        header.number <= chain_config_.dao_block.value() + 9) {
+        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
+        if (header.extra_data != kDaoExtraData) {
+            return ValidationResult::kWrongDaoExtraData;
+        }
+    }
+
+    return BaseRuleSet::validate_extra_data(header);
 }
 
 void EthashRuleSet::initialize(EVM& evm) {
@@ -85,8 +102,7 @@ BlockReward EthashRuleSet::compute_reward(const Block& block) {
         miner_reward += base >> 5;  // div 32
     }
 
-    const BlockReward block_reward{miner_reward, ommer_rewards};
-    return block_reward;
+    return {miner_reward, ommer_rewards};
 }
 
 intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t block_timestamp,
@@ -124,22 +140,22 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
 
     uint64_t bomb_delay{0};
     if (config.gray_glacier_block.has_value() && block_number >= config.gray_glacier_block) {
-        // https://eips.ethereum.org/EIPS/eip-5133
+        // EIP-5133: Delaying Difficulty Bomb to mid-September 2022
         bomb_delay = 11'400'000;
     } else if (config.arrow_glacier_block.has_value() && block_number >= config.arrow_glacier_block) {
-        // https://eips.ethereum.org/EIPS/eip-4345
+        // EIP-4345: Difficulty Bomb Delay to June 2022
         bomb_delay = 10'700'000;
     } else if (rev >= EVMC_LONDON) {
-        // https://eips.ethereum.org/EIPS/eip-3554
+        // EIP-3554: Difficulty Bomb Delay to December 2021
         bomb_delay = 9'700'000;
     } else if (config.muir_glacier_block.has_value() && block_number >= config.muir_glacier_block) {
-        // https://eips.ethereum.org/EIPS/eip-2384
+        // EIP-2384: Muir Glacier Difficulty Bomb Delay
         bomb_delay = 9'000'000;
     } else if (rev >= EVMC_CONSTANTINOPLE) {
-        // https://eips.ethereum.org/EIPS/eip-1234
+        // EIP-1234: Constantinople Difficulty Bomb Delay and Block Reward Adjustment
         bomb_delay = 5'000'000;
     } else if (rev >= EVMC_BYZANTIUM) {
-        // https://eips.ethereum.org/EIPS/eip-649
+        // EIP-649: Metropolis Difficulty Bomb Delay and Block Reward Reduction
         bomb_delay = 3'000'000;
     }
 

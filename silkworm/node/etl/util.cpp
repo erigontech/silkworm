@@ -25,7 +25,7 @@ std::string errno2str(int err_code) {
         (void)strncpy_s(msg, "Unknown error", _TRUNCATE);
     }
 #else
-    if (strerror_r(err_code, msg, sizeof(msg)) != 0) {
+    if (strerror_r(err_code, msg, sizeof(msg))) {
         (void)strncpy(msg, "Unknown error", sizeof(msg));
     }
 #endif

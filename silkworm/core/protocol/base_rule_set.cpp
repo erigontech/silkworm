@@ -16,8 +16,7 @@
 
 #include "base_rule_set.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/trie/vector_root.hpp>
+#include <algorithm>
 
 #include "param.hpp"
 
@@ -36,11 +35,14 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
         return err;
     }
 
-    if (rev < EVMC_SHANGHAI && block.withdrawals) {
-        return ValidationResult::kFieldBeforeFork;
-    }
-    if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
-        return ValidationResult::kMissingField;
+    if (chain_config_.withdrawals_activated(header.timestamp)) {
+        if (!block.withdrawals) {
+            return ValidationResult::kMissingField;
+        }
+    } else {
+        if (block.withdrawals) {
+            return ValidationResult::kFieldBeforeFork;
+        }
     }
 
     const std::optional<evmc::bytes32> withdrawals_root{compute_withdrawals_root(block)};
@@ -77,10 +79,12 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
 }
 
 ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockState& state) {
-    const BlockHeader& header{block.header};
-
-    if (prohibit_ommers_ && !block.ommers.empty()) {
-        return ValidationResult::kTooManyOmmers;
+    if (prohibit_ommers_) {
+        if (block.ommers.empty()) {
+            return ValidationResult::kOk;
+        } else {
+            return ValidationResult::kTooManyOmmers;
+        }
     }
 
     if (block.ommers.size() > 2) {
@@ -91,7 +95,8 @@ ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockSta
         return ValidationResult::kDuplicateOmmer;
     }
 
-    std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    const BlockHeader& header{block.header};
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
         if (ValidationResult err{validate_block_header(ommer, state, /*with_future_timestamp_check=*/false)};
@@ -103,7 +108,7 @@ ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockSta
             return ValidationResult::kNotAnOmmer;
         }
 
-        if (as_range::find(old_ommers, ommer) != old_ommers.end()) {
+        if (std::ranges::find(old_ommers, ommer) != old_ommers.end()) {
             return ValidationResult::kDuplicateOmmer;
         }
     }
@@ -124,18 +129,12 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kGasAboveLimit;
     }
 
-    if (header.gas_limit < 5000) {
+    if (header.gas_limit < kMinGasLimit || header.gas_limit > kMaxGasLimit) {
         return ValidationResult::kInvalidGasLimit;
     }
 
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // https://eips.ethereum.org/EIPS/eip-1985
-    if (header.gas_limit > INT64_MAX) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    if (header.extra_data.length() > kMaxExtraDataBytes) {
-        return ValidationResult::kExtraDataTooLong;
+    if (ValidationResult res{validate_extra_data(header)}; res != ValidationResult::kOk) {
+        return res;
     }
 
     if (prohibit_ommers_ && header.ommers_hash != kEmptyListHash) {
@@ -162,19 +161,6 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.difficulty != difficulty(header, *parent)) {
-        return ValidationResult::kWrongDifficulty;
-    }
-
-    // https://eips.ethereum.org/EIPS/eip-779
-    if (chain_config_.dao_block.has_value() && chain_config_.dao_block.value() <= header.number &&
-        header.number <= chain_config_.dao_block.value() + 9) {
-        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
-        if (header.extra_data != kDaoExtraData) {
-            return ValidationResult::kWrongDaoExtraData;
-        }
-    }
-
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
     if (rev < EVMC_LONDON) {
@@ -190,13 +176,13 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         }
     }
 
-    if (rev < EVMC_SHANGHAI) {
-        if (header.withdrawals_root) {
-            return ValidationResult::kFieldBeforeFork;
-        }
-    } else {
+    if (chain_config_.withdrawals_activated(header.timestamp)) {
         if (!header.withdrawals_root) {
             return ValidationResult::kMissingField;
+        }
+    } else {
+        if (header.withdrawals_root) {
+            return ValidationResult::kFieldBeforeFork;
         }
     }
 
@@ -213,7 +199,14 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
         }
     }
 
-    return validate_seal(header);
+    return validate_difficulty_and_seal(header, *parent);
+}
+
+ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) const {
+    if (header.extra_data.length() > kMaxExtraDataBytes) {
+        return ValidationResult::kExtraDataTooLong;
+    }
+    return ValidationResult::kOk;
 }
 
 std::optional<BlockHeader> BaseRuleSet::get_parent_header(const BlockState& state, const BlockHeader& header) {

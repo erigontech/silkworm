@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -36,6 +36,7 @@ using evmc::literals::operator""_address;
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     if (bytes.size() * 2 + 2 + 1 > hex_bytes.size()) {
+        SILK_ERROR << "req buffer length: " << bytes.size() * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
         throw std::invalid_argument("to_hex: hex_bytes too small");
     }
     char* dest = hex_bytes.data();
@@ -52,6 +53,7 @@ void to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes
     static const char* kHexDigits{"0123456789abcdef"};
     size_t len = bytes.length();
     if (len * 2 + 2 + 1 > hex_bytes.size()) {
+        SILK_ERROR << "req buffer length: " << len * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
         throw std::invalid_argument("to_hex_no_leading_zeros: hex_bytes too small");
     }
     char* dest = hex_bytes.data();
@@ -464,88 +466,20 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses) {
 }
 
 nlohmann::json make_json_content(uint32_t id) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", nullptr}};
+    return {{"jsonrpc", kJsonVersion}, {"id", id}, {"result", nullptr}};
 }
 
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", result}};
+    return {{"jsonrpc", kJsonVersion}, {"id", id}, {"result", result}};
 }
 
 nlohmann::json make_json_error(uint32_t id, int code, const std::string& message) {
     const Error error{code, message};
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
+    return {{"jsonrpc", kJsonVersion}, {"id", id}, {"error", error}};
 }
 
 nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
-    return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
-}
-
-static constexpr auto errorMessageSize = 1024;
-struct GlazeJsonError {
-    int code;
-    char message[errorMessageSize];
-    struct glaze {
-        using T = GlazeJsonError;
-        static constexpr auto value = glz::object(
-            "code", &T::code,
-            "message", &T::message);
-    };
-};
-
-struct GlazeJsonErrorRsp {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    GlazeJsonError json_error;
-    struct glaze {
-        using T = GlazeJsonErrorRsp;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id,
-            "error", &T::json_error);
-    };
-};
-
-void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
-    GlazeJsonErrorRsp glaze_json_error;
-    glaze_json_error.id = id;
-    glaze_json_error.json_error.code = code;
-    std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
-    glz::write_json(glaze_json_error, reply);
-}
-
-struct GlazeJsonRevert {
-    int code;
-    char message[errorMessageSize];
-    std::string data;
-    struct glaze {
-        using T = GlazeJsonRevert;
-        static constexpr auto value = glz::object(
-            "code", &T::code,
-            "message", &T::message,
-            "data", &T::data);
-    };
-};
-
-struct GlazeJsonRevertError {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    GlazeJsonRevert revert_data;
-    struct glaze {
-        using T = GlazeJsonRevertError;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id,
-            "error", &T::revert_data);
-    };
-};
-
-void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error) {
-    GlazeJsonRevertError glaze_json_revert;
-    glaze_json_revert.id = id;
-    glaze_json_revert.revert_data.code = error.code;
-    std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
-    glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
-    glz::write_json(glaze_json_revert, reply);
+    return {{"jsonrpc", kJsonVersion}, {"id", id}, {"error", error}};
 }
 
 }  // namespace silkworm::rpc

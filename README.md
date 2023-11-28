@@ -5,6 +5,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 [![Linux](https://circleci.com/gh/erigontech/silkworm.svg?style=shield)](https://circleci.com/gh/erigontech/silkworm)
 [![macOS](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml)
 [![Windows](https://github.com/erigontech/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/windows.yml)
+[![codecov](https://codecov.io/gh/erigontech/silkworm/graph/badge.svg?token=89IPVJGR4Q)](https://codecov.io/gh/erigontech/silkworm)
 
 ## Table of Contents
 
@@ -55,14 +56,14 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 14
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 15
 or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 14.3)
 * [CMake](https://cmake.org)
 * [Conan](https://conan.io)
 
 Conan requires Python, and can be installed using:
 
-    pip3 install --user conan==1.58.0 chardet
+    pip3 install --user conan==1.60.2 chardet
 
 and adding its binary to PATH:
 
@@ -190,7 +191,7 @@ See [LICENSE](LICENSE) for more information.
 
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon Thorax architecture]: https://github.com/ledgerwatch/erigon#key-features
+[Erigon Thorax architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
 [staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md

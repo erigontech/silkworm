@@ -32,7 +32,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>

@@ -28,7 +28,7 @@ namespace silkworm::sentry {
 
 class SocketStream {
   public:
-    explicit SocketStream(boost::asio::any_io_executor executor) : socket_(std::move(executor)) {}
+    explicit SocketStream(const boost::asio::any_io_executor& executor) : socket_(executor) {}
 
     SocketStream(SocketStream&&) = default;
     SocketStream& operator=(SocketStream&&) = default;

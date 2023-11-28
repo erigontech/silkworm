@@ -122,7 +122,7 @@ void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) 
     BlockNum block_number{block.header.number};
 
     headers_[block_number][hash] = block.header;
-    bodies_[block_number][hash] = static_cast<BlockBody>(block);
+    bodies_[block_number][hash] = static_cast<BlockBody>(block);  // NOLINT(cppcoreguidelines-slicing)
     if (block_number == 0) {
         difficulty_[block_number][hash] = 0;
     } else {
@@ -199,8 +199,6 @@ void InMemoryState::unwind_state_changes(BlockNum block_number) {
         }
     }
 }
-
-size_t InMemoryState::number_of_accounts() const { return accounts_.size(); }
 
 size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarnation) const {
     const auto it1{storage_.find(address)};

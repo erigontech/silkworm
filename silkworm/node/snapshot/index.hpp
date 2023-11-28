@@ -19,15 +19,11 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
 #include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {
-
-using RecSplitSettings = succinct::RecSplitSettings;
-using RecSplit8 = succinct::RecSplit8;
 
 class Index {
   public:
@@ -35,7 +31,7 @@ class Index {
     static constexpr std::size_t kBucketSize{2'000};
 
     explicit Index(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : segment_path_(std::move(segment_path)), segment_region_{std::move(segment_region)} {}
+        : segment_path_(std::move(segment_path)), segment_region_{segment_region} {}
     virtual ~Index() = default;
 
     [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
@@ -43,7 +39,7 @@ class Index {
     virtual void build();
 
   protected:
-    virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
+    virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;
@@ -52,10 +48,10 @@ class Index {
 class HeaderIndex : public Index {
   public:
     explicit HeaderIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), std::move(segment_region)) {}
+        : Index(std::move(segment_path), segment_region) {}
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 class BodyIndex : public Index {
@@ -70,12 +66,12 @@ class BodyIndex : public Index {
 class TransactionIndex : public Index {
   public:
     explicit TransactionIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), std::move(segment_region)) {}
+        : Index(std::move(segment_path), segment_region) {}
 
     void build() override;
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 }  // namespace silkworm::snapshot

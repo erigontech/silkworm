@@ -20,17 +20,18 @@
 #include <optional>
 #include <stdexcept>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/asio/this_coro.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/ipv6_unsupported_error.hpp>
 
 #include "common/packet_type.hpp"
 #include "message_codec.hpp"
@@ -41,20 +42,21 @@ using namespace boost::asio;
 
 class ServerImpl {
   public:
-    explicit ServerImpl(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler)
+    explicit ServerImpl(
+        const any_io_executor& executor,
+        uint16_t port,
+        std::function<EccKeyPair()> node_key,
+        MessageHandler& handler)
         : ip_(ip::address{ip::address_v4::any()}),
           port_(port),
+          socket_(make_socket(executor, listen_endpoint())),
           node_key_(std::move(node_key)),
           handler_(handler) {}
 
     ServerImpl(const ServerImpl&) = delete;
     ServerImpl& operator=(const ServerImpl&) = delete;
 
-    Task<void> run() {
-        auto executor = co_await this_coro::executor;
-
-        auto endpoint = listen_endpoint();
-
+    static ip::udp::socket make_socket(const any_io_executor& executor, const ip::udp::endpoint& endpoint) {
         ip::udp::socket socket{executor, endpoint.protocol()};
         socket.set_option(ip::udp::socket::reuse_address(true));
 
@@ -66,15 +68,21 @@ class ServerImpl {
         socket.set_option(detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT>(true));
 #endif
 
-        socket.bind(endpoint);
+        return socket;
+    }
 
+    void setup() {
+        auto endpoint = listen_endpoint();
+        socket_.bind(endpoint);
         log::Info("sentry") << "disc_v4::Server is listening at " << endpoint;
+    }
 
+    Task<void> run() {
         Bytes packet_data_buffer(1280, 0);
 
-        while (socket.is_open()) {
+        while (socket_.is_open()) {
             ip::udp::endpoint sender_endpoint;
-            size_t received_count = co_await socket.async_receive_from(buffer(packet_data_buffer), sender_endpoint, use_awaitable);
+            size_t received_count = co_await socket_.async_receive_from(buffer(packet_data_buffer), sender_endpoint, use_awaitable);
             ByteView packet_data{packet_data_buffer.data(), received_count};
 
             std::optional<MessageEnvelope> envelope;
@@ -95,6 +103,7 @@ class ServerImpl {
                     case PacketType::kPing:
                         co_await handler_.on_ping(
                             ping::PingMessage::rlp_decode(data),
+                            std::move(envelope->public_key),
                             std::move(sender_endpoint),
                             std::move(envelope->packet_hash));
                         break;
@@ -153,7 +162,7 @@ class ServerImpl {
 
     Task<void> send_message(Message message, ip::udp::endpoint recipient) {
         auto packet_data = MessageCodec::encode(
-            std::move(message),
+            message,
             node_key_().private_key());
         co_await send_packet(std::move(packet_data), recipient);
     }
@@ -162,25 +171,33 @@ class ServerImpl {
         using namespace std::chrono_literals;
         using namespace concurrency::awaitable_wait_for_one;
 
-        auto executor = co_await this_coro::executor;
-        ip::udp::socket socket{executor, recipient.protocol()};
-        socket.set_option(ip::udp::socket::reuse_address(true));
-        socket.bind(listen_endpoint());
-        co_await socket.async_connect(recipient, use_awaitable);
-        co_await (socket.async_send(buffer(data), use_awaitable) || concurrency::timeout(1s));
+        if (ip_.is_v4() && recipient.address().is_v6()) {
+            throw IPV6UnsupportedError();
+        }
+
+        co_await (socket_.async_send_to(buffer(data), recipient, use_awaitable) || concurrency::timeout(1s));
     }
 
     boost::asio::ip::address ip_;
     uint16_t port_;
+    ip::udp::socket socket_;
     std::function<EccKeyPair()> node_key_;
     MessageHandler& handler_;
 };
 
-Server::Server(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler)
-    : p_impl_(std::make_unique<ServerImpl>(port, std::move(node_key), handler)) {}
+Server::Server(
+    const any_io_executor& executor,
+    uint16_t port,
+    std::function<EccKeyPair()> node_key,
+    MessageHandler& handler)
+    : p_impl_(std::make_unique<ServerImpl>(executor, port, std::move(node_key), handler)) {}
 
 Server::~Server() {
     log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Server::~Server";
+}
+
+void Server::setup() {
+    p_impl_->setup();
 }
 
 Task<void> Server::run() {

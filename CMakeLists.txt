@@ -31,10 +31,8 @@ if(NOT SILKWORM_HAS_PARENT)
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake
         CACHE FILEPATH "" FORCE
     )
+    include("${CMAKE_TOOLCHAIN_FILE}")
   endif()
-
-  include(cmake/conan.cmake)
-
 endif()
 
 project(silkworm)
@@ -57,10 +55,14 @@ option(SILKWORM_CLANG_TIDY "Clang-Tidy linter" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 
+if(NOT SILKWORM_HAS_PARENT)
+  include(cmake/conan.cmake)
+endif()
+
 set_property(
   DIRECTORY
   APPEND
-  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.txt
+  PROPERTY CMAKE_CONFIGURE_DEPENDS conanfile.py
 )
 
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
@@ -87,6 +89,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 if(SILKWORM_CLANG_TIDY)
   find_program(CLANG_TIDY clang-tidy REQUIRED)
+  set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
   set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()
 

@@ -454,7 +454,7 @@ ByteView TransactionSnapshot::slice_tx_payload(ByteView tx_rlp) {
     ByteView tx_envelope{tx_rlp};
 
     rlp::Header tx_header;
-    TransactionType tx_type;
+    TransactionType tx_type{};
     const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope, tx_header, tx_type);
     ensure(envelope_result.has_value(),
            "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " error: " + to_string(envelope_result));

@@ -48,7 +48,7 @@ void Index::build() {
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
-    bool collision_detected;
+    bool collision_detected{false};
     do {
         iterations++;
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
@@ -160,7 +160,7 @@ void TransactionIndex::build() {
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
     Hash tx_hash;
-    bool collision_detected;
+    bool collision_detected{false};
     do {
         iterations++;
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
@@ -213,7 +213,7 @@ void TransactionIndex::build() {
                         ByteView tx_envelope_view{tx_envelope};
 
                         rlp::Header tx_header;
-                        TransactionType tx_type;
+                        TransactionType tx_type{};
                         decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
                         if (!decode_result) {
                             SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());

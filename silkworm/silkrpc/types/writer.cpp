@@ -31,8 +31,8 @@ namespace silkworm::rpc {
 const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
 const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
 
-ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size)
-    : writer_(writer), chunk_size_(chunck_size), available_(chunk_size_), buffer_{new char[chunk_size_]} {
+ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunk_size)
+    : writer_(writer), chunk_size_(chunk_size), available_(chunk_size_), buffer_{new char[chunk_size_]} {
     std::memset(buffer_.get(), 0, chunk_size_);
 }
 
@@ -89,8 +89,8 @@ void ChunksWriter::flush() {
     available_ = chunk_size_;
 }
 
-JsonChunksWriter::JsonChunksWriter(Writer& writer, std::size_t chunck_size)
-    : writer_(writer), chunk_size_(chunck_size), room_left_in_chunck_(chunk_size_), written_(0) {
+JsonChunksWriter::JsonChunksWriter(Writer& writer, std::size_t chunk_size)
+    : writer_(writer), chunk_size_(chunk_size), room_left_in_chunck_(chunk_size_), written_(0) {
     str_chunk_size_ << std::hex << chunk_size_ << kChunkSep;
 }
 

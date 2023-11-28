@@ -129,6 +129,7 @@ class SplittingStrategy {
   public:
     //! The lower bound for primary (lower) key aggregation
     static constexpr std::size_t kLowerAggregationBound = LEAF_SIZE * max(2,
+                                                                          // NOLINTNEXTLINE(bugprone-incorrect-roundings)
                                                                           static_cast<int64_t>(0.35 * LEAF_SIZE + 0.5));
 
     //! The lower bound for secondary (upper) key aggregation
@@ -218,7 +219,7 @@ class RecSplit {
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
-        salt_ = salt != 0 ? salt : rand_gen32();
+        salt_ = salt != 0 ? salt : static_cast<uint32_t>(rand_gen32());
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
@@ -252,13 +253,6 @@ class RecSplit {
         const uint16_t leaf_size = endian::load_big_u16(address + offset);
         SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
         offset += kLeafSizeLength;
-
-        const uint16_t primary_aggr_bound = gsl::narrow<uint16_t>(leaf_size *
-                                                                  succinct::max(2, static_cast<int64_t>(0.35 * leaf_size + 0.5)));
-        SILKWORM_ASSERT(primary_aggr_bound == kLowerAggregationBound);
-        const uint16_t secondary_aggr_bound = primary_aggr_bound *
-                                              (leaf_size < 7 ? 2 : static_cast<uint16_t>(0.21 * leaf_size + 0.9));
-        SILKWORM_ASSERT(secondary_aggr_bound == kUpperAggregationBound);
 
         // Read salt
         salt_ = endian::load_big_u32(address + offset);
@@ -547,7 +541,7 @@ class RecSplit {
         }
 
         const std::size_t bucket = hash128_to_bucket(hash);
-        uint64_t cum_keys, cum_keys_next, bit_pos;
+        uint64_t cum_keys{0}, cum_keys_next{0}, bit_pos{0};
         double_ef_index_.get3(bucket, cum_keys, cum_keys_next, bit_pos);
 
         // Number of keys in this bucket
@@ -672,7 +666,7 @@ class RecSplit {
             sqrt_prod *= sqrt(k[i]);
         }
 
-        const double p = sqrt(m) / (pow(2 * std::numbers::pi, (fanout - 1.) * 0.5) * sqrt_prod);
+        const double p = sqrt(m) / (pow(2 * std::numbers::pi, (static_cast<double>(fanout) - 1.) * 0.5) * sqrt_prod);
         auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p))));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits

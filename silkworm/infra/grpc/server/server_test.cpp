@@ -17,6 +17,7 @@
 #include "server.hpp"
 
 #include <stdexcept>
+#include <string_view>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -49,7 +50,7 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
 }  // namespace
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-static const std::string kTestAddressUri{"localhost:12345"};
+constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
@@ -67,7 +68,7 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     server->Shutdown();
     // Then, shutdown and drain the ServerCompletionQueue
     cq->Shutdown();
-    void* tag;
+    void* tag{nullptr};
     bool ok{false};
     CHECK(cq->Next(&tag, &ok) == true);
     CHECK(tag == reinterpret_cast<void*>(0));

@@ -136,8 +136,9 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
         auto growth_size = static_cast<intptr_t>(config.in_memory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        if (!db_ondisk_file_size)
+        if (!db_ondisk_file_size) {
             cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
+        }
     }
 
     using OP = ::mdbx::env::operate_parameters;

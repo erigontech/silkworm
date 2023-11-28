@@ -67,16 +67,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/node/etl/collector.hpp>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#if defined(__clang__)
-#pragma GCC diagnostic ignored "-Winvalid-constexpr"
-#endif /* defined(__clang__) */
-#pragma GCC diagnostic ignored "-Wsign-compare"
-
 #include <silkworm/node/recsplit/encoding/elias_fano.hpp>
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
@@ -134,10 +124,10 @@ class SplittingStrategy {
 
   public:
     //! The lower bound for primary (lower) key aggregation
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * max(2, ceil(0.35 * LEAF_SIZE + 1. / 2));
+    static constexpr std::size_t kLowerAggregationBound = LEAF_SIZE * max(2, ceil(0.35 * LEAF_SIZE + 1. / 2));
 
     //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : ceil(0.21 * LEAF_SIZE + 9. / 10));
+    static constexpr std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : ceil(0.21 * LEAF_SIZE + 9. / 10));
 
     static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
         std::size_t fanout{0}, unit{0};
@@ -240,7 +230,7 @@ class RecSplit {
         base_data_id_ = endian::load_big_u64(address);
         key_count_ = endian::load_big_u64(address + kBaseDataIdLength);
         bytes_per_record_ = address[kBaseDataIdLength + kKeyCountLength];
-        record_mask_ = (uint64_t(1) << (8 * bytes_per_record_)) - 1;
+        record_mask_ = (uint64_t{1} << (8 * bytes_per_record_)) - 1;
         SILK_TRACE << "Base data ID: " << base_data_id_ << " key count: " << key_count_
                    << " bytes per record: " << bytes_per_record_ << " record mask: " << record_mask_;
 
@@ -1014,5 +1004,3 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 using RecSplitIndex = RecSplit8;
 
 }  // namespace silkworm::succinct
-
-#pragma GCC diagnostic pop

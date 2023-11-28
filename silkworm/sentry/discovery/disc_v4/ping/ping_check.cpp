@@ -64,8 +64,9 @@ Task<PingCheckResult> ping_check(
     boost::signals2::signal<void(PongMessage, EccPublicKey)>& on_pong_signal,
     node_db::NodeDb& db) {
     auto address = co_await db.find_node_address(node_id);
-    if (!address)
+    if (!address) {
         throw std::runtime_error("ping_check: node address not found");
+    }
     auto endpoint = address->to_common_address().endpoint;
 
     auto last_pong_time = co_await db.find_last_pong_time(node_id);

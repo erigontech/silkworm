@@ -70,7 +70,7 @@ class GolombRiceVector {
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
             if (log2golomb == 0) return;
 
-            const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
+            const uint64_t lower_bits = v & ((uint64_t{1} << log2golomb) - 1);
             std::size_t used_bits = bit_count & 63;
 
             data.resize((bit_count + log2golomb + 63) / 64);
@@ -99,7 +99,7 @@ class GolombRiceVector {
             for (const auto u : unary) {
                 bit_count += u;
                 uint64_t* append_ptr = data.data() + bit_count / 64;
-                *append_ptr |= uint64_t(1) << (bit_count & 63);
+                *append_ptr |= uint64_t{1} << (bit_count & 63);
                 ++bit_count;
             }
         }
@@ -153,14 +153,14 @@ class GolombRiceVector {
             if (shift + log2golomb > 64) {
                 fixed |= data[idx64 + 1] << (64 - shift);
             }
-            result |= fixed & ((uint64_t(1) << log2golomb) - 1);
+            result |= fixed & ((uint64_t{1} << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }
 
         void skip_subtree(const std::size_t nodes, const std::size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
-            std::size_t missing = nodes, cnt;
+            std::size_t missing = nodes, cnt = 0;
             while ((cnt = static_cast<std::size_t>(nu(curr_window_unary))) < missing) {
                 curr_window_unary = *(curr_ptr_unary++);
                 missing -= cnt;

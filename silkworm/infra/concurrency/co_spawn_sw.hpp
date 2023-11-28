@@ -96,9 +96,9 @@ awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
 
         co_return;
     } catch (...) {
-        if (done)
+        if (done) {
             throw;
-
+        }
         e = std::current_exception();
     }
 

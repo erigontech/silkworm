@@ -133,13 +133,15 @@ struct RlpByteView {
 template <>
 inline void encode(Bytes& to, const std::span<const RlpByteView>& v) {
     Header header{true, 0};
-    for (const auto& item : v)
+    for (const auto& item : v) {
         header.payload_length += item.data.size();
+    }
     to.reserve(to.size() + length_of_length(header.payload_length) + header.payload_length);
 
     encode_header(to, header);
-    for (const auto& item : v)
+    for (const auto& item : v) {
         to.append(item.data);
+    }
 }
 
 template <>
@@ -151,8 +153,9 @@ template <>
 inline void encode(Bytes& to, const std::span<const RlpBytes>& v) {
     std::vector<RlpByteView> views;
     views.reserve(v.size());
-    for (const auto& item : v)
+    for (const auto& item : v) {
         views.emplace_back(item.data);
+    }
     encode(to, views);
 }
 

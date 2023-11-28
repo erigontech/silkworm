@@ -845,8 +845,8 @@ class RecSplit {
             gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
 
-            std::size_t i;
-            for (i = 0; i < m - unit; i += unit) {
+            std::size_t i{0};
+            for (; i < m - unit; i += unit) {
                 recsplit(level + 1, bucket, offsets, start + i, start + i + unit, unary, index_ofs);
             }
             if (m - i > 1) {
@@ -888,7 +888,7 @@ class RecSplit {
     }
 
     friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE>& rs) {
-        size_t leaf_size;
+        size_t leaf_size{0};
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         if (leaf_size != LEAF_SIZE) {
             fprintf(stderr, "Serialized leaf size %d, code leaf size %d\n", int(leaf_size), int(LEAF_SIZE));

@@ -466,13 +466,13 @@ __attribute__((constructor)) static void select_sha256_implementation(void) {
 
     if (nIds >= 0x00000001) {
         cpuid(info, 0x00000001);
-        hw_sse41 = (info[2] & ((int)1 << 19)) != 0;
+        hw_sse41 = (info[2] & (1 << 19)) != 0;
     }
     if (nIds >= 0x00000007) {
         cpuid(info, 0x00000007);
-        hw_bmi1 = (info[1] & ((int)1 << 3)) != 0;
-        hw_bmi2 = (info[1] & ((int)1 << 8)) != 0;
-        hw_sha = (info[1] & ((int)1 << 29)) != 0;
+        hw_bmi1 = (info[1] & (1 << 3)) != 0;
+        hw_bmi2 = (info[1] & (1 << 8)) != 0;
+        hw_sha = (info[1] & (1 << 29)) != 0;
     }
 
     if (hw_sse41 && hw_sha) {

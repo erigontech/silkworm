@@ -68,7 +68,7 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     // Then, shutdown and drain the ServerCompletionQueue
     cq->Shutdown();
     void* tag;
-    bool ok;
+    bool ok{false};
     CHECK(cq->Next(&tag, &ok) == true);
     CHECK(tag == reinterpret_cast<void*>(0));
     CHECK(cq->Next(&tag, &ok) == false);

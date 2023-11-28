@@ -137,7 +137,7 @@ class MemoryMappedFile {
 
 struct MemoryMappedStreamBuf : std::streambuf {
     MemoryMappedStreamBuf(char const* base, std::size_t size) {
-        char* p{const_cast<char*>(base)};
+        char* p{const_cast<char*>(base)};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
         this->setg(p, p, p + size);
     }
 };

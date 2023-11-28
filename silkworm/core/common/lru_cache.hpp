@@ -104,8 +104,9 @@ class lru_cache {
     bool remove(const key_t& key) {
         SILKWORM_LRU_CACHE_GUARD
         auto it = _cache_items_map.find(key);
-        if (it == _cache_items_map.end())
+        if (it == _cache_items_map.end()) {
             return false;
+        }
 
         _cache_items_list.erase(it->second);
         _cache_items_map.erase(it);

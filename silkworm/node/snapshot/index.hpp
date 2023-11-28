@@ -60,7 +60,7 @@ class BodyIndex : public Index {
         : Index(std::move(segment_path), std::move(segment_region)) {}
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 class TransactionIndex : public Index {

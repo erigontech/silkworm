@@ -53,6 +53,7 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/recsplit/rec_split.hpp>
 
 // Check if the vector contains duplicates without altering the original vector order

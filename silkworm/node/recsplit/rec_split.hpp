@@ -677,10 +677,10 @@ class RecSplit {
             // No need to build aggregation levels - just find bijection
             SILK_TRACE << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             if (level == 7) {
-              SILK_TRACE << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << keys[start];
-               for (std::size_t j = 0; j < m; j++) {
-                   SILK_TRACE << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << keys[start + j];
-               }
+                SILK_TRACE << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << keys[start];
+                for (std::size_t j = 0; j < m; j++) {
+                    SILK_TRACE << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << keys[start + j];
+                }
             }
             while (true) {
                 uint32_t mask{0};
@@ -759,7 +759,7 @@ class RecSplit {
                 endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
                 if (level == 0) {
-                   SILK_TRACE << "[index] written offset: " << offsets[start + i];
+                    SILK_TRACE << "[index] written offset: " << offsets[start + i];
                 }
             }
         }

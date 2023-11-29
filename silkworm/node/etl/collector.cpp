@@ -107,13 +107,13 @@ void Collector::load(db::RWCursorDupSort& target, const LoadFunc& load_func, MDB
         buffer_.sort();
 
         for (const auto& etl_entry : buffer_.entries()) {
-            //            if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-            //                if (SignalHandler::signalled()) {
-            //                    throw std::runtime_error("Operation cancelled");
-            //                }
-            //                set_loading_key(etl_entry.key);
-            //                log_time = now + kLogInterval;
-            //            }
+            if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                if (SignalHandler::signalled()) {
+                    throw std::runtime_error("Operation cancelled");
+                }
+                set_loading_key(etl_entry.key);
+                log_time = now + kLogInterval;
+            }
             if (load_func) {
                 load_func(etl_entry, target, flags);
             } else {

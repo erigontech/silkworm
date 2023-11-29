@@ -40,10 +40,11 @@ nlohmann::json Config::to_json() const noexcept {
     for (const auto& [from, val] : sprint) {
         ret["sprint"][std::to_string(from)] = val;
     }
+    ret["validatorContract"] = to_hex(validator_contract.bytes, /*with_prefix=*/true);
     for (const auto& [block, rewrites] : rewrite_code) {
         const std::string block_str{std::to_string(block)};
         for (const auto& [address, code] : rewrites) {
-            const std::string code_hex{to_hex(string_view_to_byte_view(code), true)};
+            const std::string code_hex{to_hex(string_view_to_byte_view(code), /*with_prefix=*/true)};
             ret["blockAlloc"][block_str][to_hex(address.bytes, true)]["code"] = code_hex;
         }
     }
@@ -72,6 +73,11 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
         sprint.emplace_back(from, item.value().get<uint64_t>());
     }
     config.sprint = {sprint.begin(), sprint.end()};
+
+    config.validator_contract = hex_to_address(json["validatorContract"].get<std::string>(), /*return_zero_on_err=*/true);
+    if (is_zero(config.validator_contract)) {
+        return std::nullopt;
+    }
 
     SILKWORM_THREAD_LOCAL std::set<Bytes> codes;
     if (json.contains("blockAlloc")) {

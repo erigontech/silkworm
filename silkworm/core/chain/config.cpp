@@ -319,6 +319,7 @@ SILKWORM_CONSTINIT const ChainConfig kBorMainnetConfig{
             {0, 64},
             {38'189'056, 16},
         },
+        .validator_contract = 0x0000000000000000000000000000000000001000_address,
         .rewrite_code = {
             {
                 22'156'660,
@@ -799,6 +800,7 @@ SILKWORM_CONSTINIT const ChainConfig kMumbaiConfig{
             {0, 64},
             {29'638'656, 16},
         },
+        .validator_contract = 0x0000000000000000000000000000000000001000_address,
         .rewrite_code = {
             {
                 22'244'000,

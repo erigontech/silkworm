@@ -49,11 +49,12 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
     };
 }  // namespace
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
+
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
-#ifndef SILKWORM_SANITIZE
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;

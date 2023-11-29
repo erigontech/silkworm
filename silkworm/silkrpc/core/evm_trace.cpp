@@ -1167,8 +1167,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         if (!transaction.from) {
             transaction.recover_sender();
         }
-        const auto hash = hash_of_transaction(transaction);
-        const auto tnx_hash = silkworm::to_bytes32({hash.bytes, silkworm::kHashLength});
+        const auto tnx_hash = transaction.hash();
 
         const auto& trace_call_result = trace_call_results.at(pos);
         const auto& call_traces = trace_call_result.traces.trace;
@@ -1304,8 +1303,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
                     auto& result = trace_call_result.at(index);
                     TraceCallTraces& traces = result.traces;
-                    auto hash{hash_of_transaction(transaction)};
-                    traces.transaction_hash = silkworm::to_bytes32({hash.bytes, silkworm::kHashLength});
+                    traces.transaction_hash = transaction.hash();
 
                     Tracers tracers;
                     if (config.vm_trace) {
@@ -1455,8 +1453,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
                     executor.reset();
 
                     if (create_tracer->found()) {
-                        auto hash{hash_of_transaction(transaction)};
-                        result.transaction_hash = to_bytes32({hash.bytes, kHashLength});
+                        result.transaction_hash = transaction.hash();
                         result.contract_creator = transaction.from;
                         break;
                     }
@@ -1478,8 +1475,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHas
                                          gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
     const auto& trace_result = result.traces.trace;
 
-    const auto hash = hash_of_transaction(transaction);
-    const auto tnx_hash = silkworm::to_bytes32({hash.bytes, silkworm::kHashLength});
+    const auto tnx_hash = transaction.hash();
 
     for (const auto& call_trace : trace_result) {
         Trace trace{call_trace};

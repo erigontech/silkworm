@@ -49,14 +49,12 @@ bool Transaction::set_v(const intx::uint256& v) {
 
 evmc::bytes32 Transaction::hash() const {
     if (cached_hash) {
-        std::cout << "return from cache: " << to_hex((*cached_hash).bytes) << "\n";
         return *cached_hash;
     }
 
     Bytes rlp;
     rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
     cached_hash = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
-    std::cout << "calculate and store on cache: " << to_hex((*cached_hash).bytes) << "\n";
     return *cached_hash;
 }
 

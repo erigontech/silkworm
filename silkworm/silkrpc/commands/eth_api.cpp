@@ -205,6 +205,10 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
+            // calculate hash and stores on cache
+            for (const auto& transaction : block_with_hash->block.transactions) {
+                (void)transaction.hash();
+            }
             BlockNum block_number = block_with_hash->block.header.number;
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
@@ -248,6 +252,10 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
+            // calculate hash and stores on cache
+            for (const auto& transaction : block_with_hash->block.transactions) {
+                (void)transaction.hash();
+            }
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
             const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
@@ -870,7 +878,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 
         std::optional<std::size_t> tx_index;
         for (size_t idx{0}; idx < transactions.size(); idx++) {
-            auto ethash_hash{hash_of_transaction(transactions[idx])};
+            auto ethash_hash = transactions[idx].hash();
 
             SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_hex(silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength}));
             if (std::memcmp(transaction_hash.bytes, ethash_hash.bytes, silkworm::kHashLength) == 0) {
@@ -1835,7 +1843,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
         co_return;
     }
 
-    const auto ethash_hash{hash_of_transaction(txn)};
+    const auto ethash_hash = txn.hash();
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
         const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);

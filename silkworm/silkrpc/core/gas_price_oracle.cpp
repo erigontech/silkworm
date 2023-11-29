@@ -86,7 +86,7 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
     for (const auto& transaction : block_with_hash->block.transactions) {
         const auto priority_fee_per_gas = transaction.priority_fee_per_gas(base_fee);
         SILK_TRACE << "idx: " << idx++
-                   << " hash: " << silkworm::to_hex({hash_of_transaction(transaction).bytes, silkworm::kHashLength})
+                   << " hash: " << silkworm::to_hex({transaction.hash().bytes, silkworm::kHashLength})
                    << " priority_fee_per_gas: 0x" << intx::hex(transaction.priority_fee_per_gas(base_fee))
                    << " max_fee_per_gas: 0x" << intx::hex(transaction.max_fee_per_gas)
                    << " max_priority_fee_per_gas: 0x" << intx::hex(transaction.max_priority_fee_per_gas);

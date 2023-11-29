@@ -156,7 +156,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             }
             SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
             for (auto& log : filtered_block_logs) {
-                const auto tx_hash{hash_of_transaction(block_with_hash->block.transactions[log.tx_index])};
+                const auto tx_hash{block_with_hash->block.transactions[log.tx_index].hash()};
                 log.block_number = block_to_match;
                 log.block_hash = block_with_hash->hash;
                 log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});

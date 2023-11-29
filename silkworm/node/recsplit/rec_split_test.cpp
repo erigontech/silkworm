@@ -16,7 +16,6 @@
 
 #include "rec_split.hpp"
 
-#include <fstream>
 #include <iomanip>  // for std::setw and std::setfill
 #include <vector>
 
@@ -223,10 +222,6 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
         rs1.add_key("key " + std::to_string(i), i * 17);
     }
     CHECK(rs1.build() == false /*collision_detected*/);
-
-    // std::ifstream f(index_file.path(), std::ios::binary);
-    // hexDump("par_hexdump.txt", f);
-    // f.close();
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {

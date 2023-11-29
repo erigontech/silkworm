@@ -59,7 +59,7 @@
 // Check if the vector contains duplicates without altering the original vector order
 // Used here to check the keys vector (whose elements are related to the elements of values vector at the same index)
 template <typename T>
-bool containsDuplicate(const std::vector<T>& items) {
+bool contains_duplicate(const std::vector<T>& items) {
     // Create an index vector
     std::vector<size_t> indices(items.size());
     for (size_t i = 0; i < items.size(); ++i) {
@@ -245,7 +245,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     static bool recsplit_bucket(Bucket& bucket, uint8_t bytes_per_record) {
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (bucket.keys_.size() > 1) {
-            if (containsDuplicate(bucket.keys_)) {
+            if (contains_duplicate(bucket.keys_)) {
                 SILK_TRACE << "collision detected";
                 return true;
             }

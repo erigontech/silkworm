@@ -675,14 +675,13 @@ class RecSplit {
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
             // No need to build aggregation levels - just find bijection
-            // SILK_DEBUG << "PROBE [index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
-            // if (level == 7) {
-            //    SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
-            //               << " current_bucket_id_=" << current_bucket_id_;
-            //    for (std::size_t j = 0; j < m; j++) {
-            //        SILK_DEBUG << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << bucket[start + j];
-            //    }
-            // }
+            SILK_TRACE << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
+            if (level == 7) {
+              SILK_TRACE << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << keys[start];
+               for (std::size_t j = 0; j < m; j++) {
+                   SILK_TRACE << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << keys[start + j];
+               }
+            }
             while (true) {
                 uint32_t mask{0};
                 bool fail{false};
@@ -705,9 +704,9 @@ class RecSplit {
             for (auto i{0}; i < m; i++) {
                 endian::store_big_u64(uint64_buffer.data(), buffer_offsets[i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
-                // if (level == 0) {
-                //     SILK_DEBUG << "[index] written offset: " << buffer_offsets_[i];
-                // }
+                if (level == 0) {
+                    SILK_TRACE << "[index] written offset: " << buffer_offsets[i];
+                }
             }
             salt -= kStartSeed[level];
             const auto log2golomb = golomb_param_with_max_calculation(m, memo, golomb_param_max_index);
@@ -716,7 +715,7 @@ class RecSplit {
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
-            // SILK_DEBUG << "PROBE [index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
+            SILK_TRACE << "[index] recsplit level " << level << ", m=" << m << " > leaf size, fanout=" << fanout << " unit=" << unit;
             SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
 
             std::vector<std::size_t> count(fanout, 0);  // temporary counters of key remapped occurrences
@@ -759,9 +758,9 @@ class RecSplit {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
-                // if (level == 0) {
-                //    SILK_DEBUG << "[index] written offset: " << offsets[start + i];
-                // }
+                if (level == 0) {
+                   SILK_TRACE << "[index] written offset: " << offsets[start + i];
+                }
             }
         }
     }
@@ -1008,7 +1007,6 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             buffer_bucket_.resize(current_bucket_.size());
             buffer_offsets_.resize(current_bucket_.size());
 
-            // std::vector<uint32_t> unary;
             RecSplit<LEAF_SIZE>::recsplit(
                 current_bucket_, current_bucket_offsets_, buffer_bucket_, buffer_offsets_, gr_builder_,
                 index_output_stream, golomb_param_max_index, bytes_per_record);

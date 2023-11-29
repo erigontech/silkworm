@@ -31,7 +31,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/protocol/bor_config.hpp>
+#include <silkworm/core/protocol/bor/config.hpp>
 
 namespace silkworm {
 
@@ -50,7 +50,7 @@ namespace protocol {
     };
 
     //! \see IRuleSet
-    using RuleSetConfig = std::variant<EthashConfig, CliqueConfig, BorConfig>;
+    using RuleSetConfig = std::variant<EthashConfig, CliqueConfig, bor::Config>;
 
 }  // namespace protocol
 

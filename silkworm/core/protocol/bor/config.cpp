@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "bor_config.hpp"
+#include "config.hpp"
 
 #include <set>
 #include <string>
@@ -24,15 +24,15 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 
-namespace silkworm::protocol {
+namespace silkworm::protocol::bor {
 
-uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
-    const uint64_t* size{bor_config_value_lookup(sprint, number)};
+uint64_t Config::sprint_size(BlockNum number) const noexcept {
+    const uint64_t* size{config_value_lookup(sprint, number)};
     SILKWORM_ASSERT(size);
     return *size;
 }
 
-nlohmann::json BorConfig::to_json() const noexcept {
+nlohmann::json Config::to_json() const noexcept {
     nlohmann::json ret;
     for (const auto& [from, val] : period) {
         ret["period"][std::to_string(from)] = val;
@@ -52,12 +52,12 @@ nlohmann::json BorConfig::to_json() const noexcept {
     return ret;
 }
 
-std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexcept {
+std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
     if (json.is_discarded() || !json.is_object()) {
         return std::nullopt;
     }
 
-    BorConfig config;
+    Config config;
 
     std::vector<std::pair<BlockNum, uint64_t>> period;
     for (const auto& item : json["period"].items()) {
@@ -104,4 +104,4 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
     return config;
 }
 
-}  // namespace silkworm::protocol
+}  // namespace silkworm::protocol::bor

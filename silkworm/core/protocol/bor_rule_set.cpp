@@ -43,7 +43,7 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
     }
 
     const std::optional<BlockHeader> parent{get_parent_header(state, header)};
-    const uint64_t* period{bor_config_value_lookup(config().period, header.number)};
+    const uint64_t* period{bor::config_value_lookup(config().period, header.number)};
     SILKWORM_ASSERT(period);
     if (parent->timestamp + *period > header.timestamp) {
         return ValidationResult::kInvalidTimestamp;
@@ -117,10 +117,13 @@ static void rewrite_code_if_needed(const SmallMap<BlockNum, SmallMap<evmc::addre
 }
 
 void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
-    // TODO(yperbasis): implement
-    // https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L819
+    const BlockNum header_number{block.header.number};
+    if (is_sprint_start(header_number, config().sprint_size(header_number))) {
+        // TODO(yperbasis): implement
+        // https://github.com/maticnetwork/bor/blob/v1.2.0-beta2/consensus/bor/bor.go#L827
+    }
 
-    rewrite_code_if_needed(config().rewrite_code, state, block.header.number);
+    rewrite_code_if_needed(config().rewrite_code, state, header_number);
 }
 
 ValidationResult BorRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {
@@ -171,8 +174,8 @@ void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint25
     state.add_log(log);
 }
 
-const BorConfig& BorRuleSet::config() const {
-    return std::get<BorConfig>(chain_config_.rule_set_config);
+const bor::Config& BorRuleSet::config() const {
+    return std::get<bor::Config>(chain_config_.rule_set_config);
 }
 
 }  // namespace silkworm::protocol

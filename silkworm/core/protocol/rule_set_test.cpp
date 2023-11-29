@@ -32,7 +32,7 @@ TEST_CASE("Rule Set factory") {
     CHECK(rule_set != nullptr);
     rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
     CHECK(rule_set != nullptr);
-    rule_set = rule_set_factory(ChainConfig{.rule_set_config = BorConfig{}});
+    rule_set = rule_set_factory(ChainConfig{.rule_set_config = bor::Config{}});
     CHECK(rule_set != nullptr);
 }
 

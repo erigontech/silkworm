@@ -87,6 +87,8 @@ struct Transaction : public UnsignedTransaction {
 
     // sender recovered from the signature
     std::optional<evmc::address> from{std::nullopt};
+    // store calculated hash
+    mutable std::optional<evmc::bytes32> cached_hash;
 
     [[nodiscard]] intx::uint256 v() const;  // EIP-155
 

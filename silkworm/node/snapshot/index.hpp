@@ -57,7 +57,7 @@ class HeaderIndex : public Index {
 class BodyIndex : public Index {
   public:
     explicit BodyIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), std::move(segment_region)) {}
+        : Index(std::move(segment_path), segment_region) {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;

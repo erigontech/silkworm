@@ -659,7 +659,7 @@ class RecSplit {
     }
 
     template <typename GRBUILDER>
-    static void recsplit(int level,                              // NOLINT
+    static void recsplit(int level,  // NOLINT
                          std::vector<uint64_t>& keys,
                          std::vector<uint64_t>& offsets,         // aka values
                          std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys

@@ -44,11 +44,11 @@ class StopWatch {
 
     //! \brief Starts the clock
     //! \return The TimePoint it was started on
-    TimePoint start(bool with_reset = false);
+    TimePoint start(bool with_reset = false) noexcept;
 
     //! \brief Records a lap time
     //! \return A pair of TimePoint and Duration
-    std::pair<TimePoint, Duration> lap();
+    std::pair<TimePoint, Duration> lap() noexcept;
 
     //! \brief Computes the duration amongst the start time and the provided timepoint
     //! \param origin [in] : An origin timepoint
@@ -62,16 +62,16 @@ class StopWatch {
     //! \brief Stops the watch
     //! \return The timepoint of stop and the duration since start (if no laptimes) or the duration from previous
     //! laptime
-    std::pair<TimePoint, Duration> stop();
+    std::pair<TimePoint, Duration> stop() noexcept;
 
     //! \brief Stops the watch and clears all counters
-    void reset();
+    void reset() noexcept;
 
     //! \brief Returns the vector of laptimes
     [[nodiscard]] const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
 
     //! \brief Returns a human readable duration
-    static std::string format(Duration duration);
+    static std::string format(Duration duration) noexcept;
 
     explicit operator bool() const noexcept { return started_; }
 

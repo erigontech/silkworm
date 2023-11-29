@@ -25,9 +25,11 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
+#include <silkworm/infra/concurrency/thread_safe_queue.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/snapshot/config.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {

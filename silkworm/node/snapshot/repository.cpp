@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 
 namespace silkworm::snapshot {
 

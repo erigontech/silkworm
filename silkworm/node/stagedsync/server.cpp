@@ -69,10 +69,12 @@ Task<BlockId> Server::last_fork_choice() {
     return asio::co_spawn(io_context_, lambda(this), asio::use_awaitable);
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Task<void> Server::insert_headers(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_headers not implemented"};
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Task<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
 }

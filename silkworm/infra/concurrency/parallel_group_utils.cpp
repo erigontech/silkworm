@@ -114,12 +114,11 @@ void rethrow_first_exception_if_any(
 }
 
 Task<void> generate_parallel_group_task(size_t count, absl::FunctionRef<Task<void>(size_t)> task_factory) {
-    // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
     if (count == 0) {
         co_return;
     }
+
     auto executor = co_await this_coro::executor;
-    // NOLINTEND(clang-analyzer-core.CallAndMessage)
 
     using OperationType = decltype(co_spawn(executor, ([]() -> Task<void> { co_return; })(), deferred));
     std::vector<OperationType> operations;

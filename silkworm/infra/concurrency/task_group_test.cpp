@@ -63,7 +63,7 @@ static Task<void> wait_until_cancelled(bool* is_cancelled) {
 }
 
 static Task<void> sleep(std::chrono::milliseconds duration) {
-    auto executor = co_await this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
+    auto executor = co_await this_coro::executor;
     steady_timer timer(executor);
     timer.expires_after(duration);
     co_await timer.async_wait(use_awaitable);
@@ -183,7 +183,7 @@ TEST_CASE("TaskGroup.task_exception_during_cancellation_is_rethrown") {
 
     auto test = [&]() -> Task<bool> {
         try {
-            co_await group.wait();  // NOLINT(clang-analyzer-core.CallAndMessage)
+            co_await group.wait();
             co_return false;
         } catch (const TestException&) {
             co_return false;

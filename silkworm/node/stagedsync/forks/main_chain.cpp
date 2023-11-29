@@ -281,7 +281,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
 
         const auto finalized_block_number = get_block_number(*finalized_block_hash);
         last_finalized_head_.number = *finalized_block_number;
-        last_finalized_head_.hash = std::move(*finalized_block_hash);
+        last_finalized_head_.hash = *finalized_block_hash;
     }
 
     tx_.commit_and_renew();

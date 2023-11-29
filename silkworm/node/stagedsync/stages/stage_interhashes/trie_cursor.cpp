@@ -66,6 +66,7 @@ void SubNode::parse(ByteView k, ByteView v) {
 
     success_or_throw(Node::decode_from_storage(v, *this));
 
+    // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions)
     child_id = gsl::narrow<int8_t>(std::countr_zero(state_mask_)) - 1;
     max_child_id = gsl::narrow<int8_t>(std::bit_width(state_mask_));
     hash_id = -1;

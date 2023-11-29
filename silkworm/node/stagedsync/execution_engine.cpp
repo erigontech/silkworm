@@ -64,7 +64,7 @@ void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& b
     }
 }
 
-bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
+bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
     Hash header_hash{block->header.hash()};
 
     if (block_cache_.get(header_hash)) return true;  // ignore repeated blocks
@@ -222,8 +222,8 @@ void ExecutionEngine::discard_all_forks() {
     // ensure a clean exit of all those forks that can be busy in a VerifyChain
     // method or something else; maybe use a sweeper thread
 
-    for (auto it = forks_.begin(); it != forks_.end(); ++it) {
-        (*it)->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
+    for (auto& fork : forks_) {
+        fork->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
     }
     forks_.clear();
 }

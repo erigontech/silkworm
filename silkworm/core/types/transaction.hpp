@@ -110,7 +110,8 @@ struct Transaction : public UnsignedTransaction {
 
     [[nodiscard]] evmc::bytes32 hash() const;
 
-    // store calculated hash
+  private:
+    // cached value for hash if already computed
     mutable std::optional<evmc::bytes32> cached_hash{std::nullopt};
 };
 

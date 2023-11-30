@@ -82,6 +82,7 @@ bool contains_duplicate(const std::vector<T>& items) {
 
 namespace silkworm::succinct {
 
+//! The recsplit parallel building strategy
 template <std::size_t LEAF_SIZE>
 struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     explicit ParallelBuildingStrategy(ThreadPool& tp) : thread_pool_{tp} {
@@ -139,19 +140,12 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         ensure(bucket_id < buckets_.size(), "bucket_id out of range");
 
         if (keys_added_ % 100'000 == 0) {
-            SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
+            SILK_TRACE << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
         if (offset > max_offset_) {
             max_offset_ = offset;
         }
-
-        // if (keys_added_ > 0) {  // unused
-        //     const auto delta = offset - previous_offset_;
-        //     if (keys_added_ == 1 || delta < min_delta_) {
-        //         min_delta_ = delta;
-        //     }
-        // }
 
         Bucket& bucket = buckets_[bucket_id];
 
@@ -168,7 +162,6 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         }
 
         keys_added_++;
-        // previous_offset_ = offset;
     }
 
     bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
@@ -310,19 +303,13 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
     //! Helper to build GR codes of splitting and bijection indices
     GolombRiceBuilder gr_builder_;
-
-    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    // uint64_t min_delta_{0};  // unused
-
-    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    // uint64_t previous_offset_{0};  // unused
 };
 
 inline auto par_build_strategy(ThreadPool& tp) { return std::make_unique<RecSplit8::ParallelBuildingStrategy>(tp); }
 
 /*
  Example usage:
-    RecSplit8 recsplit{RecSplitSettings{}, std::make_unique<RecSplit8::ParallelBuildingStrategy>(thread_pool)};
+    RecSplit8 recsplit{RecSplitSettings{}, par_build_strategy(thread_pool)};
     auto collision = recsplit.build();
 */
 

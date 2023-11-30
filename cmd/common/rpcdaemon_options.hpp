@@ -18,7 +18,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 namespace silkworm::cmd::common {
 

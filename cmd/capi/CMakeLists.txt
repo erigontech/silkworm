@@ -23,7 +23,7 @@ set(PRIVATE_LIBS
     mdbx-static
     silkworm_infra
     silkworm_node
-    silkrpc
+    silkworm_rpcdaemon
     silkworm_capi
     cmd_common
 )

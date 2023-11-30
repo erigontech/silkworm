@@ -23,7 +23,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(sentry)
   add_subdirectory(sync)
   add_subdirectory(node)
-  add_subdirectory(silkrpc)
+  add_subdirectory(rpc)
   add_subdirectory(capi)
 endif()
 

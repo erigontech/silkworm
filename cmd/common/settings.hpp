@@ -20,7 +20,7 @@
 #include <silkworm/node/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/silkrpc/settings.hpp>
+#include <silkworm/rpc/settings.hpp>
 
 namespace silkworm::cmd::common {
 

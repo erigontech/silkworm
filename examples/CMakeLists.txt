@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The SilkRpc Authors
+   Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(get_latest_block get_latest_block.cpp)
   target_include_directories(get_latest_block PRIVATE ${CMAKE_SOURCE_DIR})
-  target_link_libraries(get_latest_block absl::flags_parse gRPC::grpc++_unsecure protobuf::libprotobuf silkrpc)
+  target_link_libraries(get_latest_block absl::flags_parse gRPC::grpc++_unsecure protobuf::libprotobuf silkworm_rpcdaemon)
 
 endif()

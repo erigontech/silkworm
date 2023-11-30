@@ -29,7 +29,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "block_exchange.hpp"
 #include "chain_sync.hpp"

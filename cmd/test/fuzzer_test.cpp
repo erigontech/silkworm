@@ -16,7 +16,7 @@
 
 #include <string>
 
-#include <silkworm/silkrpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test/api_test_database.hpp>
 
 using namespace silkworm::rpc::test;
 

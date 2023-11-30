@@ -30,7 +30,7 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
-#include <silkworm/silkrpc/protocol/errors.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::chainsync {
 

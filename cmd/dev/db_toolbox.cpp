@@ -131,7 +131,7 @@ struct DbTableInfo {
 
 using DbComparisonResult = tl::expected<void, std::string>;
 
-[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs) {
+[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_pages) {
     // Skip freelist table because its content depends not only on *which* data you write but also *how* you write it
     // (i.e. writing the same data w/ different commit policies can lead to different freelist content)
     if (lhs.name == "FREE_DBI" && rhs.name == "FREE_DBI") {
@@ -153,20 +153,22 @@ using DbComparisonResult = tl::expected<void, std::string>;
         return tl::make_unexpected("db page mismatch: " + std::to_string(lhs.stat.ms_psize) +
                                    " vs " + std::to_string(rhs.stat.ms_psize));
     }
-    if (lhs.stat.ms_leaf_pages != rhs.stat.ms_leaf_pages) {
-        return tl::make_unexpected("leaf pages mismatch: " + std::to_string(lhs.stat.ms_leaf_pages) +
-                                   " vs " + std::to_string(rhs.stat.ms_leaf_pages));
-    }
-    if (lhs.stat.ms_branch_pages != rhs.stat.ms_branch_pages) {
-        return tl::make_unexpected("branch pages mismatch: " + std::to_string(lhs.stat.ms_branch_pages) +
-                                   " vs " + std::to_string(rhs.stat.ms_branch_pages));
-    }
-    if (lhs.stat.ms_overflow_pages != rhs.stat.ms_overflow_pages) {
-        return tl::make_unexpected("overflow pages mismatch: " + std::to_string(lhs.stat.ms_overflow_pages) +
-                                   " vs " + std::to_string(rhs.stat.ms_overflow_pages));
-    }
     if (lhs.info.flags != rhs.info.flags) {
         return tl::make_unexpected("flags mismatch: " + std::to_string(lhs.info.flags) + " vs " + std::to_string(rhs.info.flags));
+    }
+    if (check_pages) {
+        if (lhs.stat.ms_leaf_pages != rhs.stat.ms_leaf_pages) {
+            return tl::make_unexpected("leaf pages mismatch: " + std::to_string(lhs.stat.ms_leaf_pages) +
+                                       " vs " + std::to_string(rhs.stat.ms_leaf_pages));
+        }
+        if (lhs.stat.ms_branch_pages != rhs.stat.ms_branch_pages) {
+            return tl::make_unexpected("branch pages mismatch: " + std::to_string(lhs.stat.ms_branch_pages) +
+                                       " vs " + std::to_string(rhs.stat.ms_branch_pages));
+        }
+        if (lhs.stat.ms_overflow_pages != rhs.stat.ms_overflow_pages) {
+            return tl::make_unexpected("overflow pages mismatch: " + std::to_string(lhs.stat.ms_overflow_pages) +
+                                       " vs " + std::to_string(rhs.stat.ms_overflow_pages));
+        }
     }
     return {};
 }
@@ -951,14 +953,14 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
     std::cout << "\n All done!" << std::endl;
 }
 
-static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDupSort* cursor2) {
+static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDupSort* cursor2, bool force_print = false) {
     size_t diff_count{0};
     auto result1{cursor1->to_first()};
     auto result2{cursor2->to_first()};
     while (result1.done && result2.done) {
         const auto key1{result1.key};
         const auto key2{result2.key};
-        if (key1 != key2) {
+        if (key1 != key2 || force_print) {
             std::cout << "k1=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()})
                       << " k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key2.data()), key2.size()}) << "\n";
             ++diff_count;
@@ -967,9 +969,9 @@ static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorD
         while (result1.done && result2.done) {
             const auto& value1{result1.value};
             const auto& value2{result2.value};
-            if (value1 != value2) {
+            if (value1 != value2 || force_print) {
                 if (first) {
-                    if (key1 == key2) {
+                    if (key1 == key2 && !force_print) {
                         std::cout << "k1=k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
                     }
                     first = false;
@@ -987,20 +989,70 @@ static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorD
             result1 = cursor1->to_current_next_multi(/*throw_notfound=*/false);
             result2 = cursor2->to_current_next_multi(/*throw_notfound=*/false);
         }
+        while (result1.done) {
+            if (first) {
+                if (key1 == key2 && !force_print) {
+                    std::cout << "k1=k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
+                }
+                first = false;
+            }
+            const auto& value1{result1.value};
+            const auto v1_hex{silkworm::to_hex({static_cast<const uint8_t*>(value1.data()), value1.size()})};
+            std::cout << "v1=" << v1_hex << "\n";
+            ++diff_count;
+            if (diff_count % 100 == 0) {
+                if (!user_confirmation("Do you need any more diffs?")) {
+                    return diff_count;
+                }
+            }
+            result1 = cursor1->to_current_next_multi(/*throw_notfound=*/false);
+        }
+        while (result2.done) {
+            if (first) {
+                if (key1 == key2 && !force_print) {
+                    std::cout << "k1=k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
+                }
+                first = false;
+            }
+            const auto& value2{result2.value};
+            const auto v2_hex{silkworm::to_hex({static_cast<const uint8_t*>(value2.data()), value2.size()})};
+            std::cout << " v2=" << v2_hex << "\n";
+            ++diff_count;
+            if (diff_count % 100 == 0) {
+                if (!user_confirmation("Do you need any more diffs?")) {
+                    return diff_count;
+                }
+            }
+            result2 = cursor2->to_current_next_multi(/*throw_notfound=*/false);
+        }
         result1 = cursor1->to_next(/*throw_notfound=*/false);
         result2 = cursor2->to_next(/*throw_notfound=*/false);
     }
+    while (result1.done) {
+        const auto key1{result1.key};
+        std::cout << "k1=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
+        ++diff_count;
+        result1 = cursor1->to_next(/*throw_notfound=*/false);
+    }
+
+    while (result2.done) {
+        const auto key2{result2.key};
+        std::cout << "k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key2.data()), key2.size()}) << "\n";
+        ++diff_count;
+        result2 = cursor2->to_next(/*throw_notfound=*/false);
+    }
+
     return diff_count;
 }
 
-static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* cursor2) {
+static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* cursor2, bool force_print) {
     size_t diff_count{0};
     auto result1{cursor1->to_first()};
     auto result2{cursor2->to_first()};
     while (result1.done && result2.done) {
         const auto key1{result1.key};
         const auto key2{result2.key};
-        if (key1 != key2) {
+        if (key1 != key2 || force_print) {
             std::cout << "k1=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()})
                       << " k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key2.data()), key2.size()}) << "\n";
             ++diff_count;
@@ -1008,8 +1060,8 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
         bool first{true};
         const auto& value1{result1.value};
         const auto& value2{result2.value};
-        if (value1 != value2) {
-            if (first) {
+        if (value1 != value2 || force_print) {
+            if (first && !force_print) {
                 if (key1 == key2) {
                     std::cout << "k1=k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
                 }
@@ -1031,7 +1083,7 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
     return diff_count;
 }
 
-static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2) {
+static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
     ensure(table1.name == table2.name, "name mismatch: " + table1.name + " vs " + table2.name);
     ensure(table1.info.key_mode() == table2.info.key_mode(),
            "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())));
@@ -1051,14 +1103,14 @@ static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo
     if (table1_config.value_mode == ::mdbx::value_mode::single) {
         const auto cursor1{txn1.ro_cursor(table1_config)};
         const auto cursor2{txn2.ro_cursor(table2_config)};
-        const auto diff_count{print_single_table_diff(cursor1.get(), cursor2.get())};
+        const auto diff_count{print_single_table_diff(cursor1.get(), cursor2.get(), force_print)};
         if (diff_count == 0) {
             std::cout << "No diff found for single-value table " << table1_config.name << "\n";
         }
     } else if (table1_config.value_mode == ::mdbx::value_mode::multi) {
         const auto cursor1{txn1.ro_cursor_dup_sort(table1_config)};
         const auto cursor2{txn2.ro_cursor_dup_sort(table2_config)};
-        const auto diff_count{print_multi_table_diff(cursor1.get(), cursor2.get())};
+        const auto diff_count{print_multi_table_diff(cursor1.get(), cursor2.get(), force_print)};
         if (diff_count == 0) {
             std::cout << "No diff found for multi-value table " << table1_config.name << "\n";
         }
@@ -1098,10 +1150,10 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
     return {};
 }
 
-static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2,
-                                                const DbTableInfo& db1_table, const DbTableInfo& db2_table, bool verbose) {
+static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
+                                                bool check_pages, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
-    if (const auto result{compare(db1_table, db2_table)}; !result) {
+    if (const auto result{compare(db1_table, db2_table, check_pages)}; !result) {
         const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
         if (verbose) {
             std::cerr << error_message << "\n";
@@ -1110,22 +1162,18 @@ static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2
         return tl::make_unexpected(error_message);
     }
 
-    if (db1_table.size() != db2_table.size()) {
-        return tl::make_unexpected("mismatch in size of table " + db1_table.name + ": db1 has " + std::to_string(db1_table.size()) +
-                                   ", db2 has " + std::to_string(db2_table.size()));
-    }
-
     return {};
 }
 
-static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info, bool verbose) {
+static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
+                                             bool check_pages, bool verbose) {
     const auto& db1_tables{db1_info.tables};
     const auto& db2_tables{db2_info.tables};
     SILKWORM_ASSERT(db1_tables.size() == db2_tables.size());
 
     // Check both databases have the same content for each table
     for (size_t i{0}; i < db1_tables.size(); ++i) {
-        if (const auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], verbose)}; !result) {
+        if (const auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_pages, verbose)}; !result) {
             return result;
         }
     }
@@ -1133,7 +1181,7 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
     return {};
 }
 
-void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool verbose, std::optional<std::string_view> table) {
+void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_pages, bool verbose, std::optional<std::string_view> table) {
     ensure(fs::exists(target_datadir_path), "target datadir " + target_datadir_path.string() + " does not exist");
     ensure(fs::is_directory(target_datadir_path), "target datadir " + target_datadir_path.string() + " must be a folder");
 
@@ -1160,7 +1208,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ve
         }
 
         // Check both databases have the same content in the specified table
-        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, verbose)}; !result) {
+        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_pages, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     } else {
@@ -1170,7 +1218,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ve
         }
 
         // Check both databases have the same content in each table
-        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, verbose)}; !result) {
+        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_pages, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     }
@@ -2164,6 +2212,7 @@ int main(int argc, char* argv[]) {
                            ->excludes(app_dry_opt);
     auto cmd_compare_datadir = cmd_compare->add_option("--other_datadir", "Path to other data directory")->required();
     auto cmd_compare_verbose = cmd_compare->add_flag("--verbose", "Print verbose output");
+    auto cmd_compare_check_pages = cmd_compare->add_flag("--check_pages", "Check if b-tree page counters match");
     std::optional<std::string> cmd_compare_table;
     cmd_compare->add_option("--table", cmd_compare_table, "Name of specific table to compare")
         ->capture_default_str();
@@ -2322,8 +2371,8 @@ int main(int argc, char* argv[]) {
                     static_cast<bool>(*cmd_copy_target_create_opt), static_cast<bool>(*cmd_copy_target_noempty_opt),
                     cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_compare) {
-            compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_verbose->as<bool>(),
-                    cmd_compare_table);
+            compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_pages->as<bool>(),
+                    cmd_compare_verbose->as<bool>(), cmd_compare_table);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));

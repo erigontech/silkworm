@@ -171,7 +171,7 @@ TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") 
 
     struct RecSplitParams {
         std::size_t key_count{0};
-        std::size_t bucket_size{0};
+        uint16_t bucket_size{0};
     };
     std::vector<RecSplitParams> recsplit_params_sequence{
         {1'000, 128},

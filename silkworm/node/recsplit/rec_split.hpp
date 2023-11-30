@@ -375,7 +375,7 @@ class RecSplit {
         SILK_TRACE << "[index] written number of keys: " << building_strategy_->keys_added();
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(building_strategy_->max_offset()) + 7) / 8;
+        bytes_per_record_ = gsl::narrow<uint8_t>((std::bit_width(building_strategy_->max_offset()) + 7) / 8);
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_TRACE << "[index] written bytes per record: " << int(bytes_per_record_);
 
@@ -579,7 +579,7 @@ class RecSplit {
     static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
                                                              const std::array<uint32_t, kMaxBucketSize>& memo,
                                                              uint16_t& golomb_param_max_index) {
-        if (m > golomb_param_max_index) golomb_param_max_index = m;
+        if (m > golomb_param_max_index) golomb_param_max_index = gsl::narrow<uint16_t>(m);
         return golomb_param(m, memo);
     }
 

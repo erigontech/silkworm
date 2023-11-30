@@ -112,7 +112,7 @@ struct Transaction : public UnsignedTransaction {
 
   private:
     // cached value for hash if already computed
-    mutable std::optional<evmc::bytes32> cached_hash{std::nullopt};
+    mutable std::optional<evmc::bytes32> cached_hash_{std::nullopt};
 };
 
 namespace rlp {

@@ -37,8 +37,6 @@ inline std::string to_string(DecodingResult result) {
     return s;
 }
 
-namespace fs = std::filesystem;
-
 Snapshot::Snapshot(SnapshotPath path)
     : path_(std::move(path)), decoder_{path_.path()} {}
 

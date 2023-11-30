@@ -28,8 +28,8 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/rpc/daemon.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 
 #include "block_exchange.hpp"
 #include "chain_sync.hpp"

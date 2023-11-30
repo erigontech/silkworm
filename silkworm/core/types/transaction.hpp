@@ -50,14 +50,10 @@ enum class TransactionType : uint8_t {
 };
 
 struct UnsignedTransaction {
-    UnsignedTransaction() {}
-    UnsignedTransaction(TransactionType _type, const std::optional<evmc::address>& _to, const Bytes& _data) {
-        type = _type;
-        to = _to;
-        data = _data;
-    }
+    UnsignedTransaction() = default;
+    UnsignedTransaction(TransactionType _type, std::optional<evmc::address> _to, Bytes&& _data)
+        : type{_type}, to{_to}, data{std::move(_data)} {}
 
-    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
     TransactionType type{TransactionType::kLegacy};
 
     std::optional<intx::uint256> chain_id{std::nullopt};  // nullopt means a pre-EIP-155 transaction
@@ -76,6 +72,7 @@ struct UnsignedTransaction {
     intx::uint256 max_fee_per_blob_gas{0};
     std::vector<Hash> blob_versioned_hashes{};
 
+    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
     [[nodiscard]] intx::uint512 maximum_gas_cost() const;
 
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
@@ -89,8 +86,9 @@ struct UnsignedTransaction {
 };
 
 struct Transaction : public UnsignedTransaction {
-    Transaction() {}
-    Transaction(TransactionType _type, const std::optional<evmc::address>& _to, const Bytes& _data) : UnsignedTransaction(_type, _to, _data) {}
+    Transaction() = default;
+    Transaction(TransactionType _type, std::optional<evmc::address> _to, Bytes&& _data)
+        : UnsignedTransaction(_type, _to, std::move(_data)) {}
 
     bool odd_y_parity{false};
     intx::uint256 r{0}, s{0};  // signature

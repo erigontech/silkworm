@@ -17,6 +17,7 @@
 #include "glaze.hpp"
 
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
@@ -34,7 +35,7 @@ struct GlazeJsonError {
 
 struct GlazeJsonErrorRsp {
     std::string_view jsonrpc = kJsonVersion;
-    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
+    JsonRpcId id;
     GlazeJsonError json_error;
     struct glaze {
         using T = GlazeJsonErrorRsp;
@@ -47,21 +48,11 @@ struct GlazeJsonErrorRsp {
 
 void make_glaze_json_error(const nlohmann::json& request_json, const int code, const std::string& message, std::string& json_reply) {
     GlazeJsonErrorRsp glaze_json_error;
-    if (request_json.contains("id")) {
-        const auto& id = request_json["id"];
-        if (id.is_number()) {
-            glaze_json_error.id = id.get<std::uint32_t>();
-        } else if (id.is_string()) {
-            glaze_json_error.id = std::make_shared<std::string>(id.get<std::string>());
-        } else {
-            glaze_json_error.id = nullptr;
-        }
-    } else {
-        glaze_json_error.id = nullptr;
-    }
 
+    glaze_json_error.id = make_jsonrpc_id(request_json);
     glaze_json_error.json_error.code = code;
     std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
+
     glz::write_json(glaze_json_error, json_reply);
 }
 
@@ -80,7 +71,7 @@ struct GlazeJsonRevert {
 
 struct GlazeJsonRevertError {
     std::string_view jsonrpc = kJsonVersion;
-    std::variant<std::uint32_t, std::shared_ptr<std::string>> id;
+    JsonRpcId id;
     GlazeJsonRevert revert_data;
     struct glaze {
         using T = GlazeJsonRevertError;
@@ -93,21 +84,12 @@ struct GlazeJsonRevertError {
 
 void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert;
-    if (request_json.contains("id")) {
-        const auto& id = request_json["id"];
-        if (id.is_number()) {
-            glaze_json_revert.id = id.get<std::uint32_t>();
-        } else if (id.is_string()) {
-            glaze_json_revert.id = std::make_shared<std::string>(id.get<std::string>());
-        } else {
-            glaze_json_revert.id = nullptr;
-        }
-    } else {
-        glaze_json_revert.id = nullptr;
-    }
+
+    glaze_json_revert.id = make_jsonrpc_id(request_json);
     glaze_json_revert.revert_data.code = error.code;
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
+
     glz::write_json(glaze_json_revert, reply);
 }
 

@@ -107,7 +107,7 @@ bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
         SILK_TRACE << property_name << " : " << property.value().type_name() << " : " << property.value().dump();
 
         if (property_name == "id") {
-            if (!property.value().is_number() && !property.value().is_string()) {
+            if (!property.value().is_number() && !property.value().is_string() && !property.value().is_null()) {
                 return false;
             }
         } else if (property_name == "jsonrpc") {
@@ -131,8 +131,6 @@ bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
 }
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
-    // const nlohmann::json request_id = request_json.contains("id") ? request_json["id"] : nullptr;
-    // const auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_json, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;

@@ -132,7 +132,7 @@ nlohmann::json make_json_content(const nlohmann::json& request_json, const nlohm
 nlohmann::json make_json_error(const nlohmann::json& request_json, int code, const std::string& message);
 nlohmann::json make_json_error(const nlohmann::json& request_json, const RevertError& error);
 
-using JsonRpcId = std::variant<uint32_t, std::shared_ptr<std::string>>;
+using JsonRpcId = std::variant<uint32_t, std::string, std::nullptr_t>;
 JsonRpcId make_jsonrpc_id(const nlohmann::json& request_json);
 
 }  // namespace silkworm::rpc

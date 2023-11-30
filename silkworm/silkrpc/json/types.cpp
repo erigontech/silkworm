@@ -495,7 +495,7 @@ JsonRpcId make_jsonrpc_id(const nlohmann::json& request_json) {
         if (id.is_number()) {
             json_rpc_id = id.get<std::uint32_t>();
         } else if (id.is_string()) {
-            json_rpc_id = std::make_shared<std::string>(id.get<std::string>());
+            json_rpc_id = id.get<std::string>();
         } else {
             json_rpc_id = nullptr;
         }

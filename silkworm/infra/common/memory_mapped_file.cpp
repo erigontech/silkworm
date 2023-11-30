@@ -63,17 +63,6 @@ MemoryMappedFile::~MemoryMappedFile() {
 #endif
 }
 
-MemoryMappedFile::MemoryMappedFile(MemoryMappedFile&& source) noexcept
-    : path_(std::move(source.path_)), address_(source.address_), length_(source.length_), managed_(source.managed_) {}
-
-MemoryMappedFile& MemoryMappedFile::operator=(MemoryMappedFile&& other) noexcept {
-    path_ = std::move(other.path_);
-    address_ = other.address_;
-    length_ = other.length_;
-    managed_ = other.managed_;
-    return *this;
-}
-
 #ifdef _WIN32
 void MemoryMappedFile::map_existing(bool read_only) {
     DWORD desired_access = read_only ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);

@@ -84,8 +84,8 @@ class MemoryMappedFile {
     MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
 
     // Only movable
-    MemoryMappedFile(MemoryMappedFile&& source) noexcept;
-    MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept;
+    MemoryMappedFile(MemoryMappedFile&& source) noexcept = default;
+    MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept = default;
 
     [[nodiscard]] std::filesystem::path path() const {
         return path_;
@@ -137,7 +137,7 @@ class MemoryMappedFile {
 
 struct MemoryMappedStreamBuf : std::streambuf {
     MemoryMappedStreamBuf(char const* base, std::size_t size) {
-        char* p{const_cast<char*>(base)};
+        char* p{const_cast<char*>(base)};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
         this->setg(p, p, p + size);
     }
 };

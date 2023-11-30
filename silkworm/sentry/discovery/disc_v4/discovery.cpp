@@ -186,8 +186,9 @@ class DiscoveryImpl : private MessageHandler {
                 auto current_enr_seq_num = co_await node_db_.find_enr_seq_num(node_id);
                 if (current_enr_seq_num != ping_check_result.enr_seq_num) {
                     auto address = co_await node_db_.find_node_address(node_id);
-                    if (!address)
+                    if (!address) {
                         throw std::runtime_error("ping_check: node address not found");
+                    }
                     auto endpoint = address->to_common_address().endpoint;
                     auto enr_record = co_await enr::fetch_enr_record(node_id, std::move(endpoint), server_, on_enr_response_signal_);
                     if (enr_record) {

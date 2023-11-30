@@ -25,13 +25,11 @@
 #include <boost/asio/impl/execution_context.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes"
-#include <silkworm/core/execution/evm.hpp>
-#pragma GCC diagnostic pop
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>

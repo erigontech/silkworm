@@ -786,7 +786,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
 
     // Check for duplicates
     if (memory_result.done && db_result.done && memory_result.key == db_result.key) {
-        bool skip;
+        bool skip{false};
         if (type == MoveType::kNext || type == MoveType::kPrevious) {
             skip = !cursor_->is_multi_value() || memory_result.value == db_result.value;
         } else {

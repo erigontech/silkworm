@@ -249,7 +249,7 @@ MultiSentryClient::MultiSentryClient(
 }
 
 MultiSentryClient::~MultiSentryClient() {
-    [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
+    [[maybe_unused]] int non_trivial_destructor{0};  // silent clang-tidy
 }
 
 Task<std::shared_ptr<api::Service>> MultiSentryClient::service() {

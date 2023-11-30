@@ -39,7 +39,7 @@ TEST_CASE("parse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
         WaitMode::busy_spin,
     };
     for (std::size_t i{0}; i < input_texts.size(); i++) {
-        WaitMode wait_mode;
+        WaitMode wait_mode{};
         std::string error;
         const auto success{AbslParseFlag(input_texts[i], &wait_mode, &error)};
         CHECK(success == true);
@@ -49,7 +49,7 @@ TEST_CASE("parse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
 }
 
 TEST_CASE("parse invalid wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
-    WaitMode wait_mode;
+    WaitMode wait_mode{};
     std::string error;
     const auto success{AbslParseFlag("abc", &wait_mode, &error)};
     CHECK(success == false);

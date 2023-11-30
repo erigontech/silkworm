@@ -41,8 +41,9 @@ class Channel {
         try {
             co_await channel_.async_send(boost::system::error_code(), value, boost::asio::use_awaitable);
         } catch (const boost::system::system_error& ex) {
-            if (ex.code() == boost::asio::experimental::error::channel_cancelled)
+            if (ex.code() == boost::asio::experimental::error::channel_cancelled) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+            }
             throw;
         }
     }
@@ -55,8 +56,9 @@ class Channel {
         try {
             co_return (co_await channel_.async_receive(boost::asio::use_awaitable));
         } catch (const boost::system::system_error& ex) {
-            if (ex.code() == boost::asio::experimental::error::channel_cancelled)
+            if (ex.code() == boost::asio::experimental::error::channel_cancelled) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+            }
             throw;
         }
     }
@@ -64,10 +66,12 @@ class Channel {
     std::optional<T> try_receive() {
         std::optional<T> result;
         channel_.try_receive([&](const boost::system::error_code& error, T&& value) {
-            if (error == boost::asio::experimental::error::channel_cancelled)
+            if (error == boost::asio::experimental::error::channel_cancelled) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
-            if (error)
+            }
+            if (error) {
                 throw boost::system::system_error(error);
+            }
             result = std::move(value);
         });
         return result;

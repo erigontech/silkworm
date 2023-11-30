@@ -101,9 +101,10 @@ awaitable<std::variant<std::monostate, U>, Executor> operator||(awaitable<void, 
         if (!ex0) co_return std::variant<std::monostate, U>{std::in_place_index<0>};
         std::rethrow_exception(ex0);
     } else {
-        if (!ex1)
+        if (!ex1) {
             co_return std::variant<std::monostate, U>{std::in_place_index<1>,
                                                       std::move(detail::awaitable_unwrap<U>(r1))};
+        }
         std::rethrow_exception(ex1);
     }
 }
@@ -123,9 +124,10 @@ awaitable<std::variant<T, std::monostate>, Executor> operator||(awaitable<T, Exe
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     if (order[0] == 0) {
-        if (!ex0)
+        if (!ex0) {
             co_return std::variant<T, std::monostate>{std::in_place_index<0>,
                                                       std::move(detail::awaitable_unwrap<T>(r0))};
+        }
         std::rethrow_exception(ex0);
     } else {
         if (!ex1) co_return std::variant<T, std::monostate>{std::in_place_index<1>};
@@ -201,9 +203,10 @@ awaitable<std::variant<T..., U>, Executor> operator||(awaitable<std::variant<T..
         if (!ex0) co_return widen::template call<0>(detail::awaitable_unwrap<std::variant<T...>>(r0));
         std::rethrow_exception(ex0);
     } else {
-        if (!ex1)
+        if (!ex1) {
             co_return std::variant<T..., U>{std::in_place_index<sizeof...(T)>,
                                             std::move(detail::awaitable_unwrap<U>(r1))};
+        }
         std::rethrow_exception(ex1);
     }
 }

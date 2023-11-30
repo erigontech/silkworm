@@ -45,7 +45,7 @@ static const uint8_t blake2b_sigma[12][16] = {
 };
 
 static inline uint64_t load64(const void* src) {
-    uint64_t w;
+    uint64_t w = 0;
     memcpy(&w, src, sizeof w);
     return w;
 }
@@ -79,7 +79,7 @@ static inline uint64_t rotr64(const uint64_t w, const unsigned c) { return (w >>
 void silkworm_blake2b_compress(SilkwormBlake2bState* S, const uint8_t block[SILKWORM_BLAKE2B_BLOCKBYTES], size_t r) {
     uint64_t m[16];
     uint64_t v[16];
-    size_t i;
+    size_t i = 0;
 
     for (i = 0; i < 16; ++i) {
         m[i] = load64(block + i * sizeof(m[i]));

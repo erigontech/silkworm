@@ -48,20 +48,25 @@ void rethrow_first_exception_if_any(
     const auto& ex1 = exceptions[1];
 
     // no exceptions
-    if (!ex0 && !ex1)
+    if (!ex0 && !ex1) {
         return;
+    }
 
     // only 1 exception
-    if (!ex0)
+    if (!ex0) {
         std::rethrow_exception(ex1);
-    if (!ex1)
+    }
+    if (!ex1) {
         std::rethrow_exception(ex0);
+    }
 
     // 2 exceptions, but one of them is an expected operation_canceled caused by aborting a pending branch
-    if (is_operation_cancelled_error(ex0))
+    if (is_operation_cancelled_error(ex0)) {
         std::rethrow_exception(ex1);
-    if (is_operation_cancelled_error(ex1))
+    }
+    if (is_operation_cancelled_error(ex1)) {
         std::rethrow_exception(ex0);
+    }
 
     // 2 unexpected exceptions
     // This is possible if operation_canceled is handled inside a pending operation,

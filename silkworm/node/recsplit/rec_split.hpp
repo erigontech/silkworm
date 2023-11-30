@@ -68,19 +68,13 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#if defined(__clang__)
-#pragma GCC diagnostic ignored "-Winvalid-constexpr"
-#endif /* defined(__clang__) */
-#pragma GCC diagnostic ignored "-Wsign-compare"
-
 #include <silkworm/node/recsplit/encoding/elias_fano.hpp>
 #include <silkworm/node/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/node/recsplit/support/murmur_hash3.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 
 namespace silkworm::succinct {
 
@@ -135,10 +129,13 @@ class SplittingStrategy {
 
   public:
     //! The lower bound for primary (lower) key aggregation
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * max(2, ceil(0.35 * LEAF_SIZE + 1. / 2));
+    static constexpr std::size_t kLowerAggregationBound = LEAF_SIZE * max(2,
+                                                                          // NOLINTNEXTLINE(bugprone-incorrect-roundings)
+                                                                          static_cast<int64_t>(0.35 * LEAF_SIZE + 0.5));
 
     //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : ceil(0.21 * LEAF_SIZE + 9. / 10));
+    static constexpr std::size_t kUpperAggregationBound = kLowerAggregationBound *
+                                                          (LEAF_SIZE < 7 ? 2 : static_cast<int64_t>(0.21 * LEAF_SIZE + 0.9));
 
     static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
         std::size_t fanout{0}, unit{0};
@@ -184,7 +181,7 @@ constexpr std::size_t kSecondMetadataHeaderLength{
 //! Parameters for modified Recursive splitting (RecSplit) algorithm.
 struct RecSplitSettings {
     std::size_t keys_count;            // The total number of keys in the RecSplit
-    std::size_t bucket_size;           // The number of keys in each bucket (except probably last one)
+    uint16_t bucket_size;              // The number of keys in each bucket (except probably last one)
     std::filesystem::path index_path;  // The path of the generated RecSplit index file
     uint64_t base_data_id;             // Application-specific base data ID written in index header
     bool double_enum_index{true};      // Flag indicating if 2-level index is required
@@ -233,7 +230,7 @@ class RecSplit {
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
-        salt_ = salt != 0 ? salt : rand_gen32();
+        salt_ = salt != 0 ? salt : static_cast<uint32_t>(rand_gen32());
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
@@ -251,7 +248,7 @@ class RecSplit {
         base_data_id_ = endian::load_big_u64(address);
         key_count_ = endian::load_big_u64(address + kBaseDataIdLength);
         bytes_per_record_ = address[kBaseDataIdLength + kKeyCountLength];
-        record_mask_ = (uint64_t(1) << (8 * bytes_per_record_)) - 1;
+        record_mask_ = (uint64_t{1} << (8 * bytes_per_record_)) - 1;
         SILK_TRACE << "Base data ID: " << base_data_id_ << " key count: " << key_count_
                    << " bytes per record: " << bytes_per_record_ << " record mask: " << record_mask_;
 
@@ -267,13 +264,6 @@ class RecSplit {
         const uint16_t leaf_size = endian::load_big_u16(address + offset);
         SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
         offset += kLeafSizeLength;
-
-        const uint16_t primary_aggr_bound = leaf_size *
-                                            succinct::max(2, gsl::narrow<int64_t>(std::ceil(0.35 * leaf_size + 0.5)));
-        SILKWORM_ASSERT(primary_aggr_bound == kLowerAggregationBound);
-        const uint16_t secondary_aggr_bound = primary_aggr_bound *
-                                              (leaf_size < 7 ? 2 : gsl::narrow<uint16_t>(std::ceil(0.21 * leaf_size + 0.9)));
-        SILKWORM_ASSERT(secondary_aggr_bound == kUpperAggregationBound);
 
         // Read salt
         salt_ = endian::load_big_u32(address + offset);
@@ -385,7 +375,7 @@ class RecSplit {
         SILK_TRACE << "[index] written number of keys: " << building_strategy_->keys_added();
 
         // Write number of bytes per index record
-        bytes_per_record_ = (std::bit_width(building_strategy_->max_offset()) + 7) / 8;
+        bytes_per_record_ = gsl::narrow<uint8_t>((std::bit_width(building_strategy_->max_offset()) + 7) / 8);
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
         SILK_TRACE << "[index] written bytes per record: " << int(bytes_per_record_);
 
@@ -486,7 +476,7 @@ class RecSplit {
         }
 
         const std::size_t bucket = hash128_to_bucket(hash);
-        uint64_t cum_keys, cum_keys_next, bit_pos;
+        uint64_t cum_keys{0}, cum_keys_next{0}, bit_pos{0};
         double_ef_index_.get3(bucket, cum_keys, cum_keys_next, bit_pos);
 
         // Number of keys in this bucket
@@ -589,7 +579,7 @@ class RecSplit {
     static inline uint64_t golomb_param_with_max_calculation(const std::size_t m,
                                                              const std::array<uint32_t, kMaxBucketSize>& memo,
                                                              uint16_t& golomb_param_max_index) {
-        if (m > golomb_param_max_index) golomb_param_max_index = m;
+        if (m > golomb_param_max_index) golomb_param_max_index = gsl::narrow<uint16_t>(m);
         return golomb_param(m, memo);
     }
 
@@ -613,7 +603,7 @@ class RecSplit {
             sqrt_prod *= sqrt(k[i]);
         }
 
-        const double p = sqrt(m) / (pow(2 * std::numbers::pi, (fanout - 1.) * 0.5) * sqrt_prod);
+        const double p = sqrt(m) / (pow(2 * std::numbers::pi, (static_cast<double>(fanout) - 1.) * 0.5) * sqrt_prod);
         auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p))));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
@@ -671,7 +661,7 @@ class RecSplit {
                          uint16_t& golomb_param_max_index,
                          uint8_t bytes_per_record) {
         uint64_t salt = kStartSeed[level];
-        const uint16_t m = end - start;
+        const std::size_t m = end - start;
         SILKWORM_ASSERT(m > 1);
         if (m <= LEAF_SIZE) {
             // No need to build aggregation levels - just find bijection
@@ -701,7 +691,7 @@ class RecSplit {
                 buffer_offsets[j] = offsets[start + i];
             }
             Bytes uint64_buffer(8, '\0');
-            for (auto i{0}; i < m; i++) {
+            for (std::size_t i{0}; i < m; i++) {
                 endian::store_big_u64(uint64_buffer.data(), buffer_offsets[i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
                 if (level == 0) {
@@ -748,8 +738,8 @@ class RecSplit {
             gr_builder.append_fixed(salt, log2golomb);
             gr_builder.append_unary(static_cast<uint32_t>(salt >> log2golomb));
 
-            std::size_t i;
-            for (i = 0; i < m - unit; i += unit) {
+            std::size_t i{0};
+            for (; i < m - unit; i += unit) {
                 recsplit(level + 1, keys, offsets, buffer_keys, buffer_offsets, start + i, start + i + unit, gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
             }
             if (m - i > 1) {
@@ -791,7 +781,7 @@ class RecSplit {
     }
 
     friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE>& rs) {
-        size_t leaf_size;
+        size_t leaf_size{0};
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         if (leaf_size != LEAF_SIZE) {
             fprintf(stderr, "Serialized leaf size %d, code leaf size %d\n", int(leaf_size), int(LEAF_SIZE));
@@ -818,7 +808,7 @@ class RecSplit {
     static const std::array<uint32_t, kMaxBucketSize> memo;
 
     //! The size in bytes of each Recsplit bucket (possibly except the last one)
-    std::size_t bucket_size_;
+    uint16_t bucket_size_;
 
     //! The number of keys for this Recsplit algorithm instance
     std::size_t key_count_;

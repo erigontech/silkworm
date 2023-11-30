@@ -194,17 +194,20 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     if (olderReceipts.has_value()) receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderReceipts);
     if (olderSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderSenders);
     if (olderTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderTxIndex);
-    if (olderCallTraces.has_value())
+    if (olderCallTraces.has_value()) {
         call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderCallTraces);
+    }
 
     // Apply discrete values for 'before' if provided
     if (beforeHistory.has_value()) history = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeHistory);
-    if (beforeReceipts.has_value())
+    if (beforeReceipts.has_value()) {
         receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeReceipts);
+    }
     if (beforeSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeSenders);
     if (beforeTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeTxIndex);
-    if (beforeCallTraces.has_value())
+    if (beforeCallTraces.has_value()) {
         call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeCallTraces);
+    }
 
     if (!history) history = std::make_unique<BlockAmount>();
     if (!receipts) receipts = std::make_unique<BlockAmount>();

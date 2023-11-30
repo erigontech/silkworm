@@ -192,7 +192,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             // auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
             // if (!is_empty(underlying_buffer))
             //     index_output_stream << underlying_buffer;
-            char byte;
+            char byte{0};
             while (buckets_[i].index_ofs.get(byte)) {  // maybe it is better to avoid this and use a buffer in place of index_ofs
                 index_output_stream.put(byte);
             }

@@ -185,7 +185,7 @@ SessionSentryClient::SessionSentryClient(
 }
 
 SessionSentryClient::~SessionSentryClient() {
-    [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
+    [[maybe_unused]] int non_trivial_destructor{0};  // silent clang-tidy
 }
 
 Task<std::shared_ptr<api::Service>> SessionSentryClient::service() {

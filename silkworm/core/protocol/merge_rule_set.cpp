@@ -85,7 +85,11 @@ void MergeRuleSet::initialize(EVM& evm) {
 
     // EIP-4788: Beacon block root in the EVM
     SILKWORM_ASSERT(header.parent_beacon_block_root);
-    Transaction system_txn(TransactionType::kSystem, kBeaconRootsAddress, Bytes{ByteView{*header.parent_beacon_block_root}});
+    Transaction system_txn{
+        TransactionType::kSystem,
+        kBeaconRootsAddress,
+        Bytes{ByteView{*header.parent_beacon_block_root}},
+    };
     system_txn.from = kSystemAddress;
     evm.execute(system_txn, kSystemCallGasLimit);
 }

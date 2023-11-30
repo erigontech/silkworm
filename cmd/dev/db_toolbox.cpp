@@ -1032,16 +1032,24 @@ static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorD
         const auto key1{result1.key};
         std::cout << "k1=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
         ++diff_count;
+        if (diff_count % 100 == 0) {
+            if (!user_confirmation("Do you need any more diffs?")) {
+                return diff_count;
+            }
+        }
         result1 = cursor1->to_next(/*throw_notfound=*/false);
     }
-
     while (result2.done) {
         const auto key2{result2.key};
         std::cout << "k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key2.data()), key2.size()}) << "\n";
         ++diff_count;
+        if (diff_count % 100 == 0) {
+            if (!user_confirmation("Do you need any more diffs?")) {
+                return diff_count;
+            }
+        }
         result2 = cursor2->to_next(/*throw_notfound=*/false);
     }
-
     return diff_count;
 }
 
@@ -1078,6 +1086,28 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
             }
         }
         result1 = cursor1->to_next(/*throw_notfound=*/false);
+        result2 = cursor2->to_next(/*throw_notfound=*/false);
+    }
+    while (result1.done) {
+        const auto key1{result1.key};
+        std::cout << "k1=" << silkworm::to_hex({static_cast<const uint8_t*>(key1.data()), key1.size()}) << "\n";
+        ++diff_count;
+        if (diff_count % 100 == 0) {
+            if (!user_confirmation("Do you need any more diffs?")) {
+                return diff_count;
+            }
+        }
+        result1 = cursor1->to_next(/*throw_notfound=*/false);
+    }
+    while (result2.done) {
+        const auto key2{result2.key};
+        std::cout << "k2=" << silkworm::to_hex({static_cast<const uint8_t*>(key2.data()), key2.size()}) << "\n";
+        ++diff_count;
+        if (diff_count % 100 == 0) {
+            if (!user_confirmation("Do you need any more diffs?")) {
+                return diff_count;
+            }
+        }
         result2 = cursor2->to_next(/*throw_notfound=*/false);
     }
     return diff_count;

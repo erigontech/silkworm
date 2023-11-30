@@ -539,10 +539,10 @@ class RecSplit {
     std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
 
     //! Return the value associated with the given key within the index
-    std::size_t lookup(ByteView key) const { return lookup(key.data(), key.size()); }
+    [[nodiscard]] std::size_t lookup(ByteView key) const { return lookup(key.data(), key.size()); }
 
     //! Return the value associated with the given key within the index
-    std::size_t lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
+    [[nodiscard]] std::size_t lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
 
     //! Return the value associated with the given key within the index
     std::size_t lookup(const void* key, const size_t length) const {
@@ -557,25 +557,25 @@ class RecSplit {
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
+    [[nodiscard]] std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
 
     //! Return the number of keys used to build the RecSplit instance
-    std::size_t key_count() const { return key_count_; }
+    [[nodiscard]] std::size_t key_count() const { return key_count_; }
 
-    bool empty() const { return key_count_ == 0; }
-    uint64_t base_data_id() const { return base_data_id_; }
-    uint64_t record_mask() const { return record_mask_; }
-    uint64_t bucket_count() const { return bucket_count_; }
-    uint16_t bucket_size() const { return bucket_size_; }
+    [[nodiscard]] bool empty() const { return key_count_ == 0; }
+    [[nodiscard]] uint64_t base_data_id() const { return base_data_id_; }
+    [[nodiscard]] uint64_t record_mask() const { return record_mask_; }
+    [[nodiscard]] uint64_t bucket_count() const { return bucket_count_; }
+    [[nodiscard]] uint16_t bucket_size() const { return bucket_size_; }
 
-    std::size_t file_size() const { return std::filesystem::file_size(index_path_); }
+    [[nodiscard]] std::size_t file_size() const { return std::filesystem::file_size(index_path_); }
 
-    std::filesystem::file_time_type last_write_time() const {
+    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
         return std::filesystem::last_write_time(index_path_);
     }
 
-    uint8_t* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
-    std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
+    [[nodiscard]] uint8_t* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
+    [[nodiscard]] std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
 
   private:
     static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
@@ -659,7 +659,7 @@ class RecSplit {
     }
 
     template <typename GRBUILDER>
-    static void recsplit(int level,
+    static void recsplit(int level,  // NOLINT
                          std::vector<uint64_t>& keys,
                          std::vector<uint64_t>& offsets,         // aka values
                          std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
@@ -772,7 +772,7 @@ class RecSplit {
     }
 
     // Maps a 128-bit to a bucket using the first 64-bit half.
-    inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
+    [[nodiscard]] inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
     void check_minimum_length(std::size_t minimum_length) {
         if (encoded_file_ && encoded_file_->length() < minimum_length) {
@@ -871,10 +871,10 @@ class RecSplit {
 //! The sequential building strategy
 template <std::size_t LEAF_SIZE>
 struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy {
-    SequentialBuildingStrategy(std::size_t etl_optimal_size) : etl_optimal_size_{etl_optimal_size} {}
+    explicit SequentialBuildingStrategy(std::size_t etl_optimal_size) : etl_optimal_size_{etl_optimal_size} {}
 
   protected:
-    virtual void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t, bool double_enum_index) override {
+    void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t, bool double_enum_index) override {
         offset_collector_ = std::make_unique<etl::Collector>(etl_optimal_size_);
         bucket_collector_ = std::make_unique<etl::Collector>(etl_optimal_size_);
 
@@ -1045,11 +1045,11 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         max_offset_ = 0;
     }
 
-    virtual uint64_t keys_added() override {
+    uint64_t keys_added() override {
         return keys_added_;
     }
 
-    virtual uint64_t max_offset() override {
+    uint64_t max_offset() override {
         return max_offset_;
     }
 
@@ -1058,7 +1058,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     std::size_t etl_optimal_size_{etl::kOptimalBufferSize};
 
     //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
-    bool double_enum_index_;
+    bool double_enum_index_{false};
 
     //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
     uint64_t max_offset_{0};

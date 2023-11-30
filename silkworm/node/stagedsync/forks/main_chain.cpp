@@ -18,6 +18,7 @@
 
 #include <set>
 
+#include <gsl/util>
 #include <magic_enum.hpp>
 
 #include <silkworm/infra/common/ensure.hpp>

@@ -30,7 +30,7 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
-#include <silkworm/node/recsplit/rec_split.hpp>
+#include <silkworm/node/recsplit/rec_split_par.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {

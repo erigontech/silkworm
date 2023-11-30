@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>

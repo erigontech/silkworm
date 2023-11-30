@@ -100,13 +100,9 @@ Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& c
     if (!block_with_hash) {
         co_return std::nullopt;
     }
-    const silkworm::ByteView tx_hash{transaction_hash.bytes, silkworm::kHashLength};
-
     const auto& transactions = block_with_hash->block.transactions;
     for (std::size_t idx{0}; idx < transactions.size(); idx++) {
-        auto ethash_hash{hash_of_transaction(transactions[idx])};
-        silkworm::ByteView hash_view{ethash_hash.bytes, silkworm::kHashLength};
-        if (tx_hash == hash_view) {
+        if (transaction_hash == transactions[idx].hash()) {
             const auto& block_header = block_with_hash->block.header;
             co_return TransactionWithBlock{
                 *block_with_hash,

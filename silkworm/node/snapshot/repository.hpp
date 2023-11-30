@@ -25,12 +25,13 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>
 
 namespace silkworm::snapshot {
+
+class Index;
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;

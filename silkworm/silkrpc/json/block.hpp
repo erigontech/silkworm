@@ -24,7 +24,7 @@ namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const Block& b);
 
-void make_glaze_json_content(uint32_t id, const Block& b, std::string& json_reply);
-void make_glaze_json_null_content(uint32_t id, std::string& json_reply);
+void make_glaze_json_content(const nlohmann::json& request_json, const Block& b, std::string& json_reply);
+void make_glaze_json_null_content(const nlohmann::json& request_json, std::string& json_reply);
 
 }  // namespace silkworm::rpc

@@ -24,8 +24,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-
-#include "types.hpp"
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
@@ -109,7 +108,7 @@ struct GlazeJsonLogItem {
 
 struct GlazeJsonLog {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    JsonRpcId id;
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
         using T = GlazeJsonLog;
@@ -120,11 +119,11 @@ struct GlazeJsonLog {
     };
 };
 
-void make_glaze_json_content(uint32_t id, const Logs& logs, std::string& json_reply) {
+void make_glaze_json_content(const nlohmann::json& request_json, const Logs& logs, std::string& json_reply) {
     GlazeJsonLog log_json_data{};
-    log_json_data.log_json_list.reserve(logs.size());
 
-    log_json_data.id = id;
+    log_json_data.log_json_list.reserve(logs.size());
+    log_json_data.id = make_jsonrpc_id(request_json);
 
     for (const auto& l : logs) {
         GlazeJsonLogItem item{};

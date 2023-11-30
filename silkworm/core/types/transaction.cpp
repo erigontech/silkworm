@@ -47,14 +47,14 @@ bool Transaction::set_v(const intx::uint256& v) {
 }
 
 evmc::bytes32 Transaction::hash() const {
-    if (cached_hash) {
-        return *cached_hash;
+    if (cached_hash_) {
+        return *cached_hash_;
     }
 
     Bytes rlp;
     rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
-    cached_hash = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
-    return *cached_hash;
+    cached_hash_ = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
+    return *cached_hash_;
 }
 
 namespace rlp {

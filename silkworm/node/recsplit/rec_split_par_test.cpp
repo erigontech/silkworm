@@ -237,7 +237,7 @@ TEST_CASE("RecSplit8-Par: index lookup", "[silkworm][node][recsplit][ignore]") {
 }
 
 TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{

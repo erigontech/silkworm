@@ -710,7 +710,10 @@ TEST_CASE("serialize PayloadStatusV1", "[silkworm::json][to_json]") {
 }
 
 TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
-    const auto j = make_json_content(0, {});
+    const auto request = R"({
+        "id":0
+    })"_json;
+    const auto j = make_json_content(request, {});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -719,8 +722,11 @@ TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
+    const auto request = R"({
+        "id":123
+    })"_json;
     nlohmann::json json_result = {{"currency", "ETH"}, {"value", 4.2}};
-    const auto j = make_json_content(123, json_result);
+    const auto j = make_json_content(request, json_result);
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,
@@ -729,7 +735,10 @@ TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
-    const auto j = make_json_error(0, 0, "");
+    const auto request = R"({
+        "id":0
+    })"_json;
+    const auto j = make_json_error(request, 0, "");
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -738,7 +747,10 @@ TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
-    const auto j = make_json_error(0, {{0, ""}, silkworm::Bytes{}});
+    const auto request = R"({
+        "id":0
+    })"_json;
+    const auto j = make_json_error(request, {{0, ""}, silkworm::Bytes{}});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -747,7 +759,11 @@ TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
-    const auto j = make_json_error(123, -32000, "revert");
+    const auto request = R"({
+        "id":123
+    })"_json;
+
+    const auto j = make_json_error(request, -32000, "revert");
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,
@@ -756,7 +772,11 @@ TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json revert error", "[silkworm::json][make_json_error]") {
-    const auto j = make_json_error(123, {{3, "execution reverted: Ownable: caller is not the owner"}, *silkworm::from_hex("0x00010203")});
+    const auto request = R"({
+        "id":123
+    })"_json;
+
+    const auto j = make_json_error(request, {{3, "execution reverted: Ownable: caller is not the owner"}, *silkworm::from_hex("0x00010203")});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,

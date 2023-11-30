@@ -22,6 +22,8 @@
 #include <glaze/glaze.hpp>
 #pragma GCC diagnostic pop
 
+#include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/types/error.hpp>
 
@@ -36,7 +38,7 @@ inline constexpr auto kInt256HexSize = 2 + 2 * sizeof(intx::uint256) + 1;
 inline constexpr auto kDataSize = 4096;
 inline constexpr auto kEthCallResultFixedSize = 2048;
 
-void make_glaze_json_error(uint32_t id, int error_id, const std::string& message, std::string& reply);
-void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply);
+void make_glaze_json_error(const nlohmann::json& request_json, int error_id, const std::string& message, std::string& reply);
+void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply);
 
 }  // namespace silkworm::rpc

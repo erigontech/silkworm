@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "rec_split.hpp"
+#include "rec_split_seq.hpp"
 
 #include <iomanip>  // for std::setw and std::setfill
 #include <vector>

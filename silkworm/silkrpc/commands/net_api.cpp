@@ -25,7 +25,7 @@ namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#net_listening
 Task<void> NetRpcApi::handle_net_listening(const nlohmann::json& request, nlohmann::json& reply) {
-    reply = make_json_content(request["id"], true);
+    reply = make_json_content(request, true);
     // TODO(canepat): needs integration in Erigon EthBackEnd (accumulate listening from multiple sentries)
     co_return;
 }
@@ -34,13 +34,13 @@ Task<void> NetRpcApi::handle_net_listening(const nlohmann::json& request, nlohma
 Task<void> NetRpcApi::handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto peer_count = co_await backend_->net_peer_count();
-        reply = make_json_content(request["id"], to_quantity(peer_count));
+        reply = make_json_content(request, to_quantity(peer_count));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32000, e.what());
+        reply = make_json_error(request, -32000, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 }
 
@@ -48,13 +48,13 @@ Task<void> NetRpcApi::handle_net_peer_count(const nlohmann::json& request, nlohm
 Task<void> NetRpcApi::handle_net_version(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto net_version = co_await backend_->net_version();
-        reply = make_json_content(request["id"], std::to_string(net_version));
+        reply = make_json_content(request, std::to_string(net_version));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32000, e.what());
+        reply = make_json_error(request, -32000, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 }
 

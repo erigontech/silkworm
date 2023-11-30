@@ -63,7 +63,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     if (params.size() != 5) {
         auto error_msg = "invalid debug_accountRange params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
@@ -95,13 +95,13 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";
 
-        reply = make_json_content(request["id"], dump_accounts);
+        reply = make_json_content(request, dump_accounts);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -114,7 +114,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -133,16 +133,16 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
         const auto end_block_number = co_await core::get_block_number(end_block_id, tx_database);
 
         const auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
-        reply = make_json_content(request["id"], addresses);
+        reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32000, e.what());
+        reply = make_json_error(request, -32000, e.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -155,7 +155,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -174,16 +174,16 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         const auto start_block_number = co_await core::rawdb::read_header_number(tx_database, start_hash);
         const auto end_block_number = co_await core::rawdb::read_header_number(tx_database, end_hash);
         auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
-        reply = make_json_content(request["id"], addresses);
+        reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32000, e.what());
+        reply = make_json_error(request, -32000, e.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -196,7 +196,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     if (params.empty() || params.size() > 5) {
         auto error_msg = "invalid debug_storageRangeAt params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -222,7 +222,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         if (!block_with_hash) {
             const std::string error_msg = "block not found ";
             SILK_ERROR << "debug_storage_range_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request["id"], -32000, error_msg);
+            reply = make_json_error(request, -32000, error_msg);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -259,13 +259,13 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
             result["nextKey"] = nlohmann::json();
         }
 
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -278,7 +278,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
     if (params.empty() || params.size() < 3) {
         auto error_msg = "invalid debug_accountAt params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -300,7 +300,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         if (!block_with_hash) {
             const std::string error_msg = "block not found ";
             SILK_ERROR << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request["id"], -32000, error_msg);
+            reply = make_json_error(request, -32000, error_msg);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -357,16 +357,16 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             },
             boost::asio::use_awaitable);
 
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32000, e.what());
+        reply = make_json_error(request, -32000, e.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -379,7 +379,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
     if (params.empty()) {
         auto error_msg = "invalid debug_traceTransaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
 
         co_return;
@@ -426,7 +426,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCall params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
 
         co_return;
@@ -480,7 +480,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     if (!request.contains("params")) {
         auto error_msg = "missing value for required arguments";
         SILK_ERROR << error_msg << request.dump();
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
 
         co_return;
@@ -490,7 +490,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCallMany params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
 
         co_return;
@@ -500,7 +500,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     if (bundles.empty()) {
         const auto error_msg = "invalid debug_traceCallMany bundle list: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
 
         co_return;
@@ -544,7 +544,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
         co_return;
     }
@@ -597,7 +597,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
         co_return;
     }
@@ -681,7 +681,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawBlock params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -699,16 +699,16 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
         }
         Bytes encoded_block;
         rlp::encode(encoded_block, block);
-        reply = make_json_content(request["id"], silkworm::to_hex(encoded_block, true));
+        reply = make_json_content(request, silkworm::to_hex(encoded_block, true));
     } catch (const std::invalid_argument& iv) {
         SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32602, iv.what());
+        reply = make_json_error(request, -32602, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -720,7 +720,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawHeader params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -739,16 +739,16 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
         }
         Bytes encoded_header;
         rlp::encode(encoded_header, *header);
-        reply = make_json_content(request["id"], silkworm::to_hex(encoded_header, true));
+        reply = make_json_content(request, silkworm::to_hex(encoded_header, true));
     } catch (const std::invalid_argument& iv) {
         SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32602, iv.what());
+        reply = make_json_error(request, -32602, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -760,7 +760,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawTransaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -777,16 +777,16 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
         if (!success) {
             throw std::invalid_argument("transaction not found");
         }
-        reply = make_json_content(request["id"], silkworm::to_hex(rlp, true));
+        reply = make_json_content(request, silkworm::to_hex(rlp, true));
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], -32602, iv.what());
+        reply = make_json_error(request, -32602, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

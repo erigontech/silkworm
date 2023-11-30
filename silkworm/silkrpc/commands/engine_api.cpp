@@ -42,7 +42,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
     if (params.size() != 1) {
         auto error_msg = "invalid engine_exchangeCapabilities params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -60,7 +60,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
         "engine_exchangeTransitionConfigurationV1",
     };
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities execution layer capabilities: " << el_capabilities;
-    reply = make_json_content(request["id"], el_capabilities);
+    reply = make_json_content(request, el_capabilities);
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_getpayloadv1
@@ -69,7 +69,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& requ
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -78,20 +78,20 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& requ
 #endif
         const auto payload_quantity = params[0].get<std::string>();
         const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
-        reply = make_json_content(request["id"], payload_and_value.payload);
+        reply = make_json_content(request, payload_and_value.payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, se.code().message());
+        reply = make_json_error(request, kUnknownPayload, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, e.what());
+        reply = make_json_error(request, kUnknownPayload, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, "unexpected exception");
+        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
     }
 #endif
 }
@@ -101,33 +101,33 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& requ
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV2 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
     try {
         const auto payload_quantity = params[0].get<std::string>();
         const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
-        reply = make_json_content(request["id"], payload_and_value);
+        reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, se.code().message());
+        reply = make_json_error(request, kUnknownPayload, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, e.what());
+        reply = make_json_error(request, kUnknownPayload, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
-        reply = make_json_error(request["id"], kUnknownPayload, "unexpected exception");
+        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
     }
 }
 
@@ -136,14 +136,14 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohm
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadBodiesByHashV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -153,19 +153,19 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohm
         if (block_hashes.size() > 32) {
             const auto error_msg = "number of block hashes > 32 is too large";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kTooLargeRequest, error_msg);
+            reply = make_json_error(request, kTooLargeRequest, error_msg);
         }
         const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_hash(block_hashes);
-        reply = make_json_content(request["id"], payload_bodies);
+        reply = make_json_content(request, payload_bodies);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 }
 
@@ -174,14 +174,14 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nloh
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto& params = request.at("params");
     if (params.size() != 2) {
         auto error_msg = "invalid engine_getPayloadBodiesByRangeV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -191,25 +191,25 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nloh
         if (count == 0) {
             const auto error_msg = "count 0 is invalid";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+            reply = make_json_error(request, kInvalidParams, error_msg);
         }
         // We MUST support count values of at least 32 and MUST check if number is too large for us [Specification 2.]
         if (count > 32) {
             const auto error_msg = "count value > 32 is too large";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kTooLargeRequest, error_msg);
+            reply = make_json_error(request, kTooLargeRequest, error_msg);
         }
         const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_range(start, count);
-        reply = make_json_content(request["id"], payload_bodies);
+        reply = make_json_content(request, payload_bodies);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 }
 
@@ -219,7 +219,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& requ
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -228,17 +228,17 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& requ
 #endif
         const auto payload = params[0].get<ExecutionPayload>();
         auto new_payload = co_await backend_->engine_new_payload(payload);
-        reply = make_json_content(request["id"], new_payload);
+        reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 #endif
 }
@@ -249,7 +249,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV2 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto payload = params[0].get<ExecutionPayload>();
@@ -268,31 +268,31 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         if (payload.timestamp < config->shanghai_time and payload.version != ExecutionPayload::V1) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV1 if timestamp lower than Shanghai";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+            reply = make_json_error(request, kInvalidParams, error_msg);
             co_await tx->close();
             co_return;
         }
         if (payload.timestamp >= config->shanghai_time and payload.version != ExecutionPayload::V2) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV2 if timestamp greater or equal to Shanghai";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+            reply = make_json_error(request, kInvalidParams, error_msg);
             co_await tx->close();
             co_return;
         }
 
         const auto new_payload = co_await backend_->engine_new_payload(payload);
 
-        reply = make_json_content(request["id"], new_payload);
+        reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 #endif
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -304,7 +304,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -316,13 +316,13 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
         if (fork_choice_state.safe_block_hash == kZeroHash) {
             const auto error_msg = "safe block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
             co_return;
         }
         if (fork_choice_state.finalized_block_hash == kZeroHash) {
             const auto error_msg = "finalized block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
             co_return;
         }
 
@@ -332,17 +332,17 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
         const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
-        reply = make_json_content(request["id"], fcu_reply);
+        reply = make_json_content(request, fcu_reply);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 #endif
 }
@@ -353,7 +353,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV2 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -363,13 +363,13 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
         if (fork_choice_state.safe_block_hash == kZeroHash) {
             const auto error_msg = "safe block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
             co_return;
         }
         if (fork_choice_state.finalized_block_hash == kZeroHash) {
             const auto error_msg = "finalized block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
             co_return;
         }
 
@@ -389,29 +389,29 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
             if (attributes.timestamp < config->shanghai_time and attributes.version != PayloadAttributes::V1) {
                 const auto error_msg = "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+                reply = make_json_error(request, kInvalidParams, error_msg);
                 co_return;
             }
             if (attributes.timestamp >= config->shanghai_time and attributes.version != PayloadAttributes::V2) {
                 const auto error_msg = "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+                reply = make_json_error(request, kInvalidParams, error_msg);
                 co_return;
             }
             payload_attributes = attributes;
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
         const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
-        reply = make_json_content(request["id"], fcu_reply);
+        reply = make_json_content(request, fcu_reply);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 }
 
@@ -423,7 +423,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
     if (params.size() != 1) {
         auto error_msg = "invalid engine_exchangeTransitionConfigurationV1 params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto cl_configuration = params[0].get<TransitionConfiguration>();
@@ -442,14 +442,14 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
         if (config->terminal_total_difficulty != cl_configuration.terminal_total_difficulty) {
             SILK_ERROR << "execution layer has the incorrect terminal total difficulty, expected: "
                        << cl_configuration.terminal_total_difficulty << " got: " << config->terminal_total_difficulty.value();
-            reply = make_json_error(request.at("id"), kInvalidParams, "consensus layer terminal total difficulty does not match");
+            reply = make_json_error(request, kInvalidParams, "consensus layer terminal total difficulty does not match");
             co_await tx->close();
             co_return;
         }
         if (cl_configuration.terminal_block_hash != kZeroHash) {
             SILK_ERROR << "execution layer has the incorrect terminal block hash, expected: "
                        << silkworm::to_hex(cl_configuration.terminal_block_hash) << " got: " << silkworm::to_hex(kZeroHash);
-            reply = make_json_error(request.at("id"), kInvalidParams, "consensus layer terminal block hash is not zero");
+            reply = make_json_error(request, kInvalidParams, "consensus layer terminal block hash is not zero");
             co_await tx->close();
             co_return;
         }
@@ -460,14 +460,14 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
             .terminal_block_hash = kZeroHash,  // terminal_block_hash removed from chain_config, return zero
             .terminal_block_number = 0         // terminal_block_number removed from chain_config, return zero
         };
-        reply = make_json_content(request["id"], transition_configuration);
+        reply = make_json_content(request, transition_configuration);
 #ifndef BUILD_COVERAGE
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kInternalError, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request.at("id"), kServerError, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 #endif
     co_await tx->close();  // RAII not (yet) available with coroutines

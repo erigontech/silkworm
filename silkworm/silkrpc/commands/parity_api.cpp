@@ -40,7 +40,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     if (params.size() != 1) {
         auto error_msg = "invalid parity_getBlockReceipts params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -63,19 +63,19 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
             for (size_t i{0}; i < block.transactions.size(); i++) {
                 receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
             }
-            reply = make_json_content(request["id"], receipts);
+            reply = make_json_content(request, receipts);
         } else {
-            reply = make_json_content(request["id"], {});
+            reply = make_json_content(request, {});
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -88,7 +88,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     if (params.size() < 2) {
         auto error_msg = "invalid parity_listStorageKeys params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -135,16 +135,16 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             }
             v = kv_pair.value;
         }
-        reply = make_json_content(request["id"], keys);
+        reply = make_json_content(request, keys);
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

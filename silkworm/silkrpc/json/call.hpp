@@ -29,6 +29,6 @@ void from_json(const nlohmann::json& json, AccountOverrides& state_overrides);
 void from_json(const nlohmann::json& json, BlockOverrides& block_overrides);
 void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides);
 
-void make_glaze_json_content(uint32_t id, const silkworm::Bytes& call_result, std::string& json_reply);
+void make_glaze_json_content(const nlohmann::json& request_json, const silkworm::Bytes& call_result, std::string& json_reply);
 
 }  // namespace silkworm::rpc

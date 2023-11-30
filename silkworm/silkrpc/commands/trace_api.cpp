@@ -41,7 +41,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     if (params.size() < 3) {
         auto error_msg = "invalid trace_call params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -60,7 +60,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         if (!block_with_hash) {
-            reply = make_json_error(request["id"], 100, "block not found");
+            reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -71,16 +71,16 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
 
         if (result.pre_check_error) {
-            reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
+            reply = make_json_error(request, -32000, result.pre_check_error.value());
         } else {
-            reply = make_json_content(request["id"], result.traces);
+            reply = make_json_content(request, result.traces);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -93,7 +93,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     if (params.size() < 2) {
         auto error_msg = "invalid trace_callMany params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto trace_calls = params[0].get<std::vector<trace::TraceCall>>();
@@ -109,7 +109,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         if (!block_with_hash) {
-            reply = make_json_error(request["id"], 100, "block not found");
+            reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -121,16 +121,16 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
 
         if (result.pre_check_error) {
-            reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
+            reply = make_json_error(request, -32000, result.pre_check_error.value());
         } else {
-            reply = make_json_content(request["id"], result.traces);
+            reply = make_json_content(request, result.traces);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -143,7 +143,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     if (params.size() < 2) {
         const auto error_msg = "invalid trace_rawTransaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto encoded_tx_string = params[0].get<std::string>();
@@ -151,7 +151,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     if (!encoded_tx_bytes.has_value()) {
         const auto error_msg = "invalid trace_rawTransaction encoded tx: " + encoded_tx_string;
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], -32602, error_msg);
+        reply = make_json_error(request, -32602, error_msg);
         co_return;
     }
 
@@ -161,7 +161,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     if (!decoding_result) {
         const auto error_msg = decoding_result_to_string(decoding_result.error());
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], -32000, error_msg);
+        reply = make_json_error(request, -32000, error_msg);
         co_return;
     }
 
@@ -170,14 +170,14 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     if (!check_tx_fee_less_cap(kTxFeeCap, transaction.max_fee_per_gas, transaction.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], -32000, error_msg);
+        reply = make_json_error(request, -32000, error_msg);
         co_return;
     }
 
     if (!is_replay_protected(transaction)) {
         const auto error_msg = "only replay-protected (EIP-155) transactions allowed over RPC";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], -32000, error_msg);
+        reply = make_json_error(request, -32000, error_msg);
         co_return;
     }
 
@@ -185,7 +185,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     if (!transaction.from.has_value()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], -32000, error_msg);
+        reply = make_json_error(request, -32000, error_msg);
         co_return;
     }
 
@@ -202,7 +202,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (!block_with_hash) {
-            reply = make_json_error(request["id"], 100, "block not found");
+            reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -211,16 +211,16 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
-            reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
+            reply = make_json_error(request, -32000, result.pre_check_error.value());
         } else {
-            reply = make_json_content(request["id"], result.traces);
+            reply = make_json_content(request, result.traces);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -233,7 +233,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
     if (params.size() < 2) {
         auto error_msg = "invalid trace_replayBlockTransactions params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
@@ -250,16 +250,16 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
         if (block_with_hash) {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
-            reply = make_json_content(request["id"], result);
+            reply = make_json_content(request, result);
         } else {
-            reply = make_json_error(request["id"], 100, "block not found");
+            reply = make_json_error(request, 100, "block not found");
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -272,7 +272,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     if (params.size() < 2) {
         auto error_msg = "invalid trace_replayTransaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -289,23 +289,23 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction " << silkworm::to_hex(transaction_hash, true) << " not found";
-            reply = make_json_error(request["id"], -32000, oss.str());
+            reply = make_json_error(request, -32000, oss.str());
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash.block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
-                reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
+                reply = make_json_error(request, -32000, result.pre_check_error.value());
             } else {
-                reply = make_json_content(request["id"], result.traces);
+                reply = make_json_content(request, result.traces);
             }
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -318,7 +318,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
     if (params.empty()) {
         auto error_msg = "invalid trace_block params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
@@ -332,7 +332,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         if (!block_with_hash) {
-            reply = make_json_error(request["id"], 100, "block not found");
+            reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -340,13 +340,13 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
         trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter);
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -359,7 +359,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     if (params.empty()) {
         auto error_msg = "invalid trace_filter params: " + params.dump();
         SILK_ERROR << error_msg;
-        const auto reply = make_json_error(request["id"], 100, error_msg);
+        const auto reply = make_json_error(request, 100, error_msg);
         stream.write_json(reply);
         co_return;
     }
@@ -405,7 +405,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     if (params.size() < 2) {
         auto error_msg = "invalid trace_get params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -419,7 +419,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     // Erigon RpcDaemon compatibility
     // Parity fails if it gets more than a single index. It returns nothing in this case. Must we?
     if (indices.size() > 1) {
-        reply = make_json_content(request["id"]);
+        reply = make_json_content(request);
         co_return;
     }
 
@@ -431,23 +431,23 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
 
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
-            reply = make_json_content(request["id"]);
+            reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
 
             uint16_t index = indices[0] + 1;  // Erigon RpcDaemon compatibility
             if (result.size() > index) {
-                reply = make_json_content(request["id"], result[index]);
+                reply = make_json_content(request, result[index]);
             } else {
-                reply = make_json_content(request["id"]);
+                reply = make_json_content(request);
             }
         }
     } catch (const std::exception& e) {
-        reply = make_json_content(request["id"]);
+        reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -460,7 +460,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     if (params.empty()) {
         auto error_msg = "invalid trace_transaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -474,17 +474,17 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
         const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
-            reply = make_json_content(request["id"]);
+            reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
-            reply = make_json_content(request["id"], result);
+            reply = make_json_content(request, result);
         }
     } catch (const std::exception& e) {
-        reply = make_json_content(request["id"]);
+        reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

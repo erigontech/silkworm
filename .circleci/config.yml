@@ -100,9 +100,9 @@ commands:
           command: |
             if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                conan_profile=linux_clang_13_release
+                conan_profile=linux_x64_clang_13_release
             else
-                conan_profile=linux_gcc_11_release
+                conan_profile=linux_x64_gcc_11_release
             fi
             echo "export CONAN_PROFILE='$conan_profile'" >> "$BASH_ENV"
             cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"

@@ -102,7 +102,7 @@ Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& c
     }
     const auto& transactions = block_with_hash->block.transactions;
     for (std::size_t idx{0}; idx < transactions.size(); idx++) {
-        if (std::memcmp(transaction_hash.bytes, transactions[idx].hash().bytes, silkworm::kHashLength) == 0) {
+        if (transaction_hash == transactions[idx].hash()) {
             const auto& block_header = block_with_hash->block.header;
             co_return TransactionWithBlock{
                 *block_with_hash,

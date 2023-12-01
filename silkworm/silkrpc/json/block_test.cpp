@@ -22,35 +22,39 @@
 namespace silkworm::rpc {
 
 TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
-    silkworm::rpc::Block rpc_block{
-        { /* BlockWithHash */
-         {/* Block */
-          {
-              /* BlockBody */
-              .transactions = std::vector<silkworm::Transaction>{},
-              .ommers = std::vector<silkworm::BlockHeader>{},
-              .withdrawals = std::nullopt,
-          },
-          {
-              /* BlockHeader */
-              .parent_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
-              .ommers_hash = 0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
-              .beneficiary = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-              .state_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126d_bytes32,
-              .transactions_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32,
-              .receipts_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
-              .logs_bloom = silkworm::Bloom{},
-              .difficulty = intx::uint256{0},
-              .number = BlockNum(5),
-              .gas_limit = uint64_t(1000000),
-              .gas_used = uint64_t(1000000),
-              .timestamp = uint64_t(5405021),
-              .extra_data = *silkworm::from_hex("0001FF0100"),
-              .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
-              .nonce = {0, 0, 0, 0, 0, 0, 0, 255},
-              .base_fee_per_gas = std::optional<intx::uint256>(0x244428),
-          }}}};
-    auto body = rpc_block.block;
+    silkworm::BlockWithHash block_with_hash{
+        {/* Block */
+         {
+             /* BlockBody */
+             .transactions = std::vector<silkworm::Transaction>{},
+             .ommers = std::vector<silkworm::BlockHeader>{},
+             .withdrawals = std::nullopt,
+         },
+         {
+             /* BlockHeader */
+             .parent_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
+             .ommers_hash = 0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
+             .beneficiary = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+             .state_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126d_bytes32,
+             .transactions_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32,
+             .receipts_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
+             .logs_bloom = silkworm::Bloom{},
+             .difficulty = intx::uint256{0},
+             .number = BlockNum(5),
+             .gas_limit = uint64_t(1000000),
+             .gas_used = uint64_t(1000000),
+             .timestamp = uint64_t(5405021),
+             .extra_data = *silkworm::from_hex("0001FF0100"),
+             .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
+             .nonce = {0, 0, 0, 0, 0, 0, 0, 255},
+             .base_fee_per_gas = std::optional<intx::uint256>(0x244428),
+         }}};
+
+    auto block_with_hash_shared = std::make_shared<BlockWithHash>();
+    *block_with_hash_shared = block_with_hash;
+
+    silkworm::rpc::Block rpc_block{block_with_hash_shared};
+    auto body = rpc_block.block_with_hash->block;
     body.transactions.resize(2);
     body.transactions[0].nonce = 172339;
     body.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
@@ -127,7 +131,8 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize empty block", "[silkrpc][to_json]") {
-    silkworm::rpc::Block block{};
+    auto block_with_hash = std::make_shared<BlockWithHash>();
+    silkworm::rpc::Block block{block_with_hash};
     nlohmann::json j = block;
     CHECK(j == R"({
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -179,8 +184,9 @@ TEST_CASE("serialize EIP-2718 block", "[silkrpc][to_json]") {
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView view{rlp_bytes};
 
-    silkworm::rpc::Block rpc_block;
-    REQUIRE(silkworm::rlp::decode(view, rpc_block.block));
+    auto block_with_hash = std::make_shared<BlockWithHash>();
+    silkworm::rpc::Block rpc_block{block_with_hash};
+    REQUIRE(silkworm::rlp::decode(view, rpc_block.block_with_hash->block));
 
     nlohmann::json rpc_block_json = rpc_block;
     CHECK(rpc_block_json == R"({

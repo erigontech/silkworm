@@ -563,24 +563,27 @@ Task<void> DebugExecutor::execute(
                 for (const auto& bundle : bundles) {
                     const auto& block_override = bundle.block_override;
 
-                    rpc::Block blockContext{{block_with_hash.block}};
+                    auto block_with_hash_shared = std::make_shared<BlockWithHash>();
+                    *block_with_hash_shared = block_with_hash;
+
+                    rpc::Block blockContext{{block_with_hash_shared}};
                     if (block_override.block_number) {
-                        blockContext.block.header.number = block_override.block_number.value();
+                        blockContext.block_with_hash->block.header.number = block_override.block_number.value();
                     }
                     if (block_override.coin_base) {
-                        blockContext.block.header.beneficiary = block_override.coin_base.value();
+                        blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
                     }
                     if (block_override.timestamp) {
-                        blockContext.block.header.timestamp = block_override.timestamp.value();
+                        blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
                     }
                     if (block_override.difficulty) {
-                        blockContext.block.header.difficulty = block_override.difficulty.value();
+                        blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
                     }
                     if (block_override.gas_limit) {
-                        blockContext.block.header.gas_limit = block_override.gas_limit.value();
+                        blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
                     }
                     if (block_override.base_fee) {
-                        blockContext.block.header.base_fee_per_gas = block_override.base_fee;
+                        blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
                     }
 
                     stream.open_array();
@@ -595,7 +598,7 @@ Task<void> DebugExecutor::execute(
                         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                         Tracers tracers{debug_tracer};
 
-                        const auto execution_result = executor.call(blockContext.block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                        const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
                         debug_tracer->flush_logs();
                         stream.close_array();

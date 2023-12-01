@@ -315,7 +315,7 @@ DbFreeInfo get_free_info(::mdbx::txn& txn) {
     auto page_size{txn.get_map_stat(free_map).ms_psize};
 
     const auto& collect_func{[&ret, &page_size](ByteView key, ByteView value) {
-        size_t txId;
+        size_t txId{0};
         std::memcpy(&txId, key.data(), sizeof(size_t));
         uint32_t pagesCount;
         std::memcpy(&pagesCount, value.data(), sizeof(uint32_t));

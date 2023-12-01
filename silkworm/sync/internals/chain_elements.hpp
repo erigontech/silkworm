@@ -261,7 +261,7 @@ struct Segment
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
     [[nodiscard]] Slice slice(size_t start, size_t end) const {
-        return Slice(data() + start, data() + end);
+        return {data() + start, data() + end};
     }
 
   protected:

@@ -62,9 +62,6 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
     test::Context context;
 
-    // Initialize random seed
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
     size_t generated_size{0};

@@ -68,7 +68,7 @@ class FeeHistoryOracle {
   public:
     explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
         : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
-    virtual ~FeeHistoryOracle() {}
+    virtual ~FeeHistoryOracle() = default;
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
     FeeHistoryOracle& operator=(const FeeHistoryOracle&) = delete;

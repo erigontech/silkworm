@@ -354,7 +354,7 @@ static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, const std::fi
 
     // Save collected node changes
     db::PooledCursor account_cursor(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{account_cursor.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+    MDBX_put_flags_t flags{account_cursor.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
     account_trie_node_collector.load(account_cursor, nullptr, flags);
 
     db::PooledCursor storage_cursor(txn, db::table::kTrieOfStorage);
@@ -364,7 +364,7 @@ static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, const std::fi
     return computed_root;
 }
 
-static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, std::filesystem::path etl_path) {
+static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, const std::filesystem::path& etl_path) {
     return increment_intermediate_hashes(txn, etl_path, nullptr, nullptr);
 }
 

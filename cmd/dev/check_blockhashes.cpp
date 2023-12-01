@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
             if (++scanned_headers % 100000 == 0) {
                 auto [_, duration] = sw.lap();
-                log::Info() << "Scanned headers " << scanned_headers << " in " << sw.format(duration);
+                log::Info() << "Scanned headers " << scanned_headers << " in " << StopWatch::format(duration);
             }
             canonical_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }

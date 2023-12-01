@@ -45,7 +45,7 @@ class SnapshotPath_ForTest : public SnapshotPath {
 
 class Snapshot_ForTest : public Snapshot {
   public:
-    explicit Snapshot_ForTest(SnapshotPath path) : Snapshot(path) {}
+    explicit Snapshot_ForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
     explicit Snapshot_ForTest(std::filesystem::path path) : Snapshot(*SnapshotPath::parse(path)) {}
     Snapshot_ForTest(BlockNum block_from, BlockNum block_to) : Snapshot(SnapshotPath_ForTest{block_from, block_to}) {}
     ~Snapshot_ForTest() override { close(); }

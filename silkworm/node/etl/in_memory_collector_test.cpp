@@ -58,9 +58,6 @@ template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
     test::Context context;
 
-    // Initialize random seed
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
     size_t generated_size{0};
@@ -143,16 +140,14 @@ TEST_CASE("collect_and_default_load_move_in_memory_vector") {
 TEST_CASE("collect_and_load_in_memory_map") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        Bytes key{ekey};
-        table.upsert(db::to_slice(key), db::to_slice(evalue));
+        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });
 }
 
 TEST_CASE("collect_and_load_in_memory_vector") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        Bytes key{ekey};
-        table.upsert(db::to_slice(key), db::to_slice(evalue));
+        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });
 }
 

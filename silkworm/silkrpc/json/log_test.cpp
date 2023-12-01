@@ -39,7 +39,6 @@ namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using silkworm::kGiga;
 using std::string_literals::operator""s;
 
 TEST_CASE("serialize empty log", "[silkrpc][to_json]") {

@@ -48,7 +48,7 @@ typedef std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)> 
 class GasPriceOracle {
   public:
     explicit GasPriceOracle(const BlockProvider& block_provider) : block_provider_(block_provider) {}
-    virtual ~GasPriceOracle() {}
+    virtual ~GasPriceOracle() = default;
 
     GasPriceOracle(const GasPriceOracle&) = delete;
     GasPriceOracle& operator=(const GasPriceOracle&) = delete;

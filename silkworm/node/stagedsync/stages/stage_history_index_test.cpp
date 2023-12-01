@@ -303,7 +303,7 @@ TEST_CASE("Stage History Index") {
         auto batch_1{account_history.size()};
         REQUIRE(batch_1 != 0);
 
-        auto check_addresses{[&account_history, &block](std::vector<evmc::address> addrs) {
+        auto check_addresses{[&account_history, &block](const std::vector<evmc::address>& addrs) {
             for (const auto& address : addrs) {
                 Bytes key(kAddressLength, '\0');
                 std::memcpy(&key[0], address.bytes, kAddressLength);

@@ -176,7 +176,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("segemented http request 3 segs") {
         std::string seg1{"POST / HTTP/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n"};
         std::string seg2{"Content-Type: application/json\r\nContent-Length: 15\r\n\r\n"};
-        std::string seg3{"{\"json\": \"2.0\"}"};
+        std::string seg3{R"({"json": "2.0"})"};
         RequestParser parser;
         Request req;
         const auto result1{parser.parse(req, seg1.data(), seg1.data() + seg1.size())};

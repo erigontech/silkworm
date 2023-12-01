@@ -22,8 +22,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("create empty issuance", "[silkrpc][types][issuance]") {
     Issuance i{};
     CHECK(i.block_reward == std::nullopt);

@@ -20,8 +20,6 @@
 
 namespace silkworm {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("make error code with empty message", "[silkrpc][grpc][error]") {
     std::error_code error_code{make_error_code(123, "")};
     CHECK(error_code.value() == 123);

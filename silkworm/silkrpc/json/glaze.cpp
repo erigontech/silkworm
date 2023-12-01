@@ -17,6 +17,7 @@
 #include "glaze.hpp"
 
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
@@ -34,7 +35,7 @@ struct GlazeJsonError {
 
 struct GlazeJsonErrorRsp {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    JsonRpcId id;
     GlazeJsonError json_error;
     struct glaze {
         using T = GlazeJsonErrorRsp;
@@ -45,11 +46,13 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(uint32_t id, const int code, const std::string& message, std::string& json_reply) {
+void make_glaze_json_error(const nlohmann::json& request_json, const int code, const std::string& message, std::string& json_reply) {
     GlazeJsonErrorRsp glaze_json_error;
-    glaze_json_error.id = id;
+
+    glaze_json_error.id = make_jsonrpc_id(request_json);
     glaze_json_error.json_error.code = code;
     std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
+
     glz::write_json(glaze_json_error, json_reply);
 }
 
@@ -68,7 +71,7 @@ struct GlazeJsonRevert {
 
 struct GlazeJsonRevertError {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    JsonRpcId id;
     GlazeJsonRevert revert_data;
     struct glaze {
         using T = GlazeJsonRevertError;
@@ -79,12 +82,14 @@ struct GlazeJsonRevertError {
     };
 };
 
-void make_glaze_json_error(uint32_t id, const RevertError& error, std::string& reply) {
+void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert;
-    glaze_json_revert.id = id;
+
+    glaze_json_revert.id = make_jsonrpc_id(request_json);
     glaze_json_revert.revert_data.code = error.code;
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
+
     glz::write_json(glaze_json_revert, reply);
 }
 

@@ -31,7 +31,7 @@ namespace silkworm {
 using namespace std::chrono_literals;
 using std::chrono::steady_clock;
 
-const auto kResourceUsageInterval{300s};
+constexpr auto kResourceUsageInterval{300s};
 
 ResourceUsageLog::ResourceUsageLog(NodeSettings& settings) : settings_{settings}, timer_{settings_.asio_context} {}
 

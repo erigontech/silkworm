@@ -84,14 +84,14 @@ static constexpr uint64_t kSuperQSize32 = 1 + kQPerSuperQ / 2;
 
 template <class T, std::size_t Extent>
 inline static void set(std::span<T, Extent> bits, const uint64_t pos) {
-    bits[pos / 64] |= uint64_t(1) << (pos % 64);
+    bits[pos / 64] |= uint64_t{1} << (pos % 64);
 }
 
 //! This assumes that bits are set in monotonic order, so that we can skip the masking for the second word
 template <class T, std::size_t Extent>
 inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint64_t width, const uint64_t value) {
     const uint64_t shift = start & 63;
-    const uint64_t mask = ((uint64_t(1) << width) - 1) << shift;
+    const uint64_t mask = ((uint64_t{1} << width) - 1) << shift;
     const std::size_t idx64 = start >> 6;
     bits[idx64] = (bits[idx64] & ~mask) | (value << shift);
     if (shift + width > 64) {
@@ -182,7 +182,7 @@ class EliasFanoList32 {
     void build() {
         for (uint64_t i{0}, c{0}, last_super_q{0}; i < upper_bits_.size(); ++i) {
             for (uint64_t b{0}; b < 64; ++b) {
-                if ((upper_bits_[i] & (uint64_t(1) << b)) != 0) {
+                if ((upper_bits_[i] & (uint64_t{1} << b)) != 0) {
                     if ((c & kSuperQMask) == 0) {
                         /* When c is multiple of 2^14 (4096) */
                         jump_[(c / kSuperQ) * kSuperQSize32] = last_super_q = i * 64 + b;
@@ -192,7 +192,7 @@ class EliasFanoList32 {
                         // offset can be either 0, 256, 512, ..., up to 4096-256
                         const uint64_t offset = i * 64 + b - last_super_q;
                         // offset needs to be encoded as 16-bit integer, therefore the following check
-                        SILKWORM_ASSERT(offset < (uint64_t(1) << 32));
+                        SILKWORM_ASSERT(offset < (uint64_t{1} << 32));
                         // c % superQ is the bit index inside the group of 4096 bits
                         const uint64_t jump_super_q = (c / kSuperQ) * kSuperQSize32;
                         const uint64_t jump_inside_super_q = (c % kSuperQ) / kQ;
@@ -225,7 +225,7 @@ class EliasFanoList32 {
   private:
     uint64_t derive_fields() {
         l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ uint64_t(std::countl_zero(u_ / (count_ + 1)));
-        lower_bits_mask_ = (uint64_t(1) << l_) - 1;
+        lower_bits_mask_ = (uint64_t{1} << l_) - 1;
 
         uint64_t words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
         uint64_t words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
@@ -305,7 +305,7 @@ class DoubleEliasFanoList16 {
         // super_q_size is how many words is required to encode one block of 4096 bits. It is 17 words which is 1088 bits
         for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_cum_keys; i++) {
             for (uint64_t b{0}; b < 64; b++) {
-                if (upper_bits_cum_keys[i] & uint64_t(1) << b) {
+                if (upper_bits_cum_keys[i] & uint64_t{1} << b) {
                     if ((c & kSuperQMask) == 0) {
                         /* When c is multiple of 2^14 (4096) */
                         jump[(c / kSuperQ) * (kSuperQSize16 * 2)] = last_super_q = i * 64 + b;
@@ -331,7 +331,7 @@ class DoubleEliasFanoList16 {
 
         for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_position; i++) {
             for (uint64_t b = 0; b < 64; b++) {
-                if (upper_bits_position[i] & uint64_t(1) << b) {
+                if (upper_bits_position[i] & uint64_t{1} << b) {
                     if ((c & kSuperQMask) == 0) {
                         jump[(c / kSuperQ) * (kSuperQSize16 * 2) + 1] = last_super_q = i * 64 + b;
                     }

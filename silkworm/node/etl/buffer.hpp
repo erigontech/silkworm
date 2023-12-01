@@ -47,6 +47,18 @@ class Buffer {
         buffer_.push_back(std::move(entry));
     }
 
+    void put(const Bytes& key, const Bytes& value) {
+        // Add a new entry to the buffer
+        size_ += key.size() + value.size() + sizeof(head_t);
+        buffer_.emplace_back(key, value);
+    }
+
+    void put(Bytes&& key, Bytes&& value) {
+        // Add a new entry to the buffer
+        size_ += key.size() + value.size() + sizeof(head_t);
+        buffer_.emplace_back(std::move(key), std::move(value));
+    }
+
     void clear() noexcept {
         // Set the buffer to contain 0 entries
         buffer_.clear();

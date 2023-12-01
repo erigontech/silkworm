@@ -24,6 +24,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {

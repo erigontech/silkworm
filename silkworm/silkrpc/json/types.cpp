@@ -465,21 +465,44 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses) {
     }
 }
 
-nlohmann::json make_json_content(uint32_t id) {
+nlohmann::json make_json_content(const nlohmann::json& request_json) {
+    const nlohmann::json id = request_json.contains("id") ? request_json["id"] : nullptr;
+
     return {{"jsonrpc", kJsonVersion}, {"id", id}, {"result", nullptr}};
 }
 
-nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result) {
-    return {{"jsonrpc", kJsonVersion}, {"id", id}, {"result", result}};
+nlohmann::json make_json_content(const nlohmann::json& request_json, const nlohmann::json& result) {
+    const nlohmann::json id = request_json.contains("id") ? request_json["id"] : nullptr;
+    nlohmann::json json{{"jsonrpc", kJsonVersion}, {"id", id}, {"result", result}};
+    return json;
 }
 
-nlohmann::json make_json_error(uint32_t id, int code, const std::string& message) {
+nlohmann::json make_json_error(const nlohmann::json& request_json, int code, const std::string& message) {
+    const nlohmann::json id = request_json.contains("id") ? request_json["id"] : nullptr;
     const Error error{code, message};
     return {{"jsonrpc", kJsonVersion}, {"id", id}, {"error", error}};
 }
 
-nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
+nlohmann::json make_json_error(const nlohmann::json& request_json, const RevertError& error) {
+    const nlohmann::json id = request_json.contains("id") ? request_json["id"] : nullptr;
     return {{"jsonrpc", kJsonVersion}, {"id", id}, {"error", error}};
+}
+
+JsonRpcId make_jsonrpc_id(const nlohmann::json& request_json) {
+    JsonRpcId json_rpc_id;
+    if (request_json.contains("id")) {
+        const auto& id = request_json["id"];
+        if (id.is_number()) {
+            json_rpc_id = id.get<std::uint32_t>();
+        } else if (id.is_string()) {
+            json_rpc_id = id.get<std::string>();
+        } else {
+            json_rpc_id = nullptr;
+        }
+    } else {
+        json_rpc_id = nullptr;
+    }
+    return json_rpc_id;
 }
 
 }  // namespace silkworm::rpc

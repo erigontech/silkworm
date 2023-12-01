@@ -71,7 +71,7 @@ void from_json(const nlohmann::json& json, Call& call) {
 
 struct GlazeJsonCall {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    JsonRpcId id;
     char result[2048];
     struct glaze {
         using T = GlazeJsonCall;
@@ -84,7 +84,7 @@ struct GlazeJsonCall {
 
 struct GlazeJsonCallResultAsString {
     std::string_view jsonrpc = kJsonVersion;
-    uint32_t id;
+    JsonRpcId id;
     std::string result;
     struct glaze {
         using T = GlazeJsonCallResultAsString;
@@ -95,17 +95,21 @@ struct GlazeJsonCallResultAsString {
     };
 };
 
-void make_glaze_json_content(uint32_t id, const silkworm::Bytes& call_result, std::string& json_reply) {
+void make_glaze_json_content(const nlohmann::json& request_json, const silkworm::Bytes& call_result, std::string& json_reply) {
     if (call_result.size() * 2 + 2 + 1 > kEthCallResultFixedSize) {
         GlazeJsonCallResultAsString log_json_data{};
+
         log_json_data.result.reserve(call_result.size() * 2 + 2);
-        log_json_data.id = id;
+        log_json_data.id = make_jsonrpc_id(request_json);
         log_json_data.result = "0x" + silkworm::to_hex(call_result);
+
         glz::write_json(std::move(log_json_data), json_reply);
     } else {
         GlazeJsonCall log_json_data{};
-        log_json_data.id = id;
+
+        log_json_data.id = make_jsonrpc_id(request_json);
         to_hex(log_json_data.result, call_result);
+
         glz::write_json(std::move(log_json_data), json_reply);
     }
 }

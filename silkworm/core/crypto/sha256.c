@@ -131,7 +131,7 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state* state) {
     if (space_in_chunk >= TOTAL_LEN_LEN) {
         const size_t left = space_in_chunk - TOTAL_LEN_LEN;
         size_t len = state->total_len;
-        int i;
+        int i = 0;
         memset(chunk, 0x00, left);
         chunk += left;
 
@@ -171,7 +171,7 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
     uint8_t chunk[CHUNK_SIZE];
 
     while (calc_chunk(chunk, &state)) {
-        unsigned i, j;
+        unsigned i = 0, j = 0;
 
         uint32_t ah[8];
         /* Initialize working variables to current hash value: */
@@ -466,13 +466,13 @@ __attribute__((constructor)) static void select_sha256_implementation(void) {
 
     if (nIds >= 0x00000001) {
         cpuid(info, 0x00000001);
-        hw_sse41 = (info[2] & ((int)1 << 19)) != 0;
+        hw_sse41 = (info[2] & (1 << 19)) != 0;
     }
     if (nIds >= 0x00000007) {
         cpuid(info, 0x00000007);
-        hw_bmi1 = (info[1] & ((int)1 << 3)) != 0;
-        hw_bmi2 = (info[1] & ((int)1 << 8)) != 0;
-        hw_sha = (info[1] & ((int)1 << 29)) != 0;
+        hw_bmi1 = (info[1] & (1 << 3)) != 0;
+        hw_bmi2 = (info[1] & (1 << 8)) != 0;
+        hw_sha = (info[1] & (1 << 29)) != 0;
     }
 
     if (hw_sse41 && hw_sha) {

@@ -80,14 +80,14 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, Settings& setting
     ExecuteBlocksSettings exec_blocks_settings;
     cmd_execute->add_option("--from", exec_blocks_settings.start_block, "The start block number to execute")
         ->capture_default_str()
-        ->check(CLI::Range(uint64_t(1), std::numeric_limits<BlockNum>::max()));
+        ->check(CLI::Range(uint64_t{1}, std::numeric_limits<BlockNum>::max()));
     cmd_execute->add_option("--to", exec_blocks_settings.max_block, "The maximum block number to execute")
         ->capture_default_str()
-        ->check(CLI::Range(uint64_t(1), std::numeric_limits<BlockNum>::max()));
+        ->check(CLI::Range(uint64_t{1}, std::numeric_limits<BlockNum>::max()));
 
     cmd_execute->add_option("--batch_size", exec_blocks_settings.batch_size, "The block batch size to use")
         ->capture_default_str()
-        ->check(CLI::Range(uint64_t(1), std::numeric_limits<uint64_t>::max()));
+        ->check(CLI::Range(uint64_t{1}, std::numeric_limits<uint64_t>::max()));
 
     cmd_execute->add_flag("--write_change_sets", exec_blocks_settings.write_change_sets)
         ->description("Flag indicating if state changes must be written or not")

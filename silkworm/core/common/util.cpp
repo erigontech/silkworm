@@ -105,7 +105,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
 
     size_t pos(hex.length() & 1);  // "[0x]1" is legit and has to be treated as "[0x]01"
     Bytes out((hex.length() + pos) / 2, '\0');
-    const char* src{const_cast<char*>(hex.data())};
+    const char* src{hex.data()};
     const char* last = src + hex.length();
     uint8_t* dst{&out[0]};
 

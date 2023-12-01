@@ -37,7 +37,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
-    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, "-");
+    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, '-');
     if (tokens.size() != 4) {
         return std::nullopt;
     }

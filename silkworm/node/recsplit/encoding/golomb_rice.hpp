@@ -70,7 +70,7 @@ class GolombRiceVector {
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
             if (log2golomb == 0) return;
 
-            const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
+            const uint64_t lower_bits = v & ((uint64_t{1} << log2golomb) - 1);
             std::size_t used_bits = bit_count & 63;
 
             data.resize((bit_count + log2golomb + 63) / 64);
@@ -99,7 +99,7 @@ class GolombRiceVector {
             for (const auto u : unary) {
                 bit_count += u;
                 uint64_t* append_ptr = data.data() + bit_count / 64;
-                *append_ptr |= uint64_t(1) << (bit_count & 63);
+                *append_ptr |= uint64_t{1} << (bit_count & 63);
                 ++bit_count;
             }
         }
@@ -111,9 +111,56 @@ class GolombRiceVector {
             return GolombRiceVector{std::move(data)};
         }
 
+        void append_unary(uint32_t unary) {
+            unaries.push_back(unary);
+        }
+
+        void append_collected_unaries() {
+            append_unary_all(unaries);
+            unaries.clear();
+        }
+
       private:
         Uint64Sequence data;
         std::size_t bit_count{0};
+
+        Uint32Sequence unaries;
+    };
+
+    class LazyBuilder {
+      public:
+        static constexpr std::size_t kDefaultAllocatedWords{16};
+
+        LazyBuilder() : LazyBuilder(kDefaultAllocatedWords) {}
+
+        explicit LazyBuilder(const std::size_t allocated_words) {
+            fixeds.reserve(allocated_words);
+            unaries.reserve(allocated_words);
+        }
+
+        void append_fixed(const uint64_t v, const uint64_t log2golomb) {
+            fixeds.emplace_back(v, log2golomb);
+        }
+
+        void append_unary(uint32_t unary) {
+            unaries.push_back(unary);
+        }
+
+        void append_to(Builder& real_builder) {
+            for (const auto& [v, log2golomb] : fixeds) {
+                real_builder.append_fixed(v, log2golomb);
+            }
+            real_builder.append_unary_all(unaries);
+        }
+
+        void clear() {
+            fixeds.clear();
+            unaries.clear();
+        }
+
+      private:
+        std::vector<std::pair<uint64_t, uint64_t>> fixeds;
+        Uint32Sequence unaries;
     };
 
     GolombRiceVector() = default;
@@ -153,14 +200,14 @@ class GolombRiceVector {
             if (shift + log2golomb > 64) {
                 fixed |= data[idx64 + 1] << (64 - shift);
             }
-            result |= fixed & ((uint64_t(1) << log2golomb) - 1);
+            result |= fixed & ((uint64_t{1} << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }
 
         void skip_subtree(const std::size_t nodes, const std::size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
-            std::size_t missing = nodes, cnt;
+            std::size_t missing = nodes, cnt = 0;
             while ((cnt = static_cast<std::size_t>(nu(curr_window_unary))) < missing) {
                 curr_window_unary = *(curr_ptr_unary++);
                 missing -= cnt;

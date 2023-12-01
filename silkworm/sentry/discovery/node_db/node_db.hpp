@@ -64,8 +64,9 @@ struct NodeDb {
 
     virtual Task<std::optional<NodeAddress>> find_node_address(NodeId id) {
         auto address = co_await find_node_address_v4(id);
-        if (!address)
+        if (!address) {
             address = co_await find_node_address_v6(id);
+        }
         co_return address;
     }
 

@@ -100,10 +100,12 @@ DecodingResult decode(ByteView& from, Leftover mode, Arg1& arg1, Arg2& arg2, Arg
 template <>
 inline DecodingResult decode(ByteView& from, std::vector<RlpByteView>& to, Leftover mode) noexcept {
     auto header = decode_header(from);
-    if (!header)
+    if (!header) {
         return tl::unexpected{header.error()};
-    if (!header->list)
+    }
+    if (!header->list) {
         return tl::unexpected{DecodingError::kUnexpectedString};
+    }
 
     to.clear();
 
@@ -111,16 +113,18 @@ inline DecodingResult decode(ByteView& from, std::vector<RlpByteView>& to, Lefto
     while (!payload_view.empty()) {
         auto item_start = payload_view.begin();
         auto item_header = decode_header(payload_view);
-        if (!item_header)
+        if (!item_header) {
             return tl::unexpected{header.error()};
+        }
         auto item_end = payload_view.begin() + item_header->payload_length;
         to.emplace_back(ByteView{std::span{item_start, item_end}});
         payload_view.remove_prefix(item_header->payload_length);
     }
 
     from.remove_prefix(header->payload_length);
-    if ((mode != Leftover::kAllow) && !from.empty())
+    if ((mode != Leftover::kAllow) && !from.empty()) {
         return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 

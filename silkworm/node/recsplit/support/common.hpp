@@ -229,7 +229,7 @@ inline int lambda(uint64_t word) { return 63 ^ __builtin_clzll(word); }
 inline uint64_t remap16(uint64_t x, uint64_t n) {
     SILKWORM_ASSERT(n < (1 << 16));
     static const int masklen = 48;
-    static const uint64_t mask = (uint64_t(1) << masklen) - 1;
+    static const uint64_t mask = (uint64_t{1} << masklen) - 1;
     return ((x & mask) * n) >> masklen;
 }
 
@@ -280,11 +280,11 @@ inline uint64_t select64(uint64_t x, uint64_t k) {
     uint64_t kStep8 = k * kOnesStep8;
     uint64_t geqKStep8 = (((kStep8 | kLAMBDAsStep8) - byteSums) & kLAMBDAsStep8);
     uint64_t place = nu(geqKStep8) * 8;
-    uint64_t byteRank = k - (((byteSums << 8) >> place) & uint64_t(0xFF));
+    uint64_t byteRank = k - (((byteSums << 8) >> place) & uint64_t{0xFF});
     return place + kSelectInByte[((x >> place) & 0xFF) | (byteRank << 8)];
 #elif defined(__GNUC__) || defined(__clang__)
     // GCC and Clang won't inline the intrinsics.
-    uint64_t result = uint64_t(1) << k;
+    uint64_t result = uint64_t{1} << k;
 
     asm("pdep %1, %0, %0\n\t"
         "tzcnt %0, %0"

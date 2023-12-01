@@ -30,13 +30,13 @@ Task<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlo
     try {
         const auto status = co_await tx_pool_->get_status();
         TxPoolStatusInfo txpool_status{status.base_fee_count, status.pending_count, status.queued_count};
-        reply = make_json_content(request["id"], txpool_status);
+        reply = make_json_content(request, txpool_status);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_return;
@@ -74,16 +74,16 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
         }
 
         if (!error) {
-            reply = make_json_content(request["id"], transactions_content);
+            reply = make_json_content(request, transactions_content);
         } else {
-            reply = make_json_error(request["id"], 100, "RLP decoding error");
+            reply = make_json_error(request, 100, "RLP decoding error");
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_return;

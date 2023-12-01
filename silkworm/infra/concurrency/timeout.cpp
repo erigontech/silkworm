@@ -38,8 +38,9 @@ Task<void> timeout(
         co_await timer.async_wait(boost::asio::use_awaitable);
     } catch (const boost::system::system_error& ex) {
         // if the timeout is cancelled before expiration - it is not an error
-        if (ex.code() == boost::system::errc::operation_canceled)
+        if (ex.code() == boost::system::errc::operation_canceled) {
             co_return;
+        }
         throw;
     }
 

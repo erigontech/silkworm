@@ -22,6 +22,7 @@
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
@@ -41,7 +42,7 @@ namespace silkworm::rpc::commands {
 constexpr int kCurrentApiLevel{8};
 
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
-    reply = make_json_content(request["id"], kCurrentApiLevel);
+    reply = make_json_content(request, kCurrentApiLevel);
     co_return;
 }
 
@@ -50,7 +51,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_hasCode params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -72,16 +73,16 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
         if (account) {
             auto code{co_await state_reader.read_code(account->code_hash)};
-            reply = make_json_content(request["id"], code.has_value());
+            reply = make_json_content(request, code.has_value());
         } else {
-            reply = make_json_content(request["id"], false);
+            reply = make_json_content(request, false);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -93,7 +94,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     if (params.size() != 1) {
         auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
@@ -121,19 +122,19 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
-            reply = make_json_content(request["id"], block_details_response);
+            reply = make_json_content(request, block_details_response);
         } else {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -145,7 +146,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     if (params.size() != 1) {
         auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
@@ -172,19 +173,19 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
-            reply = make_json_content(request["id"], block_details_response);
+            reply = make_json_content(request, block_details_response);
         } else {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -196,7 +197,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     if (params.size() != 3) {
         auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -243,19 +244,19 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
 
-            reply = make_json_content(request["id"], block_transactions);
+            reply = make_json_content(request, block_transactions);
         } else {
-            reply = make_json_content(request["id"], {});
+            reply = make_json_content(request, {});
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], {});
+        reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -267,7 +268,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_getTransactionBySenderAndNonce params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -298,7 +299,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                     break;
                 }
 
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -352,24 +353,24 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 if (transaction.from == sender && transaction.nonce == nonce) {
                     auto const transaction_hash{hash_of_transaction(transaction)};
                     auto result = to_bytes32({transaction_hash.bytes, kHashLength});
-                    reply = make_json_content(request["id"], result);
+                    reply = make_json_content(request, result);
                     co_await tx->close();
                     co_return;
                 }
             }
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
         } else {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -381,7 +382,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getContractCreator params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -398,13 +399,13 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         auto plain_state_account = Account::from_encoded_storage(account_payload.value);
 
         if (!plain_state_account.has_value()) {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
         if (plain_state_account.value().code_hash == kEmptyHash) {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
@@ -421,7 +422,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
         while (true) {
             if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -431,7 +432,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto block_key{db::block_key(max_block)};
             auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
             if (!address_and_payload.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -439,7 +440,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto account = Account::from_encoded_storage(payload);
 
             if (!account) {
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -462,7 +463,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
 
             if (!address_and_payload.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -471,7 +472,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto account = Account::from_encoded_storage(payload);
 
             if (!account) {
-                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
@@ -494,19 +495,19 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         if (block_with_hash) {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
-            reply = make_json_content(request["id"], result);
+            reply = make_json_content(request, result);
         } else {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -518,7 +519,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_traceTransaction params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -536,24 +537,24 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
         const auto result = co_await executor.trace_transaction_entries(transaction_with_block.value());
 
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -565,7 +566,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getTransactionError params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -583,24 +584,24 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
         const auto result = co_await executor.trace_transaction_error(transaction_with_block.value());
 
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -612,7 +613,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getInternalOperations params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -630,24 +631,24 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
         const auto result = co_await executor.trace_operations(transaction_with_block.value());
 
-        reply = make_json_content(request["id"], result);
+        reply = make_json_content(request, result);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -659,7 +660,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     if (params.size() != 3) {
         const auto error_msg = "invalid ots_search_transactions_before params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -721,17 +722,17 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         }
 
         TransactionsWithReceipts results{is_first_page, !has_more, receipts, transactions, blocks};
-        reply = make_json_content(request["id"], results);
+        reply = make_json_content(request, results);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -743,7 +744,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     if (params.size() != 3) {
         const auto error_msg = "invalid handle_ots_search_transactions_after params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request["id"], 100, error_msg);
+        reply = make_json_error(request, 100, error_msg);
         co_return;
     }
 
@@ -803,17 +804,17 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 
         TransactionsWithReceipts results{is_last_page, !has_more, receipts, transactions, blocks};
 
-        reply = make_json_content(request["id"], results);
+        reply = make_json_content(request, results);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, e.what());
+        reply = make_json_error(request, 100, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        reply = make_json_error(request, 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

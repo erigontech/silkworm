@@ -62,7 +62,7 @@ TEST_CASE("Legacy Transaction RLP") {
     decoded.max_fee_per_gas = 31;
     decoded.access_list = access_list;
     decoded.max_fee_per_blob_gas = 123;
-    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.blob_versioned_hashes.emplace_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
     decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     view = encoded;
     REQUIRE(rlp::decode(view, decoded));
@@ -129,7 +129,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     decoded.max_priority_fee_per_gas = 17;
     decoded.max_fee_per_gas = 31;
     decoded.max_fee_per_blob_gas = 123;
-    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.blob_versioned_hashes.emplace_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
     decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     view = encoded_wrapped;
     REQUIRE(rlp::decode(view, decoded));

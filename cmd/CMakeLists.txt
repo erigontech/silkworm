@@ -14,6 +14,10 @@
    limitations under the License.
 ]]
 
+if(SILKWORM_CLANG_TIDY)
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
+endif()
+
 # Tests
 add_subdirectory(test)
 

@@ -50,10 +50,6 @@ enum class TransactionType : uint8_t {
 };
 
 struct UnsignedTransaction {
-    UnsignedTransaction() = default;
-    UnsignedTransaction(TransactionType _type, std::optional<evmc::address> _to, Bytes&& _data)
-        : type{_type}, to{_to}, data{std::move(_data)} {}
-
     TransactionType type{TransactionType::kLegacy};
 
     std::optional<intx::uint256> chain_id{std::nullopt};  // nullopt means a pre-EIP-155 transaction
@@ -86,10 +82,6 @@ struct UnsignedTransaction {
 };
 
 struct Transaction : public UnsignedTransaction {
-    Transaction() = default;
-    Transaction(TransactionType _type, std::optional<evmc::address> _to, Bytes&& _data)
-        : UnsignedTransaction(_type, _to, std::move(_data)) {}
-
     bool odd_y_parity{false};
     intx::uint256 r{0}, s{0};  // signature
 
@@ -109,6 +101,9 @@ struct Transaction : public UnsignedTransaction {
     void recover_sender();
 
     [[nodiscard]] evmc::bytes32 hash() const;
+
+    //! Reset the computed values
+    void reset();
 
   private:
     // cached value for hash if already computed

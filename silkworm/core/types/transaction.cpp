@@ -292,7 +292,7 @@ namespace rlp {
 
     DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping accepted_typed_txn_wrapping,
                                       Leftover mode) noexcept {
-        to.from.reset();
+        to.reset();
 
         if (from.empty()) {
             return tl::unexpected{DecodingError::kInputTooShort};
@@ -422,6 +422,11 @@ void Transaction::recover_sender() {
     if (!silkworm_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
         from = std::nullopt;
     }
+}
+
+void Transaction::reset() {
+    from.reset();
+    cached_hash_.reset();
 }
 
 intx::uint512 UnsignedTransaction::maximum_gas_cost() const {

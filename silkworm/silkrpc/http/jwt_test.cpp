@@ -32,7 +32,7 @@ static std::string ascii_from_hex(const std::string& hex) {
     if (!bytes) {
         throw std::runtime_error{"ascii_from_hex"};
     }
-    return {byte_view_to_string_view(*bytes)};
+    return std::string{byte_view_to_string_view(*bytes)};
 }
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {

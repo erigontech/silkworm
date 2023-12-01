@@ -222,7 +222,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
         std::vector<std::string> transaction_hashes;
         transaction_hashes.reserve(block.transactions.size());
         for (const auto& transaction : block.transactions) {
-            transaction_hashes.push_back("0x" + silkworm::to_hex(transaction.hash().bytes));
+            transaction_hashes.push_back("0x" + silkworm::to_hex(transaction.hash()));
         }
         result.transaction_hashes = std::make_optional(std::move(transaction_hashes));
     }

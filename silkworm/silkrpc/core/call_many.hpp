@@ -66,7 +66,7 @@ class CallExecutor {
 
     CallManyResult executes_all_bundles(const silkworm::ChainConfig& config,
                                         const ChainStorage& storage,
-                                        const silkworm::BlockWithHash& block,
+                                        std::shared_ptr<BlockWithHash> block_with_hash,
                                         ethdb::TransactionDatabase& tx_database,
                                         const Bundles& bundles,
                                         std::optional<std::uint64_t> opt_timeout,

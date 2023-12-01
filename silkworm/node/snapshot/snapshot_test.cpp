@@ -327,8 +327,9 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
         txn.gas_limit = 21000;
         txn.to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address;
         txn.value = 10 * kEther;
-        txn.data = *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
-                             "00015af1d78b58c4000");
+        txn.data = *from_hex(
+            "a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
+            "00015af1d78b58c4000");
         txn.odd_y_parity = true;
         txn.r = intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717");
         txn.s = intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718");

@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
             canonical_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
         auto [end_time, _] = sw.lap();
-        log::Info() << "Done! " << sw.format(end_time - start_time);
+        log::Info() << "Done! " << StopWatch::format(end_time - start_time);
     } catch (const std::exception& ex) {
         log::Error() << ex.what();
         return -5;

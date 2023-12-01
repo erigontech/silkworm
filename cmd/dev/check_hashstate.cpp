@@ -24,7 +24,6 @@
 #include <silkworm/node/db/util.hpp>
 
 using namespace silkworm;
-namespace fs = std::filesystem;
 
 enum Operation {
     HashAccount,

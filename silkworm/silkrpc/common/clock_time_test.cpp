@@ -20,8 +20,6 @@
 
 namespace silkworm::clock_time {
 
-using Catch::Matchers::Message;
-
 using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 using std::chrono::steady_clock;

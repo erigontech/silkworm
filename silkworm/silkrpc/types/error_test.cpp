@@ -22,8 +22,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("create empty error", "[silkrpc][types][error]") {
     Error err{};
     CHECK(err.code == 0);

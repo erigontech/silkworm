@@ -25,8 +25,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("invalid request with non-character") {
         std::array<char, 2> non_chars{static_cast<char>(-1), static_cast<char>(128)};
@@ -170,7 +168,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         CHECK(result2 == RequestParser::ResultType::good);
         CHECK(req.http_version_major == 1);
         CHECK(req.http_version_minor == 9);
-        CHECK(req.headers.size() == 0);
+        CHECK(req.headers.empty());
         CHECK(req.content_length == 0);
         CHECK(req.content.length() == 0);
     }
@@ -189,7 +187,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         CHECK(result3 == RequestParser::ResultType::good);
         CHECK(req.http_version_major == 1);
         CHECK(req.http_version_minor == 1);
-        CHECK(req.headers.size() == 0);
+        CHECK(req.headers.empty());
         CHECK(req.content_length == 15);
         CHECK(req.content.length() == 15);
     }
@@ -211,7 +209,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         CHECK(result4 == RequestParser::ResultType::good);
         CHECK(req.http_version_major == 1);
         CHECK(req.http_version_minor == 1);
-        CHECK(req.headers.size() == 0);
+        CHECK(req.headers.empty());
         CHECK(req.content_length == 15);
         CHECK(req.content.length() == 15);
     }

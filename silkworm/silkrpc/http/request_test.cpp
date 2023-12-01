@@ -20,8 +20,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("check reset method", "[silkrpc][http][request]") {
     Request req{
         "eth_call",

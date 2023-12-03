@@ -128,7 +128,7 @@ class SplittingStrategy {
     static_assert(1 <= LEAF_SIZE && LEAF_SIZE <= kMaxLeafSize);
 
   public:
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * std::max(2.0, std::ceil(0.35 * LEAF_SIZE + 0.5));
+    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * static_cast<uint64_t>(std::max(2.0, std::ceil(0.35 * LEAF_SIZE + 0.5)));
 
     //! The lower bound for secondary (upper) key aggregation
     static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : std::ceil(0.21 * LEAF_SIZE + 0.9));

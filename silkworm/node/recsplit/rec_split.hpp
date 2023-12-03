@@ -131,7 +131,7 @@ class SplittingStrategy {
     static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * static_cast<uint64_t>(std::max(2.0, std::ceil(0.35 * LEAF_SIZE + 0.5)));
 
     //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : std::ceil(0.21 * LEAF_SIZE + 0.9));
+    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * static_cast<uint64_t>(LEAF_SIZE < 7 ? 2 : std::ceil(0.21 * LEAF_SIZE + 0.9));
 
     static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
         std::size_t fanout{0}, unit{0};

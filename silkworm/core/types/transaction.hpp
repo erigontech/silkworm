@@ -101,6 +101,13 @@ struct Transaction : public UnsignedTransaction {
     void recover_sender();
 
     [[nodiscard]] evmc::bytes32 hash() const;
+
+    //! Reset the computed values
+    void reset();
+
+  private:
+    // cached value for hash if already computed
+    mutable std::optional<evmc::bytes32> cached_hash_{std::nullopt};
 };
 
 namespace rlp {

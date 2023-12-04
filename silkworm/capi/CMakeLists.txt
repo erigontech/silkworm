@@ -46,7 +46,7 @@ set(PRIVATE_LIBS
     silkworm_infra
     silkworm_node
     silkworm_sentry
-    silkrpc
+    silkworm_rpcdaemon
 )
 
 target_link_libraries(

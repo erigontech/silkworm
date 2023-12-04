@@ -47,9 +47,14 @@ bool Transaction::set_v(const intx::uint256& v) {
 }
 
 evmc::bytes32 Transaction::hash() const {
+    if (cached_hash_) {
+        return *cached_hash_;
+    }
+
     Bytes rlp;
     rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
-    return std::bit_cast<evmc_bytes32>(keccak256(rlp));
+    cached_hash_ = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
+    return *cached_hash_;
 }
 
 namespace rlp {
@@ -287,7 +292,7 @@ namespace rlp {
 
     DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping accepted_typed_txn_wrapping,
                                       Leftover mode) noexcept {
-        to.from.reset();
+        to.reset();
 
         if (from.empty()) {
             return tl::unexpected{DecodingError::kInputTooShort};
@@ -417,6 +422,11 @@ void Transaction::recover_sender() {
     if (!silkworm_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
         from = std::nullopt;
     }
+}
+
+void Transaction::reset() {
+    from.reset();
+    cached_hash_.reset();
 }
 
 intx::uint512 UnsignedTransaction::maximum_gas_cost() const {

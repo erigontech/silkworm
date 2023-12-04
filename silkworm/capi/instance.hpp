@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 struct SilkwormInstance {
     silkworm::concurrency::ContextPoolSettings context_pool_settings;

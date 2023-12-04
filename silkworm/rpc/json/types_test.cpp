@@ -26,6 +26,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::rpc {
@@ -69,6 +70,7 @@ TEST_CASE("serialize empty address using to_hex(char *)", "[rpc][to_json]") {
 }
 
 TEST_CASE("serialize empty address using to_hex(char *) small buffer", "[rpc][to_json]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     evmc::address address{};
     char address_zero[10];
     CHECK_THROWS(to_hex(address_zero, address.bytes));

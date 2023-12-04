@@ -26,11 +26,11 @@ namespace silkworm::math {
 // Computes the least integer value not less than num
 template <std::integral T = int>
 constexpr T int_ceil(double num) {
-    SILKWORM_ASSERT(num >= std::numeric_limits<T>::min());
-    SILKWORM_ASSERT(num <= std::numeric_limits<T>::max() - 1);
+    SILKWORM_ASSERT(num >= static_cast<double>(std::numeric_limits<T>::min()));
+    SILKWORM_ASSERT(num <= static_cast<double>(std::numeric_limits<T>::max()));
 
     const T i{static_cast<T>(num)};
-    return num > i ? i + 1 : i;
+    return num > static_cast<double>(i) ? i + 1 : i;
 }
 
 }  // namespace silkworm::math

@@ -44,6 +44,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cassert>
@@ -64,6 +65,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -114,10 +116,6 @@ struct hash128_t {
     bool operator<(const hash128_t& o) const { return first < o.first || second < o.second; }
 };
 
-// Quick replacements for min/max on not-so-large integers
-static constexpr inline uint64_t min(int64_t x, int64_t y) { return static_cast<uint64_t>(y + ((x - y) & ((x - y) >> 63))); }
-static constexpr inline uint64_t max(int64_t x, int64_t y) { return static_cast<uint64_t>(x - ((x - y) & ((x - y) >> 63))); }
-
 // Optimal Golomb-Rice parameters for leaves
 static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
 
@@ -128,10 +126,13 @@ class SplittingStrategy {
     static_assert(1 <= LEAF_SIZE && LEAF_SIZE <= kMaxLeafSize);
 
   public:
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * static_cast<uint64_t>(std::max(2.0, std::ceil(0.35 * LEAF_SIZE + 0.5)));
+    //! The lower bound for primary (lower) key aggregation
+    static constexpr std::size_t kLowerAggregationBound = LEAF_SIZE * std::max(std::size_t{2},
+                                                                               math::int_ceil<std::size_t>(0.35 * LEAF_SIZE + 0.5));
 
     //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * static_cast<uint64_t>(LEAF_SIZE < 7 ? 2 : std::ceil(0.21 * LEAF_SIZE + 0.9));
+    static constexpr std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? std::size_t{2}
+                                                                                                  : math::int_ceil<std::size_t>(0.21 * LEAF_SIZE + 0.9));
 
     static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
         std::size_t fanout{0}, unit{0};
@@ -500,7 +501,7 @@ class RecSplit {
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / kLowerAggregationBound;
-            m = min(kLowerAggregationBound, m - part * kLowerAggregationBound);
+            m = std::min(kLowerAggregationBound, m - part * kLowerAggregationBound);
             cum_keys += kLowerAggregationBound * part;
             if (part) reader.skip_subtree(skip_nodes(kLowerAggregationBound) * part, skip_bits(kLowerAggregationBound) * part);
             level++;
@@ -511,7 +512,7 @@ class RecSplit {
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / LEAF_SIZE;
-            m = min(LEAF_SIZE, m - part * LEAF_SIZE);
+            m = std::min(LEAF_SIZE, m - part * LEAF_SIZE);
             cum_keys += LEAF_SIZE * part;
             if (part) reader.skip_subtree(part, skip_bits(LEAF_SIZE) * part);
             level++;
@@ -600,7 +601,7 @@ class RecSplit {
         }
 
         const double p = sqrt(m) / (pow(2 * std::numbers::pi, (static_cast<double>(fanout) - 1.) * 0.5) * sqrt_prod);
-        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p))));  // log2 Golomb modulus
+        auto golomb_rice_length = math::int_ceil<uint32_t>(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p)));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;
@@ -785,7 +786,7 @@ class RecSplit {
         }
         is.read(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
         is.read(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
-        rs.bucket_count_ = max(1, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
+        rs.bucket_count_ = std::max(std::size_t{1}, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
 
         is >> rs.golomb_rice_codes_;
         is >> rs.double_ef_index_;

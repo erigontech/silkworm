@@ -28,28 +28,29 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Block& b) {
-    out << "parent_hash: " << to_hex(b.block.header.parent_hash);
-    out << " ommers_hash: " << to_hex(b.block.header.ommers_hash);
+    auto& block = b.block_with_hash->block;
+    out << "parent_hash: " << to_hex(block.header.parent_hash);
+    out << " ommers_hash: " << to_hex(block.header.ommers_hash);
     out << " beneficiary: ";
-    for (const auto& byte : b.block.header.beneficiary.bytes) {
+    for (const auto& byte : block.header.beneficiary.bytes) {
         out << std::hex << std::setw(2) << std::setfill('0') << int(byte);
     }
     out << std::dec;
-    out << " state_root: " << to_hex(b.block.header.state_root);
-    out << " transactions_root: " << to_hex(b.block.header.transactions_root);
-    out << " receipts_root: " << to_hex(b.block.header.receipts_root);
-    out << " logs_bloom: " << silkworm::to_hex(full_view(b.block.header.logs_bloom));
-    out << " difficulty: " << silkworm::to_hex(silkworm::endian::to_big_compact(b.block.header.difficulty));
-    out << " number: " << b.block.header.number;
-    out << " gas_limit: " << b.block.header.gas_limit;
-    out << " gas_used: " << b.block.header.gas_used;
-    out << " timestamp: " << b.block.header.timestamp;
-    out << " extra_data: " << silkworm::to_hex(b.block.header.extra_data);
-    out << " prev_randao: " << to_hex(b.block.header.prev_randao);
-    out << " nonce: " << silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
-    out << " #transactions: " << b.block.transactions.size();
-    out << " #ommers: " << b.block.ommers.size();
-    out << " hash: " << to_hex(b.hash);
+    out << " state_root: " << to_hex(block.header.state_root);
+    out << " transactions_root: " << to_hex(block.header.transactions_root);
+    out << " receipts_root: " << to_hex(block.header.receipts_root);
+    out << " logs_bloom: " << silkworm::to_hex(full_view(block.header.logs_bloom));
+    out << " difficulty: " << silkworm::to_hex(silkworm::endian::to_big_compact(block.header.difficulty));
+    out << " number: " << block.header.number;
+    out << " gas_limit: " << block.header.gas_limit;
+    out << " gas_used: " << block.header.gas_used;
+    out << " timestamp: " << block.header.timestamp;
+    out << " extra_data: " << silkworm::to_hex(block.header.extra_data);
+    out << " prev_randao: " << to_hex(block.header.prev_randao);
+    out << " nonce: " << silkworm::to_hex({block.header.nonce.data(), block.header.nonce.size()});
+    out << " #transactions: " << block.transactions.size();
+    out << " #ommers: " << block.ommers.size();
+    out << " hash: " << to_hex(b.block_with_hash->hash);
     out << " total_difficulty: " << silkworm::to_hex(silkworm::endian::to_big_compact(b.total_difficulty));
     out << " full_tx: " << b.full_tx;
     return out;
@@ -57,6 +58,7 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
 
 uint64_t Block::get_block_size() const {
     silkworm::rlp::Header rlp_head{true, 0};
+    auto& block = block_with_hash->block;
     rlp_head.payload_length = silkworm::rlp::length(block.header);
     rlp_head.payload_length += silkworm::rlp::length(block.transactions);
     rlp_head.payload_length += silkworm::rlp::length(block.ommers);

@@ -339,25 +339,24 @@ TEST_CASE("serialize block with hydrated transactions", "[rpc][to_json]") {
     silkworm::Transaction tx2;
     REQUIRE(silkworm::rlp::decode(tx2_view, tx2));
 
-    // 1.4) build the full block
-    silkworm::rpc::Block rpc_block{
-        {
-            // BlockWithHash
-            /*.block =*/{
-                // Block
-                {
-                    // BlockBody
-                    .transactions = std::vector<silkworm::Transaction>{tx1, tx2},
-                    .ommers = std::vector<silkworm::BlockHeader>{},
-                    .withdrawals = std::nullopt,
-                },
-                /*.header =*/header,
+    silkworm::BlockWithHash block_with_hash{
+        // BlockWithHash
+        /*.block =*/{
+            // Block
+            {
+                // BlockBody
+                .transactions = std::vector<silkworm::Transaction>{tx1, tx2},
+                .ommers = std::vector<silkworm::BlockHeader>{},
+                .withdrawals = std::nullopt,
             },
-            /*.hash =*/0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5_bytes32,
+            /*.header =*/header,
         },
-        /*.total_difficulty =*/intx::uint256{0x4e33ae},
-        /*.full_tx =*/true,
+        /*.hash =*/0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5_bytes32,
     };
+
+    auto block_with_hash_shared = std::make_shared<BlockWithHash>();
+    *block_with_hash_shared = block_with_hash;
+    silkworm::rpc::Block rpc_block{block_with_hash_shared, /* total_difficulty */ intx::uint256{0x4e33ae}, /* full_tx */ true};
 
     nlohmann::json rpc_block_json = rpc_block;
     CHECK(rpc_block_json == R"({
@@ -460,10 +459,11 @@ TEST_CASE("serialize block body with ommers", "[rpc][to_json]") {
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView in{rlp_bytes};
 
-    silkworm::rpc::Block rpc_block;
+    auto block_with_hash_shared = std::make_shared<BlockWithHash>();
+    silkworm::rpc::Block rpc_block{block_with_hash_shared};
     silkworm::BlockBody block_body;
     REQUIRE(silkworm::rlp::decode(in, block_body));
-    rpc_block.block.ommers = block_body.ommers;
+    rpc_block.block_with_hash->block.ommers = block_body.ommers;
 
     nlohmann::json rpc_block_json = rpc_block;
     CHECK(rpc_block_json == R"({

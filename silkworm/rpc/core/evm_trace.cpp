@@ -1657,7 +1657,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     auto block_number = from_block_with_hash->block.header.number;
     auto block_with_hash = from_block_with_hash;
     while (block_number++ <= to_block_with_hash->block.header.number) {
-        const Block block{*block_with_hash, {}, false};
+        const Block block{block_with_hash, {}, false};
         SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
                    << " block_number: " << block_number - 1
                    << " block: " << block;

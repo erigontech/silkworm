@@ -394,7 +394,7 @@ Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStora
 
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, storage, *block_with_hash, bundles, transaction_index);
+    co_await execute(stream, storage, block_with_hash, bundles, transaction_index);
     stream.close_array();
 
     co_return;
@@ -526,10 +526,10 @@ Task<void> DebugExecutor::execute(
 Task<void> DebugExecutor::execute(
     json::Stream& stream,
     const ChainStorage& storage,
-    const silkworm::BlockWithHash& block_with_hash,
+    std::shared_ptr<BlockWithHash> block_with_hash,
     const Bundles& bundles,
     int32_t transaction_index) {
-    const auto& block = block_with_hash.block;
+    const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
 
     SILK_TRACE << "DebugExecutor::execute: "
@@ -563,24 +563,24 @@ Task<void> DebugExecutor::execute(
                 for (const auto& bundle : bundles) {
                     const auto& block_override = bundle.block_override;
 
-                    rpc::Block blockContext{{block_with_hash.block}};
+                    rpc::Block blockContext{{block_with_hash}};
                     if (block_override.block_number) {
-                        blockContext.block.header.number = block_override.block_number.value();
+                        blockContext.block_with_hash->block.header.number = block_override.block_number.value();
                     }
                     if (block_override.coin_base) {
-                        blockContext.block.header.beneficiary = block_override.coin_base.value();
+                        blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
                     }
                     if (block_override.timestamp) {
-                        blockContext.block.header.timestamp = block_override.timestamp.value();
+                        blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
                     }
                     if (block_override.difficulty) {
-                        blockContext.block.header.difficulty = block_override.difficulty.value();
+                        blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
                     }
                     if (block_override.gas_limit) {
-                        blockContext.block.header.gas_limit = block_override.gas_limit.value();
+                        blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
                     }
                     if (block_override.base_fee) {
-                        blockContext.block.header.base_fee_per_gas = block_override.base_fee;
+                        blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
                     }
 
                     stream.open_array();
@@ -595,7 +595,7 @@ Task<void> DebugExecutor::execute(
                         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                         Tracers tracers{debug_tracer};
 
-                        const auto execution_result = executor.call(blockContext.block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                        const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
                         debug_tracer->flush_logs();
                         stream.close_array();

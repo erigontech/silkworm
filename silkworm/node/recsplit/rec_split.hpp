@@ -786,7 +786,7 @@ class RecSplit {
         }
         is.read(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
         is.read(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
-        rs.bucket_count_ = std::max(1, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
+        rs.bucket_count_ = std::max(std::size_t{1}, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
 
         is >> rs.golomb_rice_codes_;
         is >> rs.double_ef_index_;

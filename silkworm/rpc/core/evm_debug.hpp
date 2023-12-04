@@ -152,7 +152,7 @@ class DebugExecutor {
     Task<void> execute(
         json::Stream& stream,
         const ChainStorage& storage,
-        const silkworm::BlockWithHash& block_with_hash,
+        std::shared_ptr<BlockWithHash> block_with_hash,
         const Bundles& bundles,
         int32_t transaction_index);
 

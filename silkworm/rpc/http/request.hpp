@@ -23,6 +23,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -50,5 +51,13 @@ struct Request {
         content.resize(0);
     }
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Request& r) {
+    out << r.method << " / HTTP/" << r.http_version_major << "." << r.http_version_minor;
+    for (const auto& h : r.headers) {
+        out << " " << h.name << ": " << h.value;
+    }
+    return out;
+}
 
 }  // namespace silkworm::rpc::http

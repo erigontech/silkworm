@@ -243,7 +243,7 @@ RequestHandler::AuthorizationResult RequestHandler::is_request_authorized(const 
     });
 
     if (it == request.headers.end()) {
-        SILK_ERROR << "JWT request without Authorization field";
+        SILK_ERROR << "JWT request without Authorization Header: " << request;
         return tl::make_unexpected("missing Authorization Header");
     }
 

@@ -247,6 +247,7 @@ int ethbackend_coroutines(const std::string& target) {
 
         // Etherbase
         ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
+        // NOLINTNEXTLINE(performance-unnecessary-value-param)
         boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });

@@ -70,6 +70,7 @@ Checks: >
   -modernize-macro-to-enum,
   -modernize-use-nodiscard,
   -modernize-use-using,
+  -modernize-use-default-member-init,
   -modernize-use-trailing-return-type,
   performance-*,
   portability-*,

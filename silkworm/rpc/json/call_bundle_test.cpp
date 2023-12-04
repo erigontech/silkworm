@@ -25,8 +25,6 @@
 
 namespace silkworm::rpc {
 
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 TEST_CASE("serialize empty call_bundle", "[rpc][to_json]") {
     struct CallBundleInfo bundle_info {};
 

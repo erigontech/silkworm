@@ -97,7 +97,7 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
     }
 };
 
-Task<proto::SentPeers> do_send_message_call(
+inline Task<proto::SentPeers> do_send_message_call(
     const ServiceRouter& router,
     const proto::OutboundMessageData& request,
     api::PeerFilter peer_filter) {

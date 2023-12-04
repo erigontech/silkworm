@@ -29,10 +29,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using std::string_literals::operator""s;
-
 TEST_CASE("make glaze json error", "[make_glaze_json_error]") {
     std::string json;
     make_glaze_json_error(1, 3, "generic_error", json);

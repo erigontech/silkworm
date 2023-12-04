@@ -30,9 +30,7 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using std::string_literals::operator""s;
 
 TEST_CASE("convert zero uint256 to quantity", "[rpc][to_quantity]") {
     intx::uint256 zero_u256{0};

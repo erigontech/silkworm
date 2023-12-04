@@ -47,9 +47,9 @@ struct ChunkProviderResponse {
 
 class ChunkProvider {
   private:
-    silkworm::rpc::ethdb::Cursor* cursor_;
+    ethdb::Cursor* cursor_ = nullptr;
     evmc::address address_;
-    bool navigate_forward_;
+    bool navigate_forward_ = false;
     silkworm::KeyValue first_seek_key_value_;
 
     bool first_ = true;
@@ -57,7 +57,7 @@ class ChunkProvider {
     bool error_ = false;
 
   public:
-    ChunkProvider() {}
+    ChunkProvider() = default;
     ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
 
     Task<ChunkProviderResponse> get();
@@ -65,8 +65,8 @@ class ChunkProvider {
 
 struct ChunkLocatorResponse {
     ChunkProvider chunk_provider;
-    bool ok;
-    bool error;
+    bool ok{false};
+    bool error{false};
 };
 
 class ChunkLocator {

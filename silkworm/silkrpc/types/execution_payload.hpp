@@ -43,10 +43,10 @@ struct ExecutionPayload {
         V2 = 2
     } version{V1};
 
-    BlockNum number;
-    uint64_t timestamp;
-    uint64_t gas_limit;
-    uint64_t gas_used;
+    BlockNum number{0};
+    uint64_t timestamp{0};
+    uint64_t gas_limit{0};
+    uint64_t gas_used{0};
     evmc::address suggested_fee_recipient;
     evmc::bytes32 state_root;
     evmc::bytes32 receipts_root;
@@ -54,7 +54,7 @@ struct ExecutionPayload {
     evmc::bytes32 block_hash;
     evmc::bytes32 prev_randao;
     intx::uint256 base_fee;
-    Bloom logs_bloom;
+    Bloom logs_bloom{};
     Bytes extra_data;
     std::vector<Bytes> transactions;
     std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2
@@ -77,7 +77,7 @@ struct PayloadAttributes {
         V2 = 2
     } version{V1};
 
-    uint64_t timestamp;
+    uint64_t timestamp{0};
     evmc::bytes32 prev_randao;
     evmc::address suggested_fee_recipient;
     std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2

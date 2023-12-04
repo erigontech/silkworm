@@ -44,7 +44,6 @@ namespace silkworm::rpc::ethdb::kv {
 
 using namespace evmc::literals;  // NOLINT(build/namespaces_literals)
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
 using testing::Return;

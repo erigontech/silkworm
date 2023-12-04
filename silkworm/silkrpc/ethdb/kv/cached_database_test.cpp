@@ -38,7 +38,6 @@
 
 namespace silkworm::rpc::ethdb::kv {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
 using testing::Return;

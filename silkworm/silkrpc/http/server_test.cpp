@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 // Exclude from sanitizer builds due to errors in Catch2 signal handling
 // WARNING: ThreadSanitizer: signal-unsafe call inside a signal
 #ifndef SILKWORM_SANITIZE

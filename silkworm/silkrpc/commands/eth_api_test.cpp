@@ -27,8 +27,6 @@
 
 namespace silkworm::rpc::commands {
 
-using Catch::Matchers::Message;
-
 //! Utility class to expose handle hooks publicly just for tests
 class EthereumRpcApi_ForTest : public EthereumRpcApi {
   public:

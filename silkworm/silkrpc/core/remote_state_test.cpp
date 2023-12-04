@@ -36,10 +36,8 @@
 
 namespace silkworm::rpc::state {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
 using evmc::literals::operator""_address;
-using Catch::Matchers::Message;
 using testing::_;
 using testing::DoAll;
 using testing::Invoke;

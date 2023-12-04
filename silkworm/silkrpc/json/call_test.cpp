@@ -25,7 +25,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("deserialize null call", "[silkworm::json][from_json]") {

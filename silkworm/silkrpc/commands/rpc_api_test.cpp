@@ -47,8 +47,6 @@
 
 namespace silkworm::rpc::commands {
 
-using Catch::Matchers::Message;
-
 // Function to recursively sort JSON arrays
 void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
     if (jsonObj.is_array()) {

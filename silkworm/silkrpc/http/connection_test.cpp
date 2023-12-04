@@ -25,8 +25,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 // SUMMARY: ThreadSanitizer: data race /usr/include/c++/11/bits/stl_algobase.h:431
 // - write of size 1 thread T8 'grpc_global_tim' created by main thread

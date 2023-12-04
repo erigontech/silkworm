@@ -29,7 +29,6 @@
 
 namespace silkworm::rpc::ethdb {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
 using evmc::literals::operator""_address;
 using testing::_;

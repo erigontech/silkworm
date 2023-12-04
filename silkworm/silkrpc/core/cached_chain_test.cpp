@@ -49,7 +49,6 @@ using testing::Unused;
 using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 static Bytes kNumber{*silkworm::from_hex("00000000003D0900")};

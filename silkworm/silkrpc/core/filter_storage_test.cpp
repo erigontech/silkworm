@@ -26,8 +26,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("FilterStorage base") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 

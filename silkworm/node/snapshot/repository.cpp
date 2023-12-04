@@ -64,7 +64,8 @@ std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& wa
     return visited_views;
 }
 
-SnapshotRepository::SnapshotRepository(SnapshotSettings settings) : settings_(std::move(settings)) {}
+// NOLINTNEXTLINE(modernize-pass-by-value)
+SnapshotRepository::SnapshotRepository(const SnapshotSettings& settings) : settings_(settings) {}
 
 SnapshotRepository::~SnapshotRepository() {
     close();

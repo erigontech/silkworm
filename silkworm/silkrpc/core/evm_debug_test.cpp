@@ -36,7 +36,6 @@
 
 namespace silkworm::rpc::debug {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
 
 using testing::_;

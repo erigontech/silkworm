@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc::commands {
 
-using Catch::Matchers::Message;
-
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("TraceRpcApi") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};

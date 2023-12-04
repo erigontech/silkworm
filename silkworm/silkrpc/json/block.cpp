@@ -60,9 +60,7 @@ void to_json(nlohmann::json& json, const Block& b) {
         std::vector<evmc::bytes32> transaction_hashes;
         transaction_hashes.reserve(b.block.transactions.size());
         for (std::size_t i{0}; i < b.block.transactions.size(); i++) {
-            auto ethash_hash{hash_of_transaction(b.block.transactions[i])};
-            auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
-            transaction_hashes.emplace(transaction_hashes.end(), bytes32_hash);
+            transaction_hashes.emplace(transaction_hashes.end(), b.block.transactions[i].hash());
             SILK_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength});
         }
         json["transactions"] = transaction_hashes;
@@ -224,9 +222,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
         std::vector<std::string> transaction_hashes;
         transaction_hashes.reserve(block.transactions.size());
         for (const auto& transaction : block.transactions) {
-            auto ethash_hash{hash_of_transaction(transaction)};
-            auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
-            transaction_hashes.push_back("0x" + silkworm::to_hex(bytes32_hash));
+            transaction_hashes.push_back("0x" + silkworm::to_hex(transaction.hash()));
         }
         result.transaction_hashes = std::make_optional(std::move(transaction_hashes));
     }

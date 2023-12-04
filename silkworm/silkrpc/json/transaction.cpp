@@ -32,8 +32,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["from"] = transaction.from.value();
     }
     json["gas"] = rpc::to_quantity(transaction.gas_limit);
-    auto ethash_hash{hash_of_transaction(transaction)};
-    json["hash"] = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
+    json["hash"] = transaction.hash();
     json["input"] = "0x" + silkworm::to_hex(transaction.data);
     json["nonce"] = rpc::to_quantity(transaction.nonce);
     if (transaction.to) {
@@ -85,9 +84,7 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
         json_tx.nullto = std::make_optional(std::move(null_value));
     }
     to_quantity(std::span(json_tx.gas), tx.gas_limit);
-    auto ethash_hash{hash_of_transaction(tx)};
-    auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
-    to_hex(std::span(json_tx.hash), bytes32_hash.bytes);
+    to_hex(std::span(json_tx.hash), tx.hash().bytes);
     json_tx.input.reserve(tx.data.size() * 2 + 3);
     json_tx.input = "0x" + silkworm::to_hex(tx.data);
     to_quantity(std::span(json_tx.nonce), tx.nonce);

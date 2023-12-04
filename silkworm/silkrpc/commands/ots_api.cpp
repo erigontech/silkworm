@@ -351,9 +351,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         if (block_with_hash) {
             for (const auto& transaction : block_with_hash->block.transactions) {
                 if (transaction.from == sender && transaction.nonce == nonce) {
-                    auto const transaction_hash{hash_of_transaction(transaction)};
-                    auto result = to_bytes32({transaction_hash.bytes, kHashLength});
-                    reply = make_json_content(request, result);
+                    reply = make_json_content(request, transaction.hash());
                     co_await tx->close();
                     co_return;
                 }

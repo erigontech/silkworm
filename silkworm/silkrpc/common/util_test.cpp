@@ -136,57 +136,52 @@ TEST_CASE("check_tx_fee_less_cap returns false", "[silkrpc][common][util]") {
 }
 
 TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util]") {
-    const Transaction txn{
-        {.type = TransactionType::kAccessList,
-         .nonce = 0,
-         .max_priority_fee_per_gas = 50'000 * kGiga,
-         .max_fee_per_gas = 50'000 * kGiga,
-         .gas_limit = 21'000,
-         .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-         .value = 31337},
-        true,                                                                                                    // odd_y_parity
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
-    };
-
+    Transaction txn{};
+    txn.type = TransactionType::kAccessList;
+    txn.nonce = 0;
+    txn.max_priority_fee_per_gas = 50'000 * kGiga;
+    txn.max_fee_per_gas = 50'000 * kGiga;
+    txn.gas_limit = 21'000;
+    txn.to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address;
+    txn.value = 31337;
+    txn.odd_y_parity = true;
+    txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
+    txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
     auto check = is_replay_protected(txn);
     CHECK(check == false);
 }
 
 TEST_CASE("is_replay_protected returns true", "[silkrpc][common][util]") {
-    Transaction txn{
-        {.type = TransactionType::kLegacy,
-         .chain_id = 9,
-         .nonce = 0,
-         .max_priority_fee_per_gas = 20000000000,
-         .max_fee_per_gas = 20000000000,
-         .gas_limit = 0,
-         .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-         .value = 8,
-         .data = *from_hex("001122aabbcc")},
-        false,                                               // odd_y_parity
-        18,                                                  // r
-        36,                                                  // s
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,  // from
-    };
+    Transaction txn{};
+    txn.type = TransactionType::kLegacy;
+    txn.chain_id = 9;
+    txn.nonce = 0;
+    txn.max_priority_fee_per_gas = 20000000000;
+    txn.max_fee_per_gas = 20000000000;
+    txn.gas_limit = 0;
+    txn.to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
+    txn.value = 8;
+    txn.data = *from_hex("001122aabbcc");
+    txn.odd_y_parity = false;
+    txn.r = 18;
+    txn.s = 36;
+    txn.from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address;
     auto check = is_replay_protected(txn);
     CHECK(check == true);
 }
 
 TEST_CASE("is_replay_protected returns false", "[silkrpc][common][util]") {
-    const Transaction txn{
-        {.type = TransactionType::kLegacy,
-         .nonce = 0,
-         .max_priority_fee_per_gas = 50'000 * kGiga,
-         .max_fee_per_gas = 50'000 * kGiga,
-         .gas_limit = 21'000,
-         .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-         .value = 31337},
-        true,                                                                                                    // odd_y_parity
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
-    };
-
+    Transaction txn{};
+    txn.type = TransactionType::kLegacy;
+    txn.nonce = 0;
+    txn.max_priority_fee_per_gas = 50'000 * kGiga;
+    txn.max_fee_per_gas = 50'000 * kGiga;
+    txn.gas_limit = 21'000;
+    txn.to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address;
+    txn.value = 31337;
+    txn.odd_y_parity = true;
+    txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
+    txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
     auto check = is_replay_protected(txn);
     CHECK(check == false);
 }

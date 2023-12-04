@@ -89,7 +89,7 @@ static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
 }
 
 static void check_expected_transaction(const Transaction& transaction) {
-    const auto eth_hash = hash_of_transaction(transaction);
+    const auto eth_hash = transaction.hash();
     const auto tx_hash = silkworm::to_bytes32(silkworm::ByteView{eth_hash.bytes, silkworm::kHashLength});
     CHECK(tx_hash == 0x3ff7b8917f1941784c709d6e54db18500fddc2b4c1a90b5cdec675cd0f9fc042_bytes32);
     CHECK(transaction.access_list.empty());

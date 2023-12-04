@@ -225,7 +225,7 @@ Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const 
     uint32_t log_index{0};
     for (size_t i{0}; i < receipts.size(); i++) {
         // The tx hash can be calculated by the tx content itself
-        auto tx_hash{hash_of_transaction(transactions[i])};
+        auto tx_hash{transactions[i].hash()};
         receipts[i].tx_hash = silkworm::to_bytes32(full_view(tx_hash.bytes));
         receipts[i].tx_index = uint32_t(i);
 

@@ -42,7 +42,6 @@ using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Return;
 using testing::Unused;
-using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;
 
 static silkworm::Bytes kNumber{*silkworm::from_hex("00000000003D0900")};

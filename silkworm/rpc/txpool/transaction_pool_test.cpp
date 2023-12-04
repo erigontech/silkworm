@@ -69,7 +69,6 @@ inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
 
 namespace silkworm::rpc::txpool {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::AtLeast;
 using testing::MockFunction;

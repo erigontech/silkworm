@@ -120,8 +120,8 @@ int ethbackend_async(const std::string& target) {
     // Create ETHBACKEND stub using insecure channel to target
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void* got_tag;
-    bool ok;
+    void* got_tag{nullptr};
+    bool ok{false};
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
     const auto stub = remote::ETHBACKEND::NewStub(channel);
@@ -358,8 +358,8 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     grpc::ClientContext context;
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void* got_tag;
-    bool ok;
+    void* got_tag{nullptr};
+    bool ok{false};
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
     const auto stub = remote::KV::NewStub(channel);

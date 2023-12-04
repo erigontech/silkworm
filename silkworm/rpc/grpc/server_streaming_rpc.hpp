@@ -204,7 +204,7 @@ class ServerStreamingRpc<PrepareAsync> {
     std::unique_ptr<Responder<Reply>> reader_;
     Reply reply_;
     grpc::Status status_;
-    bool read_failed_;
+    bool read_failed_{false};
 };
 
 }  // namespace silkworm

@@ -21,8 +21,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("deserialize wrong receipt", "[rpc][from_json]") {
     const auto j = R"({})"_json;
     CHECK_THROWS(j.get<Receipt>());

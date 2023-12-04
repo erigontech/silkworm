@@ -27,8 +27,6 @@
 using namespace silkworm;
 
 int main(int argc, char* argv[]) {
-    namespace fs = std::filesystem;
-
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};

@@ -319,7 +319,7 @@ DbFreeInfo get_free_info(::mdbx::txn& txn) {
     const auto& collect_func{[&ret, &page_size](ByteView key, ByteView value) {
         size_t txId{0};
         std::memcpy(&txId, key.data(), sizeof(size_t));
-        uint32_t pagesCount;
+        uint32_t pagesCount{0};
         std::memcpy(&pagesCount, value.data(), sizeof(uint32_t));
         size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
@@ -335,7 +335,7 @@ DbFreeInfo get_free_info(::mdbx::txn& txn) {
 
 DbInfo get_tables_info(::mdbx::txn& txn) {
     DbInfo ret{};
-    DbTableInfo* table;
+    DbTableInfo* table{nullptr};
 
     ret.file_size = txn.env().get_info().mi_geo.current;
 
@@ -1203,7 +1203,7 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
 
     // Check both databases have the same content for each table
     for (size_t i{0}; i < db1_tables.size(); ++i) {
-        if (const auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_pages, verbose)}; !result) {
+        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_pages, verbose)}; !result) {
             return result;
         }
     }

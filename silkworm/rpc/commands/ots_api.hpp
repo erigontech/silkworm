@@ -89,7 +89,7 @@ struct BlockProviderResponse {
 
 class BlockProvider {
   public:
-    virtual ~BlockProvider() {}
+    virtual ~BlockProvider() = default;
     virtual Task<BlockProviderResponse> get() = 0;
 };
 
@@ -126,7 +126,7 @@ class ForwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    Task<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get() override;
 };
 
 class BackwardBlockProvider : public BlockProvider {
@@ -164,7 +164,7 @@ class BackwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    Task<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get() override;
 };
 
 class FromToBlockProvider : public BlockProvider {
@@ -182,7 +182,7 @@ class FromToBlockProvider : public BlockProvider {
   public:
     FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider);
 
-    Task<BlockProviderResponse> get();
+    Task<BlockProviderResponse> get() override;
 };
 
 class OtsRpcApi {

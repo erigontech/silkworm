@@ -21,6 +21,7 @@
 #include <set>
 #include <span>
 #include <stack>
+#include <utility>
 #include <vector>
 
 #include <silkworm/node/db/access_layer.hpp>
@@ -241,7 +242,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 struct Segment
     : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
 
-    Segment(std::shared_ptr<HeaderList> line) : line_(line) {}
+    Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
         assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive

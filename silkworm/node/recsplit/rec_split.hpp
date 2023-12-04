@@ -65,6 +65,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -125,10 +126,13 @@ class SplittingStrategy {
     static_assert(1 <= LEAF_SIZE && LEAF_SIZE <= kMaxLeafSize);
 
   public:
-    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * static_cast<uint64_t>(std::max(2.0, std::ceil(0.35 * LEAF_SIZE + 0.5)));
+    //! The lower bound for primary (lower) key aggregation
+    static constexpr std::size_t kLowerAggregationBound = LEAF_SIZE * std::max(std::size_t{2},
+                                                                               math::int_ceil<std::size_t>(0.35 * LEAF_SIZE + 0.5));
 
     //! The lower bound for secondary (upper) key aggregation
-    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * static_cast<uint64_t>(LEAF_SIZE < 7 ? 2 : std::ceil(0.21 * LEAF_SIZE + 0.9));
+    static constexpr std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? std::size_t{2}
+                                                                                                  : math::int_ceil<std::size_t>(0.21 * LEAF_SIZE + 0.9));
 
     static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
         std::size_t fanout{0}, unit{0};
@@ -597,7 +601,7 @@ class RecSplit {
         }
 
         const double p = sqrt(m) / (pow(2 * std::numbers::pi, (static_cast<double>(fanout) - 1.) * 0.5) * sqrt_prod);
-        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p))));  // log2 Golomb modulus
+        auto golomb_rice_length = math::int_ceil<uint32_t>(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p)));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;

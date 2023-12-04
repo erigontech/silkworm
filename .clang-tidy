@@ -1,5 +1,5 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|silkrpc|sync)/.+\.hpp$'
+HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|rpc|sync)/.+\.hpp$'
 WarningsAsErrors: '-*'
 Checks: >
   abseil-*,

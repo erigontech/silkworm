@@ -23,7 +23,7 @@ list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
 add_library(silkworm_sync "${SILKWORM_SYNC_SRC}")
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
-    silkrpc
+    silkworm_rpcdaemon
     silkworm_node
     silkworm_core
     mdbx-static

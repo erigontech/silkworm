@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/silkrpc/ethbackend/backend.hpp>
+#include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/sync/sync_pos.hpp>
 
 namespace silkworm::chainsync {

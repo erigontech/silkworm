@@ -36,7 +36,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"
 

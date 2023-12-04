@@ -21,7 +21,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "common/common.hpp"
 #include "common/rpcdaemon_options.hpp"

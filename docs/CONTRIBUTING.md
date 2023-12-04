@@ -56,7 +56,7 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 * [`silkworm/sentry`](./silkworm/sentry)
   <br /> This module implements the networking and protocol stacks for the `Sentry` component for an Ethereum node based on [Erigon architecture][erigon-interfaces].
   This module depends on the `core`, `infra` and `node` modules.
-* [`silkworm/rpc`](./silkworm/silkrpc)
+* [`silkworm/rpc`](./silkworm/rpc)
   <br /> This module implements the networking and protocol stacks for the `RpcDaemon` component for an Ethereum node based on [Erigon architecture][erigon-interfaces],
   exposing the vast majority of the [Ethereum JSON RPC Execution API][ethereum-execution-api]. This module depends on the `core`, `infra` and `node` modules.
 * [`silkworm/sync`](./silkworm/sync)

@@ -44,6 +44,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cassert>
@@ -113,10 +114,6 @@ struct hash128_t {
 
     bool operator<(const hash128_t& o) const { return first < o.first || second < o.second; }
 };
-
-// Quick replacements for min/max on not-so-large integers
-static constexpr inline uint64_t min(int64_t x, int64_t y) { return static_cast<uint64_t>(y + ((x - y) & ((x - y) >> 63))); }
-static constexpr inline uint64_t max(int64_t x, int64_t y) { return static_cast<uint64_t>(x - ((x - y) & ((x - y) >> 63))); }
 
 // Optimal Golomb-Rice parameters for leaves
 static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
@@ -500,7 +497,7 @@ class RecSplit {
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / kLowerAggregationBound;
-            m = min(kLowerAggregationBound, m - part * kLowerAggregationBound);
+            m = std::min(kLowerAggregationBound, m - part * kLowerAggregationBound);
             cum_keys += kLowerAggregationBound * part;
             if (part) reader.skip_subtree(skip_nodes(kLowerAggregationBound) * part, skip_bits(kLowerAggregationBound) * part);
             level++;
@@ -511,7 +508,7 @@ class RecSplit {
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / LEAF_SIZE;
-            m = min(LEAF_SIZE, m - part * LEAF_SIZE);
+            m = std::min(LEAF_SIZE, m - part * LEAF_SIZE);
             cum_keys += LEAF_SIZE * part;
             if (part) reader.skip_subtree(part, skip_bits(LEAF_SIZE) * part);
             level++;
@@ -785,7 +782,7 @@ class RecSplit {
         }
         is.read(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
         is.read(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
-        rs.bucket_count_ = max(1, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
+        rs.bucket_count_ = std::max(1, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
 
         is >> rs.golomb_rice_codes_;
         is >> rs.double_ef_index_;

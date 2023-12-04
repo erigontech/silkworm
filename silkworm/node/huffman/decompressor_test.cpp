@@ -33,6 +33,8 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
+using Catch::Matchers::Message;
+
 namespace silkworm::huffman {
 
 //! DecodingTable exposed for white-box testing

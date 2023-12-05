@@ -55,36 +55,7 @@ commands:
       - run:
           name: "Install compiler"
           no_output_timeout: 30m
-          command: |
-            if [[ ! -f /etc/apt/trusted.gpg.d/apt.llvm.org.asc ]]; then
-                # download GPG key once
-                sudo wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-            fi
-
-            if [[ -z "`apt-key list 2> /dev/null | grep -i llvm`" ]]; then
-                # Delete the key in the old format
-                sudo apt-key del AF4F7421
-            fi
-
-            sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
-            sudo apt-get update
-
-            # # sudo apt-get --allow-releaseinfo-change-suite update
-            # sudo apt update
-            # # sudo apt install software-properties-common
-            # sudo add-apt-repository -y ppa:nilarimogard/webupd8
-            # # sudo apt-get update
-            # sudo apt-get --allow-insecure-repositories install launchpad-getkeys          
-            # sudo apt-get update
-            # sudo launchpad-getkeys
-            # sudo apt-get update
-            # # wget https://apt.llvm.org/llvm.sh
-            # # chmod +x llvm.sh
-            # # sudo ./llvm.sh <<parameters.compiler_version>> all
-            # # sudo echo -e "\ndeb http://apt.llvm.org/jammy\n" >> /etc/apt/sources.list
-            # sudo add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy main'
-            sudo cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
-      - run:
+          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>      - run:
           name: "Cmake"
           working_directory: ~/build
           command: |
@@ -171,6 +142,14 @@ commands:
           name: "Execution spec tests"
           working_directory: ~/build
           command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
+
+  setup_cimg:
+    steps:
+      - run:
+          name: "Install Python"
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3-pip
 
   fuzz-test:
     steps:
@@ -349,6 +328,7 @@ jobs:
     steps:
       - checkout_with_submodules:
           ethereum_tests: false
+      - setup_cimg
       - build_using_conan:
           build_type: Release
           compiler_id: clang

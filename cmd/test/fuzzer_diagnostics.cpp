@@ -61,7 +61,6 @@ int main(int argc, char* argv[]) {
 
     app.add_option("input", input_str, "Input string")
         ->description("Wrap JSON in '' to avoid shell escaping, e.g. '{\"jsonrpc\":\"2.0\",\"id\":1}'")
-        ->default_val(R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawBlock","params":["3"]})")
         ->required(false);
 
     app.add_option("-f", input_file, "Path to test file or directory")

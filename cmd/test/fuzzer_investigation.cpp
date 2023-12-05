@@ -41,7 +41,7 @@ class RequestHandler_ForTest {
 
     boost::asio::awaitable<bool> is_valid_json(const std::string& request_str) {
         if (request_str.length() == 20) {
-            std::cout << "JG request_str: " << request_str << std::endl;
+            std::cout << "request_str: " << request_str << std::endl;
             throw std::invalid_argument("Invalid argument");
         }
 

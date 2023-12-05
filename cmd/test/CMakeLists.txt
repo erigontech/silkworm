@@ -52,11 +52,6 @@ if(NOT SILKWORM_CORE_ONLY)
     target_link_libraries(rpcdaemon_fuzzer_investigation 
       PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
       PRIVATE -fsanitize=address,leak,fuzzer)
-    # add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
-    # target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=fuzzer,address,undefined,leak)
-    # target_link_libraries(rpcdaemon_fuzzer_investigation 
-    #   PUBLIC nlohmann_json::nlohmann_json silkworm_node silkworm_core silkworm_interfaces
-    #   PRIVATE -fsanitize=fuzzer,address,undefined,leak)
 
     # Silkworm RpcDaemon Fuzz Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)

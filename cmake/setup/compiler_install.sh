@@ -19,14 +19,7 @@ function install_clang {
     echo "Installing clang $CLANG_VERSION..."
 
 	sudo apt-get update
-
-	if [[ "$CLANG_VERSION" == "16" ]]
-	then
-		apt-get install -y clang-16 lldb-16 lld-16 clangd-16 clang-tidy-16 clang-format-16 clang-tools-16 llvm-16-dev lld-16 lldb-16 llvm-16-tools libomp-16-dev libc++-16-dev libc++abi-16-dev libclang-common-16-dev libclang-16-dev libclang-cpp16-dev libunwind-16-dev
-	else
-		sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
-	fi
-	
+	sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
 	sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
 	sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
 	sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100

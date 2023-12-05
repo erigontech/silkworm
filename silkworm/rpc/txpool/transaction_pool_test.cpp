@@ -72,7 +72,6 @@ namespace silkworm::rpc::txpool {
 using testing::_;
 using testing::AtLeast;
 using testing::MockFunction;
-using testing::Return;
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;

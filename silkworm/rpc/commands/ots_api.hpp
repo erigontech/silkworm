@@ -100,13 +100,13 @@ class ForwardBlockProvider : public BlockProvider {
     BlockNum min_block_;
     ChunkLocator chunk_locator_;
 
-    bool is_first_;
-    bool finished_;
+    bool is_first_{true};
+    bool finished_{false};
 
     ChunkProvider chunk_provider_;
     std::vector<uint64_t> bitmap_vector_;
 
-    uint64_t bitmap_index_;
+    uint64_t bitmap_index_{0};
 
     bool has_next();
 
@@ -121,9 +121,6 @@ class ForwardBlockProvider : public BlockProvider {
         cursor_ = cursor;
         address_ = address;
         min_block_ = min_block;
-
-        is_first_ = true;
-        finished_ = false;
     }
 
     Task<BlockProviderResponse> get() override;
@@ -136,13 +133,13 @@ class BackwardBlockProvider : public BlockProvider {
     BlockNum max_block_;
     ChunkLocator chunk_locator_;
 
-    bool is_first_;
-    bool finished_;
+    bool is_first_{true};
+    bool finished_{false};
 
     ChunkProvider chunk_provider_;
     std::vector<uint64_t> bitmap_vector_;
 
-    uint64_t bitmap_index_;
+    uint64_t bitmap_index_{0};
 
     bool has_next();
 
@@ -159,9 +156,6 @@ class BackwardBlockProvider : public BlockProvider {
         if (max_block_ == 0) {
             max_block_ = std::numeric_limits<BlockNum>::max();
         }
-
-        is_first_ = true;
-        finished_ = false;
     }
 
     Task<BlockProviderResponse> get() override;

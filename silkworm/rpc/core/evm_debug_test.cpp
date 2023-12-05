@@ -67,7 +67,7 @@ class TestDebugExecutor : DebugExecutor {
         ethdb::Transaction& tx,
         DebugConfig config = {})
         : DebugExecutor(database_reader, block_cache, workers, tx, config) {}
-    virtual ~TestDebugExecutor() = default;
+    ~TestDebugExecutor() override = default;
 
     TestDebugExecutor(const TestDebugExecutor&) = delete;
     TestDebugExecutor& operator=(const TestDebugExecutor&) = delete;

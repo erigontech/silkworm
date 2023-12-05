@@ -128,23 +128,4 @@ class TestDatabaseContext {
     mdbx::env_managed db;
 };
 
-// Function to recursively sort JSON arrays
-void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
-    if (jsonObj.is_array()) {
-        // Sort the elements within the array
-        std::sort(jsonObj.begin(), jsonObj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
-            return a.dump() < b.dump();
-        });
-
-        // Recursively sort nested arrays
-        for (auto& item : jsonObj) {
-            sort_array(item);
-        }
-    } else if (jsonObj.is_object()) {
-        for (auto& item : jsonObj.items()) {
-            sort_array(item.value());
-        }
-    }
-}
-
 }  // namespace silkworm::rpc::test

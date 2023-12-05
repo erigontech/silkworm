@@ -105,9 +105,9 @@ struct TraceOp {
     TraceEx trace_ex;
     std::string idx;
     int32_t depth{0};
-    uint8_t op_code;
+    uint8_t op_code{0};
     std::string op_name;
-    uint32_t pc;
+    uint32_t pc{0};
     std::shared_ptr<VmTrace> sub;
 };
 

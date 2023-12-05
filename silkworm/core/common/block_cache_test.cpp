@@ -20,9 +20,6 @@
 
 namespace silkworm {
 
-using Catch::Matchers::Message;
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 TEST_CASE("check get cache key not present(lock)", "[rpc][commands][block_cache]") {
     BlockCache block_cache(1, true);
     evmc::bytes32 bh1{0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32};

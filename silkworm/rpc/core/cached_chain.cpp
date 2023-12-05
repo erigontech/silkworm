@@ -105,7 +105,7 @@ Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& c
         if (transaction_hash == transactions[idx].hash()) {
             const auto& block_header = block_with_hash->block.header;
             co_return TransactionWithBlock{
-                *block_with_hash,
+                block_with_hash,
                 {transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx}};
         }
     }

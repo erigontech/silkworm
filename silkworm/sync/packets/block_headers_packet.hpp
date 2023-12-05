@@ -25,7 +25,7 @@ namespace silkworm {
 using BlockHeadersPacket = std::vector<BlockHeader>;
 
 struct BlockHeadersPacket66 {  // eth/66 version
-    uint64_t requestId;
+    uint64_t requestId{0};
     BlockHeadersPacket request;
 };
 

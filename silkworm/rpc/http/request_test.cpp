@@ -18,9 +18,9 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkworm::rpc::http {
+#include <silkworm/infra/test_util/log.hpp>
 
-using Catch::Matchers::Message;
+namespace silkworm::rpc::http {
 
 TEST_CASE("check reset method", "[rpc][http][request]") {
     Request req{
@@ -47,6 +47,11 @@ TEST_CASE("check reset method", "[rpc][http][request]") {
     CHECK(req.headers.empty());
     CHECK(req.content.empty());
     CHECK(req.content_length == 0);
+}
+
+TEST_CASE("Request::operator<<", "[rpc][http][request]") {
+    Request req{};
+    CHECK_NOTHROW(test_util::null_stream() << req);
 }
 
 }  // namespace silkworm::rpc::http

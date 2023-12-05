@@ -29,9 +29,7 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using silkworm::kGiga;
 
 TEST_CASE("create empty call", "[rpc][types][call]") {
     Call call{};

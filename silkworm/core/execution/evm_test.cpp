@@ -477,7 +477,7 @@ class TestTracer : public EvmTracer {
     bool self_destruct_called_{false};
     std::optional<evmc::address> contract_address_;
     std::optional<evmc::bytes32> key_;
-    evmc_revision rev_;
+    evmc_revision rev_{EVMC_FRONTIER};
     std::vector<evmc_message> msg_stack_;
     Bytes bytecode_;
     std::vector<uint32_t> pc_stack_;

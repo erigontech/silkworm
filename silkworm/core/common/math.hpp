@@ -14,12 +14,25 @@
    limitations under the License.
 */
 
-#include "methods.hpp"
+#pragma once
 
-#include <catch2/catch.hpp>
+#include <concepts>
+#include <limits>
 
-namespace silkworm::rpc::http::method {
+namespace silkworm::math {
 
-using Catch::Matchers::Message;
+// Computes the least integer value not less than num
+template <std::integral T = int>
+constexpr T int_ceil(double num) {
+    if (num <= static_cast<double>(std::numeric_limits<T>::min())) {
+        return std::numeric_limits<T>::min();
+    }
+    if (num >= static_cast<double>(std::numeric_limits<T>::max())) {
+        return std::numeric_limits<T>::max();
+    }
 
-}  // namespace silkworm::rpc::http::method
+    const T i{static_cast<T>(num)};
+    return num > static_cast<double>(i) ? i + 1 : i;
+}
+
+}  // namespace silkworm::math

@@ -37,7 +37,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::DoAll;
 using testing::Return;

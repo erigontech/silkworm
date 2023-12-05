@@ -26,8 +26,6 @@
 
 namespace silkworm::concurrency {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("parse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     std::vector<absl::string_view> input_texts{
         "backoff", "blocking", "sleeping", "yielding", "busy_spin"};

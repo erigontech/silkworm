@@ -26,8 +26,7 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
+using evmc::literals::operator""_bytes32;
 
 evmc::bytes32 kZeroHash{0};
 
@@ -111,7 +110,7 @@ TEST_CASE("block_number_or_hash") {
     }
     SECTION("copy ctor") {
         BlockNumberOrHash bnoh{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy{bnoh};
+        BlockNumberOrHash copy{bnoh};  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(bnoh.is_hash() == copy.is_hash());
         CHECK(bnoh.is_number() == copy.is_number());
@@ -123,7 +122,7 @@ TEST_CASE("block_number_or_hash") {
     }
     SECTION("copy hash") {
         BlockNumberOrHash bnoh{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy = bnoh;
+        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(bnoh.is_hash() == copy.is_hash());
         CHECK(bnoh.is_number() == copy.is_number());
@@ -133,7 +132,7 @@ TEST_CASE("block_number_or_hash") {
     }
     SECTION("copy number") {
         BlockNumberOrHash bnoh{123456};
-        BlockNumberOrHash copy = bnoh;
+        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(bnoh.is_hash() == copy.is_hash());
         CHECK(bnoh.is_number() == copy.is_number());
@@ -143,7 +142,7 @@ TEST_CASE("block_number_or_hash") {
     }
     SECTION("copy tag") {
         BlockNumberOrHash bnoh{"latest"};
-        BlockNumberOrHash copy = bnoh;
+        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(bnoh.is_hash() == copy.is_hash());
         CHECK(bnoh.is_number() == copy.is_number());
@@ -207,13 +206,15 @@ TEST_CASE("check size of EIP-2718 block from RLP", "[rpc][types][block]") {
 
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView view{rlp_bytes};
-    Block rpc_block_with_hash;
+    auto block_with_hash = std::make_shared<BlockWithHash>();
 
-    REQUIRE(silkworm::rlp::decode(view, rpc_block_with_hash.block));
+    Block rpc_block{block_with_hash};
+
+    REQUIRE(silkworm::rlp::decode(view, rpc_block.block_with_hash->block));
     CHECK(view.empty());
 
-    CHECK(rpc_block_with_hash.get_block_size() == rlp_bytes.size());
-    CHECK_NOTHROW(test_util::null_stream() << rpc_block_with_hash);
+    CHECK(rpc_block.get_block_size() == rlp_bytes.size());
+    CHECK_NOTHROW(test_util::null_stream() << rpc_block);
 }
 
 }  // namespace silkworm::rpc

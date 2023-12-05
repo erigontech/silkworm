@@ -47,7 +47,7 @@ struct Rlp {
 };
 
 struct TransactionWithBlock {
-    silkworm::BlockWithHash block_with_hash;
+    std::shared_ptr<BlockWithHash> block_with_hash{nullptr};
     Transaction transaction;
 };
 
@@ -56,7 +56,7 @@ using AccessList = std::vector<silkworm::AccessListEntry>;
 struct AccessListResult {
     AccessList access_list;
     std::optional<std::string> error;
-    uint64_t gas_used;
+    uint64_t gas_used{0};
 };
 
 struct TxPoolStatusInfo {

@@ -38,10 +38,10 @@ struct Receipt {
     /* derived fields */
     evmc::bytes32 tx_hash;
     evmc::address contract_address;
-    uint64_t gas_used;
+    uint64_t gas_used{0};
     evmc::bytes32 block_hash;
-    BlockNum block_number;
-    uint32_t tx_index;
+    BlockNum block_number{0};
+    uint32_t tx_index{0};
     std::optional<evmc::address> from;
     std::optional<evmc::address> to;
     std::optional<uint8_t> type{std::nullopt};  // EIP-2718
@@ -52,6 +52,6 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r);
 
 silkworm::Bloom bloom_from_logs(const Logs& logs);
 
-typedef std::vector<Receipt> Receipts;
+using Receipts = std::vector<Receipt>;
 
 }  // namespace silkworm::rpc

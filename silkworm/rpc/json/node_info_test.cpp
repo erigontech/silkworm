@@ -21,9 +21,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 TEST_CASE("serialize NodeInfoPorts", "[silkworm::json][to_json]") {
     silkworm::rpc::NodeInfoPorts ports{6, 7};
     nlohmann::json j = ports;

@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
             if (!(block_num % 1000)) {
                 const auto interval{sw.lap()};
-                log::Info() << "At block height " << block_num << " in " << sw.format(interval.second);
+                log::Info() << "At block height " << block_num << " in " << StopWatch::format(interval.second);
             }
         }
 

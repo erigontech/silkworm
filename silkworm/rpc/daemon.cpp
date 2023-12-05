@@ -58,7 +58,7 @@ const char* current_exception_name() {
 #ifdef WIN32
     return "<Exception name not supported on Windows>";
 #else
-    int status;
+    int status{0};
     return abi::__cxa_demangle(abi::__cxa_current_exception_type()->name(), nullptr, nullptr, &status);
 #endif
 }

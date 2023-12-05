@@ -1492,7 +1492,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHas
 }
 
 Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+    auto block_number = transaction_with_block.block_with_hash->block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1512,7 +1512,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
 
                 Tracers tracers{entry_tracer};
 
-                executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
                     self.complete(entry_tracer);
@@ -1525,7 +1525,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
 }
 
 Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+    auto block_number = transaction_with_block.block_with_hash->block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1542,7 +1542,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
                 Tracers tracers{};
 
-                auto execution_result = executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                auto execution_result = executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 std::string result = "0x";
                 if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
@@ -1559,7 +1559,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
 }
 
 Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+    auto block_number = transaction_with_block.block_with_hash->block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1579,7 +1579,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
                 Tracers tracers{entry_tracer};
 
-                executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
                     self.complete(entry_tracer);
@@ -1657,7 +1657,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     auto block_number = from_block_with_hash->block.header.number;
     auto block_with_hash = from_block_with_hash;
     while (block_number++ <= to_block_with_hash->block.header.number) {
-        const Block block{*block_with_hash, {}, false};
+        const Block block{block_with_hash, {}, false};
         SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
                    << " block_number: " << block_number - 1
                    << " block: " << block;

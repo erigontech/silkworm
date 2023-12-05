@@ -102,8 +102,6 @@ static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks, con
     }
 }
 
-using Catch::Matchers::Message;
-
 TEST_CASE("suggested price") {
     boost::asio::thread_pool pool{1};
 

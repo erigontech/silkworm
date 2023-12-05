@@ -45,7 +45,6 @@ struct RemoteDatabaseTest : test::KVTestBase {
     ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
 using testing::Return;

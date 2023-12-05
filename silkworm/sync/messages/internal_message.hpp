@@ -17,6 +17,7 @@
 #pragma once
 
 #include <future>
+#include <utility>
 
 #include <silkworm/sync/internals/header_chain.hpp>
 
@@ -47,7 +48,7 @@ class InternalMessage : public Message {
 
 template <class R>
 InternalMessage<R>::InternalMessage(ExecutionFunc exec)
-    : execution_impl_{exec}, result_in_{}, result_out_{result_in_.get_future()} {}
+    : execution_impl_{std::move(exec)}, result_in_{}, result_out_{result_in_.get_future()} {}
 
 template <class R>
 void InternalMessage<R>::execute(db::ROAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {

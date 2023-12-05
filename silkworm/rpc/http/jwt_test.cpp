@@ -20,36 +20,20 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/files.hpp>
 
-static char hex2ascii(char c) {
-    if ('0' <= c && c <= '9') {
-        return c - '0';
-    }
-    if ('a' <= c && c <= 'f') {
-        return c + 10 - 'a';
-    }
-    if ('A' <= c && c <= 'F') {
-        return c + 10 - 'A';
-    }
-    throw std::runtime_error{"hex2ascii"};
-}
+namespace silkworm {
 
 static std::string ascii_from_hex(const std::string& hex) {
-    if (hex.size() % 2 != 0) {
+    const std::optional<Bytes> bytes{from_hex(hex)};
+    if (!bytes) {
         throw std::runtime_error{"ascii_from_hex"};
     }
-    std::string ascii;
-    ascii.reserve(hex.size() / 2);
-    for (std::size_t i{0}; i < hex.size() / 2; ++i) {
-        char n = hex2ascii(hex[2 * i]) * 16 + hex2ascii(hex[2 * i + 1]);
-        ascii += n;
-    }
-    return ascii;
+    return std::string{byte_view_to_string_view(*bytes)};
 }
-
-namespace silkworm {
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
@@ -91,7 +75,7 @@ TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
         "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8",
         "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f",
         "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4f",
-        "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4ff"
+        "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4ff",
         "0x",
         "0x?=?",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8",

@@ -69,11 +69,7 @@ inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
 
 namespace silkworm::rpc::txpool {
 
-using Catch::Matchers::Message;
 using testing::_;
-using testing::AtLeast;
-using testing::MockFunction;
-using testing::Return;
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;
@@ -240,12 +236,10 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[rpc
         tx->set_rlp_tx("0804");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
-        CHECK(transactions.size() == 1);
-        if (transactions.size() > 0) {
-            CHECK(transactions[0].transaction_type == TransactionType::QUEUED);
-            CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
-            CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
-        }
+        REQUIRE(transactions.size() == 1);
+        CHECK(transactions[0].transaction_type == TransactionType::QUEUED);
+        CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
+        CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
     }
 
     SECTION("call get_transactions and check success [more than one tx]") {
@@ -267,24 +261,22 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[rpc
         tx->set_rlp_tx("0807");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
-        CHECK(transactions.size() == 3);
-        if (transactions.size() > 2) {
-            CHECK(transactions[0].transaction_type == txpool::TransactionType::QUEUED);
-            CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
-            CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
-            CHECK(transactions[1].transaction_type == txpool::TransactionType::PENDING);
-            CHECK(transactions[1].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccdddddd_address);
-            CHECK(transactions[1].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x36});
-            CHECK(transactions[2].transaction_type == txpool::TransactionType::BASE_FEE);
-            CHECK(transactions[2].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddee_address);
-            CHECK(transactions[2].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x37});
-        }
+        REQUIRE(transactions.size() == 3);
+        CHECK(transactions[0].transaction_type == txpool::TransactionType::QUEUED);
+        CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
+        CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
+        CHECK(transactions[1].transaction_type == txpool::TransactionType::PENDING);
+        CHECK(transactions[1].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccdddddd_address);
+        CHECK(transactions[1].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x36});
+        CHECK(transactions[2].transaction_type == txpool::TransactionType::BASE_FEE);
+        CHECK(transactions[2].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddee_address);
+        CHECK(transactions[2].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x37});
     }
 
     SECTION("call get_transactions and check result is empty") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto transactions = run<&TransactionPool::get_transactions>();
-        CHECK(transactions.size() == 0);
+        CHECK(transactions.empty());
     }
 }
 #endif  // SILKWORM_SANITIZE

@@ -47,7 +47,7 @@ class AccountWalker {
 
   private:
     Task<KeyValue> next(ethdb::Cursor& cursor, uint64_t len);
-    Task<KeyValue> seek(ethdb::Cursor& cursor, const ByteView key, uint64_t len);
+    Task<KeyValue> seek(ethdb::Cursor& cursor, ByteView key, uint64_t len);
     Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, Bytes addr);
     Task<ethdb::SplittedKeyValue> seek(ethdb::SplitCursor& cursor, BlockNum number);
 

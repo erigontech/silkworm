@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc::commands {
 
-using Catch::Matchers::Message;
-
 //! Utility class to expose handle hooks publicly just for tests
 class ErigonRpcApi_ForTest : public ErigonRpcApi {
   public:

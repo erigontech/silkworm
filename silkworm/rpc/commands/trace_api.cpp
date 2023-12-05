@@ -292,7 +292,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
             reply = make_json_error(request, -32000, oss.str());
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash.block, tx_with_block->transaction, config);
+            const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash->block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
                 reply = make_json_error(request, -32000, result.pre_check_error.value());
@@ -434,7 +434,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
             reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
+            const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
 
             uint16_t index = indices[0] + 1;  // Erigon RpcDaemon compatibility
             if (result.size() > index) {
@@ -477,7 +477,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
             reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
-            auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
+            auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
             reply = make_json_content(request, result);
         }
     } catch (const std::exception& e) {

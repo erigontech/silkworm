@@ -30,12 +30,10 @@ using namespace silkworm;
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
-    namespace fs = std::filesystem;
-
     CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    size_t block_from;
+    size_t block_from{0};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);

@@ -45,7 +45,7 @@ struct VersionBase {
 
     [[nodiscard]] std::string to_string() const { return absl::StrCat(Major, ".", Minor, ".", Patch); }
 
-    // NOLINTNEXTLINE(modernize-use-nullptr)
+    // NOLINTNEXTLINE(hicpp-use-nullptr, modernize-use-nullptr)
     friend auto operator<=>(const VersionBase&, const VersionBase&) = default;
 };
 

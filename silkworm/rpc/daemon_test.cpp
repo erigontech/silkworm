@@ -20,8 +20,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 #ifndef BUILD_COVERAGE
 TEST_CASE("DaemonChecklist::success_or_throw", "[rpc]") {
     DaemonChecklist checklist;

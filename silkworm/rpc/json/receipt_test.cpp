@@ -21,8 +21,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("deserialize wrong receipt", "[rpc][from_json]") {
     const auto j = R"({})"_json;
     CHECK_THROWS(j.get<Receipt>());
@@ -51,6 +49,12 @@ TEST_CASE("deserialize wrong array receipt", "[rpc][from_json]") {
     CHECK_THROWS_AS(R"([0,null,"",0])"_json.get<Receipt>(), std::system_error);
     CHECK_THROWS_AS(R"([0,null,0,""])"_json.get<Receipt>(), std::system_error);
     CHECK_THROWS_AS(R"([0,null,0,null])"_json.get<Receipt>(), std::system_error);
+}
+
+TEST_CASE("deserialize wrong object receipt", "[rpc][from_json]") {
+    CHECK_THROWS_AS(R"({})"_json.get<Receipt>(), std::system_error);
+    CHECK_THROWS_AS(R"({"result_success":false,"cumulative_gas_used":"0"})"_json.get<Receipt>(), std::system_error);
+    CHECK_THROWS_AS(R"({"success":false,"result_cumulative_gas_used":"0"})"_json.get<Receipt>(), std::system_error);
 }
 
 TEST_CASE("deserialize empty array receipt", "[rpc][from_json]") {

@@ -24,8 +24,6 @@
 
 namespace silkworm::execution {
 
-namespace asio = boost::asio;
-
 TEST_CASE("execution::LocalClient") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
     test::Context context;

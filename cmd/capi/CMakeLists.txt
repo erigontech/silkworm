@@ -20,6 +20,7 @@ add_executable(execute execute.cpp)
 
 set(PRIVATE_LIBS
     Boost::headers
+    mdbx-static
     silkworm_infra
     silkworm_node
     silkworm_rpcdaemon

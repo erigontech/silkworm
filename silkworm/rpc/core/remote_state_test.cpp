@@ -36,6 +36,9 @@
 
 namespace silkworm::rpc::state {
 
+using testing::Invoke;
+using testing::Unused;
+
 TEST_CASE("async remote buffer", "[rpc][core][remote_buffer]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const auto backend = std::make_unique<test::BackEndMock>();

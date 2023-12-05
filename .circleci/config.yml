@@ -54,8 +54,9 @@ commands:
     steps:
       - run:
           name: "Install compiler"
-          no_output_timeout: 30m
-          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>      - run:
+
+          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
+      - run:
           name: "Cmake"
           working_directory: ~/build
           command: |

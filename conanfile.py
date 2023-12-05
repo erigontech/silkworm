@@ -51,6 +51,67 @@ class SilkwormRecipe(ConanFile):
         # In order to build mimalloc with override=True we need to switch to msvc 17 compiler but this would trigger a full rebuild from
         # sources of all dependencies wasting a lot of time, so we prefer to turn off mimalloc override
         # The same applies also for boost with option asio_no_deprecated
-        if self.settings.os != 'Windows':
-            self.options['boost'].asio_no_deprecated = True
-            self.options['mimalloc'].override = True
+        if self.settings.os == 'Windows':
+            return
+
+        self.options['mimalloc'].override = True
+
+        self.options['boost'].asio_no_deprecated = True
+
+        # disable building unused boost components
+        # note: changing default options above forces a boost rebuild anyway
+        for component in self.boost_components_unused():
+            setattr(self.options['boost'], 'without_' + component, True)
+
+    def boost_components_unused(self):
+        components_all = [
+            'atomic',
+            'chrono',
+            'container',
+            'context',
+            'contract',
+            'coroutine',
+            'date_time',
+            'exception',
+            'fiber',
+            'filesystem',
+            'graph',
+            'graph_parallel',
+            'iostreams',
+            'json',
+            'locale',
+            'log',
+            'math',
+            'mpi',
+            'nowide',
+            'program_options',
+            'python',
+            'random',
+            'regex',
+            'serialization',
+            'stacktrace',
+            'system',
+            'test',
+            'thread',
+            'timer',
+            'type_erasure',
+            'url',
+            'wave',
+        ]
+
+        components_used = [
+            # asio-grpc requires:
+            'container',
+
+            # silkworm requires:
+            'system',
+            'thread',
+
+            # Boost::thread requires:
+            'atomic',
+            'chrono',
+            'date_time',
+            'exception',
+        ]
+
+        return set(components_all) - set(components_used)

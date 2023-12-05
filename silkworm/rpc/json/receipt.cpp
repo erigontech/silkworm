@@ -74,6 +74,9 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         }
         receipt.cumulative_gas_used = json[3];
     } else {
+        if (!json.contains("success") || !json.contains("cumulative_gas_used")) {
+            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries in " + json.dump()};
+        }
         receipt.success = json.at("success").get<bool>();
         receipt.cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
     }

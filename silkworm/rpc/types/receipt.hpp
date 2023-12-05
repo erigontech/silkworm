@@ -52,6 +52,6 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r);
 
 silkworm::Bloom bloom_from_logs(const Logs& logs);
 
-typedef std::vector<Receipt> Receipts;
+using Receipts = std::vector<Receipt>;
 
 }  // namespace silkworm::rpc

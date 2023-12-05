@@ -418,7 +418,7 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
     auto source_data{storage ? source->lower_bound(db::to_slice(start_key), false)
                              : source->find(db::to_slice(start_key), false)};
 
-    BlockNum reached_block_number;
+    BlockNum reached_block_number{0};
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
         reached_block_number = endian::load_big_u64(source_data_key_view.data());

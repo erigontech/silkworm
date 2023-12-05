@@ -30,7 +30,7 @@ Task<void> timeout(
     std::chrono::milliseconds duration,
     const char* source_file_path,
     int source_file_line) {
-    auto executor = co_await boost::asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
+    auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::steady_timer timer(executor);
     timer.expires_after(duration);
 
@@ -38,8 +38,9 @@ Task<void> timeout(
         co_await timer.async_wait(boost::asio::use_awaitable);
     } catch (const boost::system::system_error& ex) {
         // if the timeout is cancelled before expiration - it is not an error
-        if (ex.code() == boost::system::errc::operation_canceled)
+        if (ex.code() == boost::system::errc::operation_canceled) {
             co_return;
+        }
         throw;
     }
 

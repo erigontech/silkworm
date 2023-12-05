@@ -330,8 +330,8 @@ static inline void rmd160_compress(uint32_t* MDbuf, const uint32_t* X) {
  *  note: there are (lswlen mod 64) bytes left in strptr.
  */
 static inline void rmd160_finish(uint32_t* MDbuf, uint8_t const* strptr, uint32_t lswlen) {
-    unsigned int i; /* counter       */
-    uint32_t X[16]; /* message words */
+    unsigned int i = 0; /* counter       */
+    uint32_t X[16];     /* message words */
 
     memset(X, 0, 16 * sizeof(uint32_t));
 
@@ -358,7 +358,7 @@ static inline void rmd160_finish(uint32_t* MDbuf, uint8_t const* strptr, uint32_
 
 // Little-endian architecture is assumed
 static inline uint32_t load32(const void* src) {
-    uint32_t w;
+    uint32_t w = 0;
     memcpy(&w, src, sizeof w);
     return w;
 }

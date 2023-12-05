@@ -136,7 +136,7 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
             }
         };
         const auto write = [&]() -> Task<void> {
-            while (co_await write_stream.next()) {  // NOLINT(clang-analyzer-core.NullDereference)
+            while (co_await write_stream.next()) {
             }
         };
         const auto max_idle_timer = [&]() -> Task<void> {
@@ -658,7 +658,7 @@ Task<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
     auto source = backend.state_change_source();
 
     // Create a never-expiring timer whose cancellation will notify our async waiting is completed
-    auto coroutine_executor = co_await boost::asio::this_coro::executor;  // NOLINT(clang-analyzer-core.CallAndMessage)
+    auto coroutine_executor = co_await boost::asio::this_coro::executor;
     auto notifying_timer = steady_timer{coroutine_executor};
 
     std::optional<remote::StateChangeBatch> incoming_batch;

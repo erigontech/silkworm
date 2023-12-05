@@ -21,7 +21,7 @@
 
 #include <absl/strings/str_split.h>
 
-#include <silkworm/silkrpc/common/constants.hpp>
+#include <silkworm/rpc/common/constants.hpp>
 
 #include "ip_endpoint_option.hpp"
 

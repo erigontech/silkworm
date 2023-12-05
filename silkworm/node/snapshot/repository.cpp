@@ -17,11 +17,13 @@
 #include "repository.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 
 namespace silkworm::snapshot {
 
@@ -184,8 +186,8 @@ const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) 
 }
 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (auto it = tx_segments_.rbegin(); it != tx_segments_.rend(); ++it) {
-        const auto& snapshot = it->second;
+    for (const auto& it : std::ranges::reverse_view(tx_segments_)) {
+        const auto& snapshot = it.second;
         auto block = snapshot->block_num_by_txn_hash(txn_hash);
         if (block) {
             return block;

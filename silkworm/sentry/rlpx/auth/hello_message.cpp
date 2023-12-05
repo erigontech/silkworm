@@ -16,10 +16,10 @@
 
 #include "hello_message.hpp"
 
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -42,7 +42,7 @@ static DecodingResult decode(ByteView& from, HelloMessage::Capability& to, rlp::
 }
 
 bool HelloMessage::contains_capability(const Capability& capability) const {
-    auto it = as_range::find_if(
+    auto it = std::ranges::find_if(
         capabilities_,
         [&capability](const Capability& c) -> bool {
             return ((c.name_bytes == capability.name_bytes) && (c.version == capability.version));

@@ -124,7 +124,7 @@ TEST_CASE("awaitable future") {
     SECTION("writing and reading from different threads") {
         auto future = promise.get_future();
 
-        int value;
+        int value{0};
         std::thread concurrent(
             [&](AwaitableFuture<int>&& moved_future) {
                 value = moved_future.get();
@@ -143,7 +143,7 @@ TEST_CASE("awaitable future") {
     SECTION("writing and reading from different threads") {
         auto future = promise.get_future();
 
-        int value;
+        int value{0};
         std::thread concurrent(
             [&](AwaitableFuture<int>&& moved_future) {
                 value = moved_future.get();
@@ -166,7 +166,7 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("using coroutines in read in the same io_context, write before read") {
-        int value;
+        int value{0};
 
         asio::co_spawn(
             io,
@@ -186,7 +186,7 @@ TEST_CASE("awaitable future") {
     SECTION("variation of using coroutines in the same io_context, write before read") {
         auto future = promise.get_future();
 
-        int value;
+        int value{0};
         asio::co_spawn(
             io,
             [&]() -> Task<void> {
@@ -204,9 +204,9 @@ TEST_CASE("awaitable future") {
     SECTION("moving AwaitableFuture") {
         auto future = promise.get_future();
 
-        int value;
+        int value{0};
         auto lambda = [&](AwaitableFuture<int>&& moved_future) -> Task<void> {
-            value = co_await moved_future.get_async();  // NOLINT(clang-analyzer-core.NullDereference)
+            value = co_await moved_future.get_async();
             io.stop();
         };
 
@@ -219,7 +219,7 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("using coroutine for both read and write, read before write") {
-        int value;
+        int value{0};
 
         asio::co_spawn(
             io,
@@ -244,7 +244,7 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("cancellation after read") {
-        int value;
+        int value{0};
         boost::system::error_code code;
 
         boost::asio::cancellation_signal cancellation_signal;

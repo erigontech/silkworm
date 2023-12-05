@@ -55,6 +55,9 @@ class Collector {
     void collect(const Entry& entry);  // Store key-value pair in memory or on disk
     void collect(Entry&& entry);       // Store key-value pair in memory or on disk
 
+    void collect(const Bytes& key, const Bytes& value);  // Store key & value in memory or on disk
+    void collect(Bytes&& key, Bytes&& value);            // Store key & value in memory or on disk
+
     //! \brief Loads and optionally transforms collected entries into db
     //! \param [in] target : a cursor opened on target table and owned by caller (can be empty)
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed

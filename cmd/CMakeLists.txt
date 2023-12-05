@@ -19,7 +19,7 @@ add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
   # C API
-  add_subdirectory(api)
+  add_subdirectory(capi)
 
   # Benchmarks
   add_subdirectory(benchmark)
@@ -65,14 +65,14 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # [=] standalone RpcDaemon component
   set(RPCDAEMON_CMD_SRC rpcdaemon.cpp common/rpcdaemon_options.cpp common/rpcdaemon_options.hpp)
-  set(RPCDAEMON_LIBRARIES silkrpc absl::flags_parse cmd_common)
+  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon absl::flags_parse cmd_common)
   if(SILKWORM_USE_MIMALLOC)
     list(APPEND RPCDAEMON_LIBRARIES mimalloc::mimalloc)
   endif()
 
-  add_executable(silkrpcdaemon "${RPCDAEMON_CMD_SRC}")
-  target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
-  target_link_libraries(silkrpcdaemon PRIVATE ${RPCDAEMON_LIBRARIES})
+  add_executable(rpcdaemon "${RPCDAEMON_CMD_SRC}")
+  target_include_directories(rpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
+  target_link_libraries(rpcdaemon PRIVATE ${RPCDAEMON_LIBRARIES})
 
   # [=] standalone Sentry component
   set(SENTRY_CMD_SRC sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)

@@ -25,6 +25,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/recsplit/rec_split_seq.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {
@@ -44,11 +45,11 @@ void Index::build() {
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
         .base_data_id = index_file.block_from()};
-    RecSplit8 rec_split{rec_split_settings};
+    RecSplit8 rec_split{rec_split_settings, succinct::seq_build_strategy(etl::kOptimalBufferSize)};
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
-    bool collision_detected;
+    bool collision_detected{false};
     do {
         iterations++;
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
@@ -91,9 +92,9 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
 }
 
 bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
-    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer_);
-    rec_split.add_key(uint64_buffer_.data(), size, offset);
-    uint64_buffer_.clear();
+    Bytes uint64_buffer;
+    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer);
+    rec_split.add_key(uint64_buffer.data(), size, offset);
     return true;
 }
 
@@ -130,9 +131,8 @@ void TransactionIndex::build() {
         .bucket_size = kBucketSize,
         .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
-        .double_enum_index = true,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2};
-    RecSplit8 tx_hash_rs{tx_hash_rs_settings};
+        .double_enum_index = true};
+    RecSplit8 tx_hash_rs{tx_hash_rs_settings, succinct::seq_build_strategy(etl::kOptimalBufferSize / 2)};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
     SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
@@ -141,9 +141,8 @@ void TransactionIndex::build() {
         .bucket_size = kBucketSize,
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
-        .double_enum_index = false,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings};
+        .double_enum_index = false};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, succinct::seq_build_strategy(etl::kOptimalBufferSize / 2)};
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
@@ -160,7 +159,7 @@ void TransactionIndex::build() {
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
     Hash tx_hash;
-    bool collision_detected;
+    bool collision_detected{false};
     do {
         iterations++;
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
@@ -213,7 +212,7 @@ void TransactionIndex::build() {
                         ByteView tx_envelope_view{tx_envelope};
 
                         rlp::Header tx_header;
-                        TransactionType tx_type;
+                        TransactionType tx_type{};
                         decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
                         if (!decode_result) {
                             SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());

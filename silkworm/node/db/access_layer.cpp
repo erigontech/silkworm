@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
 #include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
@@ -322,8 +323,8 @@ void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions
     }
 }
 
-void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& v) {
-    v.resize(count);
+void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out) {
+    out.resize(count);
     if (count == 0) {
         return;
     }
@@ -334,12 +335,12 @@ void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, st
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
-        success_or_throw(rlp::decode(data_view, v.at(i)));
+        success_or_throw(rlp::decode(data_view, out.at(i)));
     }
     SILKWORM_ASSERT(i == count);
 }
 
-void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& rlp_txs) {
+static void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& rlp_txs) {
     rlp_txs.resize(count);
     if (count == 0) {
         return;
@@ -451,15 +452,15 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     return true;
 }
 
-bool read_rlp_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) {
-    const auto key{block_key(block_number, hash.bytes)};
+bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) {
+    const auto key{block_key(height, hash.bytes)};
     auto cursor = txn.ro_cursor(table::kBlockBodies);
     const auto data{cursor->find(to_slice(key), false)};
     if (!data) return false;
 
     ByteView data_view{from_slice(data.value)};
     const auto body{detail::decode_stored_block_body(data_view)};
-    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(block_number));
+    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(height));
     read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
 
     return true;
@@ -1001,7 +1002,7 @@ BlockNum DataModel::highest_block_number() const {
     return repository_ ? repository_->max_block_available() : 0;
 }
 
-BlockNum DataModel::highest_frozen_block_number() const {
+BlockNum DataModel::highest_frozen_block_number() {
     // Ask the snapshot repository (if any) for highest block
     return repository_ ? repository_->max_block_available() : 0;
 }
@@ -1131,21 +1132,21 @@ bool DataModel::has_body(BlockNum height, const Hash& hash) const {
     return has_body(height, hash.bytes);
 }
 
-bool DataModel::read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const {
-    const bool found = db::read_block(txn_, hash, height, read_senders, block);
+bool DataModel::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
+    const bool found = db::read_block(txn_, hash, number, read_senders, block);
     if (found) return found;
 
-    return read_block_from_snapshot(height, read_senders, block);
+    return read_block_from_snapshot(number, read_senders, block);
 }
 
-bool DataModel::read_block(const evmc::bytes32& hash, BlockNum height, Block& block) const {
-    const bool found = db::read_block(txn_, hash, height, block);
+bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const {
+    const bool found = db::read_block(txn_, hash, number, block);
     if (found) return found;
 
-    return read_block_from_snapshot(height, /*read_senders=*/true, block);
+    return read_block_from_snapshot(number, /*read_senders=*/true, block);
 }
 
-void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const {
+void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
     constexpr bool throw_notfound{false};
 
     // Try to read N headers from the database
@@ -1316,11 +1317,11 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
     return false;
 }
 
-bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& transactions) const {
-    bool found = db::read_rlp_transactions(txn_, height, hash, transactions);
+bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
+    bool found = db::read_rlp_transactions(txn_, height, hash, rlp_txs);
     if (found) return true;
 
-    return read_rlp_transactions_from_snapshot(height, transactions);
+    return read_rlp_transactions_from_snapshot(height, rlp_txs);
 }
 
 std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
@@ -1341,7 +1342,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
     return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) {
     if (!repository_) {
         return {};
     }

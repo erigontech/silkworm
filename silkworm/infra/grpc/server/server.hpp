@@ -67,7 +67,7 @@ class Server {
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
 
         // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
-        int selected_port;
+        int selected_port{0};
         builder.AddListeningPort(settings_.address_uri, settings_.credentials, &selected_port);
 
         // Add one server-side gRPC completion queue for each execution context.

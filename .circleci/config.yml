@@ -329,7 +329,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 15
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
           name: "Generate report"
           command: |
@@ -358,7 +358,7 @@ jobs:
 
   linux-wasm-build:
     environment:
-      WASI_SDK_VERSION: 15
+      WASI_SDK_VERSION: 20
     machine:
       image: ubuntu-2204:2023.04.2
     steps:
@@ -409,7 +409,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 14
+    default: 15
   clang_version_latest:
     type: integer
     default: 15
@@ -436,9 +436,9 @@ workflows:
           requires:
             - lint
       - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: <<pipeline.parameters.clang_version_min>>
           ethereum_tests: false
           requires:
             - lint
@@ -453,10 +453,6 @@ workflows:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_min>>
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
       - linux-gcc-thread-sanitizer
       - linux-clang-coverage
       - linux-clang-address-sanitizer

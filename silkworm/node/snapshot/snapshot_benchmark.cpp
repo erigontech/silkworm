@@ -20,7 +20,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
-#include <silkworm/node/snapshot/snapshot.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 

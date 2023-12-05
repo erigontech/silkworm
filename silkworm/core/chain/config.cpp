@@ -21,7 +21,6 @@
 #include <set>
 #include <string>
 
-#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/overloaded.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>

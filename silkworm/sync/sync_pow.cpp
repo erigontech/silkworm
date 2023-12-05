@@ -16,7 +16,8 @@
 
 #include "sync_pow.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
+#include <algorithm>
+
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -40,7 +41,7 @@ PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left o
     block_exchange_.initial_state(last_headers);
 
     // We calculate a provisional head based on the previous headers
-    as_range::for_each(last_headers, [&, this](const auto& header) {
+    std::ranges::for_each(last_headers, [&, this](const auto& header) {
         auto hash = header.hash();
         auto td = sync_wait(in(exec_engine_), exec_engine_.get_header_td(hash, std::nullopt));
         chain_fork_view_.add(header, *td);  // add to cache & compute a new canonical head
@@ -92,7 +93,7 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
         Blocks announcements_to_do;
 
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [&, this](const auto& block) {
+        std::ranges::for_each(blocks, [&, this](const auto& block) {
             block->td = chain_fork_view_.add(block->header);
             block_progress = std::max(block_progress, block->header.number);
             if (block->to_announce) announcements_to_do.push_back(block);
@@ -157,7 +158,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
-            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(new_height.hash));
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(new_height.hash, std::nullopt));
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
 
@@ -178,7 +179,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, head=" << to_hex(invalid_chain.latest_valid_head);
-            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(invalid_chain.latest_valid_head));
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(invalid_chain.latest_valid_head, std::nullopt));
 
         } else if (std::holds_alternative<ValidationError>(verification)) {
             // if it returned a validation error, raise an exception

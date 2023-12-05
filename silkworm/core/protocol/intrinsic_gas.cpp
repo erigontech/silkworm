@@ -16,7 +16,7 @@
 
 #include "intrinsic_gas.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
+#include <algorithm>
 
 #include "param.hpp"
 
@@ -43,7 +43,7 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
         return gas;
     }
 
-    const intx::uint128 non_zero_bytes{as_range::count_if(txn.data, [](uint8_t c) { return c != 0; })};
+    const intx::uint128 non_zero_bytes{std::ranges::count_if(txn.data, [](uint8_t c) { return c != 0; })};
     const intx::uint128 nonZeroGas{rev >= EVMC_ISTANBUL ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
     gas += non_zero_bytes * nonZeroGas;
     const intx::uint128 zero_bytes{data_len - non_zero_bytes};

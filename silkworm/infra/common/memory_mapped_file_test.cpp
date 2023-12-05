@@ -104,7 +104,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
     }
 
     SECTION("constructor fails for zero length") {
-        uint8_t u;
+        uint8_t u{0};
         CHECK_THROWS_AS(MemoryMappedFile("", MemoryMappedRegion{&u, 0}), std::logic_error);
     }
 

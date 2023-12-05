@@ -32,7 +32,7 @@
 namespace silkworm::os {
 
 uint64_t max_file_descriptors() {
-    uint64_t max_descriptors;
+    uint64_t max_descriptors{0};
 #if defined(__linux__) || defined(__APPLE__)
     // Get the current limit
     rlimit limit{};
@@ -42,8 +42,6 @@ uint64_t max_file_descriptors() {
     max_descriptors = limit.rlim_cur;
 #elif defined(_WIN32)
     max_descriptors = _getmaxstdio();
-#else
-    max_descriptors = 0;
 #endif
     return max_descriptors;
 }

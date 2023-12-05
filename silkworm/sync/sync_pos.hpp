@@ -22,7 +22,7 @@
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/silkrpc/types/execution_payload.hpp>
+#include <silkworm/rpc/types/execution_payload.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 

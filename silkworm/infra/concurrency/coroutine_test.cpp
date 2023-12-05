@@ -56,7 +56,7 @@ TEST_CASE("coroutine co_return", "[silkworm][infra][concurrency]") {
         coroutine_return_123(),
         boost::asio::use_future);
 
-    std::size_t work_count;
+    std::size_t work_count{0};
     do {
         work_count = context.poll_one();
     } while (work_count > 0);

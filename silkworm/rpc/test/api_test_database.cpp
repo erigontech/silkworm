@@ -31,17 +31,6 @@ std::filesystem::path get_tests_dir() {
     return working_dir / "third_party" / "execution-apis" / "tests";
 }
 
-mdbx::env_managed open_db(const std::string& chaindata_dir) {
-    db::EnvConfig chain_conf{
-        .path = chaindata_dir,
-        .create = true,
-        .exclusive = true,
-        .in_memory = true,
-        .shared = false};
-
-    return db::open_env(chain_conf);
-}
-
 InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir) {
     auto genesis_json_path = tests_dir / "genesis.json";
     std::ifstream genesis_json_input_file(genesis_json_path);
@@ -158,10 +147,21 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 }
 
 namespace {
+    mdbx::env_managed open_db(const std::string& chaindata_dir) {
+        db::EnvConfig chain_conf{
+            .path = chaindata_dir,
+            .create = true,
+            .exclusive = true,
+            .in_memory = true,
+            .shared = false};
+
+        return db::open_env(chain_conf);
+    }
+
     mdbx::env_managed initialize_test_database() {
         const auto tests_dir = get_tests_dir();
         const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
-        auto db = open_db(db_dir);
+        auto db = open_db(db_dir.string());
         db::RWTxnManaged txn{db};
         db::table::check_or_create_chaindata_tables(txn);
         auto state_buffer = populate_genesis(txn, tests_dir);

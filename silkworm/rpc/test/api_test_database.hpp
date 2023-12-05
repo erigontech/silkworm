@@ -44,8 +44,6 @@ namespace silkworm::rpc::test {
 
 std::filesystem::path get_tests_dir();
 
-mdbx::env_managed open_db(const std::string& chaindata_dir);
-
 InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir);
 
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);

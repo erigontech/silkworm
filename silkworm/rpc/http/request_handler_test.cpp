@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("check handle_request  empty content ", "[rpc][handle_request]") {
     Request req{
         "eth_call",

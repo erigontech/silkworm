@@ -33,8 +33,8 @@ static RandomNumber rnd_byte{0, UINT8_MAX};
 
 static evmc::address random_address() {
     evmc::address a;
-    for (size_t i = 0; i < kAddressLength; ++i) {
-        a.bytes[i] = static_cast<uint8_t>(rnd_byte.generate_one());
+    for (uint8_t& byte : a.bytes) {
+        byte = static_cast<uint8_t>(rnd_byte.generate_one());
     }
     return a;
 }

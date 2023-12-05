@@ -44,7 +44,6 @@ namespace silkworm::rpc::ethdb::kv {
 
 using namespace evmc::literals;  // NOLINT(build/namespaces_literals)
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
 using testing::Return;
@@ -344,7 +343,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[rpc][ethdb][kv][state_cache
             const auto value1 = result1.get();
             CHECK(value1.has_value());
             if (value1) {
-                CHECK(*value1 == silkworm::Bytes{});
+                CHECK(value1->empty());
             }
             CHECK(cache.state_hit_count() == 1);
             CHECK(cache.state_miss_count() == 0);

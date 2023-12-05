@@ -36,10 +36,8 @@
 
 namespace silkworm::rpc::debug {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
 
-using testing::_;
 using testing::InvokeWithoutArgs;
 
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
@@ -68,7 +66,7 @@ class TestDebugExecutor : DebugExecutor {
         ethdb::Transaction& tx,
         DebugConfig config = {})
         : DebugExecutor(database_reader, block_cache, workers, tx, config) {}
-    virtual ~TestDebugExecutor() = default;
+    ~TestDebugExecutor() override = default;
 
     TestDebugExecutor(const TestDebugExecutor&) = delete;
     TestDebugExecutor& operator=(const TestDebugExecutor&) = delete;

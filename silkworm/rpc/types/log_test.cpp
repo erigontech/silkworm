@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("create empty log", "[rpc][types][log]") {
     Log l{};
     CHECK(l.address == evmc::address{});

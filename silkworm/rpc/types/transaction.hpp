@@ -56,7 +56,7 @@ using AccessList = std::vector<silkworm::AccessListEntry>;
 struct AccessListResult {
     AccessList access_list;
     std::optional<std::string> error;
-    uint64_t gas_used;
+    uint64_t gas_used{0};
 };
 
 struct TxPoolStatusInfo {

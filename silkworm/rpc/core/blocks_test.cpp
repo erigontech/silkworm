@@ -28,16 +28,13 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-// #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 #include <silkworm/rpc/test/mock_database_reader.hpp>
 
 namespace silkworm::rpc::core {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
-using evmc::literals::operator""_bytes32;
 
 static silkworm::Bytes kNumber{*silkworm::from_hex("00000000003D0900")};
 static silkworm::Bytes block_hash = silkworm::bytes_of_string(std::string("0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"));

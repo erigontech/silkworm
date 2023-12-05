@@ -21,6 +21,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/context.hpp>
@@ -30,11 +31,12 @@ namespace silkworm::etl {
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
     std::set<Bytes> keys;
+    RandomNumber rnd{0, 200000000};
     while (pairs.size() < size) {
         Bytes key(8, '\0');
-        endian::store_big_u64(&key[0], static_cast<unsigned>(std::rand()) % 200000000u);
+        endian::store_big_u64(&key[0], rnd.generate_one());
 
-        if (keys.count(key)) {
+        if (keys.contains(key)) {
             // we want unique keys
             continue;
         } else {
@@ -42,11 +44,11 @@ static std::vector<Entry> generate_entry_set(size_t size) {
         }
         if (pairs.size() % 100) {
             Bytes value(8, '\0');
-            endian::store_big_u64(&value[0], static_cast<unsigned>(std::rand()) % 200000000u);
-            pairs.push_back({key, value});
+            endian::store_big_u64(&value[0], rnd.generate_one());
+            pairs.emplace_back(key, value);
         } else {
             Bytes value;
-            pairs.push_back({key, value});
+            pairs.emplace_back(key, value);
         }
     }
     return pairs;
@@ -55,9 +57,6 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
     test::Context context;
-
-    // Initialize random seed
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -141,16 +140,14 @@ TEST_CASE("collect_and_default_load_move_in_memory_vector") {
 TEST_CASE("collect_and_load_in_memory_map") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        Bytes key{ekey};
-        table.upsert(db::to_slice(key), db::to_slice(evalue));
+        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });
 }
 
 TEST_CASE("collect_and_load_in_memory_vector") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        Bytes key{ekey};
-        table.upsert(db::to_slice(key), db::to_slice(evalue));
+        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });
 }
 

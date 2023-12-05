@@ -23,7 +23,7 @@ namespace silkworm {
 using GetBlockBodiesPacket = std::vector<Hash>;
 
 struct GetBlockBodiesPacket66 {  // eth/66 version
-    uint64_t requestId;
+    uint64_t requestId{0};
     GetBlockBodiesPacket request;
 };
 

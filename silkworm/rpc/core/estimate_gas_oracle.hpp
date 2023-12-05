@@ -19,6 +19,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
@@ -44,11 +45,11 @@ using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const
 
 struct EstimateGasException : public std::exception {
   public:
-    EstimateGasException(int64_t error_code, std::string const& message)
-        : error_code_{error_code}, message_{message}, data_{} {}
+    EstimateGasException(int64_t error_code, std::string message)
+        : error_code_{error_code}, message_{std::move(message)}, data_{} {}
 
-    EstimateGasException(int64_t error_code, std::string const& message, silkworm::Bytes const& data)
-        : error_code_{error_code}, message_{message}, data_{data} {}
+    EstimateGasException(int64_t error_code, std::string message, silkworm::Bytes data)
+        : error_code_{error_code}, message_{std::move(message)}, data_{std::move(data)} {}
 
     virtual ~EstimateGasException() noexcept {}
 
@@ -79,7 +80,7 @@ class EstimateGasOracle {
     explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider, const AccountReader& account_reader,
                                const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database, const ChainStorage& chain_storage)
         : block_header_provider_(block_header_provider), account_reader_{account_reader}, config_{config}, workers_{workers}, transaction_{tx}, tx_database_{tx_database}, storage_{chain_storage} {}
-    virtual ~EstimateGasOracle() {}
+    virtual ~EstimateGasOracle() = default;
 
     EstimateGasOracle(const EstimateGasOracle&) = delete;
     EstimateGasOracle& operator=(const EstimateGasOracle&) = delete;

@@ -21,34 +21,34 @@
 
 namespace silkworm {
 
-constexpr const char* kAdminApiNamespace{"admin"};
-constexpr const char* kDebugApiNamespace{"debug"};
-constexpr const char* kEngineApiNamespace{"engine"};
-constexpr const char* kEthApiNamespace{"eth"};
-constexpr const char* kNetApiNamespace{"net"};
-constexpr const char* kParityApiNamespace{"parity"};
-constexpr const char* kErigonApiNamespace{"erigon"};
-constexpr const char* kTxPoolApiNamespace{"txpool"};
-constexpr const char* kTraceApiNamespace{"trace"};
-constexpr const char* kWeb3ApiNamespace{"web3"};
-constexpr const char* kOtterscanApiNamespace{"ots"};
+inline constexpr const char* kAdminApiNamespace{"admin"};
+inline constexpr const char* kDebugApiNamespace{"debug"};
+inline constexpr const char* kEngineApiNamespace{"engine"};
+inline constexpr const char* kEthApiNamespace{"eth"};
+inline constexpr const char* kNetApiNamespace{"net"};
+inline constexpr const char* kParityApiNamespace{"parity"};
+inline constexpr const char* kErigonApiNamespace{"erigon"};
+inline constexpr const char* kTxPoolApiNamespace{"txpool"};
+inline constexpr const char* kTraceApiNamespace{"trace"};
+inline constexpr const char* kWeb3ApiNamespace{"web3"};
+inline constexpr const char* kOtterscanApiNamespace{"ots"};
 
-constexpr const char* kAddressPortSeparator{":"};
-constexpr const char* kApiSpecSeparator{","};
-constexpr const char* kDefaultJwtFile{"jwt.hex"};
+inline constexpr const char* kAddressPortSeparator{":"};
+inline constexpr const char* kApiSpecSeparator{","};
+inline constexpr const char* kDefaultJwtFile{"jwt.hex"};
 
-constexpr const char* kDefaultEth1EndPoint{"localhost:8545"};
-constexpr const char* kDefaultEngineEndPoint{"localhost:8551"};
-constexpr const char* kDefaultPrivateApiAddr{"localhost:9090"};
-constexpr const char* kDefaultEth1ApiSpec{"admin,debug,eth,net,parity,erigon,trace,web3,txpool"};
-constexpr const char* kDefaultEth2ApiSpec{"engine,eth"};
-constexpr const std::chrono::milliseconds kDefaultTimeout{10000};
+inline constexpr const char* kDefaultEth1EndPoint{"localhost:8545"};
+inline constexpr const char* kDefaultEngineEndPoint{"localhost:8551"};
+inline constexpr const char* kDefaultPrivateApiAddr{"localhost:9090"};
+inline constexpr const char* kDefaultEth1ApiSpec{"admin,debug,eth,net,parity,erigon,trace,web3,txpool"};
+inline constexpr const char* kDefaultEth2ApiSpec{"engine,eth"};
+inline constexpr const std::chrono::milliseconds kDefaultTimeout{10000};
 
-constexpr const std::size_t kHttpIncomingBufferSize{8192};
+inline constexpr const std::size_t kHttpIncomingBufferSize{8192};
 
-constexpr const std::size_t kRequestContentInitialCapacity{1024};
-constexpr const std::size_t kRequestHeadersInitialCapacity{8};
-constexpr const std::size_t kRequestMethodInitialCapacity{64};
-constexpr const std::size_t kRequestUriInitialCapacity{64};
+inline constexpr const std::size_t kRequestContentInitialCapacity{1024};
+inline constexpr const std::size_t kRequestHeadersInitialCapacity{8};
+inline constexpr const std::size_t kRequestMethodInitialCapacity{64};
+inline constexpr const std::size_t kRequestUriInitialCapacity{64};
 
 }  // namespace silkworm

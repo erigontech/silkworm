@@ -20,8 +20,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("header comparison", "[rpc][http][header]") {
     Header h1{"Accept", "*/*"};
     Header h2{"Accept", "*/*"};

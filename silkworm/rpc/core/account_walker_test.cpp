@@ -34,7 +34,6 @@
 namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
-using evmc::literals::operator""_bytes32;
 
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT

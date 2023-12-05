@@ -32,7 +32,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;
 

@@ -394,7 +394,7 @@ const std::string kLoremIpsum{
     "consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n"
     "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum"};
 
-const std::vector<std::string> kLoremIpsumWords = absl::StrSplit(kLoremIpsum, " ");
+const std::vector<std::string> kLoremIpsumWords = absl::StrSplit(kLoremIpsum, ' ');
 
 const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"

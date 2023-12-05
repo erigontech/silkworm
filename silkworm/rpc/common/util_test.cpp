@@ -32,14 +32,7 @@ TEST_CASE("print Bytes", "[rpc][common][util]") {
     CHECK_NOTHROW(test_util::null_stream() << b);
 }
 
-}  // namespace silkworm
-
-namespace silkworm {
-
-using Catch::Matchers::Message;
-
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using silkworm::kGiga;
 
 TEST_CASE("byte view from string", "[rpc][common][util]") {
     CHECK(silkworm::byte_view_of_string("").empty());

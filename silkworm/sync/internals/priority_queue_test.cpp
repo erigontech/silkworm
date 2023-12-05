@@ -53,7 +53,6 @@ TEST_CASE("set_based_priority_queue") {
         CHECK(queue.top() == 1);
         queue.pop();
 
-        CHECK(queue.size() == 0);
         CHECK(queue.empty());
         CHECK(queue.begin() == queue.end());
     }
@@ -180,7 +179,7 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         REQUIRE(queue.top()->timestamp == now + 4s);
         queue.pop();
 
-        CHECK(queue.size() == 0);
+        CHECK(queue.empty());
     }
 
     SECTION("in order iterating") {
@@ -292,7 +291,7 @@ TEST_CASE("Oldest_First_Link_Queue") {
         REQUIRE(queue.top()->blockHeight == 4);
         queue.pop();
 
-        REQUIRE(queue.size() == 0);
+        REQUIRE(queue.empty());
     }
 
     SECTION("erase an element") {
@@ -375,7 +374,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(queue.top()->blockHeight == 4);
         queue.pop();
 
-        REQUIRE(queue.size() == 0);
+        REQUIRE(queue.empty());
     }
 
     SECTION("erase an element") {

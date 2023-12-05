@@ -36,8 +36,6 @@ namespace silkworm::rpc::txpool {
 
 using Catch::Matchers::Message;
 using testing::_;
-using testing::MockFunction;
-using testing::Return;
 
 using evmc::literals::operator""_bytes32;
 using StrictMockMiningStub = testing::StrictMock<::txpool::MockMiningStub>;

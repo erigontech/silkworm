@@ -25,8 +25,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 static const auto zero_address = evmc::address{};
 static const auto empty_hash = evmc::bytes32{};
 static const auto zero_balance = intx::uint256{0};

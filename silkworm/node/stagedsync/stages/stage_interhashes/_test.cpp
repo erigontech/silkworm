@@ -342,7 +342,7 @@ static Bytes nibbles_from_hex(std::string_view s) {
     return unpacked;
 }
 
-static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, std::filesystem::path etl_path,
+static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, const std::filesystem::path& etl_path,
                                                    PrefixSet* account_changes, PrefixSet* storage_changes) {
     etl::Collector account_trie_node_collector{etl_path};
     etl::Collector storage_trie_node_collector{etl_path};
@@ -354,7 +354,7 @@ static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, std::filesyst
 
     // Save collected node changes
     db::PooledCursor account_cursor(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{account_cursor.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+    MDBX_put_flags_t flags{account_cursor.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
     account_trie_node_collector.load(account_cursor, nullptr, flags);
 
     db::PooledCursor storage_cursor(txn, db::table::kTrieOfStorage);
@@ -364,7 +364,7 @@ static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, std::filesyst
     return computed_root;
 }
 
-static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, std::filesystem::path etl_path) {
+static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, const std::filesystem::path& etl_path) {
     return increment_intermediate_hashes(txn, etl_path, nullptr, nullptr);
 }
 
@@ -532,7 +532,7 @@ TEST_CASE("Account and storage trie") {
 
             // Save collected node changes
             db::PooledCursor target(txn, db::table::kTrieOfAccounts);
-            MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+            MDBX_put_flags_t flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
             account_trie_node_collector.load(target, nullptr, flags);
 
             target.bind(txn, db::table::kTrieOfStorage);

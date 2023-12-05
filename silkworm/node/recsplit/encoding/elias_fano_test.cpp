@@ -141,7 +141,7 @@ TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
     CHECK(double_ef_list.num_buckets() == cum_keys.size() - 1);
 
     for (uint64_t i{0}; i < double_ef_list.num_buckets(); i++) {
-        uint64_t x, x2, y;
+        uint64_t x{0}, x2{0}, y{0};
 
         double_ef_list.get3(i, x, x2, y);
         CHECK(x == cum_keys[i]);

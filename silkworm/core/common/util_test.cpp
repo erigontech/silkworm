@@ -106,7 +106,7 @@ TEST_CASE("Zeroless view") {
         CHECK(to_hex(zeroless_view(block_num_as_bytes)) == "ba4da1");
     }
     SECTION("from ByteView") {
-        CHECK(to_hex(zeroless_view(ByteView{})) == "");
+        CHECK(to_hex(zeroless_view(ByteView{})).empty());
         CHECK(to_hex(zeroless_view(ByteView{{0x01, 0x00}})) == "0100");
         CHECK(to_hex(zeroless_view(ByteView{{00, 01}})) == "01");
     }

@@ -1,7 +1,0 @@
-cpplint
-jsondiff
-psutil
-pyjwt
-pytz
-web3
-pylint==2.11.*

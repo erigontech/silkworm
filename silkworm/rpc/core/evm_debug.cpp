@@ -369,7 +369,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
         const Error error{-32000, oss.str()};
         stream.write_json_field("error", error);
     } else {
-        const auto& block = tx_with_block->block_with_hash.block;
+        const auto& block = tx_with_block->block_with_hash->block;
         const auto& transaction = tx_with_block->transaction;
         const auto number = block.header.number - 1;
 

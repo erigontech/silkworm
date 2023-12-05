@@ -46,7 +46,7 @@ namespace silkworm::rpc::call {
 
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const ChainStorage& storage,
-                                                  const silkworm::BlockWithHash& block_with_hash,
+                                                  std::shared_ptr<BlockWithHash> block_with_hash,
                                                   ethdb::TransactionDatabase& tx_database,
                                                   const Bundles& bundles,
                                                   std::optional<std::uint64_t> opt_timeout,
@@ -54,7 +54,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
                                                   int32_t transaction_index,
                                                   boost::asio::any_io_executor& this_executor) {
     CallManyResult result;
-    const auto& block = block_with_hash.block;
+    const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
     auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
     state::OverrideState override_state{*state, accounts_overrides};
@@ -84,24 +84,28 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        rpc::Block blockContext{{block_with_hash.block}};
+        // creates a block copy where ovverides few values
+        auto block_with_hash_shared_copy = std::make_shared<BlockWithHash>();
+        *block_with_hash_shared_copy = *block_with_hash;
+
+        rpc::Block blockContext{{block_with_hash_shared_copy}};
         if (block_override.block_number) {
-            blockContext.block.header.number = block_override.block_number.value();
+            blockContext.block_with_hash->block.header.number = block_override.block_number.value();
         }
         if (block_override.coin_base) {
-            blockContext.block.header.beneficiary = block_override.coin_base.value();
+            blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
         }
         if (block_override.timestamp) {
-            blockContext.block.header.timestamp = block_override.timestamp.value();
+            blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
         }
         if (block_override.difficulty) {
-            blockContext.block.header.difficulty = block_override.difficulty.value();
+            blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
         }
         if (block_override.gas_limit) {
-            blockContext.block.header.gas_limit = block_override.gas_limit.value();
+            blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
         }
         if (block_override.base_fee) {
-            blockContext.block.header.base_fee_per_gas = block_override.base_fee;
+            blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
         }
 
         std::vector<nlohmann::json> results;
@@ -109,7 +113,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
         for (const auto& call : bundle.transactions) {
             silkworm::Transaction txn{call.to_transaction()};
 
-            auto call_execution_result = executor.call(blockContext.block, txn);
+            auto call_execution_result = executor.call(blockContext.block_with_hash->block, txn);
 
             if (call_execution_result.pre_check_error) {
                 result.error = call_execution_result.pre_check_error;
@@ -181,7 +185,7 @@ Task<CallManyResult> CallExecutor::execute(
     result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                result = executes_all_bundles(*chain_config_ptr, *chain_storage, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
+                result = executes_all_bundles(*chain_config_ptr, *chain_storage, block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
                 boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
                     self.complete(result);
                 });

@@ -47,7 +47,7 @@ struct Rlp {
 };
 
 struct TransactionWithBlock {
-    silkworm::BlockWithHash block_with_hash;
+    std::shared_ptr<BlockWithHash> block_with_hash{nullptr};
     Transaction transaction;
 };
 

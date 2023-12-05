@@ -206,13 +206,15 @@ TEST_CASE("check size of EIP-2718 block from RLP", "[rpc][types][block]") {
 
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView view{rlp_bytes};
-    Block rpc_block_with_hash;
+    auto block_with_hash = std::make_shared<BlockWithHash>();
 
-    REQUIRE(silkworm::rlp::decode(view, rpc_block_with_hash.block));
+    Block rpc_block{block_with_hash};
+
+    REQUIRE(silkworm::rlp::decode(view, rpc_block.block_with_hash->block));
     CHECK(view.empty());
 
-    CHECK(rpc_block_with_hash.get_block_size() == rlp_bytes.size());
-    CHECK_NOTHROW(test_util::null_stream() << rpc_block_with_hash);
+    CHECK(rpc_block.get_block_size() == rlp_bytes.size());
+    CHECK_NOTHROW(test_util::null_stream() << rpc_block);
 }
 
 }  // namespace silkworm::rpc

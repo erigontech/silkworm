@@ -169,7 +169,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             co_return;
         }
         const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
-        const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
+        const Block extended_block{block_with_hash, *total_difficulty, full_tx};
 
         reply = make_json_content(request, extended_block);
     } catch (const std::exception& e) {

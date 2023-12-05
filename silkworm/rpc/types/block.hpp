@@ -31,7 +31,8 @@
 
 namespace silkworm::rpc {
 
-struct Block : public silkworm::BlockWithHash {
+struct Block {
+    std::shared_ptr<BlockWithHash> block_with_hash{nullptr};
     intx::uint256 total_difficulty{0};
     bool full_tx{false};
 

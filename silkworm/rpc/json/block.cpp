@@ -22,58 +22,59 @@
 namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const Block& b) {
-    const auto block_number = to_quantity(b.block.header.number);
+    auto& header = b.block_with_hash->block.header;
+    const auto block_number = to_quantity(header.number);
     json["number"] = block_number;
-    json["hash"] = b.hash;
-    json["parentHash"] = b.block.header.parent_hash;
-    json["nonce"] = "0x" + silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
-    json["sha3Uncles"] = b.block.header.ommers_hash;
-    json["logsBloom"] = "0x" + silkworm::to_hex(full_view(b.block.header.logs_bloom));
-    json["transactionsRoot"] = b.block.header.transactions_root;
-    if (b.block.header.withdrawals_root) {
-        json["withdrawalsRoot"] = *(b.block.header.withdrawals_root);
+    json["hash"] = b.block_with_hash->hash;
+    json["parentHash"] = header.parent_hash;
+    json["nonce"] = "0x" + silkworm::to_hex({header.nonce.data(), header.nonce.size()});
+    json["sha3Uncles"] = header.ommers_hash;
+    json["logsBloom"] = "0x" + silkworm::to_hex(full_view(header.logs_bloom));
+    json["transactionsRoot"] = header.transactions_root;
+    if (header.withdrawals_root) {
+        json["withdrawalsRoot"] = *(header.withdrawals_root);
     }
-    json["stateRoot"] = b.block.header.state_root;
-    json["receiptsRoot"] = b.block.header.receipts_root;
-    json["miner"] = b.block.header.beneficiary;
-    json["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.header.difficulty));
+    json["stateRoot"] = header.state_root;
+    json["receiptsRoot"] = header.receipts_root;
+    json["miner"] = header.beneficiary;
+    json["difficulty"] = to_quantity(silkworm::endian::to_big_compact(header.difficulty));
     json["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
-    json["extraData"] = "0x" + silkworm::to_hex(b.block.header.extra_data);
-    json["mixHash"] = b.block.header.prev_randao;
+    json["extraData"] = "0x" + silkworm::to_hex(header.extra_data);
+    json["mixHash"] = header.prev_randao;
     json["size"] = to_quantity(b.get_block_size());
-    json["gasLimit"] = to_quantity(b.block.header.gas_limit);
-    json["gasUsed"] = to_quantity(b.block.header.gas_used);
-    if (b.block.header.base_fee_per_gas.has_value()) {
-        json["baseFeePerGas"] = to_quantity(b.block.header.base_fee_per_gas.value_or(0));
+    json["gasLimit"] = to_quantity(header.gas_limit);
+    json["gasUsed"] = to_quantity(header.gas_used);
+    if (header.base_fee_per_gas.has_value()) {
+        json["baseFeePerGas"] = to_quantity(header.base_fee_per_gas.value_or(0));
     }
-    json["timestamp"] = to_quantity(b.block.header.timestamp);
+    json["timestamp"] = to_quantity(header.timestamp);
     if (b.full_tx) {
-        json["transactions"] = b.block.transactions;
+        json["transactions"] = b.block_with_hash->block.transactions;
         for (std::size_t i{0}; i < json["transactions"].size(); i++) {
             auto& json_txn = json["transactions"][i];
             json_txn["transactionIndex"] = to_quantity(i);
-            json_txn["blockHash"] = b.hash;
+            json_txn["blockHash"] = b.block_with_hash->hash;
             json_txn["blockNumber"] = block_number;
-            json_txn["gasPrice"] = to_quantity(b.block.transactions[i].effective_gas_price(b.block.header.base_fee_per_gas.value_or(0)));
+            json_txn["gasPrice"] = to_quantity(b.block_with_hash->block.transactions[i].effective_gas_price(header.base_fee_per_gas.value_or(0)));
         }
     } else {
         std::vector<evmc::bytes32> transaction_hashes;
-        transaction_hashes.reserve(b.block.transactions.size());
-        for (std::size_t i{0}; i < b.block.transactions.size(); i++) {
-            transaction_hashes.emplace(transaction_hashes.end(), b.block.transactions[i].hash());
+        transaction_hashes.reserve(b.block_with_hash->block.transactions.size());
+        for (std::size_t i{0}; i < b.block_with_hash->block.transactions.size(); i++) {
+            transaction_hashes.emplace(transaction_hashes.end(), b.block_with_hash->block.transactions[i].hash());
             SILK_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength});
         }
         json["transactions"] = transaction_hashes;
     }
     std::vector<evmc::bytes32> ommer_hashes;
-    ommer_hashes.reserve(b.block.ommers.size());
-    for (std::size_t i{0}; i < b.block.ommers.size(); i++) {
-        ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
+    ommer_hashes.reserve(b.block_with_hash->block.ommers.size());
+    for (std::size_t i{0}; i < b.block_with_hash->block.ommers.size(); i++) {
+        ommer_hashes.emplace(ommer_hashes.end(), b.block_with_hash->block.ommers[i].hash());
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
     json["uncles"] = ommer_hashes;
-    if (b.block.withdrawals) {
-        json["withdrawals"] = *(b.block.withdrawals);
+    if (b.block_with_hash->block.withdrawals) {
+        json["withdrawals"] = *(b.block_with_hash->block.withdrawals);
     }
 }
 
@@ -170,15 +171,15 @@ void make_glaze_json_null_content(const nlohmann::json& request_json, std::strin
 }
 
 void make_glaze_json_content(const nlohmann::json& request_json, const Block& b, std::string& json_reply) {
+    auto& block = b.block_with_hash->block;
     GlazeJsonBlockReply block_json_data{};
-    auto& block = b.block;
     auto& header = block.header;
     auto& result = block_json_data.result;
 
     block_json_data.id = make_jsonrpc_id(request_json);
 
     to_quantity(std::span(result.block_number), header.number);
-    to_hex(std::span(result.hash), b.hash.bytes);
+    to_hex(std::span(result.hash), b.block_with_hash->hash.bytes);
     to_hex(std::span(result.parent_hash), header.parent_hash.bytes);
     to_hex(std::span(result.nonce), header.nonce);
     to_hex(std::span(result.sha3Uncles), header.ommers_hash.bytes);
@@ -212,7 +213,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
             GlazeJsonTransaction item{};
             to_quantity(std::span(item.transaction_index), i);
             to_quantity(std::span(item.block_number), header.number);
-            to_hex(std::span(item.block_hash), b.hash.bytes);
+            to_hex(std::span(item.block_hash), b.block_with_hash->hash.bytes);
             to_quantity(std::span(item.gas_price), transaction.effective_gas_price(header.base_fee_per_gas.value_or(0)));
             make_glaze_json_transaction(transaction, item);
             transaction_data_list.push_back(std::move(item));

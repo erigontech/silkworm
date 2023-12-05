@@ -857,4 +857,82 @@ TEST_CASE("Tracing destruction of smart contract") {
     CHECK(call_traces.recipients.contains(evmc::address{}));   // self-destruct
 }
 
+TEST_CASE("State changes for creation+destruction of smart contract") {
+    // Bytecode compiled using solc 0.8.19+commit.4fc1097e
+    const Bytes code{*from_hex(
+        "6080604052348015600f57600080fd5b5060858061001e6000396000f3fe"
+        "6080604052348015600f57600080fd5b506004361060285760003560e01c8063"
+        "41c0e1b514602d575b600080fd5b60336035565b005b600073ffffffffffffff"
+        "ffffffffffffffffffffffffff16fffea2646970667358221220c08c48851b75"
+        "79ee6720e88f475624478fb5b0287b58e91a51315b243356fb9264736f6c6343"
+        "0008130033")};
+    // pragma solidity 0.8.19;
+    //
+    // contract TestContract {
+    //     constructor() {}
+    //
+    //     function kill() public {
+    //         selfdestruct(payable(address(0)));
+    //     }
+    // }
+
+    // Bytecode contains SHR opcode so requires EIP-145, hence at least Constantinople HF
+    const auto chain_config{kMainnetConfig};
+    REQUIRE(chain_config.constantinople_block);
+
+    Block block{};
+    block.header.number = *chain_config.constantinople_block;
+    constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
+    constexpr auto caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const auto contract_address{create_address(caller, 0)};
+
+    InMemoryState db;
+    IntraBlockState state{db};
+
+    EVM evm{block, state, chain_config};
+    REQUIRE(evm.revision() >= EVMC_CONSTANTINOPLE);
+    TestTracer test_tracer;
+    evm.add_tracer(test_tracer);
+
+    // 1st tx creates the code at contract_address, thus changing such account state
+    Transaction txn1{};
+    txn1.from = caller;
+    txn1.data = code;
+
+    uint64_t gas = {100'000};
+    CallResult res1{evm.execute(txn1, gas)};
+    CHECK(res1.status == EVMC_SUCCESS);
+    CHECK(test_tracer.creation_completed_called());
+
+    state.finalize_transaction(EVMC_CONSTANTINOPLE);
+
+    state.clear_journal_and_substate();
+
+    // 2nd tx destroys the contract triggering self-destruct, thus changing such account back to empty state
+    Transaction txn2{};
+    txn2.from = caller;
+    txn2.to = contract_address;
+    txn2.data = ByteView{*from_hex("41c0e1b5")};  // methodID for kill
+
+    CallResult res2 = evm.execute(txn2, gas);
+    CHECK(res2.status == EVMC_SUCCESS);
+    CHECK(test_tracer.self_destruct_called());
+
+    state.finalize_transaction(EVMC_CONSTANTINOPLE);
+
+    state.write_to_db(block.header.number);
+
+    CHECK(!db.accounts().contains(contract_address));
+
+    const auto account_changes_per_block{db.account_changes()};
+    CHECK(account_changes_per_block.contains(block.header.number));
+    if (account_changes_per_block.contains(block.header.number)) {
+        const auto& account_changes{account_changes_per_block.at(block.header.number)};
+        CHECK(account_changes.contains(caller));             // transaction caller pays for execution
+        CHECK(!account_changes.contains(zero_address));      // destruction beneficiary receives zero balance (hence unchanged)
+        CHECK(!account_changes.contains(contract_address));  // contract address hasn't changed after all
+    }
+    CHECK(state.number_of_self_destructs() == 1);
+}
+
 }  // namespace silkworm

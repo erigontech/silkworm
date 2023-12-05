@@ -23,6 +23,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>

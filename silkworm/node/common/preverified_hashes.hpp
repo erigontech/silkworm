@@ -20,6 +20,8 @@
 #include <set>
 #include <utility>
 
+#include <evmc/evmc.hpp>
+
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm {

@@ -24,6 +24,8 @@ using namespace std::string_view_literals;
 
 namespace silkworm::protocol {
 
+using namespace evmc::literals;
+
 TEST_CASE("BorConfig JSON") {
     const auto json = nlohmann::json::parse(R"({
             "period": {

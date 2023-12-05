@@ -22,6 +22,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 const std::vector<AccessListEntry> access_list{
     {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
      {

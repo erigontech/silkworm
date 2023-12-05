@@ -19,6 +19,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/common/empty_hashes.hpp>
+
 namespace silkworm::rpc {
 
 TEST_CASE("serialize block with baseFeePerGas", "[rpc][to_json]") {

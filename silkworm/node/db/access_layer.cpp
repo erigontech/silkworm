@@ -20,6 +20,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

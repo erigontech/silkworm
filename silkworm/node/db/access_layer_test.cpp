@@ -22,6 +22,7 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>

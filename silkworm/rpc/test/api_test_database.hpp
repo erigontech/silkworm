@@ -26,6 +26,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/address.hpp>

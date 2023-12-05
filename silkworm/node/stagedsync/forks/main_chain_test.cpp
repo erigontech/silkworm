@@ -22,6 +22,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>

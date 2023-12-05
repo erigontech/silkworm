@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
+#include <evmc/evmc.hpp>
+
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 

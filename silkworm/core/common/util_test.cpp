@@ -22,6 +22,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 TEST_CASE("Hex") {
     CHECK(decode_hex_digit('g').has_value() == false);
 

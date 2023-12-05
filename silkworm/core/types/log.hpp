@@ -18,7 +18,8 @@
 
 #include <vector>
 
-#include <silkworm/core/common/base.hpp>
+#include <evmc/evmc.hpp>
+
 #include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm {

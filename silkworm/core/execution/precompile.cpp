@@ -524,6 +524,8 @@ std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
 }
 
 bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
+    using namespace evmc::literals;
+
     static_assert(std::size(kContracts) < 256);
     static constexpr evmc::address kMaxOneByteAddress{0x00000000000000000000000000000000000000ff_address};
     if (address > kMaxOneByteAddress) {

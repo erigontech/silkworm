@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>

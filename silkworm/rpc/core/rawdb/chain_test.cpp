@@ -26,7 +26,7 @@
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/common/decoding_result.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/tables.hpp>

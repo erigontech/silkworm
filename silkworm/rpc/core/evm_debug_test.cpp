@@ -38,7 +38,6 @@ namespace silkworm::rpc::debug {
 
 using evmc::literals::operator""_address;
 
-using testing::_;
 using testing::InvokeWithoutArgs;
 
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};

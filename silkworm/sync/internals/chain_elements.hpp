@@ -79,7 +79,7 @@ struct Anchor {
         peerId = std::move(p);
     }
 
-    BlockNum chainLength() { return lastLinkHeight - blockHeight + 1; }
+    BlockNum chainLength() const { return lastLinkHeight - blockHeight + 1; }
 
     void remove_child(const Link& child) {
         std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });
@@ -219,7 +219,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
     std::vector<Header_Ref> to_ref() {
         std::vector<Header_Ref> refs;
-        for (Header_Ref i = headers_.begin(); i < headers_.end(); i++) refs.push_back(i);
+        for (auto i = headers_.begin(); i < headers_.end(); i++) refs.emplace_back(i);
         return refs;
     }
 

@@ -37,10 +37,8 @@ namespace silkworm::rpc::core::rawdb {
 
 using Catch::Matchers::Message;
 using testing::_;
-using testing::DoAll;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
-using testing::Return;
 using testing::Unused;
 using evmc::literals::operator""_bytes32;
 

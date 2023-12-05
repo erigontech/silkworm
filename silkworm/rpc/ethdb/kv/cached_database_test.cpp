@@ -40,7 +40,6 @@ namespace silkworm::rpc::ethdb::kv {
 
 using testing::_;
 using testing::InvokeWithoutArgs;
-using testing::Return;
 
 static constexpr auto kTestBlockNumber{1'000'000};
 

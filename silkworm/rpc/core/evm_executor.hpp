@@ -42,7 +42,7 @@ namespace silkworm::rpc {
 
 struct ExecutionResult {
     std::optional<int64_t> error_code;
-    uint64_t gas_left;
+    uint64_t gas_left{0};
     Bytes data;
     std::optional<std::string> pre_check_error;
 

@@ -557,10 +557,10 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
 
         size_t i = 1;
         auto* current_links = &(anchor->links);
-        while (current_links->size() > 0) {
+        while (!current_links->empty()) {
             REQUIRE(current_links->at(0)->hash == headers[i].hash());
             current_links = &(current_links->at(0)->next);
-            i++;
+            ++i;
         }
         REQUIRE(i == 10);
     }

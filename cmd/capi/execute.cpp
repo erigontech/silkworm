@@ -22,14 +22,6 @@
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#include <mdbx.h++>
-#pragma GCC diagnostic pop
-
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>

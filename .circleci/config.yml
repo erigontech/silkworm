@@ -333,7 +333,7 @@ jobs:
       - build_using_conan:
           build_type: Release
           compiler_id: clang
-          compiler_version: 16
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
           target: rpcdaemon_fuzzer_test
       - fuzz-test
 

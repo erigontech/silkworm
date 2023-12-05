@@ -84,7 +84,11 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        rpc::Block blockContext{{block_with_hash}};
+        // creates a block copy where ovverides few values
+        auto block_with_hash_shared_copy = std::make_shared<BlockWithHash>();
+        *block_with_hash_shared_copy = *block_with_hash;
+
+        rpc::Block blockContext{{block_with_hash_shared_copy}};
         if (block_override.block_number) {
             blockContext.block_with_hash->block.header.number = block_override.block_number.value();
         }

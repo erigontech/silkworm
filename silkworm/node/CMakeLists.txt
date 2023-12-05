@@ -70,9 +70,6 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     silkworm_interfaces
 )
 # cmake-format: on
-if(MSVC)
-  list(APPEND SILKWORM_NODE_PRIVATE_LIBS ntdll.lib)
-endif(MSVC)
 
 target_link_libraries(
   silkworm_node

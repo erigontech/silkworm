@@ -56,9 +56,6 @@ set(LIBS_PRIVATE
     magic_enum::magic_enum
 )
 # cmake-format: on
-if(MSVC)
-  list(APPEND LIBS_PRIVATE ntdll.lib)
-endif(MSVC)
 
 target_link_libraries(
   ${TARGET}

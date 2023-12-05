@@ -55,9 +55,6 @@ set(LIBS_PRIVATE
     silkworm_sentry_discovery_enr
     silkworm_sentry_disc_v4
 )
-if(MSVC)
-  list(APPEND LIBS_PRIVATE ntdll.lib)
-endif(MSVC)
 
 # cmake-format: off
 set(LIBS_PUBLIC

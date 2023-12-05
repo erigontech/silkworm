@@ -41,9 +41,6 @@ set(SILKWORM_SYNC_PRIVATE_LIBS
     magic_enum::magic_enum
 )
 # cmake-format: on
-if(MSVC)
-  list(APPEND SILKWORM_SYNC_PRIVATE_LIBS ntdll.lib)
-endif(MSVC)
 
 target_link_libraries(
   silkworm_sync

@@ -22,10 +22,14 @@
 namespace silkworm {
 
 void CallTracer::on_execution_start(evmc_revision /*rev*/, const evmc_message& msg, evmone::bytes_view /*code*/) noexcept {
-    traces_.senders.insert(msg.sender);
-    if (msg.kind == EVMC_CALLCODE || msg.kind == EVMC_DELEGATECALL) {
+    if (msg.kind == EVMC_CALLCODE) {
+        traces_.senders.insert(msg.sender);
+        traces_.recipients.insert(msg.code_address);
+    } else if (msg.kind == EVMC_DELEGATECALL) {
+        traces_.senders.insert(msg.recipient);
         traces_.recipients.insert(msg.code_address);
     } else {
+        traces_.senders.insert(msg.sender);
         traces_.recipients.insert(msg.recipient);
     }
 }

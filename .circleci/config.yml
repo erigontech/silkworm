@@ -164,7 +164,7 @@ commands:
             for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
             for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
             for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
-            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=100 ~/corpus ~/crashes ~/artifacts
+            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=1000 ~/corpus ~/crashes ~/artifacts
 jobs:
   lint:
     machine:

@@ -438,12 +438,12 @@ workflows:
       - linux-wasm-build
   
   fuzzer:
-    trigger:
-      - schedule:
-          cron: "0 0 * * SAT"
-          filters:
-            branches:
-              only:
-                - main
+    # trigger:
+    #   - schedule:
+    #       cron: "0 0 * * SAT"
+    #       filters:
+    #         branches:
+    #           only:
+    #             - master
     jobs:
       - linux-clang-fuzzer

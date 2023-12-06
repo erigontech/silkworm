@@ -1016,8 +1016,8 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
     evmc::bytes32 key0{};
     CHECK(to_hex(zeroless_view(db.storage().at(caller_address).at(1).at(key0).bytes), true) == address_to_hex(caller_address));
     CHECK(call_traces.senders.size() == 2);
-    CHECK(call_traces.senders.contains(external_account));   // all txs originates from external_account
-    CHECK(call_traces.senders.contains(caller_address));     // 3rd tx triggers one delegate call from caller_address
+    CHECK(call_traces.senders.contains(external_account));  // all txs originates from external_account
+    CHECK(call_traces.senders.contains(caller_address));    // 3rd tx triggers one delegate call from caller_address
     CHECK(call_traces.recipients.size() == 3);
     CHECK(call_traces.recipients.contains(zero_address));    // 1st+2nd txs go to zero_address (contract creation)
     CHECK(call_traces.recipients.contains(caller_address));  // 3rd tx goes to caller_address

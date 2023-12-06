@@ -129,6 +129,7 @@ else()
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$"
      AND NOT SILKWORM_WASM_API
      AND NOT SILKWORM_SANITIZE
+     AND NOT SILKWORM_FUZZER
   )
     add_compile_options(-fsanitize=safe-stack)
     add_link_options(-fsanitize=safe-stack)

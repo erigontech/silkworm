@@ -48,6 +48,9 @@ commands:
       conan_profile:
         type: string
         default: none
+      target:
+        type: string
+        default: all
     steps:
       - run:
           name: "Install compiler"
@@ -68,7 +71,13 @@ commands:
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command: cmake --build ~/build -j16 # each compiler job requires 4GB of RAM
+          command:  |
+            if [[ "<<parameters.target>>" == "all" ]]
+            then
+                cmake --build ~/build -j16
+            else
+                cmake --build ~/build -j16 --target <<parameters.target>>
+            fi
 
   build_using_conan:
     parameters:
@@ -79,6 +88,9 @@ commands:
         type: string
       compiler_version:
         type: integer
+      target:
+        type: string
+        default: all
     steps:
       - run:
           name: "Install Conan"
@@ -102,6 +114,7 @@ commands:
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
           conan_profile: $CONAN_PROFILE
+          target: <<parameters.target>>
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -132,6 +145,20 @@ commands:
           name: "Execution spec tests"
           working_directory: ~/build
           command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
+
+  fuzz-test:
+    steps:
+      - run:
+          name: "RPCDaemon Fuzz test"
+          working_directory: ~/build
+          command: |
+            mkdir -p ~/corpus
+            mkdir -p ~/crashes
+            mkdir -p ~/artifacts
+            for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
+            for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
+            for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
+            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=1000 ~/corpus ~/crashes ~/artifacts
 
 jobs:
   lint:
@@ -288,6 +315,28 @@ jobs:
       - store_artifacts:
           path: /tmp/report.html
 
+  linux-clang-fuzzer:
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
+      UBSAN_OPTIONS: print_stacktrace=1
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - run:
+          name: "Ensure pip"
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3-pip
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          target: rpcdaemon_fuzzer_test
+      - fuzz-test
+
   linux-wasm-build:
     environment:
       WASI_SDK_VERSION: 20
@@ -391,3 +440,14 @@ workflows:
       - linux-clang-address-sanitizer
       - linux-clang-tidy
       - linux-wasm-build
+  
+  fuzzer:
+    triggers:
+      - schedule:
+          cron: "0 0 * * 6"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - linux-clang-fuzzer

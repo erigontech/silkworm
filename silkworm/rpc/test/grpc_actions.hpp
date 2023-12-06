@@ -24,7 +24,7 @@
 
 namespace silkworm::rpc::test {
 
-inline auto finish_with_status(agrpc::GrpcContext& grpc_context, grpc::Status status, bool ok) {
+inline auto finish_with_status(agrpc::GrpcContext& grpc_context, const grpc::Status& status, bool ok) {
     return [&grpc_context, status, ok](auto&&, ::grpc::Status* status_ptr, void* tag) {
         *status_ptr = status;
         agrpc::process_grpc_tag(grpc_context, tag, ok);
@@ -52,7 +52,7 @@ inline auto finish_error(agrpc::GrpcContext& grpc_context) {
     return finish_with_status(grpc_context, grpc::Status::OK, /*ok=*/false);
 }
 
-inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, grpc::Status status, bool ok) {
+inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, const grpc::Status& status, bool ok) {
     return [&grpc_context, status, ok](::grpc::Status* status_ptr, void* tag) {
         *status_ptr = status;
         agrpc::process_grpc_tag(grpc_context, tag, ok);

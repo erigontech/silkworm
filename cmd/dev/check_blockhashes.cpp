@@ -27,8 +27,6 @@
 using namespace silkworm;
 
 int main(int argc, char* argv[]) {
-    namespace fs = std::filesystem;
-
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
@@ -73,12 +71,12 @@ int main(int argc, char* argv[]) {
 
             if (++scanned_headers % 100000 == 0) {
                 auto [_, duration] = sw.lap();
-                log::Info() << "Scanned headers " << scanned_headers << " in " << sw.format(duration);
+                log::Info() << "Scanned headers " << scanned_headers << " in " << StopWatch::format(duration);
             }
             canonical_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
         auto [end_time, _] = sw.lap();
-        log::Info() << "Done! " << sw.format(end_time - start_time);
+        log::Info() << "Done! " << StopWatch::format(end_time - start_time);
     } catch (const std::exception& ex) {
         log::Error() << ex.what();
         return -5;

@@ -25,7 +25,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("deserialize null call", "[silkworm::json][from_json]") {
@@ -210,8 +209,8 @@ TEST_CASE("AccountOverrides", "[silkworm::json][from_json]") {
         CHECK(state.balance.has_value() == false);
         CHECK(state.nonce.has_value() == false);
         CHECK(state.code.has_value() == false);
-        CHECK(state.state.size() == 0);
-        CHECK(state.state_diff.size() == 0);
+        CHECK(state.state.empty());
+        CHECK(state.state_diff.empty());
     }
     SECTION("Full account overrides") {
         auto json = R"({
@@ -231,8 +230,8 @@ TEST_CASE("AccountOverrides", "[silkworm::json][from_json]") {
         CHECK(state.code.has_value() == true);
         CHECK(state.code.value() == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
 
-        CHECK(state.state.size() == 0);
-        CHECK(state.state_diff.size() == 0);
+        CHECK(state.state.empty());
+        CHECK(state.state_diff.empty());
     }
     SECTION("Account overrides with states") {
         auto json = R"({

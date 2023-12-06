@@ -22,8 +22,6 @@
 
 namespace silkworm::rpc::http {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("header", "[rpc][http][reply]") {
     Header header{"Accept", "*/*"};
 

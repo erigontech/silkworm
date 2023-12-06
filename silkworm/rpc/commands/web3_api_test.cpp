@@ -21,8 +21,6 @@
 
 namespace silkworm::rpc::commands {
 
-using Catch::Matchers::Message;
-
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Web3RpcApi::Web3RpcApi", "[rpc][erigon_api]") {
     boost::asio::io_context ioc;

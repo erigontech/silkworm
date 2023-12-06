@@ -23,8 +23,6 @@
 
 namespace silkworm::rpc::fee_history {
 
-using Catch::Matchers::Message;
-
 TEST_CASE("FeeHistory: json serialization") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 

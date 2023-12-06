@@ -40,18 +40,6 @@
 
 namespace silkworm::rpc::core::rawdb {
 
-using testing::_;
-using testing::DoAll;
-using testing::Invoke;
-using testing::InvokeWithoutArgs;
-using testing::Return;
-using testing::Unused;
-using evmc::literals::operator""_address;
-using evmc::literals::operator""_bytes32;
-
-using Catch::Matchers::Message;
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 static Bytes kNumber{*silkworm::from_hex("00000000003D0900")};
 static Bytes kBlockHash{*silkworm::from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff")};
 static Bytes kHeader{*silkworm::from_hex(

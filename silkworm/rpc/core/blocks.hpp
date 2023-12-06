@@ -39,7 +39,7 @@ Task<bool> is_latest_block_number(BlockNum block_number, const rawdb::DatabaseRe
 
 Task<BlockNum> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
-Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_is_required);
+Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_required);
 
 Task<BlockNum> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
 

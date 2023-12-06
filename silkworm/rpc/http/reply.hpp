@@ -62,7 +62,7 @@ std::vector<boost::asio::const_buffer> to_buffers(StatusType status, const std::
 //! A reply to be sent to a client.
 struct Reply {
     //! The status of the reply.
-    StatusType status;
+    StatusType status{StatusType::internal_server_error};
 
     //! The headers to be included in the reply.
     std::vector<Header> headers;

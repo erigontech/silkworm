@@ -18,9 +18,9 @@
 
 #include <intx/intx.hpp>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/decoding_result.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 
 namespace silkworm {
 

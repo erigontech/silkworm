@@ -16,6 +16,7 @@
 
 #include "state_reader.hpp"
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

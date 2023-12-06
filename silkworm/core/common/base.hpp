@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <tuple>
 
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
 // TODO(yperbasis): get rid of this hack
@@ -41,7 +40,6 @@
 
 namespace silkworm {
 
-using namespace evmc::literals;
 using namespace std::string_view_literals;
 
 template <class T>
@@ -55,16 +53,6 @@ using BlockTime = uint64_t;
 inline constexpr size_t kAddressLength{20};
 
 inline constexpr size_t kHashLength{32};
-
-// Keccak-256 hash of an empty string, KEC("").
-inline constexpr evmc::bytes32 kEmptyHash{0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32};
-
-// Keccak-256 hash of the RLP of an empty list, KEC("\xc0").
-inline constexpr evmc::bytes32 kEmptyListHash{
-    0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32};
-
-// Root hash of an empty trie.
-inline constexpr evmc::bytes32 kEmptyRoot{0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32};
 
 // https://en.wikipedia.org/wiki/Binary_prefix
 inline constexpr uint64_t kKibi{1024};

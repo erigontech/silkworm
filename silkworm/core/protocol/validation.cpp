@@ -18,6 +18,7 @@
 
 #include <bit>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>

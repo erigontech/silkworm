@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>

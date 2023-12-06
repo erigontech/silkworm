@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <optional>
+#include <string>
+
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm {

@@ -26,6 +26,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/rpc/test/api_test_base.hpp>
 #include <silkworm/rpc/test/grpc_actions.hpp>

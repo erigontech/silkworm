@@ -21,6 +21,9 @@
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
+
+using namespace evmc::literals;
+
 TEST_CASE("Hardcoded Bloom") {
     std::vector<Log> logs{
         {

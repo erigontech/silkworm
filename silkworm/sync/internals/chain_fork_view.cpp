@@ -17,6 +17,7 @@
 #include "chain_fork_view.hpp"
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>

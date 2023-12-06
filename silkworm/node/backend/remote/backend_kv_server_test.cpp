@@ -31,6 +31,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>

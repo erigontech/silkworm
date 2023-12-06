@@ -23,6 +23,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 

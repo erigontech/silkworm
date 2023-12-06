@@ -30,6 +30,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>

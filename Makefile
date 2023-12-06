@@ -1,4 +1,4 @@
-.PHONY: help fmt lint lint_copyright run_unit_tests test
+.PHONY: help fmt lint lint_copyright run_smoke_tests run_unit_tests test
 
 help:
 	@echo "Targets:"
@@ -15,7 +15,10 @@ lint_copyright:
 
 lint: lint_copyright
 
+run_smoke_tests:
+	@cmake/run_smoke_tests.sh $(SILKWORM_BUILD_DIR)
+
 run_unit_tests:
 	@cmake/run_unit_tests.sh $(SILKWORM_BUILD_DIR) $(SILKWORM_CLANG_COVERAGE)
 
-test: run_unit_tests
+test: run_smoke_tests run_unit_tests

@@ -47,18 +47,20 @@ class SilkwormRecipe(ConanFile):
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'
 
-        # Currently Conan Center has Windows binaries built only with msvc 16 only and mimalloc built only with option override=False
-        # In order to build mimalloc with override=True we need to switch to msvc 17 compiler but this would trigger a full rebuild from
-        # sources of all dependencies wasting a lot of time, so we prefer to turn off mimalloc override
-        # The same applies also for boost with option asio_no_deprecated
+        # Currently Conan Center has Windows binaries built only with msvc16 only and mimalloc built only with option override=False.
+        # In order to build mimalloc with override=True we would need to switch to msvc17 compiler but this would trigger a full rebuild
+        # from sources of all dependencies wasting a lot of time, so we prefer to keep mimalloc override disabled on Windows.
+        # The same applies also for boost with option asio_no_deprecated, so we can skip configuration entirely on Windows.
         if self.settings.os == 'Windows':
             return
 
-        self.options['mimalloc'].override = True
+        # Moreover, mimalloc override=True causes a crash on macOS at startup when running rpcdaemon, so we just enable it on Linux
+        if self.settings.os == 'Linux':
+            self.options['mimalloc'].override = True
 
         self.options['boost'].asio_no_deprecated = True
 
-        # disable building unused boost components
+        # Disable building unused boost components
         # note: changing default options above forces a boost rebuild anyway
         for component in self.boost_components_unused():
             setattr(self.options['boost'], 'without_' + component, True)

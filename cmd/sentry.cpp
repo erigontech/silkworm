@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     try {
         sentry_main(sentry_parse_cli_settings(argc, argv));
     } catch (const CLI::ParseError& pe) {
-        return -1;
+        return pe.get_exit_code();
     } catch (const std::exception& e) {
         log::Critical() << "Sentry exiting due to exception: " << e.what();
         return -2;

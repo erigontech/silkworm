@@ -349,12 +349,12 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex
-Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        make_glaze_json_error(request, 100, error_msg, reply);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -374,7 +374,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= ommers.size()) {
                 SILK_WARN << "invalid_argument: index not found processing request: " << request.dump();
-                reply = make_json_content(request, nullptr);
+                make_glaze_json_null_content(request, reply);
             } else {
                 const auto block_number = block_with_hash->block.header.number;
                 const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_hash, block_number);
@@ -385,19 +385,19 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
                 uncle_block_with_hash->hash = uncle.hash();
                 const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
-                reply = make_json_content(request, uncle_block_with_hash_and_td);
+                make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }
         } else {
             reply = make_json_content(request, {});
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        make_glaze_json_error(request, 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        make_glaze_json_error(request, 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

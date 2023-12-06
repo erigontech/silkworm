@@ -318,6 +318,7 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
       image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules:
           ethereum_tests: false
@@ -327,7 +328,7 @@ jobs:
             sudo apt-get update
             sudo apt install -y python3-pip
       - build_using_conan:
-          build_type: Release
+          build_type: Debug
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
           target: rpcdaemon_fuzzer_test
@@ -438,12 +439,12 @@ workflows:
       - linux-wasm-build
   
   fuzzer:
-    # trigger:
-    #   - schedule:
-    #       cron: "0 0 * * SAT"
-    #       filters:
-    #         branches:
-    #           only:
-    #             - master
+    triggers:
+      - schedule:
+          cron: "0 0 * * SAT"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - linux-clang-fuzzer

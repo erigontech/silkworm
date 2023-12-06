@@ -441,7 +441,7 @@ workflows:
   fuzzer:
     triggers:
       - schedule:
-          cron: "0 0 * * SAT"
+          cron: "0 0 * * 6"
           filters:
             branches:
               only:

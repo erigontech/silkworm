@@ -54,7 +54,6 @@ commands:
     steps:
       - run:
           name: "Install compiler"
-
           command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Cmake"
@@ -144,14 +143,6 @@ commands:
           working_directory: ~/build
           command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
 
-  setup_cimg:
-    steps:
-      - run:
-          name: "Install Python"
-          command: |
-            sudo apt-get update
-            sudo apt install -y python3-pip
-
   fuzz-test:
     steps:
       - run:
@@ -165,6 +156,7 @@ commands:
             for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
             for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
             ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=1000 ~/corpus ~/crashes ~/artifacts
+
 jobs:
   lint:
     machine:
@@ -329,7 +321,11 @@ jobs:
     steps:
       - checkout_with_submodules:
           ethereum_tests: false
-      - setup_cimg
+      - run:
+          name: "Ensure pip"
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3-pip
       - build_using_conan:
           build_type: Release
           compiler_id: clang
@@ -406,7 +402,8 @@ workflows:
 
   light:
     when:
-      equal: [ master_disable, <<pipeline.git.branch>> ]
+      not:
+        equal: [ master, <<pipeline.git.branch>> ]
     jobs:
       - lint
       - linux-release:
@@ -427,8 +424,8 @@ workflows:
   integration:
     when:
       or:
-        - equal: [ master_disable, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^ci_disable\\/.+$", value: <<pipeline.git.branch>> }
+        - equal: [ master, <<pipeline.git.branch>> ]
+        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-release:
           name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
@@ -441,12 +438,12 @@ workflows:
       - linux-wasm-build
   
   fuzzer:
-    # trigger:
-    #   - schedule:
-    #       cron: "0 0 * * SAT"
-    #       filters:
-    #         branches:
-    #           only:
-    #             - main
+    trigger:
+      - schedule:
+          cron: "0 0 * * SAT"
+          filters:
+            branches:
+              only:
+                - main
     jobs:
       - linux-clang-fuzzer

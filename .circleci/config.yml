@@ -324,8 +324,8 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
-    docker:
-      - image: cimg/python:3.12.0
+    machine:
+      image: ubuntu-2204:2023.04.2
     steps:
       - checkout_with_submodules:
           ethereum_tests: false

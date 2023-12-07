@@ -47,7 +47,7 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
 }
 
 void to_json(nlohmann::json& json, const DumpAccount& dump_account) {
-    json["balance"] = to_dec(dump_account.balance);
+    json["balance"] = to_string(dump_account.balance);
     json["nonce"] = dump_account.nonce;
     json["root"] = dump_account.root;
     json["codeHash"] = dump_account.code_hash;

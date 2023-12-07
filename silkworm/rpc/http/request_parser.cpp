@@ -28,6 +28,8 @@
 #include <cstring>
 #include <limits>
 
+#include <absl/strings/match.h>
+
 namespace silkworm::rpc::http {
 
 //! The default size of HTTP character buffer used by the parser
@@ -93,7 +95,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     for (size_t i{0}; i < num_headers; ++i) {
         const auto& header{headers[i]};
         if (header.name_len == 0) continue;
-        if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
+        if (absl::StartsWith(header.name, "Content-Length")) {
             char* strtoull_end{nullptr};
             const unsigned long long content_length{std::strtoull(header.value, &strtoull_end, /*base=*/10)};
             if (strtoull_end == header.value || content_length > std::numeric_limits<uint32_t>::max()) {
@@ -101,9 +103,9 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             }
             req.content_length = static_cast<uint32_t>(content_length);
             content_length_present = true;
-        } else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
+        } else if (absl::StartsWith(header.name, "Expect")) {
             expect_request = true;
-        } else if (std::memcmp(header.name, "Authorization", std::min(header.name_len, sizeof("Authorization"))) == 0) {
+        } else if (absl::StartsWith(header.name, "Authorization")) {
             req.headers.emplace_back();
             for (size_t index = 0; index < static_cast<size_t>(header.name_len); index++) {
                 req.headers.back().name.push_back(header.name[index]);

@@ -22,8 +22,8 @@
 namespace silkworm::rpc {
 
 struct NodeInfoPorts {
-    uint64_t discovery;
-    uint64_t listener;
+    uint64_t discovery{0};
+    uint64_t listener{0};
 };
 
 struct NodeInfo {

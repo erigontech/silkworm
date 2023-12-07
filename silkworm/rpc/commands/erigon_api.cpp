@@ -139,7 +139,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const BlockNum current_block_number = current_header->number;
 
         // Find the lowest block header w/ timestamp greater or equal to provided timestamp
-        BlockNum block_number;
+        BlockNum block_number{0};
         if (current_header->timestamp <= timestamp) {
             block_number = current_block_number;
         } else if (first_header->timestamp >= timestamp) {

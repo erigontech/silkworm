@@ -31,7 +31,7 @@
 
 namespace silkworm {
 
-TEST_CASE("Value transfer") {
+TEST_CASE("Value transfer", "[core][execution]") {
     Block block{};
     block.header.number = 10336006;
 
@@ -67,7 +67,7 @@ TEST_CASE("Value transfer") {
     CHECK(state.touched().count(to) == 1);
 }
 
-TEST_CASE("Destruct and create") {
+TEST_CASE("Destruct and create", "[core][execution]") {
     evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
 
     InMemoryState db;
@@ -109,7 +109,7 @@ TEST_CASE("Destruct and create") {
     }
 }
 
-TEST_CASE("Smart contract with storage") {
+TEST_CASE("Smart contract with storage", "[core][execution]") {
     Block block{};
     block.header.number = 1;
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
@@ -169,7 +169,7 @@ TEST_CASE("Smart contract with storage") {
     CHECK(state.get_current_storage(contract_address, key0) == new_val);
 }
 
-TEST_CASE("Maximum call depth") {
+TEST_CASE("Maximum call depth", "[core][execution]") {
     Block block{};
     block.header.number = 1'431'916;
     evmc::address caller{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
@@ -238,7 +238,7 @@ TEST_CASE("Maximum call depth") {
     CHECK(res.data.empty());
 }
 
-TEST_CASE("DELEGATECALL") {
+TEST_CASE("DELEGATECALL", "[core][execution]") {
     Block block{};
     block.header.number = 1'639'560;
     evmc::address caller_address{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
@@ -296,7 +296,7 @@ TEST_CASE("DELEGATECALL") {
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
-TEST_CASE("CREATE should only return on failure") {
+TEST_CASE("CREATE should only return on failure", "[core][execution]") {
     Block block{};
     block.header.number = 4'575'910;
     evmc::address caller{0xf466859ead1932d743d622cb74fc058882e8648a_address};
@@ -357,7 +357,7 @@ TEST_CASE("CREATE should only return on failure") {
 }
 
 // https://github.com/ethereum/EIPs/issues/684
-TEST_CASE("Contract overwrite") {
+TEST_CASE("Contract overwrite", "[core][execution]") {
     Block block{};
     block.header.number = 7'753'545;
 
@@ -386,7 +386,7 @@ TEST_CASE("Contract overwrite") {
     CHECK(res.data.empty());
 }
 
-TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
+TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte", "[core][execution]") {
     const ChainConfig& config{kMainnetConfig};
 
     Block block;
@@ -486,7 +486,7 @@ class TestTracer : public EvmTracer {
     CallResult result_;
 };
 
-TEST_CASE("Tracing smart contract with storage") {
+TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
     Block block{};
     block.header.number = 10'336'006;
     const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
@@ -635,7 +635,7 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(call_traces3.recipients.contains(contract_address1));
 }
 
-TEST_CASE("Tracing creation smart contract with CREATE2") {
+TEST_CASE("Tracing creation smart contract with CREATE2", "[core][execution]") {
     Block block{};
     block.header.number = 10'336'006;
     const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
@@ -691,7 +691,7 @@ TEST_CASE("Tracing creation smart contract with CREATE2") {
     CHECK(call_traces.recipients.contains(0xe3e8f1881ba12f7d2494c010422982a8bf6045f7_address));
 }
 
-TEST_CASE("Tracing smart contract w/o code") {
+TEST_CASE("Tracing smart contract w/o code", "[core][execution]") {
     Block block{};
     block.header.number = 10'336'006;
 
@@ -752,7 +752,7 @@ TEST_CASE("Tracing smart contract w/o code") {
     CHECK(tracer2.result().data.empty());
 }
 
-TEST_CASE("Tracing precompiled contract failure") {
+TEST_CASE("Tracing precompiled contract failure", "[core][execution]") {
     Block block{};
     block.header.number = 10'336'006;
 
@@ -779,7 +779,7 @@ TEST_CASE("Tracing precompiled contract failure") {
     CHECK(res.status == EVMC_PRECOMPILE_FAILURE);
 }
 
-TEST_CASE("Smart contract creation w/ insufficient balance") {
+TEST_CASE("Smart contract creation w/ insufficient balance", "[core][execution]") {
     Block block{};
     block.header.number = 1;
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
@@ -800,7 +800,7 @@ TEST_CASE("Smart contract creation w/ insufficient balance") {
     CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
 }
 
-TEST_CASE("Tracing destruction of smart contract") {
+TEST_CASE("Tracing destruction of smart contract", "[core][execution]") {
     // Deployed code compiled using solc 0.8.19+commit.4fc1097e
     const Bytes deployed_code{*from_hex(
         "6080604052348015600f57600080fd5b506004361060285760003560e01c8063"
@@ -857,7 +857,8 @@ TEST_CASE("Tracing destruction of smart contract") {
     CHECK(call_traces.recipients.contains(evmc::address{}));   // self-destruct
 }
 
-TEST_CASE("State changes for creation+destruction of smart contract") {
+// First occurrence at mainnet block 116'525
+TEST_CASE("State changes for creation+destruction of smart contract", "[core][execution]") {
     // Bytecode compiled using solc 0.8.19+commit.4fc1097e
     const Bytes code{*from_hex(
         "6080604052348015600f57600080fd5b5060858061001e6000396000f3fe"
@@ -905,7 +906,6 @@ TEST_CASE("State changes for creation+destruction of smart contract") {
     CHECK(test_tracer.creation_completed_called());
 
     state.finalize_transaction(EVMC_CONSTANTINOPLE);
-
     state.clear_journal_and_substate();
 
     // 2nd tx destroys the contract triggering self-destruct, thus changing such account back to empty state
@@ -919,7 +919,6 @@ TEST_CASE("State changes for creation+destruction of smart contract") {
     CHECK(test_tracer.self_destruct_called());
 
     state.finalize_transaction(EVMC_CONSTANTINOPLE);
-
     state.write_to_db(block.header.number);
 
     CHECK(!db.accounts().contains(contract_address));
@@ -933,6 +932,96 @@ TEST_CASE("State changes for creation+destruction of smart contract") {
         CHECK(!account_changes.contains(contract_address));  // contract address hasn't changed after all
     }
     CHECK(state.number_of_self_destructs() == 1);
+}
+
+// First occurrence at mainnet block 1'639'553
+TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]") {
+    constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
+    evmc::address external_account{0xf466859ead1932d743d622cb74fc058882e8648a_address};
+    const auto caller_address{create_address(external_account, 0)};
+    const auto callee_address{create_address(external_account, 1)};
+
+    // The callee writes the ADDRESS to storage.
+    const Bytes callee_code{*from_hex("30600055")};
+    /* https://github.com/CoinCulture/evm-tools
+    0      ADDRESS
+    1      PUSH1  => 00
+    3      SSTORE
+    */
+
+    // The caller delegate-calls the input contract.
+    const Bytes caller_code{*from_hex("6000808080803561eeeef4")};
+    /* https://github.com/CoinCulture/evm-tools
+    0      PUSH1  => 00
+    2      DUP1
+    3      DUP1
+    4      DUP1
+    5      DUP1
+    6      CALLDATALOAD
+    7      PUSH2  => eeee
+    10     DELEGATECALL
+    */
+
+    Block block{};
+    block.header.number = 1'639'553;
+    InMemoryState db;
+    IntraBlockState state{db};
+
+    EVM evm{block, state, kMainnetConfig};
+
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+
+    // 1st tx creates the code at caller_address
+    Transaction txn1{};
+    txn1.from = external_account;
+    txn1.data = caller_code;
+
+    uint64_t gas = {1'000'000};
+    CallResult res1{evm.execute(txn1, gas)};
+
+    CHECK(res1.status == EVMC_SUCCESS);
+
+    state.set_code(caller_address, caller_code);
+    state.finalize_transaction(EVMC_CONSTANTINOPLE);
+    state.clear_journal_and_substate();
+
+    // 2nd tx creates the code at callee_address
+    Transaction txn2{};
+    txn2.from = external_account;
+    txn2.data = callee_code;
+
+    CallResult res2 = evm.execute(txn2, gas);
+
+    CHECK(res2.status == EVMC_SUCCESS);
+
+    state.set_code(callee_address, callee_code);
+    state.finalize_transaction(EVMC_CONSTANTINOPLE);
+    state.clear_journal_and_substate();
+
+    // 3rd tx calls the code at caller_address which in turn delegate-calls the code at callee address
+    Transaction txn3{};
+    txn3.from = external_account;
+    txn3.to = caller_address;
+    txn3.data = ByteView{to_bytes32(callee_address.bytes)};
+
+    CallResult res3{evm.execute(txn3, gas)};
+    CHECK(res3.status == EVMC_SUCCESS);
+    CHECK(res3.data.empty());
+
+    state.finalize_transaction(EVMC_CONSTANTINOPLE);
+    state.write_to_db(block.header.number);
+
+    evmc::bytes32 key0{};
+    CHECK(to_hex(zeroless_view(db.storage().at(caller_address).at(1).at(key0).bytes), true) == address_to_hex(caller_address));
+    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.senders.contains(external_account));  // all txs originates from external_account
+    CHECK(call_traces.senders.contains(caller_address));    // 3rd tx triggers one delegate call from caller_address
+    CHECK(call_traces.recipients.size() == 3);
+    CHECK(call_traces.recipients.contains(zero_address));    // 1st+2nd txs go to zero_address (contract creation)
+    CHECK(call_traces.recipients.contains(caller_address));  // 3rd tx goes to caller_address
+    CHECK(call_traces.recipients.contains(callee_address));  // 3rd tx triggers one delegate call to callee_address
 }
 
 }  // namespace silkworm

@@ -89,7 +89,7 @@ void BlockNumberOrHash::build(const std::string& bnoh) {
         value_ = core::kEarliestBlockNumber;
     } else if (bnoh == core::kLatestBlockId || bnoh == core::kPendingBlockId) {
         value_ = bnoh;
-    } else if (absl::StartsWith(bnoh, "0x") || absl::StartsWith(bnoh, "0X")) {
+    } else if (absl::StartsWithIgnoreCase(bnoh, "0x")) {
         if (bnoh.length() == 66) {
             const auto b32_bytes = silkworm::from_hex(bnoh);
             const auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));

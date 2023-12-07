@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <absl/strings/match.h>
+
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
@@ -87,7 +89,7 @@ void BlockNumberOrHash::build(const std::string& bnoh) {
         value_ = core::kEarliestBlockNumber;
     } else if (bnoh == core::kLatestBlockId || bnoh == core::kPendingBlockId) {
         value_ = bnoh;
-    } else if (bnoh.find("0x") == 0 || bnoh.find("0X") == 0) {
+    } else if (absl::StartsWith(bnoh, "0x") || absl::StartsWith(bnoh, "0X")) {
         if (bnoh.length() == 66) {
             const auto b32_bytes = silkworm::from_hex(bnoh);
             const auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));

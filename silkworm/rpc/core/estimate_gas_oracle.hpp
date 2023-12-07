@@ -51,7 +51,7 @@ struct EstimateGasException : public std::exception {
     EstimateGasException(int64_t error_code, std::string message, silkworm::Bytes data)
         : error_code_{error_code}, message_{std::move(message)}, data_{std::move(data)} {}
 
-    virtual ~EstimateGasException() noexcept {}
+    ~EstimateGasException() noexcept override = default;
 
     int64_t error_code() const {
         return error_code_;
@@ -65,7 +65,7 @@ struct EstimateGasException : public std::exception {
         return data_;
     }
 
-    virtual const char* what() const noexcept {
+    const char* what() const noexcept override {
         return message_.c_str();
     }
 

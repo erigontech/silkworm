@@ -81,6 +81,7 @@ std::string base64_encode(ByteView bytes_to_encode, bool url) {
 
 static const uint64_t kMask = 0x8000000000000000;
 
+// TODO(yperbasis): switch with intx's own stuff
 std::string to_dec(intx::uint256 number) {
     uint64_t n[intx::uint256::num_words];
     for (std::size_t idx{0}; idx < intx::uint256::num_words; idx++) {
@@ -104,9 +105,7 @@ std::string to_dec(intx::uint256 number) {
     }
 
     for (int i{0}; i < count; i++) {
-        int carry;
-
-        carry = (n[3] >= kMask);
+        int carry = (n[3] >= kMask);
         // Shift n[] left, doubling it
         n[3] = (n[3] << 1) + (n[2] >= kMask);
         n[2] = (n[2] << 1) + (n[1] >= kMask);

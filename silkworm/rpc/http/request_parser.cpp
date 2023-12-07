@@ -27,6 +27,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <absl/strings/numbers.h>
+
 namespace silkworm::rpc::http {
 
 //! The default size of HTTP character buffer used by the parser
@@ -65,11 +67,11 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         current_len = buffer_.size();
     }
 
-    const char* method_name;  // uninitialised here because phr_parse_request initialises it
-    size_t method_len;        // uninitialised here because phr_parse_request initialises it
-    const char* path;         // uninitialised here because phr_parse_request initialises it
-    size_t path_len;          // uninitialised here because phr_parse_request initialises it
-    int minor_version;        // uninitialised here because phr_parse_request initialises it
+    const char* method_name{nullptr};
+    size_t method_len{0};
+    const char* path{nullptr};
+    size_t path_len{0};
+    int minor_version{0};
     struct phr_header headers[kMaxHttpHeaders];
     size_t num_headers = sizeof(headers) / sizeof(headers[0]);
 
@@ -93,7 +95,9 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         const auto& header{headers[i]};
         if (header.name_len == 0) continue;
         if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
-            req.content_length = static_cast<uint32_t>(atoi(header.value));
+            if (!absl::SimpleAtoi(header.value, &req.content_length)) {
+                return ResultType::bad;
+            }
             content_length_present = true;
         } else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
             expect_request = true;

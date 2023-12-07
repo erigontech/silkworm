@@ -42,7 +42,7 @@ Task<std::optional<silkworm::Account>> AsyncRemoteState::read_account(const evmc
 Task<silkworm::ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
     const auto optional_code{co_await state_reader_.read_code(code_hash)};
     if (optional_code) {
-        code_[code_hash] = std::move(*optional_code);
+        code_[code_hash] = *optional_code;
         co_return code_[code_hash];  // NOLINT(runtime/arrays)
     }
     co_return silkworm::ByteView{};

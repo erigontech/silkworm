@@ -706,7 +706,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
                     blocks.push_back(item.blocks.at(i));
                 }
 
-                if (item.transactions.size() > 0) {
+                if (!item.transactions.empty()) {
                     receipts.push_back(item.receipts.at(0));
                     transactions.push_back(item.transactions.at(0));
                     blocks.push_back(item.blocks.at(0));

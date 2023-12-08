@@ -33,5 +33,5 @@ else()
       CACHE PATH ""
   )
   get_target_property(GMP_LIBRARY_DIR gmp::GMP INTERFACE_LINK_DIRECTORIES)
-  find_library(GMP_LIBRARY gmp "${GMP_LIBRARY_DIR}")
+  find_library(GMP_LIBRARY gmp PATHS "${GMP_LIBRARY_DIR}" REQUIRED NO_DEFAULT_PATH)
 endif()

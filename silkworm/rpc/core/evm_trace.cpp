@@ -47,8 +47,6 @@
 
 namespace silkworm::rpc::trace {
 
-using evmc::literals::operator""_address;
-
 void from_json(const nlohmann::json& json, TraceConfig& tc) {
     std::vector<std::string> config;
     json.get_to(config);

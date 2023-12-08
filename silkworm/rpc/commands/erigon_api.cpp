@@ -63,7 +63,7 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
 // https://eth.wiki/json-rpc/API#erigon_getbalancechangesinblock
 Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() < 1) {
+    if (params.empty()) {
         auto error_msg = "invalid erigon_getBalanceChangesInBlock params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);

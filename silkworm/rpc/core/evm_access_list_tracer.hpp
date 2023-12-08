@@ -42,7 +42,7 @@ class AccessListTracer : public silkworm::EvmTracer {
                               const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
     void reset_access_list() { access_list_.clear(); }
-    static void dump(const std::string& str, const AccessList& acl);
+    static void dump(const std::string& user_string, const AccessList& acl);
     static bool compare(const AccessList& acl1, const AccessList& acl2);
 
   private:

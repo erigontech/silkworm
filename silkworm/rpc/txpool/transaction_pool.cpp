@@ -138,10 +138,10 @@ Task<TransactionsInPool> TransactionPool::get_transactions() {
     TransactionsInPool transactions_in_pool;
     const auto txs_size = reply.txs_size();
     for (int i = 0; i < txs_size; i++) {
-        const auto tx = reply.txs(i);
+        const auto& tx = reply.txs(i);
         TransactionInfo element{};
         element.sender = address_from_H160(tx.sender());
-        const auto rlp = tx.rlp_tx();
+        const auto& rlp = tx.rlp_tx();
         element.rlp = silkworm::Bytes{rlp.begin(), rlp.end()};
         if (tx.txn_type() == ::txpool::AllReply_TxnType_PENDING) {
             element.transaction_type = PENDING;

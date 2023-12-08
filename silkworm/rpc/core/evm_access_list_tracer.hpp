@@ -46,7 +46,7 @@ class AccessListTracer : public silkworm::EvmTracer {
     static bool compare(const AccessList& acl1, const AccessList& acl2);
 
   private:
-    static inline bool exclude(const evmc::address& address);
+    inline bool exclude(const evmc::address& address);
     static inline bool is_storage_opcode(const std::string& opcode_name);
     static inline bool is_contract_opcode(const std::string& opcode_name);
     static inline bool is_call_opcode(const std::string& opcode_name);

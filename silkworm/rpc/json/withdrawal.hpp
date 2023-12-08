@@ -25,10 +25,10 @@
 namespace silkworm::rpc {
 
 struct GlazeJsonWithdrawals {
-    char index[kInt64HexSize];
-    char validator_index[kInt64HexSize];
-    char address[kAddressHexSize];
-    char amount[kInt64HexSize];
+    char index[kInt64HexSize]{};
+    char validator_index[kInt64HexSize]{};
+    char address[kAddressHexSize]{};
+    char amount[kInt64HexSize]{};
 
     struct glaze {
         using T = GlazeJsonWithdrawals;
@@ -47,6 +47,6 @@ std::optional<std::vector<GlazeJsonWithdrawals>> make_glaze_json_withdrawals(con
 namespace silkworm {
 
 void to_json(nlohmann::json& json, const Withdrawal& withdrawal);
-void from_json(const nlohmann::json& json, Withdrawal& receipt);
+void from_json(const nlohmann::json& json, Withdrawal& withdrawal);
 
 }  // namespace silkworm

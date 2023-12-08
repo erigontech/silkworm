@@ -18,6 +18,7 @@
 
 #include <numeric>
 #include <string>
+#include <utility>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
@@ -967,7 +968,7 @@ ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address
     cursor_ = cursor;
     address_ = address;
     navigate_forward_ = navigate_forward;
-    first_seek_key_value_ = first_seek_key_value;
+    first_seek_key_value_ = std::move(first_seek_key_value);
 }
 
 Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {

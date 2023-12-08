@@ -57,8 +57,8 @@ void make_glaze_json_error(const nlohmann::json& request_json, const int code, c
 }
 
 struct GlazeJsonRevert {
-    int code;
-    char message[errorMessageSize];
+    int code{-1};
+    char message[errorMessageSize]{};
     std::string data;
     struct glaze {
         using T = GlazeJsonRevert;

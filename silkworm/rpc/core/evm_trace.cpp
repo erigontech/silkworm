@@ -88,9 +88,9 @@ std::ostream& operator<<(std::ostream& out, const TraceFilter& tf) {
     return out;
 }
 
-void from_json(const nlohmann::json& json, TraceCall& cm) {
-    cm.call = json.at(0);
-    cm.trace_config = json.at(1);
+void from_json(const nlohmann::json& json, TraceCall& tc) {
+    tc.call = json.at(0);
+    tc.trace_config = json.at(1);
 }
 
 void from_json(const nlohmann::json& json, TraceFilter& tf) {
@@ -318,7 +318,7 @@ void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
 }
 
 int get_stack_count(std::uint8_t op_code) {
-    int count;
+    int count{0};
     switch (op_code) {
         case evmc_opcode::OP_PUSH1:
         case evmc_opcode::OP_PUSH2:

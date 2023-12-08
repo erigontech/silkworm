@@ -60,9 +60,9 @@ class RemoteBackEnd final : public BackEnd {
     Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) override;
 
   private:
-    static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);
+    static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& grpc_payload);
     static ::types::ExecutionPayload encode_execution_payload(const ExecutionPayload& execution_payload);
-    static gsl::owner<::remote::EngineForkChoiceState*> encode_forkchoice_state(const ForkChoiceState& forkchoice_state);
+    static gsl::owner<::remote::EngineForkChoiceState*> encode_forkchoice_state(const ForkChoiceState&);
     static gsl::owner<::remote::EnginePayloadAttributes*> encode_payload_attributes(const PayloadAttributes& payload_attributes);
     static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request);
     static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);

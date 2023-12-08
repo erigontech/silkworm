@@ -107,7 +107,7 @@ struct BlockDetailsResponse {
 };
 
 struct BlockTransactionsResponse {
-    uint64_t block_size;
+    uint64_t block_size{0};
     evmc::bytes32 hash;
     silkworm::BlockHeader header;
     intx::uint256 total_difficulty{0};
@@ -118,8 +118,8 @@ struct BlockTransactionsResponse {
 };
 
 struct TransactionsWithReceipts {
-    bool first_page;
-    bool last_page;
+    bool first_page{false};
+    bool last_page{false};
     std::vector<silkworm::rpc::Receipt> receipts;
     std::vector<silkworm::Transaction> transactions;
     std::vector<BlockDetails> blocks;

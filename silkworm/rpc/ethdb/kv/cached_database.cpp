@@ -17,14 +17,15 @@
 #include "cached_database.hpp"
 
 #include <memory>
+#include <utility>
 
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
-CachedDatabase::CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache)
-    : block_id_(block_id), txn_(txn), state_cache_{state_cache}, txn_database_{txn_} {}
+CachedDatabase::CachedDatabase(BlockNumberOrHash block_id, Transaction& txn, kv::StateCache& state_cache)
+    : block_id_(std::move(block_id)), txn_(txn), state_cache_{state_cache}, txn_database_{txn_} {}
 
 Task<KeyValue> CachedDatabase::get(const std::string& table, silkworm::ByteView key) const {
     co_return co_await txn_database_.get(table, key);

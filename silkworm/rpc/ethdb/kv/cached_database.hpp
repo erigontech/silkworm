@@ -30,7 +30,7 @@ namespace silkworm::rpc::ethdb::kv {
 
 class CachedDatabase : public core::rawdb::DatabaseReader {
   public:
-    explicit CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache);
+    explicit CachedDatabase(BlockNumberOrHash block_id, Transaction& txn, kv::StateCache& state_cache);
 
     CachedDatabase(const CachedDatabase&) = delete;
     CachedDatabase& operator=(const CachedDatabase&) = delete;

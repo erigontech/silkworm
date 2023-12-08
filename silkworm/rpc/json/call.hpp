@@ -22,12 +22,12 @@
 
 namespace silkworm::rpc {
 
-void from_json(const nlohmann::json& json, Call& call);
-void from_json(const nlohmann::json& json, Bundle& bundle);
-void from_json(const nlohmann::json& json, SimulationContext& state_context);
-void from_json(const nlohmann::json& json, AccountOverrides& state_overrides);
-void from_json(const nlohmann::json& json, BlockOverrides& block_overrides);
-void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides);
+void from_json(const nlohmann::json&, Call&);
+void from_json(const nlohmann::json&, Bundle&);
+void from_json(const nlohmann::json&, SimulationContext&);
+void from_json(const nlohmann::json&, AccountOverrides&);
+void from_json(const nlohmann::json&, BlockOverrides&);
+void from_json(const nlohmann::json&, AccountsOverrides&);
 
 void make_glaze_json_content(const nlohmann::json& request_json, const silkworm::Bytes& call_result, std::string& json_reply);
 

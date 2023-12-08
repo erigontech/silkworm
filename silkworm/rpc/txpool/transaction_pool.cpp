@@ -57,7 +57,7 @@ Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView&
         if (import_result != ::txpool::ImportResult::SUCCESS) {
             result.success = false;
             if (errors_size >= 1) {
-                const auto import_error = reply.errors(0);
+                const auto& import_error = reply.errors(0);
                 result.error_descr = import_error;
                 SILK_WARN << "TransactionPool::add_transaction import_result=" << import_result << " error=" << import_error;
             } else {
@@ -94,7 +94,7 @@ Task<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc
     const auto rlp_txs_size = reply.rlp_txs_size();
     SILK_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size;
     if (rlp_txs_size == 1) {
-        const auto rlp_tx = reply.rlp_txs(0);
+        const auto& rlp_tx = reply.rlp_txs(0);
         SILK_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time);
         co_return silkworm::Bytes{rlp_tx.begin(), rlp_tx.end()};
     } else {

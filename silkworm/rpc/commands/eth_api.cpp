@@ -388,7 +388,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
                 make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }
         } else {
-            reply = make_json_content(request, {});
+            make_glaze_json_null_content(request, reply);
         }
     } catch (const std::invalid_argument& iv) {
         make_glaze_json_null_content(request, reply);

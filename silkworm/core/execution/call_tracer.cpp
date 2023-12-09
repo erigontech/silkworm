@@ -17,7 +17,11 @@
 #include "call_tracer.hpp"
 
 #include <evmc/hex.hpp>
+#include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
+#include <evmone/instructions.hpp>
+
+#include <silkworm/core/types/address.hpp>
 
 namespace silkworm {
 
@@ -31,6 +35,30 @@ void CallTracer::on_execution_start(evmc_revision /*rev*/, const evmc_message& m
     } else {
         traces_.senders.insert(msg.sender);
         traces_.recipients.insert(msg.recipient);
+    }
+}
+
+void CallTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t /*gas*/,
+                                      const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept {
+    const auto op_code = state.original_code[pc];
+    if (op_code == evmc_opcode::OP_CREATE) {
+        const uint64_t nonce{intra_block_state.get_nonce(state.msg->recipient)};
+        const auto& contract_address{create_address(state.msg->recipient, nonce)};
+
+        traces_.senders.insert(state.msg->recipient);
+        traces_.recipients.insert(contract_address);
+    } else if (op_code == evmc_opcode::OP_CREATE2) {
+        SILKWORM_ASSERT(stack_height >= 4);
+        const auto init_code_offset = static_cast<size_t>(stack_top[-1]);
+        const auto init_code_size = static_cast<size_t>(stack_top[-2]);
+        const evmc::bytes32 salt2{intx::be::store<evmc::bytes32>(stack_top[-3])};
+        SILKWORM_ASSERT(init_code_offset < state.memory.size());
+        auto init_code_hash{
+            init_code_size > 0 ? ethash::keccak256(&state.memory.data()[init_code_offset], init_code_size) : ethash_hash256{}};
+        const auto& contract_address{create2_address(state.msg->recipient, salt2, init_code_hash.bytes)};
+
+        traces_.senders.insert(state.msg->recipient);
+        traces_.recipients.insert(contract_address);
     }
 }
 

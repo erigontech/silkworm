@@ -33,7 +33,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto block_number = block.header.number;
 
-    uint64_t hi;
+    uint64_t hi = 0;
     uint64_t lo = kTxGas - 1;
 
     if (call.gas.value_or(0) >= kTxGas) {

@@ -112,7 +112,7 @@ class CoherentStateCache : public StateCache {
 
     std::unique_ptr<StateView> get_view(Transaction& txn) override;
 
-    void on_new_block(const remote::StateChangeBatch& batch) override;
+    void on_new_block(const remote::StateChangeBatch& state_changes) override;
 
     std::size_t latest_data_size() override;
     std::size_t latest_code_size() override;

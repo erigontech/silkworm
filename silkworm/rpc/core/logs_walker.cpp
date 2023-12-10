@@ -215,7 +215,7 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
         }
         SILK_DEBUG << "matches: " << std::boolalpha << matches;
         if (matches) {
-            filtered_logs.push_back(std::move(log));
+            filtered_logs.push_back(log);
         }
     }
 }

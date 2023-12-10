@@ -31,8 +31,6 @@
 
 namespace silkworm::rpc {
 
-using evmc::literals::operator""_address;
-
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     if (bytes.size() * 2 + 2 + 1 > hex_bytes.size()) {

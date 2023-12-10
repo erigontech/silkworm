@@ -38,8 +38,8 @@ Task<void> LocalTransaction::close() {
     co_return;
 }
 
-Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
-    if (is_cursor_sorted) {
+Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::string& table, bool is_cursor_dup_sort) {
+    if (is_cursor_dup_sort) {
         auto cursor_it = dup_cursors_.find(table);
         if (cursor_it != dup_cursors_.end()) {
             co_return cursor_it->second;
@@ -51,8 +51,8 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
         }
     }
     auto cursor = std::make_shared<LocalCursor>(txn_, ++last_cursor_id_, table);
-    co_await cursor->open_cursor(table, is_cursor_sorted);
-    if (is_cursor_sorted) {
+    co_await cursor->open_cursor(table, is_cursor_dup_sort);
+    if (is_cursor_dup_sort) {
         dup_cursors_[table] = cursor;
     } else {
         cursors_[table] = cursor;

@@ -102,12 +102,6 @@ TEST_CASE("base64 encode", "[rpc][common][util]") {
     CHECK(encoded == "ZGVhZGJlYWYA");
 }
 
-TEST_CASE("to_dec", "[rpc][common][util]") {
-    intx::uint256 number{0x189128};
-    auto encoded = to_dec(number);
-    CHECK(encoded == "1610024");
-}
-
 TEST_CASE("check_tx_fee_less_cap(cap=0) returns true", "[rpc][common][util]") {
     intx::uint256 max_fee_per_gas{silkworm::kEther * 1};
     uint64_t gas_limit{20};

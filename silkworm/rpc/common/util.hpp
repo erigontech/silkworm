@@ -51,8 +51,6 @@ inline bool operator==(const KeyValue& lhs, const KeyValue& rhs) {
 
 std::string base64_encode(ByteView bytes_to_encode, bool url);
 
-std::string to_dec(intx::uint256 number);
-
 bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint64_t gas_limit);
 
 bool is_replay_protected(const Transaction& txn);

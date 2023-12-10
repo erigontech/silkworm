@@ -82,9 +82,9 @@ class ChunkLocator {
 };
 
 struct BlockProviderResponse {
-    BlockNum block_number;
-    bool has_more;
-    bool error;
+    BlockNum block_number{0};
+    bool has_more{false};
+    bool error{false};
 };
 
 class BlockProvider {

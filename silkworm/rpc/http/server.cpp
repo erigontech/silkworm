@@ -57,7 +57,7 @@ Server::Server(const std::string& end_point,
       handler_table_{api_spec},
       io_context_(io_context),
       acceptor_{io_context},
-      allowed_origins_{allowed_origins},
+      allowed_origins_{std::move(allowed_origins)},
       jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 

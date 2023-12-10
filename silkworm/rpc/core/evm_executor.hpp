@@ -84,7 +84,7 @@ class EVMExecutor {
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
         StateFactory state_factory,
-        Tracers tracers = {},
+        const Tracers& tracers = {},
         bool refund = true,
         bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
@@ -105,7 +105,13 @@ class EVMExecutor {
     EVMExecutor(const EVMExecutor&) = delete;
     EVMExecutor& operator=(const EVMExecutor&) = delete;
 
-    ExecutionResult call(const silkworm::Block& block, const silkworm::Transaction& txn, Tracers tracers = {}, bool refund = true, bool gas_bailout = false);
+    ExecutionResult call(
+        const silkworm::Block& block,
+        const silkworm::Transaction& txn,
+        const Tracers& tracers = {},
+        bool refund = true,
+        bool gas_bailout = false);
+
     void reset();
 
     const IntraBlockState& get_ibs_state() { return ibs_state_; }

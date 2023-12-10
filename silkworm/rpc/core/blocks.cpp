@@ -45,7 +45,7 @@ Task<bool> is_latest_block_number(BlockNum block_number, const rawdb::DatabaseRe
 }
 
 Task<BlockNum> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader) {
-    BlockNum block_number;
+    BlockNum block_number{0};
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
     } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
@@ -62,7 +62,7 @@ Task<BlockNum> get_block_number_by_tag(const std::string& block_id, const rawdb:
 }
 
 Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_required) {
-    BlockNum block_number;
+    BlockNum block_number{0};
     bool is_latest_block = false;
     bool check_if_latest = false;
     if (block_id == kEarliestBlockId) {

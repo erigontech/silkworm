@@ -79,59 +79,6 @@ std::string base64_encode(ByteView bytes_to_encode, bool url) {
     return ret;
 }
 
-static const uint64_t kMask = 0x8000000000000000;
-
-std::string to_dec(intx::uint256 number) {
-    uint64_t n[intx::uint256::num_words];
-    for (std::size_t idx{0}; idx < intx::uint256::num_words; idx++) {
-        n[idx] = number[idx];
-    }
-    char s[256 / 3 + 1 + 1];
-    char* p = s;
-
-    std::memset(s, '0', sizeof(s) - 1);
-    s[sizeof(s) - 1] = '\0';
-
-    auto count = 256;
-    auto base = 0;
-    while (n[3] == 0 && base < 4) {
-        n[3] = n[2];
-        n[2] = n[1];
-        n[1] = n[0];
-
-        n[base++] = 0;
-        count -= 64;
-    }
-
-    for (int i{0}; i < count; i++) {
-        int carry;
-
-        carry = (n[3] >= kMask);
-        // Shift n[] left, doubling it
-        n[3] = (n[3] << 1) + (n[2] >= kMask);
-        n[2] = (n[2] << 1) + (n[1] >= kMask);
-        n[1] = (n[1] << 1) + (n[0] >= kMask);
-        n[0] = (n[0] << 1);
-
-        // Add s[] to itself in decimal, doubling it
-        for (int j = sizeof(s) - 2; j >= 0; j--) {
-            s[j] += s[j] - '0' + carry;
-
-            carry = (s[j] > '9');
-
-            if (carry) {
-                s[j] -= 10;
-            }
-        }
-    }
-
-    while ((p[0] == '0') && (p < &s[sizeof(s) - 2])) {
-        p++;
-    }
-
-    return std::string{p};
-}
-
 // check whether the fee of the given transaction is reasonable (under the cap)
 bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint64_t gas_limit) {
     // Short circuit if there is no cap for transaction fee at all

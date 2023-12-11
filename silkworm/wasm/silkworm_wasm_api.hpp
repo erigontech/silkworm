@@ -89,8 +89,6 @@ SILKWORM_EXPORT uint64_t header_number(const silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT uint8_t* header_state_root(silkworm::BlockHeader* header);
 
-SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b);
-
 SILKWORM_EXPORT silkworm::InMemoryState* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::InMemoryState* x);
 

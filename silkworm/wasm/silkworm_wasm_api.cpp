@@ -132,8 +132,6 @@ uint64_t header_number(const BlockHeader* header) { return header->number; }
 
 uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
 
-void block_recover_senders(Block* b) { b->recover_senders(); }
-
 InMemoryState* new_state() { return new InMemoryState; }
 
 void delete_state(InMemoryState* x) { delete x; }

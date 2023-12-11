@@ -118,7 +118,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block, BlockNum b
 }
 
 Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history) {
-    const auto block_with_hash = co_await block_provider_(last_block);
+    const auto block_with_hash = co_await block_provider_(newest_block);
     if (!block_with_hash) {
         co_return BlockRange{0};
     }

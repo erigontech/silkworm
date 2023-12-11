@@ -19,7 +19,6 @@
 #include <algorithm>
 
 #include <silkworm/core/protocol/validation.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/json/types.hpp>
 

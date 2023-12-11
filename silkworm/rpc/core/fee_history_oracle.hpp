@@ -49,14 +49,14 @@ void to_json(nlohmann::json& json, const FeeHistory& fh);
 
 struct BlockRange {
     uint64_t num_blocks{0};
-    BlockNum last_block{0};
-    BlockWithHash block;
+    BlockNum last_block_number{0};
+    std::shared_ptr<BlockWithHash> last_block;
     rpc::Receipts receipts;
 };
 
 struct BlockFees {
     BlockNum block_number{0};
-    BlockWithHash block;
+    std::shared_ptr<BlockWithHash> block;
     rpc::Receipts receipts;
     Rewards rewards;
     intx::uint256 base_fee;

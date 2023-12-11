@@ -57,7 +57,7 @@ Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView&
         if (import_result != ::txpool::ImportResult::SUCCESS) {
             result.success = false;
             if (errors_size >= 1) {
-                const auto import_error = reply.errors(0);
+                const auto& import_error = reply.errors(0);
                 result.error_descr = import_error;
                 SILK_WARN << "TransactionPool::add_transaction import_result=" << import_result << " error=" << import_error;
             } else {
@@ -94,7 +94,7 @@ Task<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc
     const auto rlp_txs_size = reply.rlp_txs_size();
     SILK_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size;
     if (rlp_txs_size == 1) {
-        const auto rlp_tx = reply.rlp_txs(0);
+        const auto& rlp_tx = reply.rlp_txs(0);
         SILK_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time);
         co_return silkworm::Bytes{rlp_tx.begin(), rlp_tx.end()};
     } else {
@@ -138,10 +138,10 @@ Task<TransactionsInPool> TransactionPool::get_transactions() {
     TransactionsInPool transactions_in_pool;
     const auto txs_size = reply.txs_size();
     for (int i = 0; i < txs_size; i++) {
-        const auto tx = reply.txs(i);
+        const auto& tx = reply.txs(i);
         TransactionInfo element{};
         element.sender = address_from_H160(tx.sender());
-        const auto rlp = tx.rlp_tx();
+        const auto& rlp = tx.rlp_tx();
         element.rlp = silkworm::Bytes{rlp.begin(), rlp.end()};
         if (tx.txn_type() == ::txpool::AllReply_TxnType_PENDING) {
             element.transaction_type = PENDING;

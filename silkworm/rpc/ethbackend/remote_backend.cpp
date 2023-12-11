@@ -337,18 +337,18 @@ gsl::owner<::remote::EngineForkChoiceState*> RemoteBackEnd::encode_forkchoice_st
     return fcs_grpc;
 }
 
-gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
+gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& payload_attributes) {
     auto epa_grpc = new ::remote::EnginePayloadAttributes();
-    epa_grpc->set_version(epa.version);
+    epa_grpc->set_version(payload_attributes.version);
     // Numerical parameters
-    epa_grpc->set_timestamp(epa.timestamp);
+    epa_grpc->set_timestamp(payload_attributes.timestamp);
     // 32-bytes parameters
-    epa_grpc->set_allocated_prev_randao(H256_from_bytes({epa.prev_randao.bytes, kHashLength}).release());
+    epa_grpc->set_allocated_prev_randao(H256_from_bytes({payload_attributes.prev_randao.bytes, kHashLength}).release());
     // Address parameters
-    epa_grpc->set_allocated_suggested_fee_recipient(H160_from_address(epa.suggested_fee_recipient).release());
+    epa_grpc->set_allocated_suggested_fee_recipient(H160_from_address(payload_attributes.suggested_fee_recipient).release());
     // Withdrawals
-    if (epa.withdrawals) {
-        for (auto& withdrawal : epa.withdrawals.value()) {
+    if (payload_attributes.withdrawals) {
+        for (auto& withdrawal : payload_attributes.withdrawals.value()) {
             auto grpc_withdrawal = epa_grpc->add_withdrawals();
             grpc_withdrawal->set_index(withdrawal.index);
             grpc_withdrawal->set_validator_index(withdrawal.validator_index);

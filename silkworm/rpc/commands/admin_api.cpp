@@ -27,7 +27,7 @@ namespace silkworm::rpc::commands {
 Task<void> AdminRpcApi::handle_admin_node_info(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto node_infos = co_await backend_->engine_node_info();
-        if (node_infos.size() > 0) {
+        if (!node_infos.empty()) {
             reply = make_json_content(request, node_infos[0]);
         } else {
             reply = make_json_content(request, nlohmann::json::object());

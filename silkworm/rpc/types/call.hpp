@@ -113,7 +113,7 @@ std::ostream& operator<<(std::ostream& out, const Bundles& bundles);
 std::ostream& operator<<(std::ostream& out, const Bundle& bundle);
 std::ostream& operator<<(std::ostream& out, const BlockOverrides& bo);
 std::ostream& operator<<(std::ostream& out, const SimulationContext& sc);
-std::ostream& operator<<(std::ostream& out, const AccountsOverrides& so);
+std::ostream& operator<<(std::ostream& out, const AccountsOverrides& ao);
 std::ostream& operator<<(std::ostream& out, const AccountOverrides& ao);
 
 }  // namespace silkworm::rpc

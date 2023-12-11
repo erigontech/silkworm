@@ -92,9 +92,9 @@ std::optional<silkworm::BlockHeader> OverrideState::read_header(BlockNum block_n
     return optional_header;
 }
 
-bool OverrideState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+bool OverrideState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept {
     SILK_DEBUG << "OverrideState::read_body block_number=" << block_number << " block_hash=" << to_hex(block_hash);
-    auto result = inner_state_.read_body(block_number, block_hash, filled_body);
+    auto result = inner_state_.read_body(block_number, block_hash, out);
     return result;
 }
 

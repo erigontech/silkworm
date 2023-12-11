@@ -47,17 +47,17 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
 }
 
 void to_json(nlohmann::json& json, const DumpAccount& dump_account) {
-    json["balance"] = to_dec(dump_account.balance);
+    json["balance"] = to_string(dump_account.balance);
     json["nonce"] = dump_account.nonce;
     json["root"] = dump_account.root;
     json["codeHash"] = dump_account.code_hash;
     if (dump_account.code) {
-        json["code"] = "0x" + silkworm::to_hex(dump_account.code.value());
+        json["code"] = silkworm::to_hex(dump_account.code.value(), /*with_prefix=*/true);
     }
     if (dump_account.storage) {
         nlohmann::json storage({});
         for (const auto& entry : dump_account.storage.value()) {
-            storage["0x" + silkworm::to_hex(entry.first)] = silkworm::to_hex(entry.second);
+            storage[silkworm::to_hex(entry.first, /*with_prefix=*/true)] = silkworm::to_hex(entry.second);
         }
         json["storage"] = storage;
     }

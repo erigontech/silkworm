@@ -18,6 +18,7 @@
 
 #include <numeric>
 #include <string>
+#include <utility>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
@@ -706,7 +707,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
                     blocks.push_back(item.blocks.at(i));
                 }
 
-                if (item.transactions.size() > 0) {
+                if (!item.transactions.empty()) {
                     receipts.push_back(item.receipts.at(0));
                     transactions.push_back(item.transactions.at(0));
                     blocks.push_back(item.blocks.at(0));
@@ -967,7 +968,7 @@ ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address
     cursor_ = cursor;
     address_ = address;
     navigate_forward_ = navigate_forward;
-    first_seek_key_value_ = first_seek_key_value;
+    first_seek_key_value_ = std::move(first_seek_key_value);
 }
 
 Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {

@@ -59,9 +59,9 @@ class RemoteChainStorage : public ChainStorage {
     [[nodiscard]] Task<std::optional<Hash>> read_canonical_hash(BlockNum number) const override;
     [[nodiscard]] Task<std::optional<BlockHeader>> read_canonical_header(BlockNum number) const override;
 
-    Task<bool> read_canonical_body(BlockNum height, BlockBody& body) const override;
+    Task<bool> read_canonical_body(BlockNum number, BlockBody& body) const override;
 
-    Task<bool> read_canonical_block(BlockNum height, silkworm::Block& block) const override;
+    Task<bool> read_canonical_block(BlockNum number, silkworm::Block& block) const override;
 
     [[nodiscard]] Task<bool> has_body(BlockNum number, HashAsArray hash) const override;
     [[nodiscard]] Task<bool> has_body(BlockNum number, const Hash& hash) const override;

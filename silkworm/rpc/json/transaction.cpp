@@ -81,7 +81,7 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
         json_tx.to = std::make_optional("0x" + silkworm::to_hex(tx.to.value().bytes));
     } else {
         std::monostate null_value{};
-        json_tx.nullto = std::make_optional(std::move(null_value));
+        json_tx.nullto = std::make_optional(null_value);
     }
     to_quantity(std::span(json_tx.gas), tx.gas_limit);
     to_hex(std::span(json_tx.hash), tx.hash().bytes);

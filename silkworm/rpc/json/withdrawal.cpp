@@ -47,7 +47,7 @@ std::optional<std::vector<GlazeJsonWithdrawals>> make_glaze_json_withdrawals(con
         to_quantity(std::span(item.amount), (*(block.withdrawals))[i].amount);
         to_quantity(std::span(item.validator_index), (*(block.withdrawals))[i].validator_index);
         to_hex(std::span(item.address), (*(block.withdrawals))[i].address.bytes);
-        withdrawals.push_back(std::move(item));
+        withdrawals.push_back(item);
     }
     return make_optional(std::move(withdrawals));
 }

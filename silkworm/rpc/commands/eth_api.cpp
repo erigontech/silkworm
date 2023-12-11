@@ -381,14 +381,14 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
-                uncle_block_with_hash->block.ommers.push_back(std::move(uncle));
+                uncle_block_with_hash->block.ommers.push_back(uncle);
                 uncle_block_with_hash->hash = uncle.hash();
                 const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
                 make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }
         } else {
-            reply = make_json_content(request, {});
+            make_glaze_json_null_content(request, reply);
         }
     } catch (const std::invalid_argument& iv) {
         make_glaze_json_null_content(request, reply);
@@ -437,7 +437,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
-                uncle_block_with_hash->block.ommers.push_back(std::move(uncle));
+                uncle_block_with_hash->block.ommers.push_back(uncle);
                 uncle_block_with_hash->hash = uncle.hash();
                 const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
@@ -2109,7 +2109,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         co_return;
     }
 
-    uint64_t block_count;
+    uint64_t block_count{0};
     if (params[0].is_string()) {
         const auto value = params[0].get<std::string>();
         block_count = std::stoul(value, nullptr, 16);

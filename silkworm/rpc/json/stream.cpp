@@ -131,7 +131,7 @@ void Stream::write_field(std::string_view name, std::int32_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 10> str;
+    std::array<char, 10> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {
@@ -144,7 +144,7 @@ void Stream::write_field(std::string_view name, std::uint32_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 10> str;
+    std::array<char, 10> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {
@@ -157,7 +157,7 @@ void Stream::write_field(std::string_view name, std::int64_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 19> str;
+    std::array<char, 19> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {
@@ -170,7 +170,7 @@ void Stream::write_field(std::string_view name, std::uint64_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 19> str;
+    std::array<char, 19> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {
@@ -183,7 +183,7 @@ void Stream::write_field(std::string_view name, std::float_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 30> str;
+    std::array<char, 30> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {
@@ -196,7 +196,7 @@ void Stream::write_field(std::string_view name, std::double_t value) {
     write_string(name);
     writer_.write(":");
 
-    std::array<char, 30> str;
+    std::array<char, 30> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
         writer_.write(std::string_view(str.data(), ptr));
     } else {

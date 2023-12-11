@@ -215,7 +215,7 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
 ExecutionResult EVMExecutor::call(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
-    Tracers tracers,
+    const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
     SILK_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
@@ -322,7 +322,7 @@ Task<ExecutionResult> EVMExecutor::call(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
     StateFactory state_factory,
-    Tracers tracers,
+    const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;

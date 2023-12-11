@@ -23,6 +23,7 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 #include <CLI/CLI.hpp>
 #include <boost/format.hpp>
@@ -473,9 +474,9 @@ void do_stages(db::EnvConfig& config) {
 
             // Handle "prune_" stages
             size_t offset{0};
-            static const char* prune_prefix = "prune_";
-            if (std::memcmp(result.key.data(), prune_prefix, 6) == 0) {
-                offset = 6;
+            static constexpr std::string_view prune_prefix{"prune_"};
+            if (std::memcmp(result.key.data(), prune_prefix.data(), prune_prefix.length()) == 0) {
+                offset = prune_prefix.length();
             }
 
             bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};

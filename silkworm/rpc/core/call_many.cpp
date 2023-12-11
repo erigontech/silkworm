@@ -159,7 +159,7 @@ Task<CallManyResult> CallExecutor::execute(
     bool empty = true;
     for (const auto& bundle : bundles) {
         SILK_DEBUG << "bundle[" << count++ << "]: " << bundle;
-        if (bundle.transactions.size() > 0) {
+        if (!bundle.transactions.empty()) {
             empty = false;
         }
     }

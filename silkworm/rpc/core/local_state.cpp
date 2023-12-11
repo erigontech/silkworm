@@ -49,8 +49,8 @@ std::optional<silkworm::BlockHeader> LocalState::read_header(BlockNum block_numb
     return silkworm::db::read_header(txn_, block_number, block_hash);
 }
 
-bool LocalState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
-    return silkworm::db::read_body(txn_, block_hash, block_number, filled_body);
+bool LocalState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept {
+    return silkworm::db::read_body(txn_, block_hash, block_number, out);
 }
 
 std::optional<intx::uint256> LocalState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {

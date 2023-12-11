@@ -71,7 +71,7 @@ struct TraceFilter {
     std::uint32_t count{std::numeric_limits<uint32_t>::max()};
 };
 
-void from_json(const nlohmann::json& json, TraceFilter& tc);
+void from_json(const nlohmann::json& json, TraceFilter& tf);
 
 std::string get_op_name(const char* const* names, std::uint8_t opcode);
 std::string to_string(intx::uint256 value);
@@ -276,7 +276,7 @@ class StateAddresses {
     silkworm::IntraBlockState& initial_ibs_;
 };
 
-void to_json(nlohmann::json& json, const DiffValue& dn);
+void to_json(nlohmann::json& json, const DiffValue& dv);
 void to_json(nlohmann::json& json, const StateDiffEntry& state_diff);
 
 class StateDiffTracer : public silkworm::EvmTracer {

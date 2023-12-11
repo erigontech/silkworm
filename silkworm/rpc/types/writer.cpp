@@ -75,7 +75,7 @@ void ChunksWriter::flush() {
     SILK_DEBUG << "ChunksWriter::flush available_: " << available_ << " size: " << size;
 
     if (size > 0) {
-        std::array<char, 19> str;
+        std::array<char, 19> str{};
         if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), size, 16); ec == std::errc()) {
             writer_.write(std::string_view(str.data(), ptr));
             writer_.write(kChunkSep);

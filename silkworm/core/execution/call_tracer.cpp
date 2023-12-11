@@ -48,11 +48,15 @@ void CallTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_to
         traces_.senders.insert(state.msg->recipient);
         traces_.recipients.insert(contract_address);
     } else if (op_code == evmc_opcode::OP_CREATE2) {
-        SILKWORM_ASSERT(stack_height >= 4);
+        if (stack_height < 4) {
+            return;  // Invariant break for current implementation of OP_CREATE2, let's handle this gracefully.
+        }
         const auto init_code_offset = static_cast<size_t>(stack_top[-1]);
         const auto init_code_size = static_cast<size_t>(stack_top[-2]);
         const evmc::bytes32 salt2{intx::be::store<evmc::bytes32>(stack_top[-3])};
-        SILKWORM_ASSERT(init_code_offset < state.memory.size());
+        if (init_code_offset >= state.memory.size()) {
+            return;  // Invariant break for current implementation of OP_CREATE2, let's handle this gracefully.
+        }
         auto init_code_hash{
             init_code_size > 0 ? ethash::keccak256(&state.memory.data()[init_code_offset], init_code_size) : ethash_hash256{}};
         const auto& contract_address{create2_address(state.msg->recipient, salt2, init_code_hash.bytes)};

@@ -782,13 +782,17 @@ TEST_CASE("Tracing precompiled contract failure", "[core][execution]") {
 TEST_CASE("Smart contract creation w/ insufficient balance", "[core][execution]") {
     Block block{};
     block.header.number = 1;
-    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
     Bytes code{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
 
     InMemoryState db;
     IntraBlockState state{db};
     EVM evm{block, state, test::kShanghaiConfig};
+
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
 
     Transaction txn{};
     txn.from = caller;
@@ -798,6 +802,37 @@ TEST_CASE("Smart contract creation w/ insufficient balance", "[core][execution]"
     uint64_t gas = 50'000;
     CallResult res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
+    CHECK(call_traces.senders.empty());     // No call tracer notification (compatibility w/ Erigon)
+    CHECK(call_traces.recipients.empty());  // No call tracer notification (compatibility w/ Erigon)
+}
+
+TEST_CASE("Smart contract creation w/ insufficient gas", "[core][execution]") {
+    Block block{};
+    block.header.number = 1;
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    const evmc::address contract_address{create_address(caller, 0)};
+
+    Bytes code{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, test::kShanghaiConfig};
+
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.data = code;
+
+    uint64_t gas = 10'000;
+    CallResult res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_OUT_OF_GAS);
+    CHECK(call_traces.senders.size() == 1);
+    CHECK(call_traces.senders.contains(caller));
+    CHECK(call_traces.recipients.size() == 1);
+    CHECK(call_traces.recipients.contains(contract_address));
 }
 
 TEST_CASE("Tracing destruction of smart contract", "[core][execution]") {

@@ -40,14 +40,14 @@
 namespace silkworm::rpc::txpool {
 
 struct OperationResult {
-    bool success;
+    bool success{false};
     std::string error_descr;
 };
 
 struct StatusInfo {
-    unsigned int queued_count;
-    unsigned int pending_count;
-    unsigned int base_fee_count;
+    unsigned int queued_count{0};
+    unsigned int pending_count{0};
+    unsigned int base_fee_count{0};
 };
 
 enum TransactionType {

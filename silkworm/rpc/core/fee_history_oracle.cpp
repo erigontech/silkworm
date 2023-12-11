@@ -18,12 +18,9 @@
 
 #include <algorithm>
 
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::fee_history {
@@ -87,29 +84,30 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block, BlockNum b
     fee_history.base_fees_per_gas.reserve(block_range.num_blocks + 1);
     fee_history.gas_used_ratio.reserve(block_range.num_blocks);
 
-    auto oldest_block = block_range.last_block + 1 - block_range.num_blocks;
+    auto oldest_block = block_range.last_block_number + 1 - block_range.num_blocks;
     for (auto idx = block_range.num_blocks; idx > 0; idx--) {
-        auto block_number = ++oldest_block - 1;
-
-        if (block_number > block_range.last_block) {
+        const auto block_number = ++oldest_block - 1;
+        if (block_number > block_range.last_block_number) {
             continue;
         }
-        BlockFees block_fees{block_number};
 
-        if (block_number >= block_range.block.block.header.number) {
-            block_fees.block = block_range.block;
-            block_fees.receipts = co_await receipts_provider_(block_fees.block);
-            ;
+        BlockFees block_fees{block_number};
+        if (block_number >= block_range.last_block->block.header.number) {
+            block_fees.block = block_range.last_block;
+            block_fees.receipts = co_await receipts_provider_(*block_fees.block);
         } else {
-            auto block_ref = co_await block_provider_(block_number);
-            block_fees.block = *block_ref;
-            if (block_ref && reward_percentile.size() > 0) {
-                block_fees.receipts = co_await receipts_provider_(block_fees.block);
+            const auto block_with_hash = co_await block_provider_(block_number);
+            if (!block_with_hash) {
+                continue;
+            }
+            block_fees.block = block_with_hash;
+            if (reward_percentile.size() > 0) {
+                block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             }
         }
-
         co_await process_block(block_fees, reward_percentile);
-        auto index = block_fees.block_number - oldest_block;
+
+        const auto index = block_fees.block_number - oldest_block;
         fee_history.rewards[index] = block_fees.rewards;
         fee_history.base_fees_per_gas[index] = block_fees.base_fee;
         fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
@@ -125,13 +123,12 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum last_block, uint
     if (!block_with_hash) {
         co_return BlockRange{0};
     }
-    const auto receipts = co_await receipts_provider_(*block_with_hash);
 
     if (max_history != 0) {
-        // limit retrieval to the given number of latest blocks
+        // Limit retrieval to the given number of latest blocks
         const auto too_old_count = last_block - max_history + block_count;
         if (too_old_count > 0) {
-            // tooOldCount is the number of requested blocks that are too old to be served
+            // too_old_count is the number of requested blocks that are too old to be served
             if (block_count > too_old_count) {
                 block_count -= too_old_count;
             } else {
@@ -140,14 +137,13 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum last_block, uint
         }
     }
 
-    BlockRange block_range{block_count, last_block, *block_with_hash, receipts};
+    const auto receipts = co_await receipts_provider_(*block_with_hash);
 
-    co_return block_range;
+    co_return BlockRange{block_count, last_block, block_with_hash, receipts};
 }
 
 Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile) {
-    auto& header = block_fees.block.block.header;
-
+    auto& header = block_fees.block->block.header;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
     block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
 
@@ -162,18 +158,18 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     if (reward_percentile.size() == 0) {
         co_return;
     }
-    if (block_fees.receipts.size() != block_fees.block.block.transactions.size()) {
+    if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
         co_return;
     }
 
-    if (block_fees.block.block.transactions.size() == 0) {
+    if (block_fees.block->block.transactions.size() == 0) {
         std::fill(block_fees.rewards.begin(), block_fees.rewards.end(), 0);
         co_return;
     }
 
     std::map<intx::uint256, std::uint64_t> gas_and_rewards;
-    for (size_t idx = 0; idx < block_fees.block.block.transactions.size(); idx++) {
-        const auto reward = block_fees.block.block.transactions[idx].effective_gas_price(block_fees.base_fee);
+    for (size_t idx = 0; idx < block_fees.block->block.transactions.size(); idx++) {
+        const auto reward = block_fees.block->block.transactions[idx].effective_gas_price(block_fees.base_fee);
         gas_and_rewards.emplace(reward, block_fees.receipts[idx].gas_used);
     }
 
@@ -194,4 +190,5 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
 
     co_return;
 }
+
 }  // namespace silkworm::rpc::fee_history

@@ -48,20 +48,20 @@ struct FeeHistory {
 void to_json(nlohmann::json& json, const FeeHistory& fh);
 
 struct BlockRange {
-    uint64_t num_blocks;
-    BlockNum last_block;
-    BlockWithHash block;
+    uint64_t num_blocks{0};
+    BlockNum last_block_number{0};
+    std::shared_ptr<BlockWithHash> last_block;
     rpc::Receipts receipts;
 };
 
 struct BlockFees {
-    BlockNum block_number;
-    BlockWithHash block;
+    BlockNum block_number{0};
+    std::shared_ptr<BlockWithHash> block;
     rpc::Receipts receipts;
     Rewards rewards;
     intx::uint256 base_fee;
     intx::uint256 next_base_fee;
-    double gas_used_ratio;
+    double gas_used_ratio{0};
 };
 
 class FeeHistoryOracle {

@@ -174,8 +174,7 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     if (bytes.empty()) {
         return false;
     }
-    const void* data = static_cast<const void*>(bytes.data());
-    cbor::input input(const_cast<void*>(data), static_cast<int>(bytes.size()));
+    cbor::input input(bytes.data(), static_cast<int>(bytes.size()));
     LogCborListener listener(logs);
     cbor::decoder decoder(input, listener);
     decoder.run();

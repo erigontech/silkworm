@@ -86,11 +86,6 @@ bool check_intrinsic_gas(const Transaction* txn, evmc_revision rev) {
     return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(Transaction* txn) {
-    txn->recover_sender();
-    return txn->from ? txn->from->bytes : nullptr;
-}
-
 void keccak256(uint8_t* out, const Bytes* in) {
     ethash::hash256 hash{keccak256(*in)};
     std::memcpy(out, hash.bytes, kHashLength);

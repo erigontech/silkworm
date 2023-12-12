@@ -418,9 +418,6 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
                 for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
                     rpc::Transaction txn{block.transactions[idx]};
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
                     SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
                     auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
@@ -487,10 +484,6 @@ Task<void> DebugExecutor::execute(
 
                 for (auto idx{0}; idx < index; idx++) {
                     silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
-
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
                     executor.call(block, txn);
                 }
                 executor.reset();
@@ -551,11 +544,6 @@ Task<void> DebugExecutor::execute(
 
                 for (auto idx{0}; idx < transaction_index; idx++) {
                     silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
-
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
-
                     executor.call(block, txn);
                 }
                 executor.reset();

@@ -327,9 +327,6 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                     uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index + 1);
                     for (uint64_t idx{0}; idx < index; idx++) {
                         rpc::Transaction txn{transactions[idx]};
-                        if (!txn.from) {
-                            txn.recover_sender();
-                        }
                         executor.call(block, txn);
                     }
 

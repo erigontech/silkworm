@@ -38,13 +38,14 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.clear_journal_and_substate();
 
-    assert(txn.from);
-    state_.access_account(*txn.from);
+    const std::optional<evmc::address> sender{txn.sender()};
+    assert(sender);
+    state_.access_account(*sender);
 
     if (txn.to) {
         state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
-        state_.set_nonce(*txn.from, txn.nonce + 1);
+        state_.set_nonce(*sender, txn.nonce + 1);
     }
 
     for (const AccessListEntry& ae : txn.access_list) {
@@ -62,17 +63,17 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const BlockHeader& header{evm_.block().header};
 
-    const intx::uint256 sender_initial_balance{state_.get_balance(*txn.from)};
+    const intx::uint256 sender_initial_balance{state_.get_balance(*sender)};
     const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
 
     // EIP-1559 normal gas cost
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
+    state_.subtract_from_balance(*sender, txn.gas_limit * effective_gas_price);
 
     // EIP-4844 blob gas cost (calc_data_fee)
     const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
-    state_.subtract_from_balance(*txn.from, txn.total_blob_gas() * blob_gas_price);
+    state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
 
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
@@ -94,7 +95,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         }
     }
 
-    rule_set_.add_fee_transfer_log(state_, amount, *txn.from, sender_initial_balance,
+    rule_set_.add_fee_transfer_log(state_, amount, *sender, sender_initial_balance,
                                    evm_.beneficiary, recipient_initial_balance);
 
     state_.finalize_transaction(rev);
@@ -123,7 +124,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
+    state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
 
     return gas_left;
 }

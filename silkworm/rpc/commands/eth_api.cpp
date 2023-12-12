@@ -1831,8 +1831,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
         co_return;
     }
 
-    txn.recover_sender();
-    if (!txn.from.has_value()) {
+    if (!txn.sender()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
         reply = make_json_error(request, -32000, error_msg);

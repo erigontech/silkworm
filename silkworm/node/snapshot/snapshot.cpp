@@ -408,7 +408,7 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
                    " error: " + to_string(payload_result));
 
         if (read_senders) {
-            transaction.from = bytes_to_address(senders_data);
+            transaction.set_sender(bytes_to_address(senders_data));
         }
 
         transactions.push_back(std::move(transaction));
@@ -466,10 +466,8 @@ ByteView TransactionSnapshot::slice_tx_payload(ByteView tx_rlp) {
 //! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
 DecodingResult TransactionSnapshot::decode_txn(const WordItem& item, Transaction& tx) {
     auto [senders_data, tx_rlp] = slice_tx_data(item);
-
     const auto result = rlp::decode(tx_rlp, tx);
-    tx.from = bytes_to_address(senders_data);  // Must happen after rlp::decode because it resets sender
-
+    tx.set_sender(bytes_to_address(senders_data));  // Must happen after rlp::decode because it resets sender
     return result;
 }
 

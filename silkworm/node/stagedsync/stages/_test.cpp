@@ -299,7 +299,7 @@ TEST_CASE("Sync Stages") {
         auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
         block.transactions[0].r = 1;  // dummy
         block.transactions[0].s = 1;  // dummy
-        block.transactions[0].from = sender;
+        block.transactions[0].set_sender(sender);
 
         db::Buffer buffer{txn, 0};
         Account sender_account{};

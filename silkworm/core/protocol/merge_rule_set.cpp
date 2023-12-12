@@ -89,7 +89,7 @@ void MergeRuleSet::initialize(EVM& evm) {
     system_txn.type = TransactionType::kSystem;
     system_txn.to = kBeaconRootsAddress;
     system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
-    system_txn.from = kSystemAddress;
+    system_txn.set_sender(kSystemAddress);
     evm.execute(system_txn, kSystemCallGasLimit);
 }
 

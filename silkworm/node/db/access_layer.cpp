@@ -564,13 +564,10 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
         auto addresses = reinterpret_cast<const evmc::address*>(data_view.data());
         size_t idx{0};
         for (auto& transaction : out) {
-            transaction.from.emplace(addresses[idx++]);
+            transaction.set_sender(addresses[idx++]);
         }
     } else {
         // Might be empty due to pruning
-        for (auto& transaction : out) {
-            transaction.recover_sender();
-        }
     }
 }
 
@@ -579,8 +576,8 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     auto target = txn.rw_cursor(table::kSenders);
     Bytes data;
     for (const auto& block_txn : block.transactions) {
-        if (block_txn.from.has_value()) {
-            data.append(block_txn.from.value().bytes, kAddressLength);
+        if (const std::optional<evmc::address> sender{block_txn.sender()}; sender) {
+            data.append(sender->bytes, kAddressLength);
         } else {
             throw std::runtime_error("Missing senders for block " + std::to_string(block_number));
         }

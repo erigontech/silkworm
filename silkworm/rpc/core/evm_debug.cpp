@@ -85,8 +85,6 @@ std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
-static std::string EMPTY_MEMORY(64, '0');
-
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
     for (int i = int(stack_size - 1); i >= 0; --i) {
@@ -168,11 +166,6 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         }
     }
 
-    std::vector<std::string> current_memory;
-    if (!config_.disableMemory) {
-        output_memory(current_memory, execution_state.memory);
-    }
-
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
         const auto depth = log.depth;
@@ -182,12 +175,6 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                 gas_on_precompiled_ = 0;
             } else {
                 log.gas_cost = log.gas - gas;
-            }
-            if (!config_.disableMemory) {
-                auto& memory = log.memory;
-                for (std::size_t idx = memory.size(); idx < current_memory.size(); idx++) {
-                    memory.push_back(EMPTY_MEMORY);
-                }
             }
         } else if (depth == execution_state.msg->depth) {
             log.gas_cost = log.gas - gas;
@@ -209,7 +196,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         output_stack(log.stack, stack_top, uint32_t(stack_height));
     }
     if (!config_.disableMemory) {
-        log.memory = current_memory;
+        output_memory(log.memory, execution_state.memory);
     }
     if (output_storage) {
         for (const auto& entry : storage_[recipient]) {

@@ -85,8 +85,6 @@ std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
-// static std::string EMPTY_MEMORY(64, '0');
-
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
     for (int i = int(stack_size - 1); i >= 0; --i) {

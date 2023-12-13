@@ -21,6 +21,9 @@
 
 namespace silkworm {
 
+// Resettable std::once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
+// On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (std::call_once).
+// On the other hand, we need to re-calculate when the inputs to the evaluation change (thus resettable).
 class ResettableOnceFlag {
   public:
     ResettableOnceFlag() {

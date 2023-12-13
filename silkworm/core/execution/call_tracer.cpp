@@ -68,7 +68,7 @@ inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t&
 
     return EVMC_SUCCESS;
 }
-}
+}  // namespace
 
 namespace silkworm {
 

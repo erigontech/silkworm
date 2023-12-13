@@ -664,8 +664,7 @@ TEST_CASE("Tracing smart contract creation with CREATE", "[core][execution]") {
         "a26fcd81322047223364736f6c634300081300336080604052348015600f5760"
         "0080fd5b50603f80601d6000396000f3fe6080604052600080fdfea264697066"
         "7358221220f6587bd1dd592bb64698cf04f378d03a5f9e55c27c86df8890b628"
-        "7d8694a43164736f6c63430008130033"
-        )};
+        "7d8694a43164736f6c63430008130033")};
     // pragma solidity 0.8.19;
     //
     // contract Factory {

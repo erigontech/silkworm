@@ -23,6 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/concurrency/resettable_once_flag.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/hash.hpp>
 
@@ -81,7 +82,8 @@ struct UnsignedTransaction {
     friend bool operator==(const UnsignedTransaction&, const UnsignedTransaction&) = default;
 };
 
-struct Transaction : public UnsignedTransaction {
+class Transaction : public UnsignedTransaction {
+  public:
     bool odd_y_parity{false};
     intx::uint256 r{0}, s{0};  // signature
 
@@ -107,7 +109,8 @@ struct Transaction : public UnsignedTransaction {
 
   private:
     // cached value for hash if already computed
-    mutable std::optional<evmc::bytes32> cached_hash_{std::nullopt};
+    mutable evmc::bytes32 cached_hash_;
+    mutable ResettableOnceFlag hash_computed_;
 };
 
 namespace rlp {

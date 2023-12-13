@@ -43,18 +43,17 @@ bool Transaction::set_v(const intx::uint256& v) {
     }
     odd_y_parity = parity_and_id->odd;
     chain_id = parity_and_id->chain_id;
+    reset();
     return true;
 }
 
 evmc::bytes32 Transaction::hash() const {
-    if (cached_hash_) {
-        return *cached_hash_;
-    }
-
-    Bytes rlp;
-    rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
-    cached_hash_ = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
-    return *cached_hash_;
+    std::call_once(hash_computed_.get(), [this]() {
+        Bytes rlp;
+        rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
+        cached_hash_ = std::bit_cast<evmc_bytes32>(keccak256(rlp));
+    });
+    return cached_hash_;
 }
 
 namespace rlp {
@@ -426,7 +425,7 @@ void Transaction::recover_sender() {
 
 void Transaction::reset() {
     from.reset();
-    cached_hash_.reset();
+    hash_computed_.reset();
 }
 
 intx::uint512 UnsignedTransaction::maximum_gas_cost() const {

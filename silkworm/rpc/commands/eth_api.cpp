@@ -1301,7 +1301,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
 Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
-    if (params.size() != 2) {
+    if (params.size() != 2 && params.size() != 3) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);
@@ -1309,6 +1309,14 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     auto call = params[0].get<Call>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
+    bool optimize_gas = false;
+    if (params.size() == 3) {
+        optimize_gas = params[2];
+        if (optimize_gas) {
+            reply = make_json_error(request, 100, "not supported optimize_gas to true");
+            co_return;
+        }
+    }
 
     SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash;
 
@@ -1377,11 +1385,11 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             const AccessList& current_access_list = tracer->get_access_list();
             if (call.access_list == current_access_list) {
                 AccessListResult access_list_result;
-                access_list_result.access_list = current_access_list;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
                 if (!execution_result.success()) {
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
+                access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);
                 break;
             }

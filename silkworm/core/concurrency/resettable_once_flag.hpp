@@ -28,30 +28,30 @@ class ResettableOnceFlag {
     constexpr ResettableOnceFlag() {}
 
     ResettableOnceFlag(const ResettableOnceFlag& other) {
-        const uint32_t s{other.control_.load(std::memory_order_acquire)};
+        const uint32_t s{other.flag_.load(std::memory_order_acquire)};
         if (s == absl::base_internal::kOnceDone) {
-            control_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
         } else {
-            control_.store(0, std::memory_order_release);
+            flag_.store(0, std::memory_order_release);
         }
     }
     ResettableOnceFlag& operator=(const ResettableOnceFlag& other) {
-        const uint32_t s{other.control_.load(std::memory_order_acquire)};
+        const uint32_t s{other.flag_.load(std::memory_order_acquire)};
         if (s == absl::base_internal::kOnceDone) {
-            control_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
         } else {
-            control_.store(0, std::memory_order_release);
+            flag_.store(0, std::memory_order_release);
         }
         return *this;
     }
 
     void reset() {
-        control_.store(0, std::memory_order_release);
+        flag_.store(0, std::memory_order_release);
     }
 
     template <typename Callable, typename... Args>
     void call_once(Callable&& fn, Args&&... args) {
-        std::atomic<uint32_t>* once{&control_};
+        std::atomic<uint32_t>* once{&flag_};
         const uint32_t s{once->load(std::memory_order_acquire)};
         if (ABSL_PREDICT_FALSE(s != absl::base_internal::kOnceDone)) {
             absl::base_internal::CallOnceImpl(
@@ -61,7 +61,7 @@ class ResettableOnceFlag {
     }
 
   private:
-    std::atomic<uint32_t> control_{0};
+    std::atomic<uint32_t> flag_{0};
 };
 
 }  // namespace silkworm

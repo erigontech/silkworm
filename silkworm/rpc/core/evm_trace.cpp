@@ -1291,7 +1291,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
                 std::vector<TraceCallResult> trace_call_result(transactions.size());
                 for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    silkworm::Transaction transaction{block.transactions[index]};
+                    const silkworm::Transaction& transaction{block.transactions[index]};
 
                     auto& result = trace_call_result.at(index);
                     TraceCallTraces& traces = result.traces;
@@ -1436,7 +1436,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
                 Tracers tracers{create_tracer};
 
                 for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    silkworm::Transaction transaction{block.transactions[index]};
+                    const silkworm::Transaction& transaction{block.transactions[index]};
                     executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     executor.reset();
                     if (create_tracer->found()) {

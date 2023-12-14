@@ -16,16 +16,20 @@
 
 #pragma once
 
+#ifdef SILKWORM_CORE_USE_ABSEIL
 #include <absl/base/call_once.h>
+#endif
 
 namespace silkworm {
+
+#ifdef SILKWORM_CORE_USE_ABSEIL
 
 // Resettable once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
 // On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (call_once).
 // On the other hand, we need to re-calculate when the inputs to the evaluation change (thus resettable).
 class ResettableOnceFlag {
   public:
-    constexpr ResettableOnceFlag() {}
+    constexpr ResettableOnceFlag() = default;
 
     ResettableOnceFlag(const ResettableOnceFlag& other) {
         const uint32_t s{other.flag_.load(std::memory_order_acquire)};
@@ -63,5 +67,30 @@ class ResettableOnceFlag {
   private:
     std::atomic<uint32_t> flag_{0};
 };
+
+#else
+
+class ResettableOnceFlag {
+  public:
+    constexpr ResettableOnceFlag() = default;
+
+    ResettableOnceFlag(const ResettableOnceFlag&) = default;
+    ResettableOnceFlag& operator=(const ResettableOnceFlag&) = default;
+
+    void reset() { initialized = false; }
+
+    template <typename Callable, typename... Args>
+    void call_once(Callable&& fn, Args&&... args) {
+        if (!initialized) {
+            fn(args...);
+            initialized = true;
+        }
+    }
+
+  private:
+    bool initialized{false};
+};
+
+#endif
 
 }  // namespace silkworm

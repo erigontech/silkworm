@@ -32,20 +32,20 @@ class ResettableOnceFlag {
     constexpr ResettableOnceFlag() = default;
 
     ResettableOnceFlag(const ResettableOnceFlag& other) {
-        const uint32_t s{other.flag_.load(std::memory_order_acquire)};
-        if (s == absl::base_internal::kOnceDone) {
-            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
-        } else {
-            flag_.store(0, std::memory_order_release);
-        }
+        const uint32_t other_flag{other.flag_.load(std::memory_order_acquire)};
+        // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
+        const uint32_t this_flag{other_flag == absl::base_internal::kOnceDone
+                                     ? absl::base_internal::kOnceDone
+                                     : absl::base_internal::kOnceInit};
+        flag_.store(this_flag, std::memory_order_release);
     }
     ResettableOnceFlag& operator=(const ResettableOnceFlag& other) {
-        const uint32_t s{other.flag_.load(std::memory_order_acquire)};
-        if (s == absl::base_internal::kOnceDone) {
-            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
-        } else {
-            flag_.store(0, std::memory_order_release);
-        }
+        const uint32_t other_flag{other.flag_.load(std::memory_order_acquire)};
+        // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
+        const uint32_t this_flag{other_flag == absl::base_internal::kOnceDone
+                                     ? absl::base_internal::kOnceDone
+                                     : absl::base_internal::kOnceInit};
+        flag_.store(this_flag, std::memory_order_release);
         return *this;
     }
 

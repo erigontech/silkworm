@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <bit>
+#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -23,7 +25,6 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/concurrency/resettable_once_flag.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/hash.hpp>
 
@@ -108,11 +109,11 @@ class Transaction : public UnsignedTransaction {
 
   private:
     mutable std::optional<evmc::address> sender_{std::nullopt};
-    mutable ResettableOnceFlag sender_recovered_;
+    mutable uintptr_t sender_recovered_{std::bit_cast<uintptr_t>(std::once_flag{})};
 
     // cached value for hash if already computed
     mutable evmc::bytes32 cached_hash_;
-    mutable ResettableOnceFlag hash_computed_;
+    mutable uintptr_t hash_computed_{std::bit_cast<uintptr_t>(std::once_flag{})};
 };
 
 namespace rlp {

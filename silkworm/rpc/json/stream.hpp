@@ -20,8 +20,11 @@
 #include <string>
 #include <string_view>
 
+#include <boost/asio/io_context.hpp>
+
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/rpc/types/writer.hpp>
 
 namespace silkworm::rpc::json {
@@ -31,11 +34,14 @@ static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    explicit Stream(Writer& writer) : writer_(writer) {}
+    // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : 
+    //   executor_(executor), writer_(writer), threshold_(threshold) {}
+    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) : 
+      executor_(executor), writer_(writer) {}
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
-    void close() { writer_.close(); }
+    Task<void> close();
 
     void open_object();
     void close_object();
@@ -59,11 +65,20 @@ class Stream {
     void write_field(std::string_view name, std::double_t value);
 
   private:
+    // static const std::size_t kDefaultThreshold = 0x800;
+
     void write_string(std::string_view str);
     void ensure_separator();
 
+    void write(std::string_view str);
+
+    boost::asio::any_io_executor& executor_;
+
     Writer& writer_;
     std::stack<std::uint8_t> stack_;
+
+    // const std::size_t threshold_;
+    // std::stringstream buffer_;
 };
 
 }  // namespace silkworm::rpc::json

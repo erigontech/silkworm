@@ -22,8 +22,10 @@
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
+#include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -43,14 +45,25 @@ const char* CALL = evmone::instr::traits[evmc_opcode::OP_CALL].name;
 const char* STATICCALL = evmone::instr::traits[evmc_opcode::OP_STATICCALL].name;
 const char* CALLCODE = evmone::instr::traits[evmc_opcode::OP_CALLCODE].name;
 
+inline constexpr auto TxAccessListStorageKeyGas = 1900;  // per storage key specified in EIP 2930 access list
+inline constexpr auto TxAccessListAddressGas = 2400;     // per address specified in EIP 2930 access list
+
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     const auto name = names[opcode];
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
-void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept {
+void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view /*code*/) noexcept {
+    rev_ = rev;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
+    }
+
+    if (msg.kind == evmc_call_kind::EVMC_CREATE ||
+        msg.kind == evmc_call_kind::EVMC_CREATE2) {
+        auto contract_code_address = evmc::address{msg.code_address};
+        std::cout << "CREATE " << contract_code_address << "\n";
+        add_contract(contract_code_address);
     }
 }
 
@@ -76,18 +89,29 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
 
     if (is_storage_opcode(opcode_name) && stack_height >= 1) {
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
-        add_storage(recipient, address);
+        if (!exclude(recipient)) {
+            add_storage(recipient, address);
+            if (!created_contract(recipient)) {
+                use_address_on_old_contract(recipient);
+            }
+        }
     } else if (is_contract_opcode(opcode_name) && stack_height >= 1) {
         evmc::address address;
         intx::be::trunc(address.bytes, stack_top[0]);
-        if (!exclude(address)) {
+        if (!exclude(recipient)) {
             add_address(address);
+            if (!created_contract(recipient)) {
+                use_address_on_old_contract(recipient);
+            }
         }
     } else if (is_call_opcode(opcode_name) && stack_height >= 5) {
         evmc::address address;
         intx::be::trunc(address.bytes, stack_top[-1]);
         if (!exclude(address)) {
             add_address(address);
+            if (!created_contract(recipient)) {
+                use_address_on_old_contract(recipient);
+            }
         }
     }
 }
@@ -106,8 +130,7 @@ inline bool AccessListTracer::is_call_opcode(const std::string& opcode_name) {
 }
 
 inline bool AccessListTracer::exclude(const evmc::address& address) {
-    // return (address == from_ || address == to_ || is_precompiled(address)); // ADD check on precompiled when available from silkworm
-    return (address == from_ || address == to_);
+    return (precompile::is_precompile(address, rev_));
 }
 
 void AccessListTracer::add_storage(const evmc::address& address, const evmc::bytes32& storage) {
@@ -183,6 +206,48 @@ bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {
         }
     }
     return true;
+}
+
+bool AccessListTracer::created_contract(const evmc::address& address) {
+    return created_contracts_[address];
+}
+
+void AccessListTracer::add_contract(const evmc::address& address) {
+    created_contracts_[address] = true;
+}
+
+void AccessListTracer::use_address_on_old_contract(const evmc::address& address) {
+    used_address_on_old_contract_[address] = true;
+}
+
+AccessList& AccessListTracer::optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
+    optimize_warm_address_in_access_list(from);
+    optimize_warm_address_in_access_list(to);
+    optimize_warm_address_in_access_list(coinbase);
+    for (auto it = created_contracts_.begin();
+         it != created_contracts_.end();
+         it++) {
+        auto usedit = used_address_on_old_contract_.find(it->first);
+        if (usedit != used_address_on_old_contract_.end()) {
+            optimize_warm_address_in_access_list(it->first);
+        }
+    }
+    return access_list_;
+}
+
+void AccessListTracer::optimize_warm_address_in_access_list(const evmc::address& address) {
+    for (auto it = access_list_.begin();
+         it != access_list_.end();
+         it++) {
+        if (it->account == address) {
+            // https://eips.ethereum.org/EIPS/eip-2930#charging-less-for-accesses-in-the-access-list
+            size_t access_list_saving_per_slot = evmone::instr::cold_sload_cost - evmone::instr::warm_storage_read_cost - TxAccessListStorageKeyGas;
+            if (access_list_saving_per_slot * it->storage_keys.size() <= TxAccessListAddressGas) {
+                access_list_.erase(it);
+                return;
+            }
+        }
+    }
 }
 
 }  // namespace silkworm::rpc

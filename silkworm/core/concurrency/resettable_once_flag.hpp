@@ -57,7 +57,7 @@ class ResettableOnceFlag {
     void call_once(Callable&& fn, Args&&... args) {
         std::atomic<uint32_t>* once{&flag_};
         const uint32_t s{once->load(std::memory_order_acquire)};
-        if (ABSL_PREDICT_FALSE(s != absl::base_internal::kOnceDone)) {
+        if (s != absl::base_internal::kOnceDone) [[unlikely]] {
             absl::base_internal::CallOnceImpl(
                 once, absl::base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL,
                 std::forward<Callable>(fn), std::forward<Args>(args)...);

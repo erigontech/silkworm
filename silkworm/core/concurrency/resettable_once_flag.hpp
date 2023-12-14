@@ -20,8 +20,8 @@
 
 namespace silkworm {
 
-// Resettable absl::once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
-// On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (absl::call_once).
+// Resettable once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
+// On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (call_once).
 // On the other hand, we need to re-calculate when the inputs to the evaluation change (thus resettable).
 class ResettableOnceFlag {
   public:

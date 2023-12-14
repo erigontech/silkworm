@@ -823,7 +823,7 @@ TEST_CASE("Smart contract creation w/ insufficient gas", "[core][execution]") {
     evm.add_tracer(call_tracer);
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     uint64_t gas = 10'000;
@@ -1120,7 +1120,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto factory_address{create_address(external_account, 0)};
 
     Transaction txn1{};
-    txn1.from = external_account;
+    txn1.set_sender(external_account);
     txn1.data = factory_and_test_contract_code;
 
     TestTracer tracer;
@@ -1146,7 +1146,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto item1_address{create_address(factory_address, 1)};
 
     Transaction txn2{};
-    txn2.from = external_account;
+    txn2.set_sender(external_account);
     txn2.to = factory_address;
     txn2.data = ByteView{*from_hex("efc81a8c")};  // methodID for create
 
@@ -1169,7 +1169,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto item2_address{create2_address(factory_address, evmc::bytes32{0}, item_code_hash.bytes)};
 
     Transaction txn3{};
-    txn3.from = external_account;
+    txn3.set_sender(external_account);
     txn3.to = factory_address;
     txn3.data = ByteView{*from_hex("f5eacece")};  // methodID for create2
 

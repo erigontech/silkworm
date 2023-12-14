@@ -1998,7 +1998,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     block.header.number = block_number;
 
     silkworm::Transaction transaction;
-    transaction.from = 0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address;
+    transaction.set_sender(0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address);
     transaction.nonce = 27;
     transaction.value = 0;
     transaction.data = *silkworm::from_hex(
@@ -2545,7 +2545,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     block_with_hash.hash = 0x527198f474c1f1f1d01129d3a17ecc17895d85884a31b05ef0ecd480faee1592_bytes32;
 
     silkworm::Transaction transaction;
-    transaction.from = 0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address;
+    transaction.set_sender(0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address);
     transaction.nonce = 27;
     transaction.value = 0;
     transaction.data = *silkworm::from_hex(
@@ -2747,7 +2747,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     block_with_hash.hash = 0x527198f474c1f1f1d01129d3a17ecc17895d85884a31b05ef0ecd480faee1592_bytes32;
 
     rpc::Transaction transaction;
-    transaction.from = 0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address;
+    transaction.set_sender(0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address);
     transaction.nonce = 27;
     transaction.value = 0;
     transaction.data = *silkworm::from_hex(
@@ -3707,7 +3707,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     block_with_hash.hash = 0x527198f474c1f1f1d01129d3a17ecc17895d85884a31b05ef0ecd480faee1592_bytes32;
 
     rpc::Transaction transaction;
-    transaction.from = 0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address;
+    transaction.set_sender(0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5_address);
     transaction.nonce = 27;
     transaction.value = 0;
     transaction.data = *silkworm::from_hex(

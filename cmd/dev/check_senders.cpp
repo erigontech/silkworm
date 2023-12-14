@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
                     // The most important check: i-th stored sender MUST be equal to i-th transaction recomputed sender
                     if (senders[i] != tx.sender()) {
                         log::Error() << "Block " << block_number << " tx " << i << " recovered sender " << senders[i]
-                                     << " does not match computed sender " << tx.sender();
+                                     << " does not match computed sender " << *tx.sender();
                     }
                     processed_senders_count++;
 

@@ -1441,7 +1441,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
                     executor.reset();
                     if (create_tracer->found()) {
                         result.transaction_hash = transaction.hash();
-                        result.contract_creator = transaction.from;
+                        result.contract_creator = transaction.sender();
                         break;
                     }
                 }

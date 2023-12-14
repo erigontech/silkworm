@@ -1849,10 +1849,10 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     const auto ethash_hash = txn.hash();
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
-        const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);
-        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
+        const auto contract_address = silkworm::create_address(*txn.sender(), txn.nonce);
+        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
     } else {
-        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
+        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
     }
 
     reply = make_json_content(request, hash);

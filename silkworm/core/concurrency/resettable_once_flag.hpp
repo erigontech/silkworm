@@ -16,39 +16,52 @@
 
 #pragma once
 
-#include <memory>
-#include <mutex>
+#include <absl/base/call_once.h>
 
 namespace silkworm {
 
-// Resettable std::once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
-// On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (std::call_once).
+// Resettable absl::once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
+// On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (absl::call_once).
 // On the other hand, we need to re-calculate when the inputs to the evaluation change (thus resettable).
 class ResettableOnceFlag {
   public:
-    ResettableOnceFlag() {
-        reset();
-    }
+    constexpr ResettableOnceFlag() {}
 
-    ResettableOnceFlag(const ResettableOnceFlag&) {
-        reset();
+    ResettableOnceFlag(const ResettableOnceFlag& other) {
+        const uint32_t s{other.control_.load(std::memory_order_acquire)};
+        if (s == absl::base_internal::kOnceDone) {
+            control_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+        } else {
+            control_.store(0, std::memory_order_release);
+        }
     }
-    ResettableOnceFlag& operator=(const ResettableOnceFlag&) {
-        reset();
+    ResettableOnceFlag& operator=(const ResettableOnceFlag& other) {
+        const uint32_t s{other.control_.load(std::memory_order_acquire)};
+        if (s == absl::base_internal::kOnceDone) {
+            control_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+        } else {
+            control_.store(0, std::memory_order_release);
+        }
         return *this;
     }
 
-    ResettableOnceFlag(ResettableOnceFlag&&) = default;
-    ResettableOnceFlag& operator=(ResettableOnceFlag&&) = default;
-
-    [[nodiscard]] std::once_flag& get() { return *flag_; }
-
     void reset() {
-        flag_ = std::make_unique<std::once_flag>();
+        control_.store(0, std::memory_order_release);
+    }
+
+    template <typename Callable, typename... Args>
+    void call_once(Callable&& fn, Args&&... args) {
+        std::atomic<uint32_t>* once{&control_};
+        const uint32_t s{once->load(std::memory_order_acquire)};
+        if (ABSL_PREDICT_FALSE(s != absl::base_internal::kOnceDone)) {
+            absl::base_internal::CallOnceImpl(
+                once, absl::base_internal::SCHEDULE_COOPERATIVE_AND_KERNEL,
+                std::forward<Callable>(fn), std::forward<Args>(args)...);
+        }
     }
 
   private:
-    std::unique_ptr<std::once_flag> flag_;
+    std::atomic<uint32_t> control_{0};
 };
 
 }  // namespace silkworm

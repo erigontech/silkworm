@@ -48,7 +48,7 @@ bool Transaction::set_v(const intx::uint256& v) {
 }
 
 evmc::bytes32 Transaction::hash() const {
-    std::call_once(hash_computed_.get(), [this]() {
+    hash_computed_.call_once([this]() {
         Bytes rlp;
         rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
         cached_hash_ = std::bit_cast<evmc_bytes32>(keccak256(rlp));
@@ -405,7 +405,7 @@ void UnsignedTransaction::encode_for_signing(Bytes& into) const {
 }
 
 std::optional<evmc::address> Transaction::sender() const {
-    std::call_once(sender_recovered_.get(), [this]() {
+    sender_recovered_.call_once([this]() {
         Bytes rlp{};
         encode_for_signing(rlp);
         ethash::hash256 hash{keccak256(rlp)};
@@ -425,7 +425,7 @@ std::optional<evmc::address> Transaction::sender() const {
 
 void Transaction::set_sender(const evmc::address& sender) {
     sender_recovered_.reset();
-    std::call_once(sender_recovered_.get(), [&]() {
+    sender_recovered_.call_once([&]() {
         sender_ = sender;
     });
 }

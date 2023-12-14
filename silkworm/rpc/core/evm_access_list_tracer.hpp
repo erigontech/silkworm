@@ -30,18 +30,18 @@ namespace silkworm::rpc {
 
 class AccessListTracer : public silkworm::EvmTracer {
   public:
-    explicit AccessListTracer(const evmc::address& from, const evmc::address& to) : from_{from}, to_{to} {
-    }
+    AccessListTracer() = default;
     AccessListTracer(const AccessListTracer&) = delete;
     AccessListTracer& operator=(const AccessListTracer&) = delete;
 
-    const AccessList& get_access_list() { return access_list_; }
+    AccessList& get_access_list() { return access_list_; }
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
                               const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
     void reset_access_list() { access_list_.clear(); }
+    AccessList& optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase);
     static void dump(const std::string& user_string, const AccessList& acl);
     static bool compare(const AccessList& acl1, const AccessList& acl2);
 
@@ -53,10 +53,15 @@ class AccessListTracer : public silkworm::EvmTracer {
 
     void add_storage(const evmc::address& address, const evmc::bytes32& storage);
     void add_address(const evmc::address& address);
+    bool created_contract(const evmc::address& address);
+    void add_contract(const evmc::address& address);
+    void use_address_on_old_contract(const evmc::address& address);
+    void optimize_warm_address_in_access_list(const evmc::address& address);
 
+    std::map<evmc::address, bool> created_contracts_;
+    std::map<evmc::address, bool> used_address_on_old_contract_;
     AccessList access_list_;
-    evmc::address from_;
-    evmc::address to_;
+    evmc_revision rev_;
 
     const char* const* opcode_names_ = nullptr;
 };

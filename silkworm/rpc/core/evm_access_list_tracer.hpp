@@ -59,7 +59,7 @@ class AccessListTracer : public silkworm::EvmTracer {
     void optimize_warm_address_in_access_list(const evmc::address& address);
 
     std::map<evmc::address, bool> created_contracts_;
-    std::map<evmc::address, bool> used_address_on_old_contract_;
+    std::map<evmc::address, bool> used_before_creation_;
     AccessList access_list_;
     evmc_revision rev_;
 

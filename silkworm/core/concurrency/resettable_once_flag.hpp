@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <functional>
+#include <utility>
+
 #ifdef SILKWORM_CORE_USE_ABSEIL
 #include <absl/base/call_once.h>
 #endif
@@ -33,19 +36,21 @@ class ResettableOnceFlag {
 
     ResettableOnceFlag(const ResettableOnceFlag& other) {
         const uint32_t other_flag{other.flag_.load(std::memory_order_acquire)};
-        // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
-        const uint32_t this_flag{other_flag == absl::base_internal::kOnceDone
-                                     ? absl::base_internal::kOnceDone
-                                     : absl::base_internal::kOnceInit};
-        flag_.store(this_flag, std::memory_order_release);
+        if (other_flag == absl::base_internal::kOnceDone) {
+            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+        } else {
+            // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
+            flag_.store(0, std::memory_order_release);
+        }
     }
     ResettableOnceFlag& operator=(const ResettableOnceFlag& other) {
         const uint32_t other_flag{other.flag_.load(std::memory_order_acquire)};
-        // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
-        const uint32_t this_flag{other_flag == absl::base_internal::kOnceDone
-                                     ? absl::base_internal::kOnceDone
-                                     : absl::base_internal::kOnceInit};
-        flag_.store(this_flag, std::memory_order_release);
+        if (other_flag == absl::base_internal::kOnceDone) {
+            flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);
+        } else {
+            // Have to re-evaluate if the other is in the middle of calculations (other_flag == kOnceRunning || kOnceWaiter)
+            flag_.store(0, std::memory_order_release);
+        }
         return *this;
     }
 
@@ -77,18 +82,18 @@ class ResettableOnceFlag {
     ResettableOnceFlag(const ResettableOnceFlag&) = default;
     ResettableOnceFlag& operator=(const ResettableOnceFlag&) = default;
 
-    void reset() { initialized = false; }
+    void reset() { done = false; }
 
     template <typename Callable, typename... Args>
     void call_once(Callable&& fn, Args&&... args) {
-        if (!initialized) {
-            fn(args...);
-            initialized = true;
+        if (!done) {
+            std::invoke(std::forward<Callable>(fn), std::forward<Args>(args)...);
+            done = true;
         }
     }
 
   private:
-    bool initialized{false};
+    bool done{false};
 };
 
 #endif

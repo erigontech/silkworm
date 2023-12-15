@@ -233,8 +233,8 @@ void AccessListTracer::add_contract(const evmc::address& address) {
 }
 
 void AccessListTracer::use_address_on_old_contract(const evmc::address& address) {
-    if (used_address_on_old_contract_.find(address) != used_address_on_old_contract_.end()) {
-        used_address_on_old_contract_[address] = true;
+    if (used_before_creation_.find(address) != used_before_creation_.end()) {
+        used_before_creation_[address] = true;
     }
 }
 
@@ -245,8 +245,8 @@ AccessList& AccessListTracer::optimize_gas(const evmc::address& from, const evmc
     for (auto it = created_contracts_.begin();
          it != created_contracts_.end();
          it++) {
-        auto usedit = used_address_on_old_contract_.find(it->first);
-        if (usedit != used_address_on_old_contract_.end()) {
+        auto usedit = used_before_creation_.find(it->first);
+        if (usedit != used_before_creation_.end()) {
             optimize_warm_address_in_access_list(it->first);
         }
     }

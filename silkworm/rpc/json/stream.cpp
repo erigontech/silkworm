@@ -16,6 +16,7 @@
 
 #include "stream.hpp"
 
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/use_future.hpp>
 
@@ -41,40 +42,30 @@ static std::string kColon{":"};           // NOLINT(runtime/string)
 static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
 Task<void> Stream::close() {
-    std::cout << "COMPLETING.... \n";
+    // std::cout << "COMPLETING.... \n";
 
-    auto promise = std::promise<void>();
-    boost::asio::post(executor_, [&, promise = std::move(promise)]() mutable {
-        std::cout << "CLOSE \n";
-        // if (buffer_.str().size() > 0) {
-        //     writer_.write(buffer_.str());
-        //     buffer_.str().clear();
-        // }
-        writer_.close();
-        promise.set_value();
-    });
+    auto current_executor = co_await boost::asio::this_coro::executor;
 
-    std::cout << "WAITING.... \n";
-    auto future = promise.get_future();
-    future.get();
-    // auto current_executor = co_await boost::asio::this_coro::executor;
+    std::string to_write(buffer_);
+    buffer_.clear();
 
-    // co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-    //     [&](auto&& self) {
-    //         boost::asio::post(executor_, [&, self = std::move(self)]() mutable {
-    //             if (buffer_.str().size() > 0) {
-    //                 writer_.write(buffer_.str());
-    //                 buffer_.str().clear();
-    //             }
-    //             writer_.close();
-    //             boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-    //                 self.complete();
-    //             });
-    //         });
-    //     },
-    //     boost::asio::use_awaitable);
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+        [&](auto&& self) {
+            boost::asio::post(executor_, [&, self = std::move(self), value = std::move(to_write)]() mutable {
+            if (value.size() > 0) {
+                // std::cout << "WRITE " << value << " \n";
+                writer_.write(value);
+            }
+            // std::cout << "CLOSE \n";
+            writer_.close();
+            boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+                // std::cout << "COMPLETING...\n";
+                self.complete();
+            });
+        });
+    }, boost::asio::use_awaitable);
 
-    std::cout << "COMPLETED \n";
+    // std::cout << "COMPLETED \n";
 
     co_return;
 }
@@ -256,24 +247,15 @@ void Stream::write_string(std::string_view str) {
 }
 
 void Stream::write(std::string_view str) {
-    std::string to_write(str);
-    boost::asio::post(executor_, [&, value = std::move(to_write)]() mutable {
-        std::cout << "WRITE: " << value << " \n";
-        writer_.write(value);
-        // buffer_ << value;
-        // if (buffer_.str().size() >= threshold_) {
-        //     writer_.write(buffer_.str());
-        //     buffer_.str().clear();
-        // }
-    });
-    // boost::asio::post(executor_, [&]() -> Task<void> {
-    //     buffer_ << str;
-    //     if (buffer_.str().size() >= threshold_) {
-    //         writer_.write(buffer_.str());
-    //         buffer_.str().clear();
-    //     }
-    //     co_return;
-    // });
+    buffer_ += str;
+    if (buffer_.size() >= threshold_) {
+        std::string to_write(buffer_);
+        buffer_.clear();
+        boost::asio::post(executor_, [&, value = std::move(to_write)]() mutable {
+            // std::cout << "WRITE: " << value << " \n";
+            writer_.write(value);
+        });
+    }
 }
 
 void Stream::ensure_separator() {

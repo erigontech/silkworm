@@ -34,10 +34,10 @@ static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : 
-    //   executor_(executor), writer_(writer), threshold_(threshold) {}
-    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) : 
-      executor_(executor), writer_(writer) {}
+    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : 
+      executor_(executor), writer_(writer), threshold_(threshold) {}
+    // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) : 
+    //   executor_(executor), writer_(writer) {}
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
@@ -65,7 +65,7 @@ class Stream {
     void write_field(std::string_view name, std::double_t value);
 
   private:
-    // static const std::size_t kDefaultThreshold = 0x800;
+    static const std::size_t kDefaultThreshold = 0x800;
 
     void write_string(std::string_view str);
     void ensure_separator();
@@ -77,8 +77,8 @@ class Stream {
     Writer& writer_;
     std::stack<std::uint8_t> stack_;
 
-    // const std::size_t threshold_;
-    // std::stringstream buffer_;
+    const std::size_t threshold_;
+    std::string buffer_;
 };
 
 }  // namespace silkworm::rpc::json

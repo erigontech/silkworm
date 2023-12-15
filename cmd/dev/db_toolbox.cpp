@@ -132,7 +132,7 @@ struct DbTableInfo {
 
 using DbComparisonResult = tl::expected<void, std::string>;
 
-[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_pages) {
+[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_layout) {
     // Skip freelist table because its content depends not only on *which* data you write but also *how* you write it
     // (i.e. writing the same data w/ different commit policies can lead to different freelist content)
     if (lhs.name == "FREE_DBI" && rhs.name == "FREE_DBI") {
@@ -146,10 +146,6 @@ using DbComparisonResult = tl::expected<void, std::string>;
         return tl::make_unexpected("num records mismatch: " + std::to_string(lhs.stat.ms_entries) +
                                    " vs " + std::to_string(rhs.stat.ms_entries));
     }
-    if (lhs.stat.ms_depth != rhs.stat.ms_depth) {
-        return tl::make_unexpected("btree height mismatch: " + std::to_string(lhs.stat.ms_depth) +
-                                   " vs " + std::to_string(rhs.stat.ms_depth));
-    }
     if (lhs.stat.ms_psize != rhs.stat.ms_psize) {
         return tl::make_unexpected("db page mismatch: " + std::to_string(lhs.stat.ms_psize) +
                                    " vs " + std::to_string(rhs.stat.ms_psize));
@@ -157,7 +153,11 @@ using DbComparisonResult = tl::expected<void, std::string>;
     if (lhs.info.flags != rhs.info.flags) {
         return tl::make_unexpected("flags mismatch: " + std::to_string(lhs.info.flags) + " vs " + std::to_string(rhs.info.flags));
     }
-    if (check_pages) {
+    if (check_layout) {
+        if (lhs.stat.ms_depth != rhs.stat.ms_depth) {
+            return tl::make_unexpected("btree height mismatch: " + std::to_string(lhs.stat.ms_depth) +
+                                       " vs " + std::to_string(rhs.stat.ms_depth));
+        }
         if (lhs.stat.ms_leaf_pages != rhs.stat.ms_leaf_pages) {
             return tl::make_unexpected("leaf pages mismatch: " + std::to_string(lhs.stat.ms_leaf_pages) +
                                        " vs " + std::to_string(rhs.stat.ms_leaf_pages));
@@ -1182,9 +1182,9 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
 }
 
 static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
-                                                bool check_pages, bool verbose) {
+                                                bool check_layout, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
-    if (const auto result{compare(db1_table, db2_table, check_pages)}; !result) {
+    if (const auto result{compare(db1_table, db2_table, check_layout)}; !result) {
         const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
         if (verbose) {
             std::cerr << error_message << "\n";
@@ -1197,14 +1197,14 @@ static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2
 }
 
 static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
-                                             bool check_pages, bool verbose) {
+                                             bool check_layout, bool verbose) {
     const auto& db1_tables{db1_info.tables};
     const auto& db2_tables{db2_info.tables};
     SILKWORM_ASSERT(db1_tables.size() == db2_tables.size());
 
     // Check both databases have the same content for each table
     for (size_t i{0}; i < db1_tables.size(); ++i) {
-        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_pages, verbose)}; !result) {
+        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_layout, verbose)}; !result) {
             return result;
         }
     }
@@ -1212,7 +1212,7 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
     return {};
 }
 
-void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_pages, bool verbose, std::optional<std::string_view> table) {
+void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, std::optional<std::string_view> table) {
     ensure(fs::exists(target_datadir_path), "target datadir " + target_datadir_path.string() + " does not exist");
     ensure(fs::is_directory(target_datadir_path), "target datadir " + target_datadir_path.string() + " must be a folder");
 
@@ -1239,7 +1239,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in the specified table
-        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_pages, verbose)}; !result) {
+        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_layout, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     } else {
@@ -1249,7 +1249,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in each table
-        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_pages, verbose)}; !result) {
+        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_layout, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     }
@@ -2243,7 +2243,7 @@ int main(int argc, char* argv[]) {
                            ->excludes(app_dry_opt);
     auto cmd_compare_datadir = cmd_compare->add_option("--other_datadir", "Path to other data directory")->required();
     auto cmd_compare_verbose = cmd_compare->add_flag("--verbose", "Print verbose output");
-    auto cmd_compare_check_pages = cmd_compare->add_flag("--check_pages", "Check if b-tree page counters match");
+    auto cmd_compare_check_layout = cmd_compare->add_flag("--check_layout", "Check if B-tree structures match");
     std::optional<std::string> cmd_compare_table;
     cmd_compare->add_option("--table", cmd_compare_table, "Name of specific table to compare")
         ->capture_default_str();
@@ -2402,7 +2402,7 @@ int main(int argc, char* argv[]) {
                     static_cast<bool>(*cmd_copy_target_create_opt), static_cast<bool>(*cmd_copy_target_noempty_opt),
                     cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_compare) {
-            compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_pages->as<bool>(),
+            compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_layout->as<bool>(),
                     cmd_compare_verbose->as<bool>(), cmd_compare_table);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),

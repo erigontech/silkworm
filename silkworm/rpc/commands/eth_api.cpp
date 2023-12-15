@@ -1309,16 +1309,12 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     auto call = params[0].get<Call>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
-    bool optimize_gas = false;
+    bool optimize_gas = true;
     if (params.size() == 3) {
         optimize_gas = params[2];
-        if (optimize_gas) {
-            reply = make_json_error(request, 100, "not supported optimize_gas to true");
-            co_return;
-        }
     }
 
-    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " optimize: " << optimize_gas;
 
     auto tx = co_await database_->begin();
 

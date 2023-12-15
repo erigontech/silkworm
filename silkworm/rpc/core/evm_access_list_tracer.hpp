@@ -53,7 +53,7 @@ class AccessListTracer : public silkworm::EvmTracer {
 
     void add_storage(const evmc::address& address, const evmc::bytes32& storage);
     void add_address(const evmc::address& address);
-    bool created_contract(const evmc::address& address);
+    bool is_created_contract(const evmc::address& address);
     void add_contract(const evmc::address& address);
     void use_address_on_old_contract(const evmc::address& address);
     void optimize_warm_address_in_access_list(const evmc::address& address);

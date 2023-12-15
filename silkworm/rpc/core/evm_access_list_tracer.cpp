@@ -44,6 +44,8 @@ const char* DELEGATECALL = evmone::instr::traits[evmc_opcode::OP_DELEGATECALL].n
 const char* CALL = evmone::instr::traits[evmc_opcode::OP_CALL].name;
 const char* STATICCALL = evmone::instr::traits[evmc_opcode::OP_STATICCALL].name;
 const char* CALLCODE = evmone::instr::traits[evmc_opcode::OP_CALLCODE].name;
+const char* CREATE = evmone::instr::traits[evmc_opcode::OP_CREATE].name;
+const char* CREATE2 = evmone::instr::traits[evmc_opcode::OP_CREATE2].name;
 
 inline constexpr auto TxAccessListStorageKeyGas = 1900;  // per storage key specified in EIP 2930 access list
 inline constexpr auto TxAccessListAddressGas = 2400;     // per address specified in EIP 2930 access list
@@ -53,22 +55,15 @@ std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
-void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view /*code*/) noexcept {
+void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message& /* msg */, evmone::bytes_view /*code*/) noexcept {
     rev_ = rev;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
     }
-
-    if (msg.kind == evmc_call_kind::EVMC_CREATE ||
-        msg.kind == evmc_call_kind::EVMC_CREATE2) {
-        auto contract_code_address = evmc::address{msg.code_address};
-        std::cout << "CREATE " << contract_code_address << "\n";
-        add_contract(contract_code_address);
-    }
 }
 
 void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, int64_t gas,
-                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     assert(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
 
@@ -91,7 +86,7 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
         if (!exclude(recipient)) {
             add_storage(recipient, address);
-            if (!created_contract(recipient)) {
+            if (!is_created_contract(recipient)) {
                 use_address_on_old_contract(recipient);
             }
         }
@@ -100,7 +95,7 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         intx::be::trunc(address.bytes, stack_top[0]);
         if (!exclude(recipient)) {
             add_address(address);
-            if (!created_contract(recipient)) {
+            if (!is_created_contract(recipient)) {
                 use_address_on_old_contract(recipient);
             }
         }
@@ -109,10 +104,29 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         intx::be::trunc(address.bytes, stack_top[-1]);
         if (!exclude(address)) {
             add_address(address);
-            if (!created_contract(recipient)) {
+            if (!is_created_contract(recipient)) {
                 use_address_on_old_contract(recipient);
             }
         }
+    } else if (opcode_name == CREATE) {
+        const uint64_t nonce{intra_block_state.get_nonce(execution_state.msg->recipient)};
+        const auto& contract_address{create_address(execution_state.msg->recipient, nonce)};
+        add_contract(contract_address);
+
+    } else if (opcode_name == CREATE2) {
+        if (stack_height < 4) {
+            return;  // Invariant break for current implementation of OP_CREATE2, let's handle this gracefully.
+        }
+        const auto init_code_offset = static_cast<size_t>(stack_top[-1]);
+        if (init_code_offset >= execution_state.memory.size()) {
+            return;  // Invariant break for current implementation of OP_CREATE2, let's handle this gracefully.
+        }
+        const auto init_code_size = static_cast<size_t>(stack_top[-2]);
+        const evmc::bytes32 salt2{intx::be::store<evmc::bytes32>(stack_top[-3])};
+        auto init_code_hash{
+            init_code_size > 0 ? ethash::keccak256(&execution_state.memory.data()[init_code_offset], init_code_size) : ethash_hash256{}};
+        const auto& contract_address{create2_address(execution_state.msg->recipient, salt2, init_code_hash.bytes)};
+        add_contract(contract_address);
     }
 }
 
@@ -208,16 +222,20 @@ bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {
     return true;
 }
 
-bool AccessListTracer::created_contract(const evmc::address& address) {
-    return created_contracts_[address];
+bool AccessListTracer::is_created_contract(const evmc::address& address) {
+    return created_contracts_.find(address) != created_contracts_.end();
 }
 
 void AccessListTracer::add_contract(const evmc::address& address) {
-    created_contracts_[address] = true;
+    if (created_contracts_.find(address) != created_contracts_.end()) {
+        created_contracts_[address] = true;
+    }
 }
 
 void AccessListTracer::use_address_on_old_contract(const evmc::address& address) {
-    used_address_on_old_contract_[address] = true;
+    if (used_address_on_old_contract_.find(address) != used_address_on_old_contract_.end()) {
+        used_address_on_old_contract_[address] = true;
+    }
 }
 
 AccessList& AccessListTracer::optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {

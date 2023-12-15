@@ -82,18 +82,18 @@ class ResettableOnceFlag {
     ResettableOnceFlag(const ResettableOnceFlag&) = default;
     ResettableOnceFlag& operator=(const ResettableOnceFlag&) = default;
 
-    void reset() { done = false; }
+    void reset() { done_ = false; }
 
     template <typename Callable, typename... Args>
     void call_once(Callable&& fn, Args&&... args) {
-        if (!done) {
+        if (!done_) {
             std::invoke(std::forward<Callable>(fn), std::forward<Args>(args)...);
-            done = true;
+            done_ = true;
         }
     }
 
   private:
-    bool done{false};
+    bool done_{false};
 };
 
 #endif

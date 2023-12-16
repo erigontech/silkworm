@@ -238,6 +238,9 @@ void AccessListTracer::use_address_on_old_contract(const evmc::address& address)
     }
 }
 
+// some addresses (like sender, recipient, block producer, and created contracts)
+// are considered warm already, so we can save by adding these to the access list
+// only if we are adding a lot of their respective storage slots as well
 AccessList& AccessListTracer::optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
     optimize_warm_address_in_access_list(from);
     optimize_warm_address_in_access_list(to);

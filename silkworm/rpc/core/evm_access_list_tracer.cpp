@@ -249,7 +249,7 @@ AccessList& AccessListTracer::optimize_gas(const evmc::address& from, const evmc
          it != created_contracts_.end();
          it++) {
         auto usedit = used_before_creation_.find(it->first);
-        if (usedit != used_before_creation_.end()) {
+        if (usedit == used_before_creation_.end()) {
             optimize_warm_address_in_access_list(it->first);
         }
     }

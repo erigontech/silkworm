@@ -41,12 +41,12 @@ class AccessListTracer : public silkworm::EvmTracer {
                               const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
     void reset_access_list() { access_list_.clear(); }
-    AccessList& optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase);
+    void optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase);
     static void dump(const std::string& user_string, const AccessList& acl);
     static bool compare(const AccessList& acl1, const AccessList& acl2);
 
   private:
-    inline bool exclude(const evmc::address& address);
+    static inline bool exclude(const evmc::address& address, evmc_revision rev);
     static inline bool is_storage_opcode(const std::string& opcode_name);
     static inline bool is_contract_opcode(const std::string& opcode_name);
     static inline bool is_call_opcode(const std::string& opcode_name);
@@ -61,7 +61,6 @@ class AccessListTracer : public silkworm::EvmTracer {
     std::map<evmc::address, bool> created_contracts_;
     std::map<evmc::address, bool> used_before_creation_;
     AccessList access_list_;
-    evmc_revision rev_;
 
     const char* const* opcode_names_ = nullptr;
 };

@@ -1386,7 +1386,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
                 if (optimize_gas) {
-                    current_access_list = tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
+                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
                 }
                 access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);

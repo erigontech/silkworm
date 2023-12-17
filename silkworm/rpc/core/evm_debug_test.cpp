@@ -93,8 +93,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter writer(4096);
     json::Stream stream(io_executor, writer);
@@ -261,8 +262,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter writer(4096);
     json::Stream stream(io_executor, writer);
@@ -1035,8 +1037,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter writer(4096);
     json::Stream stream(io_executor, writer);
@@ -1188,8 +1191,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter writer(4096);
     json::Stream stream(io_executor, writer);

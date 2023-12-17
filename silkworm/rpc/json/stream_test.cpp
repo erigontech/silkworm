@@ -34,8 +34,9 @@ struct JsonStreamTest : test::ContextTestBase {
 TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter string_writer;
     ChunksWriter chunks_writer(string_writer, 16);
@@ -82,8 +83,9 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
 TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    boost::asio::io_context io_context;
-    boost::asio::any_io_executor io_executor{io_context.get_executor()};
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter string_writer;
     Stream stream(io_executor, string_writer);

@@ -1309,16 +1309,12 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     auto call = params[0].get<Call>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
-    bool optimize_gas = false;
+    bool optimize_gas = true;
     if (params.size() == 3) {
         optimize_gas = params[2];
-        if (optimize_gas) {
-            reply = make_json_error(request, 100, "not supported optimize_gas to true");
-            co_return;
-        }
     }
 
-    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " optimize: " << optimize_gas;
 
     auto tx = co_await database_->begin();
 
@@ -1365,7 +1361,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             to = silkworm::create_address(*call.from, nonce);
         }
 
-        auto tracer = std::make_shared<AccessListTracer>(*call.from, to);
+        auto tracer = std::make_shared<AccessListTracer>();
 
         Tracers tracers{tracer};
         while (true) {
@@ -1388,6 +1384,9 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
                 if (!execution_result.success()) {
                     access_list_result.error = execution_result.error_message(false /* full_error */);
+                }
+                if (optimize_gas) {
+                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
                 }
                 access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);

@@ -16,13 +16,14 @@
 
 #include "stream.hpp"
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 

@@ -20,11 +20,11 @@
 #include <string>
 #include <string_view>
 
-#include <boost/asio/io_context.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/rpc/types/writer.hpp>
 
 namespace silkworm::rpc::json {
@@ -34,9 +34,8 @@ static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : 
-      executor_(executor), writer_(writer), threshold_(threshold) {}
-    // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) : 
+    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : executor_(executor), writer_(writer), threshold_(threshold) {}
+    // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) :
     //   executor_(executor), writer_(writer) {}
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;

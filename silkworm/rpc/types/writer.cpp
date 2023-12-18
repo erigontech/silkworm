@@ -103,7 +103,7 @@ void ChunksWriter2::write(std::string_view content) {
         writer_.write(content);
         writer_.write(kChunkSep);
     } else {
-        SILK_ERROR << "Invalid conversion for size " <<  size;
+        SILK_ERROR << "Invalid conversion for size " << size;
     }
 }
 

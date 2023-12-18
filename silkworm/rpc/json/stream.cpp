@@ -16,15 +16,15 @@
 
 #include "stream.hpp"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/compose.hpp>
-#include <boost/asio/use_future.hpp>
-
 #include <algorithm>
 #include <array>
 #include <charconv>
 #include <iostream>
 #include <string>
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/compose.hpp>
+#include <boost/asio/use_future.hpp>
 
 namespace silkworm::rpc::json {
 
@@ -52,18 +52,19 @@ Task<void> Stream::close() {
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
         [&](auto&& self) {
             boost::asio::post(executor_, [&, self = std::move(self), value = std::move(to_write)]() mutable {
-            if (value.size() > 0) {
-                // std::cout << "WRITE " << value << " \n";
-                writer_.write(value);
-            }
-            // std::cout << "CLOSE \n";
-            writer_.close();
-            boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-                // std::cout << "COMPLETING...\n";
-                self.complete();
+                if (value.size() > 0) {
+                    // std::cout << "WRITE " << value << " \n";
+                    writer_.write(value);
+                }
+                // std::cout << "CLOSE \n";
+                writer_.close();
+                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+                    // std::cout << "COMPLETING...\n";
+                    self.complete();
+                });
             });
-        });
-    }, boost::asio::use_awaitable);
+        },
+        boost::asio::use_awaitable);
 
     // std::cout << "COMPLETED \n";
 

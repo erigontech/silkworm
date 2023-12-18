@@ -25,6 +25,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 TEST_CASE("Log RLP encoding") {
     Log sample_log1{
         0xea674fdde714fd979de3edf0f56aa9716b898ec8_address,

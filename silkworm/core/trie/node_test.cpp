@@ -25,6 +25,8 @@
 
 namespace silkworm::trie {
 
+using namespace evmc::literals;
+
 TEST_CASE("Node marshalling") {
     Node n{/*state_mask*/ 0xf607,
            /*tree_mask*/ 0x0005,

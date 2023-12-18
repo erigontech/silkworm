@@ -18,6 +18,8 @@
 
 #include <algorithm>
 
+#include <silkworm/core/common/empty_hashes.hpp>
+
 #include "param.hpp"
 
 namespace silkworm::protocol {

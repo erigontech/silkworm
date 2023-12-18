@@ -66,6 +66,9 @@ jobs:
       working-directory: C:\build
       run: cmake --build . --config ${{ matrix.config.build_type }} --target ethereum -j 2
 
+    - name: Smoke tests
+      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_smoke_tests.cmake
+
     - name: Unit tests
       run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_unit_tests.cmake
 

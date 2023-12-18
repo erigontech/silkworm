@@ -62,7 +62,7 @@ target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
 
 add_executable(grpc_toolbox grpc_toolbox.cpp)
 target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(grpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkrpc)
+target_link_libraries(grpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkworm_rpcdaemon)
 
 add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
 target_link_libraries(kzg_g2_uncompress silkworm_core blst)

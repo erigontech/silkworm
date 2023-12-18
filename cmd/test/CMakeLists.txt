@@ -38,20 +38,32 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Silkworm RpcDaemon Tests
-  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
+  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/rpc/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
-  target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
+  target_link_libraries(rpcdaemon_test silkworm_rpcdaemon Catch2::Catch2 GTest::gmock)
 
   # Enable fuzzing tests for Clang sanitizer builds only
-  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND "${SILKWORM_SANITIZE}" MATCHES ".*fuzzer")
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
+    # Silkworm RpcDaemon Problem Investigation
+    find_package(nlohmann_json REQUIRED)
+    find_package(asio-grpc REQUIRED)
+    add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
+    target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=address,leak,fuzzer)
+    target_link_libraries(
+      rpcdaemon_fuzzer_investigation
+      PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
+      PRIVATE -fsanitize=address,leak,fuzzer
+    )
+
     # Silkworm RpcDaemon Fuzz Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address)
-    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkrpc -fsanitize=fuzzer,address)
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address,undefined,leak)
+    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon -fsanitize=fuzzer,address,undefined,leak)
 
     # Silkworm RpcDaemon Fuzz Debug Executable
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11)
+    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined,leak)
+    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkrpc CLI11::CLI11 -fsanitize=address,undefined,leak)
   endif()
 
   # Silkworm Sync Tests

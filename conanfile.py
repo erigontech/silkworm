@@ -47,10 +47,73 @@ class SilkwormRecipe(ConanFile):
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'
 
-        # Currently Conan Center has Windows binaries built only with msvc 16 only and mimalloc built only with option override=False
-        # In order to build mimalloc with override=True we need to switch to msvc 17 compiler but this would trigger a full rebuild from
-        # sources of all dependencies wasting a lot of time, so we prefer to turn off mimalloc override
-        # The same applies also for boost with option asio_no_deprecated
-        if self.settings.os != 'Windows':
-            self.options['boost'].asio_no_deprecated = True
+        # Currently Conan Center has Windows binaries built only with msvc16 only and mimalloc built only with option override=False.
+        # In order to build mimalloc with override=True we would need to switch to msvc17 compiler but this would trigger a full rebuild
+        # from sources of all dependencies wasting a lot of time, so we prefer to keep mimalloc override disabled on Windows.
+        # The same applies also for boost with option asio_no_deprecated, so we can skip configuration entirely on Windows.
+        if self.settings.os == 'Windows':
+            return
+
+        # Moreover, mimalloc override=True causes a crash on macOS at startup when running rpcdaemon, so we just enable it on Linux
+        if self.settings.os == 'Linux':
             self.options['mimalloc'].override = True
+
+        self.options['boost'].asio_no_deprecated = True
+
+        # Disable building unused boost components
+        # note: changing default options above forces a boost rebuild anyway
+        for component in self.boost_components_unused():
+            setattr(self.options['boost'], 'without_' + component, True)
+
+    def boost_components_unused(self):
+        components_all = [
+            'atomic',
+            'chrono',
+            'container',
+            'context',
+            'contract',
+            'coroutine',
+            'date_time',
+            'exception',
+            'fiber',
+            'filesystem',
+            'graph',
+            'graph_parallel',
+            'iostreams',
+            'json',
+            'locale',
+            'log',
+            'math',
+            'mpi',
+            'nowide',
+            'program_options',
+            'python',
+            'random',
+            'regex',
+            'serialization',
+            'stacktrace',
+            'system',
+            'test',
+            'thread',
+            'timer',
+            'type_erasure',
+            'url',
+            'wave',
+        ]
+
+        components_used = [
+            # asio-grpc requires:
+            'container',
+
+            # silkworm requires:
+            'system',
+            'thread',
+
+            # Boost::thread requires:
+            'atomic',
+            'chrono',
+            'date_time',
+            'exception',
+        ]
+
+        return set(components_all) - set(components_used)

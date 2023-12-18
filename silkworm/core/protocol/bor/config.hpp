@@ -19,6 +19,7 @@
 #include <optional>
 #include <string_view>
 
+#include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>

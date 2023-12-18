@@ -22,13 +22,13 @@ namespace silkworm {
 
 struct GetBlockHeadersPacket {
     HashOrNumber origin;  // Block hash or block number from which to retrieve headers
-    uint64_t amount;      // Maximum number of headers to retrieve
-    uint64_t skip;        // Blocks to skip between consecutive headers
-    bool reverse;         // Query direction (false = rising towards latest, true = falling towards genesis)
+    uint64_t amount{0};   // Maximum number of headers to retrieve
+    uint64_t skip{0};     // Blocks to skip between consecutive headers
+    bool reverse{false};  // Query direction (false = rising towards latest, true = falling towards genesis)
 };
 
 struct GetBlockHeadersPacket66 {  // eth/66 version
-    uint64_t requestId;
+    uint64_t requestId{0};
     GetBlockHeadersPacket request;
 };
 

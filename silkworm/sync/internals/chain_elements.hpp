@@ -21,6 +21,7 @@
 #include <set>
 #include <span>
 #include <stack>
+#include <utility>
 #include <vector>
 
 #include <silkworm/node/db/access_layer.hpp>
@@ -78,7 +79,7 @@ struct Anchor {
         peerId = std::move(p);
     }
 
-    BlockNum chainLength() { return lastLinkHeight - blockHeight + 1; }
+    BlockNum chainLength() const { return lastLinkHeight - blockHeight + 1; }
 
     void remove_child(const Link& child) {
         std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });
@@ -218,7 +219,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
     std::vector<Header_Ref> to_ref() {
         std::vector<Header_Ref> refs;
-        for (Header_Ref i = headers_.begin(); i < headers_.end(); i++) refs.push_back(i);
+        for (auto i = headers_.begin(); i < headers_.end(); i++) refs.emplace_back(i);
         return refs;
     }
 
@@ -241,7 +242,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 struct Segment
     : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
 
-    Segment(std::shared_ptr<HeaderList> line) : line_(line) {}
+    Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
         assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
@@ -261,7 +262,7 @@ struct Segment
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
     [[nodiscard]] Slice slice(size_t start, size_t end) const {
-        return Slice(data() + start, data() + end);
+        return {data() + start, data() + end};
     }
 
   protected:

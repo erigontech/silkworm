@@ -17,6 +17,7 @@
 #include "ethash_rule_set.hpp"
 
 #include <silkworm/core/chain/dao.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 #include "param.hpp"

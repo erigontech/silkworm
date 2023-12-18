@@ -25,7 +25,7 @@
 
 #include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/node/test/mock_execution_client.hpp>
-#include <silkworm/silkrpc/test/context_test_base.hpp>
+#include <silkworm/rpc/test/context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 #include <silkworm/sync/test/mock_block_exchange.hpp>

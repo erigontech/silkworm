@@ -129,8 +129,8 @@ TEST_CASE("Bitmap Index Loader") {
     };
 
     etl::Collector collector(context.node_settings().data_directory->etl().path());
-    db::bitmap::IndexLoader bm_loader(db::table::kLogAddressIndex);
-    bm_loader.flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
+    IndexLoader bm_loader(db::table::kLogAddressIndex);
+    IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());
 
     // Load into LogAddressIndex

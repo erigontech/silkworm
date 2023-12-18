@@ -62,7 +62,7 @@ struct SnapshotBundle {
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(SnapshotSettings settings = {});
+    explicit SnapshotRepository(const SnapshotSettings& settings = {});
     ~SnapshotRepository();
 
     [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }

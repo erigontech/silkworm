@@ -18,6 +18,7 @@
 
 #include <bit>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
@@ -332,13 +333,17 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
     }
 
     for (const auto& [address, obj] : objects_) {
+        // Skip update if both initial and final state are empty (i.e. contract creation+destruction within the same block)
+        if (!obj.initial && !obj.current) {
+            continue;
+        }
         db_.update_account(address, obj.initial, obj.current);
-        if (!obj.current.has_value()) {
+        if (!obj.current) {
             continue;
         }
         const auto& code_hash{obj.current->code_hash};
         if (code_hash != kEmptyHash &&
-            (!obj.initial.has_value() || obj.initial->incarnation != obj.current->incarnation)) {
+            (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
                 ByteView code_view{it->second.data(), it->second.size()};
                 db_.update_account_code(address, obj.current->incarnation, code_hash, code_view);

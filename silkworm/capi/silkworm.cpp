@@ -34,7 +34,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshot/index.hpp>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "instance.hpp"
 

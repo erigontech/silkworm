@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 
 namespace silkworm {
 

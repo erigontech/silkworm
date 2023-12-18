@@ -35,10 +35,10 @@
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
-#include <silkworm/silkrpc/grpc/util.hpp>
+#include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/util.hpp>
+#include <silkworm/rpc/ethbackend/remote_backend.hpp>
+#include <silkworm/rpc/grpc/util.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;
@@ -120,8 +120,8 @@ int ethbackend_async(const std::string& target) {
     // Create ETHBACKEND stub using insecure channel to target
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void* got_tag;
-    bool ok;
+    void* got_tag{nullptr};
+    bool ok{false};
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
     const auto stub = remote::ETHBACKEND::NewStub(channel);
@@ -247,6 +247,7 @@ int ethbackend_coroutines(const std::string& target) {
 
         // Etherbase
         ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
+        // NOLINTNEXTLINE(performance-unnecessary-value-param)
         boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });
@@ -358,8 +359,8 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     grpc::ClientContext context;
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void* got_tag;
-    bool ok;
+    void* got_tag{nullptr};
+    bool ok{false};
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
     const auto stub = remote::KV::NewStub(channel);

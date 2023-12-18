@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>
 

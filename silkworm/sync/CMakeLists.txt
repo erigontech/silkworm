@@ -23,7 +23,7 @@ list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
 add_library(silkworm_sync "${SILKWORM_SYNC_SRC}")
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
-    silkrpc
+    silkworm_rpcdaemon
     silkworm_node
     silkworm_core
     mdbx-static
@@ -41,9 +41,6 @@ set(SILKWORM_SYNC_PRIVATE_LIBS
     magic_enum::magic_enum
 )
 # cmake-format: on
-if(MSVC)
-  list(APPEND SILKWORM_SYNC_PRIVATE_LIBS ntdll.lib)
-endif(MSVC)
 
 target_link_libraries(
   silkworm_sync

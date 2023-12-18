@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkrpc Authors
+   Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;

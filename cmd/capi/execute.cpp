@@ -36,7 +36,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/silkrpc/daemon.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"
 
@@ -286,7 +286,7 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
 
-        const Snapshot* snapshot;
+        const Snapshot* snapshot{nullptr};
         switch (snapshot_path->type()) {
             case headers:
                 snapshot = repository.get_header_segment(*snapshot_path);
@@ -301,9 +301,9 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
             default:
                 throw std::runtime_error("Invalid snapshot type");
         }
-
-        if (!snapshot)
+        if (!snapshot) {
             throw std::runtime_error("Snapshot not found in the repository:" + snapshot_name);
+        }
 
         auto mmf = new SilkwormMemoryMappedFile();
         mmf->file_path = make_path(snapshot->path());

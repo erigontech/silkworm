@@ -79,6 +79,9 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
 
+    - name: Smoke tests
+      run: make "SILKWORM_BUILD_DIR=${{runner.workspace}}/build" run_smoke_tests
+
     - name: Unit tests
       run: make "SILKWORM_BUILD_DIR=${{runner.workspace}}/build" run_unit_tests
 

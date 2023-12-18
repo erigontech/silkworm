@@ -20,6 +20,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 TEST_CASE("from_hex") {
     CHECK(Hash::from_hex("foo") == std::nullopt);
 

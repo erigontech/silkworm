@@ -21,7 +21,7 @@
 
 #include <absl/strings/str_split.h>
 
-#include <silkworm/silkrpc/common/constants.hpp>
+#include <silkworm/rpc/common/constants.hpp>
 
 #include "ip_endpoint_option.hpp"
 
@@ -59,7 +59,7 @@ struct ApiSpecValidator : public CLI::Validator {
             }
 
             // Parse the entire API namespace specification, i.e. comma-separated list of API namespaces
-            for (const auto ns : absl::StrSplit(value, ",")) {
+            for (const auto ns : absl::StrSplit(value, ',')) {
                 const auto it = std::find(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), ns);
                 if (it == kAllEth1Namespaces.cend()) {
                     return "Value " + std::string{ns} + " is not a valid API namespace";

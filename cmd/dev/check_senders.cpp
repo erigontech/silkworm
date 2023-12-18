@@ -38,8 +38,6 @@ using namespace silkworm::cmd::common;
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
-    namespace fs = std::filesystem;
-
     CLI::App app{"Check Block => Senders mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};

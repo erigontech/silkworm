@@ -53,6 +53,7 @@ option(SILKWORM_CORE_USE_ABSEIL "Allow use of Abseil in Silkworm Core" ON)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
 option(SILKWORM_CLANG_TIDY "Clang-Tidy linter" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
+option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 
 if(NOT SILKWORM_HAS_PARENT)

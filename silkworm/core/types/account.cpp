@@ -16,6 +16,7 @@
 
 #include "account.hpp"
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>

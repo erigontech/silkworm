@@ -22,7 +22,9 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/silkrpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test/api_test_database.hpp>
+
+#include "address_sanitizer_fix.hpp"
 
 void print_stack_trace() {
     void* trace[16];

@@ -24,6 +24,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 TEST_CASE("Withdrawals hash") {
     std::vector<Withdrawal> withdrawals{
         {

@@ -78,7 +78,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     std::string etherbase_address;
     add_option_etherbase(app, etherbase_address);
 
-    uint32_t max_readers;
+    uint32_t max_readers{0};
     add_option_db_max_readers(app, max_readers);
 
     // RPC Server options

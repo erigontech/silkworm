@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 

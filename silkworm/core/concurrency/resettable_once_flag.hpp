@@ -30,6 +30,7 @@ namespace silkworm {
 // Resettable once_flag. Helper class for lazy evaluation of derived fields such as transaction hash & sender.
 // On one hand, we want such evaluation to happen exactly once and be safe to invoke concurrently (call_once).
 // On the other hand, we need to re-calculate when the inputs to the evaluation change (thus resettable).
+// N.B. This version is based on absl::call_once.
 class ResettableOnceFlag {
   public:
     constexpr ResettableOnceFlag() = default;
@@ -76,7 +77,7 @@ class ResettableOnceFlag {
 #else
 
 // Warning: this version is only suitable for protecting lazy fields in a single-threaded environment.
-// In a multi-threaded environment use the Abseil version above.
+// In a multi-threaded environment use the Abseil-based version above.
 class ResettableOnceFlag {
   public:
     constexpr ResettableOnceFlag() = default;

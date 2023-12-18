@@ -681,7 +681,7 @@ TEST_CASE("Tracing smart contract creation with CREATE", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     TestTracer tracer;

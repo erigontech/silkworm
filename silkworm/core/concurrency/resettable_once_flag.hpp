@@ -75,6 +75,8 @@ class ResettableOnceFlag {
 
 #else
 
+// Warning: this version is only suitable for protecting lazy fields in a single-threaded environment.
+// In a multi-threaded environment use the Abseil version above.
 class ResettableOnceFlag {
   public:
     constexpr ResettableOnceFlag() = default;

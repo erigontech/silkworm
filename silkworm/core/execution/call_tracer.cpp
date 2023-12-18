@@ -31,6 +31,7 @@ using namespace evmone::baseline;
 // We need to ask evmone for it to be exported or for a tracing interface extension (e.g. on_instruction_end?).
 namespace {
 template <Opcode Op>
+[[deprecated("Temporary fix, await tracing interface extension")]]
 inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
                                            const uint256* stack_top, const uint256* stack_bottom) noexcept {
     static_assert(

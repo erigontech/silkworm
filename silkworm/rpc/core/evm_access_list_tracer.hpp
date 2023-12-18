@@ -34,7 +34,7 @@ class AccessListTracer : public silkworm::EvmTracer {
     AccessListTracer(const AccessListTracer&) = delete;
     AccessListTracer& operator=(const AccessListTracer&) = delete;
 
-    AccessList& get_access_list() { return access_list_; }
+    const AccessList& get_access_list() { return access_list_; }
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,

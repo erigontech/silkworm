@@ -31,8 +31,8 @@ using namespace evmone::baseline;
 // We need to ask evmone for it to be exported or for a tracing interface extension (e.g. on_instruction_end?).
 namespace {
 template <Opcode Op>
-[[deprecated("Temporary fix, await tracing interface extension")]] inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
-                                                                                                              const uint256* stack_top, const uint256* stack_bottom) noexcept {
+inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
+                                           const uint256* stack_top, const uint256* stack_bottom) noexcept {
     static_assert(
         !instr::has_const_gas_cost(Op) || instr::gas_costs[EVMC_FRONTIER][Op] != instr::undefined,
         "undefined instructions must not be handled by check_requirements()");
@@ -62,13 +62,20 @@ template <Opcode Op>
             return EVMC_STACK_UNDERFLOW;
     }
 
-    if (INTX_UNLIKELY((gas_left -= gas_cost) < 0)) {
+    if (INTX_UNLIKELY((gas_left -= gas_cost) < 0)) {  // NOLINT(*-assignment-in-if-condition)
         return EVMC_OUT_OF_GAS;
     }
 
     return EVMC_SUCCESS;
 }
 }  // namespace
+
+template <Opcode Op>
+inline evmc_status_code check_preconditions(const intx::uint256* stack_top, int stack_height, int64_t gas,
+                                            const evmone::ExecutionState& state) noexcept {
+    const auto& cost_table{get_baseline_cost_table(state.rev, state.analysis.baseline->eof_header.version)};
+    return check_requirements<Op>(cost_table, gas, stack_top, stack_top - stack_height);
+}
 
 namespace silkworm {
 
@@ -89,8 +96,7 @@ void CallTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_to
                                       const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept {
     const auto op_code = state.original_code[pc];
     if (op_code == evmc_opcode::OP_CREATE) {
-        const auto& cost_table{get_baseline_cost_table(state.rev, state.analysis.baseline->eof_header.version)};
-        if (const auto status{check_requirements<Opcode::OP_CREATE>(cost_table, gas, stack_top, stack_top - stack_height)}; status != EVMC_SUCCESS) {
+        if (const auto status{check_preconditions<Opcode::OP_CREATE>(stack_top, stack_height, gas, state)}; status != EVMC_SUCCESS) {
             return;  // Early failure in pre-execution checks, do not trace anything for compatibility w/ Erigon
         }
         const uint64_t nonce{intra_block_state.get_nonce(state.msg->recipient)};
@@ -99,8 +105,7 @@ void CallTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_to
         traces_.senders.insert(state.msg->recipient);
         traces_.recipients.insert(contract_address);
     } else if (op_code == evmc_opcode::OP_CREATE2) {
-        const auto& cost_table{get_baseline_cost_table(state.rev, state.analysis.baseline->eof_header.version)};
-        if (const auto status{check_requirements<Opcode::OP_CREATE2>(cost_table, gas, stack_top, stack_top - stack_height)}; status != EVMC_SUCCESS) {
+        if (const auto status{check_preconditions<Opcode::OP_CREATE2>(stack_top, stack_height, gas, state)}; status != EVMC_SUCCESS) {
             return;  // Early failure in pre-execution checks, do not trace anything for compatibility w/ Erigon
         }
         if (stack_height < 4) {

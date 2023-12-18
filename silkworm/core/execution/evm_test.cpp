@@ -458,6 +458,22 @@ class TestTracer : public EvmTracer {
         self_destruct_called_ = true;
     }
 
+    void reset() {
+        execution_start_called_ = false;
+        execution_end_called_ = false;
+        creation_completed_called_ = false;
+        self_destruct_called_ = false;
+        contract_address_.reset();
+        key_.reset();
+        rev_ = EVMC_FRONTIER;
+        msg_stack_.clear();
+        bytecode_.clear();
+        pc_stack_.clear();
+        memory_size_stack_.clear();
+        storage_stack_.clear();
+        result_ = {};
+    }
+
     [[nodiscard]] bool execution_start_called() const { return execution_start_called_; }
     [[nodiscard]] bool execution_end_called() const { return execution_end_called_; }
     [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
@@ -633,6 +649,97 @@ TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
     CHECK(tracer3.result().data.empty());
     CHECK(call_traces3.senders.contains(caller));
     CHECK(call_traces3.recipients.contains(contract_address1));
+}
+
+TEST_CASE("Tracing smart contract creation with CREATE", "[core][execution]") {
+    Block block{};
+    block.header.number = 10'336'006;
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+
+    Bytes code{*from_hex(
+        "6080604052348015600f57600080fd5b50604051601a90603b565b6040518091"
+        "03906000f0801580156035573d6000803e3d6000fd5b50506047565b605c8061"
+        "009483390190565b603f806100556000396000f3fe6080604052600080fdfea2"
+        "646970667358221220a6baacd5f97c2b771bee61b48c72a104dab25ffee7f1d6"
+        "a26fcd81322047223364736f6c634300081300336080604052348015600f5760"
+        "0080fd5b50603f80601d6000396000f3fe6080604052600080fdfea264697066"
+        "7358221220f6587bd1dd592bb64698cf04f378d03a5f9e55c27c86df8890b628"
+        "7d8694a43164736f6c63430008130033")};
+    // pragma solidity 0.8.19;
+    //
+    // contract Factory {
+    //     constructor() {
+    //         new Item();
+    //     }
+    // }
+    // contract Item {
+    //     constructor() {}
+    // }
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, kMainnetConfig};
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.data = code;
+
+    TestTracer tracer;
+    evm.add_tracer(tracer);
+    CallTraces call_traces;
+    CallTracer call_tracer{call_traces};
+    evm.add_tracer(call_tracer);
+    CHECK(evm.tracers().size() == 2);
+
+    const auto factory0_address{create_address(caller, state.get_nonce(caller))};
+    const auto item0_address{create_address(factory0_address, 1)};
+
+    uint64_t gas1 = {100'000};  // largely abundant (required 57'470)
+    CallResult res1{evm.execute(txn, gas1)};
+
+    CHECK(res1.status == EVMC_SUCCESS);
+    CHECK(tracer.msg_stack().size() == 2);
+    if (tracer.msg_stack().size() == 2) {
+        CHECK(tracer.msg_stack().at(0).depth == 0);
+        CHECK(tracer.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+        CHECK(tracer.msg_stack().at(0).recipient == factory0_address);
+        CHECK(evmc::is_zero(tracer.msg_stack().at(0).code_address));
+        CHECK(tracer.msg_stack().at(1).depth == 1);
+        CHECK(tracer.msg_stack().at(1).kind == evmc_call_kind::EVMC_CREATE);
+        CHECK(tracer.msg_stack().at(1).recipient == item0_address);
+    }
+    CHECK(evmc::is_zero(tracer.msg_stack().at(1).code_address));
+    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.senders.contains(caller));
+    CHECK(call_traces.senders.contains(factory0_address));
+    CHECK(call_traces.recipients.size() == 2);
+    CHECK(call_traces.recipients.contains(factory0_address));
+    CHECK(call_traces.recipients.contains(item0_address));
+
+    tracer.reset();
+    call_traces.senders.clear();
+    call_traces.recipients.clear();
+
+    // Trigger an early failure in evmone::baseline::check_requirements for CREATE opcode
+    const auto factory1_address{create_address(caller, state.get_nonce(caller))};
+    const auto item1_address{create_address(factory1_address, 1)};
+
+    uint64_t gas2 = {138};  // causes out-of-gas at instruction 34 opcode CREATE in check_requirements
+    CallResult res2 = evm.execute(txn, gas2);
+    CHECK(res2.status == EVMC_OUT_OF_GAS);
+    CHECK(tracer.msg_stack().size() == 1);
+    if (tracer.msg_stack().size() == 1) {
+        CHECK(tracer.msg_stack().at(0).depth == 0);
+        CHECK(tracer.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+        CHECK(tracer.msg_stack().at(0).recipient == factory1_address);
+        CHECK(evmc::is_zero(tracer.msg_stack().at(0).code_address));
+    }
+    CHECK(call_traces.senders.size() == 1);
+    CHECK(call_traces.senders.contains(caller));
+    CHECK(!call_traces.senders.contains(factory1_address));
+    CHECK(call_traces.recipients.size() == 1);
+    CHECK(call_traces.recipients.contains(factory1_address));
+    CHECK(!call_traces.recipients.contains(item1_address));
 }
 
 TEST_CASE("Tracing smart contract creation with CREATE2", "[core][execution]") {
@@ -1187,34 +1294,34 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     call_traces.senders.clear();
     call_traces.recipients.clear();
 
-    // 4th execution is like 2nd but triggers early failure due to insufficient gas
+    // 4th execution is like 2nd but triggers early failure in check_requirements due to insufficient gas
     const auto item1bis_address{create_address(factory_address, 3)};
 
     uint64_t gas4 = {10'000};
     CallResult res4{evm.execute(txn2, gas4)};
 
     CHECK(res4.status == EVMC_OUT_OF_GAS);
-    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.senders.size() == 1);
     CHECK(call_traces.senders.contains(external_account));  // 2nd tx originates from external_account
-    CHECK(call_traces.senders.contains(factory_address));
-    CHECK(call_traces.recipients.size() == 2);
-    CHECK(call_traces.recipients.contains(factory_address));  // 2nd tx goes to factory_address
-    CHECK(call_traces.recipients.contains(item1bis_address));
+    CHECK(!call_traces.senders.contains(factory_address));  // factory_address not traced because creation failed
+    CHECK(call_traces.recipients.size() == 1);
+    CHECK(call_traces.recipients.contains(factory_address));    // 2nd tx goes to factory_address
+    CHECK(!call_traces.recipients.contains(item1bis_address));  // item1bis_address not traced because creation failed
 
     call_traces.senders.clear();
     call_traces.recipients.clear();
 
-    // 5th execution is like 3rd but triggers early failure due to insufficient gas
+    // 5th execution is like 3rd but triggers early failure in check_requirements due to insufficient gas
     uint64_t gas5 = {10'000};
     CallResult res5{evm.execute(txn3, gas5)};
 
     CHECK(res5.status == EVMC_OUT_OF_GAS);
-    CHECK(call_traces.senders.size() == 2);
+    CHECK(call_traces.senders.size() == 1);
     CHECK(call_traces.senders.contains(external_account));  // 3rd tx originates from external_account
-    CHECK(call_traces.senders.contains(factory_address));   // item creation originates from factory_address
-    CHECK(call_traces.recipients.size() == 2);
+    CHECK(!call_traces.senders.contains(factory_address));  // factory_address not traced because creation failed
+    CHECK(call_traces.recipients.size() == 1);
     CHECK(call_traces.recipients.contains(factory_address));  // 3rd tx goes to factory_address
-    CHECK(call_traces.recipients.contains(item2_address));    // failed item creation at item2_address
+    CHECK(!call_traces.recipients.contains(item2_address));   // item2_address not traced because creation failed
 }
 
 }  // namespace silkworm

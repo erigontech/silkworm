@@ -219,8 +219,9 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
         auto current_executor = co_await boost::asio::this_coro::executor;
 
         SocketWriter socket_writer(socket_);
-        ChunksWriter chunks_writer(socket_writer, 0x1FFF);
-        json::Stream stream(current_executor, chunks_writer);
+        // ChunksWriter chunks_writer(socket_writer, 0x2000);
+        ChunksWriter2 chunks_writer(socket_writer);
+        json::Stream stream(current_executor, chunks_writer, 0x1000);
 
         co_await write_headers();
         co_await (rpc_api_.*handler)(request_json, stream);

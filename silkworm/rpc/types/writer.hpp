@@ -91,6 +91,17 @@ class ChunksWriter : public Writer {
     std::unique_ptr<char[]> buffer_;
 };
 
+class ChunksWriter2 : public Writer {
+  public:
+    explicit ChunksWriter2(Writer& writer);
+
+    void write(std::string_view content) override;
+    void close() override;
+
+  private:
+    Writer& writer_;
+};
+
 class JsonChunksWriter : public Writer {
   public:
     explicit JsonChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);

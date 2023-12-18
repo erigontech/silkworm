@@ -70,6 +70,21 @@ Task<void> Stream::close() {
     co_return;
 }
 
+// Task<void> Stream::close() {
+//     auto current_executor = co_await boost::asio::this_coro::executor;
+//     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+//         [&](auto&& self) {
+//             boost::asio::post(executor_, [&, self = std::move(self)]() mutable {
+//             writer_.close();
+//             boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+//                 self.complete();
+//             });
+//         });
+//     }, boost::asio::use_awaitable);
+
+//     co_return;
+// }
+
 void Stream::open_object() {
     bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
     if (isEntry) {
@@ -257,6 +272,13 @@ void Stream::write(std::string_view str) {
         });
     }
 }
+
+// void Stream::write(std::string_view str) {
+//     std::string to_write(str);
+//     boost::asio::post(executor_, [&, value = std::move(to_write)]() mutable {
+//         writer_.write(value);
+//     });
+// }
 
 void Stream::ensure_separator() {
     if (!stack_.empty()) {

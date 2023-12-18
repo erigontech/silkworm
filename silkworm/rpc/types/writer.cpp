@@ -89,6 +89,29 @@ void ChunksWriter::flush() {
     available_ = chunk_size_;
 }
 
+ChunksWriter2::ChunksWriter2(Writer& writer)
+    : writer_(writer) {
+}
+
+void ChunksWriter2::write(std::string_view content) {
+    auto size = content.size();
+    std::array<char, 19> str{};
+
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), size, 16); ec == std::errc()) {
+        writer_.write(std::string_view(str.data(), ptr));
+        writer_.write(kChunkSep);
+        writer_.write(content);
+        writer_.write(kChunkSep);
+    } else {
+        SILK_ERROR << "Invalid conversion for size " <<  size;
+    }
+}
+
+void ChunksWriter2::close() {
+    writer_.write(kFinalChunk);
+    writer_.close();
+}
+
 JsonChunksWriter::JsonChunksWriter(Writer& writer, std::size_t chunk_size)
     : writer_(writer), chunk_size_(chunk_size), room_left_in_chunck_(chunk_size_), written_(0) {
     str_chunk_size_ << std::hex << chunk_size_ << kChunkSep;

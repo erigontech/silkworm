@@ -65,11 +65,8 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kMaxPriorityFeeGreaterThanMax;
     }
 
-    /* Should the sender already be present it means the validation of signature already occurred */
-    if (!txn.from.has_value()) {
-        if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
-            return ValidationResult::kInvalidSignature;
-        }
+    if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+        return ValidationResult::kInvalidSignature;
     }
 
     const intx::uint128 g0{intrinsic_gas(txn, rev)};
@@ -116,22 +113,23 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
 
 ValidationResult validate_transaction(const Transaction& txn, const IntraBlockState& state,
                                       uint64_t available_gas) noexcept {
-    if (!txn.from) {
-        return ValidationResult::kMissingSender;
+    const std::optional<evmc::address> sender{txn.sender()};
+    if (!sender) {
+        return ValidationResult::kInvalidSignature;
     }
 
-    if (state.get_code_hash(*txn.from) != kEmptyHash) {
+    if (state.get_code_hash(*sender) != kEmptyHash) {
         return ValidationResult::kSenderNoEOA;  // EIP-3607
     }
 
-    const uint64_t nonce{state.get_nonce(*txn.from)};
+    const uint64_t nonce{state.get_nonce(*sender)};
     if (nonce != txn.nonce) {
         return ValidationResult::kWrongNonce;
     }
 
     // See YP, Eq (61) in Section 6.2 "Execution"
     const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
-    if (state.get_balance(*txn.from) < v0) {
+    if (state.get_balance(*sender) < v0) {
         return ValidationResult::kInsufficientFunds;
     }
 

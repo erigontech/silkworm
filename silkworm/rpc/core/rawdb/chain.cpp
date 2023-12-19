@@ -234,7 +234,7 @@ Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const 
 
         // When tx receiver is not set, create a contract with address depending on tx sender and its nonce
         if (!transactions[i].to.has_value()) {
-            receipts[i].contract_address = silkworm::create_address(*transactions[i].from, transactions[i].nonce);
+            receipts[i].contract_address = create_address(*transactions[i].sender(), transactions[i].nonce);
         }
 
         // The gas used can be calculated by the previous receipt
@@ -244,7 +244,7 @@ Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const 
             receipts[i].gas_used = receipts[i].cumulative_gas_used - receipts[i - 1].cumulative_gas_used;
         }
 
-        receipts[i].from = transactions[i].from;
+        receipts[i].from = transactions[i].sender();
         receipts[i].to = transactions[i].to;
         receipts[i].type = static_cast<uint8_t>(transactions[i].type);
 

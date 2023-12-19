@@ -55,7 +55,6 @@ enum class [[nodiscard]] ValidationResult {
     kFieldBeforeFork,  // e.g. withdrawals present in a pre-Shanghai block
 
     // [YP] Section 6.2 "Execution", Eq (58)
-    kMissingSender,          // S(T) = ∅
     kSenderNoEOA,            // EIP-3607: σ[S(T)]c ≠ KEC( () )
     kWrongNonce,             // Tn ≠ σ[S(T)]n
     kIntrinsicGas,           // g0 > Tg
@@ -72,7 +71,7 @@ enum class [[nodiscard]] ValidationResult {
     kWrongBlockGas,  // BHg ≠ l(BR)u
 
     // Various other transaction validation
-    kInvalidSignature,            // EIP-2
+    kInvalidSignature,            // EIP-2 violated or otherwise invalid signature
     kWrongChainId,                // EIP-155
     kUnsupportedTransactionType,  // EIP-2718
     kNonceTooHigh,                // Tn ≥ 2^64 - 1 (EIP-2681)
@@ -126,9 +125,8 @@ namespace protocol {
 
     //! \brief Final part of transaction validation that requires access to the state.
     //!
-    //! Preconditions:
-    //! 1) pre_validate_transaction(txn) must return kOk
-    //! 2) txn.from must be recovered, otherwise kMissingSender will be returned
+    //! Precondition:
+    //! pre_validate_transaction(txn) must return kOk
     ValidationResult validate_transaction(const Transaction& txn, const IntraBlockState& state,
                                           uint64_t available_gas) noexcept;
 

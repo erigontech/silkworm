@@ -87,20 +87,19 @@ class Transaction : public UnsignedTransaction {
     bool odd_y_parity{false};
     intx::uint256 r{0}, s{0};  // signature
 
-    // sender recovered from the signature
-    std::optional<evmc::address> from{std::nullopt};
-
     [[nodiscard]] intx::uint256 v() const;  // EIP-155
 
     //! \brief Returns false if v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
     [[nodiscard]] bool set_v(const intx::uint256& v);
 
-    //! \brief Populates the from field with recovered sender.
+    //! \brief Sender recovered from the signature.
     //! \see Yellow Paper, Appendix F "Signing Transactions",
-    //! https://eips.ethereum.org/EIPS/eip-2 and
-    //! https://eips.ethereum.org/EIPS/eip-155.
-    //! If recovery fails the from field is set to null.
-    void recover_sender();
+    //! EIP-2: Homestead Hard-fork Changes and
+    //! EIP-155: Simple replay attack protection.
+    //! If recovery fails std::nullopt is returned.
+    std::optional<evmc::address> sender() const;
+
+    void set_sender(const evmc::address& sender);
 
     [[nodiscard]] evmc::bytes32 hash() const;
 
@@ -108,6 +107,9 @@ class Transaction : public UnsignedTransaction {
     void reset();
 
   private:
+    mutable std::optional<evmc::address> sender_{std::nullopt};
+    mutable ResettableOnceFlag sender_recovered_;
+
     // cached value for hash if already computed
     mutable evmc::bytes32 cached_hash_;
     mutable ResettableOnceFlag hash_computed_;

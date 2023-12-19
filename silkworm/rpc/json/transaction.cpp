@@ -25,11 +25,8 @@
 namespace silkworm {
 
 void to_json(nlohmann::json& json, const Transaction& transaction) {
-    if (!transaction.from) {
-        (const_cast<Transaction&>(transaction)).recover_sender();
-    }
-    if (transaction.from) {
-        json["from"] = transaction.from.value();
+    if (const std::optional<evmc::address> sender{transaction.sender()}; sender) {
+        json["from"] = *sender;
     }
     json["gas"] = rpc::to_quantity(transaction.gas_limit);
     json["hash"] = transaction.hash();
@@ -70,11 +67,8 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
 namespace silkworm::rpc {
 
 void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTransaction& json_tx) {
-    if (!tx.from) {
-        (const_cast<silkworm::Transaction&>(tx)).recover_sender();
-    }
-    if (tx.from) {
-        to_hex(std::span(json_tx.from), tx.from.value().bytes);
+    if (const std::optional<evmc::address> sender{tx.sender()}; sender) {
+        to_hex(std::span(json_tx.from), sender->bytes);
     }
 
     if (tx.to) {

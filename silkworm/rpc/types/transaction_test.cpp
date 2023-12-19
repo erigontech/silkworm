@@ -60,7 +60,7 @@ TEST_CASE("print type-2 transaction", "[rpc][types][transaction]") {
     txn.odd_y_parity = true;
     txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
     txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
-    txn.from = 0x7ad75fdb6244111753822140dad3337f5535f718_address;
+    txn.set_sender(0x7ad75fdb6244111753822140dad3337f5535f718_address);
     txn.block_hash = 0x007fe79ccdd5365f46c34336b8a15b36e05c249a0c62596878236a38034edc21_bytes32;
     txn.block_number = 13116571;
     txn.block_base_fee_per_gas = 110'045'619'790;
@@ -83,7 +83,7 @@ TEST_CASE("print type-2 silkworm::transaction", "[rpc][types][silkworm::transact
     txn.odd_y_parity = true;
     txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
     txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
-    txn.from = 0x7ad75fdb6244111753822140dad3337f5535f718_address;
+    txn.set_sender(0x7ad75fdb6244111753822140dad3337f5535f718_address);
     CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 
@@ -100,7 +100,7 @@ TEST_CASE("create legacy transaction", "[rpc][types][transaction]") {
     txn.odd_y_parity = true;
     txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
     txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
-    txn.from = 0xa1e4380a3b1f749673e270229993ee55f35663b4_address;
+    txn.set_sender(0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
     txn.block_hash = 0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32;
     txn.block_number = 46147;
     CHECK(txn.effective_gas_price() == 50000000000000);
@@ -119,7 +119,7 @@ TEST_CASE("create legacy silkworm::transaction", "[rpc][types][silkworm::transac
     txn.odd_y_parity = true;
     txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
     txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
-    txn.from = 0xa1e4380a3b1f749673e270229993ee55f35663b4_address;
+    txn.set_sender(0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
     CHECK_NOTHROW(silkworm::test_util::null_stream() << txn);
 }
 

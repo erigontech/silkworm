@@ -122,7 +122,7 @@ TEST_CASE("create call with no gas price and valid max_fee_per_gas and max_prior
         31337,                                               // value
         *silkworm::from_hex("001122aabbcc")};
     silkworm::Transaction txn = call.to_transaction();
-    CHECK(txn.from == 0x99f9b87991262f6ba471f09758cde1c0fc1de734_address);
+    CHECK(txn.sender() == 0x99f9b87991262f6ba471f09758cde1c0fc1de734_address);
     CHECK(txn.to == 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 0);

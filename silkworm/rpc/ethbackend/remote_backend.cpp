@@ -239,7 +239,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& has
             sender_addresses.reserve(block.transactions.size());
             for (size_t i{0}; i < block.transactions.size(); ++i) {
                 ByteView sender{senders.substr(i * kAddressLength, kAddressLength)};
-                block.transactions[i].from = bytes_to_address(sender);
+                block.transactions[i].set_sender(bytes_to_address(sender));
             }
         }
     }

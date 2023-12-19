@@ -115,7 +115,7 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
 
     Transaction txn{test::sample_transactions()[0]};
     txn.nonce = 0;
-    txn.from = sender;
+    txn.set_sender(sender);
 
     InMemoryState state;
     IntraBlockState ibs{state};

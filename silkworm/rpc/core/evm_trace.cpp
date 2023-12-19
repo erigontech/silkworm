@@ -1162,9 +1162,6 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
     const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
     for (std::uint64_t pos = 0; pos < trace_call_results.size(); pos++) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
-        if (!transaction.from) {
-            transaction.recover_sender();
-        }
         const auto tnx_hash = transaction.hash();
 
         const auto& trace_call_result = trace_call_results.at(pos);
@@ -1294,10 +1291,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
                 std::vector<TraceCallResult> trace_call_result(transactions.size());
                 for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    silkworm::Transaction transaction{block.transactions[index]};
-                    if (!transaction.from) {
-                        transaction.recover_sender();
-                    }
+                    const silkworm::Transaction& transaction{block.transactions[index]};
 
                     auto& result = trace_call_result.at(index);
                     TraceCallTraces& traces = result.traces;
@@ -1442,17 +1436,12 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
                 Tracers tracers{create_tracer};
 
                 for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    silkworm::Transaction transaction{block.transactions[index]};
-                    if (!transaction.from) {
-                        transaction.recover_sender();
-                    }
-
+                    const silkworm::Transaction& transaction{block.transactions[index]};
                     executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     executor.reset();
-
                     if (create_tracer->found()) {
                         result.transaction_hash = transaction.hash();
-                        result.contract_creator = transaction.from;
+                        result.contract_creator = transaction.sender();
                         break;
                     }
                 }
@@ -1712,10 +1701,6 @@ Task<TraceCallResult> TraceCallExecutor::execute(
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
                 for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
                     silkworm::Transaction txn{block.transactions[idx]};
-
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
                     const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     if (execution_result.pre_check_error) {
                         SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;

@@ -200,7 +200,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     CHECK(transaction.has_value());
     if (transaction) {
         CHECK(transaction->type == TransactionType::kLegacy);
-        CHECK(transaction->from == 0x68795c4aa09d6f4ed3e5deddf8c2ad3049a601da_address);
+        CHECK(transaction->sender() == 0x68795c4aa09d6f4ed3e5deddf8c2ad3049a601da_address);
         CHECK(transaction->to == 0xe9ae6ec1117bbfeb89302ce7e632597bc595efae_address);
     }
 }

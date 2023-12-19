@@ -120,7 +120,7 @@ void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
     const BlockNum header_number{block.header.number};
     if (is_sprint_start(header_number, config().sprint_size(header_number))) {
         // TODO(yperbasis): implement
-        // https://github.com/maticnetwork/bor/blob/v1.2.0-beta2/consensus/bor/bor.go#L827
+        // https://github.com/maticnetwork/bor/blob/v1.2.0/consensus/bor/bor.go#L827
     }
 
     rewrite_code_if_needed(config().rewrite_code, state, header_number);

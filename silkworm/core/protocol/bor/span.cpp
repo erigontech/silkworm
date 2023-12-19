@@ -14,20 +14,12 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/state/intra_block_state.hpp>
+#include "span.hpp"
 
 namespace silkworm::protocol::bor {
 
-struct Span {
-    uint64_t id{0};
-    BlockNum start_block{0};
-    BlockNum end_block{0};
-};
-
-// See GetCurrentSpan in consensus/bor/heimdall/span/spanner.go
-Span get_current_span(IntraBlockState&);
+Span get_current_span(IntraBlockState&) {
+    // TODO(yperbasis): implement
+}
 
 }  // namespace silkworm::protocol::bor

@@ -62,11 +62,11 @@ static silkworm::BlockWithHash allocate_block(BlockNum block_number,
     block_with_hash.block.transactions.resize(2);
     block_with_hash.block.transactions[0].max_priority_fee_per_gas = block_data.max_priority_fee_per_gas_tx1;
     block_with_hash.block.transactions[0].max_fee_per_gas = block_data.max_fee_per_gas_tx1;
-    block_with_hash.block.transactions[0].from = kFromTnx1;
+    block_with_hash.block.transactions[0].set_sender(kFromTnx1);
 
     block_with_hash.block.transactions[1].max_priority_fee_per_gas = block_data.max_priority_fee_per_gas_tx2;
     block_with_hash.block.transactions[1].max_fee_per_gas = block_data.max_fee_per_gas_tx2;
-    block_with_hash.block.transactions[1].from = kFromTnx2;
+    block_with_hash.block.transactions[1].set_sender(kFromTnx2);
 
     return block_with_hash;
 }

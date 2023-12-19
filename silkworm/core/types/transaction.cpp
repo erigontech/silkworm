@@ -43,18 +43,17 @@ bool Transaction::set_v(const intx::uint256& v) {
     }
     odd_y_parity = parity_and_id->odd;
     chain_id = parity_and_id->chain_id;
+    reset();
     return true;
 }
 
 evmc::bytes32 Transaction::hash() const {
-    if (cached_hash_) {
-        return *cached_hash_;
-    }
-
-    Bytes rlp;
-    rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
-    cached_hash_ = (std::bit_cast<evmc_bytes32>(keccak256(rlp)));
-    return *cached_hash_;
+    hash_computed_.call_once([this]() {
+        Bytes rlp;
+        rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
+        cached_hash_ = std::bit_cast<evmc_bytes32>(keccak256(rlp));
+    });
+    return cached_hash_;
 }
 
 namespace rlp {
@@ -405,28 +404,35 @@ void UnsignedTransaction::encode_for_signing(Bytes& into) const {
     }
 }
 
-void Transaction::recover_sender() {
-    if (from.has_value()) {
-        return;
-    }
-    Bytes rlp{};
-    encode_for_signing(rlp);
-    ethash::hash256 hash{keccak256(rlp)};
+std::optional<evmc::address> Transaction::sender() const {
+    sender_recovered_.call_once([this]() {
+        Bytes rlp{};
+        encode_for_signing(rlp);
+        ethash::hash256 hash{keccak256(rlp)};
 
-    uint8_t signature[kHashLength * 2];
-    intx::be::unsafe::store(signature, r);
-    intx::be::unsafe::store(signature + kHashLength, s);
+        uint8_t signature[kHashLength * 2];
+        intx::be::unsafe::store(signature, r);
+        intx::be::unsafe::store(signature + kHashLength, s);
 
-    from = evmc::address{};
-    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
-    if (!silkworm_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
-        from = std::nullopt;
-    }
+        sender_ = evmc::address{};
+        static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+        if (!silkworm_recover_address(sender_->bytes, hash.bytes, signature, odd_y_parity, context)) {
+            sender_ = std::nullopt;
+        }
+    });
+    return sender_;
+}
+
+void Transaction::set_sender(const evmc::address& sender) {
+    sender_recovered_.reset();
+    sender_recovered_.call_once([&]() {
+        sender_ = sender;
+    });
 }
 
 void Transaction::reset() {
-    from.reset();
-    cached_hash_.reset();
+    sender_recovered_.reset();
+    hash_computed_.reset();
 }
 
 intx::uint512 UnsignedTransaction::maximum_gas_cost() const {

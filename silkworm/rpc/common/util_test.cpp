@@ -153,7 +153,7 @@ TEST_CASE("is_replay_protected returns true", "[rpc][common][util]") {
     txn.odd_y_parity = false;
     txn.r = 18;
     txn.s = 36;
-    txn.from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address;
+    txn.set_sender(0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address);
     auto check = is_replay_protected(txn);
     CHECK(check == true);
 }

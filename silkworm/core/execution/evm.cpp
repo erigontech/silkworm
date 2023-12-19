@@ -70,7 +70,7 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
-    assert(txn.from.has_value());  // sender must be recovered
+    assert(txn.sender());  // sender must be valid
 
     txn_ = &txn;
 
@@ -81,7 +81,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         .kind = contract_creation ? EVMC_CREATE : EVMC_CALL,
         .gas = static_cast<int64_t>(gas),
         .recipient = destination,
-        .sender = *txn.from,
+        .sender = *txn.sender(),
         .input_data = txn.data.data(),
         .input_size = txn.data.size(),
         .value = intx::be::store<evmc::uint256be>(txn.value),
@@ -475,7 +475,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{evm_.txn_->effective_gas_price(base_fee_per_gas)};
     intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
-    context.tx_origin = *evm_.txn_->from;
+    context.tx_origin = *evm_.txn_->sender();
     context.block_coinbase = evm_.beneficiary;
     assert(header.number <= INT64_MAX);  // EIP-1985
     context.block_number = static_cast<int64_t>(header.number);

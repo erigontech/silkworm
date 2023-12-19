@@ -103,8 +103,6 @@ struct BlockBody {
 
 struct Block : public BlockBody {
     BlockHeader header;
-
-    void recover_senders();
 };
 
 struct BlockWithHash {

@@ -88,6 +88,7 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_getProof",            // not implemented
     "eth_feeHistory",          // history not stored, needs fixing
     "eth_sendRawTransaction",  // call to oracle fails, needs fixing or mocking
+    "eth_createAccessList",    // expected value doesn't contains gas optimzation
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library

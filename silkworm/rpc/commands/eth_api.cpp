@@ -1301,7 +1301,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
 Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
-    if (params.size() != 2) {
+    if (params.size() != 2 && params.size() != 3) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);
@@ -1309,8 +1309,12 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     auto call = params[0].get<Call>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
+    bool optimize_gas = true;
+    if (params.size() == 3) {
+        optimize_gas = params[2];
+    }
 
-    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " optimize: " << optimize_gas;
 
     auto tx = co_await database_->begin();
 
@@ -1357,7 +1361,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             to = silkworm::create_address(*call.from, nonce);
         }
 
-        auto tracer = std::make_shared<AccessListTracer>(*call.from, to);
+        auto tracer = std::make_shared<AccessListTracer>();
 
         Tracers tracers{tracer};
         while (true) {
@@ -1377,11 +1381,14 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             const AccessList& current_access_list = tracer->get_access_list();
             if (call.access_list == current_access_list) {
                 AccessListResult access_list_result;
-                access_list_result.access_list = current_access_list;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
                 if (!execution_result.success()) {
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
+                if (optimize_gas) {
+                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
+                }
+                access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);
                 break;
             }
@@ -1831,8 +1838,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
         co_return;
     }
 
-    txn.recover_sender();
-    if (!txn.from.has_value()) {
+    if (!txn.sender()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
         reply = make_json_error(request, -32000, error_msg);
@@ -1842,10 +1848,10 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     const auto ethash_hash = txn.hash();
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
-        const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);
-        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
+        const auto contract_address = silkworm::create_address(*txn.sender(), txn.nonce);
+        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
     } else {
-        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
+        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
     }
 
     reply = make_json_content(request, hash);

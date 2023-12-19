@@ -65,12 +65,12 @@ TEST_CASE("Legacy Transaction RLP") {
     decoded.access_list = access_list;
     decoded.max_fee_per_blob_gas = 123;
     decoded.blob_versioned_hashes.emplace_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
-    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
+    decoded.set_sender(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
     view = encoded;
     REQUIRE(rlp::decode(view, decoded));
     CHECK(view.empty());
     CHECK(decoded == txn);
-    CHECK_FALSE(decoded.from.has_value());
+    CHECK_FALSE(decoded.sender());
 }
 
 TEST_CASE("EIP-2930 Transaction RLP") {
@@ -131,11 +131,11 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     decoded.max_fee_per_gas = 31;
     decoded.max_fee_per_blob_gas = 123;
     decoded.blob_versioned_hashes.emplace_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
-    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
+    decoded.set_sender(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
     view = encoded_wrapped;
     REQUIRE(rlp::decode(view, decoded));
     CHECK(decoded == txn);
-    CHECK(!decoded.from);
+    CHECK(!decoded.sender());
 }
 
 TEST_CASE("EIP-1559 Transaction RLP") {
@@ -209,9 +209,7 @@ TEST_CASE("Recover sender 1") {
     txn.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
     txn.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
 
-    txn.recover_sender();
-    CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
-    txn.recover_sender();  // Only for coverage - should not recover twice
+    CHECK(txn.sender() == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
     CHECK(txn.hash() == 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060_bytes32);
 }
 
@@ -231,8 +229,7 @@ TEST_CASE("Recover sender 2") {
     txn.r = intx::from_string<intx::uint256>("0x1c48defe76d367bb92b4fc0628aca42a4d8037062865635d955673e57eddfbfa");
     txn.s = intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6");
 
-    txn.recover_sender();
-    CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
+    CHECK(txn.sender() == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
     CHECK(txn.hash() == 0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314_bytes32);
 }
 

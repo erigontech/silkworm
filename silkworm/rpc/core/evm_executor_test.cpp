@@ -73,7 +73,7 @@ TEST_CASE("EVMExecutor") {
 
         const auto block_number = 10000;
         silkworm::Transaction txn{};
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
         silkworm::Block block{};
         block.header.number = block_number;
 
@@ -107,7 +107,7 @@ TEST_CASE("EVMExecutor") {
         block.header.number = block_number;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
@@ -138,7 +138,7 @@ TEST_CASE("EVMExecutor") {
         block.header.number = block_number;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.max_priority_fee_per_gas = 0x18;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
@@ -171,7 +171,7 @@ TEST_CASE("EVMExecutor") {
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.gas_limit = 60000;
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
@@ -203,7 +203,7 @@ TEST_CASE("EVMExecutor") {
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.gas_limit = 60000;
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
@@ -242,7 +242,7 @@ TEST_CASE("EVMExecutor") {
         block.header.number = block_number;
         silkworm::Transaction txn{};
         txn.gas_limit = 600000;
-        txn.from = 0xa872626373628737383927236382161739290870_address;
+        txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.access_list = access_list;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();

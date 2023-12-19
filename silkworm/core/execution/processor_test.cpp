@@ -41,7 +41,7 @@ TEST_CASE("Zero gas price") {
     txn.odd_y_parity = false;
     txn.r = 1;
     txn.s = 1;
-    txn.from = sender;
+    txn.set_sender(sender);
 
     InMemoryState state;
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
@@ -99,7 +99,7 @@ TEST_CASE("No refund on error") {
 
     processor.evm().state().add_to_balance(caller, kEther);
     processor.evm().state().set_nonce(caller, nonce);
-    txn.from = caller;
+    txn.set_sender(caller);
 
     Receipt receipt1;
     processor.execute_transaction(txn, receipt1);
@@ -193,7 +193,7 @@ TEST_CASE("Self-destruct") {
     txn.odd_y_parity = false;
     txn.r = 1;
     txn.s = 1;
-    txn.from = originator;
+    txn.set_sender(originator);
 
     evmc::bytes32 address_as_hash{to_bytes32(suicidal_address.bytes)};
     txn.data = ByteView{address_as_hash};
@@ -324,7 +324,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     txn.odd_y_parity = false;
     txn.r = 1;
     txn.s = 1;
-    txn.from = caller;
+    txn.set_sender(caller);
 
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig};
@@ -365,7 +365,7 @@ TEST_CASE("Empty suicide beneficiary") {
     txn.odd_y_parity = false;
     txn.r = 1;
     txn.s = 1;
-    txn.from = caller;
+    txn.set_sender(caller);
 
     InMemoryState state;
 

@@ -244,12 +244,9 @@ void AccessListTracer::optimize_gas(const evmc::address& from, const evmc::addre
     optimize_warm_address_in_access_list(from);
     optimize_warm_address_in_access_list(to);
     optimize_warm_address_in_access_list(coinbase);
-    for (auto it = created_contracts_.begin();
-         it != created_contracts_.end();
-         it++) {
-        auto usedit = used_before_creation_.find(it->first);
-        if (usedit == used_before_creation_.end()) {
-            optimize_warm_address_in_access_list(it->first);
+    for (const auto& [address, _] : created_contracts_) {
+        if (!used_before_creation_.contains(address)) {
+            optimize_warm_address_in_access_list(address);
         }
     }
 }

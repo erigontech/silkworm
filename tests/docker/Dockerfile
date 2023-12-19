@@ -33,7 +33,7 @@ RUN cmake/setup/compiler_install.sh clang 15
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_clang_13_debug
+RUN cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
 WORKDIR /app/project
 RUN cmake --build /app/build -j4 
 
@@ -59,9 +59,9 @@ RUN git pull origin ${BRANCH}
 # Rebuild all targets
 RUN echo "Rebuilding"
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_clang_13_debug
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
 WORKDIR /app/project
-RUN sudo cmake --build /app/build -j4 
+RUN sudo cmake --build /app/build -j4 --target rpcdaemon_fuzzer_test
 
 
 # Example of how to run a fuzzer:

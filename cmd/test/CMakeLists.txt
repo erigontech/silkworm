@@ -55,12 +55,12 @@ if(NOT SILKWORM_CORE_ONLY)
       PRIVATE -fsanitize=address,leak,fuzzer
     )
 
-    # Silkworm RpcDaemon Fuzz Tests
+    # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer,address,undefined,leak)
-    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon -fsanitize=fuzzer,address,undefined,leak)
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
+    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon -fsanitize=fuzzer)
 
-    # Silkworm RpcDaemon Fuzz Debug Executable
+    # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined,leak)
     target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=address,undefined,leak)

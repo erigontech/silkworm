@@ -1,7 +1,7 @@
 # ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 # Avoid changes in the code below this point to avoid re-building everything 
 
-FROM cimg/python:3.12.0 as base
+FROM cimg/python:3.12 as base
 
 # 1 Install dependencies
 RUN sudo apt-get update
@@ -33,9 +33,9 @@ RUN cmake/setup/compiler_install.sh clang 15
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
 WORKDIR /app/project
-RUN cmake --build /app/build -j4 
+RUN sudo cmake --build /app/build -j4 
 
 # Avoid changes in the code after this point to avoid re-building everything
 # ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
@@ -46,7 +46,7 @@ ARG CACHEBUST
 RUN echo $CACHEBUST
 
 # Option 1: Build from branch
-RUN echo "Pulling branch" ${BRANCH}
+RUN echo "Pulling branch" $BRANCH
 ARG BRANCH=main
 WORKDIR /app/project
 RUN git checkout ${BRANCH}

@@ -1278,7 +1278,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::vector<TraceCallResult>)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 IntraBlockState initial_ibs{*state};
@@ -1351,7 +1351,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1421,7 +1421,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto deploy_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceDeployResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1487,7 +1487,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::EntryTracer>)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1520,7 +1520,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::string)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1554,7 +1554,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::OperationTracer>)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1587,7 +1587,7 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::TouchTracer>)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
                 silkworm::IntraBlockState initial_ibs{*state};
@@ -1687,7 +1687,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     const auto trace_call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceCallResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
                 silkworm::IntraBlockState initial_ibs{*state};

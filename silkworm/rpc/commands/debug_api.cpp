@@ -316,7 +316,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         auto this_executor = co_await boost::asio::this_coro::executor;
 
         auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
-            [&](auto&& self) {
+            [&](auto& self) {
                 boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                     auto state = tx->create_state(this_executor, tx_database, *chain_storage, block_number - 1);
                     auto account_opt = state->read_account(address);

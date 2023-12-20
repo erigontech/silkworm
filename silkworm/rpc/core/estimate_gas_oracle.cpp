@@ -84,7 +84,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
                 EVMExecutor executor{config_, workers_, state};

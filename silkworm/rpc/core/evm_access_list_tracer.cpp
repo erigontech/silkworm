@@ -92,10 +92,10 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
     } else if (is_contract_opcode(opcode_name) && stack_height >= 1) {
         evmc::address address;
         intx::be::trunc(address.bytes, stack_top[0]);
-        if (!exclude(recipient, execution_state.rev)) {
+        if (!exclude(address, execution_state.rev)) {
             add_address(address);
-            if (!is_created_contract(recipient)) {
-                use_address_on_old_contract(recipient);
+            if (!is_created_contract(address)) {
+                use_address_on_old_contract(address);
             }
         }
     } else if (is_call_opcode(opcode_name) && stack_height >= 5) {
@@ -103,8 +103,8 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
         intx::be::trunc(address.bytes, stack_top[-1]);
         if (!exclude(address, execution_state.rev)) {
             add_address(address);
-            if (!is_created_contract(recipient)) {
-                use_address_on_old_contract(recipient);
+            if (!is_created_contract(address)) {
+                use_address_on_old_contract(address);
             }
         }
     } else if (opcode_name == CREATE) {
@@ -178,13 +178,14 @@ void AccessListTracer::add_address(const evmc::address& address) {
 }
 
 void AccessListTracer::dump(const std::string& user_string, const AccessList& acl) {
-    std::cout << user_string << "\n";
+    std::cout << "Dump: " << user_string << "\n";
     for (std::size_t i{0}; i < acl.size(); i++) {
         std::cout << "Address: " << acl[i].account << "\n";
         for (std::size_t z{0}; z < acl[i].storage_keys.size(); z++) {
             std::cout << "-> StorageKeys: " << to_hex(acl[i].storage_keys[z]) << "\n";
         }
     }
+    std::cout << "---------\n";
 }
 
 bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {

@@ -334,7 +334,7 @@ jobs:
             sudo apt-get update
       - run:
           name: "Install compiler"
-          command: cmake/setup/compiler_install.sh 15
+          command: cmake/setup/compiler_install.sh clang 15
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build

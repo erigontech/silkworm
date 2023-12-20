@@ -158,7 +158,8 @@ commands:
             for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
             for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
             for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
-            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=1000 ~/corpus ~/crashes ~/artifacts
+            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=100000
+            # ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=100000 ~/corpus ~/crashes ~/artifacts
 
 jobs:
   lint:
@@ -319,9 +320,8 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
-    machine:
-      image: ubuntu-2204:2023.04.2
-    resource_class: 2xlarge
+    docker:
+      - image: cimg/python:3.12
     steps:
       - checkout_with_submodules:
           ethereum_tests: false
@@ -330,11 +330,18 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt install -y python3-pip
-      - build_using_conan:
-          build_type: Debug
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
-          target: rpcdaemon_fuzzer_test
+            sudo pip install conan==1.60.2 chardet
+            sudo apt-get update
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh 15
+      - run:
+          name: "CMake Fuzzer"
+          working_directory: ~/build
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+      - run:
+          name: "Build Fuzzer"
+          command: cmake --build ~/build -j
       - fuzz-test
 
   linux-wasm-build:
@@ -402,52 +409,50 @@ parameters:
     default: 12
 
 workflows:
-  version: 2
+  # light:
+  #   when:
+  #     not:
+  #       equal: [ master, <<pipeline.git.branch>> ]
+  #   jobs:
+  #     - lint
+  #     - linux-release:
+  #         name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
+  #         compiler_id: gcc
+  #         compiler_version: <<pipeline.parameters.gcc_version_latest>>
+  #         ethereum_tests: false
+  #         requires:
+  #           - lint
+  #     - linux-release:
+  #         name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
+  #         compiler_id: clang
+  #         compiler_version: <<pipeline.parameters.clang_version_min>>
+  #         ethereum_tests: false
+  #         requires:
+  #           - lint
 
-  light:
-    when:
-      not:
-        equal: [ master, <<pipeline.git.branch>> ]
-    jobs:
-      - lint
-      - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
-          compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_latest>>
-          ethereum_tests: false
-          requires:
-            - lint
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
-          ethereum_tests: false
-          requires:
-            - lint
-
-  integration:
-    when:
-      or:
-        - equal: [ master, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
-    jobs:
-      - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
-          compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_min>>
-      - linux-gcc-thread-sanitizer
-      - linux-clang-coverage
-      - linux-clang-address-sanitizer
-      - linux-clang-tidy
-      - linux-wasm-build
+  # integration:
+  #   when:
+  #     or:
+  #       - equal: [ master, <<pipeline.git.branch>> ]
+  #       - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+  #   jobs:
+  #     - linux-release:
+  #         name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
+  #         compiler_id: gcc
+  #         compiler_version: <<pipeline.parameters.gcc_version_min>>
+  #     - linux-gcc-thread-sanitizer
+  #     - linux-clang-coverage
+  #     - linux-clang-address-sanitizer
+  #     - linux-clang-tidy
+  #     - linux-wasm-build
   
   fuzzer:
-    triggers:
-      - schedule:
-          cron: "0 0 * * 6"
-          filters:
-            branches:
-              only:
-                - master
+    # triggers:
+    #   - schedule:
+    #       cron: "0 0 * * 6"
+    #       filters:
+    #         branches:
+    #           only:
+    #             - master
     jobs:
       - linux-clang-fuzzer

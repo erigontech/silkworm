@@ -352,7 +352,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, nonce_block);
         if (block_with_hash) {
             for (const auto& transaction : block_with_hash->block.transactions) {
-                if (transaction.from == sender && transaction.nonce == nonce) {
+                if (transaction.sender() == sender && transaction.nonce == nonce) {
                     reply = make_json_content(request, transaction.hash());
                     co_await tx->close();
                     co_return;

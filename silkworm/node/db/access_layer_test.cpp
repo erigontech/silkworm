@@ -531,9 +531,6 @@ TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
         CHECK(block.ommers == body.ommers);
         CHECK(block.transactions == body.transactions);
 
-        CHECK(!block.transactions[0].from);
-        CHECK(!block.transactions[1].from);
-
         read_senders = true;
         CHECK_NOTHROW(read_block_by_number(txn, block_num, read_senders, block));
 
@@ -550,8 +547,8 @@ TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
         CHECK(block.ommers == body.ommers);
         CHECK(block.transactions == body.transactions);
 
-        CHECK(block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
-        CHECK(block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
+        CHECK(block.transactions[0].sender() == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
+        CHECK(block.transactions[1].sender() == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
 
         auto [b, h] = split_block_key(key);
         REQUIRE(b == header.number);

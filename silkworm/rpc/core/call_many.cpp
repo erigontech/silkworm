@@ -64,13 +64,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     const auto start_time = clock_time::now();
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
-
-        if (!txn.from) {
-            txn.recover_sender();
-        }
-
         auto exec_result = executor.call(block, txn);
-
         if ((clock_time::since(start_time) / 1000000) > timeout) {
             std::ostringstream oss;
             oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";

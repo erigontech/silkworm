@@ -40,8 +40,8 @@ std::ostream& operator<<(std::ostream& out, const Transaction& t) {
         out << " chain_id: null";
     }
     out << " data: " << silkworm::to_hex(t.data);
-    if (t.from) {
-        out << " from: " << *t.from;
+    if (t.sender()) {
+        out << " from: " << *t.sender();
     } else {
         out << " from: null";
     }
@@ -75,8 +75,8 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
         out << " chain_id: null";
     }
     out << " data: " << silkworm::to_hex(t.data);
-    if (t.from) {
-        out << " from: " << *t.from;
+    if (t.sender()) {
+        out << " from: " << *t.sender();
     } else {
         out << " from: null";
     }

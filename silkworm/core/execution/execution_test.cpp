@@ -64,7 +64,7 @@ TEST_CASE("Execute two blocks") {
 
     block.transactions[0].r = 1;  // dummy
     block.transactions[0].s = 1;  // dummy
-    block.transactions[0].from = kSender;
+    block.transactions[0].set_sender(kSender);
 
     InMemoryState state;
     Account sender_account{};

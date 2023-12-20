@@ -101,9 +101,6 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
         auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
         // FIX 3: populate senders table
-        for (auto& block_txn : block.transactions) {
-            block_txn.recover_sender();
-        }
         db::write_senders(txn, block_hash, block.header.number, block);
 
         // FIX 4a: populate tx lookup table and create receipts

@@ -86,11 +86,6 @@ bool check_intrinsic_gas(const Transaction* txn, evmc_revision rev) {
     return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(Transaction* txn) {
-    txn->recover_sender();
-    return txn->from ? txn->from->bytes : nullptr;
-}
-
 void keccak256(uint8_t* out, const Bytes* in) {
     ethash::hash256 hash{keccak256(*in)};
     std::memcpy(out, hash.bytes, kHashLength);
@@ -131,8 +126,6 @@ BlockHeader* block_header(Block* b) { return &(b->header); }
 uint64_t header_number(const BlockHeader* header) { return header->number; }
 
 uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
-
-void block_recover_senders(Block* b) { b->recover_senders(); }
 
 InMemoryState* new_state() { return new InMemoryState; }
 

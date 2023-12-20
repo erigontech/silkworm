@@ -168,7 +168,7 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
     auto j_transaction = test_data_["transaction"];
 
     txn.nonce = std::stoull(j_transaction.at("nonce").get<std::string>(), nullptr, 16);
-    txn.from = *private_key_to_address(j_transaction["secretKey"]);
+    txn.set_sender(*private_key_to_address(j_transaction["secretKey"]));
 
     const auto to_address = j_transaction.at("to").get<std::string>();
     if (!to_address.empty()) {

@@ -67,13 +67,6 @@ std::optional<intx::uint256> BlockHeader::blob_gas_price() const {
         protocol::kBlobGasPriceUpdateFraction);
 }
 
-//! \brief Recover transaction senders for each block.
-void Block::recover_senders() {
-    for (Transaction& txn : transactions) {
-        txn.recover_sender();
-    }
-}
-
 namespace rlp {
 
     static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool exclude_extra_data_sig = false) {

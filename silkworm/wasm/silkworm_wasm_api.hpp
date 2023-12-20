@@ -67,8 +67,6 @@ SILKWORM_EXPORT void delete_transaction(silkworm::Transaction* x);
 
 SILKWORM_EXPORT bool check_intrinsic_gas(const silkworm::Transaction* txn, evmc_revision rev);
 
-SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn);
-
 SILKWORM_EXPORT void keccak256(uint8_t* out, const silkworm::Bytes* in);
 
 SILKWORM_EXPORT silkworm::Account* new_account(uint64_t nonce, const intx::uint256* balance);
@@ -88,8 +86,6 @@ SILKWORM_EXPORT silkworm::BlockHeader* block_header(silkworm::Block* b);
 SILKWORM_EXPORT uint64_t header_number(const silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT uint8_t* header_state_root(silkworm::BlockHeader* header);
-
-SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b);
 
 SILKWORM_EXPORT silkworm::InMemoryState* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::InMemoryState* x);

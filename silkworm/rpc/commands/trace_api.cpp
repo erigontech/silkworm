@@ -181,8 +181,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
         co_return;
     }
 
-    transaction.recover_sender();
-    if (!transaction.from.has_value()) {
+    if (!transaction.sender()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
         reply = make_json_error(request, -32000, error_msg);

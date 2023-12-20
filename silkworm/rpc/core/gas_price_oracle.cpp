@@ -94,8 +94,7 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
             continue;
         }
 
-        const auto& sender = transaction.from;
-        if (sender == coinbase) {
+        if (transaction.sender() == coinbase) {
             continue;
         }
         block_prices.push_back(priority_fee_per_gas);

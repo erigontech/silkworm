@@ -1366,7 +1366,6 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         Tracers tracers{tracer};
         while (true) {
             const auto txn = call.to_transaction();
-            tracer->reset_access_list();
 
             const auto execution_result = co_await EVMExecutor::call(
                 *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {

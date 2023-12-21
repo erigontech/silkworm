@@ -34,7 +34,7 @@ static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : executor_(executor), writer_(writer), threshold_(threshold) {}
+    explicit Stream(boost::asio::any_io_executor& executor, Writer& writer, std::size_t threshold = kDefaultThreshold) : io_executor_(executor), writer_(writer), threshold_(threshold) {}
     // explicit Stream(boost::asio::any_io_executor& executor, Writer& writer) :
     //   executor_(executor), writer_(writer) {}
     Stream(const Stream& stream) = delete;
@@ -71,7 +71,7 @@ class Stream {
 
     void write(std::string_view str);
 
-    boost::asio::any_io_executor& executor_;
+    boost::asio::any_io_executor& io_executor_;
 
     Writer& writer_;
     std::stack<std::uint8_t> stack_;

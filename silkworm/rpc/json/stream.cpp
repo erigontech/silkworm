@@ -44,27 +44,14 @@ static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 Task<void> Stream::close() {
     // std::cout << "COMPLETING.... \n";
 
-    auto current_executor = co_await boost::asio::this_coro::executor;
+    if (buffer_.size() > 0) {
+        // std::cout << "WRITE " << buffer_ << " \n";
+        writer_.write(buffer_);
+        buffer_.clear();
+    }
 
-    std::string to_write(buffer_);
-    buffer_.clear();
-
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto&& self) {
-            boost::asio::post(executor_, [&, self = std::move(self), value = std::move(to_write)]() mutable {
-                if (value.size() > 0) {
-                    // std::cout << "WRITE " << value << " \n";
-                    writer_.write(value);
-                }
-                // std::cout << "CLOSE \n";
-                writer_.close();
-                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-                    // std::cout << "COMPLETING...\n";
-                    self.complete();
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+    //  std::cout << "CLOSE \n";
+    writer_.close();
 
     // std::cout << "COMPLETED \n";
 
@@ -72,10 +59,40 @@ Task<void> Stream::close() {
 }
 
 // Task<void> Stream::close() {
+//     // std::cout << "COMPLETING.... \n";
+
+//     auto current_executor = co_await boost::asio::this_coro::executor;
+
+//     std::string to_write(buffer_);
+//     buffer_.clear();
+
+//     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
+//         [&](auto&& self) {
+//             boost::asio::post(io_executor_, [&, self = std::move(self), value = std::move(to_write)]() mutable {
+//                 if (value.size() > 0) {
+//                     // std::cout << "WRITE " << value << " \n";
+//                     writer_.write(value);
+//                 }
+//                 // std::cout << "CLOSE \n";
+//                 writer_.close();
+//                 boost::asio::post(current_executor, [self = std::move(self)]() mutable {
+//                     // std::cout << "COMPLETING...\n";
+//                     self.complete();
+//                 });
+//             });
+//         },
+//         boost::asio::use_awaitable);
+
+//     // std::cout << "COMPLETED \n";
+
+//     co_return;
+// }
+
+// Task<void> Stream::close() {
 //     auto current_executor = co_await boost::asio::this_coro::executor;
 //     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
 //         [&](auto&& self) {
-//             boost::asio::post(executor_, [&, self = std::move(self)]() mutable {
+//             boost::asio::post(io_executor_, [&, self = std::move(self)]() mutable {
 //             writer_.close();
 //             boost::asio::post(current_executor, [self = std::move(self)]() mutable {
 //                 self.complete();
@@ -267,7 +284,7 @@ void Stream::write(std::string_view str) {
     if (buffer_.size() >= threshold_) {
         std::string to_write(buffer_);
         buffer_.clear();
-        boost::asio::post(executor_, [&, value = std::move(to_write)]() mutable {
+        boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
             // std::cout << "WRITE: " << value << " \n";
             writer_.write(value);
         });
@@ -276,7 +293,7 @@ void Stream::write(std::string_view str) {
 
 // void Stream::write(std::string_view str) {
 //     std::string to_write(str);
-//     boost::asio::post(executor_, [&, value = std::move(to_write)]() mutable {
+//     boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
 //         writer_.write(value);
 //     });
 // }

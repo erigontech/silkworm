@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "index.hpp"
+#include "index_par.hpp"
 
 #include <stdexcept>
 
@@ -87,9 +87,9 @@ void Index::build(ThreadPool& thread_pool) {
             uint64_t start_offset = prefetched_offsets[i].offset;
             uint64_t start_ordinal = prefetched_offsets[i].ordinal;
             uint64_t end_offset = prefetched_offsets[i + 1].offset;
-            huffman::OffsetRange offset_range{start_offset, end_offset};
 
             thread_pool.push_task([&, start_offset, end_offset, start_ordinal]() {
+                huffman::OffsetRange offset_range{start_offset, end_offset};
                 decoder.read_ahead(offset_range,
                    [start_offset, start_ordinal, &read_ok, &rec_split, this](huffman::Decompressor::Iterator it) {
                        // SILK_INFO << "offset: " << start_offset;
@@ -115,7 +115,7 @@ void Index::build(ThreadPool& thread_pool) {
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_TRACE << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = rec_split.build(thread_pool);
+        collision_detected = rec_split.build();
         SILK_DEBUG << "Build RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
         if (collision_detected) rec_split.reset_new_salt();
     } while (collision_detected);
@@ -210,7 +210,6 @@ void TransactionIndex::build(ThreadPool& thread_pool) {
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
 
     uint64_t iterations{0};
-    Hash tx_hash;
     bool collision_detected{false};
     do {
         iterations++;
@@ -223,9 +222,10 @@ void TransactionIndex::build(ThreadPool& thread_pool) {
 
             uint64_t start_block_num = first_block_num;
 
-            thread_pool.push_task([&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok,
-                                    offset_range = huffman::OffsetRange(start_offset, end_offset),
-                                    bn = start_block_num, f = first_tx_id, so = start_ordinal]() {
+            thread_pool.push_task(
+                [&double_read_ahead, &tx_hash_rs, &tx_hash_to_block_rs, &read_ok, start_offset, end_offset,
+                      bn = start_block_num, f = first_tx_id, so = start_ordinal]() {
+                huffman::OffsetRange offset_range{start_offset, end_offset};
                 bool ok = double_read_ahead(offset_range,
                     [&tx_hash_rs, &tx_hash_to_block_rs,
                      start_block_num = bn, first_tx_id = f, start_offset = offset_range.start, start_ordinal = so](auto tx_it, auto body_it) -> bool {
@@ -324,11 +324,11 @@ void TransactionIndex::build(ThreadPool& thread_pool) {
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_TRACE << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_rs.build(thread_pool);
+        collision_detected = tx_hash_rs.build();
         SILK_TRACE << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected |= tx_hash_to_block_rs.build(thread_pool);
+        collision_detected |= tx_hash_to_block_rs.build();
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {

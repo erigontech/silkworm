@@ -350,6 +350,14 @@ bool Decompressor::read_ahead(ReadAheadFuncRef fn) {
     return fn(it);
 }
 
+bool Decompressor::read_ahead(OffsetRange offset_range, ReadAheadFuncRef fn) {
+    ensure(bool(compressed_file_), "decompressor closed, call open first");
+    compressed_file_->advise_sequential();
+    [[maybe_unused]] auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
+    Iterator it{this, offset_range};
+    return fn(it);
+}
+
 void Decompressor::close() {
     compressed_file_.reset();
 }
@@ -473,7 +481,10 @@ void Decompressor::read_positions(ByteView dict) {
     SILK_TRACE << *position_dict_;
 }
 
-Decompressor::Iterator::Iterator(const Decompressor* decoder) : decoder_(decoder) {}
+Decompressor::Iterator::Iterator(const Decompressor* decoder) : decoder_(decoder), end_offset_{decoder_->words_length_} {}
+
+Decompressor::Iterator::Iterator(const Decompressor* decoder, OffsetRange offset_range)
+    : decoder_(decoder), word_offset_{offset_range.start}, end_offset_{offset_range.end} {}
 
 ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};

@@ -77,7 +77,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         double_enum_index_ = double_enum_index;
     }
 
-    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) override {
+    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset, uint64_t ordinal) override {
         if (keys_added_ % 100'000 == 0) {
             SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
@@ -103,8 +103,10 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             offset_collector_->collect(offset_key, {});
 
             Bytes current_key_count(8, '\0');
-            endian::store_big_u64(current_key_count.data(), keys_added_);
+            endian::store_big_u64(current_key_count.data(), ordinal);
             bucket_collector_->collect(collector_key, current_key_count);
+
+            ensure(ordinal == keys_added_, "ordinal mismatch");  // otherwise we need to sort somewhere
         } else {
             bucket_collector_->collect(collector_key, offset_key);
         }

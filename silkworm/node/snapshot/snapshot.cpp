@@ -81,6 +81,26 @@ bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
     });
 }
 
+bool Snapshot::for_each_item(huffman::Decompressor& decoder, huffman::OffsetRange offset_range, uint64_t start_ordinal,
+                             const Snapshot::WordItemFunc& fn) {
+    auto start_offset = offset_range.start;
+    return decoder.read_ahead(offset_range, [start_offset, start_ordinal, fn](huffman::Decompressor::Iterator it) -> bool {
+        uint64_t word_count{start_ordinal};
+        WordItem item{};
+        item.offset = start_offset;
+        while (it.has_next()) {
+            const uint64_t next_offset = it.next(item.value);
+            item.position = word_count;
+            const bool result = fn(item);
+            if (!result) return false;
+            ++word_count;
+            item.offset = next_offset;
+            item.value.clear();
+        }
+        return true;
+    });
+}
+
 std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView prefix) const {
     SILK_TRACE << "Snapshot::next_item offset: " << offset;
     auto data_iterator = decoder_.make_iterator();
@@ -239,19 +259,31 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
     });
 }
 
-std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
+std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount(AdditionalWork additional_work) {
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
 
-    const bool read_ok = for_each_body([&](BlockNum number, const StoredBlockBody* body) {
+    const bool read_ok = for_each_item([&](const WordItem& item) -> bool {
+        db::detail::BlockBodyForStorage body;
+        success_or_throw(decode_body(item, body));
+        const BlockNum number = path_.block_from() + item.position;
+
         if (number == path_.block_from()) {
-            first_tx_id = body->base_txn_id;
+            first_tx_id = body.base_txn_id;
         }
         if (number == path_.block_to() - 1) {
-            last_tx_id = body->base_txn_id;
-            last_txs_amount = body->txn_count;
+            last_tx_id = body.base_txn_id;
+            last_txs_amount = body.txn_count;
         }
+
+        if (additional_work) {
+            if (!additional_work(number, body, first_tx_id, item)) {
+                return false;
+            }
+        }
+
         return true;
     });
+
     if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.path().string()};
     if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.path().string()};
 

@@ -201,7 +201,7 @@ class RecSplit {
         virtual void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count, bool double_enum_index) = 0;
         virtual ~BuildingStrategy() = default;
 
-        virtual void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) = 0;
+        virtual void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset, uint64_t ordinal) = 0;
         virtual bool build_mph_index(std::ofstream& index_output_stream, GolombRiceVector& golomb_rice_codes,
                                      uint16_t& golomb_param_max_index, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) = 0;
         virtual void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) = 0;
@@ -321,7 +321,7 @@ class RecSplit {
         built_ = true;
     }
 
-    void add_key(const hash128_t& key_hash, uint64_t offset) {
+    void add_key(const hash128_t& key_hash, uint64_t offset, uint64_t ordinal) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
@@ -329,20 +329,20 @@ class RecSplit {
         uint64_t bucket_id = hash128_to_bucket(key_hash);
         auto bucket_key = key_hash.second;
 
-        building_strategy_->add_key(bucket_id, bucket_key, offset);
+        building_strategy_->add_key(bucket_id, bucket_key, offset, ordinal);
     }
 
-    void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+    void add_key(const void* key_data, const size_t key_length, uint64_t offset, uint64_t ordinal) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
         const auto key_hash = murmur_hash_3(key_data, key_length);
-        add_key(key_hash, offset);
+        add_key(key_hash, offset, ordinal);
     }
 
-    void add_key(const std::string& key, uint64_t offset) {
-        add_key(key.c_str(), key.size(), offset);
+    void add_key(const std::string& key, uint64_t offset, uint64_t ordinal) {
+        add_key(key.c_str(), key.size(), offset, ordinal);
     }
 
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file

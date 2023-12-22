@@ -80,6 +80,65 @@ bool contains_duplicate(const std::vector<T>& items) {
     return false;  // No duplicate found
 }
 
+// merge_sorted_vectors merges multiple sorted vectors into a single sorted vector
+// The input vectors must be sorted in ascending order
+// The output vector is sorted in ascending order
+// The input vectors must not contain duplicates
+// The output vector does not contain duplicates
+// The input can be constructed moving all the vectors in all_vector
+// otherwise we have to use an all_vector made by std::vector<std::reference_wrapper<const std::vector<int>>>
+template <typename T>
+std::vector<T> merge_sorted_vectors(const std::vector<std::vector<T>>& all_vectors) {
+    // Calculate total size for reservation
+    size_t total_size = 0;
+    for (const auto& vec : all_vectors) {
+        total_size += vec.size();
+    }
+
+    std::vector<T> result;
+    result.reserve(total_size);  // Reserve space
+
+    struct Element {
+        T val;
+        size_t vec_index;   // Index of the original vector
+        size_t next_index;  // Index of the next element in the original vector
+
+        // Comparator for min heap
+        bool operator>(const Element& other) const {
+            return val > other.val;
+        }
+    };
+
+    std::priority_queue<Element, std::vector<Element>, std::greater<>> min_heap;
+    for (size_t i = 0; i < all_vectors.size(); ++i) {
+        if (!all_vectors[i].empty()) {
+            min_heap.push({all_vectors[i][0], i, 1});
+        }
+    }
+
+    while (!min_heap.empty()) {
+        Element current = min_heap.top();
+        min_heap.pop();
+
+        result.push_back(current.val);
+
+        if (current.next_index < all_vectors[current.vec_index].size()) {
+            min_heap.push({all_vectors[current.vec_index][current.next_index], current.vec_index, current.next_index + 1});
+        }
+    }
+
+    return result;
+}
+
+// set_max sets the value of an atomic var to a new value v if v is greater than the current value
+template <typename T>
+void set_max(std::atomic<T>& atom, T v) {
+    T current = atom.load();
+    while (v > current && !atom.compare_exchange_weak(current, v))
+        ;
+}
+
+
 namespace silkworm::succinct {
 
 //! The recsplit parallel building strategy
@@ -90,21 +149,50 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
   protected:
     struct Bucket {
-        Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id} {
+        Bucket(uint64_t bucket_id, std::size_t bucket_size, bool double_enum)
+            : bucket_id_{bucket_id}, double_enum_{double_enum}, mutex_{new std::mutex} {
             keys_.reserve(bucket_size);
             values_.reserve(bucket_size);
+            if (double_enum_) offsets_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
-        Bucket(Bucket&&) noexcept = default;
+
+        Bucket(Bucket&& other) noexcept
+            : bucket_id_{other.bucket_id_}, keys_{std::move(other.keys_)}, values_{std::move(other.values_)},
+              offsets_{std::move(other.offsets_)}, gr_builder_{std::move(other.gr_builder_)},
+              double_enum_{other.double_enum_}, index_ofs{std::move(other.index_ofs)}, mutex_{other.mutex_} {
+            other.mutex_ = nullptr;
+        }
+
+        ~Bucket() {
+            delete mutex_;
+        }
+
+        void add_key(uint64_t bucket_key, uint64_t offset, uint64_t ordinal) {
+            std::lock_guard<std::mutex> lock{*mutex_};
+
+            if (double_enum_) {
+                offsets_.push_back(offset);
+
+                keys_.emplace_back(bucket_key);
+                values_.emplace_back(ordinal);
+            } else {
+                keys_.emplace_back(bucket_key);
+                values_.emplace_back(offset);
+            }
+        }
 
         //! Identifier of the current bucket being accumulated
         uint64_t bucket_id_{0};
 
         //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
-        std::vector<uint64_t> keys_;  // mike: current_bucket_;  -> keys_
+        std::vector<uint64_t> keys_;
 
         //! Index offsets for the current bucket
-        std::vector<uint64_t> values_;  // mike: current_bucket_offsets_; -> values_
+        std::vector<uint64_t> values_;
+
+        //! Index offsets for the current bucket
+        std::vector<uint64_t> offsets_;
 
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
         GolombRiceVector::LazyBuilder gr_builder_;
@@ -112,13 +200,20 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         //! The local max index used in Golomb parameter array
         uint16_t golomb_param_max_index_{0};
 
+        //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+        bool double_enum_{false};
+
         //! Helper index output stream
         std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
+
+        //! Mutex to protect concurrent access to the bucket
+        std::mutex* mutex_;
 
         void clear() {
             // bucket_id_ = 0;
             keys_.clear();
             values_.clear();
+            offsets_.clear();
             gr_builder_.clear();
             index_ofs.clear();
         }
@@ -131,35 +226,23 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         // Prepare buckets
         buckets_.reserve(bucket_count);
         for (int i = 0; i < bucket_count; i++)
-            buckets_.emplace_back(i, bucket_size);
-        if (double_enum_index)
+            buckets_.emplace_back(i, bucket_size, double_enum_index_);
+        if (double_enum_index_)
             offsets_.reserve(key_count);
     }
 
-    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) override {
+    void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset, uint64_t ordinal) override {
         ensure(bucket_id < buckets_.size(), "bucket_id out of range");
 
         if (keys_added_ % 100'000 == 0) {
             SILK_TRACE << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
-        }
+        set_max(max_offset_, offset);
 
         Bucket& bucket = buckets_[bucket_id];
 
-        if (this->double_enum_index_) {
-            offsets_.push_back(offset);
-
-            auto current_key_count = keys_added_;
-
-            bucket.keys_.emplace_back(bucket_key);
-            bucket.values_.emplace_back(current_key_count);
-        } else {
-            bucket.keys_.emplace_back(bucket_key);
-            bucket.values_.emplace_back(offset);
-        }
+        bucket.add_key(bucket_key, offset, ordinal);
 
         keys_added_++;
     }
@@ -224,8 +307,13 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     }
 
     void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
-        // Build Elias-Fano index for offsets (if any)
-        std::sort(offsets_.begin(), offsets_.end());
+        // Merge all offsets
+        std::vector<std::vector<uint64_t>> all_vectors;
+        for (size_t i = 0; i < bucket_count_; i++) {
+            all_vectors.push_back(std::move(buckets_[i].offsets_));
+        }
+        offsets_ = merge_sorted_vectors(all_vectors);
+        // Build Elias-Fano index for offsets
         ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         for (auto offset : offsets_) {
             ef_offsets->add_offset(offset);
@@ -242,6 +330,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
                 SILK_TRACE << "collision detected";
                 return true;
             }
+
+            // it is unnecessary to sort keys and values
 
             std::vector<uint64_t> buffer_keys;     // temporary buffer for keys
             std::vector<uint64_t> buffer_offsets;  // temporary buffer for offsets
@@ -260,6 +350,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             }
         }
 
+        std::sort(bucket.offsets_.begin(), bucket.offsets_.end());
+
         return false;
     }
 
@@ -277,7 +369,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     }
 
     uint64_t max_offset() override {
-        return max_offset_;
+        return max_offset_.load();
     }
 
     //! The thread pool used for parallel processing
@@ -287,10 +379,10 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     bool double_enum_index_{false};
 
     //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
-    uint64_t max_offset_{0};
+    std::atomic<uint64_t> max_offset_{0};
 
     //! The number of keys currently added
-    uint64_t keys_added_{0};
+    std::atomic<uint64_t> keys_added_{0};
 
     //! The number of buckets for this Recsplit algorithm instance
     std::size_t bucket_count_{0};

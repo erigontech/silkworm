@@ -20,10 +20,10 @@
 #include <memory>
 #include <string>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/write.hpp>
-
-#include <silkworm/infra/concurrency/task.hpp>
 
 namespace silkworm::rpc {
 
@@ -33,7 +33,7 @@ class Writer {
 
     virtual Task<std::size_t> write(std::string_view content) = 0;
     virtual Task<void> close() {
-      co_return;
+        co_return;
     }
 };
 
@@ -42,7 +42,7 @@ class NullWriter : public Writer {
     explicit NullWriter() = default;
 
     Task<std::size_t> write(std::string_view content) override {
-      co_return content.size();
+        co_return content.size();
     }
 };
 
@@ -55,8 +55,8 @@ class StringWriter : public Writer {
     }
 
     Task<std::size_t> write(std::string_view content) override {
-      content_.append(content);
-      co_return content.size();
+        content_.append(content);
+        co_return content.size();
     }
 
     const std::string& get_content() {

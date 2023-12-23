@@ -287,12 +287,14 @@ void Stream::write(std::string_view str) {
     if (buffer_.size() >= threshold_) {
         std::string to_write(buffer_);
         buffer_.clear();
-        co_spawn(io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
-            // std::cout << "WRITING " << value.size() << " chars.....\n";
-            co_await writer_.write(value);
-            // std::cout << "WROTE " << size << " chars\n";
-            co_return;
-        }, boost::asio::detached);
+        co_spawn(
+            io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
+                // std::cout << "WRITING " << value.size() << " chars.....\n";
+                co_await writer_.write(value);
+                // std::cout << "WROTE " << size << " chars\n";
+                co_return;
+            },
+            boost::asio::detached);
         // std::cout << "WROTE \n";
         // boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
         //     // std::cout << "WRITE: " << value << " \n";

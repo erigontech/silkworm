@@ -20,10 +20,11 @@
 #include <string>
 #include <string_view>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/rpc/types/writer.hpp>
 
 namespace silkworm::rpc::json {

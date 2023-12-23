@@ -24,6 +24,7 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/compose.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/use_future.hpp>
 
 namespace silkworm::rpc::json {
@@ -46,12 +47,14 @@ Task<void> Stream::close() {
 
     if (buffer_.size() > 0) {
         // std::cout << "WRITE " << buffer_ << " \n";
-        writer_.write(buffer_);
+        // std::cout << "WRITING " << buffer_.size() << " chars.....\n";
+        co_await writer_.write(buffer_);
+        // std::cout << "WROTE " << size << " chars\n";
         buffer_.clear();
     }
 
-    //  std::cout << "CLOSE \n";
-    writer_.close();
+    // std::cout << "CLOSE \n";
+    co_await writer_.close();
 
     // std::cout << "COMPLETED \n";
 
@@ -284,12 +287,39 @@ void Stream::write(std::string_view str) {
     if (buffer_.size() >= threshold_) {
         std::string to_write(buffer_);
         buffer_.clear();
-        boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
-            // std::cout << "WRITE: " << value << " \n";
-            writer_.write(value);
-        });
+        co_spawn(io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
+            // std::cout << "WRITING " << value.size() << " chars.....\n";
+            co_await writer_.write(value);
+            // std::cout << "WROTE " << size << " chars\n";
+            co_return;
+        }, boost::asio::detached);
+        // std::cout << "WROTE \n";
+        // boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
+        //     // std::cout << "WRITE: " << value << " \n";
+        //     std::cout << "WRITING " << value.size() << " chars.....\n";
+        //     co_spawn(io_executor_, writer_.write(value), boost::asio::detached);
+        //     std::cout << "WROTE \n";
+        //     // auto result = co_spawn(io_executor_, writer_.write(value), boost::asio::use_future);
+        //     // auto size = result.get();
+        //     // auto size = co_await writer_.write(value);
+        //     // std::cout << "WROTE " << size << " chars\n";
+        //     // co_await writer_.write(value);
+        //     // co_return;
+        // });
     }
 }
+
+// void Stream::write(std::string_view str) {
+//     buffer_ += str;
+//     if (buffer_.size() >= threshold_) {
+//         std::string to_write(buffer_);
+//         buffer_.clear();
+//         boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
+//             // std::cout << "WRITE: " << value << " \n";
+//             writer_.write(value);
+//         });
+//     }
+// }
 
 // void Stream::write(std::string_view str) {
 //     std::string to_write(str);

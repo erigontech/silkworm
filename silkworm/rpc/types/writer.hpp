@@ -23,21 +23,26 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/write.hpp>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 namespace silkworm::rpc {
 
 class Writer {
   public:
     virtual ~Writer() = default;
 
-    virtual void write(std::string_view content) = 0;
-    virtual void close() {}
+    virtual Task<std::size_t> write(std::string_view content) = 0;
+    virtual Task<void> close() {
+      co_return;
+    }
 };
 
 class NullWriter : public Writer {
   public:
     explicit NullWriter() = default;
 
-    void write(std::string_view) override {
+    Task<std::size_t> write(std::string_view content) override {
+      co_return content.size();
     }
 };
 
@@ -49,8 +54,9 @@ class StringWriter : public Writer {
         content_.reserve(initial_capacity);
     }
 
-    void write(std::string_view content) override {
-        content_.append(content);
+    Task<std::size_t> write(std::string_view content) override {
+      content_.append(content);
+      co_return content.size();
     }
 
     const std::string& get_content() {
@@ -65,9 +71,7 @@ class SocketWriter : public Writer {
   public:
     explicit SocketWriter(boost::asio::ip::tcp::socket& socket) : socket_(socket) {}
 
-    void write(std::string_view content) override {
-        boost::asio::write(socket_, boost::asio::buffer(content));
-    }
+    Task<std::size_t> write(std::string_view content) override;
 
   private:
     boost::asio::ip::tcp::socket& socket_;
@@ -77,13 +81,13 @@ class ChunksWriter : public Writer {
   public:
     explicit ChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
 
-    void write(std::string_view content) override;
-    void close() override;
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> close() override;
 
   private:
     static const std::size_t kDefaultChunkSize = 0x800;
 
-    void flush();
+    Task<void> flush();
 
     Writer& writer_;
     const std::size_t chunk_size_;
@@ -95,8 +99,8 @@ class ChunksWriter2 : public Writer {
   public:
     explicit ChunksWriter2(Writer& writer);
 
-    void write(std::string_view content) override;
-    void close() override;
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> close() override;
 
   private:
     Writer& writer_;
@@ -106,8 +110,8 @@ class JsonChunksWriter : public Writer {
   public:
     explicit JsonChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
 
-    void write(std::string_view content) override;
-    void close() override;
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> close() override;
 
   private:
     static const std::size_t kDefaultChunkSize = 0x800;

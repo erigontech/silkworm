@@ -1349,7 +1349,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 if (!nonce_option) {
                     std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash->block.header.number + 1)};
                     if (account) {
-                        nonce = (*account).nonce;  // NOLINT
+                        nonce = (*account).nonce + 1;  // NOLINT
                     }
                 } else {
                     nonce = *nonce_option + 1;

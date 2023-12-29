@@ -43,68 +43,15 @@ static std::string kColon{":"};           // NOLINT(runtime/string)
 static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
 Task<void> Stream::close() {
-    // std::cout << "COMPLETING.... \n";
-
     if (buffer_.size() > 0) {
-        // std::cout << "WRITE " << buffer_ << " \n";
-        // std::cout << "WRITING " << buffer_.size() << " chars.....\n";
         co_await writer_.write(buffer_);
-        // std::cout << "WROTE " << size << " chars\n";
         buffer_.clear();
     }
 
-    // std::cout << "CLOSE \n";
     co_await writer_.close();
-
-    // std::cout << "COMPLETED \n";
 
     co_return;
 }
-
-// Task<void> Stream::close() {
-//     // std::cout << "COMPLETING.... \n";
-
-//     auto current_executor = co_await boost::asio::this_coro::executor;
-
-//     std::string to_write(buffer_);
-//     buffer_.clear();
-
-//     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-//         [&](auto&& self) {
-//             boost::asio::post(io_executor_, [&, self = std::move(self), value = std::move(to_write)]() mutable {
-//                 if (value.size() > 0) {
-//                     // std::cout << "WRITE " << value << " \n";
-//                     writer_.write(value);
-//                 }
-//                 // std::cout << "CLOSE \n";
-//                 writer_.close();
-//                 boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-//                     // std::cout << "COMPLETING...\n";
-//                     self.complete();
-//                 });
-//             });
-//         },
-//         boost::asio::use_awaitable);
-
-//     // std::cout << "COMPLETED \n";
-
-//     co_return;
-// }
-
-// Task<void> Stream::close() {
-//     auto current_executor = co_await boost::asio::this_coro::executor;
-//     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-//         [&](auto&& self) {
-//             boost::asio::post(io_executor_, [&, self = std::move(self)]() mutable {
-//             writer_.close();
-//             boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-//                 self.complete();
-//             });
-//         });
-//     }, boost::asio::use_awaitable);
-
-//     co_return;
-// }
 
 void Stream::open_object() {
     bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
@@ -289,46 +236,11 @@ void Stream::write(std::string_view str) {
         buffer_.clear();
         co_spawn(
             io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
-                // std::cout << "WRITING " << value.size() << " chars.....\n";
                 co_await writer_.write(value);
-                // std::cout << "WROTE " << size << " chars\n";
-                co_return;
             },
             boost::asio::detached);
-        // std::cout << "WROTE \n";
-        // boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
-        //     // std::cout << "WRITE: " << value << " \n";
-        //     std::cout << "WRITING " << value.size() << " chars.....\n";
-        //     co_spawn(io_executor_, writer_.write(value), boost::asio::detached);
-        //     std::cout << "WROTE \n";
-        //     // auto result = co_spawn(io_executor_, writer_.write(value), boost::asio::use_future);
-        //     // auto size = result.get();
-        //     // auto size = co_await writer_.write(value);
-        //     // std::cout << "WROTE " << size << " chars\n";
-        //     // co_await writer_.write(value);
-        //     // co_return;
-        // });
     }
 }
-
-// void Stream::write(std::string_view str) {
-//     buffer_ += str;
-//     if (buffer_.size() >= threshold_) {
-//         std::string to_write(buffer_);
-//         buffer_.clear();
-//         boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
-//             // std::cout << "WRITE: " << value << " \n";
-//             writer_.write(value);
-//         });
-//     }
-// }
-
-// void Stream::write(std::string_view str) {
-//     std::string to_write(str);
-//     boost::asio::post(io_executor_, [&, value = std::move(to_write)]() mutable {
-//         writer_.write(value);
-//     });
-// }
 
 void Stream::ensure_separator() {
     if (!stack_.empty()) {

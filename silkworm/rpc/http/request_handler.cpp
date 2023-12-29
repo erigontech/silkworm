@@ -216,11 +216,12 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
 
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        auto io_executor = co_await boost::asio::this_coro::executor;
+        const std::size_t kStreamBufferSize = 4096;
 
         SocketWriter socket_writer(socket_);
         ChunksWriter chunks_writer(socket_writer);
-        json::Stream stream(current_executor, chunks_writer, 0x1000);
+        json::Stream stream(io_executor, chunks_writer, kStreamBufferSize);
 
         co_await write_headers();
         co_await (rpc_api_.*handler)(request_json, stream);

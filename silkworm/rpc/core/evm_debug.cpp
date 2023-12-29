@@ -93,22 +93,9 @@ void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, 
 }
 
 void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory) {
-    vect.reserve(1);
-
     const auto data = memory.data();
     vect.push_back(silkworm::to_hex({data, memory.size()}));
 }
-
-// void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory) {
-//     const std::size_t len = 32;
-//     vect.reserve(memory.size() / len);
-
-//     const auto data = memory.data();
-//     silkworm::to_hex({data, memory.size()})
-//     for (std::size_t start = 0; start < memory.size(); start += len) {
-//         vect.push_back(silkworm::to_hex({data + start, len}));
-//     }
-// }
 
 void insert_error(DebugLog& log, evmc_status_code status_code) {
     switch (status_code) {
@@ -294,8 +281,6 @@ void DebugTracer::write_log(const DebugLog& log) {
             for (std::size_t start = 0; start < item.size(); start += len) {
                 stream_.write_entry({data + start, len});
             }
-
-            // stream_.write_entry(item);
         }
         stream_.close_array();
     }

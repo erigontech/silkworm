@@ -31,8 +31,6 @@ struct WriterTest : test::ContextTestBase {
 };
 
 TEST_CASE_METHOD(WriterTest, "StringWriter") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("write") {
         StringWriter writer;
         std::string test = "test";
@@ -53,8 +51,6 @@ TEST_CASE_METHOD(WriterTest, "StringWriter") {
 }
 
 TEST_CASE_METHOD(WriterTest, "ChunksWriter") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("write&close under chunk size") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer);
@@ -115,8 +111,6 @@ TEST_CASE_METHOD(WriterTest, "ChunksWriter") {
 }
 
 TEST_CASE_METHOD(WriterTest, "JsonChunksWriter") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("write&close under chunk size") {
         StringWriter s_writer;
         JsonChunksWriter writer(s_writer, 16);
@@ -179,4 +173,5 @@ TEST_CASE_METHOD(WriterTest, "JsonChunksWriter") {
         CHECK(s_writer.get_content() == "30\r\n{\"accounts\":{},\"next\":\"next\",\"root\":\"root\"}     \r\n0\r\n\r\n");
     }
 }
+
 }  // namespace silkworm::rpc

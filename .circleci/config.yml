@@ -455,5 +455,6 @@ workflows:
     #         branches:
     #           only:
     #             - master
+    no_output_timeout: 1h
     jobs:
       - linux-clang-fuzzer

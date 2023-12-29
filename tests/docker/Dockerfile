@@ -33,7 +33,7 @@ RUN cmake/setup/compiler_install.sh clang 15
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
 WORKDIR /app/project
 RUN sudo cmake --build /app/build -j4 
 

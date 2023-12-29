@@ -21,8 +21,6 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc {

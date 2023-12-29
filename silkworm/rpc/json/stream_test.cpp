@@ -16,45 +16,58 @@
 
 #include "stream.hpp"
 
+#include <silkworm/infra/concurrency/task.hpp>
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
+#include <gmock/gmock.h>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc::json {
 
-TEST_CASE("JsonStream", "[json]") {
+struct JsonStreamTest : test::ContextTestBase {
+};
+
+TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter string_writer;
-    ChunksWriter chunks_writer(string_writer, 16);
+    ChunksWriter chunks_writer(string_writer);
 
     SECTION("write_json in string") {
-        Stream stream(string_writer);
+        Stream stream(io_executor, string_writer);
 
         nlohmann::json json = R"({
             "test": "test"
         })"_json;
 
         stream.write_json(json);
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 1 chunk") {
-        Stream stream(chunks_writer);
+        Stream stream(io_executor, chunks_writer);
 
         nlohmann::json json = R"({
             "test": "test"
         })"_json;
 
         stream.write_json(json);
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "f\r\n{\"test\":\"test\"}\r\n0\r\n\r\n");
     }
     SECTION("write_json in 2 chunks") {
-        Stream stream(chunks_writer);
+        Stream stream(io_executor, chunks_writer);
 
         nlohmann::json json = R"({
             "check": "check",
@@ -62,17 +75,21 @@ TEST_CASE("JsonStream", "[json]") {
         })"_json;
 
         stream.write_json(json);
-        stream.close();
+        spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "10\r\n{\"check\":\"check\"\r\nf\r\n,\"test\":\"test\"}\r\n0\r\n\r\n");
+        CHECK(string_writer.get_content() == "1f\r\n{\"check\":\"check\",\"test\":\"test\"}\r\n0\r\n\r\n");
     }
 }
 
-TEST_CASE("JsonStream calls") {
+TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter string_writer;
-    Stream stream(string_writer);
+    Stream stream(io_executor, string_writer);
 
     SECTION("write_json json") {
         nlohmann::json json = R"({
@@ -80,33 +97,33 @@ TEST_CASE("JsonStream calls") {
         })"_json;
 
         stream.write_json(json);
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("empty object 1") {
         stream.open_object();
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{}");
     }
     SECTION("empty object 2") {
         stream.write_json(EMPTY_OBJECT);
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{}");
     }
     SECTION("empty array 1") {
         stream.open_array();
         stream.close_array();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[]");
     }
     SECTION("empty array 2") {
         stream.write_json(EMPTY_ARRAY);
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[]");
     }
@@ -114,7 +131,7 @@ TEST_CASE("JsonStream calls") {
         stream.open_object();
         stream.write_json_field("null", JSON_NULL);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"null\":null}");
     }
@@ -122,7 +139,7 @@ TEST_CASE("JsonStream calls") {
         stream.open_object();
         stream.write_json_field("array", EMPTY_ARRAY);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"array\":[]}");
     }
@@ -130,7 +147,7 @@ TEST_CASE("JsonStream calls") {
         stream.open_object();
         stream.write_field("name", "value");
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name\":\"value\"}");
     }
@@ -139,7 +156,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_field("name1", "value1");
         stream.write_field("name2", "value2");
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":\"value2\"}");
     }
@@ -152,7 +169,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_field("name1", "value1");
         stream.write_json_field("name2", json);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":{\"test\":\"test\"}}");
     }
@@ -165,7 +182,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_field("name1", "value1");
         stream.write_json_field("name2", json);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[\"one\",\"two\"]}");
     }
@@ -181,7 +198,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_json(json);
         stream.close_array();
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[{\"test\":\"test\"}]}");
     }
@@ -197,7 +214,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_json_field("name1", json_obj);
         stream.write_json_field("name2", json_array);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":{\"test\":\"test\"},\"name2\":[\"one\",\"two\"]}");
     }
@@ -214,7 +231,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_json_field("name1", json_obj);
         stream.write_json_field("name2", json_array);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":{\"boolean\":true,\"numeric\":1},\"name2\":[\"1.2\",\"3.4\"]}");
     }
@@ -233,7 +250,7 @@ TEST_CASE("JsonStream calls") {
         stream.close_array();
         stream.write_field("name3", "name3");
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"name1\":\"name1\",\"name2\":[{\"boolean\":true,\"numeric\":1},{\"boolean\":true,\"numeric\":1}],\"name3\":\"name3\"}");
     }
@@ -243,7 +260,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_field("double", 10.3);
         stream.write_field("boolean", true);
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{\"numeric\":10,\"double\":10.3,\"boolean\":true}");
     }
@@ -275,7 +292,7 @@ TEST_CASE("JsonStream calls") {
 
         stream.close_array();
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() ==
               "{\"result\":[{\"item\":1,\"logs\":[{\"item\":1.1}]},{\"item\":2,\"logs\":[{\"item\":2.1}]}]}");
@@ -288,7 +305,7 @@ TEST_CASE("JsonStream calls") {
         stream.open_array();
         stream.write_json(json);
         stream.close_array();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[{\"test\":\"test\"}]");
     }
@@ -301,7 +318,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_json(json);
         stream.write_json(json);
         stream.close_array();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[{\"test\":\"test\"},{\"test\":\"test\"}]");
     }
@@ -311,7 +328,7 @@ TEST_CASE("JsonStream calls") {
         stream.write_json(10.3);
         stream.write_json(true);
         stream.close_array();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[10,10.3,true]");
     }

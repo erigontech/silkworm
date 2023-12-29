@@ -18,13 +18,9 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
-#include <gmock/gmock.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc::json {
@@ -33,8 +29,6 @@ struct JsonStreamTest : test::ContextTestBase {
 };
 
 TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     ClientContextPool pool{1};
     pool.start();
     boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
@@ -82,8 +76,6 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
 }
 
 TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     ClientContextPool pool{1};
     pool.start();
     boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
@@ -333,4 +325,5 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         CHECK(string_writer.get_content() == "[10,10.3,true]");
     }
 }
+
 }  // namespace silkworm::rpc::json

@@ -32,101 +32,30 @@ const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/s
 const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
 
 Task<std::size_t> SocketWriter::write(std::string_view content) {
-    // boost::asio::write(socket_, boost::asio::buffer(content));
-    // std::cout << "WRITING ON SOCKET " << content.size() << " chars.....\n";
-
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
-    // std::cout << "WROTE ON SOCKET " << bytes_transferred << " chars.\n";
 
     SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;
 }
 
-ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunk_size)
-    : writer_(writer), chunk_size_(chunk_size), available_(chunk_size_), buffer_{new char[chunk_size_]} {
-    std::memset(buffer_.get(), 0, chunk_size_);
-}
-
-Task<std::size_t> ChunksWriter::write(std::string_view content) {
-    auto c_str = content.data();
-    auto size = content.size();
-
-    SILK_DEBUG << "ChunksWriter::write available_: " << available_ << " size: " << size;
-
-    char* buffer_start = buffer_.get() + (chunk_size_ - available_);
-    if (available_ > size) {
-        std::memcpy(buffer_start, c_str, size);
-        available_ -= size;
-        co_return content.size();
-    }
-
-    while (size > 0) {
-        const auto count = std::min(available_, size);
-        std::memcpy(buffer_start, c_str, count);
-        size -= count;
-        c_str += count;
-        available_ -= count;
-        if (available_ > 0) {
-            break;
-        }
-        co_await flush();
-
-        buffer_start = buffer_.get();
-    }
-    co_return content.size();
-}
-
-Task<void> ChunksWriter::close() {
-    co_await flush();
-    co_await writer_.write(kFinalChunk);
-    co_await writer_.close();
-
-    co_return;
-}
-
-Task<void> ChunksWriter::flush() {
-    auto size = chunk_size_ - available_;
-    SILK_DEBUG << "ChunksWriter::flush available_: " << available_ << " size: " << size;
-
-    if (size > 0) {
-        std::array<char, 19> str{};
-        if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), size, 16); ec == std::errc()) {
-            co_await writer_.write(std::string_view(str.data(), ptr));
-            co_await writer_.write(kChunkSep);
-        } else {
-            co_await writer_.write("Invalid value");
-        }
-
-        co_await writer_.write(std::string_view(buffer_.get(), size));
-        co_await writer_.write(kChunkSep);
-    }
-    available_ = chunk_size_;
-
-    co_return;
-}
-
-ChunksWriter2::ChunksWriter2(Writer& writer)
+ChunksWriter::ChunksWriter(Writer& writer)
     : writer_(writer) {
 }
 
-Task<std::size_t> ChunksWriter2::write(std::string_view content) {
+Task<std::size_t> ChunksWriter::write(std::string_view content) {
     auto size = content.size();
     std::array<char, 19> str{};
 
     std::size_t written{0};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), size, 16); ec == std::errc()) {
         auto view = std::string_view(str.data(), ptr);
-        // chunk.reserve(view.size() + 2 * kChunkSep.size() + content.size());
+
         std::string chunk(view.size() + 2 * kChunkSep.size() + content.size(), '\0');
         chunk = view;
         chunk += kChunkSep;
         chunk += content;
         chunk += kChunkSep;
         written = co_await writer_.write(chunk);
-        // co_await writer_.write(std::string_view(str.data(), ptr));
-        // co_await writer_.write(kChunkSep);
-        // co_await writer_.write(content);
-        // co_await writer_.write(kChunkSep);
     } else {
         SILK_ERROR << "Invalid conversion for size " << size;
     }
@@ -134,7 +63,7 @@ Task<std::size_t> ChunksWriter2::write(std::string_view content) {
     co_return written;
 }
 
-Task<void> ChunksWriter2::close() {
+Task<void> ChunksWriter::close() {
     co_await writer_.write(kFinalChunk);
     co_await writer_.close();
 

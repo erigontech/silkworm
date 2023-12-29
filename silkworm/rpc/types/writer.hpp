@@ -79,24 +79,6 @@ class SocketWriter : public Writer {
 
 class ChunksWriter : public Writer {
   public:
-    explicit ChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
-
-    Task<std::size_t> write(std::string_view content) override;
-    Task<void> close() override;
-
-  private:
-    static const std::size_t kDefaultChunkSize = 0x800;
-
-    Task<void> flush();
-
-    Writer& writer_;
-    const std::size_t chunk_size_;
-    std::size_t available_;
-    std::unique_ptr<char[]> buffer_;
-};
-
-class ChunksWriter2 : public Writer {
-  public:
     explicit ChunksWriter2(Writer& writer);
 
     Task<std::size_t> write(std::string_view content) override;

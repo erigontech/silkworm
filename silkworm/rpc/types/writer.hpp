@@ -79,7 +79,7 @@ class SocketWriter : public Writer {
 
 class ChunksWriter : public Writer {
   public:
-    explicit ChunksWriter2(Writer& writer);
+    explicit ChunksWriter(Writer& writer);
 
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override;

@@ -24,7 +24,7 @@ namespace silkworm::rpc::test {
 std::filesystem::path get_tests_dir() {
     auto working_dir = std::filesystem::current_path();
 
-    while (working_dir != "/"){
+    while (working_dir != "/") {
         if (std::filesystem::exists(working_dir / "third_party" / "execution-apis")) {
             return working_dir / "third_party" / "execution-apis" / "tests";
         }

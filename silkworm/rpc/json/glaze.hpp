@@ -35,7 +35,7 @@ inline constexpr auto kHashHexSize = 2 + 2 * kHashLength + 1;
 inline constexpr auto kBloomSize = 1024;
 inline constexpr auto kInt64HexSize = 2 + 2 * sizeof(uint64_t) + 1;
 inline constexpr auto kInt256HexSize = 2 + 2 * sizeof(intx::uint256) + 1;
-inline constexpr auto kDataSize = 4096;
+inline constexpr auto kDataSize = 16384;
 inline constexpr auto kEthCallResultFixedSize = 2048;
 
 void make_glaze_json_error(const nlohmann::json& request_json, int error_id, const std::string& message, std::string& reply);

@@ -55,7 +55,7 @@ if(NOT SILKWORM_CORE_ONLY)
       PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
       PRIVATE -fsanitize=address,leak,undefined
     )
-    if (SILKWORM_FUZZER_LIBFUZZER_PATH)
+    if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
       target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=fuzzer)
@@ -65,7 +65,7 @@ if(NOT SILKWORM_CORE_ONLY)
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=address,leak,undefined,fuzzer)
     target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon -fsanitize=address,leak,undefined)
-    if (SILKWORM_FUZZER_LIBFUZZER_PATH)
+    if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
@@ -74,7 +74,9 @@ if(NOT SILKWORM_CORE_ONLY)
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,leak,undefined)
-    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=address,leak,undefined)
+    target_link_libraries(
+      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=address,leak,undefined
+    )
   endif()
 
   # Silkworm Sync Tests

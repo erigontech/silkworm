@@ -37,7 +37,7 @@ namespace silkworm::rpc {
 
 using BalanceChanges = std::map<evmc::address, intx::uint256>;
 
-void to_json(nlohmann::json& json, const BalanceChanges& bc);
+void to_json(nlohmann::json& json, const BalanceChanges& balance_changes);
 
 class BlockReader {
   public:

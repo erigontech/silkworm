@@ -327,7 +327,7 @@ Task<ExecutionResult> EVMExecutor::call(
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
                 auto state = state_factory(this_executor, block.header.number, chain_storage);
                 EVMExecutor executor{config, workers, state};

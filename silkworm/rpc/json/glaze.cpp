@@ -23,8 +23,8 @@ namespace silkworm::rpc {
 
 static constexpr auto errorMessageSize = 1024;
 struct GlazeJsonError {
-    int code;
-    char message[errorMessageSize];
+    int code{-1};
+    char message[errorMessageSize]{};
     struct glaze {
         using T = GlazeJsonError;
         static constexpr auto value = glz::object(
@@ -46,11 +46,11 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(const nlohmann::json& request_json, const int code, const std::string& message, std::string& json_reply) {
+void make_glaze_json_error(const nlohmann::json& request_json, const int error_id, const std::string& message, std::string& json_reply) {
     GlazeJsonErrorRsp glaze_json_error;
 
     glaze_json_error.id = make_jsonrpc_id(request_json);
-    glaze_json_error.json_error.code = code;
+    glaze_json_error.json_error.code = error_id;
     std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
 
     glz::write_json(glaze_json_error, json_reply);

@@ -49,14 +49,14 @@ class StorageWalker {
 
     Task<void> walk_of_storages(
         BlockNum block_number,
-        const evmc::address& start_address,
+        const evmc::address& address,
         const evmc::bytes32& start_location,
         uint64_t incarnation,
         AccountCollector& collector);
 
     Task<void> storage_range_at(
         BlockNum block_number,
-        const evmc::address& start_address,
+        const evmc::address& address,
         const evmc::bytes32& start_location,
         size_t max_result,
         StorageCollector& collector);

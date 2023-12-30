@@ -31,8 +31,6 @@
 
 namespace silkworm::rpc::commands {
 
-using evmc::literals::operator""_bytes32;
-
 constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities

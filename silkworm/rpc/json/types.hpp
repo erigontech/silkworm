@@ -76,7 +76,7 @@ void from_json(const nlohmann::json& json, uint256& ui256);
 
 namespace silkworm {
 
-void to_json(nlohmann::json& json, const BlockHeader& ommer);
+void to_json(nlohmann::json& json, const BlockHeader& header);
 
 }  // namespace silkworm
 

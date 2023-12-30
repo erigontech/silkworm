@@ -35,8 +35,5 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(stbrumme-crc32)
   add_subdirectory(stbrumme-keccak)
   add_subdirectory(stun-msg)
-endif()
-
-if (SILKWORM_FUZZER)
   add_subdirectory(llvm)
 endif()

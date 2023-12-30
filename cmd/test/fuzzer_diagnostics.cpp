@@ -44,7 +44,7 @@ void print_stack_trace() {
             if (end) {
                 *end = '\0';
                 // use addr2line to get the file name and line number
-                std::string command = "addr2line -e ./rpcdaemon_fuzz_debug " + std::string(address);
+                std::string command = "addr2line -e ./rpcdaemon_fuzzer_diagnostics " + std::string(address);
                 auto command_result = system(command.c_str());
                 if (command_result != 0) {
                     std::cout << "addr2line failed" << std::endl;
@@ -81,8 +81,11 @@ int main(int argc, char* argv[]) {
     }
 
     if (!nlohmann::json::accept(input_str)) {
-        std::cout << "Not valid json" << std::endl;
-        return -1;
+        std::cout << "Not valid json: " << input_str << std::endl;
+    }
+    else {
+        auto request_json = nlohmann::json::parse(input_str);
+        std::cout << "Request: " << request_json.dump(4) << std::endl;
     }
 
     silkworm::rpc::http::Reply reply;
@@ -90,8 +93,6 @@ int main(int argc, char* argv[]) {
     try {
         auto context = silkworm::rpc::test::TestDatabaseContext();
         auto request_handler = new silkworm::rpc::test::RpcApiTestBase<silkworm::rpc::test::RequestHandler_ForTest>(context.db);
-        auto request_json = nlohmann::json::parse(input_str);
-        std::cout << "Request: " << request_json.dump(4) << std::endl;
 
         request_handler->run<&silkworm::rpc::test::RequestHandler_ForTest::handle_request>(input_str, reply);
     } catch (...) {

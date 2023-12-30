@@ -44,43 +44,37 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
-    # Silkworm RpcDaemon Problem Investigation
+
+    # Silkworm RpcDaemon Problem Investigation, to be deleted once the fuzzer is stable
     find_package(nlohmann_json REQUIRED)
     find_package(asio-grpc REQUIRED)
-    add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp ${SILKWORM_FUZZER_LIBFUZZER_PATH})
-    target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=address,leak,fuzzer)
+    add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
+    target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=address,leak,undefined,fuzzer)
     target_link_libraries(
       rpcdaemon_fuzzer_investigation
       PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
-      PRIVATE -fsanitize=address,leak
+      PRIVATE -fsanitize=address,leak,undefined
     )
-
-
-    SET_SOURCE_FILES_PROPERTIES(
-      ${SILKWORM_FUZZER_LIBFUZZER_PATH}
-      PROPERTIES
-      EXTERNAL_OBJECT true
-      GENERATED true
-    )
-
-    message(STATUS "${CMAKE_CURRENT_SOURCE_DIR}")
-    message(STATUS ${CMAKE_CURRENT_SOURCE_DIR})
-    message(STATUS ${CMAKE_SOURCE_DIR})
-    message(STATUS ${SILKWORM_FUZZER_LIBFUZZER_PATH})
-    message(STATUS "Using libFuzzer from ${SILKWORM_FUZZER_LIBFUZZER_PATH}")
-    message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
+    if (SILKWORM_FUZZER_LIBFUZZER_PATH)
+      target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
+    else()
+      target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=fuzzer)
+    endif()
 
     # Silkworm RpcDaemon Fuzzer Tests
-    add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp ${SILKWORM_FUZZER_LIBFUZZER_PATH})
+    add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=address,leak,undefined,fuzzer)
     target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon -fsanitize=address,leak,undefined)
+    if (SILKWORM_FUZZER_LIBFUZZER_PATH)
+      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
+    else()
+      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
+    endif()
 
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,undefined,leak)
-    target_link_libraries(
-      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=address,undefined,leak
-    )
+    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address,leak,undefined)
+    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=address,leak,undefined)
   endif()
 
   # Silkworm Sync Tests

@@ -148,6 +148,7 @@ commands:
 
   fuzz-test:
     steps:
+      no_output_timeout: 1h
       - run:
           name: "RPCDaemon Fuzz test"
           working_directory: ~/build
@@ -454,6 +455,5 @@ workflows:
     #         branches:
     #           only:
     #             - master
-    no_output_timeout: 1h
     jobs:
       - linux-clang-fuzzer

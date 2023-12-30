@@ -158,8 +158,7 @@ commands:
             for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
             for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
             for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
-            ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=100000
-            # ./cmd/test/rpcdaemon_fuzzer_test -max_total_time=100000 ~/corpus ~/crashes ~/artifacts
+            ./cmd/test/rpcdaemon_fuzzer_test ~/corpus ~/crashes ~/artifacts -max_total_time=86400 -detect_leaks=0
 
 jobs:
   lint:
@@ -339,7 +338,7 @@ jobs:
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
       - run:
           name: "Build Fuzzer"
           command: cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test

@@ -1,7 +1,7 @@
 # ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 # Avoid changes in the code below this point to avoid re-building everything 
 
-FROM cimg/python:3.12 as base
+FROM cimg/python:3.12.0 as base
 
 # 1 Install dependencies
 RUN sudo apt-get update
@@ -33,9 +33,9 @@ RUN cmake/setup/compiler_install.sh clang 15
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_clang_13_debug
 WORKDIR /app/project
-RUN sudo cmake --build /app/build -j4 
+RUN cmake --build /app/build -j4 
 
 # Avoid changes in the code after this point to avoid re-building everything
 # ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
@@ -46,7 +46,7 @@ ARG CACHEBUST
 RUN echo $CACHEBUST
 
 # Option 1: Build from branch
-RUN echo "Pulling branch" $BRANCH
+RUN echo "Pulling branch" ${BRANCH}
 ARG BRANCH=main
 WORKDIR /app/project
 RUN git checkout ${BRANCH}
@@ -59,9 +59,9 @@ RUN git pull origin ${BRANCH}
 # Rebuild all targets
 RUN echo "Rebuilding"
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCONAN_PROFILE=linux_clang_13_release -DSILKWORM_FUZZER=ON
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_clang_13_debug
 WORKDIR /app/project
-RUN sudo cmake --build /app/build -j4 --target rpcdaemon_fuzzer_test
+RUN sudo cmake --build /app/build -j4 
 
 
 # Example of how to run a fuzzer:

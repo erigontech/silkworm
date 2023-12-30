@@ -21,7 +21,6 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <gsl/util>
 
 #include <silkworm/rpc/test/api_test_database.hpp>
 

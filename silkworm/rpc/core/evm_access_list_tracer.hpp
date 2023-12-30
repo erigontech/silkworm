@@ -36,7 +36,6 @@ class AccessListTracer : public silkworm::EvmTracer {
 
     const AccessList& get_access_list() { return access_list_; }
 
-    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
                               const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
@@ -47,9 +46,9 @@ class AccessListTracer : public silkworm::EvmTracer {
 
   private:
     static inline bool exclude(const evmc::address& address, evmc_revision rev);
-    static inline bool is_storage_opcode(const std::string& opcode_name);
-    static inline bool is_contract_opcode(const std::string& opcode_name);
-    static inline bool is_call_opcode(const std::string& opcode_name);
+    static inline bool is_storage_opcode(const int opcode);
+    static inline bool is_contract_opcode(const int opcode);
+    static inline bool is_call_opcode(const int opcode);
 
     void add_storage(const evmc::address& address, const evmc::bytes32& storage);
     void add_address(const evmc::address& address);
@@ -61,8 +60,6 @@ class AccessListTracer : public silkworm::EvmTracer {
     std::map<evmc::address, bool> created_contracts_;
     std::map<evmc::address, bool> used_before_creation_;
     AccessList access_list_;
-
-    const char* const* opcode_names_ = nullptr;
 };
 
 inline bool operator!=(const AccessList& acl1, const AccessList& acl2) {

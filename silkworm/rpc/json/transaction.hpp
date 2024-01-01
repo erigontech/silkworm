@@ -83,8 +83,10 @@ struct GlazeJsonTransaction {
     };
 };
 
+void to_json(nlohmann::json& json, const Transaction& transaction);
+
 void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTransaction& json_tx);
 
-void to_json(nlohmann::json& json, const Transaction& transaction);
+void make_glaze_json_content(const nlohmann::json& request_json, const Transaction& tx, std::string& json_reply);
 
 }  // namespace silkworm::rpc

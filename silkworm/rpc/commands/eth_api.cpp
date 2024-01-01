@@ -535,12 +535,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyhash
-Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        make_glaze_json_error(request, 100, error_msg, reply);
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -560,30 +560,30 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
                 const auto decoding_result = silkworm::rlp::decode(encoded_tx_view, transaction);
                 if (decoding_result) {
                     transaction.queued_in_pool = true;
-                    reply = make_json_content(request, transaction);
+                    make_glaze_json_content(request, transaction, reply);
                 } else {
                     const auto error_msg = "invalid RLP decoding for tx hash: " + silkworm::to_hex(transaction_hash);
                     SILK_ERROR << error_msg;
-                    reply = make_json_content(request, {});
+                    make_glaze_json_null_content(request, reply);
                 }
             } else {
                 const auto error_msg = "tx hash: " + silkworm::to_hex(transaction_hash) + " does not exist in pool";
                 SILK_ERROR << error_msg;
-                reply = make_json_content(request, {});
+                make_glaze_json_null_content(request, reply);
             }
         } else {
-            reply = make_json_content(request, tx_with_block->transaction);
+            make_glaze_json_content(request, tx_with_block->transaction, reply);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const boost::system::system_error& se) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        make_glaze_json_error(request, 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        make_glaze_json_error(request, 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

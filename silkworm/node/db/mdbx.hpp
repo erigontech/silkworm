@@ -369,7 +369,7 @@ struct EnvConfig {
     size_t page_size{os::page_size()};  // Mdbx page size
     size_t max_size{3_Tebi};            // Mdbx max map size
     size_t growth_size{2_Gibi};         // Increment size for each extension
-    uint32_t max_tables{128};           // Default max number of named tables
+    uint32_t max_tables{256};           // Default max number of named tables
     uint32_t max_readers{100};          // Default max number of readers
 };
 

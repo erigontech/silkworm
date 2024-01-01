@@ -120,6 +120,32 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
     to_quantity(std::span(json_tx.s), silkworm::endian::to_big_compact(tx.s));
 }
 
+struct GlazeJsonTransactionReply {
+    std::string_view jsonrpc = kJsonVersion;
+    JsonRpcId id;
+    GlazeJsonTransaction result;
+
+    struct glaze {
+        using T = GlazeJsonTransactionReply;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::result);
+    };
+};
+
+void make_glaze_json_content(const nlohmann::json& request_json, const Transaction& tx, std::string& json_reply) {
+    GlazeJsonTransactionReply tx_json_data{};
+    tx_json_data.id = make_jsonrpc_id(request_json);
+    to_quantity(std::span(tx_json_data.result.transaction_index), tx.transaction_index);
+    to_quantity(std::span(tx_json_data.result.block_number), tx.block_number);
+    to_hex(std::span(tx_json_data.result.block_hash), tx.block_hash.bytes);
+    to_quantity(std::span(tx_json_data.result.gas_price), tx.effective_gas_price());
+    make_glaze_json_transaction(tx, tx_json_data.result);
+
+    glz::write_json(tx_json_data, json_reply);
+}
+
 void to_json(nlohmann::json& json, const Transaction& transaction) {
     to_json(json, static_cast<const silkworm::Transaction&>(transaction));
 

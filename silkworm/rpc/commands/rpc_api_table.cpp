@@ -124,7 +124,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getBlockTransactionCountByNumber] = &commands::RpcApi::handle_eth_get_block_transaction_count_by_number;
     method_handlers_[http::method::k_eth_getUncleCountByBlockNumber] = &commands::RpcApi::handle_eth_get_uncle_count_by_block_number;
     method_handlers_[http::method::k_eth_getUncleCountByBlockHash] = &commands::RpcApi::handle_eth_get_uncle_count_by_block_hash;
-    method_handlers_[http::method::k_eth_getTransactionByHash] = &commands::RpcApi::handle_eth_get_transaction_by_hash;
     method_handlers_[http::method::k_eth_getTransactionByBlockHashAndIndex] = &commands::RpcApi::handle_eth_get_transaction_by_block_hash_and_index;
     method_handlers_[http::method::k_eth_getTransactionByBlockNumberAndIndex] = &commands::RpcApi::handle_eth_get_transaction_by_block_number_and_index;
     method_handlers_[http::method::k_eth_getRawTransactionByHash] = &commands::RpcApi::handle_eth_get_raw_transaction_by_hash;
@@ -169,6 +168,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_glaze_[http::method::k_eth_getBlockByHash] = &commands::RpcApi::handle_eth_get_block_by_hash;
     method_handlers_glaze_[http::method::k_eth_getUncleByBlockHashAndIndex] = &commands::RpcApi::handle_eth_get_uncle_by_block_hash_and_index;
     method_handlers_glaze_[http::method::k_eth_getUncleByBlockNumberAndIndex] = &commands::RpcApi::handle_eth_get_uncle_by_block_number_and_index;
+    method_handlers_glaze_[http::method::k_eth_getTransactionByHash] = &commands::RpcApi::handle_eth_get_transaction_by_hash;
 }
 
 void RpcApiTable::add_net_handlers() {

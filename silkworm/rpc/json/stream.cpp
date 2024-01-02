@@ -43,7 +43,7 @@ static std::string kColon{":"};           // NOLINT(runtime/string)
 static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
 Task<void> Stream::close() {
-    if (buffer_.size() > 0) {
+    if (!buffer_.empty()) {
         co_await writer_.write(buffer_);
         buffer_.clear();
     }

@@ -545,7 +545,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    BlockNum block_number;
+    BlockNum block_number{0};
     if (params[0].is_string()) {
         block_number = std::stoul(params[0].get<std::string>(), nullptr, 10);
     } else {

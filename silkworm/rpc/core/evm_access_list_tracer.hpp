@@ -46,9 +46,9 @@ class AccessListTracer : public silkworm::EvmTracer {
 
   private:
     static inline bool exclude(const evmc::address& address, evmc_revision rev);
-    static inline bool is_storage_opcode(const int opcode);
-    static inline bool is_contract_opcode(const int opcode);
-    static inline bool is_call_opcode(const int opcode);
+    static inline bool is_storage_opcode(int opcode);
+    static inline bool is_contract_opcode(int opcode);
+    static inline bool is_call_opcode(int opcode);
 
     void add_storage(const evmc::address& address, const evmc::bytes32& storage);
     void add_address(const evmc::address& address);

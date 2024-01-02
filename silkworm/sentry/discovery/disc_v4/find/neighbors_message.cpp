@@ -49,7 +49,7 @@ void encode(Bytes& to, const NeighborsNodeInfo& info) {
 //! RLP decode NeighborsNodeInfo
 DecodingResult decode(ByteView& from, NeighborsNodeInfo& to, rlp::Leftover mode) noexcept {
     Bytes ip_bytes;
-    uint16_t port;
+    uint16_t port{0};
     Bytes public_key_data;
     auto result = rlp::decode(from, mode, ip_bytes, port, to.address.port_rlpx, public_key_data);
     if (!result) {
@@ -88,7 +88,7 @@ Bytes NeighborsMessage::rlp_encode() const {
 
 NeighborsMessage NeighborsMessage::rlp_decode(ByteView data) {
     std::vector<NeighborsNodeInfo> node_infos;
-    uint64_t expiration_ts;
+    uint64_t expiration_ts{0};
 
     auto result = rlp::decode(
         data,

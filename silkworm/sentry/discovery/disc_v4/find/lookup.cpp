@@ -45,7 +45,7 @@ Task<size_t> lookup(
         /* max_lookup_time = */ now - 10min,
         /* limit = */ 3,
     };
-    auto node_ids = co_await db.take_lookup_candidates(std::move(query), now);
+    auto node_ids = co_await db.take_lookup_candidates(query, now);
 
     size_t total_neighbors = 0;
     auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), [&](size_t index) -> Task<void> {

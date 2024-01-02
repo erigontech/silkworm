@@ -55,7 +55,7 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
 
         BackInsertPtrIterator& operator*() { return *this; }
         BackInsertPtrIterator& operator++() { return *this; }
-        BackInsertPtrIterator operator++(int) { return *this; }
+        BackInsertPtrIterator operator++(int) { return *this; }  // NOLINT(cert-dcl21-cpp)
 
       private:
         std::list<T*>* container_;

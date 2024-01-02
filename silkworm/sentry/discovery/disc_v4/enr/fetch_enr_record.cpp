@@ -56,7 +56,7 @@ Task<std::optional<discovery::enr::EnrRecord>> fetch_enr_record(
     };
 
     try {
-        co_await message_sender.send_enr_request(std::move(request_message), endpoint);
+        co_await message_sender.send_enr_request(request_message, endpoint);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled)
             throw;

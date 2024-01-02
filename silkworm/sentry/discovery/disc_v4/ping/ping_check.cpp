@@ -79,7 +79,7 @@ Task<PingCheckResult> ping_check(
         local_enr_seq_num,
         message_sender,
         on_pong_signal,
-        std::move(last_pong_time),
+        last_pong_time,
         ping_fails_count.value_or(0));
 
     co_return result;
@@ -164,10 +164,10 @@ Task<PingCheckResult> ping_check(
 
     co_return PingCheckResult{
         std::move(node_id),
-        std::move(pong_time),
+        pong_time,
         ping_fails_count,
-        std::move(next_ping_time1),
-        std::move(enr_seq_num),
+        next_ping_time1,
+        enr_seq_num,
     };
 }
 

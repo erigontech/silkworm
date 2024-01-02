@@ -29,7 +29,7 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
     explicit ErigonRpcApi_ForTest(boost::asio::io_context& io_context) : ErigonRpcApi{io_context} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
-    Task<void> erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
+    Task<void> erigon_get_block_by_timestamp(const nlohmann::json& request, std::string& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_get_block_by_timestamp(request, reply);
     }
     Task<void> erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
@@ -62,7 +62,8 @@ using ErigonRpcApiTest = test::JsonApiTestBase<ErigonRpcApi_ForTest>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_timestamp", "[rpc][erigon_api]") {
-    nlohmann::json reply;
+    std::string reply;
+    nlohmann::json exp_rsp;
 
     SECTION("request params is empty: return error") {
         CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
@@ -73,11 +74,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
                 "params":[]
             })"_json,
             reply));
-        CHECK(reply == R"({
-            "jsonrpc":"2.0",
-            "id":1,
-            "error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: []"}
-        })"_json);
+
+        std::string expected_rsp{"{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":100,\"message\":\"invalid erigon_getBlockByTimestamp params: []\"}}"};
+        CHECK(reply == expected_rsp);
     }
     SECTION("request params are incomplete: return error") {
         CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
@@ -93,11 +92,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: [\"1658865942\"]"}
         })"_json;
-        CHECK(reply == R"({
-            "jsonrpc":"2.0",
-            "id":1,
-            "error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: [\"1658865942\"]"}
-        })"_json);
+        std::string expected_rsp{"{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":100,\"message\":\"invalid erigon_getBlockByTimestamp params: [\\\"1658865942\\\"]\"}}"};
+        CHECK(reply == expected_rsp);
     }
     SECTION("request 1st param is invalid: return error") {
         CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(

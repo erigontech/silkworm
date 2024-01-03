@@ -66,7 +66,7 @@ class PeerManager {
         std::unique_ptr<rlpx::Protocol> protocol,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
 
-    using EnumeratePeersCallback = std::function<void(rlpx::Peer&)>;
+    using EnumeratePeersCallback = std::function<void(std::shared_ptr<rlpx::Peer>)>;
 
     Task<size_t> count_peers();
     Task<void> enumerate_peers(EnumeratePeersCallback callback);

@@ -139,8 +139,10 @@ Task<std::vector<Discovery::PeerCandidate>> DiscoveryImpl::request_peer_candidat
     using namespace std::chrono_literals;
 
     std::vector<node_db::NodeId> exclude_ids;
-    for (auto& url : exclude_urls)
+    exclude_ids.reserve(exclude_urls.size());
+    for (auto& url : exclude_urls) {
         exclude_ids.push_back(url.public_key());
+    }
 
     auto now = std::chrono::system_clock::now();
     node_db::NodeDb::FindPeerCandidatesQuery query{

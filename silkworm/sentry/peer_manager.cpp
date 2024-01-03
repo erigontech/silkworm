@@ -139,14 +139,14 @@ Task<size_t> PeerManager::count_peers_in_strand() {
 
 Task<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callback) {
     for (auto& peer : peers_) {
-        callback(peer);
+        callback(*peer);
     }
     co_return;
 }
 
 Task<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback) {
     for (auto peer_ptr : random_list_items(peers_, max_count)) {
-        callback(*peer_ptr);
+        callback(**peer_ptr);
     }
     co_return;
 }

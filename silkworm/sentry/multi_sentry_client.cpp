@@ -50,13 +50,13 @@ class MultiSentryClientImpl : public api::Service {
         std::function<Task<void>(std::shared_ptr<api::Service>)> callback) {
         using namespace concurrency::awaitable_wait_for_one;
 
-        std::function<Task<void>(size_t)> call_factory = [&clients, &callback](size_t index) -> Task<void> {
+        auto call_factory = [&clients, &callback](size_t index) -> Task<void> {
             auto client = clients[index];
             auto service = co_await client->service();
             co_await callback(service);
         };
 
-        auto group_task = concurrency::generate_parallel_group_task(clients.size(), std::move(call_factory));
+        auto group_task = concurrency::generate_parallel_group_task(clients.size(), call_factory);
 
         try {
             co_await (std::move(group_task) || concurrency::timeout(timeout));

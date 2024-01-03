@@ -212,8 +212,8 @@ Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason
     return concurrency::co_spawn_sw(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
 }
 
-Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
-    co_await self->drop(reason);
+Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason) {
+    co_await peer->drop(reason);
 }
 
 Task<void> Peer::drop(DisconnectReason reason) {

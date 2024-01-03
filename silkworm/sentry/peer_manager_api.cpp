@@ -91,7 +91,7 @@ Task<void> PeerManagerApi::handle_peers_calls() {
         auto call = co_await peers_calls_channel_.receive();
 
         api::PeerInfos peers;
-        co_await peer_manager_.enumerate_peers([&peers](std::shared_ptr<rlpx::Peer> peer) {
+        co_await peer_manager_.enumerate_peers([&peers](const std::shared_ptr<rlpx::Peer>& peer) {
             auto info_opt = make_peer_info(*peer);
             if (info_opt) {
                 peers.push_back(info_opt.value());
@@ -109,7 +109,7 @@ Task<void> PeerManagerApi::handle_peer_calls() {
         auto peer_public_key_opt = call.peer_public_key;
 
         std::optional<api::PeerInfo> info_opt;
-        co_await peer_manager_.enumerate_peers([&info_opt, &peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
+        co_await peer_manager_.enumerate_peers([&info_opt, &peer_public_key_opt](const std::shared_ptr<rlpx::Peer>& peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
                 info_opt = make_peer_info(*peer);
@@ -125,7 +125,7 @@ Task<void> PeerManagerApi::handle_peer_penalize_calls() {
     while (true) {
         auto peer_public_key_opt = co_await peer_penalize_calls_channel_.receive();
 
-        co_await peer_manager_.enumerate_peers([&peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
+        co_await peer_manager_.enumerate_peers([&peer_public_key_opt](const std::shared_ptr<rlpx::Peer>& peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
                 peer->disconnect(rlpx::DisconnectReason::DisconnectRequested);

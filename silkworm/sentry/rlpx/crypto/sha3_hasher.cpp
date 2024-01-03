@@ -25,8 +25,7 @@ namespace silkworm::sentry::rlpx::crypto {
 Sha3Hasher::Sha3Hasher() : impl_(std::make_unique<Keccak>()) {
 }
 
-Sha3Hasher::~Sha3Hasher() {
-}
+Sha3Hasher::~Sha3Hasher() = default;
 
 void Sha3Hasher::update(ByteView data) {
     impl_->add(data.data(), data.size());

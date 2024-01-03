@@ -53,7 +53,7 @@ Task<size_t> find_neighbors(
 
     auto executor = co_await boost::asio::this_coro::executor;
     concurrency::Channel<std::map<EccPublicKey, NodeAddress>> neighbors_channel{executor, 2};
-    auto on_neighbors_handler = [&](NeighborsMessage message, EccPublicKey sender_node_id) {
+    auto on_neighbors_handler = [&](NeighborsMessage message, const EccPublicKey& sender_node_id) {
         if ((sender_node_id == node_id) && !is_expired_message_expiration(message.expiration)) {
             neighbors_channel.try_send(std::move(message.node_addresses));
         }

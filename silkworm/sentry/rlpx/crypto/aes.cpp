@@ -33,7 +33,7 @@ extern const size_t kAESBlockSize = AES_BLOCK_SIZE;
 AESCipher::AESCipher(ByteView key, std::optional<ByteView> iv, Direction direction) {
     assert(!iv || (iv->size() == kAESBlockSize));
 
-    const EVP_CIPHER* mode;
+    const EVP_CIPHER* mode{nullptr};
     switch (key.size()) {
         case kKeySize128:
             mode = iv ? EVP_aes_128_ctr() : EVP_aes_128_ecb();

@@ -47,8 +47,8 @@ TEST_CASE("EnrResponseMessage.rlp_decode") {
     CHECK(eth1_fork_id_data_rlp_header->payload_length == 10);
 
     // now eth1_fork_id_data is just RLP([hash_u32, next_u64])
-    uint32_t eth1_fork_id_hash;
-    uint64_t eth1_fork_id_next;
+    uint32_t eth1_fork_id_hash{0};
+    uint64_t eth1_fork_id_next{0};
     auto eth1_fork_id_decode_result = rlp::decode(eth1_fork_id_data, rlp::Leftover::kProhibit, eth1_fork_id_hash, eth1_fork_id_next);
     CHECK(eth1_fork_id_decode_result.has_value());
     if (!eth1_fork_id_decode_result) {

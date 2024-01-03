@@ -152,7 +152,7 @@ class SessionSentryClientImpl : public api::SentryClient {
     }
 
     Task<void> run_transitions_until_ready(Event event) {
-        State state;
+        State state{State::kInit};
         std::optional<Waiter> ready_waiter;
         do {
             std::tie(state, ready_waiter) = proceed_to_next_state(event);

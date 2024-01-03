@@ -203,7 +203,6 @@ FramingCipher::FramingCipher(const KeyMaterial& key_material) {
 }
 
 FramingCipher::~FramingCipher() {
-    assert(true);
 }
 
 FramingCipher::FramingCipher(FramingCipher&& other) noexcept

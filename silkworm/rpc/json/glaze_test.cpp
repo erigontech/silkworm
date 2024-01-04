@@ -36,7 +36,7 @@ TEST_CASE("make glaze json error", "[silkworm][rpc][make_glaze_json_error]") {
 TEST_CASE("make glaze json revert error", "[silkworm][rpc][make_glaze_json_error]") {
     std::string json;
     const char* data_hex{"c68341b58302c0"};
-    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
+    Bytes data_bytes{*silkworm::from_hex(data_hex)};
     make_glaze_json_error(kEmptyRequest, RevertError{{3, "generic_error"}, data_bytes}, json);
     CHECK(json == R"({"jsonrpc":"2.0","id":1,"error":{"code":3,"message":"generic_error","data":"0xc68341b58302c0"}})");
 }

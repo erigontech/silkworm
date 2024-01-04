@@ -61,7 +61,7 @@ struct GlazeJsonErrorRsp {
 };
 
 void make_glaze_json_error(const nlohmann::json& request_json, const int error_id, const std::string& message, std::string& json_reply) {
-    GlazeJsonErrorRsp glaze_json_error;
+    GlazeJsonErrorRsp glaze_json_error{};
 
     glaze_json_error.id = make_jsonrpc_id(request_json);
     glaze_json_error.json_error.code = error_id;
@@ -97,7 +97,7 @@ struct GlazeJsonRevertError {
 };
 
 void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply) {
-    GlazeJsonRevertError glaze_json_revert;
+    GlazeJsonRevertError glaze_json_revert{};
 
     glaze_json_revert.id = make_jsonrpc_id(request_json);
     glaze_json_revert.revert_data.code = error.code;

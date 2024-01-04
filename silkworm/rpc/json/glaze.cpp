@@ -60,14 +60,14 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(const nlohmann::json& request_json, const int error_id, const std::string& message, std::string& json_reply) {
+void make_glaze_json_error(const nlohmann::json& request, const int error_id, const std::string& message, std::string& reply) {
     GlazeJsonErrorRsp glaze_json_error{};
 
-    glaze_json_error.id = make_jsonrpc_id(request_json);
+    glaze_json_error.id = make_jsonrpc_id(request);
     glaze_json_error.json_error.code = error_id;
     fill_error_message(glaze_json_error.json_error.message, message);
 
-    glz::write_json(glaze_json_error, json_reply);
+    glz::write_json(glaze_json_error, reply);
 }
 
 struct GlazeJsonRevert {
@@ -96,10 +96,10 @@ struct GlazeJsonRevertError {
     };
 };
 
-void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply) {
+void make_glaze_json_error(const nlohmann::json& request, const RevertError& error, std::string& reply) {
     GlazeJsonRevertError glaze_json_revert{};
 
-    glaze_json_revert.id = make_jsonrpc_id(request_json);
+    glaze_json_revert.id = make_jsonrpc_id(request);
     glaze_json_revert.revert_data.code = error.code;
     fill_error_message(glaze_json_revert.revert_data.message, error.message);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);

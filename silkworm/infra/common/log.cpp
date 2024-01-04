@@ -39,7 +39,7 @@ static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
 thread_local std::string thread_name_{};
 
-void init(Settings& settings) {
+void init(const Settings& settings) {
     settings_ = settings;
     if (!settings_.log_file.empty()) {
         tee_file(std::filesystem::path(settings.log_file));

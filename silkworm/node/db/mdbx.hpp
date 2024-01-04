@@ -394,12 +394,12 @@ struct EnvConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
-//! \param [in] page_size : the actually configured MDBX's page size
+//! \brief Computes the max size of single-value data to fit into a leaf data page
+//! \param [in] page_size : the actually configured MDBX page size
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(size_t page_size, size_t key_size);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
+//! \brief Computes the max size of single-value data to fit into a leaf data page
 //! \param [in] txn : the transaction used to derive pagesize from
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);

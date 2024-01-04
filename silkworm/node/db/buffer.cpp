@@ -38,6 +38,13 @@ void Buffer::begin_block(uint64_t block_number) {
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
+    // Skip update if both initial and final state are non-existent (i.e. contract creation+destruction within the same block)
+    if (!initial && !current) {
+        // Only to perfectly match Erigon state batch size (Erigon does count any account w/ old=new=empty value).
+        batch_state_size_ += kAddressLength;
+        return;
+    }
+
     const bool equal{current == initial};
     const bool account_deleted{!current.has_value()};
 
@@ -85,10 +92,12 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
-    // Don't overwrite already existing code so that views of it
-    // that were previously returned by read_code() are still valid.
-    if (hash_to_code_.try_emplace(code_hash, code).second) {
+    // Don't overwrite existing code so that views of it that were previously returned by read_code are still valid
+    const auto [inserted_or_existing_it, inserted] = hash_to_code_.try_emplace(code_hash, code);
+    if (inserted) {
         batch_state_size_ += kHashLength + code.length();
+    } else {
+        batch_state_size_ += code.length() - inserted_or_existing_it->second.length();
     }
 
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
@@ -111,8 +120,14 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
         }
     }
 
-    if (storage_[address][incarnation].insert_or_assign(location, current).second) {
-        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + kHashLength;
+    // Iterator in insert_or_assign return value "is pointing at the element that was inserted or updated"
+    // so we cannot use it to determine the old value size: we need to use initial instead
+    const auto [_, inserted] = storage_[address][incarnation].insert_or_assign(location, current);
+    ByteView current_val{zeroless_view(current.bytes)};
+    if (inserted) {
+        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + current_val.length();
+    } else {
+        batch_state_size_ += current_val.length() - zeroless_view(initial.bytes).length();
     }
 }
 
@@ -337,9 +352,17 @@ void Buffer::write_state_to_db() {
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
-                for (const auto& [location, value] : contract_storage) {
-                    upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
-                    written_size += prefix.length() + kLocationLength + kHashLength;
+                // Extract sorted set of storage locations to insert ordered data into the DB
+                absl::btree_set<evmc::bytes32> storage_locations;
+                for (auto& storage_entry : contract_storage) {
+                    storage_locations.insert(storage_entry.first);
+                }
+                for (const auto& location : storage_locations) {
+                    if (auto storage_it{contract_storage.find(location)}; storage_it != contract_storage.end()) {
+                        const auto& value{storage_it->second};
+                        upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
+                        written_size += prefix.length() + kLocationLength + zeroless_view(value.bytes).size();
+                    }
                 }
             }
             storage_.erase(it);

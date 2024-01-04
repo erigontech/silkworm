@@ -80,10 +80,12 @@ static log::Args log_args_for_version() {
 }
 
 //! Generate log arguments for execution flush at specified block
-static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_t current_block) {
+static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_t max_batch_size, uint64_t current_block) {
     return {
-        "state",
+        "batch",
         std::to_string(state_buffer.current_batch_state_size()),
+        "max_batch",
+        std::to_string(max_batch_size),
         "block",
         std::to_string(current_block)};
 }
@@ -470,7 +472,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             // Flush state buffer if we've reached the target batch size
             if (state_buffer.current_batch_state_size() >= max_batch_size) {
                 log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_flush(state_buffer, block.header.number)};
+                          log_args_for_exec_flush(state_buffer, max_batch_size, block.header.number)};
                 state_buffer.write_state_to_db();
                 gas_batch_size = 0;
                 StopWatch sw{/*auto_start=*/true};
@@ -497,7 +499,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         }
 
         log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                  log_args_for_exec_flush(state_buffer, max_block)};
+                  log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
         StopWatch sw{/*auto_start=*/true};
         txn.commit_and_renew();

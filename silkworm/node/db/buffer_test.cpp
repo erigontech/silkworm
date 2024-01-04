@@ -207,6 +207,26 @@ TEST_CASE("Account update") {
         CHECK(std::memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
         CHECK(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
     }
+
+    SECTION("Change EOA account w/ new value equal to old one") {
+        const auto address{0xbe00000000000000000000000000000000000000_address};
+        Account initial_account;
+        initial_account.nonce = 2;
+        initial_account.balance = kEther;
+
+        Account current_account;
+        current_account.nonce = 2;
+        current_account.balance = kEther;
+
+        Buffer buffer{txn, 0};
+        buffer.begin_block(1);
+        buffer.update_account(address, /*initial=*/initial_account, current_account);
+        REQUIRE(buffer.account_changes().empty());
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 0);
+    }
 }
 
 }  // namespace silkworm::db

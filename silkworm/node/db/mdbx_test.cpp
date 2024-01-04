@@ -15,6 +15,7 @@
 */
 
 #include <atomic>
+#include <future>
 #include <map>
 #include <thread>
 
@@ -238,7 +239,7 @@ TEST_CASE("RWTxn") {
     auto env{db::open_env(db_config)};
     static const char* table_name{"GeneticCode"};
 
-    SECTION("Managed") {
+    SECTION("Managed: commit_and_renew") {
         {
             auto tx{db::RWTxnManaged(env)};
             db::PooledCursor table_cursor(*tx, {table_name});
@@ -256,12 +257,42 @@ TEST_CASE("RWTxn") {
         REQUIRE(table_cursor.empty() == false);
     }
 
-    SECTION("External") {
+    SECTION("Managed: commit_and_stop") {
+        {
+            auto tx{db::RWTxnManaged(env)};
+            db::PooledCursor table_cursor(*tx, {table_name});
+
+            // populate table
+            for (const auto& [key, value] : kGeneticCode) {
+                table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+            }
+
+            tx.commit_and_stop();
+        }
+
+        auto tx{env.start_read()};
+        db::PooledCursor table_cursor(tx, {table_name});
+        REQUIRE(table_cursor.empty() == false);
+    }
+
+    SECTION("External: commit_and_renew") {
         RWTxnManaged tx{env};
         tx.disable_commit();
         {
             (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_renew();  // Does not have any effect
+        }
+        tx.abort();
+        RWTxnManaged tx2{env};
+        REQUIRE(db::has_map(tx2, table_name) == false);
+    }
+
+    SECTION("External: commit_and_stop") {
+        RWTxnManaged tx{env};
+        tx.disable_commit();
+        {
+            (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
+            tx.commit_and_stop();  // Does not have any effect
         }
         tx.abort();
         RWTxnManaged tx2{env};
@@ -275,6 +306,46 @@ TEST_CASE("RWTxn") {
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
         table_cursor.close();
         REQUIRE_THROWS(table_cursor.bind(tx, {table_name}));
+    }
+
+    SECTION("Unmanaged: commit_and_renew") {
+        {
+            ::MDBX_txn* rw_txn{nullptr};
+            ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
+
+            auto tx{db::RWTxnUnmanaged(rw_txn)};
+            db::PooledCursor table_cursor(*tx, {table_name});
+
+            // populate table
+            for (const auto& [key, value] : kGeneticCode) {
+                table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+            }
+
+            tx.commit_and_renew();
+        }
+        auto ro_txn{env.start_read()};
+        db::PooledCursor cursor(ro_txn, {table_name});
+        CHECK(cursor.empty() == false);
+    }
+
+    SECTION("Unmanaged: commit_and_stop") {
+        {
+            ::MDBX_txn* rw_txn{nullptr};
+            ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
+
+            auto tx{db::RWTxnUnmanaged(rw_txn)};
+            db::PooledCursor table_cursor(*tx, {table_name});
+
+            // populate table
+            for (const auto& [key, value] : kGeneticCode) {
+                table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+            }
+
+            tx.commit_and_stop();
+        }
+        auto ro_txn{env.start_read()};
+        db::PooledCursor cursor(ro_txn, {table_name});
+        CHECK(cursor.empty() == false);
     }
 }
 
@@ -494,11 +565,26 @@ TEST_CASE("Cursor walk") {
     }
 }
 
+//! Compute the maximum free space in an empty MDBX database page
+//! \warning this may change in future versions of MDBX
+//! \details see `page_space` function in MDBX core.c
+static size_t page_space(const mdbx::env& env) {
+    constexpr size_t kPageHeaderSize{20};  // size of MDBX page header (PAGEHDRSZ)
+    const size_t db_page_size{env.get_pagesize()};
+    return db_page_size - kPageHeaderSize;
+}
+
+static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
+    const size_t kDupSortNodes{2};
+    const size_t kNodeHeaderSize{8};  // size of MDBX node header (NODESIZE)
+    return page_space(txn.env()) / kDupSortNodes - 2 * kNodeHeaderSize;
+}
+
 TEST_CASE("OF pages") {
     test::Context context;
     db::RWTxn& txn = context.rw_txn();
 
-    SECTION("No overflow") {
+    SECTION("Single-value map: No overflow") {
         db::PooledCursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
@@ -506,18 +592,346 @@ TEST_CASE("OF pages") {
         txn.commit_and_renew();
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};
-        REQUIRE(!stats.ms_overflow_pages);
+        CHECK(stats.ms_overflow_pages == 0);
     }
 
-    SECTION("Let's overflow") {
+    SECTION("Single-value map: Let's overflow") {
         db::PooledCursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
-        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
+        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value*/ 1, '\0');
         target.insert(db::to_slice(key), db::to_slice(value));
         txn.commit_and_renew();
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};
-        REQUIRE(stats.ms_overflow_pages);
+        CHECK(stats.ms_overflow_pages > 0);
+    }
+
+    SECTION("Multi-value map: No overflow, value size OK") {
+        db::PooledCursor target(txn, db::table::kPlainState);
+        Bytes key(20, '\0');
+        Bytes value(db::max_multivalue_size_for_leaf_page(txn), '\0');
+        target.insert(db::to_slice(key), db::to_slice(value));
+        txn.commit_and_renew();
+        target.bind(txn, db::table::kPlainState);
+        auto stats{target.get_map_stat()};
+        CHECK(stats.ms_overflow_pages == 0);
+    }
+
+    // Skip the following section in debug as too big data size in multi-value map will assert
+#ifndef MDBX_DEBUG
+    SECTION("Multi-value map: No overflow, error for value too big") {
+        db::PooledCursor target(txn, db::table::kPlainState);
+        Bytes key(20, '\0');
+        Bytes value(db::max_multivalue_size_for_leaf_page(txn) + /*any extra value*/ 1, '\0');
+        CHECK_THROWS_AS(target.insert(db::to_slice(key), db::to_slice(value)), ::mdbx::exception);
+    }
+#endif  // MDBX_DEBUG
+}
+
+static uint64_t get_free_pages(const ::mdbx::env& env) {
+    uint64_t free_pages{0};
+
+    // Use threaded execution because MDBX does not allow overlapping txns in same thread
+    std::async([&]() {
+        constexpr MDBX_dbi FREE_DBI{0};
+        ::mdbx::map_handle free_map{FREE_DBI};
+
+        auto ro_txn{env.start_read()};
+        auto free_cursor{ro_txn.open_cursor(free_map)};
+        auto data = free_cursor.to_first(false);
+        while (data.done) {
+            size_t tx_id{0};
+            std::memcpy(&tx_id, db::from_slice(data.key).data(), sizeof(size_t));
+            uint32_t tx_free_pages{0};
+            std::memcpy(&tx_free_pages, db::from_slice(data.value).data(), sizeof(uint32_t));
+            free_pages += tx_free_pages;
+            data = free_cursor.to_next(false);
+        }
+    }).get();
+
+    return free_pages;
+}
+
+TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
+    TemporaryDirectory tmp_dir{};
+    auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
+    db::EnvConfig env_config{
+        .path = data_directory->chaindata().path().string(),
+        .create = true,
+        .readonly = false,
+        .exclusive = false,
+        .in_memory = true,
+    };
+    auto env{db::open_env(env_config)};
+
+    constexpr size_t kKeySize{20};  // just to copycat account address size
+    const Bytes key(kKeySize, '\0');
+
+    // Initialize the map content w/ one max-size value [scope needed to limit rw_txn lifecycle]
+    {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 0);
+        REQUIRE(code_stats.ms_depth == 0);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 0);
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        code_cursor.insert(db::to_slice(key), db::to_slice(value));  // insert or upsert equivalent here
+        code_stats = rw_txn.get_map_stat(code_map);
+        REQUIRE(code_stats.ms_entries == 1);  // we have 1 value here
+        REQUIRE(code_stats.ms_depth == 1);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 1);  // we have 1 max data value
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 0);  // No free pages after initialization
+    }
+
+    SECTION("upsert same value does not cause any free page") {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        auto key_slice{db::to_slice(key)};
+        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        auto value_slice{db::to_slice(value)};
+        code_cursor.upsert(key_slice, value_slice);
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 1);
+        REQUIRE(code_stats.ms_depth == 1);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 1);
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 0);  // no free page produced
+    }
+
+    SECTION("erase + upsert same value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        auto key_slice{db::to_slice(key)};
+        CHECK(code_cursor.erase(key_slice));
+        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        auto value_slice{db::to_slice(value)};
+        code_cursor.upsert(key_slice, value_slice);
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 1);
+        REQUIRE(code_stats.ms_depth == 1);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 1);
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages if we erase+upsert w/ same value => bad pattern
+    }
+
+    SECTION("upsert different value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        auto key_slice{db::to_slice(key)};
+        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
+        auto value_slice{db::to_slice(value)};
+        code_cursor.upsert(key_slice, value_slice);
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 1);  // we have 1 value here since table is single-value
+        REQUIRE(code_stats.ms_depth == 1);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 1);  // we have 1 max data value
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages in any case
+    }
+
+    SECTION("erase + upsert different value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        auto key_slice{db::to_slice(key)};
+        CHECK(code_cursor.erase(key_slice, true));
+        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
+        auto value_slice{db::to_slice(value)};
+        code_cursor.upsert(key_slice, value_slice);
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 1);
+        REQUIRE(code_stats.ms_depth == 1);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 1);
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages in any case
+    }
+
+    SECTION("erase causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_cursor{rw_txn.open_cursor(code_map)};
+        auto key_slice{db::to_slice(key)};
+        CHECK(code_cursor.erase(key_slice));
+        auto code_stats{rw_txn.get_map_stat(code_map)};
+        REQUIRE(code_stats.ms_entries == 0);
+        REQUIRE(code_stats.ms_depth == 0);
+        REQUIRE(code_stats.ms_branch_pages == 0);
+        REQUIRE(code_stats.ms_leaf_pages == 0);
+        REQUIRE(code_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages if we erase
+    }
+
+    SECTION("erase + upsert same value w/ 2 commits causes two free pages") {
+        {
+            auto rw_txn{env.start_write()};
+            auto code_map{db::open_map(rw_txn, db::table::kCode)};
+            auto code_cursor{rw_txn.open_cursor(code_map)};
+            auto key_slice{db::to_slice(key)};
+            CHECK(code_cursor.erase(key_slice));
+            auto code_stats{rw_txn.get_map_stat(code_map)};
+            REQUIRE(code_stats.ms_entries == 0);
+            REQUIRE(code_stats.ms_depth == 0);
+            REQUIRE(code_stats.ms_branch_pages == 0);
+            REQUIRE(code_stats.ms_leaf_pages == 0);
+            REQUIRE(code_stats.ms_overflow_pages == 0);
+            rw_txn.commit();
+            CHECK(get_free_pages(env) == 2);
+        }
+        {
+            auto rw_txn{env.start_write()};
+            auto code_map{db::open_map(rw_txn, db::table::kCode)};
+            auto code_cursor{rw_txn.open_cursor(code_map)};
+            auto key_slice{db::to_slice(key)};
+            Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+            auto value_slice{db::to_slice(value)};
+            code_cursor.upsert(key_slice, value_slice);
+            auto code_stats{rw_txn.get_map_stat(code_map)};
+            REQUIRE(code_stats.ms_entries == 1);
+            REQUIRE(code_stats.ms_depth == 1);
+            REQUIRE(code_stats.ms_branch_pages == 0);
+            REQUIRE(code_stats.ms_leaf_pages == 1);
+            REQUIRE(code_stats.ms_overflow_pages == 0);
+            rw_txn.commit();
+            CHECK(get_free_pages(env) == 2);
+        }
+    }
+}
+
+TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
+    TemporaryDirectory tmp_dir{};
+    auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
+    db::EnvConfig env_config{
+        .path = data_directory->chaindata().path().string(),
+        .create = true,
+        .readonly = false,
+        .exclusive = false,
+        .in_memory = true,
+    };
+    auto env{db::open_env(env_config)};
+
+    // We need to split max multi-value data size between key and value
+    constexpr size_t kKeySize{20};  // just to copycat account address size
+    const size_t kMaxNonInitialValueSize{[&env]() {
+        auto ro_txn{env.start_read()};
+        return db::max_multivalue_size_for_leaf_page(ro_txn);
+    }()};
+    const size_t kMaxFirstValueSize{kMaxNonInitialValueSize - kKeySize};  // we need to take key size into account once
+    const Bytes key(kKeySize, '\0');
+
+    // Initialize the map content w/ one max-size value [scope needed to limit rw_txn lifecycle]
+    {
+        auto rw_txn{env.start_write()};
+        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
+        REQUIRE(plain_state_stats.ms_entries == 0);
+        REQUIRE(plain_state_stats.ms_depth == 0);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 0);
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
+        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        plain_state_cursor.insert(db::to_slice(key), db::to_slice(value));  // insert or upsert equivalent here
+        plain_state_stats = rw_txn.get_map_stat(plain_state_map);
+        REQUIRE(plain_state_stats.ms_entries == 1);  // we have 1 value here
+        REQUIRE(plain_state_stats.ms_depth == 1);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 1);
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 0);  // No free pages after
+    }
+
+    SECTION("upsert same value does not cause any free page") {
+        auto rw_txn{env.start_write()};
+        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
+        auto key_slice{db::to_slice(key)};
+        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        auto value_slice{db::to_slice(value)};
+        plain_state_cursor.upsert(key_slice, value_slice);
+        auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
+        REQUIRE(plain_state_stats.ms_entries == 1);
+        REQUIRE(plain_state_stats.ms_depth == 1);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 1);
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 0);  // no free page produced
+    }
+
+    SECTION("erase + upsert same value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
+        auto key_slice{db::to_slice(key)};
+        CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
+        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        auto value_slice{db::to_slice(value)};
+        plain_state_cursor.upsert(key_slice, value_slice);
+        auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
+        REQUIRE(plain_state_stats.ms_entries == 1);
+        REQUIRE(plain_state_stats.ms_depth == 1);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 1);
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages if we erase+upsert w/ same value => bad pattern
+    }
+
+    SECTION("upsert different value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
+        auto key_slice{db::to_slice(key)};
+        Bytes value(kMaxNonInitialValueSize, static_cast<uint8_t>(11));
+        auto value_slice{db::to_slice(value)};
+        plain_state_cursor.upsert(key_slice, value_slice);
+        auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
+        REQUIRE(plain_state_stats.ms_entries == 2);  // we have 2 values here since table is multi-value
+        REQUIRE(plain_state_stats.ms_depth == 1);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 2);  // we have 2 max data values hence we need 2 pages
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages in any case
+    }
+
+    SECTION("erase + upsert different value causes two free pages") {
+        auto rw_txn{env.start_write()};
+        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
+        auto key_slice{db::to_slice(key)};
+        CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
+        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(11));
+        auto value_slice{db::to_slice(value)};
+        plain_state_cursor.upsert(key_slice, value_slice);
+        auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
+        REQUIRE(plain_state_stats.ms_entries == 1);
+        REQUIRE(plain_state_stats.ms_depth == 1);
+        REQUIRE(plain_state_stats.ms_branch_pages == 0);
+        REQUIRE(plain_state_stats.ms_leaf_pages == 1);
+        REQUIRE(plain_state_stats.ms_overflow_pages == 0);
+        rw_txn.commit();
+        CHECK(get_free_pages(env) == 2);  // +2 free pages in any case
     }
 }
 

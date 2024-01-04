@@ -71,7 +71,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
     auto& log_settings = settings.log_settings;
     auto& context_pool_settings = settings.context_pool_settings;
 
-    log::set_verbosity(log_settings.log_verbosity);
+    log::init(log_settings);
     log::set_thread_name("main-thread");
 
     auto mdbx_ver{mdbx::get_version()};

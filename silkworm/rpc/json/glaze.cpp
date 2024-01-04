@@ -17,6 +17,9 @@
 #include "glaze.hpp"
 
 #include <algorithm>
+#include <cstring>
+#include <string>
+#include <string_view>
 
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>

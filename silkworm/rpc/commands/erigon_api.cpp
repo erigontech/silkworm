@@ -152,8 +152,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
             auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
-
-            for (; matching_header->timestamp > timestamp;) {
+            while (matching_header->timestamp > timestamp) {
                 const auto header = co_await chain_storage->read_canonical_header(matching_block_number - 1);
                 if (!header || header->timestamp < timestamp) {
                     break;

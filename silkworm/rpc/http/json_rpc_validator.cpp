@@ -20,7 +20,6 @@ namespace silkworm::rpc::http {
 
 static const std::string valid_jsonrpc_version = "2.0";
 
-
 JsonRpcValidator::JsonRpcValidator() {
     std::string spec_input_file_path = "/home/jacek/dev/ethereum-execution-apis/openrpc.json";
 
@@ -52,7 +51,7 @@ JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& reques
 
     if (results.is_valid) {
         results = validate_params(request_);
-    }   
+    }
 
     return results;
 }

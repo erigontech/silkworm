@@ -25,6 +25,7 @@
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
+#include <gsl/util>
 
 void print_stack_trace() {
     void* trace[16];
@@ -63,8 +64,8 @@ int main(int argc, char* argv[]) {
         ->description("Wrap JSON in '' to avoid shell escaping, e.g. '{\"jsonrpc\":\"2.0\",\"id\":1}'")
         ->required(false);
 
-    app.add_option("-f", input_file, "Path to test file or directory")
-        ->check(CLI::ExistingPath)
+    app.add_option("-f", input_file, "Path to the JSON request file")
+        ->check(CLI::ExistingFile)
         ->required(false);
 
     CLI11_PARSE(app, argc, argv);

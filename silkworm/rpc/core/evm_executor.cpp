@@ -231,7 +231,9 @@ ExecutionResult EVMExecutor::call(
         evm.add_tracer(*tracer);
     }
 
-    SILKWORM_ASSERT(txn.sender());
+    if (!txn.sender()) {
+        return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
+    }
     ibs_state_.access_account(*txn.sender());
 
     const evmc_revision rev{evm.revision()};

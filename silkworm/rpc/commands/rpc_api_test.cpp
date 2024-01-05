@@ -156,6 +156,20 @@ TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
         CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 }
+
+TEST_CASE("rpc_api io (non-regression) - eth_call invalid params", "[rpc][rpc_api][ignore]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    auto context = test::TestDatabaseContext();
+    test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
+
+    SECTION("sample test") {
+        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
+        http::Reply reply;
+
+        test_base.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}})"_json);
+    }
+}
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc::commands

@@ -18,12 +18,12 @@
 
 #include <thread>
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/test/api_test_base.hpp>
+#include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -107,6 +107,18 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wron
     CHECK(reply == R"({
         "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"},"id":1,"jsonrpc":"2.0"
     })"_json);
+}
+
+TEST_CASE("fuzzy: eth_call invalid params", "[rpc][api]") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    auto context = test::TestDatabaseContext();
+    test::RpcApiTestBase<test::RequestHandler_ForTest> handler{context.db};
+
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
+
+    http::Reply reply;
+    handler.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}})"_json);
 }
 #endif  // SILKWORM_SANITIZE
 

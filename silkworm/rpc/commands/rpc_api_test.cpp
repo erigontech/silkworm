@@ -14,36 +14,17 @@
    limitations under the License.
 */
 
-#include "rpc_api.hpp"
-
-#include <bit>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <utility>
 #include <vector>
 
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/core/types/address.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
-#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
-#include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc::commands {
 

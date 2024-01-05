@@ -558,7 +558,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
-    return std::ranges::any_of(headers, [](const BlockHeader& header) {
+    return std::ranges::any_of(headers, [this](const BlockHeader& header) {
         if (is_zero(header.parent_hash) && header.number != 0) {
             log::Warning("HeaderStage") << "received malformed header: " << header.number;
             return true;

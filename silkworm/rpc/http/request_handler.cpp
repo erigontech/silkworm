@@ -41,8 +41,6 @@
 
 namespace silkworm::rpc::http {
 
-static bool is_valid_jsonrpc(const nlohmann::json& request_json);
-
 Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
@@ -100,8 +98,15 @@ Task<void> RequestHandler::handle(const http::Request& request) {
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-static bool is_valid_jsonrpc(const nlohmann::json& request_json) {
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
     static const std::string valid_jsonrpc_version = "2.0";
+
+    auto validation_result = json_rpc_validator_.validate(request_json.dump());
+
+    if (!validation_result.is_valid) {
+        std::cout << "JSON RPC validation error: " << validation_result.error_message << std::endl;
+    }
+
     return std::ranges::all_of(request_json.items(), [](auto& property) {
         const auto& property_name = property.key();
 

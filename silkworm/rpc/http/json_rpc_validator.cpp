@@ -205,6 +205,8 @@ JsonRpcValidationResults JsonRpcValidator::validate_schema(const nlohmann::json&
         results = validate_boolean(value_);
     } else if (schema["type"] == "number") {
         results = validate_number(value_);
+    } else if (schema["type"] == "null") {
+        results = validate_null(value_);
     } else {
         results.is_valid = false;
         results.error_message = "Invalid schema type";
@@ -326,6 +328,12 @@ JsonRpcValidationResults JsonRpcValidator::validate_number(const nlohmann::json&
         results.error_message = "Invalid number";
     }
 
+    return results;
+}
+
+JsonRpcValidationResults JsonRpcValidator::validate_null(const nlohmann::json& number_) {
+    JsonRpcValidationResults results;
+    results.is_valid = true;
     return results;
 }
 

@@ -51,5 +51,6 @@ namespace silkworm::rpc::http {
             JsonRpcValidationResults validate_object(const nlohmann::json& object_, const nlohmann::json& schema);
             JsonRpcValidationResults validate_boolean(const nlohmann::json& boolean_);
             JsonRpcValidationResults validate_number(const nlohmann::json& number_);
+            JsonRpcValidationResults validate_null(const nlohmann::json& number_);
     };  
 }

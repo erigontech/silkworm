@@ -146,8 +146,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             block_number = core::kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
-            auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t i) -> Task<bool> {
-                const auto header = co_await chain_storage->read_canonical_header(i);
+            auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
+                const auto header = co_await chain_storage->read_canonical_header(bn);
                 co_return header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)

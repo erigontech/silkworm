@@ -335,9 +335,9 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                     nlohmann::json json_result;
                     if (ibs.exists(address)) {
                         std::ostringstream oss;
-                        oss << ibs.get_nonce(address);
+                        oss << std::hex << ibs.get_nonce(address);
                         json_result["nonce"] = "0x" + oss.str();
-                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address));
+                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
                         json_result["codeHash"] = ibs.get_code_hash(address);
                         json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
                     } else {

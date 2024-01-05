@@ -21,11 +21,11 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
+#include <gsl/util>
 
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
-#include <gsl/util>
 
 void print_stack_trace() {
     void* trace[16];

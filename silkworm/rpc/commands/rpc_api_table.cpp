@@ -186,7 +186,6 @@ void RpcApiTable::add_erigon_handlers() {
     method_handlers_[http::method::k_erigon_blockNumber] = &commands::RpcApi::handle_erigon_block_number;
     method_handlers_[http::method::k_erigon_cacheCheck] = &commands::RpcApi::handle_erigon_cache_check;
     method_handlers_[http::method::k_erigon_getBalanceChangesInBlock] = &commands::RpcApi::handle_erigon_get_balance_changes_in_block;
-    method_handlers_[http::method::k_erigon_getBlockByTimestamp] = &commands::RpcApi::handle_erigon_get_block_by_timestamp;
     method_handlers_[http::method::k_erigon_getBlockReceiptsByBlockHash] = &commands::RpcApi::handle_erigon_get_block_receipts_by_block_hash;
     method_handlers_[http::method::k_erigon_getHeaderByHash] = &commands::RpcApi::handle_erigon_get_header_by_hash;
     method_handlers_[http::method::k_erigon_getHeaderByNumber] = &commands::RpcApi::handle_erigon_get_header_by_number;
@@ -196,6 +195,9 @@ void RpcApiTable::add_erigon_handlers() {
     method_handlers_[http::method::k_erigon_watchTheBurn] = &commands::RpcApi::handle_erigon_watch_the_burn;
     method_handlers_[http::method::k_erigon_cumulative_chain_traffic] = &commands::RpcApi::handle_erigon_cumulative_chain_traffic;
     method_handlers_[http::method::k_erigon_nodeInfo] = &commands::RpcApi::handle_erigon_node_info;
+
+    // GLAZE methods
+    method_handlers_glaze_[http::method::k_erigon_getBlockByTimestamp] = &commands::RpcApi::handle_erigon_get_block_by_timestamp;
 }
 
 void RpcApiTable::add_trace_handlers() {

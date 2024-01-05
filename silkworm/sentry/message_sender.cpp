@@ -29,7 +29,7 @@ Task<void> MessageSender::run(PeerManager& peer_manager) {
 
         api::router::SendMessageCall::PeerKeys sent_peer_keys;
 
-        auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](std::shared_ptr<rlpx::Peer> peer) {
+        auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](const std::shared_ptr<rlpx::Peer>& peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && (!peer_filter.peer_public_key || (key_opt.value() == peer_filter.peer_public_key.value()))) {
                 sent_peer_keys.push_back(key_opt.value());

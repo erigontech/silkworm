@@ -39,7 +39,7 @@ Bytes PongMessage::rlp_encode() const {
 PongMessage PongMessage::rlp_decode(ByteView data) {
     NodeAddress recipient_address;
     Bytes ping_hash;
-    uint64_t expiration_ts;
+    uint64_t expiration_ts{0};
     std::optional<uint64_t> enr_seq_num_opt;
 
     auto result = rlp::decode(
@@ -52,7 +52,7 @@ PongMessage PongMessage::rlp_decode(ByteView data) {
         throw DecodingException(result.error(), "Failed to decode PingMessage RLP");
     }
 
-    uint64_t enr_seq_num;
+    uint64_t enr_seq_num{0};
     if (rlp::decode(data, enr_seq_num)) {
         enr_seq_num_opt = enr_seq_num;
     }
@@ -61,7 +61,7 @@ PongMessage PongMessage::rlp_decode(ByteView data) {
         std::move(recipient_address.endpoint),
         std::move(ping_hash),
         time_point_from_unix_timestamp(expiration_ts),
-        std::move(enr_seq_num_opt),
+        enr_seq_num_opt,
     };
 }
 

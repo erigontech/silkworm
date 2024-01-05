@@ -46,7 +46,7 @@ class DiscoveryImpl : private MessageHandler {
     DiscoveryImpl(
         const boost::asio::any_io_executor& executor,
         uint16_t server_port,
-        std::function<EccKeyPair()> node_key,
+        std::function<EccKeyPair()> node_key,  // NOLINT(performance-unnecessary-value-param)
         std::function<EnodeUrl()> node_url,
         std::function<discovery::enr::EnrRecord()> node_record,
         node_db::NodeDb& node_db)
@@ -110,7 +110,7 @@ class DiscoveryImpl : private MessageHandler {
 
     Task<void> on_enr_request(enr::EnrRequestMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint, Bytes packet_hash) override {
         return enr::EnrRequestHandler::handle(
-            std::move(message),
+            message,
             std::move(sender_public_key),
             std::move(sender_endpoint),
             std::move(packet_hash),
@@ -157,7 +157,7 @@ class DiscoveryImpl : private MessageHandler {
             for (auto& node_id : node_ids) {
                 // grab the semaphore and block once we reach kPingChecksTasksMax
                 co_await ping_checks_semaphore_.send(node_id.serialized());
-                ping_checks_tasks_.spawn(executor, [this, node_id = std::move(node_id)]() -> Task<void> {
+                ping_checks_tasks_.spawn(executor, [this, node_id = std::move(node_id)]() mutable -> Task<void> {
                     // when a ping check is going to finish, unblock the semaphore
                     [[maybe_unused]] auto _ = gsl::finally([this] {
                         auto finished_task_id = this->ping_checks_semaphore_.try_receive();

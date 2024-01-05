@@ -23,6 +23,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <absl/strings/str_cat.h>
+
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
@@ -71,9 +73,10 @@ class Handshake {
     class CapabilityMismatchError : public std::runtime_error {
       public:
         CapabilityMismatchError(
-            std::string required_capability_desc,
-            std::string peer_capabilities_desc)
-            : std::runtime_error("rlpx::auth::Handshake: no matching required capability " + required_capability_desc + " in " + peer_capabilities_desc) {}
+            const std::string& required_capability_desc,
+            const std::string& peer_capabilities_desc)
+            : std::runtime_error(absl::StrCat("rlpx::auth::Handshake: no matching required capability ",
+                                              required_capability_desc, " in ", peer_capabilities_desc)) {}
     };
 
   private:

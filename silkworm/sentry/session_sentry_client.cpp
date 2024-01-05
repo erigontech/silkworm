@@ -152,7 +152,7 @@ class SessionSentryClientImpl : public api::SentryClient {
     }
 
     Task<void> run_transitions_until_ready(Event event) {
-        State state;
+        State state{State::kInit};
         std::optional<Waiter> ready_waiter;
         do {
             std::tie(state, ready_waiter) = proceed_to_next_state(event);
@@ -181,7 +181,7 @@ class SessionSentryClientImpl : public api::SentryClient {
 SessionSentryClient::SessionSentryClient(
     std::shared_ptr<api::SentryClient> sentry_client,
     StatusDataProvider status_data_provider)
-    : p_impl_(std::make_unique<SessionSentryClientImpl>(sentry_client, status_data_provider)) {
+    : p_impl_(std::make_unique<SessionSentryClientImpl>(std::move(sentry_client), std::move(status_data_provider))) {
 }
 
 SessionSentryClient::~SessionSentryClient() {

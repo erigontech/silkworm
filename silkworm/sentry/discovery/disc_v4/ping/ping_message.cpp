@@ -39,10 +39,10 @@ Bytes PingMessage::rlp_encode() const {
 }
 
 PingMessage PingMessage::rlp_decode(ByteView data) {
-    unsigned int disc_version;
+    unsigned int disc_version{0};
     NodeAddress sender_address;
     NodeAddress recipient_address;
-    uint64_t expiration_ts;
+    uint64_t expiration_ts{0};
     std::optional<uint64_t> enr_seq_num_opt;
 
     auto result = rlp::decode(
@@ -56,7 +56,7 @@ PingMessage PingMessage::rlp_decode(ByteView data) {
         throw DecodingException(result.error(), "Failed to decode PingMessage RLP");
     }
 
-    uint64_t enr_seq_num;
+    uint64_t enr_seq_num{0};
     if (rlp::decode(data, enr_seq_num)) {
         enr_seq_num_opt = enr_seq_num;
     }
@@ -66,7 +66,7 @@ PingMessage PingMessage::rlp_decode(ByteView data) {
         sender_address.port_rlpx,
         std::move(recipient_address.endpoint),
         time_point_from_unix_timestamp(expiration_ts),
-        std::move(enr_seq_num_opt),
+        enr_seq_num_opt,
     };
 }
 

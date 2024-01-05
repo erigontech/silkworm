@@ -247,8 +247,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_v
         {"jsonrpc", "2.0"},
         {"id", 1},
         {"method", "eth_getProof"},
-        {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "0x02"}, "0x3"}}
-    };
+        {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "0x02"}, "0x3"}}};
     JsonRpcValidationResults results = validator.validate(request.dump());
     CHECK(results.is_valid);
 
@@ -256,8 +255,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_v
         {"jsonrpc", "2.0"},
         {"id", 1},
         {"method", "eth_getProof"},
-        {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "invalid"}, "0x3"}}
-    };
+        {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "invalid"}, "0x3"}}};
     results = validator.validate(request.dump());
     CHECK(!results.is_valid);
 }
@@ -270,11 +268,10 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "0x1"},
-            {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
-            {"terminalBlockNumber", "0x1"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "0x1"},
+                       {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
+                       {"terminalBlockNumber", "0x1"},
+                   }}}};
     JsonRpcValidationResults results = validator.validate(request.dump());
     CHECK(results.is_valid);
 
@@ -283,10 +280,9 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "0x1"},
-            {"terminalBlockNumber", "0x1"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "0x1"},
+                       {"terminalBlockNumber", "0x1"},
+                   }}}};
     results = validator.validate(request.dump());
     CHECK(!results.is_valid);
 
@@ -295,11 +291,10 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "1x1"},
-            {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
-            {"terminalBlockNumber", "0x1"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "1x1"},
+                       {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
+                       {"terminalBlockNumber", "0x1"},
+                   }}}};
     results = validator.validate(request.dump());
     CHECK(!results.is_valid);
 
@@ -308,11 +303,10 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "0x1"},
-            {"terminalBlockHash", "1x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
-            {"terminalBlockNumber", "0x1"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "0x1"},
+                       {"terminalBlockHash", "1x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
+                       {"terminalBlockNumber", "0x1"},
+                   }}}};
     results = validator.validate(request.dump());
     CHECK(!results.is_valid);
 
@@ -321,11 +315,10 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "0x1"},
-            {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
-            {"terminalBlockNumber", "1x1"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "0x1"},
+                       {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
+                       {"terminalBlockNumber", "1x1"},
+                   }}}};
     results = validator.validate(request.dump());
 
     CHECK(!results.is_valid);
@@ -334,12 +327,11 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
         {"id", 1},
         {"method", "engine_exchangeTransitionConfigurationV1"},
         {"params", {{
-            {"terminalTotalDifficulty", "0x1"},
-            {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
-            {"terminalBlockNumber", "0x1"},
-            {"extra", "extra"},
-        }}}
-    };
+                       {"terminalTotalDifficulty", "0x1"},
+                       {"terminalBlockHash", "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"},
+                       {"terminalBlockNumber", "0x1"},
+                       {"extra", "extra"},
+                   }}}};
     results = validator.validate(request.dump());
     CHECK(!results.is_valid);
 }

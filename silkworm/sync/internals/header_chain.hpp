@@ -178,7 +178,7 @@ class HeaderChain {
     time_point_t last_nack_;
 
     uint64_t generate_request_id();
-    uint64_t is_valid_request_id(uint64_t request_id);
+    uint64_t is_valid_request_id(uint64_t request_id) const;
 
     uint64_t request_id_prefix;
     uint64_t request_count = 0;

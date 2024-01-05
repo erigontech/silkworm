@@ -17,6 +17,7 @@
 #include "header_chain.hpp"
 
 #include <algorithm>
+#include <ranges>
 
 #include <gsl/util>
 
@@ -557,7 +558,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
-    for (auto& header : headers) {
+    return std::ranges::any_of(headers, [](const BlockHeader& header) {
         if (is_zero(header.parent_hash) && header.number != 0) {
             log::Warning("HeaderStage") << "received malformed header: " << header.number;
             return true;
@@ -573,8 +574,8 @@ bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
             log::Warning("HeaderStage") << "received bad header: " << header.number;
             return true;
         }
-    }
-    return false;
+        return false;
+    });
 }
 
 std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t requestId, const PeerId& peer_id) {
@@ -835,8 +836,7 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link = attachment_link;
-    for (auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
-        auto header = *h;
+    for (auto header : std::ranges::reverse_view(segment_slice)) {
         bool persisted = false;
         auto link = add_header_as_link(*header, persisted);
         if (prev_link->persisted) insert_list_.push(link);
@@ -886,8 +886,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
     // Iterate over headers backwards (from parents towards children)
     // Add all headers in the segments as links to this anchor
     std::shared_ptr<Link> prev_link;
-    for (auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
-        auto header = *h;
+    for (auto header : std::ranges::reverse_view(segment_slice)) {
         bool persisted = false;
         auto link = add_header_as_link(*header, persisted);
         if (!prev_link)
@@ -927,8 +926,7 @@ void HeaderChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slic
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link = attachment_link;
-    for (auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
-        auto header = *h;
+    for (auto header : std::ranges::reverse_view(segment_slice)) {
         bool persisted = false;
         auto link = add_header_as_link(*header, persisted);
         if (prev_link->persisted) insert_list_.push(link);
@@ -965,8 +963,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
-    for (auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
-        auto header = *h;
+    for (auto header : std::ranges::reverse_view(segment_slice)) {
         bool persisted = false;
         auto link = add_header_as_link(*header, persisted);
         if (!prev_link)
@@ -1056,7 +1053,7 @@ uint64_t HeaderChain::generate_request_id() {
     return request_id_prefix * 10000 + request_count;
 }
 
-uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) {
+uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) const {
     uint64_t prefix = request_id / 10000;
     return request_id_prefix == prefix;
 }

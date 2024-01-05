@@ -23,7 +23,8 @@
 
 namespace silkworm {
 
-OutboundNewBlock::OutboundNewBlock(Blocks b, bool f) : blocks_to_announce_{std::move(b)}, is_first_sync_{f} {}
+OutboundNewBlock::OutboundNewBlock(Blocks b, bool is_first_sync)
+    : blocks_to_announce_{std::move(b)}, is_first_sync_{is_first_sync} {}
 
 void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient& sentry) {
     if (is_first_sync_) return;  // Don't announce blocks during first sync

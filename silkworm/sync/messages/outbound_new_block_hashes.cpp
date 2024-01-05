@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-OutboundNewBlockHashes::OutboundNewBlockHashes(bool f) : is_first_sync_{f} {}
+OutboundNewBlockHashes::OutboundNewBlockHashes(bool is_first_sync) : is_first_sync_{is_first_sync} {}
 
 void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     auto& announces_to_do = hc.announces_to_do();

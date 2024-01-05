@@ -31,8 +31,6 @@
 
 namespace silkworm {
 
-using silkworm::sentry::api::MessageFromPeer;
-
 BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainConfig& chain_config)
     : db_access_{dba},
       sentry_{sentry},
@@ -149,8 +147,8 @@ void BlockExchange::execution_loop() {
     stop();
 }
 
-size_t BlockExchange::request_headers(time_point_t tp, size_t max_nr_of_requests) {
-    if (max_nr_of_requests == 0) return 0;
+size_t BlockExchange::request_headers(time_point_t tp, size_t max_requests) {
+    if (max_requests == 0) return 0;
     if (!downloading_active_) return 0;
     if (header_chain_.in_sync()) return 0;
 
@@ -169,13 +167,13 @@ size_t BlockExchange::request_headers(time_point_t tp, size_t max_nr_of_requests
         if (request_message->nack_requests() > 0) break;
 
         sent_requests++;
-    } while (sent_requests < max_nr_of_requests);
+    } while (sent_requests < max_requests);
 
     return sent_requests;
 }
 
-size_t BlockExchange::request_bodies(time_point_t tp, size_t max_nr_of_requests) {
-    if (max_nr_of_requests == 0) return 0;
+size_t BlockExchange::request_bodies(time_point_t tp, size_t max_requests) {
+    if (max_requests == 0) return 0;
     if (!downloading_active_) return 0;
     if (body_sequence_.has_completed()) return 0;
 
@@ -194,7 +192,7 @@ size_t BlockExchange::request_bodies(time_point_t tp, size_t max_nr_of_requests)
         if (request_message->nack_requests() > 0) break;
 
         sent_requests++;
-    } while (sent_requests < max_nr_of_requests);
+    } while (sent_requests < max_requests);
 
     return sent_requests;
 }

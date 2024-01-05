@@ -18,6 +18,9 @@ namespace silkworm::rpc::http {
 #define REQUEST_FIELD_PARAMETERS "params"
 #define REQUEST_FIELD_JSONRPC "jsonrpc"
 
+static const std::string valid_jsonrpc_version = "2.0";
+
+
 JsonRpcValidator::JsonRpcValidator() {
     std::string spec_input_file_path = "/home/jacek/dev/ethereum-execution-apis/openrpc.json";
 
@@ -41,33 +44,15 @@ JsonRpcValidator::~JsonRpcValidator() {
     // Destructor implementation goes here
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate(const std::string& input_str) {
+JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request_) {
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    if (input_str.empty()) {
-        results.is_valid = false;
-        results.error_message = "Empty request";
-        return results;
-    }
+    results = check_request_fields(request_);
 
-    nlohmann::json input_json;
-
-    try {
-        input_json = nlohmann::json::parse(input_str);
-    } catch (nlohmann::json::parse_error& e) {
-        results.is_valid = false;
-        results.error_message = "Invalid JSON: " + std::string(e.what());
-        return results;
-    }
-
-    results = check_request_fields(input_json);
-
-    if (!results.is_valid) {
-        return results;
-    }
-
-    results = validate_params(input_json);
+    if (results.is_valid) {
+        results = validate_params(request_);
+    }   
 
     return results;
 }
@@ -106,7 +91,7 @@ JsonRpcValidationResults JsonRpcValidator::check_request_fields(const nlohmann::
 
     // jsonrpc must contain the string "2.0"
     if (!request.contains(REQUEST_FIELD_JSONRPC) ||
-        request[REQUEST_FIELD_JSONRPC] != "2.0") {
+        request[REQUEST_FIELD_JSONRPC] != valid_jsonrpc_version) {
         results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_JSONRPC);
         return results;
     }
@@ -331,7 +316,7 @@ JsonRpcValidationResults JsonRpcValidator::validate_number(const nlohmann::json&
     return results;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_null(const nlohmann::json& number_) {
+JsonRpcValidationResults JsonRpcValidator::validate_null(const nlohmann::json&) {
     JsonRpcValidationResults results;
     results.is_valid = true;
     return results;

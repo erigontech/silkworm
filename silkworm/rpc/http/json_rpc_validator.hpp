@@ -38,7 +38,7 @@ class JsonRpcValidator {
     JsonRpcValidator();
     JsonRpcValidator(nlohmann::json& spec_);
     ~JsonRpcValidator();
-    JsonRpcValidationResults validate(const std::string& input_str);
+    JsonRpcValidationResults validate(const nlohmann::json& request_);
     nlohmann::json get_spec();
 
   private:

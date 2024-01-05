@@ -496,7 +496,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
     return send_penalties;
 }
 
-void HeaderChain::invalidate(std::shared_ptr<Anchor> anchor) {
+void HeaderChain::invalidate(const std::shared_ptr<Anchor>& anchor) {
     remove(anchor);
     // remove upwards
     auto& link_to_remove = anchor->links;
@@ -523,7 +523,7 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::save_external_announce(Hash 
     request.request.skip = 0;
     request.request.reverse = false;
 
-    return {std::move(request)};
+    return request;
 }
 
 void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
@@ -793,8 +793,8 @@ std::optional<std::shared_ptr<Link>> HeaderChain::get_link(const Hash& hash) con
 }
 
 // find_anchors find the anchor the link is anchored to
-std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> HeaderChain::find_anchor(std::shared_ptr<Link> link) const {
-    auto parent_link = link;
+std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> HeaderChain::find_anchor(const std::shared_ptr<Link>& link) const {
+    std::shared_ptr<Link> parent_link = link;
     decltype(links_.begin()) it;
     do {
         it = links_.find(parent_link->header->parent_hash);
@@ -818,8 +818,8 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> Header
     return {a->second, parent_link};
 }
 
-void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice,
-                          std::shared_ptr<Anchor> anchor) {
+void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment::Slice segment_slice,
+                          const std::shared_ptr<Anchor>& anchor) {
     using std::to_string;
     // Extend up
 
@@ -872,7 +872,7 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
                  << (anchor_preverified ? " (V)" : "");
 }
 
-HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) {
+HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_slice, const std::shared_ptr<Anchor>& anchor) {
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
@@ -912,7 +912,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
     return !pre_existing;
 }
 
-void HeaderChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice) {
+void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segment::Slice segment_slice) {
     using std::to_string;
     // Search for bad headers
     if (bad_headers_.contains(attachment_link->hash)) {
@@ -959,7 +959,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
     // Add or find anchor
     auto anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = true;
-    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, peerId, check_limits);
+    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, std::move(peerId), check_limits);
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
@@ -1006,7 +1006,7 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
                                               ", limit: " + to_string(anchor_limit));
     }
 
-    std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, peerId);
+    std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));
     if (anchor->blockHeight > 0) {
         anchors_[anchor_header.parent_hash] = anchor;
         anchor_queue_.push(anchor);
@@ -1024,7 +1024,7 @@ std::shared_ptr<Link> HeaderChain::add_header_as_link(const BlockHeader& header,
     return link;
 }
 
-void HeaderChain::remove(std::shared_ptr<Anchor> anchor) {
+void HeaderChain::remove(const std::shared_ptr<Anchor>& anchor) {
     size_t erased1 = anchors_.erase(anchor->parentHash);
     bool erased2 = anchor_queue_.erase(anchor);
 

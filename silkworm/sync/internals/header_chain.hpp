@@ -127,14 +127,14 @@ class HeaderChain {
     std::tuple<std::optional<std::shared_ptr<Link>>, End> find_link(const Segment&, size_t start) const;
     std::optional<std::shared_ptr<Link>> get_link(const Hash& hash) const;
     using DeepLink = std::shared_ptr<Link>;
-    std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink> find_anchor(std::shared_ptr<Link> link) const;
+    std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink> find_anchor(const std::shared_ptr<Link>& link) const;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
     using Pre_Existing = bool;
-    void invalidate(std::shared_ptr<Anchor>);
-    void remove(std::shared_ptr<Anchor>);
+    void invalidate(const std::shared_ptr<Anchor>&);
+    void remove(const std::shared_ptr<Anchor>&);
     bool find_bad_header(const std::vector<BlockHeader>&);
     std::shared_ptr<Link> add_header_as_link(const BlockHeader& header, bool persisted);
     std::tuple<std::shared_ptr<Anchor>, Pre_Existing> add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits);
@@ -153,9 +153,9 @@ class HeaderChain {
     };
     VerificationResult verify(const Link& link);
 
-    void connect(std::shared_ptr<Link>, Segment::Slice, std::shared_ptr<Anchor>);
-    RequestMoreHeaders extend_down(Segment::Slice, std::shared_ptr<Anchor>);
-    void extend_up(std::shared_ptr<Link>, Segment::Slice);
+    void connect(const std::shared_ptr<Link>&, Segment::Slice, const std::shared_ptr<Anchor>&);
+    RequestMoreHeaders extend_down(Segment::Slice, const std::shared_ptr<Anchor>&);
+    void extend_up(const std::shared_ptr<Link>&, Segment::Slice);
     RequestMoreHeaders new_anchor(Segment::Slice, PeerId);
 
     OldestFirstAnchorQueue anchor_queue_;      // Priority queue of anchors used to sequence the header requests

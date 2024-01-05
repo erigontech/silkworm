@@ -31,7 +31,7 @@ void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, Sentry
 
     for (auto& block_ptr : blocks_to_announce_) {
         const BlockEx& block = *block_ptr;
-        NewBlockPacket packet{{block, block.header}, block.td};
+        NewBlockPacket packet{block, block.td};  // NOLINT(cppcoreguidelines-slicing)
         auto peers = send_packet(sentry, std::move(packet));
 
         // no peers available

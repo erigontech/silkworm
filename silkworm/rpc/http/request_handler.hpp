@@ -30,9 +30,9 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/http/json_rpc_validator.hpp>
 #include <silkworm/rpc/http/reply.hpp>
 #include <silkworm/rpc/http/request.hpp>
-#include <silkworm/rpc/http/json_rpc_validator.hpp>
 
 namespace silkworm::rpc::http {
 

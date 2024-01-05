@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "json_rpc_specification.hpp"
+
 namespace silkworm::rpc::http {
 
 #define REQUEST_FIELD_METHOD "method"
@@ -21,16 +23,7 @@ namespace silkworm::rpc::http {
 static const std::string valid_jsonrpc_version = "2.0";
 
 JsonRpcValidator::JsonRpcValidator() {
-    std::string spec_input_file_path = "/home/jacek/dev/ethereum-execution-apis/openrpc.json";
-
-    if (std::filesystem::exists(spec_input_file_path)) {
-        std::ifstream spec_input_file(spec_input_file_path);
-        spec_input_file >> json_spec;
-    } else {
-        throw std::runtime_error("Spec file does not exist");
-        // Handle the case where the file does not exist
-    }
-
+    json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
     accept_unknown_methods = true;
 }
 

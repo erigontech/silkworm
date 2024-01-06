@@ -24,6 +24,7 @@
 
 #include <array>
 #include <string>
+#include <regex>
 
 #include <nlohmann/json.hpp>
 
@@ -45,6 +46,7 @@ class JsonRpcValidator {
     nlohmann::json json_spec;
 
     std::map<std::string, nlohmann::json> method_params;
+    std::map<std::string, std::regex> regexes;
 
     bool accept_unknown_methods;
     JsonRpcValidationResults check_request_fields(const nlohmann::json& request);

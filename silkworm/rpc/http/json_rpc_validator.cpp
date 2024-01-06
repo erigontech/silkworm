@@ -129,19 +129,6 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
         return results;
     }
 
-    // for (const auto& m : json_spec["methods"]) {
-    //     if (m["name"] == method) {
-    //         method_spec = m;
-    //         break;
-    //     }
-    // }
-
-    // if (method_spec.is_null()) {
-    //     results.is_valid = accept_unknown_methods;
-    //     results.error_message = "Method not found in spec";
-    //     return results;
-    // }
-
     if (params.size() > method_spec.size()) {
         results.is_valid = false;
         results.error_message = "Invalid number of parameters";
@@ -231,7 +218,14 @@ JsonRpcValidationResults JsonRpcValidator::validate_string(const nlohmann::json&
     }
 
     if (schema.find("pattern") != schema.end()) {
-        std::regex pattern(schema["pattern"].get<std::string>());
+
+        std::regex pattern;
+        if (regexes.find(schema["pattern"]) != regexes.end()) {
+            pattern = regexes[schema["pattern"]];
+        } else {
+            pattern = std::regex(schema["pattern"].get<std::string>(), std::regex::optimize);
+            regexes[schema["pattern"]] = pattern;
+        }
         if (!std::regex_match(string_.get<std::string>(), pattern)) {
             results.error_message = "Invalid string pattern";
             return results;

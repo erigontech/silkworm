@@ -43,6 +43,9 @@ class JsonRpcValidator {
 
   private:
     nlohmann::json json_spec;
+
+    std::map<std::string, nlohmann::json> method_params;
+
     bool accept_unknown_methods;
     JsonRpcValidationResults check_request_fields(const nlohmann::json& request);
     JsonRpcValidationResults validate_params(const nlohmann::json& request);

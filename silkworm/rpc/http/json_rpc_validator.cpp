@@ -41,6 +41,10 @@ static const std::string valid_jsonrpc_version = "2.0";
 JsonRpcValidator::JsonRpcValidator() {
     json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
     accept_unknown_methods = true;
+
+    for (const auto& method : json_spec["methods"]) {
+        method_params[method["name"]] = method["params"];
+    }
 }
 
 JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
@@ -116,32 +120,41 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
     auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
 
     nlohmann::json method_spec;
-    for (const auto& m : json_spec["methods"]) {
-        if (m["name"] == method) {
-            method_spec = m;
-            break;
-        }
-    }
 
-    if (method_spec.is_null()) {
+    if (method_params.find(method) != method_params.end()) {
+        method_spec = method_params[method];
+    } else {
         results.is_valid = accept_unknown_methods;
         results.error_message = "Method not found in spec";
         return results;
     }
 
-    if (params.size() > method_spec["params"].size()) {
+    // for (const auto& m : json_spec["methods"]) {
+    //     if (m["name"] == method) {
+    //         method_spec = m;
+    //         break;
+    //     }
+    // }
+
+    // if (method_spec.is_null()) {
+    //     results.is_valid = accept_unknown_methods;
+    //     results.error_message = "Method not found in spec";
+    //     return results;
+    // }
+
+    if (params.size() > method_spec.size()) {
         results.is_valid = false;
         results.error_message = "Invalid number of parameters";
         return results;
     }
 
     unsigned long idx = 0;
-    for (const auto& spec : method_spec["params"]) {
+    for (const auto& spec : method_spec) {
         auto spec_name = spec["name"].get<std::string>();
         auto spec_required = spec["required"].get<bool>();
         auto spec_schema = spec["schema"];
 
-        std::cout << spec_name << " idx: " << idx << " params size: " << params.size() << std::endl;
+        // std::cout << spec_name << " idx: " << idx << " params size: " << params.size() << std::endl;
 
         if (params.size() <= idx) {
             if (spec_required) {
@@ -151,7 +164,7 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
             break;
         }
 
-        std::cout << "params[idx]: " << params[idx] << std::endl;
+        // std::cout << "params[idx]: " << params[idx] << std::endl;
 
         if (!spec_schema["type"].is_null()) {
             auto param_results = validate_schema(params[idx], spec_schema);

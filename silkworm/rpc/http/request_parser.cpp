@@ -26,6 +26,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <limits>
 
 namespace silkworm::rpc::http {
@@ -89,10 +90,22 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     req.http_version_minor = minor_version;
 
     bool expect_request{false};
+    bool upgrade_web_socket{false};
     bool content_length_present{false};
     for (size_t i{0}; i < num_headers; ++i) {
         const auto& header{headers[i]};
         if (header.name_len == 0) continue;
+        // -----
+        char key[1024];
+        char value[1024];
+        std::memcpy(key, header.name, header.name_len);
+        key[header.name_len] = '\0';
+        std::memcpy(value, header.value, header.value_len);
+        key[header.name_len] = '\0';
+        value[header.value_len] = '\0';
+        std::cout << "Hdr: " << key << " value: " << value << "\n";
+        // -----
+
         if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
             char* strtoull_end{nullptr};
             const unsigned long long content_length{std::strtoull(header.value, &strtoull_end, /*base=*/10)};
@@ -111,7 +124,12 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             for (size_t index = 0; index < static_cast<size_t>(header.value_len); index++) {
                 req.headers.back().value.push_back(header.value[index]);
             }
+        } else if (std::memcmp(header.name, "Connection", std::min(header.name_len, sizeof("Connection"))) == 0) {
+            upgrade_web_socket = true;
         }
+    }
+    if (upgrade_web_socket) {
+        return ResultType::upgrade_websocket;
     }
 
     if (!content_length_present || req.content_length == 0) {

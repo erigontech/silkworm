@@ -59,7 +59,11 @@ Task<void> Connection::read_loop() {
     try {
         // Read next request or next chunk (result == RequestParser::indeterminate) until closed or error
         while (true) {
-            co_await do_read();
+            if (websocket_connection_) {
+                co_await websocket_connection_->do_read();
+            } else {
+                co_await do_read();
+            }
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe) {
@@ -95,6 +99,16 @@ Task<void> Connection::do_read() {
         reply_ = Reply::stock_reply(StatusType::processing_continue);
         co_await do_write();
         reply_.reset();
+    } else if (result == RequestParser::ResultType::upgrade_websocket) {
+        // Now that talking to the socket is succcessful,
+        // we tie the socket object to a websocket stream
+        boost::optional<boost::beast::http::request_parser<boost::beast::http::string_body>> parser;
+        boost::beast::websocket::stream<boost::beast::tcp_stream> ws(std::move(socket_));
+
+        // lupin fills request
+        websocket_connection_ = std::make_shared<WebSocketConnection>(std::move(ws), std::move(request_handler_));
+        // lupin calls do_accept
+        //co_await websocket_connection_->do_accept(std::move(parser->release()));
     }
 }
 

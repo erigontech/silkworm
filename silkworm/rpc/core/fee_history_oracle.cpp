@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -48,44 +49,48 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     }
 }
 
-Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block, BlockNum block_count, const std::vector<std::int8_t>& reward_percentile) {
+Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
+                                               BlockNum block_count,
+                                               const std::vector<int8_t>& reward_percentiles) {
     FeeHistory fee_history;
     if (block_count < 1) {
         co_return fee_history;
     }
     if (block_count > kDefaultMaxFeeHistory) {
-        SILK_WARN << "FeeHistoryOracle::fee_history fee history length to long: requested " << block_count << " truncated to " << kDefaultMaxFeeHistory;
+        SILK_WARN << "FeeHistoryOracle::fee_history fee history length too long: requested " << block_count
+                  << " truncated to " << kDefaultMaxFeeHistory;
         block_count = kDefaultMaxFeeHistory;
     }
 
-    for (size_t idx = 0; idx < reward_percentile.size(); idx++) {
-        if (reward_percentile[idx] < 0 || reward_percentile[idx] > 100) {
+    for (size_t idx = 0; idx < reward_percentiles.size(); idx++) {
+        if (reward_percentiles[idx] < 0 || reward_percentiles[idx] > 100) {
             std::ostringstream ss;
-            ss << "ErrInvalidPercentile: " << std::dec << reward_percentile[idx];
-
+            ss << "ErrInvalidPercentile: " << std::dec << reward_percentiles[idx];
             fee_history.error = ss.str();
             co_return fee_history;
         }
-        if (idx > 0 && reward_percentile[idx] < reward_percentile[idx - 1]) {
+        if (idx > 0 && reward_percentiles[idx] < reward_percentiles[idx - 1]) {
             std::ostringstream ss;
-            ss << "ErrInvalidPercentile: #" << idx - 1 << ":" << reward_percentile[idx - 1]
-               << "> #" << idx << ":" << reward_percentile[idx];
+            ss << "ErrInvalidPercentile: #" << idx - 1 << ":" << reward_percentiles[idx - 1]
+               << "> #" << idx << ":" << reward_percentiles[idx];
             fee_history.error = ss.str();
             co_return fee_history;
         }
     }
 
-    auto max_history = reward_percentile.empty() ? kDefaultMaxHeaderHistory : kDefaultMaxBlockHistory;
+    // Only process blocks if reward percentiles were requested
+    const auto max_history = reward_percentiles.empty() ? kDefaultMaxHeaderHistory : kDefaultMaxBlockHistory;
 
-    auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
+    const auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
 
     fee_history.rewards.reserve(block_range.num_blocks);
     fee_history.base_fees_per_gas.reserve(block_range.num_blocks + 1);
     fee_history.gas_used_ratio.reserve(block_range.num_blocks);
 
-    auto oldest_block = block_range.last_block_number + 1 - block_range.num_blocks;
-    for (auto idx = block_range.num_blocks; idx > 0; idx--) {
-        const auto block_number = ++oldest_block - 1;
+    const auto oldest_block_number = block_range.last_block_number + 1 - block_range.num_blocks;
+    auto first_missing = block_range.num_blocks;
+    for (auto idx = block_range.num_blocks, next = oldest_block_number; idx > 0; idx--) {
+        const auto block_number = ++next - 1;
         if (block_number > block_range.last_block_number) {
             continue;
         }
@@ -100,19 +105,36 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block, BlockNum b
                 continue;
             }
             block_fees.block = block_with_hash;
-            if (!reward_percentile.empty()) {
+            if (!reward_percentiles.empty()) {
                 block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             }
         }
-        co_await process_block(block_fees, reward_percentile);
+        co_await process_block(block_fees, reward_percentiles);
 
-        const auto index = block_fees.block_number - oldest_block;
-        fee_history.rewards[index] = block_fees.rewards;
-        fee_history.base_fees_per_gas[index] = block_fees.base_fee;
-        fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
-        fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
+        ensure(block_fees.block_number >= oldest_block_number, "fee_history: block_number lower than oldest");
+        const auto index = block_fees.block_number - oldest_block_number;
+        if (block_fees.block) {
+            fee_history.rewards[index] = block_fees.rewards;
+            fee_history.base_fees_per_gas[index] = block_fees.base_fee;
+            fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
+            fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
+        } else {
+            // Getting no block and no error means we are requesting into the future (might happen because of a reorg)
+            if (index < first_missing) {
+                first_missing = index;
+            }
+        }
     }
-    // TODO(sixtysixter) firstMissing management as in erigon
+    if (first_missing == 0) {
+        co_return FeeHistory{};
+    }
+    if (!reward_percentiles.empty()) {
+        fee_history.rewards.resize(first_missing);
+    } else {
+        fee_history.rewards.clear();
+    }
+    fee_history.base_fees_per_gas.resize(first_missing + 1);
+    fee_history.gas_used_ratio.resize(first_missing);
 
     co_return fee_history;
 }
@@ -136,17 +158,25 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, ui
         }
     }
 
+    // Ensure not trying to retrieve before genesis
+    if (block_count > newest_block + 1) {
+        block_count = newest_block + 1;
+    }
+
     const auto receipts = co_await receipts_provider_(*block_with_hash);
 
     co_return BlockRange{block_count, newest_block, block_with_hash, receipts};
 }
 
-Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile) {
+Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles) {
     auto& header = block_fees.block->block.header;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
     block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
 
     const auto parent_block = co_await block_provider_(header.number - 1);
+    if (!parent_block) {
+        co_return;
+    }
 
     const auto evmc_revision = config_.revision(parent_block->block.header.number, parent_block->block.header.timestamp);
     block_fees.next_base_fee = 0;
@@ -154,7 +184,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block->block.header);
     }
 
-    if (reward_percentile.empty()) {
+    if (reward_percentiles.empty()) {
         co_return;
     }
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
@@ -166,25 +196,24 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         co_return;
     }
 
-    std::map<intx::uint256, uint64_t> gas_and_rewards;
+    std::map<intx::uint256, uint64_t> rewards_and_gas;
     for (size_t idx = 0; idx < block_fees.block->block.transactions.size(); idx++) {
         const auto reward = block_fees.block->block.transactions[idx].effective_gas_price(block_fees.base_fee);
-        gas_and_rewards.emplace(reward, block_fees.receipts[idx].gas_used);
+        rewards_and_gas.emplace(reward, block_fees.receipts[idx].gas_used);
     }
 
-    auto index = gas_and_rewards.begin();
-    auto last = --gas_and_rewards.end();
+    auto index = rewards_and_gas.begin();
+    const auto last = --rewards_and_gas.end();
     auto sum_gas_used = index->second;
-    for (size_t idx = 0; idx < reward_percentile.size(); idx++) {
-        auto percentile = static_cast<uint8_t>(reward_percentile[idx]);
-        uint64_t threshold_gas_used = header.gas_used * percentile / 100;
+    for (const auto percentile : reward_percentiles) {
+        const uint64_t threshold_gas_used = header.gas_used * static_cast<uint8_t>(percentile) / 100;
         while (index != last) {
             index++;
             if (sum_gas_used < threshold_gas_used) {
                 sum_gas_used += index->second;
             }
         }
-        block_fees.rewards[idx] = index->first;
+        block_fees.rewards.push_back(index->first);
     }
 
     co_return;

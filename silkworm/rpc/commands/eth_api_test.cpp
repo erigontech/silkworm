@@ -109,16 +109,37 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wron
     })"_json);
 }
 
-TEST_CASE("fuzzy: eth_call invalid params", "[rpc][api]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    auto context = test::TestDatabaseContext();
-    test::RpcApiTestBase<test::RequestHandler_ForTest> handler{context.db};
-
+TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
-
     http::Reply reply;
-    handler.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
-    CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}})"_json);
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}
+    })"_json);
+}
+
+TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invalid input", "[rpc][api]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["5x1","0x2",[95,99]]})"_json;
+    http::Reply reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":100,"message":"invalid block_count: 5x1"}
+    })"_json);
+}
+
+TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid input", "[rpc][api]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x5","0x2",[95,99]]})"_json;
+    http::Reply reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "result":{"baseFeePerGas":["0x0","0x0","0x0","0x0"],"gasUsedRatio":[0.0,0.0,0.0],"oldestBlock":"0x0","reward":[[],[],[]]}
+    })"_json);
 }
 #endif  // SILKWORM_SANITIZE
 

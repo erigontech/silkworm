@@ -29,7 +29,8 @@ class RequestParser {
         good,
         bad,
         indeterminate,
-        processing_continue
+        processing_continue,
+        upgrade_websocket
     };
 
     /**

@@ -37,6 +37,7 @@
 #include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/http/request_parser.hpp>
+#include <silkworm/rpc/http/websocket_connection.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -87,6 +88,9 @@ class Connection {
 
     //! The reply to be sent back to the client.
     Reply reply_;
+
+    // pointer to websocket if created
+    std::shared_ptr<WebSocketConnection> websocket_connection_{nullptr};
 };
 
 }  // namespace silkworm::rpc::http

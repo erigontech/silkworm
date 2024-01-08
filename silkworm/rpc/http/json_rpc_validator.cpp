@@ -130,8 +130,6 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
 
     // from method_params get by method or null
 
-
-
     const auto method_spec_field = method_params.find(method);
 
     if (method_spec_field == method_params.end()) {
@@ -173,13 +171,13 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
             }
         }
 
-        //TODO: use contains instead of is_null
+        // TODO: use contains instead of is_null
 
         auto spec_schema_of = spec_schema.find("anyOf");
         if (spec_schema_of == spec_schema.end()) {
             spec_schema_of = spec_schema.find("oneOf");
         }
- 
+
         if (spec_schema_of != spec_schema.end()) {
             results.is_valid = false;
             for (const auto& schema : spec_schema_of.value()) {

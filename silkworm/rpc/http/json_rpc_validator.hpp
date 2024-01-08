@@ -43,20 +43,18 @@ class JsonRpcValidator {
     nlohmann::json get_spec();
 
   private:
-    nlohmann::json json_spec;
-
-    std::map<std::string, nlohmann::json> method_params;
-    std::map<std::string, std::regex> regexes;
+    std::unordered_map<std::string, nlohmann::json> method_params;
+    std::unordered_map<std::string, std::regex> regexes;
 
     bool accept_unknown_methods;
-    JsonRpcValidationResults check_request_fields(const nlohmann::json& request);
-    JsonRpcValidationResults validate_params(const nlohmann::json& request);
-    JsonRpcValidationResults validate_schema(const nlohmann::json& value_, const nlohmann::json& schema);
-    JsonRpcValidationResults validate_string(const nlohmann::json& string_, const nlohmann::json& schema);
-    JsonRpcValidationResults validate_array(const nlohmann::json& array_, const nlohmann::json& schema);
-    JsonRpcValidationResults validate_object(const nlohmann::json& object_, const nlohmann::json& schema);
-    JsonRpcValidationResults validate_boolean(const nlohmann::json& boolean_);
-    JsonRpcValidationResults validate_number(const nlohmann::json& number_);
-    JsonRpcValidationResults validate_null(const nlohmann::json& number_);
+    void check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results);
+    void validate_params(const nlohmann::json& request, JsonRpcValidationResults& results);
+    void validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_boolean(const nlohmann::json& boolean_, JsonRpcValidationResults& results);
+    void validate_number(const nlohmann::json& number_, JsonRpcValidationResults& results);
+    void validate_null(const nlohmann::json& number_, JsonRpcValidationResults& results);
 };
 }  // namespace silkworm::rpc::http

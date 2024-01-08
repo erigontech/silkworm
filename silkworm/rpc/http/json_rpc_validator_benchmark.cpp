@@ -23,7 +23,7 @@
 
 static silkworm::rpc::http::JsonRpcValidator validator{};
 
-nlohmann::json requests[2] = {
+const nlohmann::json requests[2] = {
     {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBlockByNumber"},

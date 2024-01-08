@@ -39,17 +39,21 @@ namespace silkworm::rpc::http {
 static const std::string valid_jsonrpc_version = "2.0";
 
 JsonRpcValidator::JsonRpcValidator() {
-    json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
+    const auto json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
     accept_unknown_methods = true;
 
     for (const auto& method : json_spec["methods"]) {
-        method_params[method["name"]] = method["params"];
+        method_params[method["name"].get<std::string>()] = nlohmann::json::parse(method["params"].dump());
+        // TODO: check method_params[method["name"].get<std::string>()] = method["params"].array();
     }
 }
 
 JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
-    json_spec = spec_;
     accept_unknown_methods = true;
+
+    for (const auto& method : spec_["methods"]) {
+        method_params[method["name"].get<std::string>()] = method["params"];
+    }
 }
 
 JsonRpcValidator::~JsonRpcValidator() {
@@ -60,17 +64,16 @@ JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& reques
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    results = check_request_fields(request_);
+    check_request_fields(request_, results);
 
     if (results.is_valid) {
-        results = validate_params(request_);
+        validate_params(request_, results);
     }
 
     return results;
 }
 
-JsonRpcValidationResults JsonRpcValidator::check_request_fields(const nlohmann::json& request) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results) {
     results.is_valid = false;
 
     // expected fields: jsonrpc, method, params (optional), id
@@ -80,69 +83,75 @@ JsonRpcValidationResults JsonRpcValidator::check_request_fields(const nlohmann::
         if (item.key() == REQUEST_FIELD_METHOD) {
             if (!item.value().is_string()) {
                 results.error_message = "Invalid field: " + item.key();
-                return results;
+                return;
             }
             required_fields &= 0b110;
         } else if (item.key() == REQUEST_FIELD_ID) {
             if (!item.value().is_number()) {
                 results.error_message = "Invalid field: " + item.key();
-                return results;
+                return;
             }
             required_fields &= 0b101;
         } else if (item.key() == REQUEST_FIELD_PARAMETERS) {
             if (!item.value().is_array()) {
                 results.error_message = "Invalid field: " + item.key();
-                return results;
+                return;
             }
         } else if (item.key() == REQUEST_FIELD_JSONRPC) {
             if (!item.value().is_string()) {
                 results.error_message = "Invalid field: " + item.key();
-                return results;
+                return;
             }
             required_fields &= 0b011;
         } else {
             results.error_message = "Invalid field: " + item.key();
-            return results;
+            return;
         }
     }
 
     if (required_fields != 0) {
         results.error_message = "Request not valid, required fields: " + std::string(REQUEST_FIELD_METHOD) + ", " + std::string(REQUEST_FIELD_ID) + ", " + std::string(REQUEST_FIELD_PARAMETERS) + ", " + std::string(REQUEST_FIELD_JSONRPC);
-        return results;
+        return;
     }
 
     results.is_valid = true;
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json& request) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
-    auto method = request[REQUEST_FIELD_METHOD];
-    auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
+    // auto method = request[REQUEST_FIELD_METHOD].get<std::string>();
+    // auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
 
-    nlohmann::json method_spec;
+    const auto method = request.find(REQUEST_FIELD_METHOD).value().get<std::string>();
+    const auto params_field = request.find(REQUEST_FIELD_PARAMETERS);
+    const auto params = params_field != request.end() ? params_field.value() : nlohmann::json::array();
 
-    if (method_params.find(method) != method_params.end()) {
-        method_spec = method_params[method];
-    } else {
+    // from method_params get by method or null
+
+
+
+    const auto method_spec_field = method_params.find(method);
+
+    if (method_spec_field == method_params.end()) {
         results.is_valid = accept_unknown_methods;
         results.error_message = "Method not found in spec";
-        return results;
+        return;
     }
+    const auto method_spec = method_spec_field->second;
 
     if (params.size() > method_spec.size()) {
         results.is_valid = false;
         results.error_message = "Invalid number of parameters";
-        return results;
+        return;
     }
 
     unsigned long idx = 0;
     for (const auto& spec : method_spec) {
-        auto spec_name = spec["name"].get<std::string>();
-        auto spec_required = spec["required"].get<bool>();
-        auto spec_schema = spec["schema"];
+        const auto spec_name = spec["name"].get<std::string>();
+        const auto spec_required = spec["required"].get<bool>();
+        const auto spec_schema = spec["schema"];
 
         // std::cout << spec_name << " idx: " << idx << " params size: " << params.size() << std::endl;
 
@@ -154,29 +163,34 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
             break;
         }
 
-        // std::cout << "params[idx]: " << params[idx] << std::endl;
+        // // std::cout << "params[idx]: " << params[idx] << std::endl;
 
-        if (!spec_schema["type"].is_null()) {
-            auto param_results = validate_schema(params[idx], spec_schema);
-            if (!param_results.is_valid) {
-                results.is_valid = false;
-                results.error_message += "\nInvalid parameter: " + spec_name + " " + param_results.error_message;
+        if (spec_schema.contains("type")) {
+            validate_schema(params[idx], spec_schema, results);
+            if (!results.is_valid) {
+                results.error_message += "\nInvalid parameter: " + spec_name + " " + results.error_message;
+                return;
             }
         }
 
-        nlohmann::json schemas = spec_schema["anyOf"].is_null() ? spec_schema["oneOf"] : spec_schema["anyOf"];
-        if (!schemas.is_null()) {
-            bool is_valid = false;
-            for (const auto& schema : schemas) {
-                JsonRpcValidationResults param_results = validate_schema(params[idx], schema);
-                if (param_results.is_valid) {
-                    is_valid = true;
+        //TODO: use contains instead of is_null
+
+        auto spec_schema_of = spec_schema.find("anyOf");
+        if (spec_schema_of == spec_schema.end()) {
+            spec_schema_of = spec_schema.find("oneOf");
+        }
+ 
+        if (spec_schema_of != spec_schema.end()) {
+            results.is_valid = false;
+            for (const auto& schema : spec_schema_of.value()) {
+                validate_schema(params[idx], schema, results);
+                if (results.is_valid) {
+                    results.is_valid = true;
                     break;
                 }
             }
 
-            if (!is_valid) {
-                results.is_valid = false;
+            if (!results.is_valid) {
                 results.error_message += "\nInvalid parameter: " + spec_name;
             }
         }
@@ -184,53 +198,55 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
         ++idx;
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_schema(const nlohmann::json& value_, const nlohmann::json& schema) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = false;
 
-    if (schema["type"] == "string") {
-        results = validate_string(value_, schema);
-    } else if (schema["type"] == "array") {
-        results = validate_array(value_, schema);
-    } else if (schema["type"] == "object") {
-        results = validate_object(value_, schema);
-    } else if (schema["type"] == "boolean") {
-        results = validate_boolean(value_);
-    } else if (schema["type"] == "number") {
-        results = validate_number(value_);
-    } else if (schema["type"] == "null") {
-        results = validate_null(value_);
+    const auto schema_type = schema["type"].get<std::string>();
+
+    if (schema_type == "string") {
+        validate_string(value_, schema, results);
+    } else if (schema_type == "array") {
+        validate_array(value_, schema, results);
+    } else if (schema_type == "object") {
+        validate_object(value_, schema, results);
+    } else if (schema_type == "boolean") {
+        validate_boolean(value_, results);
+    } else if (schema_type == "number") {
+        validate_number(value_, results);
+    } else if (schema_type == "null") {
+        validate_null(value_, results);
     } else {
         results.is_valid = false;
         results.error_message = "Invalid schema type";
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_string(const nlohmann::json& string_, const nlohmann::json& schema) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = false;
 
     if (!string_.is_string()) {
         results.error_message = "Invalid string";
-        return results;
+        return;
     }
 
-    if (schema.find("pattern") != schema.end()) {
+    const auto schema_pattern_field = schema.find("pattern");
+    if (schema_pattern_field != schema.end()) {
         std::regex pattern;
-        if (regexes.find(schema["pattern"]) != regexes.end()) {
-            pattern = regexes[schema["pattern"]];
+        const auto schema_pattern = schema_pattern_field.value().get<std::string>();
+        if (regexes.find(schema_pattern) != regexes.end()) {
+            pattern = regexes[schema_pattern];
         } else {
-            pattern = std::regex(schema["pattern"].get<std::string>(), std::regex::optimize);
-            regexes[schema["pattern"]] = pattern;
+            pattern = std::regex(schema_pattern, std::regex::optimize);
+            regexes[schema_pattern] = pattern;
         }
         if (!std::regex_match(string_.get<std::string>(), pattern)) {
             results.error_message = "Invalid string pattern";
-            return results;
+            return;
         }
     }
 
@@ -245,16 +261,15 @@ JsonRpcValidationResults JsonRpcValidator::validate_string(const nlohmann::json&
 
         if (!is_valid) {
             results.error_message = "Invalid string enum";
-            return results;
+            return;
         }
     }
 
     results.is_valid = true;
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_array(const nlohmann::json& array_, const nlohmann::json& schema) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
     if (!array_.is_array()) {
@@ -262,18 +277,18 @@ JsonRpcValidationResults JsonRpcValidator::validate_array(const nlohmann::json& 
         results.error_message = "Invalid array";
     }
 
+    const auto schema_items = schema["items"];
     for (const auto& item : array_) {
-        results = validate_schema(item, schema["items"]);
+        validate_schema(item, schema_items, results);
         if (!results.is_valid) {
             break;
         }
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_object(const nlohmann::json& object_, const nlohmann::json& schema) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
     if (!object_.is_object()) {
@@ -286,7 +301,7 @@ JsonRpcValidationResults JsonRpcValidator::validate_object(const nlohmann::json&
             if (object_.find(item) == object_.end()) {
                 results.is_valid = false;
                 results.error_message = "Missing required field: " + item.get<std::string>();
-                return results;
+                return;
             }
         }
     }
@@ -294,23 +309,22 @@ JsonRpcValidationResults JsonRpcValidator::validate_object(const nlohmann::json&
     if (schema.contains("properties")) {
         for (const auto& item : object_.items()) {
             if (schema["properties"].contains(item.key())) {
-                results = validate_schema(item.value(), schema["properties"][item.key()]);
+                validate_schema(item.value(), schema["properties"][item.key()], results);
                 if (!results.is_valid) {
-                    return results;
+                    return;
                 }
             } else {
                 results.is_valid = false;
                 results.error_message = "Invalid field: " + item.key();
-                return results;
+                return;
             }
         }
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_boolean(const nlohmann::json& boolean_) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_boolean(const nlohmann::json& boolean_, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
     if (!boolean_.is_boolean()) {
@@ -318,11 +332,10 @@ JsonRpcValidationResults JsonRpcValidator::validate_boolean(const nlohmann::json
         results.error_message = "Invalid boolean";
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_number(const nlohmann::json& number_) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_number(const nlohmann::json& number_, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
     if (!number_.is_number()) {
@@ -330,17 +343,16 @@ JsonRpcValidationResults JsonRpcValidator::validate_number(const nlohmann::json&
         results.error_message = "Invalid number";
     }
 
-    return results;
+    return;
 }
 
-JsonRpcValidationResults JsonRpcValidator::validate_null(const nlohmann::json&) {
-    JsonRpcValidationResults results;
+void JsonRpcValidator::validate_null(const nlohmann::json&, JsonRpcValidationResults& results) {
     results.is_valid = true;
-    return results;
+    return;
 }
 
 nlohmann::json JsonRpcValidator::get_spec() {
-    return json_spec;
+    return nlohmann::json{};
 }
 
 }  // namespace silkworm::rpc::http

@@ -36,7 +36,7 @@ class ChainForkView {
   public:
     ChainForkView(ChainHead headers_head);
 
-    void reset_head(ChainHead headers_head);
+    void reset_head(ChainHead new_head);
 
     TotalDifficulty add(const BlockHeader&);
     TotalDifficulty add(const BlockHeader&, TotalDifficulty parent_td);

@@ -83,9 +83,9 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 
     const auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
 
-    fee_history.rewards.reserve(block_range.num_blocks);
-    fee_history.base_fees_per_gas.reserve(block_range.num_blocks + 1);
-    fee_history.gas_used_ratio.reserve(block_range.num_blocks);
+    fee_history.rewards.resize(block_range.num_blocks);
+    fee_history.base_fees_per_gas.resize(block_range.num_blocks + 1);
+    fee_history.gas_used_ratio.resize(block_range.num_blocks);
 
     const auto oldest_block_number = block_range.last_block_number + 1 - block_range.num_blocks;
     auto first_missing = block_range.num_blocks;

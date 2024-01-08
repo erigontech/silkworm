@@ -14,9 +14,9 @@
    limitations under the License.
 ]]
 
-set(COPYRIGHT_HEADER
+set(COPYRIGHT_HEADER_TEMPLATE
     "/*
-   Copyright 2022 The Silkworm Authors
+   Copyright YYYY The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the \"License\");
    you may not use this file except in compliance with the License.
@@ -33,15 +33,21 @@ set(COPYRIGHT_HEADER
 "
 )
 
+set(SILKWORM_COPYRIGHT_YEARS "2022" "2023" "2024")
+
 function(check file_path)
-  string(LENGTH "${COPYRIGHT_HEADER}" header_len)
+  string(LENGTH "${COPYRIGHT_HEADER_TEMPLATE}" header_len)
   file(READ "${file_path}" header LIMIT ${header_len})
 
-  string(REPLACE "2022" "2023" COPYRIGHT_HEADER_23 "${COPYRIGHT_HEADER}")
+  foreach(Y IN LISTS SILKWORM_COPYRIGHT_YEARS)
+    string(REPLACE "YYYY" "${Y}" COPYRIGHT_HEADER "${COPYRIGHT_HEADER_TEMPLATE}")
 
-  if(NOT ((header STREQUAL COPYRIGHT_HEADER) OR (header STREQUAL COPYRIGHT_HEADER_23)))
-    message(SEND_ERROR "${file_path}: the copyright header differs from the other files")
-  endif()
+    if(header STREQUAL COPYRIGHT_HEADER)
+      return()
+    endif()
+  endforeach()
+
+  message(SEND_ERROR "${file_path}: the copyright header differs from the other files")
 endfunction()
 
 cmake_policy(SET CMP0009 NEW)

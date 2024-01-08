@@ -19,8 +19,11 @@
 #include <charconv>
 #include <chrono>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
+#include <absl/strings/str_split.h>
 #include <boost/circular_buffer.hpp>
 
 #include <silkworm/buildinfo.h>
@@ -66,6 +69,15 @@ struct ExecutionProgress {
     size_t processed_gas{0};
     float gas_state_perc{0.0};
 };
+
+static bool is_compatible_libmdbx_version(std::string_view their_version, std::string_view our_version) {
+    const std::vector<std::string> their_version_parts = absl::StrSplit(std::string(their_version), '.');
+    const std::vector<std::string> our_version_parts = absl::StrSplit(std::string(our_version), '.');
+    return (their_version_parts.size() >= 3) &&
+           (our_version_parts.size() >= 3) &&
+           (their_version_parts[0] == our_version_parts[0]) &&
+           (their_version_parts[1] == our_version_parts[1]);
+}
 
 //! Generate log arguments for Silkworm library version
 static log::Args log_args_for_version() {
@@ -156,6 +168,10 @@ SILKWORM_EXPORT int silkworm_init(
     }
     if (!settings) {
         return SILKWORM_INVALID_SETTINGS;
+    }
+
+    if (!is_compatible_libmdbx_version(settings->libmdbx_version, silkworm_libmdbx_version())) {
+        return SILKWORM_INCOMPATIBLE_LIBMDBX;
     }
 
     static bool is_initialized = false;
@@ -308,6 +324,10 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         .tx_snapshot = std::move(transactions_snapshot)};
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
+    return ::mdbx::get_version().git.describe;
 }
 
 SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* env) SILKWORM_NOEXCEPT {

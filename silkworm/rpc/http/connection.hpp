@@ -33,6 +33,7 @@
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/http/channel_writer.hpp>
 #include <silkworm/rpc/http/reply.hpp>
 #include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
@@ -41,7 +42,7 @@
 namespace silkworm::rpc::http {
 
 //! Represents a single connection from a client.
-class Connection {
+class Connection : public ChannelWriter {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -60,15 +61,30 @@ class Connection {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
+    Task<void> write(MessageResponse& response);
+
   private:
+    using AuthorizationError = std::string;
+    using AuthorizationResult = tl::expected<void, AuthorizationError>;
+    AuthorizationResult is_request_authorized(const http::Request& request);
+
+    Task<void> handle_request(Request& request);
+
     //! Reset connection data
     void clean();
+
+    void set_cors(std::vector<Header>& headers);
+
+    Task<void> write_headers();
+
+    static StatusType get_http_status(ChannelWriter::ResponseStatus status);
 
     //! Perform an asynchronous read operation.
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
     Task<void> do_write();
+    Task<void> do_write(http::Reply& reply);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -87,6 +103,10 @@ class Connection {
 
     //! The reply to be sent back to the client.
     Reply reply_;
+
+    const std::vector<std::string>& allowed_origins_;
+
+    const std::optional<std::string> jwt_secret_;
 };
 
 }  // namespace silkworm::rpc::http

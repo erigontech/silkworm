@@ -30,61 +30,44 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
+#include <silkworm/rpc/http/channel_writer.hpp>
 
 namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(boost::asio::ip::tcp::socket& socket,
+    RequestHandler(ChannelWriter* channel_writer,
                    commands::RpcApi& rpc_api,
-                   const commands::RpcApiTable& rpc_api_table,
-                   const std::vector<std::string>& allowed_origins,
-                   std::optional<std::string> jwt_secret)
+                   const commands::RpcApiTable& rpc_api_table)
         : rpc_api_{rpc_api},
-          socket_{socket},
-          rpc_api_table_(rpc_api_table),
-          jwt_secret_(std::move(jwt_secret)),
-          allowed_origins_(allowed_origins) {}
+          channel_writer_{channel_writer},
+          rpc_api_table_(rpc_api_table) {}
 
     RequestHandler(const RequestHandler&) = delete;
     virtual ~RequestHandler() = default;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<void> handle(const http::Request& request);
+    Task<void> handle(const std::string& request);
 
   protected:
-    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
-    virtual Task<void> do_write(http::Reply& reply);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::MessageResponse& response);
 
   private:
-    using AuthorizationError = std::string;
-    using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(const http::Request& request);
-
-    void set_cors(std::vector<Header>& headers);
-
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethod handler,
         const nlohmann::json& request_json,
-        http::Reply& reply);
+        ChannelWriter::MessageResponse& response);
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethodGlaze handler,
         const nlohmann::json& request_json,
-        http::Reply& reply);
+        ChannelWriter::MessageResponse& response);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
-    Task<void> write_headers();
 
     commands::RpcApi& rpc_api_;
 
-    boost::asio::ip::tcp::socket& socket_;
+    ChannelWriter* channel_writer_;
 
     const commands::RpcApiTable& rpc_api_table_;
-
-    const std::optional<std::string> jwt_secret_;
-
-    const std::vector<std::string>& allowed_origins_;
 };
 
 }  // namespace silkworm::rpc::http

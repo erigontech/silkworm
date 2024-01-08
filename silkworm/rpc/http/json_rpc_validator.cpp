@@ -74,37 +74,40 @@ JsonRpcValidationResults JsonRpcValidator::check_request_fields(const nlohmann::
     results.is_valid = false;
 
     // expected fields: jsonrpc, method, params (optional), id
-    if (request.size() != 4 && request.size() != 3) {
+    auto required_fields = 0b111;
+
+    for (auto item = request.begin(); item != request.end(); ++item) {
+        if (item.key() == REQUEST_FIELD_METHOD) {
+            if (!item.value().is_string()) {
+                results.error_message = "Invalid field: " + item.key();
+                return results;
+            }
+            required_fields &= 0b110;
+        } else if (item.key() == REQUEST_FIELD_ID) {
+            if (!item.value().is_number()) {
+                results.error_message = "Invalid field: " + item.key();
+                return results;
+            }
+            required_fields &= 0b101;
+        } else if (item.key() == REQUEST_FIELD_PARAMETERS) {
+            if (!item.value().is_array()) {
+                results.error_message = "Invalid field: " + item.key();
+                return results;
+            }
+        } else if (item.key() == REQUEST_FIELD_JSONRPC) {
+            if (!item.value().is_string()) {
+                results.error_message = "Invalid field: " + item.key();
+                return results;
+            }
+            required_fields &= 0b011;
+        } else {
+            results.error_message = "Invalid field: " + item.key();
+            return results;
+        }
+    }
+
+    if (required_fields != 0) {
         results.error_message = "Request not valid, required fields: " + std::string(REQUEST_FIELD_METHOD) + ", " + std::string(REQUEST_FIELD_ID) + ", " + std::string(REQUEST_FIELD_PARAMETERS) + ", " + std::string(REQUEST_FIELD_JSONRPC);
-        return results;
-    }
-
-    // `method` must be a string
-    if (!request.contains(REQUEST_FIELD_METHOD) ||
-        request[REQUEST_FIELD_METHOD].empty() ||
-        !request[REQUEST_FIELD_METHOD].is_string()) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_METHOD);
-        return results;
-    }
-
-    // `id` must be a number
-    if (!request.contains(REQUEST_FIELD_ID) ||
-        request[REQUEST_FIELD_ID].empty() ||
-        !request[REQUEST_FIELD_ID].is_number()) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_ID);
-        return results;
-    }
-
-    // optional `params` must be an array
-    if (request.contains(REQUEST_FIELD_PARAMETERS) && !request[REQUEST_FIELD_PARAMETERS].is_array()) {
-        results.error_message = "Invalid field: " + std::string(REQUEST_FIELD_PARAMETERS);
-        return results;
-    }
-
-    // jsonrpc must contain the string "2.0"
-    if (!request.contains(REQUEST_FIELD_JSONRPC) ||
-        request[REQUEST_FIELD_JSONRPC] != valid_jsonrpc_version) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_JSONRPC);
         return results;
     }
 
@@ -218,7 +221,6 @@ JsonRpcValidationResults JsonRpcValidator::validate_string(const nlohmann::json&
     }
 
     if (schema.find("pattern") != schema.end()) {
-
         std::regex pattern;
         if (regexes.find(schema["pattern"]) != regexes.end()) {
             pattern = regexes[schema["pattern"]];

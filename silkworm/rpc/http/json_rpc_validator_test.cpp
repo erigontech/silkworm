@@ -50,7 +50,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     JsonRpcValidationResults results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: jsonrpc");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -59,7 +59,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: method");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -68,7 +68,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: id");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {

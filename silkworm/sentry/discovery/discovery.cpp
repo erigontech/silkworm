@@ -38,7 +38,7 @@ class DiscoveryImpl {
         concurrency::ExecutorPool& executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
-        const std::filesystem::path& data_dir_path,
+        std::filesystem::path data_dir_path,
         uint64_t network_id,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
@@ -77,21 +77,21 @@ DiscoveryImpl::DiscoveryImpl(
     concurrency::ExecutorPool& executor_pool,
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
-    const std::filesystem::path& data_dir_path,
+    std::filesystem::path data_dir_path,
     uint64_t network_id,
-    std::function<EccKeyPair()> node_key,
+    std::function<EccKeyPair()> node_key,  // NOLINT(performance-unnecessary-value-param)
     std::function<EnodeUrl()> node_url,
     std::function<enr::EnrRecord()> node_record,
     std::vector<EnodeUrl> bootnodes,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
-      data_dir_path_(data_dir_path),
+      data_dir_path_(std::move(data_dir_path)),
       node_id_([node_key] { return node_key().public_key(); }),
       network_id_(network_id),
       node_db_(executor_pool.any_executor()),
       bootnodes_(std::move(bootnodes)),
-      disc_v4_discovery_(executor_pool.any_executor(), disc_v4_port, node_key, node_url, node_record, node_db_.interface()) {
+      disc_v4_discovery_(executor_pool.any_executor(), disc_v4_port, node_key, std::move(node_url), std::move(node_record), node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
@@ -139,8 +139,10 @@ Task<std::vector<Discovery::PeerCandidate>> DiscoveryImpl::request_peer_candidat
     using namespace std::chrono_literals;
 
     std::vector<node_db::NodeId> exclude_ids;
-    for (auto& url : exclude_urls)
+    exclude_ids.reserve(exclude_urls.size());
+    for (auto& url : exclude_urls) {
         exclude_ids.push_back(url.public_key());
+    }
 
     auto now = std::chrono::system_clock::now();
     node_db::NodeDb::FindPeerCandidatesQuery query{

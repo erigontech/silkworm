@@ -93,8 +93,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter writer(4096);
-    json::Stream stream(writer);
+    json::Stream stream(io_executor, writer);
 
     SECTION("precompiled contract failure") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -150,7 +154,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -258,8 +262,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter writer(4096);
-    json::Stream stream(writer);
+    json::Stream stream(io_executor, writer);
 
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -301,7 +309,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -364,7 +372,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -475,7 +483,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -577,7 +585,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -684,7 +692,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -792,7 +800,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -887,7 +895,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -1029,8 +1037,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter writer(4096);
-    json::Stream stream(writer);
+    json::Stream stream(io_executor, writer);
 
     SECTION("Call: TO present") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -1094,7 +1106,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         stream.open_object();
         spawn_and_wait(executor.execute(stream, storage, block, call));
         stream.close_object();
-        stream.close();
+        spawn_and_wait(stream.close());
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
@@ -1179,8 +1191,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    ClientContextPool pool{1};
+    pool.start();
+    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+
     StringWriter writer(4096);
-    json::Stream stream(writer);
+    json::Stream stream(io_executor, writer);
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1251,7 +1267,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     stream.open_object();
     spawn_and_wait(executor.execute(stream, storage, block, call));
     stream.close_object();
-    stream.close();
+    spawn_and_wait(stream.close());
 
     nlohmann::json json = nlohmann::json::parse(writer.get_content());
 

@@ -405,12 +405,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex
-Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        make_glaze_json_error(request, 100, error_msg, reply);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -431,7 +431,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
             const auto idx = std::stoul(index, nullptr, 16);
             if (idx >= ommers.size()) {
                 SILK_WARN << "invalid_argument: index not found processing request: " << request.dump();
-                reply = make_json_content(request, nullptr);
+                make_glaze_json_null_content(request, reply);
             } else {
                 const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
                 const auto& uncle = ommers[idx];
@@ -441,19 +441,19 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
                 uncle_block_with_hash->hash = uncle.hash();
                 const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
 
-                reply = make_json_content(request, uncle_block_with_hash_and_td);
+                make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }
         } else {
-            reply = make_json_content(request, {});
+            make_glaze_json_null_content(request, reply);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        make_glaze_json_error(request, 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        make_glaze_json_error(request, 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -535,12 +535,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyhash
-Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        make_glaze_json_error(request, 100, error_msg, reply);
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -560,30 +560,30 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
                 const auto decoding_result = silkworm::rlp::decode(encoded_tx_view, transaction);
                 if (decoding_result) {
                     transaction.queued_in_pool = true;
-                    reply = make_json_content(request, transaction);
+                    make_glaze_json_content(request, transaction, reply);
                 } else {
                     const auto error_msg = "invalid RLP decoding for tx hash: " + silkworm::to_hex(transaction_hash);
                     SILK_ERROR << error_msg;
-                    reply = make_json_content(request, {});
+                    make_glaze_json_null_content(request, reply);
                 }
             } else {
                 const auto error_msg = "tx hash: " + silkworm::to_hex(transaction_hash) + " does not exist in pool";
                 SILK_ERROR << error_msg;
-                reply = make_json_content(request, {});
+                make_glaze_json_null_content(request, reply);
             }
         } else {
-            reply = make_json_content(request, tx_with_block->transaction);
+            make_glaze_json_content(request, tx_with_block->transaction, reply);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const boost::system::system_error& se) {
-        reply = make_json_content(request, {});
+        make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        make_glaze_json_error(request, 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        make_glaze_json_error(request, 100, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1309,16 +1309,12 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     auto call = params[0].get<Call>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
-    bool optimize_gas = false;
+    bool optimize_gas = true;
     if (params.size() == 3) {
         optimize_gas = params[2];
-        if (optimize_gas) {
-            reply = make_json_error(request, 100, "not supported optimize_gas to true");
-            co_return;
-        }
     }
 
-    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " optimize: " << optimize_gas;
 
     auto tx = co_await database_->begin();
 
@@ -1353,7 +1349,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 if (!nonce_option) {
                     std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash->block.header.number + 1)};
                     if (account) {
-                        nonce = (*account).nonce;  // NOLINT
+                        nonce = (*account).nonce + 1;  // NOLINT
                     }
                 } else {
                     nonce = *nonce_option + 1;
@@ -1365,12 +1361,11 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             to = silkworm::create_address(*call.from, nonce);
         }
 
-        auto tracer = std::make_shared<AccessListTracer>(*call.from, to);
+        auto tracer = std::make_shared<AccessListTracer>();
 
         Tracers tracers{tracer};
         while (true) {
             const auto txn = call.to_transaction();
-            tracer->reset_access_list();
 
             const auto execution_result = co_await EVMExecutor::call(
                 *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
@@ -1388,6 +1383,9 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
                 if (!execution_result.success()) {
                     access_list_result.error = execution_result.error_message(false /* full_error */);
+                }
+                if (optimize_gas) {
+                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
                 }
                 access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);
@@ -1839,8 +1837,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
         co_return;
     }
 
-    txn.recover_sender();
-    if (!txn.from.has_value()) {
+    if (!txn.sender()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
         reply = make_json_error(request, -32000, error_msg);
@@ -1850,10 +1847,10 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     const auto ethash_hash = txn.hash();
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
-        const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);
-        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
+        const auto contract_address = silkworm::create_address(*txn.sender(), txn.nonce);
+        SILK_DEBUG << "submitted contract creation hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value;
     } else {
-        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
+        SILK_DEBUG << "submitted transaction hash: " << silkworm::to_hex(hash) << " from: " << *txn.sender() << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value;
     }
 
     reply = make_json_content(request, hash);

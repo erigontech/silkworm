@@ -163,15 +163,15 @@ class BackwardBlockProvider : public BlockProvider {
 
 class FromToBlockProvider : public BlockProvider {
   private:
-    bool is_backwards_;
-    BlockProvider* callFromProvider_;
-    BlockProvider* callToProvider_;
+    bool is_backwards_{false};
+    BlockProvider* callFromProvider_{nullptr};
+    BlockProvider* callToProvider_{nullptr};
 
-    uint64_t next_from_;
-    uint64_t next_to_;
-    bool has_more_from_;
-    bool has_more_to_;
-    bool initialized_;
+    uint64_t next_from_{0};
+    uint64_t next_to_{0};
+    bool has_more_from_{false};
+    bool has_more_to_{false};
+    bool initialized_{false};
 
   public:
     FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider);

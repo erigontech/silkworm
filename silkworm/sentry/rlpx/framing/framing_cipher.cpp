@@ -202,9 +202,7 @@ FramingCipher::FramingCipher(const KeyMaterial& key_material) {
     impl_ = std::make_unique<FramingCipherImpl>(key_material, aes_secret, mac_secret);
 }
 
-FramingCipher::~FramingCipher() {
-    assert(true);
-}
+FramingCipher::~FramingCipher() = default;
 
 FramingCipher::FramingCipher(FramingCipher&& other) noexcept
     : impl_(std::move(other.impl_)) {}

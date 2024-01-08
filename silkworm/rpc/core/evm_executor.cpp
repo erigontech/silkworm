@@ -176,7 +176,7 @@ uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& tx
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                     : txn.max_priority_fee_per_gas};
     SILK_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price;
-    ibs_state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
+    ibs_state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
     return gas_left;
 }
 
@@ -190,14 +190,14 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
     if (rev >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < base_fee_per_gas) {
-                const std::string from = address_to_hex(*txn.from);
+                const std::string from = address_to_hex(*txn.sender());
                 const std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
                                           intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
                 return error;
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
-                std::string from = address_to_hex(*txn.from);
+                std::string from = address_to_hex(*txn.sender());
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
                 return error;
@@ -205,7 +205,7 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
         }
     }
     if (txn.gas_limit < g0) {
-        std::string from = address_to_hex(*txn.from);
+        std::string from = address_to_hex(*txn.sender());
         std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         return error;
     }
@@ -231,8 +231,10 @@ ExecutionResult EVMExecutor::call(
         evm.add_tracer(*tracer);
     }
 
-    SILKWORM_ASSERT(txn.from.has_value());
-    ibs_state_.access_account(*txn.from);
+    if (!txn.sender()) {
+        return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
+    }
+    ibs_state_.access_account(*txn.sender());
 
     const evmc_revision rev{evm.revision()};
     const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
@@ -253,22 +255,22 @@ ExecutionResult EVMExecutor::call(
     } else {
         want = 0;
     }
-    const auto have = ibs_state_.get_balance(*txn.from);
+    const auto have = ibs_state_.get_balance(*txn.sender());
     if (have < want + txn.value) {
         if (!gas_bailout) {
             Bytes data{};
-            std::string from = address_to_hex(*txn.from);
+            std::string from = address_to_hex(*txn.sender());
             std::string msg = "insufficient funds for gas * price + value: address " + from + ", have " + intx::to_string(have) + ", want " + intx::to_string(want + txn.value);
             return {std::nullopt, txn.gas_limit, data, msg};
         }
     } else {
-        ibs_state_.subtract_from_balance(*txn.from, want);
+        ibs_state_.subtract_from_balance(*txn.sender(), want);
     }
 
     if (txn.to.has_value()) {
         ibs_state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
-        ibs_state_.set_nonce(*txn.from, ibs_state_.get_nonce(*txn.from) + 1);
+        ibs_state_.set_nonce(*txn.sender(), ibs_state_.get_nonce(*txn.sender()) + 1);
     }
     for (const AccessListEntry& ae : txn.access_list) {
         ibs_state_.access_account(ae.account);
@@ -327,7 +329,7 @@ Task<ExecutionResult> EVMExecutor::call(
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
                 auto state = state_factory(this_executor, block.header.number, chain_storage);
                 EVMExecutor executor{config, workers, state};

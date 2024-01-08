@@ -490,7 +490,7 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
     std::cout << "Transaction found in: " << snapshot_filename << "\n"
               << "hash=" << to_hex(txn.hash()) << "\n"
               << "type=" << magic_enum::enum_name(txn.type) << "\n"
-              << "from=" << (txn.from ? address_to_hex(*txn.from) : "") << "\n"
+              << "from=" << (txn.sender() ? address_to_hex(*txn.sender()) : "") << "\n"
               << "to=" << (txn.to ? address_to_hex(*txn.to) : "") << "\n"
               << "chain_id=" << (txn.chain_id ? intx::to_string(*txn.chain_id) : "") << "\n"
               << "nonce=" << txn.nonce << "\n"

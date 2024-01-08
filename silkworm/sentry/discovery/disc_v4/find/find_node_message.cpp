@@ -35,7 +35,7 @@ Bytes FindNodeMessage::rlp_encode() const {
 
 FindNodeMessage FindNodeMessage::rlp_decode(ByteView data) {
     Bytes target_public_key_data;
-    uint64_t expiration_ts;
+    uint64_t expiration_ts{0};
 
     auto result = rlp::decode(
         data,

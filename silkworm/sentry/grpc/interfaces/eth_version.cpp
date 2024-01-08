@@ -21,12 +21,12 @@ namespace silkworm::sentry::grpc::interfaces {
 namespace proto = ::sentry;
 
 uint8_t eth_version_from_protocol(proto::Protocol protocol) {
-    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    static_assert(proto::Protocol_MIN == proto::Protocol::ETH65);
     return static_cast<uint8_t>(protocol) + 65;
 }
 
 proto::Protocol protocol_from_eth_version(uint8_t version) {
-    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    static_assert(proto::Protocol_MIN == proto::Protocol::ETH65);
     return static_cast<proto::Protocol>(version - 65);
 }
 

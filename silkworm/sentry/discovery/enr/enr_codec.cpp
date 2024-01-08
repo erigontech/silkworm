@@ -83,17 +83,17 @@ static std::optional<NodeAddress> try_decode_node_address(
     const char* ip_key,
     const char* port_disc_key,
     const char* port_rlpx_key) {
-    if ((entries_data.count(ip_key) == 0) || (entries_data.count(port_disc_key) == 0))
+    if (!entries_data.contains(ip_key) || !entries_data.contains(port_disc_key))
         return std::nullopt;
 
     auto ip = ip_address_from_bytes(decode_rlp_bytes(entries_data.at(ip_key), ip_key));
     if (!ip)
         throw std::runtime_error("EnrCodec: invalid IP address");
 
-    uint16_t port_disc = decode_rlp_num_value<uint16_t>(entries_data.at(port_disc_key), port_disc_key);
+    auto port_disc = decode_rlp_num_value<uint16_t>(entries_data.at(port_disc_key), port_disc_key);
 
     uint16_t port_rlpx = 0;
-    if (entries_data.count(port_rlpx_key) > 0) {
+    if (entries_data.contains(port_rlpx_key)) {
         port_rlpx = decode_rlp_num_value<uint16_t>(entries_data.at(port_rlpx_key), port_rlpx_key);
     }
 
@@ -140,7 +140,7 @@ EnrRecord EnrCodec::decode(ByteView data) {
         items.pop_back();
 
     auto& seq_num_data = items[1];
-    uint64_t seq_num = decode_rlp_num_value<uint64_t>(seq_num_data, "seq_num");
+    auto seq_num = decode_rlp_num_value<uint64_t>(seq_num_data, "seq_num");
 
     std::map<std::string, const rlp::RlpByteView> entries_data;
     for (size_t i = 2; i < items.size(); i += 2) {
@@ -149,12 +149,12 @@ EnrRecord EnrCodec::decode(ByteView data) {
         entries_data.emplace(key, items[i + 1]);
     }
 
-    if (entries_data.count("id") == 0)
+    if (!entries_data.contains("id"))
         throw std::runtime_error("EnrCodec: missing required 'id' key");
     if (decode_rlp_bytes(entries_data.at("id"), "id") != Bytes{'v', '4'})
         throw std::runtime_error("EnrCodec: unsupported ID scheme");
 
-    if (entries_data.count("secp256k1") == 0)
+    if (!entries_data.contains("secp256k1"))
         throw std::runtime_error("EnrCodec: missing required 'secp256k1' key");
     auto public_key = EccPublicKey::deserialize_std(decode_rlp_bytes(entries_data.at("secp256k1"), "secp256k1"));
 
@@ -220,7 +220,7 @@ Bytes EnrCodec::encode(const EnrRecord& record, const EccKeyPair& key_pair) {
 
     // set signature
     Bytes signature = sign(items, key_pair.private_key());
-    items[0] = encode_rlp_bytes(std::move(signature));
+    items[0] = encode_rlp_bytes(signature);
 
     Bytes data;
     rlp::encode(data, items);

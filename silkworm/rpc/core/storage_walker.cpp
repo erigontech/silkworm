@@ -90,7 +90,7 @@ Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, 
 Task<void> StorageWalker::walk_of_storages(
     BlockNum block_number,
     const evmc::address& address,
-    const evmc::bytes32& location_hash,
+    const evmc::bytes32& start_location,
     uint64_t incarnation,
     AccountCollector& collector) {
     SILK_TRACE << "block_number=" << block_number << " address=" << address << " START";
@@ -99,13 +99,13 @@ Task<void> StorageWalker::walk_of_storages(
     auto ps_key{make_key(address, incarnation)};
     ethdb::SplitCursorDupSort ps_split_cursor{*ps_cursor,
                                               ps_key,
-                                              location_hash.bytes,      /* subkey */
+                                              start_location.bytes,     /* subkey */
                                               8 * (kAddressLength + 8), /* match_bits */
                                               kAddressLength,           /* part1_end */
                                               kHashLength};             /* value_offset */
 
     auto sh_cursor = co_await transaction_.cursor(db::table::kStorageHistoryName);
-    auto sh_key{make_key(address, location_hash)};
+    auto sh_key{make_key(address, start_location)};
     ethdb::SplitCursor sh_split_cursor{*sh_cursor,
                                        sh_key,
                                        8 * kAddressLength,            /* match_bits */

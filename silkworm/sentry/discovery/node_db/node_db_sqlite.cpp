@@ -493,7 +493,7 @@ class NodeDbSqliteImpl : public NodeDb {
 
     Task<std::vector<NodeId>> take_lookup_candidates(FindLookupCandidatesQuery query, Time time) override {
         SQLite::Transaction transaction{*db_};
-        auto candidates = co_await find_lookup_candidates(std::move(query));
+        auto candidates = co_await find_lookup_candidates(query);
         co_await mark_taken_lookup_candidates(candidates, time);
         transaction.commit();
         co_return candidates;

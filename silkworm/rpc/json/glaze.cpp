@@ -16,15 +16,29 @@
 
 #include "glaze.hpp"
 
+#include <algorithm>
+#include <cstring>
+#include <string>
+#include <string_view>
+
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
-static constexpr auto errorMessageSize = 1024;
+//! Maximum size of RPC error message
+static constexpr size_t kMaxErrorMessageSize{1024};
+
+//! Fill a fixed error message by trimming the provided message if needed
+static void fill_error_message(char fixed_msg[kMaxErrorMessageSize], const std::string& msg) {
+    const auto error_message_size{std::min(msg.size(), kMaxErrorMessageSize - 1)};
+    std::strncpy(fixed_msg, msg.c_str(), error_message_size);
+    fixed_msg[error_message_size] = '\0';
+}
+
 struct GlazeJsonError {
-    int code;
-    char message[errorMessageSize];
+    int code{-1};
+    char message[kMaxErrorMessageSize]{};
     struct glaze {
         using T = GlazeJsonError;
         static constexpr auto value = glz::object(
@@ -46,19 +60,19 @@ struct GlazeJsonErrorRsp {
     };
 };
 
-void make_glaze_json_error(const nlohmann::json& request_json, const int code, const std::string& message, std::string& json_reply) {
-    GlazeJsonErrorRsp glaze_json_error;
+void make_glaze_json_error(const nlohmann::json& request, const int error_id, const std::string& message, std::string& reply) {
+    GlazeJsonErrorRsp glaze_json_error{};
 
-    glaze_json_error.id = make_jsonrpc_id(request_json);
-    glaze_json_error.json_error.code = code;
-    std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
+    glaze_json_error.id = make_jsonrpc_id(request);
+    glaze_json_error.json_error.code = error_id;
+    fill_error_message(glaze_json_error.json_error.message, message);
 
-    glz::write_json(glaze_json_error, json_reply);
+    glz::write_json(glaze_json_error, reply);
 }
 
 struct GlazeJsonRevert {
     int code{-1};
-    char message[errorMessageSize]{};
+    char message[kMaxErrorMessageSize]{};
     std::string data;
     struct glaze {
         using T = GlazeJsonRevert;
@@ -82,12 +96,12 @@ struct GlazeJsonRevertError {
     };
 };
 
-void make_glaze_json_error(const nlohmann::json& request_json, const RevertError& error, std::string& reply) {
-    GlazeJsonRevertError glaze_json_revert;
+void make_glaze_json_error(const nlohmann::json& request, const RevertError& error, std::string& reply) {
+    GlazeJsonRevertError glaze_json_revert{};
 
-    glaze_json_revert.id = make_jsonrpc_id(request_json);
+    glaze_json_revert.id = make_jsonrpc_id(request);
     glaze_json_revert.revert_data.code = error.code;
-    std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
+    fill_error_message(glaze_json_revert.revert_data.message, error.message);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
 
     glz::write_json(glaze_json_revert, reply);

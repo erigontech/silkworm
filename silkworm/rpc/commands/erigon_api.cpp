@@ -107,13 +107,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
-Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, std::string& reply) {
     // Decode request parameters
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid erigon_getBlockByTimestamp params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        make_glaze_json_error(request, 100, error_msg, reply);
         co_return;
     }
     const auto block_timestamp = params[0].get<std::string>();
@@ -146,17 +146,21 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             block_number = core::kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
-            const auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t i) -> Task<bool> {
-                const auto header = co_await chain_storage->read_canonical_header(i);
+            auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
+                const auto header = co_await chain_storage->read_canonical_header(bn);
                 co_return header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
-            const auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
-            if (matching_header->timestamp > timestamp) {
-                block_number = matching_block_number - 1;
-            } else {
-                block_number = matching_block_number;
+            auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
+            while (matching_header->timestamp > timestamp) {
+                const auto header = co_await chain_storage->read_canonical_header(matching_block_number - 1);
+                if (!header || header->timestamp < timestamp) {
+                    break;
+                }
+                matching_block_number = matching_block_number - 1;
+                matching_header = header;
             }
+            block_number = matching_block_number;
         }
 
         // Lookup and return the matching block
@@ -164,20 +168,20 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         if (!block_with_hash) {
             const std::string error_msg = "block not found ";
             SILK_ERROR << "erigon_get_block_by_timestamè: core::read_block_by_number: " << error_msg << request.dump();
-            reply = make_json_error(request, 100, error_msg);
+            make_glaze_json_error(request, 100, error_msg, reply);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
         const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
         const Block extended_block{block_with_hash, *total_difficulty, full_tx};
 
-        reply = make_json_content(request, extended_block);
+        make_glaze_json_content(request, extended_block, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        make_glaze_json_error(request, 100, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        make_glaze_json_error(request, 100, "unexpected exception", reply);
     }
 
     // Close remote database transaction, RAII not available with coroutines

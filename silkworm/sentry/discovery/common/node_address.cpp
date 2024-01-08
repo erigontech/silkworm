@@ -63,7 +63,7 @@ void encode(Bytes& to, const NodeAddress& address) {
 //! RLP decode
 DecodingResult decode(ByteView& from, NodeAddress& to, rlp::Leftover mode) noexcept {
     Bytes ip_bytes;
-    uint16_t port;
+    uint16_t port{0};
     auto result = rlp::decode(from, mode, ip_bytes, port, to.port_rlpx);
     if (!result) {
         return result;

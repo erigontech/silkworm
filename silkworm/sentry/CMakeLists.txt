@@ -23,6 +23,10 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
+if(SILKWORM_CLANG_TIDY)
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
+endif()
+
 # sentry common
 add_subdirectory(common)
 

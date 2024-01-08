@@ -23,7 +23,7 @@ namespace silkworm::sentry {
 
 SentryClientFactory::SentryPtrPair SentryClientFactory::make_sentry(
     Settings sentry_settings,
-    std::vector<std::string> remote_sentry_addresses,
+    const std::vector<std::string>& remote_sentry_addresses,
     concurrency::ExecutorPool& executor_pool,
     rpc::GrpcContextPool& grpc_context_pool,
     SessionSentryClient::StatusDataProvider eth_status_data_provider) {
@@ -52,7 +52,7 @@ SentryClientFactory::SentryPtrPair SentryClientFactory::make_sentry(
             // Wrap remote client in a session client
             auto session_sentry_client = std::make_shared<SessionSentryClient>(
                 remote_sentry_client,
-                std::move(eth_status_data_provider));
+                eth_status_data_provider);
             clients.push_back(session_sentry_client);
         }
 

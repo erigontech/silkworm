@@ -33,7 +33,7 @@ static Bytes snappy_compress(ByteView data) {
     Bytes output;
     output.resize(snappy::MaxCompressedLength(data.size()));
 
-    size_t compressed_length;
+    size_t compressed_length{0};
     snappy::RawCompress(
         reinterpret_cast<const char*>(data.data()),
         data.size(),
@@ -45,7 +45,7 @@ static Bytes snappy_compress(ByteView data) {
 }
 
 static size_t snappy_uncompressed_length(ByteView data) {
-    size_t uncompressed_length;
+    size_t uncompressed_length{0};
     bool ok = snappy::GetUncompressedLength(
         reinterpret_cast<const char*>(data.data()),
         data.size(),
@@ -87,7 +87,7 @@ Message MessageFrameCodec::decode(ByteView frame_data) const {
     if (frame_data.empty())
         throw std::runtime_error("MessageFrameCodec: frame size too short");
 
-    uint8_t id;
+    uint8_t id{0};
     auto id_data = ByteView{frame_data.substr(0, 1)};
     success_or_throw(rlp::decode(id_data, id), "MessageFrameCodec: failed to decode a message ID");
 

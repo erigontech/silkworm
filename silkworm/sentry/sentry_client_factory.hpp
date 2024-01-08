@@ -38,7 +38,7 @@ struct SentryClientFactory {
 
     static SentryPtrPair make_sentry(
         Settings sentry_settings,
-        std::vector<std::string> remote_sentry_addresses,
+        const std::vector<std::string>& remote_sentry_addresses,
         concurrency::ExecutorPool& executor_pool,
         rpc::GrpcContextPool& grpc_context_pool,
         SessionSentryClient::StatusDataProvider eth_status_data_provider);

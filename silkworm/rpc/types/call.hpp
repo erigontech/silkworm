@@ -51,7 +51,9 @@ struct Call {
 
     [[nodiscard]] silkworm::Transaction to_transaction() const {
         silkworm::Transaction txn{};
-        txn.from = from;
+        if (from) {
+            txn.set_sender(*from);
+        }
         txn.to = to;
         if (nonce) {
             txn.nonce = *nonce;

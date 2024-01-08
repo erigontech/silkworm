@@ -158,7 +158,7 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
     }
 }
 
-bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->cache.insert(kv);
     SILK_DEBUG << "Data cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
@@ -188,7 +188,7 @@ bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId v
     return inserted;
 }
 
-bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
     SILK_DEBUG << "Code cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;

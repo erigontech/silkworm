@@ -19,7 +19,13 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <iostream>
 #include <string>
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/compose.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/use_future.hpp>
 
 namespace silkworm::rpc::json {
 
@@ -33,6 +39,19 @@ static std::string kCloseBrace{"}"};      // NOLINT(runtime/string)
 static std::string kOpenBracket{"["};     // NOLINT(runtime/string)
 static std::string kCloseBracket{"]"};    // NOLINT(runtime/string)
 static std::string kFieldSeparator{","};  // NOLINT(runtime/string)
+static std::string kColon{":"};           // NOLINT(runtime/string)
+static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
+
+Task<void> Stream::close() {
+    if (!buffer_.empty()) {
+        co_await writer_.write(buffer_);
+        buffer_.clear();
+    }
+
+    co_await writer_.close();
+
+    co_return;
+}
 
 void Stream::open_object() {
     bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
@@ -40,10 +59,10 @@ void Stream::open_object() {
         if (stack_.top() != kEntryWritten) {
             stack_.push(kEntryWritten);
         } else {
-            writer_.write(kFieldSeparator);
+            write(kFieldSeparator);
         }
     }
-    writer_.write(kOpenBrace);
+    write(kOpenBrace);
     stack_.push(kObjectOpen);
 }
 
@@ -52,11 +71,11 @@ void Stream::close_object() {
         stack_.pop();
     }
     stack_.pop();
-    writer_.write(kCloseBrace);
+    write(kCloseBrace);
 }
 
 void Stream::open_array() {
-    writer_.write(kOpenBracket);
+    write(kOpenBracket);
     stack_.push(kArrayOpen);
 }
 
@@ -65,7 +84,7 @@ void Stream::close_array() {
         stack_.pop();
     }
     stack_.pop();
-    writer_.write(kCloseBracket);
+    write(kCloseBracket);
 }
 
 void Stream::write_json(const nlohmann::json& json) {
@@ -74,19 +93,19 @@ void Stream::write_json(const nlohmann::json& json) {
         if (stack_.top() != kEntryWritten) {
             stack_.push(kEntryWritten);
         } else {
-            writer_.write(kFieldSeparator);
+            write(kFieldSeparator);
         }
     }
 
     const auto content = json.dump(/*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
-    writer_.write(content);
+    write(content);
 }
 
 void Stream::write_field(std::string_view name) {
     ensure_separator();
 
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 }
 
 void Stream::write_entry(std::string_view value) {
@@ -101,113 +120,126 @@ void Stream::write_json_field(std::string_view name, const nlohmann::json& value
     const auto content = value.dump(/*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
 
     write_string(name);
-    writer_.write(":");
-    writer_.write(content);
+    write(kColon);
+    write(content);
 }
 
 void Stream::write_field(std::string_view name, std::string_view value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
     write_string(value);
 }
 
 void Stream::write_field(std::string_view name, bool value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
-    writer_.write(value ? "true" : "false");
+    write(kColon);
+    write(value ? "true" : "false");
 }
 
 void Stream::write_field(std::string_view name, const char* value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
     write_string(std::string_view(value, strlen(value)));
 }
 
 void Stream::write_field(std::string_view name, std::int32_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 10> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_field(std::string_view name, std::uint32_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 10> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_field(std::string_view name, std::int64_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 19> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_field(std::string_view name, std::uint64_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 19> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_field(std::string_view name, std::float_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 30> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_field(std::string_view name, std::double_t value) {
     ensure_separator();
     write_string(name);
-    writer_.write(":");
+    write(kColon);
 
     std::array<char, 30> str{};
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), value); ec == std::errc()) {
-        writer_.write(std::string_view(str.data(), ptr));
+        write(std::string_view(str.data(), ptr));
     } else {
-        writer_.write("Invalid value");
+        write("Invalid value");
     }
 }
 
 void Stream::write_string(std::string_view str) {
-    writer_.write("\"");
-    writer_.write(str);
-    writer_.write("\"");
+    write(kDoubleQuotes);
+    write(str);
+    write(kDoubleQuotes);
+}
+
+void Stream::write(std::string_view str) {
+    buffer_ += str;
+    if (buffer_.size() >= threshold_) {
+        std::string to_write(buffer_);
+        buffer_.clear();
+        co_spawn(
+            io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
+                co_await writer_.write(value);
+            },
+            boost::asio::detached);
+    }
 }
 
 void Stream::ensure_separator() {
@@ -215,7 +247,7 @@ void Stream::ensure_separator() {
         if (stack_.top() != kFieldWritten) {
             stack_.push(kFieldWritten);
         } else {
-            writer_.write(kFieldSeparator);
+            write(kFieldSeparator);
         }
     }
 }

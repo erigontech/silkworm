@@ -47,7 +47,7 @@ TEST_CASE("Value transfer", "[core][execution]") {
     CHECK(state.get_balance(to) == 0);
 
     Transaction txn{};
-    txn.from = from;
+    txn.set_sender(from);
     txn.to = to;
     txn.value = value;
 
@@ -142,7 +142,7 @@ TEST_CASE("Smart contract with storage", "[core][execution]") {
     EVM evm{block, state, test::kShanghaiConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     uint64_t gas{0};
@@ -217,7 +217,7 @@ TEST_CASE("Maximum call depth", "[core][execution]") {
     evm.analysis_cache = &analysis_cache;
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.to = contract;
 
     uint64_t gas{1'000'000};
@@ -277,7 +277,7 @@ TEST_CASE("DELEGATECALL", "[core][execution]") {
     evm.add_tracer(call_tracer);
 
     Transaction txn{};
-    txn.from = caller_address;
+    txn.set_sender(caller_address);
     txn.to = caller_address;
     txn.data = ByteView{to_bytes32(callee_address.bytes)};
 
@@ -343,7 +343,7 @@ TEST_CASE("CREATE should only return on failure", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     uint64_t gas{150'000};
@@ -375,7 +375,7 @@ TEST_CASE("Contract overwrite", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = new_code;
 
     uint64_t gas{100'000};
@@ -398,7 +398,7 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte", "[core][
     EVM evm{block, state, config};
 
     Transaction txn;
-    txn.from = 0x1000000000000000000000000000000000000000_address;
+    txn.set_sender(0x1000000000000000000000000000000000000000_address);
     const uint64_t gas{50'000};
 
     // https://eips.ethereum.org/EIPS/eip-3541#test-cases
@@ -535,7 +535,7 @@ TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     CHECK(evm.tracers().empty());
@@ -681,7 +681,7 @@ TEST_CASE("Tracing smart contract creation with CREATE", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     TestTracer tracer;
@@ -772,7 +772,7 @@ TEST_CASE("Tracing smart contract creation with CREATE2", "[core][execution]") {
     EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     TestTracer tracer;
@@ -816,7 +816,7 @@ TEST_CASE("Tracing smart contract w/o code", "[core][execution]") {
     Bytes code{};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
     uint64_t gas{50'000};
 
@@ -878,7 +878,7 @@ TEST_CASE("Tracing precompiled contract failure", "[core][execution]") {
     evmc::address blake2f_precompile{0x0000000000000000000000000000000000000009_address};
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.to = blake2f_precompile;
     uint64_t gas{50'000};
 
@@ -902,7 +902,7 @@ TEST_CASE("Smart contract creation w/ insufficient balance", "[core][execution]"
     evm.add_tracer(call_tracer);
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
     txn.value = intx::uint256{1};
 
@@ -930,7 +930,7 @@ TEST_CASE("Smart contract creation w/ insufficient gas", "[core][execution]") {
     evm.add_tracer(call_tracer);
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.data = code;
 
     uint64_t gas = 10'000;
@@ -983,7 +983,7 @@ TEST_CASE("Tracing destruction of smart contract", "[core][execution]") {
     CHECK(evm.tracers().size() == 2);
 
     Transaction txn{};
-    txn.from = caller;
+    txn.set_sender(caller);
     txn.to = contract_address;
     txn.data = ByteView{*from_hex("41c0e1b5")};  // methodID for kill
 
@@ -1039,7 +1039,7 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
     // 1st tx creates the code at contract_address, thus changing such account state
     Transaction txn1{};
-    txn1.from = caller;
+    txn1.set_sender(caller);
     txn1.data = code;
 
     uint64_t gas = {100'000};
@@ -1052,7 +1052,7 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
     // 2nd tx destroys the contract triggering self-destruct, thus changing such account back to empty state
     Transaction txn2{};
-    txn2.from = caller;
+    txn2.set_sender(caller);
     txn2.to = contract_address;
     txn2.data = ByteView{*from_hex("41c0e1b5")};  // methodID for kill
 
@@ -1117,7 +1117,7 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
 
     // 1st tx creates the code at caller_address
     Transaction txn1{};
-    txn1.from = external_account;
+    txn1.set_sender(external_account);
     txn1.data = caller_code;
 
     uint64_t gas = {1'000'000};
@@ -1131,7 +1131,7 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
 
     // 2nd tx creates the code at callee_address
     Transaction txn2{};
-    txn2.from = external_account;
+    txn2.set_sender(external_account);
     txn2.data = callee_code;
 
     CallResult res2 = evm.execute(txn2, gas);
@@ -1144,7 +1144,7 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
 
     // 3rd tx calls the code at caller_address which in turn delegate-calls the code at callee address
     Transaction txn3{};
-    txn3.from = external_account;
+    txn3.set_sender(external_account);
     txn3.to = caller_address;
     txn3.data = ByteView{to_bytes32(callee_address.bytes)};
 
@@ -1227,7 +1227,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto factory_address{create_address(external_account, 0)};
 
     Transaction txn1{};
-    txn1.from = external_account;
+    txn1.set_sender(external_account);
     txn1.data = factory_and_test_contract_code;
 
     TestTracer tracer;
@@ -1253,7 +1253,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto item1_address{create_address(factory_address, 1)};
 
     Transaction txn2{};
-    txn2.from = external_account;
+    txn2.set_sender(external_account);
     txn2.to = factory_address;
     txn2.data = ByteView{*from_hex("efc81a8c")};  // methodID for create
 
@@ -1276,7 +1276,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     const auto item2_address{create2_address(factory_address, evmc::bytes32{0}, item_code_hash.bytes)};
 
     Transaction txn3{};
-    txn3.from = external_account;
+    txn3.set_sender(external_account);
     txn3.to = factory_address;
     txn3.data = ByteView{*from_hex("f5eacece")};  // methodID for create2
 

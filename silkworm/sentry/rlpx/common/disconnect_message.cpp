@@ -45,7 +45,7 @@ DisconnectMessage DisconnectMessage::rlp_decode(ByteView data) {
 
     // if RLP is not a list
     if (!result && (result.error() == DecodingError::kUnexpectedString)) {
-        uint8_t reason_num;
+        uint8_t reason_num{0};
         result = rlp::decode(data, reason_num);
         if (result) {
             reason.push_back(reason_num);

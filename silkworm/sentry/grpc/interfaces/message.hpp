@@ -28,7 +28,7 @@ sentry::Message message_from_outbound_data(const ::sentry::OutboundMessageData& 
 sentry::Message message_from_inbound_message(const ::sentry::InboundMessage& message);
 ::sentry::InboundMessage inbound_message_from_message(const sentry::Message& message);
 
-uint8_t message_id_from_proto_message_id(::sentry::MessageId message_id);
+uint8_t message_id_from_proto_message_id(::sentry::MessageId proto_id);
 ::sentry::MessageId proto_message_id_from_message_id(uint8_t message_id);
 
 api::MessageIdSet message_id_set_from_messages_request(const ::sentry::MessagesRequest& request);

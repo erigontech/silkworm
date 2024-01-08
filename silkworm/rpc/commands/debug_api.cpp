@@ -316,7 +316,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         auto this_executor = co_await boost::asio::this_coro::executor;
 
         auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
-            [&](auto&& self) {
+            [&](auto& self) {
                 boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                     auto state = tx->create_state(this_executor, tx_database, *chain_storage, block_number - 1);
                     auto account_opt = state->read_account(address);
@@ -327,9 +327,6 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                     uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index + 1);
                     for (uint64_t idx{0}; idx < index; idx++) {
                         rpc::Transaction txn{transactions[idx]};
-                        if (!txn.from) {
-                            txn.recover_sender();
-                        }
                         executor.call(block, txn);
                     }
 
@@ -338,9 +335,9 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                     nlohmann::json json_result;
                     if (ibs.exists(address)) {
                         std::ostringstream oss;
-                        oss << ibs.get_nonce(address);
+                        oss << std::hex << ibs.get_nonce(address);
                         json_result["nonce"] = "0x" + oss.str();
-                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address));
+                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
                         json_result["codeHash"] = ibs.get_code_hash(address);
                         json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
                     } else {
@@ -548,7 +545,12 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    const auto block_number = params[0].get<BlockNum>();
+    BlockNum block_number{0};
+    if (params[0].is_string()) {
+        block_number = std::stoul(params[0].get<std::string>(), nullptr, 10);
+    } else {
+        block_number = params[0].get<BlockNum>();
+    }
 
     debug::DebugConfig config;
     if (params.size() > 1) {

@@ -221,7 +221,7 @@ Task<void> Server::send_neighbors(find::NeighborsMessage message, ip::udp::endpo
 }
 
 Task<void> Server::send_enr_request(enr::EnrRequestMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 Task<void> Server::send_enr_response(enr::EnrResponseMessage message, ip::udp::endpoint recipient) {

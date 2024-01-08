@@ -33,8 +33,8 @@ struct StatusMessage {
     [[nodiscard]] Message to_message() const;
     [[nodiscard]] static StatusMessage from_message(const Message& message);
 
-    uint8_t version;
-    uint64_t network_id;
+    uint8_t version{0};
+    uint64_t network_id{0};
     intx::uint256 total_difficulty;
     Bytes best_block_hash;
     Bytes genesis_hash;

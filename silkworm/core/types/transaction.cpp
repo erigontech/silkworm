@@ -48,7 +48,7 @@ bool Transaction::set_v(const intx::uint256& v) {
 }
 
 evmc::bytes32 Transaction::hash() const {
-    std::call_once(hash_computed_.get(), [this]() {
+    hash_computed_.call_once([this]() {
         Bytes rlp;
         rlp::encode(rlp, *this, /*wrap_eip2718_into_string=*/false);
         cached_hash_ = std::bit_cast<evmc_bytes32>(keccak256(rlp));
@@ -404,27 +404,34 @@ void UnsignedTransaction::encode_for_signing(Bytes& into) const {
     }
 }
 
-void Transaction::recover_sender() {
-    if (from.has_value()) {
-        return;
-    }
-    Bytes rlp{};
-    encode_for_signing(rlp);
-    ethash::hash256 hash{keccak256(rlp)};
+std::optional<evmc::address> Transaction::sender() const {
+    sender_recovered_.call_once([this]() {
+        Bytes rlp{};
+        encode_for_signing(rlp);
+        ethash::hash256 hash{keccak256(rlp)};
 
-    uint8_t signature[kHashLength * 2];
-    intx::be::unsafe::store(signature, r);
-    intx::be::unsafe::store(signature + kHashLength, s);
+        uint8_t signature[kHashLength * 2];
+        intx::be::unsafe::store(signature, r);
+        intx::be::unsafe::store(signature + kHashLength, s);
 
-    from = evmc::address{};
-    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
-    if (!silkworm_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
-        from = std::nullopt;
-    }
+        sender_ = evmc::address{};
+        static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+        if (!silkworm_recover_address(sender_->bytes, hash.bytes, signature, odd_y_parity, context)) {
+            sender_ = std::nullopt;
+        }
+    });
+    return sender_;
+}
+
+void Transaction::set_sender(const evmc::address& sender) {
+    sender_recovered_.reset();
+    sender_recovered_.call_once([&]() {
+        sender_ = sender;
+    });
 }
 
 void Transaction::reset() {
-    from.reset();
+    sender_recovered_.reset();
     hash_computed_.reset();
 }
 

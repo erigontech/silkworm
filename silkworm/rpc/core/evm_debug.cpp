@@ -93,13 +93,8 @@ void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, 
 }
 
 void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory) {
-    const std::size_t len = 32;
-    vect.reserve(memory.size() / len);
-
     const auto data = memory.data();
-    for (std::size_t start = 0; start < memory.size(); start += len) {
-        vect.push_back(silkworm::to_hex({data + start, len}));
-    }
+    vect.push_back(silkworm::to_hex({data, memory.size()}));
 }
 
 void insert_error(DebugLog& log, evmc_status_code status_code) {
@@ -281,7 +276,11 @@ void DebugTracer::write_log(const DebugLog& log) {
         stream_.write_field("memory");
         stream_.open_array();
         for (const auto& item : log.memory) {
-            stream_.write_entry(item);
+            const std::size_t len = 64;
+            const auto data = item.data();
+            for (std::size_t start = 0; start < item.size(); start += len) {
+                stream_.write_entry({data + start, len});
+            }
         }
         stream_.close_array();
     }
@@ -398,16 +397,13 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, storage, block_number - 1);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
                     rpc::Transaction txn{block.transactions[idx]};
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
                     SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
                     auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
@@ -467,17 +463,13 @@ Task<void> DebugExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, storage, block_number);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (auto idx{0}; idx < index; idx++) {
                     silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
-
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
                     executor.call(block, txn);
                 }
                 executor.reset();
@@ -531,18 +523,13 @@ Task<void> DebugExecutor::execute(
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, storage, block.header.number);
                 EVMExecutor executor{*chain_config_ptr, workers_, state};
 
                 for (auto idx{0}; idx < transaction_index; idx++) {
                     silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
-
-                    if (!txn.from) {
-                        txn.recover_sender();
-                    }
-
                     executor.call(block, txn);
                 }
                 executor.reset();

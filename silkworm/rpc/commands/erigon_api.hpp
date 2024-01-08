@@ -51,7 +51,6 @@ class ErigonRpcApi {
     Task<void> handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_cache_check(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_get_balance_changes_in_block(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply);
@@ -61,6 +60,9 @@ class ErigonRpcApi {
     Task<void> handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
+
+    // GLAZE
+    Task<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request, std::string& reply);
 
   private:
     BlockCache* block_cache_;

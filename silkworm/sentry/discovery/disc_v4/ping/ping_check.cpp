@@ -79,7 +79,7 @@ Task<PingCheckResult> ping_check(
         local_enr_seq_num,
         message_sender,
         on_pong_signal,
-        std::move(last_pong_time),
+        last_pong_time,
         ping_fails_count.value_or(0));
 
     co_return result;
@@ -119,7 +119,7 @@ Task<PingCheckResult> ping_check(
     auto executor = co_await boost::asio::this_coro::executor;
     concurrency::EventNotifier pong_received_notifier{executor};
     std::optional<uint64_t> enr_seq_num;
-    auto on_pong_handler = [&](PongMessage message, EccPublicKey sender_node_id) {
+    auto on_pong_handler = [&](const PongMessage& message, const EccPublicKey& sender_node_id) {
         if ((sender_node_id == node_id) && !is_expired_message_expiration(message.expiration)) {
             enr_seq_num = message.enr_seq_num;
             pong_received_notifier.notify();
@@ -164,10 +164,10 @@ Task<PingCheckResult> ping_check(
 
     co_return PingCheckResult{
         std::move(node_id),
-        std::move(pong_time),
+        pong_time,
         ping_fails_count,
-        std::move(next_ping_time1),
-        std::move(enr_seq_num),
+        next_ping_time1,
+        enr_seq_num,
     };
 }
 

@@ -328,14 +328,6 @@ RunResults transaction_test(const nlohmann::json& j) {
         const ChainConfig& config{test::kNetworkConfig.at(entry.key())};
         const evmc_revision rev{config.revision(/*block_number=*/0, /*block_time=*/0)};
 
-        /* pre_validate_transaction checks for invalid signature only if from is empty, which means sender recovery
-         * phase (which btw also verifies signature) was not triggered yet. In the context of tests, instead, from is
-         * already valued from the json rlp payload: this makes pre_validate_transaction to incorrectly skip the
-         * validation signature. Hence, we reset from to nullopt to allow proper validation flow. In any case, sender
-         * recovery would be performed anyway immediately after this block.
-         */
-        txn.from.reset();
-
         if (ValidationResult err{
                 pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt,
                                          /*blob_gas_price=*/std::nullopt)};
@@ -348,13 +340,12 @@ RunResults transaction_test(const nlohmann::json& j) {
             }
         }
 
-        txn.recover_sender();
-        if (should_be_valid && !txn.from.has_value()) {
+        if (should_be_valid && !txn.sender()) {
             std::cout << "Failed to recover sender" << std::endl;
             return Status::kFailed;
         }
 
-        if (!should_be_valid && txn.from.has_value()) {
+        if (!should_be_valid && txn.sender()) {
             std::cout << entry.key() << "\n"
                       << "Sender recovered for invalid transaction" << std::endl;
             return Status::kFailed;
@@ -365,9 +356,9 @@ RunResults transaction_test(const nlohmann::json& j) {
         }
 
         const std::string expected_sender{test["sender"].get<std::string>()};
-        if (txn.from != hex_to_address(expected_sender)) {
+        if (txn.sender() != hex_to_address(expected_sender)) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
-                      << *txn.from << " != " << expected_sender << std::endl;
+                      << *txn.sender() << " != " << expected_sender << std::endl;
             return Status::kFailed;
         }
 

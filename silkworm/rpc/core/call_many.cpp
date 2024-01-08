@@ -46,7 +46,7 @@ namespace silkworm::rpc::call {
 
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const ChainStorage& storage,
-                                                  std::shared_ptr<BlockWithHash> block_with_hash,
+                                                  const std::shared_ptr<BlockWithHash>& block_with_hash,
                                                   ethdb::TransactionDatabase& tx_database,
                                                   const Bundles& bundles,
                                                   std::optional<std::uint64_t> opt_timeout,
@@ -64,13 +64,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     const auto start_time = clock_time::now();
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
-
-        if (!txn.from) {
-            txn.recover_sender();
-        }
-
         auto exec_result = executor.call(block, txn);
-
         if ((clock_time::since(start_time) / 1000000) > timeout) {
             std::ostringstream oss;
             oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
@@ -183,7 +177,7 @@ Task<CallManyResult> CallExecutor::execute(
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
-        [&](auto&& self) {
+        [&](auto& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 result = executes_all_bundles(*chain_config_ptr, *chain_storage, block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
                 boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {

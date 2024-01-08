@@ -24,6 +24,7 @@ namespace silkworm::rpc {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
+// NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
 class ProtocolErrorCategory final : public boost::system::error_category {
   public:
     [[nodiscard]] const char* name() const noexcept override {

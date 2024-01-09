@@ -174,11 +174,12 @@ Connection::write_rsp(Response& msg_response) {
 }
 
 Task<std::size_t> Connection::write(std::string_view content) {
-    co_await write_headers();
+    if (first_chunk_) {
+       co_await write_headers();
+       first_chunk_ = false;
+    }
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
-    std::cout << "Len: " << bytes_transferred << "\n";
-    std::cout << content.data() << "\n";
     co_return bytes_transferred;
 }
 
@@ -228,7 +229,6 @@ Task<void> Connection::write_headers() {
         auto buffers = http::to_buffers(StatusType::ok, headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
-
         SILK_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred;
     } catch (const std::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));

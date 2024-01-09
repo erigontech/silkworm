@@ -107,7 +107,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
                     auto request = nlohmann::json::parse(line_out.substr(3));
                     auto expected = nlohmann::json::parse(line_in.substr(3));
 
-                    silkworm::rpc::http::ChannelWriter::MessageResponse response;
+                    ChannelWriter::Response response;
                     test_base.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, response);
                     INFO("Request:           " << request.dump())
                     INFO("Actual response:   " << response.content)
@@ -131,7 +131,7 @@ TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
 
     SECTION("sample test") {
         auto request = R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawTransaction","params":["0x74e41d593675913d6d5521f46523f1bd396dff1891bdb35f59be47c7e5e0b34b"]})"_json;
-        silkworm::rpc::http::ChannelWriter::MessageResponse response;
+        ChannelWriter::Response response;
 
         test_base.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, response);
         CHECK(nlohmann::json::parse(response.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);

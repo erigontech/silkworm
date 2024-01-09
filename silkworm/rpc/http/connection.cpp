@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -8,7 +8,7 @@
        http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
+   distributed under the License is distributed on an "AS IS" BASIS,C
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
@@ -166,11 +166,20 @@ StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
 
 /* notification from request_handler */
 Task<void>
-Connection::write(MessageResponse& msg_response) {
+Connection::write_rsp(Response& msg_response) {
     Reply reply;
     reply.status = get_http_status(msg_response.status);
     reply.content = std::move(msg_response.content);
     co_await do_write(reply);
+}
+
+Task<std::size_t> Connection::write(std::string_view content) {
+    co_await write_headers();
+    const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+    SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
+    std::cout << "Len: " << bytes_transferred << "\n";
+    std::cout << content.data() << "\n";
+    co_return bytes_transferred;
 }
 
 void Connection::clean() {

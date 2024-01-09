@@ -31,13 +31,6 @@ namespace silkworm::rpc {
 const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
 const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
 
-Task<std::size_t> SocketWriter::write(std::string_view content) {
-    const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
-
-    SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
-    co_return bytes_transferred;
-}
-
 ChunksWriter::ChunksWriter(Writer& writer)
     : writer_(writer) {
 }

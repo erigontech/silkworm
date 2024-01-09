@@ -41,7 +41,7 @@ static bool is_valid_jsonrpc(const nlohmann::json& request_json);
 
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
-    ChannelWriter::MessageResponse msg_response;
+    ChannelWriter::Response msg_response;
 
     bool send_reply{true};
     const auto request_json = nlohmann::json::parse(content);
@@ -65,7 +65,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
             if (!is_valid_jsonrpc(item.value())) {
                 batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
             } else {
-                ChannelWriter::MessageResponse single_reply;
+                ChannelWriter::Response single_reply;
                 send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
                 batch_reply_content << single_reply.content;
             }
@@ -77,7 +77,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     }
 
     if (send_reply) {
-        co_await channel_writer_->write(msg_response);
+        co_await channel_writer_->write_rsp(msg_response);
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
@@ -112,7 +112,7 @@ static bool is_valid_jsonrpc(const nlohmann::json& request_json) {
     });
 }
 
-Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::MessageResponse& response) {
+Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response) {
     if (!request_json.contains("method")) {
         response.status = ChannelWriter::ResponseStatus::bad_request;
         response.content = make_json_error(request_json, -32600, "invalid request").dump();
@@ -155,7 +155,7 @@ Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
     co_return true;
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, ChannelWriter::MessageResponse& response) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, ChannelWriter::Response& response) {
     try {
         std::string reply_json;
         reply_json.reserve(2048);
@@ -175,7 +175,7 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGla
     co_return;
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, ChannelWriter::MessageResponse& response) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, ChannelWriter::Response& response) {
     try {
         nlohmann::json reply_json;
         co_await (rpc_api_.*handler)(request_json, reply_json);
@@ -196,17 +196,14 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
     co_return;
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream /* handler*/, const nlohmann::json& /* request_json*/) {
-#ifdef notdef
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         auto io_executor = co_await boost::asio::this_coro::executor;
         const std::size_t kStreamBufferSize = 4096;
 
-        SocketWriter socket_writer(socket_);
-        ChunksWriter chunks_writer(socket_writer);
+        ChunksWriter chunks_writer(*channel_writer_);
         json::Stream stream(io_executor, chunks_writer, kStreamBufferSize);
 
-        co_await write_headers();
         co_await (rpc_api_.*handler)(request_json, stream);
 
         co_await stream.close();
@@ -216,7 +213,6 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream /*
         SILK_ERROR << "unexpected exception";
     }
 
-#endif
     co_return;
 }
 

@@ -61,7 +61,8 @@ class Connection : public ChannelWriter {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write(MessageResponse& response);
+    Task<void> write_rsp(Response& response);
+    Task<std::size_t> write(std::string_view content);
 
   private:
     using AuthorizationError = std::string;

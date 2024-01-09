@@ -52,30 +52,31 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
-class ChannelWriterForTest : public silkworm::rpc::http::ChannelWriter {
-    virtual Task<void> write(MessageResponse& /* response */) { co_return; }
+class ChannelWriterForTest : public ChannelWriter {
+    virtual Task<void> write_rsp(Response& /* response */) { co_return; }
+    virtual Task<std::size_t> write(std::string_view /* content */) { co_return 0; }
 };
 
-class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
+class RequestHandler_ForTest : public http::RequestHandler {
   public:
     RequestHandler_ForTest(ChannelWriterForTest* channel_writer,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : silkworm::rpc::http::RequestHandler(channel_writer, rpc_api, rpc_api_table) {
+        : http::RequestHandler(channel_writer, rpc_api, rpc_api_table) {
     }
 
-    Task<void> request_and_create_reply(const nlohmann::json& request_json, silkworm::rpc::http::ChannelWriter::MessageResponse& response) {
+    Task<void> request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<void> handle_request(const std::string& request_str, silkworm::rpc::http::ChannelWriter::MessageResponse& response) {
+    Task<void> handle_request(const std::string& request_str, ChannelWriter::Response& response) {
         co_await RequestHandler::handle(request_str);
         response = std::move(response_);
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    silkworm::rpc::http::ChannelWriter::MessageResponse response_;
+    ChannelWriter::Response response_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

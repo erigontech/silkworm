@@ -50,17 +50,17 @@ class RequestHandler {
     Task<void> handle(const std::string& request);
 
   protected:
-    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::MessageResponse& response);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response);
 
   private:
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethod handler,
         const nlohmann::json& request_json,
-        ChannelWriter::MessageResponse& response);
+        ChannelWriter::Response& response);
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethodGlaze handler,
         const nlohmann::json& request_json,
-        ChannelWriter::MessageResponse& response);
+        ChannelWriter::Response& response);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
     commands::RpcApi& rpc_api_;

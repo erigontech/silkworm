@@ -38,8 +38,6 @@
 
 namespace silkworm::rpc {
 
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("EVMExecutor") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};

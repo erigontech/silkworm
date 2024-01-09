@@ -29,8 +29,6 @@
 
 namespace silkworm {
 
-using evmc::literals::operator""_address;
-
 static const evmc::address kBeneficiary = 0xe5ef458d37212a06e3f59d40c454e76150ae7c31_address;
 static const evmc::address kFromTnx1 = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
 static const evmc::address kFromTnx2 = 0xe5ef458d37212a06e3f59d40c454e76150ae7c33_address;

@@ -40,9 +40,6 @@
 
 namespace silkworm::rpc::trace {
 
-using evmc::literals::operator""_address;
-using evmc::literals::operator""_bytes32;
-
 using testing::InvokeWithoutArgs;
 
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};

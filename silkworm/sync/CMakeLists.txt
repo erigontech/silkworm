@@ -17,10 +17,6 @@
 find_package(absl REQUIRED)
 find_package(magic_enum REQUIRED)
 
-if(SILKWORM_CLANG_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
-endif()
-
 file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
 

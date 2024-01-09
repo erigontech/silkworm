@@ -22,10 +22,6 @@ find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
 
-if(SILKWORM_CLANG_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
-endif()
-
 # Silkrpc library
 file(
   GLOB_RECURSE

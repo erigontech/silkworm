@@ -22,10 +22,6 @@ find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 
-if(SILKWORM_CLANG_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
-endif()
-
 add_subdirectory(test_util)
 
 set(TARGET silkworm_infra)

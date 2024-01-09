@@ -175,8 +175,8 @@ Connection::write_rsp(Response& msg_response) {
 
 Task<std::size_t> Connection::write(std::string_view content) {
     if (first_chunk_) {
-       co_await write_headers();
-       first_chunk_ = false;
+        co_await write_headers();
+        first_chunk_ = false;
     }
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;

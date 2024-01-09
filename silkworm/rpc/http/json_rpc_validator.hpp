@@ -40,7 +40,6 @@ class JsonRpcValidator {
     JsonRpcValidator(nlohmann::json& spec_);
     ~JsonRpcValidator();
     JsonRpcValidationResults validate(const nlohmann::json& request_);
-    nlohmann::json get_spec();
 
   private:
     std::unordered_map<std::string, nlohmann::json> method_params;

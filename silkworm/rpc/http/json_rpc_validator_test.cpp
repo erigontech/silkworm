@@ -22,7 +22,6 @@ namespace silkworm::rpc::http {
 
 TEST_CASE("rpc::http::JsonRpcValidator loads default spec in constructor", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{};
-    CHECK(validator.get_spec()["openrpc"] == "1.2.4");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][json_rpc_validator]") {

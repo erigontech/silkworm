@@ -44,7 +44,6 @@ JsonRpcValidator::JsonRpcValidator() {
 
     for (const auto& method : json_spec["methods"]) {
         method_params[method["name"].get<std::string>()] = nlohmann::json::parse(method["params"].dump());
-        // TODO: check method_params[method["name"].get<std::string>()] = method["params"].array();
     }
 }
 
@@ -57,7 +56,6 @@ JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
 }
 
 JsonRpcValidator::~JsonRpcValidator() {
-    // Destructor implementation goes here
 }
 
 JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request_) {
@@ -121,19 +119,11 @@ void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonR
 void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcValidationResults& results) {
     results.is_valid = true;
 
-    // auto method = request[REQUEST_FIELD_METHOD].get<std::string>();
-    // auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
-
     const auto method = request.find(REQUEST_FIELD_METHOD).value().get<std::string>();
     const auto params_field = request.find(REQUEST_FIELD_PARAMETERS);
     const auto params = params_field != request.end() ? params_field.value() : nlohmann::json::array();
 
-    // from method_params get by method or null
-
-
-
     const auto method_spec_field = method_params.find(method);
-
     if (method_spec_field == method_params.end()) {
         results.is_valid = accept_unknown_methods;
         results.error_message = "Method not found in spec";
@@ -153,8 +143,6 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
         const auto spec_required = spec["required"].get<bool>();
         const auto spec_schema = spec["schema"];
 
-        // std::cout << spec_name << " idx: " << idx << " params size: " << params.size() << std::endl;
-
         if (params.size() <= idx) {
             if (spec_required) {
                 results.is_valid = false;
@@ -163,8 +151,6 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
             break;
         }
 
-        // // std::cout << "params[idx]: " << params[idx] << std::endl;
-
         if (spec_schema.contains("type")) {
             validate_schema(params[idx], spec_schema, results);
             if (!results.is_valid) {
@@ -172,8 +158,6 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
                 return;
             }
         }
-
-        //TODO: use contains instead of is_null
 
         auto spec_schema_of = spec_schema.find("anyOf");
         if (spec_schema_of == spec_schema.end()) {
@@ -349,10 +333,6 @@ void JsonRpcValidator::validate_number(const nlohmann::json& number_, JsonRpcVal
 void JsonRpcValidator::validate_null(const nlohmann::json&, JsonRpcValidationResults& results) {
     results.is_valid = true;
     return;
-}
-
-nlohmann::json JsonRpcValidator::get_spec() {
-    return nlohmann::json{};
 }
 
 }  // namespace silkworm::rpc::http

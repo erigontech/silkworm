@@ -108,6 +108,8 @@ class Connection : public ChannelWriter {
     const std::vector<std::string>& allowed_origins_;
 
     const std::optional<std::string> jwt_secret_;
+
+    bool first_chunk_{true};
 };
 
 }  // namespace silkworm::rpc::http

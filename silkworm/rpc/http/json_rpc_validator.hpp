@@ -29,7 +29,7 @@
 
 namespace silkworm::rpc::http {
 struct JsonRpcValidationResults {
-    bool is_valid;
+    bool is_valid{false};
     std::string error_message;
 };
 
@@ -37,7 +37,7 @@ class JsonRpcValidator {
   public:
     JsonRpcValidator();
     JsonRpcValidator(nlohmann::json& spec_);
-    ~JsonRpcValidator();
+    ~JsonRpcValidator() = default;
     JsonRpcValidationResults validate(const nlohmann::json& request_);
     nlohmann::json get_spec();
 

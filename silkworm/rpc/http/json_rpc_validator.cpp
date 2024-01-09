@@ -48,10 +48,6 @@ JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
     accept_unknown_methods = true;
 }
 
-JsonRpcValidator::~JsonRpcValidator() {
-    // Destructor implementation goes here
-}
-
 JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request_) {
     JsonRpcValidationResults results;
     results.is_valid = true;
@@ -112,7 +108,7 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    auto method = request[REQUEST_FIELD_METHOD];
+    const auto& method = request[REQUEST_FIELD_METHOD];
     auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
 
     nlohmann::json method_spec;

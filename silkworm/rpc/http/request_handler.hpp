@@ -30,6 +30,7 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/http/json_rpc_validator.hpp>
 #include <silkworm/rpc/http/reply.hpp>
 #include <silkworm/rpc/http/request.hpp>
 
@@ -62,6 +63,7 @@ class RequestHandler {
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
     AuthorizationResult is_request_authorized(const http::Request& request);
+    bool is_valid_jsonrpc(const nlohmann::json& request_json);
 
     void set_cors(std::vector<Header>& headers);
 
@@ -85,6 +87,8 @@ class RequestHandler {
     const std::optional<std::string> jwt_secret_;
 
     const std::vector<std::string>& allowed_origins_;
+
+    JsonRpcValidator json_rpc_validator_;
 };
 
 }  // namespace silkworm::rpc::http

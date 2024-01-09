@@ -53,7 +53,7 @@ inline std::vector<std::shared_ptr<Block>> to_plain_blocks(const Blocks& blocks)
  */
 class BodySequence {
   public:
-    explicit BodySequence();
+    explicit BodySequence() = default;
     ~BodySequence() = default;
 
     // sync current state - this must be done at header forward

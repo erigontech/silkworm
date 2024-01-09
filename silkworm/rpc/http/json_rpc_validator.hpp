@@ -23,7 +23,10 @@
 #pragma once
 
 #include <array>
+<<<<<<< HEAD
 #include <regex>
+=======
+>>>>>>> master
 #include <string>
 
 #include <nlohmann/json.hpp>

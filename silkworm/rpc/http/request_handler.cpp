@@ -37,7 +37,6 @@
 
 namespace silkworm::rpc::http {
 
-
 Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
     ChannelWriter::Response msg_response;

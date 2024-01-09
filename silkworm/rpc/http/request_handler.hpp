@@ -30,7 +30,7 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/http/channel_writer.hpp>
+#include <silkworm/rpc/http/json_rpc_validator.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -68,6 +68,12 @@ class RequestHandler {
     ChannelWriter* channel_writer_;
 
     const commands::RpcApiTable& rpc_api_table_;
+
+    const std::optional<std::string> jwt_secret_;
+
+    const std::vector<std::string>& allowed_origins_;
+
+    JsonRpcValidator json_rpc_validator_;
 };
 
 }  // namespace silkworm::rpc::http

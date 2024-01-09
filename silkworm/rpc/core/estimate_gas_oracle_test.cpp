@@ -46,7 +46,6 @@ struct RemoteDatabaseTest : test::KVTestBase {
 };
 
 using testing::_;
-using testing::InvokeWithoutArgs;
 using testing::Return;
 
 TEST_CASE("EstimateGasException") {

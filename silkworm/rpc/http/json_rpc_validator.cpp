@@ -163,7 +163,7 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
         if (spec_schema_of == spec_schema.end()) {
             spec_schema_of = spec_schema.find("oneOf");
         }
- 
+
         if (spec_schema_of != spec_schema.end()) {
             results.is_valid = false;
             for (const auto& schema : spec_schema_of.value()) {

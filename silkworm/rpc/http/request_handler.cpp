@@ -41,8 +41,6 @@
 
 namespace silkworm::rpc::http {
 
-static bool is_valid_jsonrpc(const nlohmann::json& request_json);
-
 Task<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
@@ -100,34 +98,9 @@ Task<void> RequestHandler::handle(const http::Request& request) {
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-static bool is_valid_jsonrpc(const nlohmann::json& request_json) {
-    static const std::string valid_jsonrpc_version = "2.0";
-    return std::ranges::all_of(request_json.items(), [](auto& property) {
-        const auto& property_name = property.key();
-
-        SILK_TRACE << property_name << " : " << property.value().type_name() << " : " << property.value().dump();
-
-        if (property_name == "id") {
-            if (!property.value().is_number() && !property.value().is_string() && !property.value().is_null()) {
-                return false;
-            }
-        } else if (property_name == "jsonrpc") {
-            if (property.value() != valid_jsonrpc_version) {
-                return false;
-            }
-        } else if (property_name == "method") {
-            if (!property.value().is_string()) {
-                return false;
-            }
-        } else if (property_name == "params") {
-            if (!property.value().is_array()) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-        return true;
-    });
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
+    auto validation_result = json_rpc_validator_.validate(request_json);
+    return validation_result.is_valid;
 }
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {

@@ -54,15 +54,15 @@ class Connection : public ChannelWriter {
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret);
 
-    ~Connection();
+    ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
 
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(Response& response);
-    Task<std::size_t> write(std::string_view content);
+    Task<void> write_rsp(Response& response) override;
+    Task<std::size_t> write(std::string_view content) override;
 
   private:
     using AuthorizationError = std::string;

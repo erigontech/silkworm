@@ -20,6 +20,7 @@
 #include <string>
 
 #include "json_rpc_specification.hpp"
+#include <iostream>
 
 namespace silkworm::rpc::http {
 
@@ -27,23 +28,28 @@ static const std::string kRequestFieldMethod{"method"};
 static const std::string kRequestFieldId{"id"};
 static const std::string kRequestFieldParameters{"params"};
 static const std::string kRequestFieldJsonRpc{"jsonrpc"};
-
 static const std::string kValidJsonRpcVersion{"2.0"};
 
 JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
-    spec_ = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
+    auto spec = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
+    for (const auto& method : spec["methods"]) {
+        method_specs_[method["name"].get<std::string>()] = method["params"];
+    }
 }
 
-JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : spec_{spec}, accept_unknown_methods_{true} {}
+JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : accept_unknown_methods_{true} {
+    for (const auto& method : spec["methods"]) {
+        method_specs_[method["name"].get<std::string>()] = method["params"];
+    }
+}
 
 JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request) {
     JsonRpcValidationResults results;
-    results.is_valid = true;
 
-    check_request_fields(request);
+    check_request_fields(request, results);
 
     if (results.is_valid) {
-        validate_params(request);
+        validate_params(request, results);
     }
 
     return results;
@@ -68,7 +74,7 @@ void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonR
                 return;
             }
             required_fields &= 0b101;
-        } else if (item.key() == kRequestFieldParameter) {
+        } else if (item.key() == kRequestFieldParameters) {
             if (!item.value().is_array()) {
                 results.error_message = "Invalid field: " + item.key();
                 return;
@@ -86,7 +92,7 @@ void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonR
     }
 
     if (required_fields != 0) {
-        results.error_message = "Request not valid, required fields: " + kRequestFieldMethod + ", " + kRequestFieldId + ", " + kRequestFieldParameter + ", " + kRequestFieldJsonRpc;
+        results.error_message = "Request not valid, required fields: " + kRequestFieldMethod + ", " + kRequestFieldId + ", " + kRequestFieldParameters + ", " + kRequestFieldJsonRpc;
         return;
     }
 
@@ -98,12 +104,12 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
     results.is_valid = true;
 
     const auto method = request.find(kRequestFieldMethod).value().get<std::string>();
-    const auto params_field = request.find(kRequestFieldParameter);
+    const auto params_field = request.find(kRequestFieldParameters);
     const auto params = params_field != request.end() ? params_field.value() : nlohmann::json::array();
 
-    const auto method_spec_field = method_params.find(method);
-    if (method_spec_field == method_params.end()) {
-        results.is_valid = accept_unknown_methods;
+    const auto method_spec_field = method_specs_.find(method);
+    if (method_spec_field == method_specs_.end()) {
+        results.is_valid = accept_unknown_methods_;
         results.error_message = "Method not found in spec";
         return;
     }
@@ -203,11 +209,11 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string_, const nloh
     if (schema_pattern_field != schema.end()) {
         std::regex pattern;
         const auto schema_pattern = schema_pattern_field.value().get<std::string>();
-        if (regexes.find(schema_pattern) != regexes.end()) {
-            pattern = regexes[schema_pattern];
+        if (patterns_.find(schema_pattern) != patterns_.end()) {
+            pattern = patterns_[schema_pattern];
         } else {
             pattern = std::regex(schema_pattern, std::regex::optimize);
-            regexes[schema_pattern] = pattern;
+            patterns_[schema_pattern] = pattern;
         }
         if (!std::regex_match(string_.get<std::string>(), pattern)) {
             results.error_message = "Invalid string pattern";

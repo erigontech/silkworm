@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -28,6 +22,7 @@
 #include <nlohmann/json.hpp>
 
 namespace silkworm::rpc::http {
+
 struct JsonRpcValidationResults {
     bool is_valid{false};
     std::string error_message;
@@ -36,14 +31,13 @@ struct JsonRpcValidationResults {
 class JsonRpcValidator {
   public:
     JsonRpcValidator();
-    JsonRpcValidator(nlohmann::json& spec_);
+    JsonRpcValidator(const nlohmann::json& spec);
     ~JsonRpcValidator() = default;
-    JsonRpcValidationResults validate(const nlohmann::json& request_);
-    nlohmann::json get_spec();
+
+    JsonRpcValidationResults validate(const nlohmann::json& request);
+    const nlohmann::json& get_spec() const { return spec_; }
 
   private:
-    nlohmann::json json_spec;
-    bool accept_unknown_methods;
     JsonRpcValidationResults check_request_fields(const nlohmann::json& request);
     JsonRpcValidationResults validate_params(const nlohmann::json& request);
     JsonRpcValidationResults validate_schema(const nlohmann::json& value_, const nlohmann::json& schema);
@@ -53,5 +47,9 @@ class JsonRpcValidator {
     JsonRpcValidationResults validate_boolean(const nlohmann::json& boolean_);
     JsonRpcValidationResults validate_number(const nlohmann::json& number_);
     JsonRpcValidationResults validate_null(const nlohmann::json& number_);
+
+    nlohmann::json spec_;
+    bool accept_unknown_methods_;
 };
+
 }  // namespace silkworm::rpc::http

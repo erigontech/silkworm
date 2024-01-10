@@ -30,6 +30,7 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/http/channel_writer.hpp>
 #include <silkworm/rpc/http/json_rpc_validator.hpp>
 
 namespace silkworm::rpc::http {
@@ -39,20 +40,22 @@ class RequestHandler {
     RequestHandler(ChannelWriter* channel_writer,
                    commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table)
-        : rpc_api_{rpc_api},
-          channel_writer_{channel_writer},
+        : channel_writer_{channel_writer},
+          rpc_api_{rpc_api},
           rpc_api_table_(rpc_api_table) {}
 
     RequestHandler(const RequestHandler&) = delete;
     virtual ~RequestHandler() = default;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<void> handle(const std::string& request);
+    Task<void> handle(const std::string& content);
 
   protected:
     Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response);
 
   private:
+    bool is_valid_jsonrpc(const nlohmann::json& request_json);
+
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethod handler,
         const nlohmann::json& request_json,
@@ -63,15 +66,11 @@ class RequestHandler {
         ChannelWriter::Response& response);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
-    commands::RpcApi& rpc_api_;
-
     ChannelWriter* channel_writer_;
 
+    commands::RpcApi& rpc_api_;
+
     const commands::RpcApiTable& rpc_api_table_;
-
-    const std::optional<std::string> jwt_secret_;
-
-    const std::vector<std::string>& allowed_origins_;
 
     JsonRpcValidator json_rpc_validator_;
 };

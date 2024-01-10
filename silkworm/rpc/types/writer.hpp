@@ -67,16 +67,6 @@ class StringWriter : public Writer {
     std::string content_;
 };
 
-class SocketWriter : public Writer {
-  public:
-    explicit SocketWriter(boost::asio::ip::tcp::socket& socket) : socket_(socket) {}
-
-    Task<std::size_t> write(std::string_view content) override;
-
-  private:
-    boost::asio::ip::tcp::socket& socket_;
-};
-
 class ChunksWriter : public Writer {
   public:
     explicit ChunksWriter(Writer& writer);

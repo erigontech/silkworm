@@ -210,7 +210,7 @@ void JsonRpcValidator::validate_schema(const nlohmann::json& value_, const nlohm
 void JsonRpcValidator::validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = false;
 
-    std::cout << string_ << ": "<< schema["title"] << std::endl;
+    std::cout << string_ << ": " << schema["title"] << std::endl;
 
     if (!string_.is_string()) {
         results.error_message = "Invalid string";

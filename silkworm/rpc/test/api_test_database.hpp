@@ -53,8 +53,8 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
 class ChannelWriterForTest : public ChannelWriter {
-    virtual Task<void> write_rsp(Response& /* response */) { co_return; }
-    virtual Task<std::size_t> write(std::string_view /* content */) { co_return 0; }
+    Task<void> write_rsp(Response& /* response */) override { co_return; }
+    Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
 };
 
 class RequestHandler_ForTest : public http::RequestHandler {

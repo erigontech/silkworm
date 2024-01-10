@@ -40,7 +40,8 @@ class JsonRpcValidator {
   private:
     void check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results);
     void validate_params(const nlohmann::json& request, JsonRpcValidationResults& results);
-    void validate_schema(const nlohmann::json& value, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results);
+    void validate_type(const nlohmann::json& value, const nlohmann::json& schema, JsonRpcValidationResults& results);
     void validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results);
     void validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResults& results);
     void validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResults& results);

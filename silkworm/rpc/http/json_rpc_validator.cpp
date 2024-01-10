@@ -134,34 +134,11 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
             break;
         }
 
-        if (spec_schema.contains("type")) {
-            validate_schema(params[idx], spec_schema, results);
-            if (!results.is_valid) {
-                results.error_message += "\nInvalid parameter: " + spec_name + " " + results.error_message;
-                return;
-            }
-        }
+        validate_schema(params[idx], spec_schema, results);
 
-        auto spec_schema_of = spec_schema.find("anyOf");
-        if (spec_schema_of == spec_schema.end()) {
-            spec_schema_of = spec_schema.find("oneOf");
-        }
-
-        if (spec_schema_of != spec_schema.end()) {
-            results.is_valid = false;
-            for (const auto& schema : spec_schema_of.value()) {
-                std::cout << params.dump(2) << std::endl;
-                std::cout << schema << std::endl;
-                validate_schema(params[idx], schema, results);
-                if (results.is_valid) {
-                    results.is_valid = true;
-                    break;
-                }
-            }
-
-            if (!results.is_valid) {
-                results.error_message += "\nInvalid parameter: " + spec_name;
-            }
+        if (!results.is_valid) {
+            results.error_message += "\nInvalid parameter: " + spec_name;
+            break;
         }
 
         ++idx;
@@ -171,6 +148,30 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
 }
 
 void JsonRpcValidator::validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
+        if (schema.contains("type")) {
+            validate_type(value_, schema, results);
+            if (!results.is_valid) {
+                return;
+            }
+        }
+
+        auto schema_of_collection = schema.find("anyOf");
+        if (schema_of_collection == schema.end()) {
+            schema_of_collection = schema.find("oneOf");
+        }
+
+        if (schema_of_collection != schema.end()) {
+            results.is_valid = false;
+            for (const auto& schema_of : schema_of_collection.value()) {
+                validate_type(value_, schema_of, results);
+                if (results.is_valid) {
+                    break;
+                }
+            }
+        }    
+}
+
+void JsonRpcValidator::validate_type(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
     results.is_valid = false;
 
     const auto schema_type = schema["type"].get<std::string>();
@@ -250,7 +251,7 @@ void JsonRpcValidator::validate_array(const nlohmann::json& array_, const nlohma
 
     const auto schema_items = schema["items"];
     for (const auto& item : array_) {
-        validate_schema(item, schema_items, results);
+        validate_type(item, schema_items, results);
         if (!results.is_valid) {
             break;
         }

@@ -16,50 +16,34 @@
 
 #include "json_rpc_validator.hpp"
 
-#include <bit>
-#include <cstdlib>
-#include <exception>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <regex>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "json_rpc_specification.hpp"
 
 namespace silkworm::rpc::http {
 
-#define REQUEST_FIELD_METHOD "method"
-#define REQUEST_FIELD_ID "id"
-#define REQUEST_FIELD_PARAMETERS "params"
-#define REQUEST_FIELD_JSONRPC "jsonrpc"
+static const std::string kRequestFieldMethod{"method"};
+static const std::string kRequestFieldId{"id"};
+static const std::string kRequestFieldParameters{"params"};
+static const std::string kRequestFieldJsonRpc{"jsonrpc"};
 
-static const std::string valid_jsonrpc_version = "2.0";
+static const std::string kValidJsonRpcVersion{"2.0"};
 
-JsonRpcValidator::JsonRpcValidator() {
-    json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
-    accept_unknown_methods = true;
+JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
+    spec_ = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
 }
 
-JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
-    json_spec = spec_;
-    accept_unknown_methods = true;
-}
+JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : spec_{spec}, accept_unknown_methods_{true} {}
 
-JsonRpcValidator::~JsonRpcValidator() {
-    // Destructor implementation goes here
-}
-
-JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request_) {
+JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request) {
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    results = check_request_fields(request_);
+    results = check_request_fields(request);
 
     if (results.is_valid) {
-        results = validate_params(request_);
+        results = validate_params(request);
     }
 
     return results;
@@ -71,36 +55,36 @@ JsonRpcValidationResults JsonRpcValidator::check_request_fields(const nlohmann::
 
     // expected fields: jsonrpc, method, params (optional), id
     if (request.size() != 4 && request.size() != 3) {
-        results.error_message = "Request not valid, required fields: " + std::string(REQUEST_FIELD_METHOD) + ", " + std::string(REQUEST_FIELD_ID) + ", " + std::string(REQUEST_FIELD_PARAMETERS) + ", " + std::string(REQUEST_FIELD_JSONRPC);
+        results.error_message = "Request not valid, required fields: " + kRequestFieldMethod + ", " + kRequestFieldId + ", " + kRequestFieldParameters + ", " + kRequestFieldJsonRpc;
         return results;
     }
 
     // `method` must be a string
-    if (!request.contains(REQUEST_FIELD_METHOD) ||
-        request[REQUEST_FIELD_METHOD].empty() ||
-        !request[REQUEST_FIELD_METHOD].is_string()) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_METHOD);
+    if (!request.contains(kRequestFieldMethod) ||
+        request[kRequestFieldMethod].empty() ||
+        !request[kRequestFieldMethod].is_string()) {
+        results.error_message = "Missing or invalid field: " + kRequestFieldMethod;
         return results;
     }
 
     // `id` must be a number
-    if (!request.contains(REQUEST_FIELD_ID) ||
-        request[REQUEST_FIELD_ID].empty() ||
-        !request[REQUEST_FIELD_ID].is_number()) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_ID);
+    if (!request.contains(kRequestFieldId) ||
+        request[kRequestFieldId].empty() ||
+        !request[kRequestFieldId].is_number()) {
+        results.error_message = "Missing or invalid field: " + kRequestFieldId;
         return results;
     }
 
     // optional `params` must be an array
-    if (request.contains(REQUEST_FIELD_PARAMETERS) && !request[REQUEST_FIELD_PARAMETERS].is_array()) {
-        results.error_message = "Invalid field: " + std::string(REQUEST_FIELD_PARAMETERS);
+    if (request.contains(kRequestFieldParameters) && !request[kRequestFieldParameters].is_array()) {
+        results.error_message = "Invalid field: " + kRequestFieldParameters;
         return results;
     }
 
     // jsonrpc must contain the string "2.0"
-    if (!request.contains(REQUEST_FIELD_JSONRPC) ||
-        request[REQUEST_FIELD_JSONRPC] != valid_jsonrpc_version) {
-        results.error_message = "Missing or invalid field: " + std::string(REQUEST_FIELD_JSONRPC);
+    if (!request.contains(kRequestFieldJsonRpc) ||
+        request[kRequestFieldJsonRpc] != kValidJsonRpcVersion) {
+        results.error_message = "Missing or invalid field: " + kRequestFieldJsonRpc;
         return results;
     }
 
@@ -112,11 +96,11 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    auto method = request[REQUEST_FIELD_METHOD];
-    auto params = request.contains(REQUEST_FIELD_PARAMETERS) ? request[REQUEST_FIELD_PARAMETERS] : nlohmann::json::array();
+    const auto& method = request[kRequestFieldMethod];
+    const auto params = request.contains(kRequestFieldParameters) ? request[kRequestFieldParameters] : nlohmann::json::array();
 
     nlohmann::json method_spec;
-    for (const auto& m : json_spec["methods"]) {
+    for (const auto& m : spec_["methods"]) {
         if (m["name"] == method) {
             method_spec = m;
             break;
@@ -124,7 +108,7 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
     }
 
     if (method_spec.is_null()) {
-        results.is_valid = accept_unknown_methods;
+        results.is_valid = accept_unknown_methods_;
         results.error_message = "Method not found in spec";
         return results;
     }
@@ -141,8 +125,6 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
         auto spec_required = spec["required"].get<bool>();
         auto spec_schema = spec["schema"];
 
-        std::cout << spec_name << " idx: " << idx << " params size: " << params.size() << std::endl;
-
         if (params.size() <= idx) {
             if (spec_required) {
                 results.is_valid = false;
@@ -150,8 +132,6 @@ JsonRpcValidationResults JsonRpcValidator::validate_params(const nlohmann::json&
             }
             break;
         }
-
-        std::cout << "params[idx]: " << params[idx] << std::endl;
 
         if (!spec_schema["type"].is_null()) {
             auto param_results = validate_schema(params[idx], spec_schema);
@@ -328,10 +308,6 @@ JsonRpcValidationResults JsonRpcValidator::validate_null(const nlohmann::json&) 
     JsonRpcValidationResults results;
     results.is_valid = true;
     return results;
-}
-
-nlohmann::json JsonRpcValidator::get_spec() {
-    return json_spec;
 }
 
 }  // namespace silkworm::rpc::http

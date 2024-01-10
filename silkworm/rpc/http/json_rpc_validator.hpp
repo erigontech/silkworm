@@ -23,17 +23,14 @@
 #pragma once
 
 #include <array>
-<<<<<<< HEAD
 #include <regex>
-=======
->>>>>>> master
 #include <string>
 
 #include <nlohmann/json.hpp>
 
 namespace silkworm::rpc::http {
 struct JsonRpcValidationResults {
-    bool is_valid;
+    bool is_valid{false};
     std::string error_message;
 };
 
@@ -41,7 +38,7 @@ class JsonRpcValidator {
   public:
     JsonRpcValidator();
     JsonRpcValidator(nlohmann::json& spec_);
-    ~JsonRpcValidator();
+    ~JsonRpcValidator() = default;
     JsonRpcValidationResults validate(const nlohmann::json& request_);
 
   private:

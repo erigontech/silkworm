@@ -6887,7 +6887,7 @@
 					"schema": {
 						"title": "hex encoded 256 bit unsigned integer",
 						"type": "string",
-						"pattern": "^0x([1-9a-f]+[0-9a-f]{0,31})|0$"
+						"pattern": "^0x([0-9a-f]+[0-9a-f]{0,31})|0$"
 					}
 				},
 				{

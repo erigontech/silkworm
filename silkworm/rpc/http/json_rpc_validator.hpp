@@ -31,7 +31,7 @@ struct JsonRpcValidationResults {
 class JsonRpcValidator {
   public:
     JsonRpcValidator();
-    JsonRpcValidator(const nlohmann::json& spec);
+    explicit JsonRpcValidator(nlohmann::json spec);
     ~JsonRpcValidator() = default;
 
     JsonRpcValidationResults validate(const nlohmann::json& request);

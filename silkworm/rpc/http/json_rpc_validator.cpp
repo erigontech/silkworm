@@ -18,6 +18,7 @@
 
 #include <regex>
 #include <string>
+#include <utility>
 
 #include "json_rpc_specification.hpp"
 
@@ -34,7 +35,7 @@ JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
     spec_ = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
 }
 
-JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : spec_{spec}, accept_unknown_methods_{true} {}
+JsonRpcValidator::JsonRpcValidator(nlohmann::json spec) : spec_{std::move(spec)}, accept_unknown_methods_{true} {}
 
 JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request) {
     JsonRpcValidationResults results;

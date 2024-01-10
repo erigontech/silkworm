@@ -16,52 +16,34 @@
 
 #include "json_rpc_validator.hpp"
 
-#include <bit>
-#include <cstdlib>
-#include <exception>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <regex>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "json_rpc_specification.hpp"
 
 namespace silkworm::rpc::http {
 
-const std::string kRequestFieldMethod = "method";
-const std::string kRequestFieldId = "id";
-const std::string kRequestFieldParameter = "params";
-const std::string kRequestFieldJsonRpc = "jsonrpc";
-const std::string kValidJsonRpcVersion = "2.0";
+static const std::string kRequestFieldMethod{"method"};
+static const std::string kRequestFieldId{"id"};
+static const std::string kRequestFieldParameters{"params"};
+static const std::string kRequestFieldJsonRpc{"jsonrpc"};
 
-JsonRpcValidator::JsonRpcValidator() {
-    const auto json_spec = nlohmann::json::parse(silkworm::json_rpc_specification, nullptr, /* allow_exceptions = */ false);
-    accept_unknown_methods = true;
+static const std::string kValidJsonRpcVersion{"2.0"};
 
-    for (const auto& method : json_spec["methods"]) {
-        method_params[method["name"].get<std::string>()] = nlohmann::json::parse(method["params"].dump());
-    }
+JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
+    spec_ = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
 }
 
-JsonRpcValidator::JsonRpcValidator(nlohmann::json& spec_) {
-    accept_unknown_methods = true;
+JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : spec_{spec}, accept_unknown_methods_{true} {}
 
-    for (const auto& method : spec_["methods"]) {
-        method_params[method["name"].get<std::string>()] = method["params"];
-    }
-}
-
-JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request_) {
+JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request) {
     JsonRpcValidationResults results;
     results.is_valid = true;
 
-    check_request_fields(request_, results);
+    check_request_fields(request);
 
     if (results.is_valid) {
-        validate_params(request_, results);
+        validate_params(request);
     }
 
     return results;

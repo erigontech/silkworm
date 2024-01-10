@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -29,6 +23,7 @@
 #include <nlohmann/json.hpp>
 
 namespace silkworm::rpc::http {
+
 struct JsonRpcValidationResults {
     bool is_valid{false};
     std::string error_message;
@@ -37,23 +32,24 @@ struct JsonRpcValidationResults {
 class JsonRpcValidator {
   public:
     JsonRpcValidator();
-    JsonRpcValidator(nlohmann::json& spec_);
+    JsonRpcValidator(const nlohmann::json& spec);
     ~JsonRpcValidator() = default;
-    JsonRpcValidationResults validate(const nlohmann::json& request_);
+
+    JsonRpcValidationResults validate(const nlohmann::json& request);
 
   private:
-    std::unordered_map<std::string, nlohmann::json> method_params;
-    std::unordered_map<std::string, std::regex> regexes;
+    JsonRpcValidationResults check_request_fields(const nlohmann::json& request);
+    JsonRpcValidationResults validate_params(const nlohmann::json& request);
+    JsonRpcValidationResults validate_schema(const nlohmann::json& value_, const nlohmann::json& schema);
+    JsonRpcValidationResults validate_string(const nlohmann::json& string_, const nlohmann::json& schema);
+    JsonRpcValidationResults validate_array(const nlohmann::json& array_, const nlohmann::json& schema);
+    JsonRpcValidationResults validate_object(const nlohmann::json& object_, const nlohmann::json& schema);
+    JsonRpcValidationResults validate_boolean(const nlohmann::json& boolean_);
+    JsonRpcValidationResults validate_number(const nlohmann::json& number_);
+    JsonRpcValidationResults validate_null(const nlohmann::json& number_);
 
-    bool accept_unknown_methods;
-    void check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results);
-    void validate_params(const nlohmann::json& request, JsonRpcValidationResults& results);
-    void validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_boolean(const nlohmann::json& boolean_, JsonRpcValidationResults& results);
-    void validate_number(const nlohmann::json& number_, JsonRpcValidationResults& results);
-    void validate_null(const nlohmann::json& number_, JsonRpcValidationResults& results);
+    nlohmann::json spec_;
+    bool accept_unknown_methods_;
 };
+
 }  // namespace silkworm::rpc::http

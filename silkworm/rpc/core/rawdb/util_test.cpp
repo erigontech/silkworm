@@ -22,7 +22,6 @@
 
 namespace silkworm {
 
-// NOLINTNEXTLINE(misc-unused-using-decls)
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("all-zero composite key", "[rpc][core][rawdb][util]") {

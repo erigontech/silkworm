@@ -43,13 +43,12 @@ class ChannelWriter : public Writer {
     };
 
     struct Response {
-        ResponseStatus status;
+        ResponseStatus status{ResponseStatus::ok};
         std::string content;
     };
 
-    ChannelWriter() {}
+    ChannelWriter() = default;
     ChannelWriter(const ChannelWriter&) = delete;
-    virtual ~ChannelWriter() = default;
     ChannelWriter& operator=(const ChannelWriter&) = delete;
 
     virtual Task<void> write_rsp(Response& response) = 0;

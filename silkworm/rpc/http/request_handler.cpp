@@ -37,7 +37,7 @@
 
 namespace silkworm::rpc::http {
 
-Task<void> RequestHandler::handle(const http::Request& request) {
+Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
     ChannelWriter::Response msg_response;
 
@@ -80,9 +80,10 @@ Task<void> RequestHandler::handle(const http::Request& request) {
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
-    auto validation_result = json_rpc_validator_.validate(request_json);
-    return validation_result.is_valid;
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& /* request_json */) {
+    // auto validation_result = json_rpc_validator_.validate(request_json);
+    // return validation_result.is_valid;
+    return true;
 }
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response) {

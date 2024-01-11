@@ -355,7 +355,6 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
                 std::string request_line;
                 if (std::getline(test_stream, request_line) && request_line.starts_with(">> ")) {
                     auto request = nlohmann::json::parse(request_line.substr(3));
-                    std::cout << request.dump() << std::endl;
                     const auto results = validator.validate(request);
                     if (test_name.find("invalid") == std::string::npos) {
                         CHECK(results.is_valid);

@@ -17,8 +17,9 @@
 #include "json_rpc_validator.hpp"
 
 #include <iostream>
-#include <regex>
 #include <string>
+
+#include <boost/regex.hpp>
 
 #include "json_rpc_specification.hpp"
 
@@ -190,8 +191,6 @@ void JsonRpcValidator::validate_type(const nlohmann::json& value_, const nlohman
 }
 
 void JsonRpcValidator::validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results) {
-    std::cout << string_ << ": " << schema["title"] << std::endl;
-
     if (!string_.is_string()) {
         results.is_valid = false;
         results.error_message = "Invalid string";
@@ -200,15 +199,15 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string_, const nloh
 
     const auto schema_pattern_field = schema.find("pattern");
     if (schema_pattern_field != schema.end()) {
-        std::regex pattern;
+        boost::regex pattern;
         const auto schema_pattern = schema_pattern_field.value().get<std::string>();
         if (patterns_.find(schema_pattern) != patterns_.end()) {
             pattern = patterns_[schema_pattern];
         } else {
-            pattern = std::regex(schema_pattern, std::regex::optimize);
+            pattern = boost::regex(schema_pattern, boost::regex::optimize);
             patterns_[schema_pattern] = pattern;
         }
-        if (!std::regex_match(string_.get<std::string>(), pattern)) {
+        if (!boost::regex_match(string_.get<std::string>(), pattern)) {
             results.is_valid = false;
             results.error_message = "Invalid string pattern";
             return;
@@ -266,8 +265,6 @@ void JsonRpcValidator::validate_object(const nlohmann::json& object_, const nloh
     if (schema.contains("properties")) {
         for (const auto& item : object_.items()) {
             if (schema["properties"].contains(item.key())) {
-                std::cout << item.key() << ": " << item.value() << std::endl;
-                std::cout << schema["properties"][item.key()] << std::endl;
                 validate_schema(item.value(), schema["properties"][item.key()], results);
                 if (!results.is_valid) {
                     return;

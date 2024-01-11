@@ -17,9 +17,9 @@
 #pragma once
 
 #include <array>
-#include <regex>
 #include <string>
 
+#include <boost/regex.hpp>
 #include <nlohmann/json.hpp>
 
 namespace silkworm::rpc::http {
@@ -50,7 +50,7 @@ class JsonRpcValidator {
     void validate_null(const nlohmann::json& value_, JsonRpcValidationResults& results);
 
     std::map<std::string, nlohmann::json> method_specs_;
-    std::map<std::string, std::regex> patterns_;
+    std::map<std::string, boost::regex> patterns_;
     bool accept_unknown_methods_;
 };
 

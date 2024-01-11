@@ -338,12 +338,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
-    auto path = "/home/jacek/dev/silkworm2/silkworm/rpc/http/json_rpc_specification.json";
-    std::ifstream file_stream{path};
-    nlohmann::json spec_json;
-    file_stream >> spec_json;
-
-    JsonRpcValidator validator{spec_json};
+    JsonRpcValidator validator;
 
     const auto tests_dir = test::get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {

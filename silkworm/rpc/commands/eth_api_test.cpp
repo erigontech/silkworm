@@ -144,10 +144,10 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid input
         "jsonrpc":"2.0",
         "id":1,
         "result":{
-            "baseFeePerGas":["0x3b9aca00","0x342770c0","0x2db08786","0x2db08786"],
+            "baseFeePerGas":["0x3b9aca00","0x342770c0","0x2db08786","0x2806be9d"],
             "gasUsedRatio":[0.0,0.0042,0.0042],
             "oldestBlock":"0x0",
-            "reward":[[],["0x342770c1","0x342770c1"],["0x2db08787","0x2db08787"]]}
+            "reward":[["0x0","0x0"],["0x1","0x1"],["0x1","0x1"]]}
     })"_json);
 }
 #endif  // SILKWORM_SANITIZE

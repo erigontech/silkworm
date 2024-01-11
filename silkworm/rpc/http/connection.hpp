@@ -63,9 +63,9 @@ class Connection : public Channel, StreamWriter {
     Task<void> read_loop();
 
     Task<void> write(Response& response) override;
-    Task<void> open();
-    Task<std::size_t> write(std::string_view content);
-    Task<void> close() { co_return; }
+    Task<void> open() override;
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> close() override { co_return; }
 
   private:
     using AuthorizationError = std::string;

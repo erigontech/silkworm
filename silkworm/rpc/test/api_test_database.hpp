@@ -89,7 +89,12 @@ class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
 template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
-    explicit RpcApiTestBase(mdbx::env& chaindata_env) : LocalContextTestBase(chaindata_env), workers_{1}, socket{io_context_}, rpc_api{io_context_, workers_}, rpc_api_table{kDefaultEth1ApiSpec} {
+    explicit RpcApiTestBase(mdbx::env& chaindata_env)
+        : LocalContextTestBase(chaindata_env),
+          workers_{1},
+          socket{io_context_},
+          rpc_api{io_context_, workers_},
+          rpc_api_table{kDefaultEth1ApiSpec} {
     }
 
     template <auto method, typename... Args>
@@ -116,6 +121,15 @@ class TestDatabaseContext {
     }
 
     mdbx::env_managed db;
+};
+
+class RpcApiE2ETest : public TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
+  public:
+    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {}
+    using RpcApiTestBase<RequestHandler_ForTest>::run;
+
+  private:
+    static inline test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 }  // namespace silkworm::rpc::test

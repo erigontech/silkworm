@@ -34,6 +34,7 @@ file(
   "*.h"
 )
 list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
+list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     silkworm_node

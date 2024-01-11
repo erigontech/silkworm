@@ -22,9 +22,9 @@
 
 namespace silkworm::rpc::http {
 
-TEST_CASE("rpc::http::JsonRpcValidator loads default spec in constructor", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("rpc::http::JsonRpcValidator loads spec in constructor", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{};
-    CHECK(validator.get_spec()["openrpc"] == "1.2.4");
+    CHECK(validator.openrpc_version() == "1.2.4");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][json_rpc_validator]") {
@@ -51,7 +51,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     JsonRpcValidationResult result = validator.validate(request);
     CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
+    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -60,7 +60,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     result = validator.validate(request);
     CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
+    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -69,7 +69,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     result = validator.validate(request);
     CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
+    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {

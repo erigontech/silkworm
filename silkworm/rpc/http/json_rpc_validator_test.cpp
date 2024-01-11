@@ -18,11 +18,12 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/rpc/test/api_test_database.hpp>
+
 namespace silkworm::rpc::http {
 
 TEST_CASE("rpc::http::JsonRpcValidator loads default spec in constructor", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{};
-    CHECK(validator.get_spec()["openrpc"] == "1.2.4");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][json_rpc_validator]") {
@@ -50,7 +51,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     JsonRpcValidationResults results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: jsonrpc");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -59,7 +60,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: method");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -68,7 +69,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     };
     results = validator.validate(request);
     CHECK(!results.is_valid);
-    CHECK(results.error_message == "Missing or invalid field: id");
+    CHECK(results.error_message == "Request not valid, required fields: method, id, params, jsonrpc");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {
@@ -335,4 +336,28 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
     results = validator.validate(request);
     CHECK(!results.is_valid);
 }
+
+TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator;
+
+    const auto tests_dir = test::get_tests_dir();
+    for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
+        if (!test_file.is_directory() && test_file.path().extension() == ".io") {
+            auto test_name = test_file.path().filename().string();
+            auto group_name = test_file.path().parent_path().filename().string();
+            SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
+                std::ifstream test_stream(test_file.path());
+                std::string request_line;
+                if (std::getline(test_stream, request_line) && request_line.starts_with(">> ")) {
+                    auto request = nlohmann::json::parse(request_line.substr(3));
+                    const auto results = validator.validate(request);
+                    if (test_name.find("invalid") == std::string::npos) {
+                        CHECK(results.is_valid);
+                    }
+                }
+            }
+        }
+    }
+}
+
 }  // namespace silkworm::rpc::http

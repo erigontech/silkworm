@@ -17,7 +17,6 @@
 #include "json_rpc_validator.hpp"
 
 #include <string>
-#include <utility>
 
 #include <boost/regex.hpp>
 

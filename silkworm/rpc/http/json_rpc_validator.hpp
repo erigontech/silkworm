@@ -24,7 +24,7 @@
 
 namespace silkworm::rpc::http {
 
-struct JsonRpcValidationResults {
+struct JsonRpcValidationResult {
     bool is_valid{true};
     std::string error_message;
 };
@@ -32,22 +32,21 @@ struct JsonRpcValidationResults {
 class JsonRpcValidator {
   public:
     JsonRpcValidator();
-    JsonRpcValidator(const nlohmann::json& spec);
     ~JsonRpcValidator() = default;
 
-    JsonRpcValidationResults validate(const nlohmann::json& request);
+    JsonRpcValidationResult validate(const nlohmann::json& request);
 
   private:
-    void check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results);
-    void validate_params(const nlohmann::json& request, JsonRpcValidationResults& results);
-    void validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_type(const nlohmann::json& value, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResults& results);
-    void validate_boolean(const nlohmann::json& boolean_, JsonRpcValidationResults& results);
-    void validate_number(const nlohmann::json& number_, JsonRpcValidationResults& results);
-    void validate_null(const nlohmann::json& value_, JsonRpcValidationResults& results);
+    void check_request_fields(const nlohmann::json& request, JsonRpcValidationResult& result);
+    void validate_params(const nlohmann::json& request, JsonRpcValidationResult& result);
+    void validate_schema(const nlohmann::json& value_, const nlohmann::json& schema, JsonRpcValidationResult& result);
+    void validate_type(const nlohmann::json& value, const nlohmann::json& schema, JsonRpcValidationResult& result);
+    void validate_string(const nlohmann::json& string_, const nlohmann::json& schema, JsonRpcValidationResult& result);
+    void validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResult& result);
+    void validate_object(const nlohmann::json& object_, const nlohmann::json& schema, JsonRpcValidationResult& result);
+    void validate_boolean(const nlohmann::json& boolean_, JsonRpcValidationResult& result);
+    void validate_number(const nlohmann::json& number_, JsonRpcValidationResult& result);
+    void validate_null(const nlohmann::json& value_, JsonRpcValidationResult& result);
 
     std::map<std::string, nlohmann::json> method_specs_;
     std::map<std::string, boost::regex> patterns_;

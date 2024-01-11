@@ -16,7 +16,7 @@
 
 #include "json_rpc_validator.hpp"
 
-#include <iostream>
+#include <regex>
 #include <string>
 
 #include <boost/regex.hpp>
@@ -38,66 +38,60 @@ JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
     }
 }
 
-JsonRpcValidator::JsonRpcValidator(const nlohmann::json& spec) : accept_unknown_methods_{true} {
-    for (const auto& method : spec["methods"]) {
-        method_specs_[method["name"].get<std::string>()] = method["params"];
-    }
-}
+JsonRpcValidationResult JsonRpcValidator::validate(const nlohmann::json& request) {
+    JsonRpcValidationResult result;
 
-JsonRpcValidationResults JsonRpcValidator::validate(const nlohmann::json& request) {
-    JsonRpcValidationResults results;
+    check_request_fields(request, result);
 
-    check_request_fields(request, results);
-
-    if (results.is_valid) {
-        validate_params(request, results);
+    if (result.is_valid) {
+        validate_params(request, result);
     }
 
-    return results;
+    return result;
 }
 
-void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonRpcValidationResults& results) {
+void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonRpcValidationResult& result) {
     // expected fields: jsonrpc, method, params (optional), id
     auto required_fields = 0b111;
 
     for (auto item = request.begin(); item != request.end(); ++item) {
         if (item.key() == kRequestFieldMethod) {
             if (!item.value().is_string()) {
-                results.is_valid = false;
-                results.error_message = "Invalid field: " + item.key();
+                result.is_valid = false;
+                result.error_message = "Invalid field: " + item.key();
                 return;
             }
             required_fields &= 0b110;
         } else if (item.key() == kRequestFieldId) {
             if (!item.value().is_number()) {
-                results.is_valid = false;
-                results.error_message = "Invalid field: " + item.key();
+                result.is_valid = false;
+                result.error_message = "Invalid field: " + item.key();
                 return;
             }
             required_fields &= 0b101;
         } else if (item.key() == kRequestFieldParameters) {
             if (!item.value().is_array()) {
-                results.is_valid = false;
-                results.error_message = "Invalid field: " + item.key();
+                result.is_valid = false;
+                result.error_message = "Invalid field: " + item.key();
                 return;
             }
         } else if (item.key() == kRequestFieldJsonRpc) {
             if (!item.value().is_string()) {
-                results.is_valid = false;
-                results.error_message = "Invalid field: " + item.key();
+                result.is_valid = false;
+                result.error_message = "Invalid field: " + item.key();
                 return;
             }
             required_fields &= 0b011;
         } else {
-            results.is_valid = false;
-            results.error_message = "Invalid field: " + item.key();
+            result.is_valid = false;
+            result.error_message = "Invalid field: " + item.key();
             return;
         }
     }
 
     if (required_fields != 0) {
-        results.is_valid = false;
-        results.error_message = "Request not valid, required fields: " + kRequestFieldMethod + ", " + kRequestFieldId + ", " + kRequestFieldParameters + ", " + kRequestFieldJsonRpc;
+        result.is_valid = false;
+        result.error_message = "Request not valid, required fields: " + kRequestFieldMethod + ", " + kRequestFieldId + ", " + kRequestFieldParameters + ", " + kRequestFieldJsonRpc;
         return;
     }
 }

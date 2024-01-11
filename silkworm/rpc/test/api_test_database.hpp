@@ -40,7 +40,7 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
-#include <silkworm/rpc/http/channel_writer.hpp>
+#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
@@ -52,31 +52,37 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
-class ChannelWriterForTest : public ChannelWriter {
-    Task<void> write_rsp(Response& /* response */) override { co_return; }
+class ChannelWriterForTest : public Channel {
+    Task<void> write(Response& /* response */) override { co_return; }
+};
+
+class StreamWriterForTest : public StreamWriter {
+    Task<void> open() override { co_return; }
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
+    Task<void> close() override { co_return; }
 };
 
 class RequestHandler_ForTest : public http::RequestHandler {
   public:
     RequestHandler_ForTest(ChannelWriterForTest* channel_writer,
+                           StreamWriterForTest* stream_writer,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : http::RequestHandler(channel_writer, rpc_api, rpc_api_table) {
+        : http::RequestHandler(channel_writer, stream_writer, rpc_api, rpc_api_table) {
     }
 
-    Task<void> request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response) {
+    Task<void> request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<void> handle_request(const std::string& request_str, ChannelWriter::Response& response) {
+    Task<void> handle_request(const std::string& request_str, Channel::Response& response) {
         co_await RequestHandler::handle(request_str);
         response = std::move(response_);
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    ChannelWriter::Response response_;
+    Channel::Response response_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
@@ -100,7 +106,8 @@ class RpcApiTestBase : public LocalContextTestBase {
     template <auto method, typename... Args>
     auto run(Args&&... args) {
         ChannelWriterForTest channel_writer;
-        TestRequestHandler handler{&channel_writer, rpc_api, rpc_api_table};
+        StreamWriterForTest stream_writer;
+        TestRequestHandler handler{&channel_writer, &stream_writer, rpc_api, rpc_api_table};
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 

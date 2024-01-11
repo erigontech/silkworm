@@ -16,11 +16,9 @@
 
 #pragma once
 
-#include <silkworm/rpc/types/writer.hpp>
-
 namespace silkworm::rpc {
 
-class ChannelWriter : public Writer {
+class Channel {
   public:
     enum class ResponseStatus {
         processing_continue,
@@ -47,11 +45,13 @@ class ChannelWriter : public Writer {
         std::string content;
     };
 
-    ChannelWriter() = default;
-    ChannelWriter(const ChannelWriter&) = delete;
-    ChannelWriter& operator=(const ChannelWriter&) = delete;
+    Channel() = default;
+    virtual ~Channel() = default;
 
-    virtual Task<void> write_rsp(Response& response) = 0;
+    Channel(const Channel&) = delete;
+    Channel& operator=(const Channel&) = delete;
+
+    virtual Task<void> write(Response& response) = 0;
 };
 
 }  // namespace silkworm::rpc

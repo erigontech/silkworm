@@ -33,16 +33,17 @@
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/http/channel_writer.hpp>
+#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/reply.hpp>
 #include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/http/request_parser.hpp>
+#include <silkworm/rpc/http/stream_writer.hpp>
 
 namespace silkworm::rpc::http {
 
 //! Represents a single connection from a client.
-class Connection : public ChannelWriter {
+class Connection : public Channel, StreamWriter {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -61,8 +62,10 @@ class Connection : public ChannelWriter {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(Response& response) override;
-    Task<std::size_t> write(std::string_view content) override;
+    Task<void> write(Response& response) override;
+    Task<void> open();
+    Task<std::size_t> write(std::string_view content);
+    Task<void> close() { co_return; }
 
   private:
     using AuthorizationError = std::string;
@@ -78,7 +81,7 @@ class Connection : public ChannelWriter {
 
     Task<void> write_headers();
 
-    static StatusType get_http_status(ChannelWriter::ResponseStatus status);
+    static StatusType get_http_status(Channel::ResponseStatus status);
 
     //! Perform an asynchronous read operation.
     Task<void> do_read();
@@ -108,8 +111,6 @@ class Connection : public ChannelWriter {
     const std::vector<std::string>& allowed_origins_;
 
     const std::optional<std::string> jwt_secret_;
-
-    bool first_chunk_{true};
 };
 
 }  // namespace silkworm::rpc::http

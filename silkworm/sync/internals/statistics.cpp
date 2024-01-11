@@ -76,11 +76,11 @@ void Network_Statistics::inaccurate_copy(const Network_Statistics& other) {
     malformed_msgs = other.malformed_msgs.load();
 }
 
-#define SHOW(LABEL, VARIABLE, FACTOR)                                                     \
-    (os << std::setfill('_') << std::right                                                \
-        << ", " LABEL ":" << std::setw(5) << curr.VARIABLE.load() / FACTOR                \
-        << "(+" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / FACTOR \
-        << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / FACTOR / elapsed_s << "/s)")
+#define SHOW(LABEL, VARIABLE, FACTOR)                                                       \
+    (os << std::setfill('_') << std::right                                                  \
+        << ", " LABEL ":" << std::setw(5) << curr.VARIABLE.load() / (FACTOR)                \
+        << "(+" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) \
+        << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) / elapsed_s << "/s)")
 
 std::ostream& operator<<(std::ostream& os, std::tuple<Network_Statistics&, Network_Statistics&, seconds_t> stats) {
     Network_Statistics& prev = get<0>(stats);

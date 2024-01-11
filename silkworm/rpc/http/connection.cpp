@@ -44,7 +44,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
-      request_handler_{this, api, handler_table},
+      request_handler_{this, this, api, handler_table},
       buffer_{},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
@@ -123,7 +123,7 @@ Connection::handle_request(Request& request) {
     }
 }
 
-StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
+StatusType Connection::get_http_status(Channel::ResponseStatus status) {
     switch (status) {
         case ResponseStatus::processing_continue:
             return StatusType::processing_continue;
@@ -131,33 +131,33 @@ StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
             return StatusType::ok;
         case ResponseStatus::created:
             return StatusType::created;
-        case ChannelWriter::ResponseStatus::accepted:
+        case ResponseStatus::accepted:
             return StatusType::accepted;
-        case ChannelWriter::ResponseStatus::no_content:
+        case ResponseStatus::no_content:
             return StatusType::no_content;
-        case ChannelWriter::ChannelWriter::ResponseStatus::multiple_choices:
+        case ResponseStatus::multiple_choices:
             return StatusType::multiple_choices;
-        case ChannelWriter::ChannelWriter::ResponseStatus::moved_permanently:
+        case ResponseStatus::moved_permanently:
             return StatusType::moved_permanently;
-        case ChannelWriter::ChannelWriter::ResponseStatus::moved_temporarily:
+        case ResponseStatus::moved_temporarily:
             return StatusType::moved_temporarily;
-        case ChannelWriter::ChannelWriter::ResponseStatus::not_modified:
+        case ResponseStatus::not_modified:
             return StatusType::not_modified;
-        case ChannelWriter::ChannelWriter::ResponseStatus::bad_request:
+        case ResponseStatus::bad_request:
             return StatusType::bad_request;
-        case ChannelWriter::ChannelWriter::ResponseStatus::unauthorized:
+        case ResponseStatus::unauthorized:
             return StatusType::unauthorized;
-        case ChannelWriter::ResponseStatus::forbidden:
+        case ResponseStatus::forbidden:
             return StatusType::forbidden;
-        case ChannelWriter::ResponseStatus::not_found:
+        case ResponseStatus::not_found:
             return StatusType::not_found;
-        case ChannelWriter::ResponseStatus::internal_server_error:
+        case ResponseStatus::internal_server_error:
             return StatusType::internal_server_error;
-        case ChannelWriter::ResponseStatus::not_implemented:
+        case ResponseStatus::not_implemented:
             return StatusType::not_implemented;
-        case ChannelWriter::ResponseStatus::bad_gateway:
+        case ResponseStatus::bad_gateway:
             return StatusType::bad_gateway;
-        case ChannelWriter::ResponseStatus::service_unavailable:
+        case ResponseStatus::service_unavailable:
             return StatusType::service_unavailable;
         default:
             return StatusType::internal_server_error;
@@ -166,18 +166,18 @@ StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
 
 /* notification from request_handler */
 Task<void>
-Connection::write_rsp(Response& msg_response) {
+Connection::write(Response& msg_response) {
     Reply reply;
     reply.status = get_http_status(msg_response.status);
     reply.content = std::move(msg_response.content);
     co_await do_write(reply);
 }
 
+Task<void> Connection::open() {
+    co_await write_headers();
+}
+
 Task<std::size_t> Connection::write(std::string_view content) {
-    if (first_chunk_) {
-        co_await write_headers();
-        first_chunk_ = false;
-    }
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;

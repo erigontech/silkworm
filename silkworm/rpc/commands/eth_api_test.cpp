@@ -118,12 +118,16 @@ TEST_CASE("fuzzy: eth_call invalid params", "[rpc][api]") {
 
     ChannelWriter::Response response;
     handler.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, response);
-    CHECK(nlohmann::json::parse(response.content) == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}})"_json);
+    CHECK(nlohmann::json::parse(response.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}
+    })"_json);
 }
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invalid input", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["5x1","0x2",[95,99]]})"_json;
-    http::Reply reply;
+    ChannelWriter::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -134,7 +138,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invalid inp
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid input", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x5","0x2",[95,99]]})"_json;
-    http::Reply reply;
+    ChannelWriter::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",

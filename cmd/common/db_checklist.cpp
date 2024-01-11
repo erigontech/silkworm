@@ -125,21 +125,17 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
                         const auto known_value_activation{known_value.get<uint64_t>()};
                         const auto active_value_activation{active_value.get<uint64_t>()};
                         if (known_value_activation != active_value_activation) {
-                            bool must_throw{false};
-                            if (!known_value_activation && active_value_activation &&
-                                active_value_activation <= header_download_progress) {
+                            const bool must_throw{
                                 // Can't de-activate an already activated fork block
-                                must_throw = true;
-                            } else if (!active_value_activation && known_value_activation &&
-                                       known_value_activation <= header_download_progress) {
+                                (!known_value_activation && active_value_activation &&
+                                 active_value_activation <= header_download_progress) ||
                                 // Can't activate a fork block BEFORE current height
-                                must_throw = true;
-                            } else if (known_value_activation && active_value_activation &&
-                                       std::min(known_value_activation, active_value_activation) <=
-                                           header_download_progress) {
+                                (!active_value_activation && known_value_activation &&
+                                 known_value_activation <= header_download_progress) ||
                                 // Can change activation height BEFORE current height
-                                must_throw = true;
-                            }
+                                (known_value_activation && active_value_activation &&
+                                 std::min(known_value_activation, active_value_activation) <=
+                                     header_download_progress)};
                             if (must_throw) {
                                 throw std::runtime_error("Can't apply modified chain config key " +
                                                          known_key + " from " +

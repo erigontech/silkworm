@@ -41,8 +41,6 @@
 
 namespace silkworm::rpc::commands {
 
-using evmc::literals::operator""_bytes32;
-
 namespace {
     //! This dummy transaction just gives you the same cursor over and over again.
     class DummyTransaction : public ethdb::Transaction {

@@ -153,6 +153,7 @@ SILKWORM_EXPORT int silkworm_init(
     auto snapshot_repository = std::make_unique<snapshot::SnapshotRepository>();
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
+    // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
         {},  // context_pool_settings
         make_path(settings->data_dir_path),

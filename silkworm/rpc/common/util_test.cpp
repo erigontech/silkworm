@@ -33,8 +33,6 @@ TEST_CASE("print Bytes", "[rpc][common][util]") {
     CHECK_NOTHROW(test_util::null_stream() << b);
 }
 
-using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-
 TEST_CASE("byte view from string", "[rpc][common][util]") {
     CHECK(silkworm::byte_view_of_string("").empty());
 }

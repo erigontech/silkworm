@@ -1,6 +1,6 @@
 FormatStyle: file
 HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|rpc|sync)/.+\.hpp$'
-WarningsAsErrors: '-*'
+WarningsAsErrors: '*'
 Checks: >
   abseil-*,
   -abseil-string-find-str-contains,

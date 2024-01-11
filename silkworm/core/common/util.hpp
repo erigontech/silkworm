@@ -19,10 +19,10 @@
 #include <cmath>
 #include <cstring>
 #include <optional>
+#include <regex>
 #include <string_view>
 #include <vector>
 
-#include <boost/regex.hpp>
 #include <ethash/keccak.hpp>
 #include <intx/intx.hpp>
 
@@ -41,8 +41,8 @@ inline bool has_hex_prefix(std::string_view s) {
 }
 
 inline bool is_valid_hex(std::string_view s) {
-    static const boost::regex hexRegex("^0x[0-9a-fA-F]+$", boost::regex::optimize);
-    return boost::regex_match(s.data(), hexRegex);
+    static const std::regex hexRegex("^0x[0-9a-fA-F]+$");
+    return std::regex_match(s.data(), hexRegex);
 }
 
 inline bool is_valid_hash(std::string_view s) {

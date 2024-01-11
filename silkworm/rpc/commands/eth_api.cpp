@@ -2144,10 +2144,14 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
             return core::get_receipts(tx_database, block_with_hash);
         };
 
+        rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx_database]() {
+            return core::get_block_number(core::kLatestBlockId, tx_database);
+        };
+
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 
-        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider};
+        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider, latest_block_provider};
 
         const auto block_number = co_await core::get_block_number(newest_block, tx_database);
         const auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentiles);

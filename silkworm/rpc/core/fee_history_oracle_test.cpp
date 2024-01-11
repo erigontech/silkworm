@@ -30,10 +30,8 @@ TEST_CASE("FeeHistory: json serialization") {
         FeeHistory fh;
 
         CHECK(nlohmann::json(fh) == R"({
-            "baseFeePerGas":[],
-            "gasUsedRatio":[],
-            "oldestBlock":"0x0",
-            "reward":[]
+            "gasUsedRatio":null,
+            "oldestBlock":"0x0"
         })"_json);
     }
 

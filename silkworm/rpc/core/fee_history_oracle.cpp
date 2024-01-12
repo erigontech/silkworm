@@ -211,7 +211,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         std::fill(block_fees.rewards.begin(), block_fees.rewards.end(), 0);
         // return an all zero row if there are no transactions to gather data from
         for (size_t idx = 0; idx < reward_percentiles.size(); idx++) {
-            block_fees.rewards.push_back(0);
+            block_fees.rewards.emplace_back(0);
         }
         co_return;
     }
@@ -220,7 +220,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         auto& txn = block_fees.block->block.transactions[idx];
         const auto reward{txn.max_fee_per_gas >= block_fees.base_fee ? txn.effective_gas_price(block_fees.base_fee) - block_fees.base_fee
                                                                      : txn.max_priority_fee_per_gas};
-        rewards_and_gas.push_back(std::make_pair(reward, block_fees.receipts[idx].gas_used));
+        rewards_and_gas.emplace_back(reward, block_fees.receipts[idx].gas_used);
     }
     sort(rewards_and_gas.begin(), rewards_and_gas.end(), sort_by_reward);
 

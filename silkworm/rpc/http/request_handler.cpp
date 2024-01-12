@@ -75,7 +75,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     }
 
     if (send_reply) {
-        co_await channel_writer_->write(msg_response);
+        co_await channel_writer_->write_rsp(msg_response);
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
@@ -175,14 +175,13 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
         auto io_executor = co_await boost::asio::this_coro::executor;
         const std::size_t kStreamBufferSize = 4096;
 
-        co_await stream_writer_->open();
-        ChunksWriter chunks_writer(*stream_writer_);
+        co_await channel_writer_->open();
+        ChunksWriter chunks_writer(*channel_writer_);
         json::Stream stream(io_executor, chunks_writer, kStreamBufferSize);
 
         co_await (rpc_api_.*handler)(request_json, stream);
 
         co_await stream.close();
-        co_await stream_writer_->close();
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     } catch (...) {

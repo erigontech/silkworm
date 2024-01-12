@@ -44,7 +44,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
-      request_handler_{this, this, api, handler_table},
+      request_handler_{this, api, handler_table},
       buffer_{},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
@@ -105,7 +105,7 @@ Task<void> Connection::do_read() {
 
 Task<void>
 Connection::handle_request(Request& request) {
-    http::Reply reply;
+    http::Reply reply{};
 
     if (request.content.empty()) {
         reply.content = "";
@@ -166,8 +166,8 @@ StatusType Connection::get_http_status(Channel::ResponseStatus status) {
 
 /* notification from request_handler */
 Task<void>
-Connection::write(Response& msg_response) {
-    Reply reply;
+Connection::write_rsp(Response& msg_response) {
+    Reply reply{};
     reply.status = get_http_status(msg_response.status);
     reply.content = std::move(msg_response.content);
     co_await do_write(reply);
@@ -179,7 +179,7 @@ Task<void> Connection::open() {
 
 Task<std::size_t> Connection::write(std::string_view content) {
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
-    SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
+    SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;
 }
 
@@ -200,7 +200,7 @@ static constexpr size_t kCorsNumHeaders{4};
 
 Task<void> Connection::do_write(Reply& reply) {
     try {
-        SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
+        SILK_DEBUG << "Connection::do_write reply: " << reply.content;
 
         reply.headers.reserve(allowed_origins_.empty() ? 2 : 2 + kCorsNumHeaders);
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
@@ -209,7 +209,7 @@ Task<void> Connection::do_write(Reply& reply) {
         set_cors(reply.headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply.to_buffers(), boost::asio::use_awaitable);
-        SILK_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred;
+        SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
@@ -229,7 +229,7 @@ Task<void> Connection::write_headers() {
         auto buffers = http::to_buffers(StatusType::ok, headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
-        SILK_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred;
+        SILK_TRACE << "Connection::write_headers bytes_transferred: " << bytes_transferred;
     } catch (const std::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {

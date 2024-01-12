@@ -38,15 +38,15 @@
 #include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/http/request_parser.hpp>
-#include <silkworm/rpc/http/stream_writer.hpp>
 
 namespace silkworm::rpc::http {
 
 //! Represents a single connection from a client.
-class Connection : public Channel, StreamWriter {
+class Connection : public Channel {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
+    
 
     //! Construct a connection running within the given execution context.
     Connection(boost::asio::io_context& io_context,
@@ -54,15 +54,14 @@ class Connection : public Channel, StreamWriter {
                commands::RpcApiTable& handler_table,
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret);
-
-    ~Connection() override;
+    virtual ~Connection();
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
 
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write(Response& response) override;
+    Task<void> write_rsp(Response& response) override;
     Task<void> open() override;
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }

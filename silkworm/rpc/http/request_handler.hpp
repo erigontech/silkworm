@@ -32,18 +32,15 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/json_rpc_validator.hpp>
-#include <silkworm/rpc/http/stream_writer.hpp>
 
 namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
     RequestHandler(Channel* channel_writer,
-                   StreamWriter* stream_writer,
                    commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table)
         : channel_writer_{channel_writer},
-          stream_writer_{stream_writer},
           rpc_api_{rpc_api},
           rpc_api_table_(rpc_api_table) {}
 
@@ -70,7 +67,6 @@ class RequestHandler {
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
     Channel* channel_writer_;
-    StreamWriter* stream_writer_;
 
     commands::RpcApi& rpc_api_;
 

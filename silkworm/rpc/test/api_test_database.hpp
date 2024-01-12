@@ -53,11 +53,8 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
 class ChannelWriterForTest : public Channel {
-    Task<void> write(Response& /* response */) override { co_return; }
-};
-
-class StreamWriterForTest : public StreamWriter {
     Task<void> open() override { co_return; }
+    Task<void> write_rsp(Response& /* response */) override { co_return; }
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
     Task<void> close() override { co_return; }
 };
@@ -65,10 +62,9 @@ class StreamWriterForTest : public StreamWriter {
 class RequestHandler_ForTest : public http::RequestHandler {
   public:
     RequestHandler_ForTest(ChannelWriterForTest* channel_writer,
-                           StreamWriterForTest* stream_writer,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : http::RequestHandler(channel_writer, stream_writer, rpc_api, rpc_api_table) {
+        : http::RequestHandler(channel_writer, rpc_api, rpc_api_table) {
     }
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response) {
@@ -106,8 +102,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     template <auto method, typename... Args>
     auto run(Args&&... args) {
         ChannelWriterForTest channel_writer;
-        StreamWriterForTest stream_writer;
-        TestRequestHandler handler{&channel_writer, &stream_writer, rpc_api, rpc_api_table};
+        TestRequestHandler handler{&channel_writer, rpc_api, rpc_api_table};
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 

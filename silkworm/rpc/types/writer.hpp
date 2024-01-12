@@ -27,26 +27,15 @@
 
 namespace silkworm::rpc {
 
-class Writer {
+class StreamWriter {
   public:
-    virtual ~Writer() = default;
+    virtual ~StreamWriter() = default;
 
     virtual Task<std::size_t> write(std::string_view content) = 0;
-    virtual Task<void> close() {
-        co_return;
-    }
+    virtual Task<void> close() = 0;
 };
 
-class NullWriter : public Writer {
-  public:
-    explicit NullWriter() = default;
-
-    Task<std::size_t> write(std::string_view content) override {
-        co_return content.size();
-    }
-};
-
-class StringWriter : public Writer {
+class StringWriter : public StreamWriter {
   public:
     StringWriter() = default;
 
@@ -59,6 +48,8 @@ class StringWriter : public Writer {
         co_return content.size();
     }
 
+    Task<void> close() override { co_return; }
+
     const std::string& get_content() {
         return content_;
     }
@@ -67,33 +58,18 @@ class StringWriter : public Writer {
     std::string content_;
 };
 
-class ChunksWriter : public Writer {
+const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
+const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
+
+class ChunkWriter : public StreamWriter {
   public:
-    explicit ChunksWriter(Writer& writer);
+    explicit ChunkWriter(StreamWriter& writer);
 
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override;
 
   private:
-    Writer& writer_;
-};
-
-class JsonChunksWriter : public Writer {
-  public:
-    explicit JsonChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
-
-    Task<std::size_t> write(std::string_view content) override;
-    Task<void> close() override;
-
-  private:
-    static const std::size_t kDefaultChunkSize = 0x800;
-
-    Writer& writer_;
-    bool chunk_open_ = false;
-    const std::size_t chunk_size_;
-    size_t room_left_in_chunck_;
-    std::size_t written_;
-    std::stringstream str_chunk_size_;
+    StreamWriter& writer_;
 };
 
 }  // namespace silkworm::rpc

@@ -20,7 +20,7 @@
 
 namespace silkworm::rpc {
 
-class Channel : public Writer {
+class Channel : public StreamWriter {
   public:
     enum class ResponseStatus {
         processing_continue,
@@ -44,11 +44,11 @@ class Channel : public Writer {
 
     struct Response {
         ResponseStatus status{ResponseStatus::ok};
-        std::string content{""};
+        std::string content;
     };
 
     Channel() = default;
-    virtual ~Channel() = default;
+    ~Channel() override = default;
 
     Channel(const Channel&) = delete;
     Channel& operator=(const Channel&) = delete;

@@ -37,12 +37,8 @@ namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(Channel* channel_writer,
-                   commands::RpcApi& rpc_api,
-                   const commands::RpcApiTable& rpc_api_table)
-        : channel_writer_{channel_writer},
-          rpc_api_{rpc_api},
-          rpc_api_table_(rpc_api_table) {}
+    RequestHandler(Channel* channel, commands::RpcApi& rpc_api, const commands::RpcApiTable& rpc_api_table)
+        : channel_{channel}, rpc_api_{rpc_api}, rpc_api_table_(rpc_api_table) {}
 
     RequestHandler(const RequestHandler&) = delete;
     virtual ~RequestHandler() = default;
@@ -66,7 +62,7 @@ class RequestHandler {
         Channel::Response& response);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
-    Channel* channel_writer_;
+    Channel* channel_;
 
     commands::RpcApi& rpc_api_;
 

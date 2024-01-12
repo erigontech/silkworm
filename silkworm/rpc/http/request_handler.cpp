@@ -13,19 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #include "request_handler.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <sstream>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -36,6 +28,8 @@
 #include <silkworm/rpc/types/writer.hpp>
 
 namespace silkworm::rpc::http {
+
+constexpr std::size_t kStreamBufferSize{4096};
 
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
@@ -75,7 +69,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     }
 
     if (send_reply) {
-        co_await channel_writer_->write_rsp(msg_response);
+        co_await channel_->write_rsp(msg_response);
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
@@ -173,11 +167,10 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         auto io_executor = co_await boost::asio::this_coro::executor;
-        const std::size_t kStreamBufferSize = 4096;
 
-        co_await channel_writer_->open_stream();
-        ChunksWriter chunks_writer(*channel_writer_);
-        json::Stream stream(io_executor, chunks_writer, kStreamBufferSize);
+        co_await channel_->open_stream();
+        ChunkWriter chunk_writer(*channel_);
+        json::Stream stream(io_executor, chunk_writer, kStreamBufferSize);
 
         co_await (rpc_api_.*handler)(request_json, stream);
 

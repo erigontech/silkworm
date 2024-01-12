@@ -26,7 +26,7 @@ namespace silkworm::rpc::commands {
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_blockNumber succeeds if request well-formed", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]})"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -37,7 +37,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_blockNumber succeeds if request
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_blockNumber fails if request empty", "[rpc][api]") {
     const auto request = R"({})"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -53,7 +53,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_sendRawTransaction fails rlp pa
         "method": "eth_sendRawTransaction",
         "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
     })"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -69,7 +69,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_sendRawTransaction fails wrong 
         "method": "eth_sendRawTransaction",
         "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
     })"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -80,7 +80,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_sendRawTransaction fails wrong 
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x867A80",[25,75]]})"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
@@ -91,7 +91,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request 
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
-    ChannelWriter::Response reply;
+    Channel::Response reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",

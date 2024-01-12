@@ -173,7 +173,7 @@ Connection::write_rsp(Response& msg_response) {
     co_await do_write(reply);
 }
 
-Task<void> Connection::open() {
+Task<void> Connection::open_stream() {
     co_await write_headers();
 }
 

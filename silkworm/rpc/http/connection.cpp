@@ -105,7 +105,7 @@ Task<void> Connection::do_read() {
 
 Task<void>
 Connection::handle_request(Request& request) {
-    http::Reply reply{};
+    http::Reply reply;
 
     if (request.content.empty()) {
         reply.content = "";
@@ -167,7 +167,7 @@ StatusType Connection::get_http_status(Channel::ResponseStatus status) {
 /* notification from request_handler */
 Task<void>
 Connection::write_rsp(Response& msg_response) {
-    Reply reply{};
+    Reply reply;
     reply.status = get_http_status(msg_response.status);
     reply.content = std::move(msg_response.content);
     co_await do_write(reply);

@@ -53,7 +53,7 @@ class Connection : public Channel {
                commands::RpcApiTable& handler_table,
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret);
-    virtual ~Connection();
+    ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
 

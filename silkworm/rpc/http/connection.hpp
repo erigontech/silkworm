@@ -61,7 +61,7 @@ class Connection : public Channel {
     Task<void> read_loop();
 
     Task<void> write_rsp(Response& response) override;
-    Task<void> open() override;
+    Task<void> open_stream() override;
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }
 

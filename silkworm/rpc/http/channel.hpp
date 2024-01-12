@@ -53,7 +53,7 @@ class Channel : public Writer {
     Channel(const Channel&) = delete;
     Channel& operator=(const Channel&) = delete;
 
-    virtual Task<void> open() = 0;
+    virtual Task<void> open_stream() = 0;
     virtual Task<void> write_rsp(Response& response) = 0;
 };
 

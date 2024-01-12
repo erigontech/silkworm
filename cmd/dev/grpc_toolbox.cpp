@@ -24,6 +24,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
+#include <absl/strings/match.h>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
@@ -693,7 +694,7 @@ ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as inte
 
 int ethbackend_async() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -704,7 +705,7 @@ int ethbackend_async() {
 
 int ethbackend_coroutines() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -715,7 +716,7 @@ int ethbackend_coroutines() {
 
 int ethbackend_sync() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -726,7 +727,7 @@ int ethbackend_sync() {
 
 int kv_seek_async_callback() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -754,7 +755,7 @@ int kv_seek_async_callback() {
 
 int kv_seek_async() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -782,7 +783,7 @@ int kv_seek_async() {
 
 int kv_seek_both() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;
@@ -816,7 +817,7 @@ int kv_seek_both() {
 
 int kv_seek() {
     auto target{absl::GetFlag(FLAGS_target)};
-    if (target.empty() || target.find(":") == std::string::npos) {
+    if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
         std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
         return -1;

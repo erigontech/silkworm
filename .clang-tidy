@@ -3,7 +3,6 @@ HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|rpc|sync)/.+\.hpp$'
 WarningsAsErrors: '*'
 Checks: >
   abseil-*,
-  -abseil-string-find-str-contains,
   boost-*,
   bugprone-*,
   -bugprone-easily-swappable-parameters,

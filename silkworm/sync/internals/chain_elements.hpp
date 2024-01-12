@@ -152,9 +152,9 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 }  // namespace silkworm
 template <>
-struct mbpq_key<std::shared_ptr<silkworm::Link>> {                                          // extract key type and value
-    using type = silkworm::BlockNum;                                                        // type of the key
-    static type value(const std::shared_ptr<silkworm::Link>& l) { return l->blockHeight; }  // value of the key
+struct mbpq_key<std::shared_ptr<silkworm::Link>> {                                                // extract key type and value
+    using type = silkworm::BlockNum;                                                              // type of the key
+    static type value(const std::shared_ptr<silkworm::Link>& link) { return link->blockHeight; }  // value of the key
 };
 namespace silkworm {  // reopen namespace
 

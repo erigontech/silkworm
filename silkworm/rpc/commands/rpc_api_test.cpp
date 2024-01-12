@@ -19,6 +19,7 @@
 #include <iostream>
 #include <vector>
 
+#include <absl/strings/match.h>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
@@ -113,7 +114,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
                     INFO("Actual response:   " << response.content)
                     INFO("Expected response: " << expected.dump())
 
-                    if (test_name.find("invalid") != std::string::npos) {
+                    if (absl::StrContains(test_name, "invalid")) {
                         CHECK(nlohmann::json::parse(response.content).contains("error"));
                     } else {
                         CHECK(are_equivalent(nlohmann::json::parse(response.content), expected));

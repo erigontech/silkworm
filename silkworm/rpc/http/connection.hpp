@@ -46,7 +46,6 @@ class Connection : public Channel {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
-    
 
     //! Construct a connection running within the given execution context.
     Connection(boost::asio::io_context& io_context,

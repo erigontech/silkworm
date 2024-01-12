@@ -16,26 +16,16 @@
 
 #include "writer.hpp"
 
-#include <algorithm>
 #include <charconv>
 #include <iostream>
-#include <utility>
-
-#include <boost/asio/detached.hpp>
-#include <boost/asio/write.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
 
-const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
-const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
+ChunkWriter::ChunkWriter(StreamWriter& writer) : writer_(writer) {}
 
-ChunksWriter::ChunksWriter(Writer& writer)
-    : writer_(writer) {
-}
-
-Task<std::size_t> ChunksWriter::write(std::string_view content) {
+Task<std::size_t> ChunkWriter::write(std::string_view content) {
     auto size = content.size();
     std::array<char, 19> str{};
 
@@ -56,67 +46,7 @@ Task<std::size_t> ChunksWriter::write(std::string_view content) {
     co_return written;
 }
 
-Task<void> ChunksWriter::close() {
-    co_await writer_.write(kFinalChunk);
-    co_await writer_.close();
-
-    co_return;
-}
-
-JsonChunksWriter::JsonChunksWriter(Writer& writer, std::size_t chunk_size)
-    : writer_(writer), chunk_size_(chunk_size), room_left_in_chunck_(chunk_size_), written_(0) {
-    str_chunk_size_ << std::hex << chunk_size_ << kChunkSep;
-}
-
-Task<std::size_t> JsonChunksWriter::write(std::string_view content) {
-    auto size = content.size();
-
-    SILK_DEBUG << "JsonChunksWriter::write written_: " << written_ << " size: " << size;
-
-    if (!chunk_open_) {
-        co_await writer_.write(str_chunk_size_.str());
-        chunk_open_ = true;
-    }
-
-    size_t remaining_in_view = size;
-    size_t start = 0;
-    while (start < size) {
-        const auto length = std::min(room_left_in_chunck_, remaining_in_view);
-        std::string_view sub_view(content.data() + start, length);
-        co_await writer_.write(sub_view);
-
-        written_ += length;
-        start += length;
-        remaining_in_view -= length;
-        room_left_in_chunck_ -= length;
-
-        if ((room_left_in_chunck_ % chunk_size_) == 0) {
-            if (chunk_open_) {
-                co_await writer_.write(kChunkSep);
-                room_left_in_chunck_ = chunk_size_;
-                chunk_open_ = false;
-            }
-            if (remaining_in_view > 0) {
-                co_await writer_.write(str_chunk_size_.str());
-                chunk_open_ = true;
-            }
-        }
-    }
-    co_return content.size();
-}
-
-Task<void> JsonChunksWriter::close() {
-    if (chunk_open_) {
-        if (room_left_in_chunck_ > 0) {
-            std::unique_ptr<char[]> buffer{new char[room_left_in_chunck_]};
-            std::memset(buffer.get(), ' ', room_left_in_chunck_);
-            co_await writer_.write(std::string_view(buffer.get(), room_left_in_chunck_));
-        }
-        co_await writer_.write(kChunkSep);
-        chunk_open_ = false;
-        room_left_in_chunck_ = chunk_size_;
-    }
-
+Task<void> ChunkWriter::close() {
     co_await writer_.write(kFinalChunk);
     co_await writer_.close();
 

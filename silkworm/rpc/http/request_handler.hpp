@@ -30,19 +30,15 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/http/channel_writer.hpp>
+#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/json_rpc_validator.hpp>
 
 namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(ChannelWriter* channel_writer,
-                   commands::RpcApi& rpc_api,
-                   const commands::RpcApiTable& rpc_api_table)
-        : channel_writer_{channel_writer},
-          rpc_api_{rpc_api},
-          rpc_api_table_(rpc_api_table) {}
+    RequestHandler(Channel* channel, commands::RpcApi& rpc_api, const commands::RpcApiTable& rpc_api_table)
+        : channel_{channel}, rpc_api_{rpc_api}, rpc_api_table_(rpc_api_table) {}
 
     RequestHandler(const RequestHandler&) = delete;
     virtual ~RequestHandler() = default;
@@ -51,7 +47,7 @@ class RequestHandler {
     Task<void> handle(const std::string& content);
 
   protected:
-    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, ChannelWriter::Response& response);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response);
 
   private:
     bool is_valid_jsonrpc(const nlohmann::json& request_json);
@@ -59,14 +55,14 @@ class RequestHandler {
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethod handler,
         const nlohmann::json& request_json,
-        ChannelWriter::Response& response);
+        Channel::Response& response);
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethodGlaze handler,
         const nlohmann::json& request_json,
-        ChannelWriter::Response& response);
+        Channel::Response& response);
     Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
-    ChannelWriter* channel_writer_;
+    Channel* channel_;
 
     commands::RpcApi& rpc_api_;
 

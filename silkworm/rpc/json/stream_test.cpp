@@ -34,7 +34,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
     boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
 
     StringWriter string_writer;
-    ChunksWriter chunks_writer(string_writer);
+    ChunkWriter chunk_writer(string_writer);
 
     SECTION("write_json in string") {
         Stream stream(io_executor, string_writer);
@@ -49,7 +49,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
         CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 1 chunk") {
-        Stream stream(io_executor, chunks_writer);
+        Stream stream(io_executor, chunk_writer);
 
         nlohmann::json json = R"({
             "test": "test"
@@ -61,7 +61,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
         CHECK(string_writer.get_content() == "f\r\n{\"test\":\"test\"}\r\n0\r\n\r\n");
     }
     SECTION("write_json in 2 chunks") {
-        Stream stream(io_executor, chunks_writer);
+        Stream stream(io_executor, chunk_writer);
 
         nlohmann::json json = R"({
             "check": "check",

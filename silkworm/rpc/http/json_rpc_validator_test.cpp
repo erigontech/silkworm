@@ -117,7 +117,6 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
     CHECK(result.error_message == "Invalid field: id");
 }
 
-
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{};
 

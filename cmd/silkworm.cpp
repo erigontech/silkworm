@@ -290,6 +290,7 @@ int main(int argc, char* argv[]) {
         };
 
         // Execution: the execution layer engine
+        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         silkworm::node::Node execution_node{settings.node_settings, sentry_client, chaindata_db};
         execution::LocalClient& execution_client{execution_node.execution_local_client()};
 
@@ -306,7 +307,7 @@ int main(int argc, char* argv[]) {
         };
         chainsync::Sync chain_sync_process{
             context_pool.any_executor(),
-            chaindata_db,
+            chaindata_db,  // NOLINT(cppcoreguidelines-slicing)
             execution_client,
             sentry_client,
             *node_settings.chain_config,

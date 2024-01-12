@@ -34,6 +34,7 @@ namespace silkworm::rpc::fee_history {
 
 using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)>;
 using ReceiptsProvider = std::function<Task<rpc::Receipts>(const BlockWithHash&)>;
+using LatestBlockProvider = std::function<Task<uint64_t>()>;
 
 using Rewards = std::vector<intx::uint256>;
 
@@ -66,8 +67,9 @@ struct BlockFees {
 
 class FeeHistoryOracle {
   public:
-    explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
-        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
+    explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider,
+                              LatestBlockProvider& latest_block_provider)
+        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider), latest_block_provider_{latest_block_provider} {}
     virtual ~FeeHistoryOracle() = default;
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
@@ -77,8 +79,8 @@ class FeeHistoryOracle {
 
   private:
     static inline const std::uint32_t kDefaultMaxFeeHistory = 1024;
-    static inline const std::uint32_t kDefaultMaxHeaderHistory = 300;
-    static inline const std::uint32_t kDefaultMaxBlockHistory = 5;
+    static inline const std::uint32_t kDefaultMaxHeaderHistory = 0;
+    static inline const std::uint32_t kDefaultMaxBlockHistory = 0;
 
     Task<BlockRange> resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history);
     Task<void> process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles);
@@ -86,6 +88,7 @@ class FeeHistoryOracle {
     const silkworm::ChainConfig& config_;
     const BlockProvider& block_provider_;
     const ReceiptsProvider& receipts_provider_;
+    const LatestBlockProvider& latest_block_provider_;
 };
 
 }  // namespace silkworm::rpc::fee_history

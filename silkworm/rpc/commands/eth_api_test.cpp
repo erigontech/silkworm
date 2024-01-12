@@ -14,111 +14,86 @@
    limitations under the License.
 */
 
-#include "eth_api.hpp"
-
 #include <thread>
 
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/test/api_test_base.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 
-//! Utility class to expose handle hooks publicly just for tests
-class EthereumRpcApi_ForTest : public EthereumRpcApi {
-  public:
-    explicit EthereumRpcApi_ForTest(boost::asio::io_context& ioc, boost::asio::thread_pool& workers)
-        : EthereumRpcApi{ioc, workers} {}
-
-    // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
-    Task<void> eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
-        co_await EthereumRpcApi::handle_eth_block_number(request, reply);
-    }
-    Task<void> eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
-        co_await EthereumRpcApi::handle_eth_send_raw_transaction(request, reply);
-    }
-};
-
-using EthereumRpcApiTest = test::JsonApiWithWorkersTestBase<EthereumRpcApi_ForTest>;
-
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if request well-formed", "[rpc][eth_api]") {
-    nlohmann::json reply;
-
-    // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
-    CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(
-                        R"({
-                            "jsonrpc":"2.0",
-                            "id": 1,
-                            "method":"eth_blockNumber",
-                            "params":[]
-                        })"_json,
-                        reply),
-                    std::exception);
-    /*CHECK(reply == R"({
-            "jsonrpc":"2.0",
-            "id":1,
-            "result":{}
-        })"_json);*/
-}
-
-TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number fails if request empty", "[rpc][eth_api]") {
-    nlohmann::json reply;
-
-    // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
-    CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(R"({})"_json, reply), std::exception);
-    /*CHECK(reply == R"({
-            "jsonrpc":"2.0",
-            "id":1,
-            "result":{}
-        })"_json);*/
-}
-
-TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails rlp parsing", "[rpc][eth_api]") {
-    nlohmann::json reply;
-
-    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(
-        R"({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "eth_sendRawTransaction",
-            "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
-        })"_json,
-        reply);
-    CHECK(reply == R"({
-        "error":{"code":-32000,"message":"rlp: input exceeds encoded length"},"id":1,"jsonrpc":"2.0"
+TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_blockNumber succeeds if request well-formed", "[rpc][api]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]})"_json;
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "result":"0x9"
     })"_json);
 }
 
-TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wrong number digit", "[rpc][eth_api]") {
-    nlohmann::json reply;
-
-    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(
-        R"({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "eth_sendRawTransaction",
-            "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
-        })"_json,
-        reply);
-    CHECK(reply == R"({
-        "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"},"id":1,"jsonrpc":"2.0"
+TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_blockNumber fails if request empty", "[rpc][api]") {
+    const auto request = R"({})"_json;
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":null,
+        "error":{"code":-32600,"message":"invalid request"}
     })"_json);
 }
 
-TEST_CASE("fuzzy: eth_call invalid params", "[rpc][api]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    auto context = test::TestDatabaseContext();
-    test::RpcApiTestBase<test::RequestHandler_ForTest> handler{context.db};
+TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_sendRawTransaction fails rlp parsing", "[rpc][api]") {
+    const auto request = R"({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_sendRawTransaction",
+        "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
+    })"_json;
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":-32000,"message":"rlp: input exceeds encoded length"}
+    })"_json);
+}
 
+TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_sendRawTransaction fails wrong number digit", "[rpc][api]") {
+    const auto request = R"({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_sendRawTransaction",
+        "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
+    })"_json;
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"}
+    })"_json);
+}
+
+TEST_CASE_METHOD(test::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x867A80",[25,75]]})"_json;
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "result":{"gasUsedRatio":null,"oldestBlock":"0x0"}
+    })"_json);
+}
+
+TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
-
-    Channel::Response response;
-    handler.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, response);
-    CHECK(nlohmann::json::parse(response.content) == R"({
+    ChannelWriter::Response reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply.content) == R"({
         "jsonrpc":"2.0",
         "id":1,
         "error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}
@@ -144,10 +119,10 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid input
         "jsonrpc":"2.0",
         "id":1,
         "result":{
-            "baseFeePerGas":["0x3b9aca00","0x342770c0","0x2db08786","0x2db08786"],
+            "baseFeePerGas":["0x3b9aca00","0x342770c0","0x2db08786","0x2806be9d"],
             "gasUsedRatio":[0.0,0.0042,0.0042],
             "oldestBlock":"0x0",
-            "reward":[[],["0x342770c1","0x342770c1"],["0x2db08787","0x2db08787"]]}
+            "reward":[["0x0","0x0"],["0x1","0x1"],["0x1","0x1"]]}
     })"_json);
 }
 #endif  // SILKWORM_SANITIZE

@@ -29,7 +29,6 @@
 
 namespace silkworm::rpc {
 
-using evmc::literals::operator""_bytes32;
 using testing::_;
 using testing::InvokeWithoutArgs;
 

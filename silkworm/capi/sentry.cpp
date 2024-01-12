@@ -122,7 +122,10 @@ SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct Si
         std::latch sentry_started{1};
         std::exception_ptr startup_ex_ptr;
 
-        handle->sentry_thread = std::make_unique<std::thread>([settings = std::move(settings), &sentry_stop_signal = handle->sentry_stop_signal, &sentry_started, &startup_ex_ptr] {
+        handle->sentry_thread = std::make_unique<std::thread>([settings = std::move(settings),
+                                                               &sentry_stop_signal = handle->sentry_stop_signal,
+                                                               &sentry_started,
+                                                               &startup_ex_ptr]() mutable {
             try {
                 log::set_thread_name("sentry-run");
                 sentry_run(std::move(settings), sentry_stop_signal.slot(), sentry_started);

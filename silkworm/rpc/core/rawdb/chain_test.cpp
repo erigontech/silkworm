@@ -40,7 +40,6 @@ using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
-using evmc::literals::operator""_bytes32;
 
 static silkworm::Bytes kNumber{*silkworm::from_hex("00000000003D0900")};
 static silkworm::Bytes kTotalBurnt{*silkworm::from_hex("0000000000000005")};

@@ -455,7 +455,8 @@ workflows:
       - linux-gcc-thread-sanitizer
       - linux-clang-coverage
       - linux-clang-address-sanitizer
-      - linux-clang-fuzzer
+      - linux-clang-fuzzer:
+          name: linux-clang-fuzzer
       - linux-clang-tidy
       - linux-wasm-build
   
@@ -469,4 +470,5 @@ workflows:
                 - master
     jobs:
       - linux-clang-fuzzer:
+          name: linux-clang-run-fuzzer
           run_tests: true

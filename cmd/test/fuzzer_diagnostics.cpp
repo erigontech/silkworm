@@ -72,7 +72,8 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv)
 
     if (input_str.empty() && input_file.empty()) {
-        std::cerr << "Either input string or input file must be provided" << "\n";
+        std::cerr << "Either input string or input file must be provided"
+                  << "\n";
         return -1;
     }
 

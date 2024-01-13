@@ -121,6 +121,28 @@ commands:
           paths:
             - ~/.conan
 
+  build_fuzzer:
+    steps:
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - run:
+          name: "Ensure pip"
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3-pip
+            sudo pip install conan==1.60.2 chardet
+            sudo apt-get update
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh clang 15
+      - run:
+          name: "CMake Fuzzer"
+          working_directory: ~/build
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+      - run:
+          name: "Build Fuzzer"
+          command: cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test
+
   test:
     parameters:
       ethereum_tests:
@@ -316,6 +338,9 @@ jobs:
           path: /tmp/report.html
 
   linux-clang-fuzzer:
+    run_tests:
+      type: boolean
+      default: false
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
@@ -323,26 +348,11 @@ jobs:
       - image: cimg/python:3.12
     resource_class: 2xlarge
     steps:
-      - checkout_with_submodules:
-          ethereum_tests: false
-      - run:
-          name: "Ensure pip"
-          command: |
-            sudo apt-get update
-            sudo apt install -y python3-pip
-            sudo pip install conan==1.60.2 chardet
-            sudo apt-get update
-      - run:
-          name: "Install compiler"
-          command: cmake/setup/compiler_install.sh clang 15
-      - run:
-          name: "CMake Fuzzer"
-          working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
-      - run:
-          name: "Build Fuzzer"
-          command: cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test
-      - fuzz-test
+      - build_fuzzer
+      - when:
+          condition: <<parameters.run_tests>>
+          steps:
+            - fuzz-test
 
   linux-wasm-build:
     environment:
@@ -443,6 +453,7 @@ workflows:
       - linux-gcc-thread-sanitizer
       - linux-clang-coverage
       - linux-clang-address-sanitizer
+      - linux-clang-fuzzer
       - linux-clang-tidy
       - linux-wasm-build
   
@@ -455,4 +466,5 @@ workflows:
               only:
                 - master
     jobs:
-      - linux-clang-fuzzer
+      - linux-clang-fuzzer:
+          run_tests: true

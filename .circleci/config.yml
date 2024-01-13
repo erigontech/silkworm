@@ -338,9 +338,11 @@ jobs:
           path: /tmp/report.html
 
   linux-clang-fuzzer:
-    run_tests:
-      type: boolean
-      default: false
+    parameters:
+      run_tests:
+        description: Run fuzzy tests if required.
+        type: boolean
+        default: false
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1

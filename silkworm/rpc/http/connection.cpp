@@ -33,6 +33,7 @@
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -45,13 +46,12 @@ Connection::Connection(boost::asio::io_context& io_context,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
       request_handler_{this, api, handler_table},
-      buffer_{},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
-    request_.content.reserve(kRequestContentInitialCapacity);
-    request_.headers.reserve(kRequestHeadersInitialCapacity);
-    request_.method.reserve(kRequestMethodInitialCapacity);
-    request_.uri.reserve(kRequestUriInitialCapacity);
+     request_.content.reserve(kRequestContentInitialCapacity);
+     request_.headers.reserve(kRequestHeadersInitialCapacity);
+     request_.method.reserve(kRequestMethodInitialCapacity);
+     request_.uri.reserve(kRequestUriInitialCapacity);
     SILK_DEBUG << "Connection::Connection socket " << &socket_ << " created";
 }
 
@@ -83,12 +83,32 @@ Task<void> Connection::read_loop() {
 
 Task<void> Connection::do_read() {
     SILK_DEBUG << "Connection::do_read going to read...";
-    std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
-    SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_read;
-    SILK_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read};
 
-    RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
+    boost::beast::http::request_parser<boost::beast::http::string_body> parser;
+    // Apply a reasonable limit to the allowed size
+    // of the body in bytes to prevent abuse.
+    parser.body_limit(10000);
+    // Construct a new parser for each message
+    parser.header_limit(10000);
 
+    auto bytes_transferred = co_await boost::beast::http::async_read_some(socket_, data_, parser, boost::asio::use_awaitable);
+    SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_transferred;
+
+    if (bytes_transferred && parser.is_done()) {
+       int length =  0;
+       if (parser.content_length()) {
+          length = *parser.content_length();
+       }
+       std::cout << "http:content_length: " << length << "\n";
+    }
+    if(boost::beast::websocket::is_upgrade(parser.get())) {
+       std::cout << "http upgrade\n";
+    }
+    parser.release();
+
+    // rqeuest object should not be used
+    
+#ifdef notdef
     if (result == RequestParser::ResultType::good) {
         co_await handle_request(request_);
         clean();
@@ -101,6 +121,8 @@ Task<void> Connection::do_read() {
         co_await do_write();
         reply_.reset();
     }
+#endif
+
 }
 
 Task<void>
@@ -192,6 +214,9 @@ void Connection::clean() {
 Task<void> Connection::do_write() {
     SILK_DEBUG << "Connection::do_write reply: " << reply_.content;
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply_.to_buffers(), boost::asio::use_awaitable);
+
+    //const auto bytes_transferred  =  co_await boost::beast::async_write(socket_, std::move(response_queue_.front()), boost::asio::use_awaitable);
+
     SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
 }
 

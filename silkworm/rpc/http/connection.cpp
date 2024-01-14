@@ -81,9 +81,9 @@ Task<void> Connection::do_read() {
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
     // Apply a reasonable limit to the allowed size
     // of the body in bytes to prevent abuse.
-    parser.body_limit(10000);
+    // parser.body_limit(10000);
     // Construct a new parser for each message
-    parser.header_limit(10000);
+    // parser.header_limit(10000);
 
     try {
         auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
@@ -207,9 +207,10 @@ Task<void> Connection::do_write(Reply& reply) {
     try {
         SILK_DEBUG << "Connection::do_write reply: " << reply.content;
         boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::ok, 11};  // TODO from req
-        res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(boost::beast::http::field::content_type, "text/html");
+        res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
+        res.set(boost::beast::http::field::content_type, "application/json");
         // res.keep_alive(req.keep_alive()); // TODO
+        res.content_length(reply.content.size());
         res.body() = std::string(std::move(reply.content));
 
         set_cors(reply.headers);
@@ -232,6 +233,7 @@ Task<void> Connection::do_close() {
     socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
 
     // At this point the connection is closed gracefully
+    socket_.close();
     co_return;
 }
 

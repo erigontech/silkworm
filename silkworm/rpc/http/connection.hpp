@@ -30,6 +30,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -94,8 +97,7 @@ class Connection : public Channel {
     //! The handler used to process the incoming request.
     RequestHandler request_handler_;
 
-    //! Buffer for incoming data.
-    std::array<char, kHttpIncomingBufferSize> buffer_;
+    boost::beast::flat_buffer data_;
 
     //! The incoming request.
     Request request_;

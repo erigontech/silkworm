@@ -33,7 +33,6 @@
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
-
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -48,10 +47,10 @@ Connection::Connection(boost::asio::io_context& io_context,
       request_handler_{this, api, handler_table},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
-     request_.content.reserve(kRequestContentInitialCapacity);
-     request_.headers.reserve(kRequestHeadersInitialCapacity);
-     request_.method.reserve(kRequestMethodInitialCapacity);
-     request_.uri.reserve(kRequestUriInitialCapacity);
+    request_.content.reserve(kRequestContentInitialCapacity);
+    request_.headers.reserve(kRequestHeadersInitialCapacity);
+    request_.method.reserve(kRequestMethodInitialCapacity);
+    request_.uri.reserve(kRequestUriInitialCapacity);
     SILK_DEBUG << "Connection::Connection socket " << &socket_ << " created";
 }
 
@@ -95,19 +94,19 @@ Task<void> Connection::do_read() {
     SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_transferred;
 
     if (bytes_transferred && parser.is_done()) {
-       int length =  0;
-       if (parser.content_length()) {
-          length = *parser.content_length();
-       }
-       std::cout << "http:content_length: " << length << "\n";
+        int length = 0;
+        if (parser.content_length()) {
+            length = *parser.content_length();
+        }
+        std::cout << "http:content_length: " << length << "\n";
     }
-    if(boost::beast::websocket::is_upgrade(parser.get())) {
-       std::cout << "http upgrade\n";
+    if (boost::beast::websocket::is_upgrade(parser.get())) {
+        std::cout << "http upgrade\n";
     }
     parser.release();
 
     // rqeuest object should not be used
-    
+
 #ifdef notdef
     if (result == RequestParser::ResultType::good) {
         co_await handle_request(request_);
@@ -122,7 +121,6 @@ Task<void> Connection::do_read() {
         reply_.reset();
     }
 #endif
-
 }
 
 Task<void>
@@ -215,7 +213,7 @@ Task<void> Connection::do_write() {
     SILK_DEBUG << "Connection::do_write reply: " << reply_.content;
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply_.to_buffers(), boost::asio::use_awaitable);
 
-    //const auto bytes_transferred  =  co_await boost::beast::async_write(socket_, std::move(response_queue_.front()), boost::asio::use_awaitable);
+    // const auto bytes_transferred  =  co_await boost::beast::async_write(socket_, std::move(response_queue_.front()), boost::asio::use_awaitable);
 
     SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
 }

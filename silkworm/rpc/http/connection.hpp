@@ -71,12 +71,9 @@ class Connection : public Channel {
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(const http::Request& request);
+    AuthorizationResult is_request_authorized(boost::beast::http::request_parser<boost::beast::http::string_body>& parser);
 
-    Task<void> handle_request(Request& request);
-
-    //! Reset connection data
-    void clean();
+    Task<void> handle_request(boost::beast::http::request_parser<boost::beast::http::string_body>& parser);
 
     void set_cors(std::vector<Header>& headers);
 
@@ -88,8 +85,8 @@ class Connection : public Channel {
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write();
     Task<void> do_write(http::Reply& reply);
+    Task<void> do_close();
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -98,15 +95,6 @@ class Connection : public Channel {
     RequestHandler request_handler_;
 
     boost::beast::flat_buffer data_;
-
-    //! The incoming request.
-    Request request_;
-
-    //! The parser for the incoming request.
-    RequestParser request_parser_;
-
-    //! The reply to be sent back to the client.
-    Reply reply_;
 
     const std::vector<std::string>& allowed_origins_;
 

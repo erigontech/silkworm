@@ -17,9 +17,7 @@
 #include <iostream>
 #include <string>
 
-#include <boost/asio/async_result.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
@@ -33,15 +31,15 @@ class RequestHandler_ForTest {
         try {
             co_await is_valid_json(request_str);
         } catch (const std::invalid_argument& e) {
-            std::cerr << "Invalid argument: " << e.what() << std::endl;
+            std::cerr << "Invalid argument: " << e.what() << "\n";
         } catch (...) {
-            std::cerr << "Error occurred" << std::endl;
+            std::cerr << "Error occurred\n";
         }
     }
 
     boost::asio::awaitable<bool> is_valid_json(const std::string& request_str) {
         if (request_str.length() == 20) {
-            std::cout << "Target length found, terminating, request_str: " << request_str << std::endl;
+            std::cout << "Target length found, terminating, request_str: " << request_str << "\n";
             throw std::invalid_argument("Invalid argument");
         }
 
@@ -55,14 +53,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     try {
         auto io_context = boost::asio::io_context{};
         auto result = boost::asio::co_spawn(
-            io_context, [&request_str]() -> boost::asio::awaitable<void> {
+            io_context, [](const auto& request_str) -> boost::asio::awaitable<void> {
                 try {
                     RequestHandler_ForTest handler{};
                     co_await handler.handle_request(request_str);
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << '\n';
                 }
-            },
+            }(request_str),
             boost::asio::use_future);
 
         io_context.run();
@@ -72,9 +70,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
         io_context.restart();
 
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
     } catch (...) {
-        std::cout << "Error" << std::endl;
+        std::cout << "Error\n";
     }
 
     return 0;

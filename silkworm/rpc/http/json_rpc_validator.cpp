@@ -102,17 +102,17 @@ void JsonRpcValidator::check_request_fields(const nlohmann::json& request, JsonR
 }
 
 void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcValidationResult& result) {
-    const auto method = request.find(kRequestFieldMethod).value().get<std::string>();
-    const auto params_field = request.find(kRequestFieldParameters);
-    const auto params = params_field != request.end() ? params_field.value() : nlohmann::json::array();
+    const auto& method = request.find(kRequestFieldMethod).value().get<std::string>();
+    const auto& params_field = request.find(kRequestFieldParameters);
+    const auto& params = params_field != request.end() ? params_field.value() : nlohmann::json::array();
 
-    const auto method_spec_field = method_specs_.find(method);
+    const auto& method_spec_field = method_specs_.find(method);
     if (method_spec_field == method_specs_.end()) {
         result.is_valid = accept_unknown_methods_;
         result.error_message = "Method not found in spec";
         return;
     }
-    const auto method_spec = method_spec_field->second;
+    const auto& method_spec = method_spec_field->second;
 
     if (params.size() > method_spec.size()) {
         result.is_valid = false;
@@ -122,7 +122,7 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
 
     unsigned long idx = 0;
     for (const auto& spec : method_spec) {
-        const auto spec_name = spec["name"].get<std::string>();
+        const auto& spec_name = spec["name"].get<std::string>();
         const auto& spec_schema = spec["schema"];
 
         if (params.size() <= idx) {
@@ -169,7 +169,7 @@ void JsonRpcValidator::validate_schema(const nlohmann::json& value, const nlohma
 }
 
 void JsonRpcValidator::validate_type(const nlohmann::json& value, const nlohmann::json& schema, JsonRpcValidationResult& result) {
-    const auto schema_type = schema["type"].get<std::string>();
+    const auto& schema_type = schema["type"].get<std::string>();
 
     if (schema_type == "string") {
         validate_string(value, schema, result);
@@ -196,16 +196,19 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string, const nlohm
         return;
     }
 
-    const auto schema_pattern_field = schema.find("pattern");
+    const auto& schema_pattern_field = schema.find("pattern");
     if (schema_pattern_field != schema.end()) {
         boost::regex pattern;
-        const auto schema_pattern = schema_pattern_field.value().get<std::string>();
-        if (patterns_.find(schema_pattern) != patterns_.end()) {
-            pattern = patterns_[schema_pattern];
+        const auto& schema_pattern = schema_pattern_field.value().get<std::string>();
+
+        const auto& pattern_field = patterns_.find(schema_pattern);
+        if (pattern_field != patterns_.end()) {
+            pattern = pattern_field->second;
         } else {
             pattern = boost::regex(schema_pattern, boost::regex::optimize);
             patterns_[schema_pattern] = pattern;
         }
+
         if (!boost::regex_match(string.get<std::string>(), pattern)) {
             result.is_valid = false;
             result.error_message = "Invalid string pattern";
@@ -213,9 +216,10 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string, const nlohm
         }
     }
 
-    if (schema.find("enum") != schema.end()) {
+    const auto& enum_field = schema.find("enum");
+    if (enum_field != schema.end()) {
         bool is_valid = false;
-        for (const auto& enum_value : schema["enum"]) {
+        for (const auto& enum_value : enum_field.value()) {
             if (string == enum_value) {
                 is_valid = true;
                 break;

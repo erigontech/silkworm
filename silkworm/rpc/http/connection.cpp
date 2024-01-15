@@ -123,7 +123,7 @@ Connection::handle_request(Request& request) {
     }
 }
 
-StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
+StatusType Connection::get_http_status(Channel::ResponseStatus status) {
     switch (status) {
         case ResponseStatus::processing_continue:
             return StatusType::processing_continue;
@@ -131,33 +131,33 @@ StatusType Connection::get_http_status(ChannelWriter::ResponseStatus status) {
             return StatusType::ok;
         case ResponseStatus::created:
             return StatusType::created;
-        case ChannelWriter::ResponseStatus::accepted:
+        case ResponseStatus::accepted:
             return StatusType::accepted;
-        case ChannelWriter::ResponseStatus::no_content:
+        case ResponseStatus::no_content:
             return StatusType::no_content;
-        case ChannelWriter::ChannelWriter::ResponseStatus::multiple_choices:
+        case ResponseStatus::multiple_choices:
             return StatusType::multiple_choices;
-        case ChannelWriter::ChannelWriter::ResponseStatus::moved_permanently:
+        case ResponseStatus::moved_permanently:
             return StatusType::moved_permanently;
-        case ChannelWriter::ChannelWriter::ResponseStatus::moved_temporarily:
+        case ResponseStatus::moved_temporarily:
             return StatusType::moved_temporarily;
-        case ChannelWriter::ChannelWriter::ResponseStatus::not_modified:
+        case ResponseStatus::not_modified:
             return StatusType::not_modified;
-        case ChannelWriter::ChannelWriter::ResponseStatus::bad_request:
+        case ResponseStatus::bad_request:
             return StatusType::bad_request;
-        case ChannelWriter::ChannelWriter::ResponseStatus::unauthorized:
+        case ResponseStatus::unauthorized:
             return StatusType::unauthorized;
-        case ChannelWriter::ResponseStatus::forbidden:
+        case ResponseStatus::forbidden:
             return StatusType::forbidden;
-        case ChannelWriter::ResponseStatus::not_found:
+        case ResponseStatus::not_found:
             return StatusType::not_found;
-        case ChannelWriter::ResponseStatus::internal_server_error:
+        case ResponseStatus::internal_server_error:
             return StatusType::internal_server_error;
-        case ChannelWriter::ResponseStatus::not_implemented:
+        case ResponseStatus::not_implemented:
             return StatusType::not_implemented;
-        case ChannelWriter::ResponseStatus::bad_gateway:
+        case ResponseStatus::bad_gateway:
             return StatusType::bad_gateway;
-        case ChannelWriter::ResponseStatus::service_unavailable:
+        case ResponseStatus::service_unavailable:
             return StatusType::service_unavailable;
         default:
             return StatusType::internal_server_error;
@@ -173,13 +173,13 @@ Connection::write_rsp(Response& msg_response) {
     co_await do_write(reply);
 }
 
+Task<void> Connection::open_stream() {
+    co_await write_headers();
+}
+
 Task<std::size_t> Connection::write(std::string_view content) {
-    if (first_chunk_) {
-        co_await write_headers();
-        first_chunk_ = false;
-    }
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
-    SILK_TRACE << "SocketWriter::write bytes_transferred: " << bytes_transferred;
+    SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;
 }
 
@@ -200,7 +200,7 @@ static constexpr size_t kCorsNumHeaders{4};
 
 Task<void> Connection::do_write(Reply& reply) {
     try {
-        SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
+        SILK_DEBUG << "Connection::do_write reply: " << reply.content;
 
         reply.headers.reserve(allowed_origins_.empty() ? 2 : 2 + kCorsNumHeaders);
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
@@ -209,7 +209,7 @@ Task<void> Connection::do_write(Reply& reply) {
         set_cors(reply.headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply.to_buffers(), boost::asio::use_awaitable);
-        SILK_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred;
+        SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
@@ -229,7 +229,7 @@ Task<void> Connection::write_headers() {
         auto buffers = http::to_buffers(StatusType::ok, headers);
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
-        SILK_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred;
+        SILK_TRACE << "Connection::write_headers bytes_transferred: " << bytes_transferred;
     } catch (const std::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {

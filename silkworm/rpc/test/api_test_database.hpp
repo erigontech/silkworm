@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#pragma once
+
 #include <bit>
 #include <filesystem>
 #include <fstream>
@@ -38,6 +40,7 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
+#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
@@ -49,44 +52,32 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
-class RequestHandler_ForTest : public silkworm::rpc::http::RequestHandler {
+class ChannelForTest : public Channel {
+    Task<void> open_stream() override { co_return; }
+    Task<void> write_rsp(Response& /* response */) override { co_return; }
+    Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
+    Task<void> close() override { co_return; }
+};
+
+class RequestHandler_ForTest : public http::RequestHandler {
   public:
-    RequestHandler_ForTest(boost::asio::ip::tcp::socket& socket,
+    RequestHandler_ForTest(ChannelForTest* channel,
                            commands::RpcApi& rpc_api,
-                           const commands::RpcApiTable& rpc_api_table,
-                           std::optional<std::string> jwt_secret)
-        : silkworm::rpc::http::RequestHandler(socket, rpc_api, rpc_api_table, allowed_origins, std::move(jwt_secret)) {
+                           const commands::RpcApiTable& rpc_api_table)
+        : http::RequestHandler(channel, rpc_api, rpc_api_table) {}
+
+    Task<void> request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response) {
+        co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<void> request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
-        co_await RequestHandler::handle_request_and_create_reply(request_json, reply);
-    }
-
-    Task<void> handle_request(const std::string& request_str, http::Reply& reply) {
-        http::Request request;
-        request.content = request_str;
-        co_await RequestHandler::handle(request);
-        reply = std::move(reply_);
-    }
-
-    // Override required to avoid writing to socket and to intercept the reply
-    Task<void> do_write(http::Reply& reply) override {
-        try {
-            reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
-            reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
-
-            reply_ = std::move(reply);
-        } catch (const boost::system::system_error& se) {
-            std::rethrow_exception(std::make_exception_ptr(se));
-        } catch (const std::exception& e) {
-            std::rethrow_exception(std::make_exception_ptr(e));
-        }
-        co_return;
+    Task<void> handle_request(const std::string& request_str, Channel::Response& response) {
+        co_await RequestHandler::handle(request_str);
+        response = std::move(response_);
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    http::Reply reply_;
+    Channel::Response response_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
@@ -99,19 +90,25 @@ class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
 template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
-    explicit RpcApiTestBase(mdbx::env& chaindata_env) : LocalContextTestBase(chaindata_env), workers_{1}, socket{io_context_}, rpc_api{io_context_, workers_}, rpc_api_table{kDefaultEth1ApiSpec} {
+    explicit RpcApiTestBase(mdbx::env& chaindata_env)
+        : LocalContextTestBase(chaindata_env),
+          workers_{1},
+          socket_{io_context_},
+          rpc_api_{io_context_, workers_},
+          rpc_api_table_{kDefaultEth1ApiSpec} {
     }
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        TestRequestHandler handler{socket, rpc_api, rpc_api_table, ""};
+        ChannelForTest channel;
+        TestRequestHandler handler{&channel, rpc_api_, rpc_api_table_};
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 
     boost::asio::thread_pool workers_;
-    boost::asio::ip::tcp::socket socket;
-    commands::RpcApi rpc_api;
-    commands::RpcApiTable rpc_api_table;
+    boost::asio::ip::tcp::socket socket_;
+    commands::RpcApi rpc_api_;
+    commands::RpcApiTable rpc_api_table_;
 };
 
 class TestDatabaseContext {
@@ -125,6 +122,15 @@ class TestDatabaseContext {
     }
 
     mdbx::env_managed db;
+};
+
+class RpcApiE2ETest : public TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
+  public:
+    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {}
+    using RpcApiTestBase<RequestHandler_ForTest>::run;
+
+  private:
+    static inline test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 }  // namespace silkworm::rpc::test

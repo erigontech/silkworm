@@ -151,9 +151,9 @@ Task<void> resolve_promise_with_awaitable_result(std::promise<void>& promise, Ta
 }
 
 template <typename T>
-static T sync_spawn(concurrency::TaskGroup& tasks, any_io_executor executor, Task<T> task) {
+static T sync_spawn(concurrency::TaskGroup& tasks, const any_io_executor& executor, Task<T> task) {
     std::promise<T> promise;
-    tasks.spawn(std::move(executor), resolve_promise_with_awaitable_result(promise, std::move(task)));
+    tasks.spawn(executor, resolve_promise_with_awaitable_result(promise, std::move(task)));
     return promise.get_future().get();
 }
 

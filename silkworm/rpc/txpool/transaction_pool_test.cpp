@@ -69,8 +69,6 @@ inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
 
 namespace silkworm::rpc::txpool {
 
-using testing::_;
-
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;
 

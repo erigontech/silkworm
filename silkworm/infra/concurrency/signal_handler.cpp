@@ -125,9 +125,9 @@ void SignalHandler::handle(int sig_code) {
     if (signalled_.compare_exchange_strong(expected, true)) {
         sig_code_ = sig_code;
         if (!silent_) {
-            std::fputs("\nGot ", stderr);
-            std::fputs(sig_name(sig_code), stderr);
-            std::fputs(". Shutting down ...\n", stderr);
+            (void)std::fputs("\nGot ", stderr);
+            (void)std::fputs(sig_name(sig_code), stderr);
+            (void)std::fputs(". Shutting down ...\n", stderr);
         }
     }
     uint32_t sig_count = ++sig_count_;
@@ -135,17 +135,19 @@ void SignalHandler::handle(int sig_code) {
         std::abort();
     }
     if (sig_count > 1 && !silent_) {
-        std::fputs("Already shutting down. Interrupt more to panic. ", stderr);
+        (void)std::fputs("Already shutting down. Interrupt more to panic. ", stderr);
         char digit_with_endl[3];
         digit_with_endl[0] = static_cast<char>('0' + (10 - sig_count));
         digit_with_endl[1] = '\n';
         digit_with_endl[2] = '\0';
-        std::fputs(digit_with_endl, stderr);
+        (void)std::fputs(digit_with_endl, stderr);
     }
     if (custom_handler_) {
         custom_handler_(sig_code);
     }
-    signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
+    if (signal(sig_code, &SignalHandler::handle) == SIG_ERR) {  // Re-enable the hook
+        (void)std::fputs("Failed to re-enable signal hook :(", stderr);
+    }
 }
 
 void SignalHandler::reset() {
@@ -154,7 +156,9 @@ void SignalHandler::reset() {
     // Restore any previous signal handlers
     for (const int sig_code : kHandleableCodes) {
         if (previous_signal_handlers.contains(sig_code)) {
-            signal(sig_code, previous_signal_handlers[sig_code]);
+            if (signal(sig_code, previous_signal_handlers[sig_code]) == SIG_ERR) {
+                (void)std::fputs("Failed to restore previous signal handlers :(", stderr);
+            }
         }
     }
 }

@@ -22,19 +22,20 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
+#include <absl/strings/match.h>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/rpc/ethdb/transaction_database.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;
@@ -79,7 +80,7 @@ int main(int argc, char* argv[]) {
 
     try {
         auto target{absl::GetFlag(FLAGS_target)};
-        if (target.empty() || target.find(":") == std::string::npos) {
+        if (target.empty() || !absl::StrContains(target, ":")) {
             std::cerr << "Parameter target is invalid: [" << target << "]\n";
             std::cerr << "Use --target flag to specify the location of Silkworm/Erigon running instance\n";
             return -1;
@@ -101,16 +102,16 @@ int main(int argc, char* argv[]) {
 
         const auto latest_block_number = get_latest_block(*io_context, *database);
         if (latest_block_number) {
-            std::cout << "latest_block_number: " << latest_block_number.value() << "\n" << std::flush;
+            std::cout << "latest_block_number: " << latest_block_number.value() << std::endl;
         }
 
         if (context_pool_thread.joinable()) {
             context_pool_thread.join();
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << "\n" << std::flush;
+        std::cerr << "Exception: " << e.what() << std::endl;
     } catch (...) {
-        std::cerr << "Unexpected exception\n" << std::flush;
+        std::cerr << "Unexpected exception" << std::endl;
     }
 
     return 0;

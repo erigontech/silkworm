@@ -23,12 +23,10 @@
 #include <limits>
 #include <map>
 #include <string>
-#include <utility>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -46,7 +44,6 @@
 #include <silkworm/rpc/core/fee_history_oracle.hpp>
 #include <silkworm/rpc/core/gas_price_oracle.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
@@ -2117,16 +2114,22 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
     uint64_t block_count{0};
     if (params[0].is_string()) {
         const auto value = params[0].get<std::string>();
-        block_count = std::stoul(value, nullptr, 16);
+        std::size_t processed_characters{0};
+        block_count = std::stoul(value, &processed_characters, 16);
+        if (processed_characters != value.size()) {
+            const auto error_msg = "invalid block_count: " + value;
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, 100, error_msg);
+            co_return;
+        }
     } else {
         block_count = params[0].get<uint64_t>();
     }
     const auto newest_block = params[1].get<std::string>();
-    const auto reward_percentile = params[2].get<std::vector<std::int8_t>>();
+    const auto reward_percentiles = params[2].get<std::vector<int8_t>>();
 
-    SILK_LOG << "block_count: " << block_count
-             << ", newest_block: " << newest_block
-             << ", reward_percentile size: " << reward_percentile.size();
+    SILK_TRACE << "block_count: " << block_count << " newest_block: " << newest_block
+               << " reward_percentiles size: " << reward_percentiles.size();
 
     auto tx = co_await database_->begin();
 
@@ -2135,19 +2138,23 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
 
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
-            return core::read_block_by_number(*(this->block_cache_), *chain_storage, block_number);
+            return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
         rpc::fee_history::ReceiptsProvider receipts_provider = [&tx_database](const BlockWithHash& block_with_hash) {
             return core::get_receipts(tx_database, block_with_hash);
         };
 
+        rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx_database]() {
+            return core::get_block_number(core::kLatestBlockId, tx_database);
+        };
+
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 
-        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider};
+        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider, latest_block_provider};
 
         const auto block_number = co_await core::get_block_number(newest_block, tx_database);
-        auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentile);
+        const auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentiles);
 
         if (fee_history.error) {
             reply = make_json_error(request, -32000, fee_history.error.value());

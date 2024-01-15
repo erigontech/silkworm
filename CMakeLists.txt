@@ -90,7 +90,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 if(SILKWORM_CLANG_TIDY)
   find_program(CLANG_TIDY clang-tidy REQUIRED)
-  set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
+  set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY}")
   set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()
 

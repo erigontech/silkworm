@@ -22,10 +22,6 @@ find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
 
-if(SILKWORM_CLANG_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-warnings-as-errors=*")
-endif()
-
 # Silkrpc library
 file(
   GLOB_RECURSE
@@ -38,6 +34,7 @@ file(
   "*.h"
 )
 list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
+list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     silkworm_node

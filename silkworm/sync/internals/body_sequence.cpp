@@ -24,9 +24,6 @@
 
 namespace silkworm {
 
-BodySequence::BodySequence() {
-}
-
 void BodySequence::current_state(BlockNum highest_in_db) {
     highest_body_in_output_ = highest_in_db;
     target_height_ = highest_in_db;
@@ -158,7 +155,7 @@ std::shared_ptr<OutboundMessage> BodySequence::request_bodies(time_point_t tp) {
 
     statistics_.requested_items += packet.request.size();
 
-    if (packet.request.size() == 0) {
+    if (packet.request.empty()) {
         retrieval_condition_ = "no more bodies to request";
         if (retrieval_condition_ != prev_condition) {
             SILK_TRACE << "BodySequence, no more bodies to request";
@@ -251,7 +248,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
 //! Save headers of witch it has to download bodies
 void BodySequence::download_bodies(const Headers& headers) {
-    for (auto header : headers) {
+    for (const auto& header : headers) {
         BlockNum bn = header->number;
 
         BodyRequest new_request;

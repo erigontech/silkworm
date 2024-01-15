@@ -780,10 +780,7 @@ class RecSplit {
     friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE>& rs) {
         size_t leaf_size{0};
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
-        if (leaf_size != LEAF_SIZE) {
-            fprintf(stderr, "Serialized leaf size %d, code leaf size %d\n", int(leaf_size), int(LEAF_SIZE));
-            abort();
-        }
+        SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
         is.read(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
         is.read(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
         rs.bucket_count_ = std::max(std::size_t{1}, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);

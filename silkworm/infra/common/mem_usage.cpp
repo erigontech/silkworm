@@ -58,7 +58,7 @@ size_t get_mem_usage(bool resident) {
             vm_size = vm * static_cast<size_t>(getpagesize());
             rm_size = rm * static_cast<size_t>(getpagesize());
         }
-        fclose(file);
+        (void)fclose(file);
     }
     return (resident ? rm_size : vm_size);
 

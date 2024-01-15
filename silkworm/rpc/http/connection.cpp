@@ -61,7 +61,8 @@ Task<void> Connection::read_loop() {
             co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe) {
+        if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe ||
+            se.code() == boost::beast::http::error::end_of_stream) {
             SILK_DEBUG << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
             SILK_ERROR << "Connection::read_loop system_error: " << se.what();
@@ -79,22 +80,9 @@ Task<void> Connection::do_read() {
     SILK_DEBUG << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    // Apply a reasonable limit to the allowed size
-    // of the body in bytes to prevent abuse.
-    // parser.body_limit(10000);
-    // Construct a new parser for each message
-    // parser.header_limit(10000);
-
-    try {
-        auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
-        SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_transferred;
-        SILK_TRACE << "Connection::do_read: " << parser.get() << "\n";
-    } catch (const boost::system::system_error& se) {
-        co_await do_close();
-        co_return;
-    } catch (const std::exception& e) {
-        std::rethrow_exception(std::make_exception_ptr(e));
-    }
+    auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
+    SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_transferred;
+    SILK_TRACE << "Connection::do_read: " << parser.get() << "\n";
 
     if (!parser.is_done()) {
         co_return;
@@ -115,9 +103,8 @@ Task<void> Connection::do_read() {
     co_await handle_request(parser);
 
     /* gestione bad */
-    parser.release();
 
-    // rqeuest object should not be used
+    parser.release();
 }
 
 Task<void>
@@ -135,6 +122,7 @@ Connection::handle_request(boost::beast::http::request_parser<boost::beast::http
         if (!auth_result) {
             reply.content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
             reply.status = http::StatusType::unauthorized;
+            co_return;
         }
         co_await request_handler_.handle(parser.get().body());
     }
@@ -213,7 +201,7 @@ Task<void> Connection::do_write(Reply& reply) {
         res.content_length(reply.content.size());
         res.body() = std::string(std::move(reply.content));
 
-        set_cors(reply.headers);
+        // set_cors(reply.headers);
 
         res.prepare_payload();
         const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
@@ -224,16 +212,6 @@ Task<void> Connection::do_write(Reply& reply) {
     } catch (const std::exception& e) {
         std::rethrow_exception(std::make_exception_ptr(e));
     }
-    co_return;
-}
-
-Task<void> Connection::do_close() {
-    // Send a TCP shutdown
-    boost::beast::error_code ec;
-    socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-
-    // At this point the connection is closed gracefully
-    socket_.close();
     co_return;
 }
 

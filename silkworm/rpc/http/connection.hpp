@@ -86,7 +86,6 @@ class Connection : public Channel {
 
     //! Perform an asynchronous write operation.
     Task<void> do_write(http::Reply& reply);
-    Task<void> do_close();
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

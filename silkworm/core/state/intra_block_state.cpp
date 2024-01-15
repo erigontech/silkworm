@@ -87,6 +87,8 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
             created.current->balance = prev->current->balance;
             if (prev->initial) {
                 prev_incarnation = std::max(prev->current->incarnation, prev->initial->incarnation);
+            } else {
+                prev_incarnation = prev->current->incarnation;
             }
         } else if (prev->initial) {
             prev_incarnation = prev->initial->incarnation;

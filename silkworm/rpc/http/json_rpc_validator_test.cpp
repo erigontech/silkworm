@@ -16,6 +16,7 @@
 
 #include "json_rpc_validator.hpp"
 
+#include <absl/strings/match.h>
 #include <catch2/catch.hpp>
 
 #include <silkworm/rpc/test/api_test_database.hpp>
@@ -390,7 +391,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
                 if (std::getline(test_stream, request_line) && request_line.starts_with(">> ")) {
                     auto request = nlohmann::json::parse(request_line.substr(3));
                     const auto results = validator.validate(request);
-                    if (test_name.find("invalid") == std::string::npos) {
+                    if (!absl::StrContains(test_name, "invalid")) {
                         CHECK(results.is_valid);
                     }
                 }

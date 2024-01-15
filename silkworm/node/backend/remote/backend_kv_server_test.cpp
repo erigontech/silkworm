@@ -27,6 +27,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <absl/strings/match.h>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -533,7 +534,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         remote::ClientVersionReply response;
         const auto status = backend_client.client_version(&response);
         CHECK(status.ok());
-        CHECK(response.node_name().find("silkworm") != std::string::npos);
+        CHECK(absl::StrContains(response.node_name(), "silkworm"));
     }
 
     // TODO(canepat): change using something meaningful when really implemented
@@ -567,7 +568,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
-        CHECK(status.error_message().find("unknown bucket") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -581,7 +582,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
-        CHECK(status.error_message().find("unknown bucket") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -594,7 +595,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
-        CHECK(status.error_message().find("unknown cursor") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -680,7 +681,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
-        CHECK(status.error_message().find("unknown cursor") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
@@ -820,7 +821,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status2 = subscribe_reply_reader2->Finish();
         CHECK(!status2.ok());
         CHECK(status2.error_code() == grpc::StatusCode::ALREADY_EXISTS);
-        CHECK(status2.error_message().find("assigned consumer token already in use") != std::string::npos);
+        CHECK(absl::StrContains(status2.error_message(), "assigned consumer token already in use"));
 
         // Close the server-side RPC stream and check first call completes successfully
         state_change_source->close();
@@ -935,7 +936,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     auto failing_tx_status = failing_tx_stream->Finish();
     CHECK(!failing_tx_status.ok());
     CHECK(failing_tx_status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
-    CHECK(failing_tx_status.error_message().find("start tx failed") != std::string::npos);
+    CHECK(absl::StrContains(failing_tx_status.error_message(), "start tx failed"));
 
     // Dispose all the opened Tx calls.
     for (const auto& tx_stream : tx_streams) {
@@ -980,7 +981,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
     auto status = tx_stream->Finish();
     CHECK(!status.ok());
     CHECK(status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
-    CHECK(status.error_message().find("maximum cursors per txn") != std::string::npos);
+    CHECK(absl::StrContains(status.error_message(), "maximum cursors per txn"));
 }
 
 class TxIdleTimeoutGuard {
@@ -1005,7 +1006,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
-        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "call idle, no incoming request"));
     }*/
 
     SECTION("Tx KO: finish after first read (w/o WritesDone)") {
@@ -1017,7 +1018,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
-        CHECK(status.error_message().find("no incoming request") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "no incoming request"));
     }
 
     SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)") {
@@ -1036,7 +1037,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
-        CHECK(status.error_message().find("no incoming request") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "no incoming request"));
     }
 }
 
@@ -1992,7 +1993,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("exception: MDBX_ENODATA") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
@@ -2016,7 +2017,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("exception: MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
@@ -2040,7 +2041,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("exception: MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
@@ -2061,7 +2062,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("exception: mdbx") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -2081,7 +2082,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("exception: mdbx") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -2101,7 +2102,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -2121,7 +2122,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(absl::StrContains(status.error_message(), "MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }

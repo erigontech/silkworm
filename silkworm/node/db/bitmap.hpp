@@ -72,7 +72,7 @@ class IndexLoader {
 
     //! \brief Returns the hex representation of currently processed key
     [[nodiscard]] std::string get_current_key() const {
-        std::unique_lock l{log_mtx_};
+        std::unique_lock lock{log_mtx_};
         return current_key_;
     }
 

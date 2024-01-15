@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <regex>
 
+#include <silkworm/core/common/assert.hpp>
+
 namespace silkworm {
 
 // ASCII -> hex value (0xff means bad [hex] char)
@@ -211,7 +213,7 @@ std::string human_size(uint64_t bytes) {
     }
     static constexpr size_t kBufferSize{64};
     SILKWORM_THREAD_LOCAL char output[kBufferSize];
-    std::snprintf(output, kBufferSize, "%.02lf %s", value, suffix[index]);
+    SILKWORM_ASSERT(std::snprintf(output, kBufferSize, "%.02lf %s", value, suffix[index]) > 0);
     return output;
 }
 

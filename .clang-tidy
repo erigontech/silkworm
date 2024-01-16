@@ -12,7 +12,6 @@ Checks: >
   -bugprone-unused-raii,
   cert-*,
   -cert-err58-cpp,
-  -cert-oop54-cpp,
   -clang-analyzer-*,
   clang-diagnostic-*,
   concurrency-*,

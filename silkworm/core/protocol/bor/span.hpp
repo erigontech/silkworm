@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/core/execution/evm.hpp>
 
 namespace silkworm::protocol::bor {
 
@@ -27,7 +27,7 @@ struct Span {
     BlockNum end_block{0};
 };
 
-// See GetCurrentSpan in consensus/bor/heimdall/span/spanner.go
-Span get_current_span(IntraBlockState&);
+// See GetCurrentSpan in polygon/bor/spanner.go
+Span get_current_span(EVM& evm, const evmc_address& validator_contract);
 
 }  // namespace silkworm::protocol::bor

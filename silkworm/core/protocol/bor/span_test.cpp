@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,22 +16,19 @@
 
 #include "span.hpp"
 
-#include <silkworm/core/protocol/param.hpp>
+#include <catch2/catch.hpp>
+
+#include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::protocol::bor {
 
-Span get_current_span(EVM& evm, const evmc_address& validator_contract) {
-    static constexpr uint8_t kFunctionSelector[]{0xaf, 0x26, 0xaa, 0x96};  // getCurrentSpan()
-
-    Transaction system_txn{};
-    system_txn.type = TransactionType::kSystem;
-    system_txn.to = validator_contract;
-    system_txn.data = ByteView{kFunctionSelector};
-    system_txn.set_sender(kSystemAddress);
-    evm.execute(system_txn, kSystemCallGasLimit);
-
-    // TODO(yperbasis): unpack & implement the rest
-    return {};
+// See https://docs.soliditylang.org/en/latest/abi-spec.html
+TEST_CASE("GetCurrentSpan ABI") {
+    static constexpr std::string_view kFunctionSignature{"getCurrentSpan()"};
+    const ethash::hash256 hash{keccak256(string_view_to_byte_view(kFunctionSignature))};
+    const ByteView selector{ByteView{hash.bytes}.substr(0, 4)};
+    CHECK(to_hex(selector) == "af26aa96");
 }
 
 }  // namespace silkworm::protocol::bor

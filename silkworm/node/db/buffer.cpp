@@ -74,7 +74,9 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         accounts_[address] = current;
     }
 
-    if (account_deleted && initial->incarnation) {
+    const bool initial_smart_now_deleted{account_deleted && initial->incarnation};
+    const bool initial_smart_now_eoa{!account_deleted && current->incarnation == 0 && initial && initial->incarnation};
+    if (initial_smart_now_deleted || initial_smart_now_eoa) {
         if (incarnations_.insert_or_assign(address, initial->incarnation).second) {
             batch_state_size_ += kAddressLength + kIncarnationLength;
         }

@@ -34,6 +34,7 @@ struct Account {
     intx::uint256 balance;
     evmc::bytes32 code_hash{kEmptyHash};
     uint64_t incarnation{0};
+    uint64_t previous_incarnation{0};
 
     //! \remarks Erigon's (*Account)EncodeForStorage
     [[nodiscard]] Bytes encode_for_storage(bool omit_code_hash = false) const;

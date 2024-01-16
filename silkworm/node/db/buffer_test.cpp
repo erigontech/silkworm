@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <string>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -122,7 +124,7 @@ TEST_CASE("Account update") {
         auto changeset_address{bytes_to_address(data_value_view)};
         REQUIRE(changeset_address == address);
         data_value_view.remove_prefix(kAddressLength);
-        REQUIRE(data_value_view.length() == 0);
+        REQUIRE(data_value_view.empty());
     }
 
     SECTION("Changed EOA account") {
@@ -153,13 +155,13 @@ TEST_CASE("Account update") {
         auto changeset_address{bytes_to_address(data_value_view)};
         REQUIRE(changeset_address == address);
         data_value_view.remove_prefix(kAddressLength);
-        REQUIRE(data_value_view.length() != 0);
+        REQUIRE(!data_value_view.empty());
 
         auto previous_account{Account::from_encoded_storage(data_value_view)};
         CHECK(previous_account == initial_account);
     }
 
-    SECTION("Delete Contract account") {
+    SECTION("Delete contract account") {
         const auto address{0xbe00000000000000000000000000000000000000_address};
         Account account;
         account.incarnation = kDefaultIncarnation;
@@ -167,15 +169,43 @@ TEST_CASE("Account update") {
 
         Buffer buffer{txn, 0};
         buffer.begin_block(1);
-        buffer.update_account(address, /*initial=*/account, std::nullopt);
+        buffer.update_account(address, /*initial=*/account, /*current=*/std::nullopt);
         REQUIRE(buffer.account_changes().empty() == false);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
         REQUIRE_NOTHROW(incarnations.to_first());
         auto data{incarnations.current()};
-        REQUIRE(memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
+        REQUIRE(std::memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
         REQUIRE(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
+    }
+
+    SECTION("Delete contract account and recreate as EOA") {
+        const auto address{0xbe00000000000000000000000000000000000000_address};
+        Account account;
+        account.incarnation = kDefaultIncarnation;
+        account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
+
+        // Block 1: create contract account
+        Buffer buffer{txn, 0};
+        buffer.begin_block(1);
+        buffer.update_account(address, /*initial=*/std::nullopt, /*current=*/account);
+        REQUIRE(!buffer.account_changes().empty());
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        // Block 2 : destroy contract and recreate account as EOA
+        buffer.begin_block(2);
+        Account eoa;
+        eoa.balance = kEther;
+        buffer.update_account(address, /*initial=*/account, /*current=*/eoa);
+        REQUIRE(!buffer.account_changes().empty());
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
+        REQUIRE_NOTHROW(incarnations.to_first());
+        auto data{incarnations.current()};
+        CHECK(std::memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
+        CHECK(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
     }
 }
 

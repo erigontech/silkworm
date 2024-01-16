@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,23 +14,14 @@
    limitations under the License.
 */
 
-#include "util.hpp"
+#pragma once
 
-namespace silkworm::etl {
+#include <string>
 
-std::string errno2str(int err_code) {
-    char msg[64];
-#if defined(_WIN32) || defined(_WIN64)
-    if (strerror_s(msg, sizeof(msg), err_code) != 0) {
-        (void)strncpy_s(msg, "Unknown error", _TRUNCATE);
-    }
-#else
-    if (strerror_r(err_code, msg, sizeof(msg))) {
-        (void)strncpy(msg, "Unknown error", sizeof(msg));
-    }
-#endif
-    msg[sizeof(msg) - 1] = '\0';
-    return {msg};
-}
+namespace silkworm {
 
-}  // namespace silkworm::etl
+//! \brief Converts a system error code into its message.
+//! \remarks Thread-safe version of strerror.
+std::string safe_strerror(int err_code);
+
+}  // namespace silkworm

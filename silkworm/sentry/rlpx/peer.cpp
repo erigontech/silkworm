@@ -85,8 +85,8 @@ static bool is_fatal_network_error(const boost::system::system_error& ex) {
            (code == boost::asio::error::broken_pipe);
 }
 
-static const std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
-static const std::chrono::milliseconds kPeerPingInterval = 15s;
+constexpr std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
+constexpr std::chrono::milliseconds kPeerPingInterval = 15s;
 
 class PingTimeoutError : public std::runtime_error {
   public:

@@ -16,6 +16,8 @@
 
 #include "safe_strerror.hpp"
 
+#include <cstring>
+
 namespace silkworm {
 
 std::string safe_strerror(int err_code) {

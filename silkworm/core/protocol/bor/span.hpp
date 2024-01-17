@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/execution/evm.hpp>
 
@@ -28,6 +30,6 @@ struct Span {
 };
 
 // See GetCurrentSpan in polygon/bor/spanner.go
-Span get_current_span(EVM& evm, const evmc_address& validator_contract);
+std::optional<Span> get_current_span(EVM& evm, const evmc_address& validator_contract);
 
 }  // namespace silkworm::protocol::bor

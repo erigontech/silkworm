@@ -31,11 +31,10 @@ struct JsonRpcValidationResult {
 
 class JsonRpcValidator {
   public:
-    JsonRpcValidator();
-    ~JsonRpcValidator() = default;
+    static void load_specification();
+    static const std::string& openrpc_version() { return openrpc_version_; }
 
     JsonRpcValidationResult validate(const nlohmann::json& request);
-    const std::string& openrpc_version() const { return openrpc_version_; }
 
   private:
     void check_request_fields(const nlohmann::json& request, JsonRpcValidationResult& result);
@@ -49,10 +48,10 @@ class JsonRpcValidator {
     void validate_number(const nlohmann::json& number, JsonRpcValidationResult& result);
     void validate_null(const nlohmann::json& value, JsonRpcValidationResult& result);
 
-    std::string openrpc_version_;
-    std::map<std::string, nlohmann::json> method_specs_;
-    std::map<std::string, boost::regex> patterns_;
-    bool accept_unknown_methods_;
+    inline static std::string openrpc_version_;
+    inline static std::map<std::string, nlohmann::json> method_specs_;
+    inline static std::map<std::string, boost::regex> patterns_;
+    bool accept_unknown_methods_{true};
 };
 
 }  // namespace silkworm::rpc::http

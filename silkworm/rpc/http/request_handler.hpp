@@ -68,8 +68,7 @@ class RequestHandler {
 
     const commands::RpcApiTable& rpc_api_table_;
 
-    // commented for performance reason
-    // JsonRpcValidator json_rpc_validator_;
+    JsonRpcValidator json_rpc_validator_;
 };
 
 }  // namespace silkworm::rpc::http

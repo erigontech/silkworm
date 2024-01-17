@@ -45,6 +45,9 @@ class ResettableOnceFlag {
         }
     }
     ResettableOnceFlag& operator=(const ResettableOnceFlag& other) {
+        if (this == &other) {
+            return *this;
+        }
         const uint32_t other_flag{other.flag_.load(std::memory_order_acquire)};
         if (other_flag == absl::base_internal::kOnceDone) {
             flag_.store(absl::base_internal::kOnceDone, std::memory_order_release);

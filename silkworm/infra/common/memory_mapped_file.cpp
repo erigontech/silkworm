@@ -33,6 +33,7 @@
 #include <gsl/util>
 
 #include "ensure.hpp"
+#include "safe_strerror.hpp"
 
 namespace silkworm {
 
@@ -137,7 +138,7 @@ void MemoryMappedFile::cleanup() {
 void MemoryMappedFile::map_existing(bool read_only) {
     FileDescriptor fd = ::open(path_.c_str(), read_only ? O_RDONLY : O_RDWR);
     if (fd == -1) {
-        throw std::runtime_error{"open failed for: " + path_.string() + " error: " + strerror(errno)};
+        throw std::runtime_error{"open failed for: " + path_.string() + " error: " + safe_strerror(errno)};
     }
     [[maybe_unused]] auto _ = gsl::finally([fd]() { ::close(fd); });
 
@@ -163,7 +164,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
 
     const auto address = ::mmap(nullptr, length_, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
     if (address == MAP_FAILED) {
-        throw std::runtime_error{"mmap failed for: " + path_.string() + " error: " + strerror(errno)};
+        throw std::runtime_error{"mmap failed for: " + path_.string() + " error: " + safe_strerror(errno)};
     }
 
     return address;
@@ -173,7 +174,7 @@ void MemoryMappedFile::unmap() {
     if (address_ != nullptr) {
         const int result = ::munmap(address_, length_);
         if (result == -1) {
-            throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + strerror(errno)};
+            throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + safe_strerror(errno)};
         }
     }
 }
@@ -183,7 +184,7 @@ void MemoryMappedFile::advise(int advice) {
     if (result == -1) {
         // Ignore not implemented in kernel error because it still works (from Erigon)
         if (errno != ENOSYS) {
-            throw std::runtime_error{"madvise failed for: " + path_.string() + " error: " + strerror(errno)};
+            throw std::runtime_error{"madvise failed for: " + path_.string() + " error: " + safe_strerror(errno)};
         }
     }
 }

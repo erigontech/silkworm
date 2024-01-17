@@ -23,10 +23,6 @@
 
 namespace silkworm::etl {
 
-//! \brief Converts a system error code into its message
-//! \remarks Removes the deprecation strerror
-std::string errno2str(int err_code);
-
 class etl_error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;

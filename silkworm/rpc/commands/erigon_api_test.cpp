@@ -248,7 +248,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
     }
 #endif  // _WIN32
 
-    SECTION("request earlist") {
+    SECTION("request earliest") {
         CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_block_number>(
                             R"({
                                 "jsonrpc":"2.0",

@@ -278,7 +278,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
         "method":"engine_getPayloadV1",
         "params":[]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -342,7 +342,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
             "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
         }]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     std::unique_ptr<ethdb::Database> database;
@@ -383,7 +383,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
         "method":"engine_newPayloadV1",
         "params":[]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -440,7 +440,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
             }
         ]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -502,7 +502,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
             }
         ]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -560,7 +560,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
             null
         ]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -601,7 +601,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
         "method":"engine_forkchoiceUpdatedV1",
         "params":[]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -649,7 +649,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
             }
         ]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components
@@ -694,7 +694,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
             }
         ]
     })"_json;
-    // Initialize contex pool
+    // Initialize context pool
     ClientContextPool cp{1};
     cp.start();
     // Initialise components

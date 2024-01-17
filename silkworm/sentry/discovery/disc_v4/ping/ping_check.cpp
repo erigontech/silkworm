@@ -33,7 +33,7 @@
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
-static const std::chrono::hours kPongValidityPeriod{24};
+constexpr std::chrono::hours kPongValidityPeriod{24};
 
 static std::chrono::time_point<std::chrono::system_clock> pong_expiration(std::chrono::time_point<std::chrono::system_clock> last_pong_time) {
     return last_pong_time + kPongValidityPeriod;

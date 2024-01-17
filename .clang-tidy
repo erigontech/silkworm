@@ -24,7 +24,6 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-avoid-reference-coroutine-parameters,
-  -cppcoreguidelines-explicit-virtual-functions,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-no-malloc,
   -cppcoreguidelines-non-private-member-variables-in-classes,

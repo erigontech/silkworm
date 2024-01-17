@@ -123,7 +123,7 @@ class ROCursor {
 //! \brief Read-only key-value cursor for multi-value tables
 class ROCursorDupSort : public virtual ROCursor {
   public:
-    virtual ~ROCursorDupSort() = default;  // NOLINT(modernize-use-override)
+    ~ROCursorDupSort() override = default;
 
     virtual CursorResult to_previous_last_multi() = 0;
     virtual CursorResult to_previous_last_multi(bool throw_notfound) = 0;
@@ -141,8 +141,8 @@ class ROCursorDupSort : public virtual ROCursor {
     virtual CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;                    // NOLINT(modernize-use-override)
-    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;  // NOLINT(modernize-use-override)
+    MoveResult move(MoveOperation operation, bool throw_notfound) override = 0;
+    MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
     [[nodiscard]] virtual std::size_t count_multivalue() const = 0;
 };
@@ -150,7 +150,7 @@ class ROCursorDupSort : public virtual ROCursor {
 //! \brief Read-write key-value cursor for single-value tables
 class RWCursor : public virtual ROCursor {
   public:
-    virtual ~RWCursor() = default;  // NOLINT(modernize-use-override)
+    ~RWCursor() override = default;
 
     virtual MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept = 0;
     virtual void insert(const Slice& key, Slice value) = 0;
@@ -170,16 +170,16 @@ class RWCursor : public virtual ROCursor {
 //! \brief Read-write key-value cursor for multi-value tables
 class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
   public:
-    virtual ~RWCursorDupSort() = default;  // NOLINT(modernize-use-override)
+    ~RWCursorDupSort() override = default;
 
     //! \brief Remove all multi-values at the current cursor position.
-    virtual bool erase() = 0;                       // NOLINT(modernize-use-override)
-    virtual bool erase(bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
+    bool erase() override = 0;
+    bool erase(bool whole_multivalue) override = 0;
 
     //! \brief Seek and remove whole multi-value of the given key.
     //! \return true if the key is found and a value(s) is removed.
-    virtual bool erase(const Slice& key) = 0;                         // NOLINT(modernize-use-override)
-    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
+    bool erase(const Slice& key) override = 0;
+    bool erase(const Slice& key, bool whole_multivalue) override = 0;
 
     //! \brief Seek and remove the particular multi-value entry of the key.
     //! \return true if the given key-value pair is found and removed

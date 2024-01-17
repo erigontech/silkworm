@@ -36,6 +36,7 @@
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/rpc/http/json_rpc_validator.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
 
 namespace silkworm::rpc {
@@ -223,6 +224,9 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
+
+    // Load JSON RPC specification for Ethereum API
+    rpc::http::JsonRpcValidator::load_specification();
 }
 
 void Daemon::add_private_services() {

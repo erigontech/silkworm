@@ -20,6 +20,7 @@
 #include <string>
 #include <thread>
 
+#include <absl/strings/match.h>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
@@ -50,7 +51,7 @@ template <Level level>
 void check_log_not_empty() {
     auto log_buffer = LogBuffer_ForTest<level>();
     log_buffer << "test";
-    CHECK(log_buffer.content().find("test") != std::string::npos);
+    CHECK(absl::StrContains(log_buffer.content(), "test"));
 }
 
 //! Build the plain key-value pair
@@ -113,7 +114,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         thread_id_stream << std::this_thread::get_id();
         auto log_buffer1 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer1 << "test";
-        CHECK(log_buffer1.content().find(thread_id_stream.str()) == std::string::npos);
+        CHECK(!absl::StrContains(log_buffer1.content(), thread_id_stream.str()));
 
         // Enable thread tracing
         Settings log_settings;
@@ -121,25 +122,25 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         init(log_settings);
         auto log_buffer2 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer2 << "test";
-        CHECK(log_buffer2.content().find(thread_id_stream.str()) != std::string::npos);
+        CHECK(absl::StrContains(log_buffer2.content(), thread_id_stream.str()));
 
         // Disable thread tracing
         log_settings.log_threads = false;
         init(log_settings);
         auto log_buffer3 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer3 << "test";
-        CHECK(log_buffer3.content().find(thread_id_stream.str()) == std::string::npos);
+        CHECK(!absl::StrContains(log_buffer3.content(), thread_id_stream.str()));
     }
 
     SECTION("Settings disable colorized output if log file present") {
         // Default output is colorized
         LogBuffer_ForTest<Level::kInfo>{"test0", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output0{string_cerr.str()};
-        CHECK(cerr_output0.find("test0") != std::string::npos);
-        CHECK(cerr_output0.find(key_value("key1", "value1")) == std::string::npos);
-        CHECK(cerr_output0.find(key_value("key2", "value2")) == std::string::npos);
-        CHECK(cerr_output0.find(prettified_key_value("key1", "value1")) != std::string::npos);
-        CHECK(cerr_output0.find(prettified_key_value("key2", "value2")) != std::string::npos);
+        CHECK(absl::StrContains(cerr_output0, "test0"));
+        CHECK(!absl::StrContains(cerr_output0, key_value("key1", "value1")));
+        CHECK(!absl::StrContains(cerr_output0, key_value("key2", "value2")));
+        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key1", "value1")));
+        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key2", "value2")));
 
         // Reset cerr replacement stream
         string_cerr.str("");
@@ -153,11 +154,11 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         init(log_settings1);
         LogBuffer_ForTest<Level::kInfo>{"test1", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output1{string_cerr.str()};
-        CHECK(cerr_output1.find("test1") != std::string::npos);
-        CHECK(cerr_output1.find(key_value("key1", "value1")) != std::string::npos);
-        CHECK(cerr_output1.find(key_value("key2", "value2")) != std::string::npos);
-        CHECK(cerr_output1.find(prettified_key_value("key1", "value1")) == std::string::npos);
-        CHECK(cerr_output1.find(prettified_key_value("key2", "value2")) == std::string::npos);
+        CHECK(absl::StrContains(cerr_output1, "test1"));
+        CHECK(absl::StrContains(cerr_output1, key_value("key1", "value1")));
+        CHECK(absl::StrContains(cerr_output1, key_value("key2", "value2")));
+        CHECK(!absl::StrContains(cerr_output1, prettified_key_value("key1", "value1")));
+        CHECK(!absl::StrContains(cerr_output1, prettified_key_value("key2", "value2")));
 
         // Reset cerr replacement stream
         string_cerr.str("");
@@ -171,26 +172,26 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         init(log_settings2);
         LogBuffer_ForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
         const auto cerr_output2{string_cerr.str()};
-        CHECK(cerr_output2.find("test2") != std::string::npos);
-        CHECK(cerr_output2.find(key_value("key3", "value3")) != std::string::npos);
-        CHECK(cerr_output2.find(key_value("key4", "value4")) != std::string::npos);
-        CHECK(cerr_output2.find(prettified_key_value("key3", "value3")) == std::string::npos);
-        CHECK(cerr_output2.find(prettified_key_value("key4", "value4")) == std::string::npos);
+        CHECK(absl::StrContains(cerr_output2, "test2"));
+        CHECK(absl::StrContains(cerr_output2, key_value("key3", "value3")));
+        CHECK(absl::StrContains(cerr_output2, key_value("key4", "value4")));
+        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key3", "value3")));
+        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key4", "value4")));
     }
 
     SECTION("Variable arguments: constructor") {
         auto log_buffer = LogBuffer_ForTest<Level::kInfo>("test", {"key1", "value1", "key2", "value2"});
-        CHECK(log_buffer.content().find("test") != std::string::npos);
-        CHECK(log_buffer.content().find(prettified_key_value("key1", "value1")) != std::string::npos);
-        CHECK(log_buffer.content().find(prettified_key_value("key2", "value2")) != std::string::npos);
+        CHECK(absl::StrContains(log_buffer.content(), "test"));
+        CHECK(absl::StrContains(log_buffer.content(), prettified_key_value("key1", "value1")));
+        CHECK(absl::StrContains(log_buffer.content(), prettified_key_value("key2", "value2")));
     }
 
     SECTION("Variable arguments: accumulators") {
         auto log_buffer = LogBuffer_ForTest<Level::kInfo>();
         log_buffer << "test" << Args{"key1", "value1", "key2", "value2"};
-        CHECK(log_buffer.content().find("test") != std::string::npos);
-        CHECK(log_buffer.content().find(prettified_key_value("key1", "value1")) != std::string::npos);
-        CHECK(log_buffer.content().find(prettified_key_value("key2", "value2")) != std::string::npos);
+        CHECK(absl::StrContains(log_buffer.content(), "test"));
+        CHECK(absl::StrContains(log_buffer.content(), prettified_key_value("key1", "value1")));
+        CHECK(absl::StrContains(log_buffer.content(), prettified_key_value("key2", "value2")));
     }
 }
 

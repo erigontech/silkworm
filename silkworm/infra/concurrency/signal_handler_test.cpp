@@ -26,7 +26,7 @@ namespace silkworm {
 #ifndef __APPLE__
 TEST_CASE("Signal Handler") {
     SignalHandler::init();
-    std::raise(SIGINT);
+    CHECK(std::raise(SIGINT) == 0);
     CHECK(SignalHandler::signalled());
     SignalHandler::reset();
     CHECK(SignalHandler::signalled() == false);

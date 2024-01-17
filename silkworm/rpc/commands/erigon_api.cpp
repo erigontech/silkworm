@@ -352,7 +352,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     }
 
     if (options.log_count != 0 && options.block_count != 0) {
-        auto error_msg = "logs count & block count are ambigious";
+        auto error_msg = "logs count & block count are ambiguous";
         SILK_ERROR << error_msg << request.dump();
         reply = make_json_error(request, -32000, error_msg);
         co_return;

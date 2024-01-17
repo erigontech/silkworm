@@ -31,7 +31,7 @@ static const std::string kRequestFieldParameters{"params"};
 static const std::string kRequestRequiredFields{
     kRequestFieldJsonRpc + "," + kRequestFieldId + "," + kRequestFieldMethod + "," + kRequestFieldParameters};
 
-JsonRpcValidator::JsonRpcValidator() : accept_unknown_methods_{true} {
+void JsonRpcValidator::load_specification() {
     const auto spec = nlohmann::json::parse(json_rpc_specification, nullptr, /*allow_exceptions=*/false);
     if (spec.contains("methods")) {
         for (const auto& method : spec["methods"]) {

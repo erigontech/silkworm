@@ -23,7 +23,6 @@ Checks: >
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-avoid-reference-coroutine-parameters,
   -cppcoreguidelines-macro-usage,
-  -cppcoreguidelines-no-malloc,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-prefer-member-initializer,

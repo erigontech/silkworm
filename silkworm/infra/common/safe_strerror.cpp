@@ -21,7 +21,7 @@
 namespace silkworm {
 
 std::string safe_strerror(int err_code) {
-    char msg[1024];
+    char msg[256];
 #if defined(_WIN32)
     if (strerror_s(msg, sizeof(msg), err_code) != 0) {
         (void)strncpy_s(msg, "Unknown error", _TRUNCATE);

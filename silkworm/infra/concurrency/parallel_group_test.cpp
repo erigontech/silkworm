@@ -35,7 +35,7 @@ using namespace boost::asio::experimental;
 using namespace silkworm::concurrency;
 using namespace std::chrono_literals;
 
-awaitable<void> sleep(std::chrono::milliseconds duration) {
+awaitable<void> my_sleep(std::chrono::milliseconds duration) {
     auto executor = co_await this_coro::executor;
     steady_timer timer(executor);
     timer.expires_after(duration);
@@ -47,7 +47,7 @@ awaitable<void> noop() {
 }
 
 awaitable<void> throw_op() {
-    co_await sleep(1ms);
+    co_await my_sleep(1ms);
     throw std::runtime_error("throw_op");
 }
 
@@ -67,7 +67,7 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
     auto strand = make_strand(executor);
 
     try {
-        co_await (sleep(1s) && spawn_throw_op(strand) && spawn_noop_loop(strand));
+        co_await (my_sleep(1s) && spawn_throw_op(strand) && spawn_noop_loop(strand));
     } catch (std::runtime_error&) {
     }
 }

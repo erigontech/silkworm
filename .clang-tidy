@@ -1,5 +1,5 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm/(api|core|infra|node|sentry|rpc|sync)/.+\.hpp$'
+HeaderFilterRegex: 'silkworm/(capi|core|infra|node|rpc|sentry|sync|wasm)/.+\.hpp$'
 WarningsAsErrors: '*'
 Checks: >
   abseil-*,
@@ -15,7 +15,6 @@ Checks: >
   -clang-analyzer-*,
   clang-diagnostic-*,
   concurrency-*,
-  -concurrency-mt-unsafe,
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-avoid-const-or-ref-data-members,

@@ -30,6 +30,7 @@
 #include <libtorrent/write_resume_data.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -294,10 +295,16 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
     // When we receive the finished alert, we request to save resume data for the torrent
     if (const auto* tfa = lt::alert_cast<lt::torrent_finished_alert>(alert)) {
         const auto& status = tfa->handle.status();
+        std::tm completed_calendar_time{};
+#ifdef _MSC_VER
+        SILKWORM_ASSERT(gmtime_s(&completed_calendar_time, &status.completed_time) == 0);
+#else
+        SILKWORM_ASSERT(gmtime_r(&status.completed_time, &completed_calendar_time) != nullptr);
+#endif
         SILK_TRACE << "Torrent: " << tfa->torrent_name() << " finished download_rate: " << (status.download_rate / 1000) << " kB/s"
                    << " download_payload_rate: " << (status.download_payload_rate / 1000) << " kB/s"
                    << " in " << (status.completed_time - status.added_time) << " sec at "
-                   << std::put_time(std::gmtime(&status.completed_time), "%c %Z");
+                   << std::put_time(&completed_calendar_time, "%c %Z");
 
         tfa->handle.save_resume_data(lt::torrent_handle::save_info_dict | lt::torrent_handle::flush_disk_cache);
         ++outstanding_resume_requests_;

@@ -87,6 +87,8 @@ Task<void> Connection::do_read() {
             std::rethrow_exception(std::make_exception_ptr(se));
         } else {
             Response msg_response{};
+            request_keep_alive_ = parser.get().keep_alive();
+            request_http_version_ = parser.get().version();
             msg_response.status = Channel::ResponseStatus::bad_request;
             msg_response.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
             co_await do_write(msg_response);
@@ -100,216 +102,192 @@ Task<void> Connection::do_read() {
     if (!parser.is_done()) {
         co_return;
     }
+    request_keep_alive_ = parser.get().keep_alive();
+    request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
         co_return;
     }
 
-#ifdef notdef
-    if (jwt) {
-        Response response;
-        msg_response.status = Channel::ResponseStatus::processing_continue;
-        co_await do_write(msg_response);
-        else {
-#endif
-            co_await handle_request(parser);
+    co_await handle_request(parser.get());
+}
+
+Task<void>
+Connection::handle_request(boost::beast::http::request<boost::beast::http::string_body>& req) {
+    Response response;
+
+    if (!req.body().size()) {
+        response.content = "";
+        response.status = Channel::ResponseStatus::no_content;
+        co_await do_write(response);
+    } else {
+        SILK_TRACE << "handle HTTP request content #size: " << req.body().size();
+        SILK_TRACE << "handle HTTP request content: " << req.body();
+
+        const auto auth_result = is_request_authorized(req);
+        if (!auth_result) {
+            response.content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
+            response.status = Channel::ResponseStatus::unauthorized;
+            co_await do_write(response);
+        } else {
+            co_await request_handler_.handle(req.body());
         }
+    }
+}
 
-        Task<void>
-        Connection::handle_request(boost::beast::http::request_parser<boost::beast::http::string_body> & parser) {
-            Response response;
-            auto& message = parser.get();
+boost::beast::http::status Connection::get_http_status(Channel::ResponseStatus status) {
+    switch (status) {
+        case ResponseStatus::processing_continue:
+            return boost::beast::http::status::processing;
+        case ResponseStatus::ok:
+            return boost::beast::http::status::ok;
+        case ResponseStatus::created:
+            return boost::beast::http::status::created;
+        case ResponseStatus::accepted:
+            return boost::beast::http::status::accepted;
+        case ResponseStatus::no_content:
+            return boost::beast::http::status::no_content;
+        case ResponseStatus::multiple_choices:
+            return boost::beast::http::status::multiple_choices;
+        case ResponseStatus::moved_permanently:
+            return boost::beast::http::status::moved_permanently;
+        case ResponseStatus::not_modified:
+            return boost::beast::http::status::not_modified;
+        case ResponseStatus::bad_request:
+            return boost::beast::http::status::bad_request;
+        case ResponseStatus::unauthorized:
+            return boost::beast::http::status::unauthorized;
+        case ResponseStatus::forbidden:
+            return boost::beast::http::status::forbidden;
+        case ResponseStatus::not_found:
+            return boost::beast::http::status::not_found;
+        case ResponseStatus::internal_server_error:
+            return boost::beast::http::status::internal_server_error;
+        case ResponseStatus::not_implemented:
+            return boost::beast::http::status::not_implemented;
+        case ResponseStatus::bad_gateway:
+            return boost::beast::http::status::bad_gateway;
+        case ResponseStatus::service_unavailable:
+            return boost::beast::http::status::service_unavailable;
+        default:
+            return boost::beast::http::status::internal_server_error;
+    }
+}
 
-            request_keep_alive_ = message.keep_alive();
-            request_http_version_ = message.version();
-            if (!message.body().size()) {
-                response.content = "";
-                response.status = Channel::ResponseStatus::no_content;
-                co_await do_write(response);
-            } else {
-                SILK_TRACE << "handle HTTP request content #size: " << *parser.content_length();
+/* notification from request_handler */
+Task<void>
+Connection::write_rsp(Response& msg_response) {
+    co_await do_write(msg_response);
+}
 
-                const auto auth_result = is_request_authorized(parser);
-                if (!auth_result) {
-                    response.content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-                    response.status = Channel::ResponseStatus::unauthorized;
-                    co_await do_write(response);
-                } else {
-                    co_await request_handler_.handle(message.body());
-                }
-            }
+Task<void> Connection::open_stream() {
+    try {
+        boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::ok, request_http_version_};
+        res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
+        res.set(boost::beast::http::field::content_type, "application/json");
+        res.set("Transfer-Encoding", "chunked");
+        res.keep_alive(request_keep_alive_);
+
+        set_cors(res);
+
+        res.prepare_payload();
+        co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
+    } catch (const boost::system::system_error& se) {
+        std::rethrow_exception(std::make_exception_ptr(se));
+    } catch (const std::exception& e) {
+        std::rethrow_exception(std::make_exception_ptr(e));
+    }
+    co_return;
+}
+
+Task<std::size_t> Connection::write(std::string_view content) {
+    /* write chunks */
+    const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+    SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
+    co_return bytes_transferred;
+}
+
+//! The number of HTTP headers added when Cross-Origin Resource Sharing (CORS) is enabled.
+static constexpr size_t kCorsNumHeaders{4};
+
+Task<void> Connection::do_write(Response& response) {
+    try {
+        SILK_DEBUG << "Connection::do_write response: " << response.content;
+        auto http_status = get_http_status(response.status);
+        boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
+        res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
+        res.set(boost::beast::http::field::content_type, "application/json");
+        res.keep_alive(request_keep_alive_);
+        res.content_length(response.content.size());
+        res.body() = std::string(std::move(response.content));
+
+        set_cors(res);
+
+        res.prepare_payload();
+        const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
+
+        SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
+    } catch (const boost::system::system_error& se) {
+        std::rethrow_exception(std::make_exception_ptr(se));
+    } catch (const std::exception& e) {
+        std::rethrow_exception(std::make_exception_ptr(e));
+    }
+    co_return;
+}
+
+void Connection::set_cors(boost::beast::http::response<boost::beast::http::string_body>& res) {
+    if (allowed_origins_.empty()) {
+        return;
+    }
+
+    if (allowed_origins_.at(0) == "*") {
+        res.set("Access-Control-Allow-Origin", "*");
+    } else {
+        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
+    }
+    res.set("Access-Control-Allow-Methods", "GET, POST");
+    res.set("Access-Control-Allow-Headers", "*");
+    res.set("Access-Control-Max-Age", "600");
+}
+
+Connection::AuthorizationResult Connection::is_request_authorized(boost::beast::http::request<boost::beast::http::string_body>& req) {
+    if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
+        return {};
+    }
+
+    auto it = req.find("Authorization");
+    if (it == req.end()) {
+        SILK_ERROR << "JWT request without Authorization Header: " << req.body();
+        return tl::make_unexpected("missing Authorization header");
+    }
+
+    std::string client_token;
+    if (it->value().substr(0, 7) == "Bearer ") {
+        client_token = it->value().substr(7);
+    } else {
+        SILK_ERROR << "JWT client request without token";
+        return tl::make_unexpected("missing token");
+    }
+    try {
+        // Parse token
+        auto decoded_client_token = jwt::decode(client_token);
+        if (decoded_client_token.has_issued_at() == 0) {
+            SILK_ERROR << "JWT iat (Issued At) not defined";
+            return tl::make_unexpected("iat(Issued At) not defined");
         }
+        // Validate token
+        auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
 
-        boost::beast::http::status Connection::get_http_status(Channel::ResponseStatus status) {
-            switch (status) {
-                case ResponseStatus::processing_continue:
-                    return boost::beast::http::status::processing;
-                case ResponseStatus::ok:
-                    return boost::beast::http::status::ok;
-                case ResponseStatus::created:
-                    return boost::beast::http::status::created;
-                case ResponseStatus::accepted:
-                    return boost::beast::http::status::accepted;
-                case ResponseStatus::no_content:
-                    return boost::beast::http::status::no_content;
-                case ResponseStatus::multiple_choices:
-                    return boost::beast::http::status::multiple_choices;
-                case ResponseStatus::moved_permanently:
-                    return boost::beast::http::status::moved_permanently;
-                case ResponseStatus::not_modified:
-                    return boost::beast::http::status::not_modified;
-                case ResponseStatus::bad_request:
-                    return boost::beast::http::status::bad_request;
-                case ResponseStatus::unauthorized:
-                    return boost::beast::http::status::unauthorized;
-                case ResponseStatus::forbidden:
-                    return boost::beast::http::status::forbidden;
-                case ResponseStatus::not_found:
-                    return boost::beast::http::status::not_found;
-                case ResponseStatus::internal_server_error:
-                    return boost::beast::http::status::internal_server_error;
-                case ResponseStatus::not_implemented:
-                    return boost::beast::http::status::not_implemented;
-                case ResponseStatus::bad_gateway:
-                    return boost::beast::http::status::bad_gateway;
-                case ResponseStatus::service_unavailable:
-                    return boost::beast::http::status::service_unavailable;
-                default:
-                    return boost::beast::http::status::internal_server_error;
-            }
-        }
+        SILK_TRACE << "JWT client token: " << client_token << " secret: " << *jwt_secret_;
+        verifier.verify(decoded_client_token);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "JWT invalid token: " << se.what();
+        return tl::make_unexpected("invalid token");
+    } catch (const std::exception& se) {
+        SILK_ERROR << "JWT invalid token: " << se.what();
+        return tl::make_unexpected("invalid token");
+    }
+    return {};
+}
 
-        /* notification from request_handler */
-        Task<void>
-        Connection::write_rsp(Response & msg_response) {
-            co_await do_write(msg_response);
-        }
-
-        Task<void> Connection::open_stream() {
-            /* write chunk headers */
-            co_await write_headers();
-        }
-
-        Task<std::size_t> Connection::write(std::string_view content) {
-            /* write chunks */
-            const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
-            SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
-            co_return bytes_transferred;
-        }
-
-        //! The number of HTTP headers added when Cross-Origin Resource Sharing (CORS) is enabled.
-        static constexpr size_t kCorsNumHeaders{4};
-
-        Task<void> Connection::do_write(Response & response) {
-            try {
-                SILK_DEBUG << "Connection::do_write response: " << response.content;
-                auto http_status = get_http_status(response.status);
-                boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
-                res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
-                res.set(boost::beast::http::field::content_type, "application/json");
-                res.keep_alive(request_keep_alive_);
-                res.content_length(response.content.size());
-                res.body() = std::string(std::move(response.content));
-
-                // set_cors(reply.headers); //TODO
-
-                res.prepare_payload();
-                const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
-
-                SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
-            } catch (const boost::system::system_error& se) {
-                std::rethrow_exception(std::make_exception_ptr(se));
-            } catch (const std::exception& e) {
-                std::rethrow_exception(std::make_exception_ptr(e));
-            }
-            co_return;
-        }
-
-        Task<void> Connection::write_headers() {
-#ifdef notdef
-            try {
-                std::vector<http::Header> headers;
-                headers.reserve(allowed_origins_.empty() ? 2 : 2 + kCorsNumHeaders);
-                headers.emplace_back(http::Header{"Content-Type", "application/json"});
-                headers.emplace_back(http::Header{"Transfer-Encoding", "chunked"});
-
-                set_cors(headers);
-
-                auto buffers = http::to_buffers(StatusType::ok, headers);
-
-                const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
-                SILK_TRACE << "Connection::write_headers bytes_transferred: " << bytes_transferred;
-            } catch (const std::system_error& se) {
-                std::rethrow_exception(std::make_exception_ptr(se));
-            } catch (const std::exception& e) {
-                std::rethrow_exception(std::make_exception_ptr(e));
-            }
-#endif
-            co_return;
-        }
-
-#ifdef notdef
-        void Connection::set_cors(std::vector<Header> & headers) {
-            if (allowed_origins_.empty()) {
-                return;
-            }
-
-            if (allowed_origins_.at(0) == "*") {
-                headers.emplace_back(http::Header{"Access-Control-Allow-Origin", "*"});
-            } else {
-                headers.emplace_back(http::Header{"Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ",")});
-            }
-            headers.emplace_back(http::Header{"Access-Control-Allow-Methods", "GET, POST"});
-            headers.emplace_back(http::Header{"Access-Control-Allow-Headers", "*"});
-            headers.emplace_back(http::Header{"Access-Control-Max-Age", "600"});
-        }
-#endif
-
-        Connection::AuthorizationResult Connection::is_request_authorized(boost::beast::http::request_parser<boost::beast::http::string_body> & parser) {
-            boost::ignore_unused(parser);
-
-            if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
-                return {};
-            }
-
-#ifdef notdef
-            const auto it = std::find_if(request.headers.begin(), request.headers.end(), [&](const Header& h) {
-                return h.name == "Authorization";
-            });
-
-            if (it == request.headers.end()) {
-                SILK_ERROR << "JWT request without Authorization Header: " << request;
-                return tl::make_unexpected("missing Authorization Header");
-            }
-
-            std::string client_token;
-            if (it->value.substr(0, 7) == "Bearer ") {
-                client_token = it->value.substr(7);
-            } else {
-                SILK_ERROR << "JWT client request without token";
-                return tl::make_unexpected("missing token");
-            }
-            try {
-                // Parse token
-                auto decoded_client_token = jwt::decode(client_token);
-                if (decoded_client_token.has_issued_at() == 0) {
-                    SILK_ERROR << "JWT iat (Issued At) not defined";
-                    return tl::make_unexpected("iat(Issued At) not defined");
-                }
-                // Validate token
-                auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
-
-                SILK_TRACE << "JWT client token: " << client_token << " secret: " << *jwt_secret_;
-                verifier.verify(decoded_client_token);
-            } catch (const boost::system::system_error& se) {
-                SILK_ERROR << "JWT invalid token: " << se.what();
-                return tl::make_unexpected("invalid token");
-            } catch (const std::exception& se) {
-                SILK_ERROR << "JWT invalid token: " << se.what();
-                return tl::make_unexpected("invalid token");
-            }
-#endif
-            return {};
-        }
-
-    }  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::http

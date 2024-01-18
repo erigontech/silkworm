@@ -68,13 +68,11 @@ class Connection : public Channel {
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(boost::beast::http::request_parser<boost::beast::http::string_body>& parser);
+    AuthorizationResult is_request_authorized(boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    Task<void> handle_request(boost::beast::http::request_parser<boost::beast::http::string_body>& parser);
+    Task<void> handle_request(boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    // void set_cors(std::vector<Header>& headers); // TODO
-
-    Task<void> write_headers();
+    void set_cors(boost::beast::http::response<boost::beast::http::string_body>& res);
 
     static boost::beast::http::status get_http_status(Channel::ResponseStatus status);
 

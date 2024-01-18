@@ -23,7 +23,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/files.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm {
 
@@ -37,7 +37,7 @@ static std::string ascii_from_hex(const std::string& hex) {
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::TemporaryFile tmp_jwt_file;
+    test_util::TemporaryFile tmp_jwt_file;
 
     SECTION("empty file path") {
         CHECK_THROWS_AS(generate_jwt_token(std::filesystem::path{""}), std::runtime_error);
@@ -57,7 +57,7 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
 
 TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::TemporaryFile tmp_jwt_file;
+    test_util::TemporaryFile tmp_jwt_file;
     std::ofstream tmp_jwt_ofs{tmp_jwt_file.path()};
 
     SECTION("empty file path") {

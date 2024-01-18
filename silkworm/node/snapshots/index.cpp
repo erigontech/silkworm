@@ -25,8 +25,11 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_seq.hpp>
-#include <silkworm/node/test/snapshots.hpp>
+#include <silkworm/node/snapshots/snapshot.hpp>
+
+#include "encode_varint.hpp"
 
 namespace silkworm::snapshots {
 
@@ -94,7 +97,7 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
 
 bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
     Bytes uint64_buffer;
-    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer);
+    const auto size = encode_varint<uint64_t>(i, uint64_buffer);
     rec_split.add_key(uint64_buffer.data(), size, offset);
     return true;
 }

@@ -30,7 +30,7 @@
 #include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/node/stagedsync/types.hpp>
 
-namespace silkworm::test {
+namespace silkworm::chainsync::test_util {
 
 //! \brief MockBlockExchange is the gMock mock class for execution::Client.
 class MockClient : public execution::Client {
@@ -60,4 +60,4 @@ class MockClient : public execution::Client {
     MOCK_METHOD((Task<std::optional<TotalDifficulty>>), get_header_td, (Hash, std::optional<BlockNum>), (override));
 };
 
-}  // namespace silkworm::test
+}  // namespace silkworm::chainsync::test_util

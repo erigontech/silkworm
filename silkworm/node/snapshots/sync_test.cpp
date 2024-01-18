@@ -21,8 +21,8 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
 #include <silkworm/node/test/context.hpp>
-#include <silkworm/node/test/files.hpp>
 
 namespace silkworm::snapshots {
 

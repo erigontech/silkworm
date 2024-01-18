@@ -20,12 +20,15 @@
 
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/snapshots.hpp>
+#include <silkworm/node/snapshots/test_util/common.hpp>
 
 namespace silkworm::snapshots {
 
+namespace test = test_util;
+using silkworm::test_util::SetLogVerbosityGuard;
+
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
     HeaderIndex header_index{*SnapshotPath::parse(tmp_snapshot_file.path().string())};
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
@@ -33,7 +36,7 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
 
 // This unit test fails on Windows with error: SIGSEGV - Segmentation violation signal
 TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_body_snapshot{};
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     BodyIndex body_index{body_snapshot_path};
@@ -41,7 +44,7 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
 }
 
 TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
     constexpr const char* kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
 
@@ -54,7 +57,7 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
 }
 
 TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     constexpr const char* kTransactionsSnapshotFileName{"v1-015000-015500-transactions.seg"};
 
     SECTION("KO: invalid zero word length") {
@@ -130,7 +133,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 }
 
 TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_bodies_snapshot{};
     test::SampleTransactionSnapshotFile valid_txs_snapshot{};
     test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers

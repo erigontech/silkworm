@@ -16,152 +16,131 @@
 
 #include "request_handler.hpp"
 
-#include <catch2/catch.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/thread_pool.hpp>
+#if !defined(__clang__)
+#include <boost/asio/use_future.hpp>
+#endif  // !defined(__clang__)
 
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/constants.hpp>
+
+
+#include <catch2/catch.hpp>
 
 namespace silkworm::rpc::http {
 
-TEST_CASE("check handle_request  empty content ", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        0,
-        ""};
-    Reply reply{};
+//! Represents a single connection from a client.
+class HandlerListener : public Channel {
+public:
+    Task<void> write_rsp(Response& response) override {
+       response_ = response;
+       co_return;
+    }
 
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
+    Task<void> open_stream() override {
+       co_return;
+    }
+
+    Task<std::size_t> write(std::string_view /* content */) override {
+       co_return 0;
+    }
+
+    Task<void> close() override {
+       co_return;
+    }
+
+    Response& get_response () {return response_; }
+
+private:
+    Response response_;
+};
+
+
+TEST_CASE("check handle_request no method", "[rpc][handle]") {
         boost::asio::thread_pool workers{1};
+        ClientContextPool cp{1};
+        add_shared_service(cp.next_io_context(), std::make_shared<BlockCache>());
+        add_shared_service<ethdb::kv::StateCache>(cp.next_io_context(), std::make_shared<ethdb::kv::CoherentStateCache>());
+
+        cp.start();
+        HandlerListener listener;
+        commands::RpcApi api{cp.next_io_context(), workers};
+        commands::RpcApiTable handler_table{kDefaultEth1ApiSpec};
+        const std::string json = {"{\"jsonrpc\":\"2.0\",\"id\":3 }"};
+        RequestHandler h{&listener, api, handler_table};
+        cp.start();
+
         try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
+            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle(json), boost::asio::use_future)};
             result.get();
         } catch (...) {
+           std::cout << "exception\n";
            CHECK(false);
         }
 
-        CHECK(reply.content == "");
-        CHECK(reply.status == 204);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "0");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
+        CHECK(listener.get_response().content == "");
+        CHECK(listener.get_response().status == Channel::ResponseStatus::no_content);
         cp.stop();
-        context_pool_thread.join();
-    */
-}
-
-TEST_CASE("check handle_request no method", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        24,
-        R"({"jsonrpc":"2.0","id":3 })"};
-    Reply reply{};
-
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::thread_pool workers{1};
-
-        try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
-            result.get();
-        } catch (...) {
-           CHECK(false);
-        }
-        CHECK(reply.content == "{\"error\":{\"code\":-32600,\"message\":\"method missing\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 400);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "76");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
-        cp.stop();
-        context_pool_thread.join();
-    */
+        cp.join();
 }
 
 TEST_CASE("check handle_request invalid method", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        24,
-        R"({"jsonrpc":"2.0","id":3,"method":"eth_AAA"})"};
-    Reply reply{};
+        boost::asio::io_context io_context;
+        std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
         boost::asio::thread_pool workers{1};
+        ClientContextPool cp{1};
+        cp.start();
+
+        HandlerListener listener;
+        commands::RpcApi api{cp.next_io_context(), workers};
+        commands::RpcApiTable handler_table{kDefaultEth1ApiSpec};
+        const std::string json = {"{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"eth_AAA\"}"};
 
         try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
+            RequestHandler h{&listener, api, handler_table};
+            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle(json), boost::asio::use_future)};
             result.get();
         } catch (...) {
            CHECK(false);
         }
-        CHECK(reply.content == "{\"error\":{\"code\":-32601,\"message\":\"method not existent or not implemented\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 501);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "100");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
+
+        CHECK(listener.get_response().content == "");
+        CHECK(listener.get_response().status == Channel::ResponseStatus::not_implemented);
         cp.stop();
-        context_pool_thread.join();
-    */
+        cp.join();
 }
 
 TEST_CASE("check handle_request method return failed", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        70,
-        R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"};
-    Reply reply{};
+        boost::asio::io_context io_context;
+        std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
         boost::asio::thread_pool workers{1};
+        ClientContextPool cp{1};
+        cp.start();
 
-        RequestHandler h{cp.next_context(), workers};
+        HandlerListener listener;
+        commands::RpcApi api{cp.next_io_context(), workers};
+        commands::RpcApiTable handler_table{kDefaultEth1ApiSpec};
+        const std::string json = {"{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"eth_getBlockByNumber\",\"params\":[]}"};
+
         try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
+            RequestHandler h{&listener, api, handler_table};
+            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle(json), boost::asio::use_future)};
             result.get();
         } catch (...) {
            CHECK(false);
         }
-        CHECK(reply.content == "{\"error\":{\"code\":100,\"message\":\"invalid getBlockByNumber params: []\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 200);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "94");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
+
+        CHECK(listener.get_response().content == "");
+        CHECK(listener.get_response().status == Channel::ResponseStatus::ok);
         cp.stop();
-        context_pool_thread.join();
-    */
+        cp.join();
 }
 
 }  // namespace silkworm::rpc::http

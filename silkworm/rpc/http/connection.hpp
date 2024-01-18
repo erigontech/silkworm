@@ -37,10 +37,7 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/http/channel.hpp>
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
-#include <silkworm/rpc/http/request_parser.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -75,17 +72,17 @@ class Connection : public Channel {
 
     Task<void> handle_request(boost::beast::http::request_parser<boost::beast::http::string_body>& parser);
 
-    void set_cors(std::vector<Header>& headers);
+    // void set_cors(std::vector<Header>& headers); // TODO
 
     Task<void> write_headers();
 
-    static StatusType get_http_status(Channel::ResponseStatus status);
+    static boost::beast::http::status get_http_status(Channel::ResponseStatus status);
 
     //! Perform an asynchronous read operation.
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(http::Reply& reply);
+    Task<void> do_write(Response& response);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -98,6 +95,9 @@ class Connection : public Channel {
     const std::vector<std::string>& allowed_origins_;
 
     const std::optional<std::string> jwt_secret_;
+
+    bool request_keep_alive_{false};
+    unsigned int request_http_version_{11};
 };
 
 }  // namespace silkworm::rpc::http

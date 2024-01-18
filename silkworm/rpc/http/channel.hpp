@@ -44,7 +44,7 @@ class Channel : public StreamWriter {
 
     struct Response {
         ResponseStatus status{ResponseStatus::ok};
-        std::string content;
+        std::string content{};
     };
 
     Channel() = default;

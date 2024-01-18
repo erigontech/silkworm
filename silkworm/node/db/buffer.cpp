@@ -25,9 +25,9 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/log_cbor.hpp>
+#include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/types/log_cbor.hpp>
-#include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
 

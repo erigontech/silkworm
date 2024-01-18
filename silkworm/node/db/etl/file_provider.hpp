@@ -20,10 +20,10 @@
 #include <memory>
 #include <optional>
 
-#include <silkworm/node/etl/buffer.hpp>
-#include <silkworm/node/etl/util.hpp>
+#include <silkworm/node/db/etl/buffer.hpp>
+#include <silkworm/node/db/etl/util.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
 
 /**
  * Provides an abstraction to flush data to disk
@@ -48,4 +48,4 @@ class FileProvider {
     size_t file_size_{0};    // Actual size of written data
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::db::etl

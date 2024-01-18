@@ -32,7 +32,7 @@ class BlockHashes final : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    std::unique_ptr<etl::Collector> collector_{nullptr};
+    std::unique_ptr<db::etl::Collector> collector_{nullptr};
 
     /* Stats */
     std::atomic_uint32_t current_phase_{0};

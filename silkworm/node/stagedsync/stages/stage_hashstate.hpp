@@ -24,7 +24,7 @@ class HashState final : public Stage {
   public:
     explicit HashState(NodeSettings* node_settings, SyncContext* sync_context)
         : Stage(sync_context, db::stages::kHashStateKey, node_settings),
-          collector_(std::make_unique<etl::Collector>(node_settings)){};
+          collector_(std::make_unique<db::etl::Collector>(node_settings)){};
     ~HashState() override = default;
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
@@ -71,13 +71,13 @@ class HashState final : public Stage {
     void reset_log_progress();
 
     // Logger info
-    std::mutex log_mtx_{};                       // Guards async logging
-    std::atomic_bool incremental_{false};        // Whether operation is incremental
-    std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
-    std::string current_source_;                 // Current source of data
-    std::string current_target_;                 // Current target of transformed data
-    std::string current_key_;                    // Actual processing key
-    std::unique_ptr<etl::Collector> collector_;  // Collector (used only in !incremental_)
+    std::mutex log_mtx_{};                           // Guards async logging
+    std::atomic_bool incremental_{false};            // Whether operation is incremental
+    std::atomic_bool loading_{false};                // Whether we're in ETL loading phase
+    std::string current_source_;                     // Current source of data
+    std::string current_target_;                     // Current target of transformed data
+    std::string current_key_;                        // Actual processing key
+    std::unique_ptr<db::etl::Collector> collector_;  // Collector (used only in !incremental_)
 };
 
 }  // namespace silkworm::stagedsync

@@ -29,6 +29,9 @@
 
 namespace silkworm::stagedsync {
 
+using db::etl::Collector;
+using db::etl::Entry;
+
 Stage::Result HashState::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
@@ -224,7 +227,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                     throw StageError(Stage::Result::kUnexpectedError, what);
                 }
 
-                etl::Entry entry{Bytes(address_hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
+                Entry entry{Bytes(address_hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
                 collector_->collect(std::move(entry));
 
             } else if (data.key.length() == db::kPlainStoragePrefixLength) {
@@ -259,7 +262,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                     std::memcpy(&etl_storage_entry_key[kHashLength + db::kIncarnationLength],
                                 keccak256(data_value_view.substr(0, kHashLength)).bytes, kHashLength);
                     data_value_view.remove_prefix(kHashLength);
-                    etl::Entry entry{etl_storage_entry_key, Bytes{data_value_view}};
+                    Entry entry{etl_storage_entry_key, Bytes{data_value_view}};
                     collector_->collect(std::move(entry));
                     data = source->to_current_next_multi(false);
                 }
@@ -284,8 +287,8 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                 throw std::runtime_error(std::string(db::table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
-            const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, db::RWCursorDupSort& target,
-                                                              MDBX_put_flags_t) -> void {
+            const db::etl::LoadFunc load_func = [&storage_target](const Entry& entry, db::RWCursorDupSort& target,
+                                                                  MDBX_put_flags_t) -> void {
                 if (entry.value.empty()) {
                     return;
                 }
@@ -373,7 +376,7 @@ Stage::Result HashState::hash_from_plaincode(db::RWTxn& txn) {
 
             std::memcpy(&new_key[kHashLength], &data_key_view[kAddressLength], db::kIncarnationLength);
 
-            etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+            Entry entry{new_key, Bytes{db::from_slice(data.value)}};
             collector_->collect(std::move(entry));
             data = source->to_next(/*throw_notfound=*/false);
         }

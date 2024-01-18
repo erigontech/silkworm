@@ -26,9 +26,9 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/snapshots/repository.hpp>
-#include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
 

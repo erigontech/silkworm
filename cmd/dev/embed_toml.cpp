@@ -80,8 +80,8 @@ int main(int argc, char* argv[]) {
             output << "/* Generated from " << entry.path().filename().string() << " using Silkworm embed_toml */\n\n";
             output << "#pragma once\n\n";
             output << "#include <array>\n\n";
-            output << "#include <silkworm/node/snapshot/entry.hpp>\n\n";
-            output << "namespace silkworm::snapshot {\n\n";
+            output << "#include <silkworm/node/snapshots/entry.hpp>\n\n";
+            output << "namespace silkworm::snapshots {\n\n";
             output << "inline constexpr std::array<Entry, " << table.size() << "> k" << snapshot_name << "Snapshots{\n";
             for (auto&& [key, value] : table) {
                 std::string key_str{key.begin(), key.end()};

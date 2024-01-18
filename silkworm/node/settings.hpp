@@ -21,16 +21,16 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/server_settings.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/node/snapshots/settings.hpp>
 #include <silkworm/sentry/settings.hpp>
 
 namespace silkworm::node {
 
 struct Settings : public NodeSettings {
-    log::Settings log_settings;                    // Configuration for the logging facility
-    sentry::Settings sentry_settings;              // Configuration for Sentry client + embedded server
-    rpc::ServerSettings server_settings;           // Configuration for the gRPC server
-    snapshot::SnapshotSettings snapshot_settings;  // Configuration for the database snapshots
+    log::Settings log_settings;                     // Configuration for the logging facility
+    sentry::Settings sentry_settings;               // Configuration for Sentry client + embedded server
+    rpc::ServerSettings server_settings;            // Configuration for the gRPC server
+    snapshots::SnapshotSettings snapshot_settings;  // Configuration for the database snapshots
 };
 
 }  // namespace silkworm::node

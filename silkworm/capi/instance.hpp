@@ -23,13 +23,13 @@
 #include <boost/asio/cancellation_signal.hpp>
 
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 struct SilkwormInstance {
     silkworm::concurrency::ContextPoolSettings context_pool_settings;
     std::filesystem::path data_dir_path;
-    std::unique_ptr<silkworm::snapshot::SnapshotRepository> snapshot_repository;
+    std::unique_ptr<silkworm::snapshots::SnapshotRepository> snapshot_repository;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
 
     // sentry

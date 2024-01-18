@@ -23,7 +23,7 @@
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/settings.hpp>
-#include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/node/snapshots/settings.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>

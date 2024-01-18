@@ -21,13 +21,13 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/node/test/files.hpp>
 
 namespace silkworm::test {
 
-using snapshot::SnapshotPath;
-using snapshot::SnapshotType;
+using snapshots::SnapshotPath;
+using snapshots::SnapshotType;
 
 //! Big-endian int encoder
 template <typename int_t = uint64_t>

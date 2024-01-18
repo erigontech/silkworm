@@ -23,10 +23,10 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
-#include <silkworm/node/bittorrent/client.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/resource_usage.hpp>
-#include <silkworm/node/snapshot/sync.hpp>
+#include <silkworm/node/snapshots/bittorrent/client.hpp>
+#include <silkworm/node/snapshots/sync.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::node {
@@ -66,7 +66,7 @@ class NodeImpl final {
     mdbx::env chaindata_db_;
 
     //! The repository for snapshots
-    snapshot::SnapshotRepository snapshot_repository_;
+    snapshots::SnapshotRepository snapshot_repository_;
 
     //! The execution layer server engine
     execution::Server execution_server_;
@@ -75,7 +75,7 @@ class NodeImpl final {
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<rpc::BackEndKvServer> backend_kv_rpc_server_;
     ResourceUsageLog resource_usage_log_;
-    std::unique_ptr<BitTorrentClient> bittorrent_client_;
+    std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
@@ -89,7 +89,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.node_name);
     backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings.server_settings, *backend_);
-    bittorrent_client_ = std::make_unique<BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
+    bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
 
 void NodeImpl::setup() {
@@ -109,7 +109,7 @@ void NodeImpl::setup_snapshots() {
         db::RWTxnManaged rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
-        snapshot::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
+        snapshots::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
         snapshot_sync.download_and_index_snapshots(rw_txn);
 
         rw_txn.commit_and_stop();

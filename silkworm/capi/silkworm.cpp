@@ -33,7 +33,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/snapshot/index.hpp>
+#include <silkworm/node/snapshots/index.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 #include "instance.hpp"
@@ -150,7 +150,7 @@ SILKWORM_EXPORT int silkworm_init(
     log::init(kLogSettingsLikeErigon);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
-    auto snapshot_repository = std::make_unique<snapshot::SnapshotRepository>();
+    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>();
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
@@ -172,7 +172,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         return SILKWORM_INVALID_HANDLE;
     }
 
-    std::vector<std::shared_ptr<snapshot::Index>> needed_indexes;
+    std::vector<std::shared_ptr<snapshots::Index>> needed_indexes;
     for (size_t i = 0; i < len; i++) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
@@ -180,23 +180,23 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         }
         auto snapshot_region = make_region(*snapshot);
 
-        const auto snapshot_path = snapshot::SnapshotPath::parse(snapshot->file_path);
+        const auto snapshot_path = snapshots::SnapshotPath::parse(snapshot->file_path);
         if (!snapshot_path) {
             return SILKWORM_INVALID_PATH;
         }
 
-        std::shared_ptr<snapshot::Index> index;
+        std::shared_ptr<snapshots::Index> index;
         switch (snapshot_path->type()) {
-            case snapshot::SnapshotType::headers: {
-                index = std::make_shared<snapshot::HeaderIndex>(*snapshot_path, snapshot_region);
+            case snapshots::SnapshotType::headers: {
+                index = std::make_shared<snapshots::HeaderIndex>(*snapshot_path, snapshot_region);
                 break;
             }
-            case snapshot::SnapshotType::bodies: {
-                index = std::make_shared<snapshot::BodyIndex>(*snapshot_path, snapshot_region);
+            case snapshots::SnapshotType::bodies: {
+                index = std::make_shared<snapshots::BodyIndex>(*snapshot_path, snapshot_region);
                 break;
             }
-            case snapshot::SnapshotType::transactions: {
-                index = std::make_shared<snapshot::TransactionIndex>(*snapshot_path, snapshot_region);
+            case snapshots::SnapshotType::transactions: {
+                index = std::make_shared<snapshots::TransactionIndex>(*snapshot_path, snapshot_region);
                 break;
             }
             default: {
@@ -245,43 +245,43 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_SNAPSHOT;
     }
     const SilkwormHeadersSnapshot& hs = snapshot->headers;
-    const auto headers_segment_path = snapshot::SnapshotPath::parse(hs.segment.file_path);
+    const auto headers_segment_path = snapshots::SnapshotPath::parse(hs.segment.file_path);
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshot::MappedHeadersSnapshot mapped_h_snapshot{
+    snapshots::MappedHeadersSnapshot mapped_h_snapshot{
         .segment = make_region(hs.segment),
         .header_hash_index = make_region(hs.header_hash_index)};
-    auto headers_snapshot = std::make_unique<snapshot::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
+    auto headers_snapshot = std::make_unique<snapshots::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
     headers_snapshot->reopen_segment();
     headers_snapshot->reopen_index();
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
-    const auto bodies_segment_path = snapshot::SnapshotPath::parse(bs.segment.file_path);
+    const auto bodies_segment_path = snapshots::SnapshotPath::parse(bs.segment.file_path);
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshot::MappedBodiesSnapshot mapped_b_snapshot{
+    snapshots::MappedBodiesSnapshot mapped_b_snapshot{
         .segment = make_region(bs.segment),
         .block_num_index = make_region(bs.block_num_index)};
-    auto bodies_snapshot = std::make_unique<snapshot::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
+    auto bodies_snapshot = std::make_unique<snapshots::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
     bodies_snapshot->reopen_segment();
     bodies_snapshot->reopen_index();
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
-    const auto transactions_segment_path = snapshot::SnapshotPath::parse(ts.segment.file_path);
+    const auto transactions_segment_path = snapshots::SnapshotPath::parse(ts.segment.file_path);
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshot::MappedTransactionsSnapshot mapped_t_snapshot{
+    snapshots::MappedTransactionsSnapshot mapped_t_snapshot{
         .segment = make_region(ts.segment),
         .tx_hash_index = make_region(ts.tx_hash_index),
         .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)};
-    auto transactions_snapshot = std::make_unique<snapshot::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
+    auto transactions_snapshot = std::make_unique<snapshots::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
     transactions_snapshot->reopen_segment();
     transactions_snapshot->reopen_index();
 
-    snapshot::SnapshotBundle bundle{
+    snapshots::SnapshotBundle bundle{
         .headers_snapshot_path = *headers_segment_path,
         .headers_snapshot = std::move(headers_snapshot),
         .bodies_snapshot_path = *bodies_segment_path,

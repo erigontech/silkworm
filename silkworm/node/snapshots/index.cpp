@@ -32,6 +32,7 @@ namespace silkworm::snapshots {
 
 using RecSplitSettings = rec_split::RecSplitSettings;
 using RecSplit8 = rec_split::RecSplit8;
+using db::etl::kOptimalBufferSize;
 
 void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
@@ -45,7 +46,7 @@ void Index::build() {
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
         .base_data_id = index_file.block_from()};
-    RecSplit8 rec_split{rec_split_settings, rec_split::seq_build_strategy(etl::kOptimalBufferSize)};
+    RecSplit8 rec_split{rec_split_settings, rec_split::seq_build_strategy(kOptimalBufferSize)};
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
@@ -132,7 +133,7 @@ void TransactionIndex::build() {
         .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
         .double_enum_index = true};
-    RecSplit8 tx_hash_rs{tx_hash_rs_settings, rec_split::seq_build_strategy(etl::kOptimalBufferSize / 2)};
+    RecSplit8 tx_hash_rs{tx_hash_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
     SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
@@ -142,7 +143,7 @@ void TransactionIndex::build() {
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(etl::kOptimalBufferSize / 2)};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
 
     huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();

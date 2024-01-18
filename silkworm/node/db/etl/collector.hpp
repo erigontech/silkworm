@@ -19,15 +19,15 @@
 #include <mutex>
 
 #include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/db/etl/buffer.hpp>
+#include <silkworm/node/db/etl/file_provider.hpp>
+#include <silkworm/node/db/etl/util.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/etl/buffer.hpp>
-#include <silkworm/node/etl/file_provider.hpp>
-#include <silkworm/node/etl/util.hpp>
 
 // ETL : Extract, Transform, Load
 // https://en.wikipedia.org/wiki/Extract,_transform,_load
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
 
 inline constexpr size_t kOptimalBufferSize = 256_Mebi;
 
@@ -123,4 +123,4 @@ class Collector {
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::db::etl

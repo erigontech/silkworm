@@ -25,6 +25,8 @@
 
 namespace silkworm::stagedsync {
 
+using db::etl::Collector;
+
 Stage::Result TxLookup::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
@@ -237,7 +239,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_.store(false);
-    collector_ = std::make_unique<etl::Collector>(node_settings_);
+    collector_ = std::make_unique<Collector>(node_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
@@ -269,7 +271,7 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Unwind;
     loading_.store(false);
-    collector_ = std::make_unique<etl::Collector>(node_settings_);
+    collector_ = std::make_unique<Collector>(node_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
@@ -302,7 +304,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Prune;
     loading_.store(false);
-    collector_ = std::make_unique<etl::Collector>(node_settings_);
+    collector_ = std::make_unique<Collector>(node_settings_);
     current_source_ = std::string(source_config.name);
     current_target_.clear();
     current_key_.clear();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,19 +14,24 @@
    limitations under the License.
 */
 
-#include "in_memory_collector.hpp"
+#include "collector.hpp"
 
+#include <filesystem>
 #include <set>
 #include <thread>
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/test/context.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
+
+namespace fs = std::filesystem;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -54,32 +59,29 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return pairs;
 }
 
-template <typename COLLECTOR>
-void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
+void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
     test::Context context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
     size_t generated_size{0};
     for (const auto& entry : set) {
-        generated_size += entry.size();
+        generated_size += entry.size() + /* each flushed record stores also length of key and length of value */ 8;
     }
+    auto collector{Collector(context.dir().etl().path(), generated_size / 10)};  // expect 10 files
 
     // Collection
-    COLLECTOR collector{set.size()};
-
     for (auto&& entry : set) {
         if (do_copy)
             collector.collect(entry);  // copy is slower... do only if entry is reused afterwards
         else
             collector.collect(std::move(entry));
     }
+    // Check whether temporary files were generated
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
+    CHECK(collector.bytes_size() == (generated_size - 8 * set.size()));
 
-    // Check size
-    CHECK(collector.size() == set.size());
-    CHECK(collector.bytes_size() == generated_size);
-
-    // Reading loading key from another thread
+    // Load data while reading loading key from another thread
     auto key_reader_thread = std::thread([&collector]() -> void {
         size_t max_tries{10};
         while (--max_tries) {
@@ -89,66 +91,30 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
         }
     });
 
-    // Load data
     db::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
-
-    if (load_func) {
-        size_t found_items{0};
-        db::PooledCursor from{context.rw_txn(), db::table::kHeaderNumbers};
-        auto data = from.to_first();
-        while (data) {
-            auto key = db::from_slice(data.key);
-            auto value = db::from_slice(data.value);
-            found_items++;
-
-            // find key in set and compare value
-            auto it = std::find_if(set.begin(), set.end(), [&key](const Entry& entry) {
-                return entry.key == key;
-            });
-            CHECK(it != set.end());
-            CHECK(it->value == value);
-
-            data = from.to_next(/*throw_notfound =*/false);
-        }
-        CHECK(found_items == set.size());
-    }
-
+    // Check whether temporary files were cleaned
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
     key_reader_thread.join();
 }
 
-TEST_CASE("collect_and_default_load_in_memory_map") {
+TEST_CASE("collect_and_default_load") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<MapStorage>>(nullptr);
+    run_collector_test(nullptr);
 }
 
-TEST_CASE("collect_and_default_load_in_memory_vector") {
+TEST_CASE("collect_and_default_load_move") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<VectorStorage>>(nullptr);
+    run_collector_test(nullptr, false);
 }
 
-TEST_CASE("collect_and_default_load_move_in_memory_map") {
+TEST_CASE("collect_and_load") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<MapStorage>>(nullptr, false);
-}
-
-TEST_CASE("collect_and_default_load_move_in_memory_vector") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<VectorStorage>>(nullptr, false);
-}
-
-TEST_CASE("collect_and_load_in_memory_map") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
+    run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
+        Bytes key{entry.key};
+        key.at(0) = 1;
+        table.upsert(db::to_slice(key), db::to_slice(entry.value));
     });
 }
 
-TEST_CASE("collect_and_load_in_memory_vector") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
-    });
-}
-
-}  // namespace silkworm::etl
+}  // namespace silkworm::db::etl

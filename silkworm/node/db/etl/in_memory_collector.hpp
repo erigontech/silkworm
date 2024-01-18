@@ -20,15 +20,15 @@
 
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/db/etl/util.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/etl/util.hpp>
 
 /*
  * This is a memory-only reduced version of ETL Collector, with compatible interface
  * It can be used to prototype code that will use the full ETL collector or to do performance comparisons
  * between a memory-only impl. and a file-based impl.
  */
-namespace silkworm::etl {
+namespace silkworm::db::etl {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
@@ -172,4 +172,4 @@ class InMemoryCollector {
     std::string loading_key_{};   // Actual load key (for log purposes)
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::db::etl

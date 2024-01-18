@@ -28,7 +28,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -80,7 +80,7 @@ class Senders final : public Stage {
     uint64_t collected_senders_{0};
 
     //! ETL collector writing recovered senders in bulk
-    etl::Collector collector_;
+    db::etl::Collector collector_;
 
     // Stats
     std::mutex mutex_{};

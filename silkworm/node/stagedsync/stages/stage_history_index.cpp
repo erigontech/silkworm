@@ -64,7 +64,7 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
                 previous_progress_storage = node_settings_->prune_mode->history().value_from_head(target_progress);
         }
 
-        collector_ = std::make_unique<etl::Collector>(node_settings_);
+        collector_ = std::make_unique<db::etl::Collector>(node_settings_);
         if (previous_progress_accounts < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
             txn.commit_and_renew();

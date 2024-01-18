@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
 
 TEST_CASE("ETL Entry comparison") {
     Entry a{*from_hex("1a"), *from_hex("75")};
@@ -38,4 +38,4 @@ TEST_CASE("ETL Entry comparison") {
     CHECK(!(d < d));
 }
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::db::etl

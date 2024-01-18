@@ -53,7 +53,7 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split.hpp>
 
 namespace silkworm::snapshots::rec_split {
@@ -65,8 +65,8 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
   protected:
     void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t, bool double_enum_index) override {
-        offset_collector_ = std::make_unique<etl::Collector>(etl_optimal_size_);
-        bucket_collector_ = std::make_unique<etl::Collector>(etl_optimal_size_);
+        offset_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
+        bucket_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
 
         bucket_size_accumulator_.reserve(bucket_count + 1);
         bucket_position_accumulator_.reserve(bucket_count + 1);
@@ -128,7 +128,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         try {
             // Passing a void cursor is valid case for ETL when DB modification is not expected
             db::PooledCursor empty_cursor{};
-            bucket_collector_->load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
+            bucket_collector_->load(empty_cursor, [&](const db::etl::Entry& entry, auto&, MDBX_put_flags_t) {
                 // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
                 const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
                 SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
@@ -168,7 +168,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         // Build Elias-Fano index for offsets (if any)
         ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
         db::PooledCursor empty_cursor{};
-        offset_collector_->load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
+        offset_collector_->load(empty_cursor, [&](const db::etl::Entry& entry, auto&, MDBX_put_flags_t) {
             const uint64_t offset = endian::load_big_u64(entry.key.data());
             ef_offsets->add_offset(offset);
         });
@@ -245,7 +245,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
   private:
     // Optimal size for offset and bucket ETL collectors
-    std::size_t etl_optimal_size_{etl::kOptimalBufferSize};
+    std::size_t etl_optimal_size_{db::etl::kOptimalBufferSize};
 
     //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
     bool double_enum_index_{false};
@@ -266,10 +266,10 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     std::vector<uint64_t> current_bucket_offsets_;
 
     //! The ETL collector sorting keys by offset
-    std::unique_ptr<etl::Collector> offset_collector_{};
+    std::unique_ptr<db::etl::Collector> offset_collector_{};
 
     //! The ETL collector sorting keys by bucket
-    std::unique_ptr<etl::Collector> bucket_collector_{};
+    std::unique_ptr<db::etl::Collector> bucket_collector_{};
 
     //! Accumulator for size of every bucket
     std::vector<int64_t> bucket_size_accumulator_;
@@ -293,7 +293,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     // uint64_t previous_offset_{0};  // unused
 };
 
-inline auto seq_build_strategy(size_t etl_buffer_size = etl::kOptimalBufferSize) { return std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl_buffer_size); }
+inline auto seq_build_strategy(size_t etl_buffer_size = db::etl::kOptimalBufferSize) { return std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl_buffer_size); }
 
 /* Example usage:
     RecSplit8 recsplit{RecSplitSettings{}, seq_build_strategy(etl::kOptimalBufferSize)};

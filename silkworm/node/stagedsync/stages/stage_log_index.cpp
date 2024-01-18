@@ -21,7 +21,7 @@
 #include <gsl/narrow>
 #include <magic_enum.hpp>
 
-#include <silkworm/node/types/log_cbor.hpp>
+#include <silkworm/node/db/log_cbor.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -253,13 +253,15 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 }
 
 void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+    using db::etl::Collector;
+
     const db::MapConfig source_config{db::table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_ = false;
-    topics_collector_ = std::make_unique<etl::Collector>(node_settings_);
-    addresses_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    topics_collector_ = std::make_unique<Collector>(node_settings_);
+    addresses_collector_ = std::make_unique<Collector>(node_settings_);
     current_source_ = std::string(source_config.name);
     current_target_.clear();
     current_key_.clear();

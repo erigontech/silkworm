@@ -22,7 +22,7 @@
 #include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 
 namespace silkworm::db::bitmap {
 

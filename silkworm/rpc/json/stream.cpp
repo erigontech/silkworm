@@ -27,6 +27,9 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_future.hpp>
 
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+
 namespace silkworm::rpc::json {
 
 static std::uint8_t kObjectOpen = 1;
@@ -42,12 +45,23 @@ static std::string kFieldSeparator{","};  // NOLINT(runtime/string)
 static std::string kColon{":"};           // NOLINT(runtime/string)
 static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
+Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold)
+    : io_executor_(executor), writer_(writer), threshold_(threshold), channel_{executor, threshold}, synch_{executor, 1} {
+    buffer_.reserve(threshold);
+    co_spawn(
+        executor, [&]() -> Task<void> {
+            co_await run();
+        },
+        boost::asio::detached);
+}
+
 Task<void> Stream::close() {
     if (!buffer_.empty()) {
-        co_await writer_.write(buffer_);
-        buffer_.clear();
+        do_write(std::make_shared<std::string>(std::move(buffer_)));
     }
 
+    co_await channel_.async_send(boost::system::error_code(), nullptr, boost::asio::use_awaitable);
+    co_await synch_.async_receive(boost::asio::use_awaitable);
     co_await writer_.close();
 
     co_return;
@@ -232,13 +246,7 @@ void Stream::write_string(std::string_view str) {
 void Stream::write(std::string_view str) {
     buffer_ += str;
     if (buffer_.size() >= threshold_) {
-        std::string to_write(buffer_);
-        buffer_.clear();
-        co_spawn(
-            io_executor_, [&, value = std::move(to_write)]() -> Task<void> {
-                co_await writer_.write(value);
-            },
-            boost::asio::detached);
+        do_write(std::make_shared<std::string>(std::move(buffer_)));
     }
 }
 
@@ -250,6 +258,57 @@ void Stream::ensure_separator() {
             write(kFieldSeparator);
         }
     }
+}
+
+void Stream::do_write(std::shared_ptr<std::string> ptr) {
+    if (!closed_) {
+        co_spawn(
+            io_executor_, [&, pointer = ptr]() -> Task<void> {
+                co_await channel_.async_send(boost::system::error_code(), pointer, boost::asio::use_awaitable);
+                co_return;
+            },
+            boost::asio::detached);
+    }
+}
+
+Task<void> Stream::run() {
+    std::unique_ptr<silkworm::StopWatch> stop_watch;
+
+    uint32_t write_counter{0};
+    std::size_t total_send{0};
+    while (true) {
+        auto ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
+
+        if (!ptr) {
+            break;
+        }
+        if (!stop_watch) {
+            stop_watch = std::make_unique<StopWatch>(true);
+        }
+
+        try {
+            total_send += co_await writer_.write(*ptr);
+            write_counter++;
+        } catch (const std::exception& exception) {
+            SILK_ERROR << "#" << std::dec << write_counter << " Exception: " << exception.what();
+            closed_ = true;
+            channel_.close();
+            break;
+        }
+    }
+
+    closed_ = true;
+    channel_.close();
+
+    SILK_DEBUG << "Stream::run -> total write " << std::dec << write_counter << ", total sent: " << total_send;
+    if (stop_watch) {
+        const auto [_, duration] = stop_watch->lap();
+        SILK_DEBUG << "Stream::run -> actual duration " << StopWatch::format(duration);
+    }
+
+    co_await synch_.async_send(boost::system::error_code(), total_send, boost::asio::use_awaitable);
+
+    co_return;
 }
 
 }  // namespace silkworm::rpc::json

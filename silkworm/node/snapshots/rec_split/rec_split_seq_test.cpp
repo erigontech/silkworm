@@ -22,10 +22,15 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/files.hpp>
-#include <silkworm/node/test/xoroshiro128pp.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
+
+#include "test_util/xoroshiro128pp.hpp"
 
 namespace silkworm::snapshots::rec_split {
+
+using silkworm::test_util::SetLogVerbosityGuard;
+using silkworm::test_util::TemporaryFile;
+using test_util::next_pseudo_random;
 
 // Exclude tests from Windows build due to access issues with files in OS temporary dir
 #ifndef _WIN32
@@ -34,8 +39,8 @@ namespace silkworm::snapshots::rec_split {
 constexpr int kTestSalt{1};
 
 TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 0,
         .bucket_size = 10,
@@ -47,8 +52,8 @@ TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 1,
         .bucket_size = 10,
@@ -61,8 +66,8 @@ TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 2,
         .bucket_size = 10,
@@ -123,15 +128,15 @@ using RecSplit4 = RecSplit<kTestLeaf>;
 auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(db::etl::kOptimalBufferSize); }
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
 
     constexpr int kTestNumKeys{1'000};
     constexpr int kTestBucketSize{128};
 
     std::vector<hash128_t> hashed_keys;
     for (std::size_t i{0}; i < kTestNumKeys; ++i) {
-        hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
+        hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
     }
 
     RecSplitSettings settings{
@@ -161,8 +166,8 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
 
     struct RecSplitParams {
         std::size_t key_count{0};
@@ -179,7 +184,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
         SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
             std::vector<hash128_t> hashed_keys;
             for (std::size_t i{0}; i < key_count; ++i) {
-                hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
+                hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
             }
 
             RecSplitSettings settings{
@@ -208,8 +213,8 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
         .bucket_size = 10,
@@ -231,8 +236,8 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
 }
 
 TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kInfo};
-    test::TemporaryFile index_file;
+    SetLogVerbosityGuard guard{log::Level::kInfo};
+    TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
         .bucket_size = 10,

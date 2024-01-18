@@ -24,7 +24,7 @@ See <http://creativecommons.org/publicdomain/zero/1.0/>. */
 
 #include <cstdint>
 
-namespace silkworm::test {
+namespace silkworm::snapshots::rec_split::test_util {
 
 static inline uint64_t rotl(const uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 
@@ -42,4 +42,4 @@ static uint64_t next_pseudo_random() {
     return result;
 }
 
-}  // namespace silkworm::test
+}  // namespace silkworm::snapshots::rec_split::test_util

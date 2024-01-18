@@ -21,11 +21,13 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
+#include <silkworm/node/snapshots/encode_varint.hpp>
 #include <silkworm/node/snapshots/repository.hpp>
-#include <silkworm/node/test/files.hpp>
 
-namespace silkworm::test {
+namespace silkworm::snapshots::test_util {
 
+using snapshots::encode_varint;
 using snapshots::SnapshotPath;
 using snapshots::SnapshotType;
 
@@ -36,19 +38,6 @@ std::size_t encode_big_endian(int_t value, Bytes& output) {
     output.resize(old_size + sizeof(int_t));
     endian::store_big_u64(output.data() + old_size, value);
     return output.size();
-}
-
-//! Varint encoder
-template <typename int_t = uint64_t>
-std::size_t encode_varint(int_t value, Bytes& output) {
-    std::size_t varint_size{0};
-    while (value > 127) {
-        output.push_back(static_cast<uint8_t>(value & 127) | 128);
-        value >>= 7;
-        ++varint_size;
-    }
-    output.push_back(static_cast<uint8_t>(value) & 127);
-    return ++varint_size;
 }
 
 //! Snapshot header encoder
@@ -151,7 +140,7 @@ class TemporarySnapshotFile {
     const std::filesystem::path& path() const { return file_.path(); }
 
   private:
-    test::TemporaryFile file_;
+    silkworm::test_util::TemporaryFile file_;
 };
 
 //! HelloWorld snapshot file: it contains just one word: "hello, world" w/o any patterns
@@ -164,15 +153,15 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
         : TemporarySnapshotFile{tmp_dir, filename, kHeader, kBody} {}
 
   private:
-    inline static const test::SnapshotHeader kHeader{
+    inline static const SnapshotHeader kHeader{
         .words_count = 1,  // number of non-empty words
         .empty_words_count = 0,
-        .patterns = std::vector<test::SnapshotPattern>{},  // zero patterns
-        .positions = std::vector<test::SnapshotPosition>{
+        .patterns = std::vector<SnapshotPattern>{},  // zero patterns
+        .positions = std::vector<SnapshotPosition>{
             {1, 0},  // 1: depth 0: value
             {1, 13}  // 1: depth 13: unencoded data length (including position encoding)
         }};
-    inline static const test::SnapshotBody kBody{
+    inline static const SnapshotBody kBody{
         *from_hex("0168656C6C6F2C20776F726C64")  // 0x01: position 0x68656C6C6F2C20776F726C64: "hello, world"
     };
 };
@@ -411,4 +400,4 @@ class SampleTransactionSnapshotPath : public SampleSnapshotPath {
         : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::transactions) {}
 };
 
-}  // namespace silkworm::test
+}  // namespace silkworm::snapshots::test_util

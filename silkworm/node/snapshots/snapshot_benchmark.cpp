@@ -19,12 +19,16 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
 #include <silkworm/node/snapshots/huffman/decompressor.hpp>
 #include <silkworm/node/snapshots/index.hpp>
-#include <silkworm/node/test/files.hpp>
-#include <silkworm/node/test/snapshots.hpp>
+#include <silkworm/node/snapshots/test_util/common.hpp>
 
 namespace silkworm::snapshots {
+
+namespace test = test_util;
+using silkworm::test_util::SetLogVerbosityGuard;
+using silkworm::test_util::TemporaryFile;
 
 const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"
@@ -51,7 +55,7 @@ const Bytes kLoremIpsumDict{*from_hex(
     "73742036340d6c61626f72756d203635")};
 
 static void open_snapshot(benchmark::State& state) {
-    test::TemporaryFile tmp_file{};
+    TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     for ([[maybe_unused]] auto _ : state) {
         huffman::Decompressor decoder{tmp_file.path()};
@@ -122,7 +126,7 @@ static void build_tx_index(benchmark::State& state) {
 BENCHMARK(build_tx_index);
 
 static void reopen_folder(benchmark::State& state) {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
     std::filesystem::create_directories(tmp_dir);
     snapshots::SnapshotSettings settings{tmp_dir};

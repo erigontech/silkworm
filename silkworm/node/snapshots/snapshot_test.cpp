@@ -25,11 +25,13 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/snapshots/index.hpp>
-#include <silkworm/node/test/snapshots.hpp>
+#include <silkworm/node/snapshots/test_util/common.hpp>
 
 namespace silkworm::snapshots {
 
 using namespace std::chrono_literals;
+namespace test = test_util;
+using silkworm::test_util::SetLogVerbosityGuard;
 
 static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-014500-015000-headers.seg")};
 
@@ -93,14 +95,14 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{kValidHeadersSegmentPath.filename(), test::SnapshotHeader{}};
     Snapshot_ForTest snapshot{tmp_snapshot_file.path()};
     snapshot.reopen_segment();
 }
 
 TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{kValidHeadersSegmentPath.filename()};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
@@ -116,7 +118,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{kValidHeadersSegmentPath.filename()};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
@@ -126,7 +128,7 @@ TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
 
 // https://etherscan.io/block/1500013
 TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile valid_header_snapshot{};                             // contains headers for [1'500'012, 1'500'013]
     test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};  // necessary to tweak the block numbers
     HeaderIndex header_index{header_snapshot_path};
@@ -164,7 +166,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
 
 // https://etherscan.io/block/1500013
 TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_body_snapshot{};                           // contains bodies for [1'500'012, 1'500'013]
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     BodyIndex body_index{body_snapshot_path};
@@ -187,7 +189,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
 
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex tx_index{tx_snapshot_path};
@@ -207,7 +209,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex tx_index{tx_snapshot_path};
@@ -239,7 +241,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex tx_index{tx_snapshot_path};
@@ -273,7 +275,7 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 }
 
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex tx_index{tx_snapshot_path};
@@ -307,7 +309,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
 }
 
 TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     const std::vector<AccessListEntry> access_list{
         {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
          {
@@ -409,7 +411,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
 }
 
 TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile sample_header_snapshot{};
     test::SampleHeaderSnapshotPath header_snapshot_path{sample_header_snapshot.path()};
     HeaderIndex header_index{header_snapshot_path};
@@ -431,7 +433,7 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
 }
 
 TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile sample_body_snapshot{};
     test::SampleBodySnapshotPath body_snapshot_path{sample_body_snapshot.path()};
     BodyIndex body_index{body_snapshot_path};
@@ -453,7 +455,7 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
 }
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
     test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
     TransactionIndex tx_index{tx_snapshot_path};

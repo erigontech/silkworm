@@ -18,13 +18,13 @@
 
 #include <filesystem>
 #include <fstream>
+#include <ios>
 #include <string>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::test {
+namespace silkworm::test_util {
 
 //! Temporary file flushed after any data insertion
 class TemporaryFile {
@@ -48,4 +48,4 @@ class TemporaryFile {
     std::ofstream stream_;
 };
 
-}  // namespace silkworm::test
+}  // namespace silkworm::test_util

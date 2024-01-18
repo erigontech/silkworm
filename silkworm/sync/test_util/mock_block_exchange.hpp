@@ -30,7 +30,7 @@
 #include <silkworm/sync/messages/message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
-namespace silkworm::test {
+namespace silkworm::chainsync::test_util {
 
 //! \brief MockBlockExchange is the gMock mock class for BlockExchange.
 class MockBlockExchange : public BlockExchange {
@@ -56,4 +56,4 @@ class MockBlockExchange : public BlockExchange {
     MOCK_METHOD((SentryClient&), sentry, (), (const));
 };
 
-}  // namespace silkworm::test
+}  // namespace silkworm::chainsync::test_util

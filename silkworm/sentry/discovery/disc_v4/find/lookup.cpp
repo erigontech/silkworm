@@ -48,7 +48,7 @@ Task<size_t> lookup(
     auto node_ids = co_await db.take_lookup_candidates(query, now);
 
     size_t total_neighbors = 0;
-    auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), [&](size_t index) -> Task<void> {
+    auto group_task_factory = [&](size_t index) -> Task<void> {
         auto node_id = node_ids[index];
         try {
             total_neighbors += co_await find_neighbors(node_id, local_node_id, message_sender, on_neighbors_signal, db);
@@ -59,7 +59,8 @@ Task<size_t> lookup(
         } catch (const std::exception& ex) {
             log::Error("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " exception: " << ex.what();
         }
-    });
+    };
+    auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), group_task_factory);
 
     try {
         co_await (std::move(group_task) || concurrency::timeout(1s));

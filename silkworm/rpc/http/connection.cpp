@@ -29,6 +29,7 @@
 #include <absl/strings/str_join.h>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/beast/http/write.hpp>
 #include <boost/system/error_code.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
@@ -65,13 +66,13 @@ Task<void> Connection::read_loop() {
             SILK_DEBUG << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
             SILK_ERROR << "Connection::read_loop system_error: " << se.what();
-            std::rethrow_exception(std::make_exception_ptr(se));
+            throw;
         } else {
             SILK_DEBUG << "Connection::read_loop operation_aborted: " << se.what();
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
-        std::rethrow_exception(std::make_exception_ptr(e));
+        throw;
     }
 }
 
@@ -84,14 +85,17 @@ Task<void> Connection::do_read() {
         bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            std::rethrow_exception(std::make_exception_ptr(se));
+            throw;
         } else {
+
+#ifdef notdef /* TODO */
             Response msg_response{};
             request_keep_alive_ = parser.get().keep_alive();
             request_http_version_ = parser.get().version();
             msg_response.status = Channel::ResponseStatus::bad_request;
             msg_response.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
-            co_await do_write(msg_response);
+            co_await do_write(msg_response); 
+#endif
             co_return;
         }
     }
@@ -185,40 +189,38 @@ Task<void> Connection::open_stream() {
     /* write chunks header */
     try {
         boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_http_version_};
-        // res.keep_alive(request_keep_alive_);
         res.set(boost::beast::http::field::content_type, "application/json");
-        // res.set(boost::beast::http::field::transfer_encoding, "chunked");
         res.chunked(true);
 
-        // set_cors(res);
+        // Set up the serializer
+        boost::beast::http::response_serializer<boost::beast::http::empty_body> sr{res};
 
-        co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
+        co_await async_write_header(socket_, sr, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        std::rethrow_exception(std::make_exception_ptr(se));
+        SILK_ERROR << "Connection::open_stream system_error: " << se.what();
+        throw;
     } catch (const std::exception& e) {
-        std::rethrow_exception(std::make_exception_ptr(e));
+        SILK_ERROR << "Connection::open_stream exception: " << e.what();
+        throw;
     }
     co_return;
 }
 
 Task<std::size_t> Connection::write(std::string_view content) {
     /* write chunks */
-#ifdef notdef
-    std::cout << "write_chunk: [" << content << "]\n";
-
     unsigned int bytes_transferred{0};
     try {
         bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        std::rethrow_exception(std::make_exception_ptr(se));
+        SILK_ERROR << "Connection::write system_error: " << se.what();
+        throw;
     } catch (const std::exception& e) {
-        std::rethrow_exception(std::make_exception_ptr(e));
+        SILK_ERROR << "Connection::write exception: " << e.what();
+        throw;
     }
 
     SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;
-#endif
-    co_return content.size();
 }
 
 Task<void> Connection::do_write(Response& response) {
@@ -238,9 +240,11 @@ Task<void> Connection::do_write(Response& response) {
 
         SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
-        std::rethrow_exception(std::make_exception_ptr(se));
+        SILK_ERROR << "Connection::do_write system_error: " << se.what();
+        throw;
     } catch (const std::exception& e) {
-        std::rethrow_exception(std::make_exception_ptr(e));
+        SILK_ERROR << "Connection::do_write exception: " << e.what();
+        throw;
     }
     co_return;
 }

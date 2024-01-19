@@ -150,6 +150,10 @@ void InMemoryState::begin_block(BlockNum block_number) {
 
 void InMemoryState::update_account(const evmc::address& address, std::optional<Account> initial,
                                    std::optional<Account> current) {
+    // Skip update if both initial and final state are non-existent (i.e. contract creation+destruction within the same block)
+    if (!initial && !current) {
+        return;
+    }
     account_changes_[block_number_][address] = initial;
 
     if (current.has_value()) {

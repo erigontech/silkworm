@@ -101,18 +101,18 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     }
 
     fs::path db_file{db::get_datafile_path(db_path)};
-    size_t db_ondisk_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
+    const size_t db_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
-    if (!config.create && !db_ondisk_file_size) {
+    if (!config.create && !db_file_size) {
         throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
-    } else if (config.create && db_ondisk_file_size) {
+    } else if (config.create && db_file_size) {
         throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
     }
 
     // Prevent mapping a file with a smaller map size than the size on disk.
     // Opening would not fail but only a part of data would be mapped.
-    if (db_ondisk_file_size > config.max_size) {
-        throw std::runtime_error("Database map size is too small. Min required " + human_size(db_ondisk_file_size));
+    if (db_file_size > config.max_size) {
+        throw std::runtime_error("Database map size is too small. Min required " + human_size(db_file_size));
     }
 
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
@@ -152,7 +152,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
         auto growth_size = static_cast<intptr_t>(config.in_memory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        if (!db_ondisk_file_size) {
+        if (!db_file_size) {
             cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
         }
     }
@@ -160,7 +160,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     using OP = ::mdbx::env::operate_parameters;
     OP op{};  // Operational parameters
     op.mode = OP::mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
-    op.options = op.options_from_flags(static_cast<MDBX_env_flags_t>(flags));
+    op.options = OP::options_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.durability = OP::durability_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
@@ -171,7 +171,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     config.page_size = env.get_pagesize();
 
     if (!config.shared) {
-        // C++ bindings don't have setoptions
+        // C++ bindings don't have set_option
         ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_rp_augment_limit, 32_Mebi));
         if (!config.readonly) {
             ::mdbx::error::success_or_throw(::mdbx_env_set_option(env, MDBX_opt_txn_dp_initial, 16_Kibi));
@@ -206,7 +206,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
 
 size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size) {
     /*
-     * On behalf of configured MDBX's page size we need to find
+     * On behalf of configured MDBX page size we need to find
      * the size of each shard best fitting in data page without
      * causing MDBX to write value in overflow pages.
      *
@@ -270,7 +270,7 @@ void RWTxnManaged::commit_and_stop() {
 
 RWTxnUnmanaged::~RWTxnUnmanaged() {
     if (handle_) {
-        abort();
+        RWTxnUnmanaged::abort();
     }
 }
 

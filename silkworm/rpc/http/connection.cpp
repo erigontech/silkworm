@@ -80,7 +80,7 @@ Task<void> Connection::do_read() {
     SILK_DEBUG << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    int bytes_transferred;
+    unsigned long bytes_transferred;
     try {
         bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {

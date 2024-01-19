@@ -61,7 +61,7 @@ Task<void> Connection::read_loop() {
             co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream) {
+        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
             SILK_DEBUG << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
             SILK_ERROR << "Connection::read_loop system_error: " << se.what();
@@ -83,7 +83,7 @@ Task<void> Connection::do_read() {
     try {
         bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream) {
+        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
             std::rethrow_exception(std::make_exception_ptr(se));
         } else {
             Response msg_response{};
@@ -177,20 +177,21 @@ boost::beast::http::status Connection::get_http_status(Channel::ResponseStatus s
 /* notification from request_handler */
 Task<void>
 Connection::write_rsp(Response& msg_response) {
+    /* write rsp from request_handler */
     co_await do_write(msg_response);
 }
 
 Task<void> Connection::open_stream() {
+    /* write chunks header */
     try {
-        boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::ok, request_http_version_};
-        res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
+        boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_http_version_};
+        //res.keep_alive(request_keep_alive_);
         res.set(boost::beast::http::field::content_type, "application/json");
-        res.set("Transfer-Encoding", "chunked");
-        res.keep_alive(request_keep_alive_);
+        //res.set(boost::beast::http::field::transfer_encoding, "chunked");
+        res.chunked(true);
 
-        set_cors(res);
+        //set_cors(res);
 
-        res.prepare_payload();
         co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
@@ -202,20 +203,29 @@ Task<void> Connection::open_stream() {
 
 Task<std::size_t> Connection::write(std::string_view content) {
     /* write chunks */
-    const auto bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+#ifdef notdef
+    std::cout << "write_chunk: ["  << content << "]\n";
+  
+    unsigned int bytes_transferred{0};
+    try {
+       bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+    } catch (const boost::system::system_error& se) {
+        std::rethrow_exception(std::make_exception_ptr(se));
+    } catch (const std::exception& e) {
+        std::rethrow_exception(std::make_exception_ptr(e));
+    }
+
     SILK_TRACE << "Connection::write bytes_transferred: " << bytes_transferred;
     co_return bytes_transferred;
+#endif
+    co_return content.size();
 }
-
-//! The number of HTTP headers added when Cross-Origin Resource Sharing (CORS) is enabled.
-static constexpr size_t kCorsNumHeaders{4};
 
 Task<void> Connection::do_write(Response& response) {
     try {
         SILK_DEBUG << "Connection::do_write response: " << response.content;
         auto http_status = get_http_status(response.status);
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
-        res.set(boost::beast::http::field::server, "erigon/rpcdaemon");
         res.set(boost::beast::http::field::content_type, "application/json");
         res.keep_alive(request_keep_alive_);
         res.content_length(response.content.size());

@@ -25,9 +25,9 @@ namespace silkworm::rpc::http {
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
     const auto request = R"({"jsonrpc":"2.0","id":1})"_json;
-    Channel::Response reply;
+    std::string reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
-    CHECK(nlohmann::json::parse(reply.content) == R"({
+    CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
         "error":{
@@ -39,9 +39,9 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][h
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request invalid method", "[rpc][handle_request]") {
     const auto request = R"({"jsonrpc":"2.0","id":1, "method":"eth_AAA"})"_json;
-    Channel::Response reply;
+    std::string reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
-    CHECK(nlohmann::json::parse(reply.content) == R"({
+    CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
         "error":{
@@ -53,9 +53,9 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request invalid method", "[r
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request method return failed", "[rpc][handle_request]") {
     const auto request = R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"_json;
-    Channel::Response reply;
+    std::string reply;
     run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
-    CHECK(nlohmann::json::parse(reply.content) == R"({
+    CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":3,
         "error":{

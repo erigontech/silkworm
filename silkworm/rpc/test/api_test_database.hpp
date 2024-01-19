@@ -55,17 +55,17 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 class ChannelForTest : public Channel {
   public:
     Task<void> open_stream() override { co_return; }
-    Task<void> write_rsp(Response& response) override {
+    Task<void> write_rsp(std::string& response) override {
         response_ = response;
         co_return;
     }
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
     Task<void> close() override { co_return; }
 
-    Response& get_response() { return response_; }
+    std::string& get_response() { return response_; }
 
   private:
-    Channel::Response response_;
+    std::string response_;
 };
 
 class RequestHandler_ForTest : public http::RequestHandler {
@@ -75,11 +75,11 @@ class RequestHandler_ForTest : public http::RequestHandler {
                            const commands::RpcApiTable& rpc_api_table)
         : http::RequestHandler(channel, rpc_api, rpc_api_table) {}
 
-    Task<void> request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response) {
+    Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<void> handle_request(const std::string& request_str, Channel::Response& response) {
+    Task<void> handle_request(const std::string& request_str, std::string& response) {
         co_await RequestHandler::handle(request_str);
         response = std::move(channel_->get_response());
     }

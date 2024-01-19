@@ -33,17 +33,16 @@ constexpr std::size_t kStreamBufferSize{4096};
 
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
-    Channel::Response msg_response;
+    std::string response{};
 
     bool send_reply{true};
     const auto request_json = nlohmann::json::parse(content);
     if (request_json.is_object()) {
         if (!is_valid_jsonrpc(request_json)) {
-            msg_response.status = Channel::ResponseStatus::bad_request;
-            msg_response.content = make_json_error(0, -32600, "invalid request").dump() + "\n";
+            response = make_json_error(0, -32600, "invalid request").dump() + "\n";
         } else {
-            send_reply = co_await handle_request_and_create_reply(request_json, msg_response);
-            msg_response.content += "\n";
+            send_reply = co_await handle_request_and_create_reply(request_json, response);
+            response += "\n";
         }
     } else {
         std::stringstream batch_reply_content;
@@ -57,19 +56,18 @@ Task<void> RequestHandler::handle(const std::string& content) {
             if (!is_valid_jsonrpc(item.value())) {
                 batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
             } else {
-                Channel::Response single_reply;
+                std::string single_reply;
                 send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
-                batch_reply_content << single_reply.content;
+                batch_reply_content << single_reply;
             }
         }
         batch_reply_content << "]\n";
 
-        msg_response.status = Channel::ResponseStatus::ok;
-        msg_response.content = batch_reply_content.str();
+        response = batch_reply_content.str();
     }
 
     if (send_reply) {
-        co_await channel_->write_rsp(msg_response);
+        co_await channel_->write_rsp(response);
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
@@ -80,17 +78,15 @@ bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& /* request_json */) 
     return true;
 }
 
-Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, Channel::Response& response) {
+Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
     if (!request_json.contains("method")) {
-        response.status = Channel::ResponseStatus::bad_request;
-        response.content = make_json_error(request_json, -32600, "invalid request").dump();
+        response = make_json_error(request_json, -32600, "invalid request").dump();
         co_return true;
     }
 
     const auto method = request_json["method"].get<std::string>();
     if (method.empty()) {
-        response.status = Channel::ResponseStatus::bad_request;
-        response.content = make_json_error(request_json, -32600, "invalid request").dump();
+        response = make_json_error(request_json, -32600, "invalid request").dump();
         co_return true;
     }
 
@@ -117,48 +113,41 @@ Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
         co_return false;
     }
 
-    response.content = make_json_error(request_json, -32601, "the method " + method + " does not exist/is not available").dump();
-    response.status = Channel::ResponseStatus::not_implemented;
+    response = make_json_error(request_json, -32601, "the method " + method + " does not exist/is not available").dump();
 
     co_return true;
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, Channel::Response& response) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, std::string& response) {
     try {
         std::string reply_json;
         reply_json.reserve(2048);
         co_await (rpc_api_.*handler)(request_json, reply_json);
-        response.status = Channel::ResponseStatus::ok;
-        response.content = std::move(reply_json);
+        response = std::move(reply_json);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
-        response.content = make_json_error(request_json, 100, e.what()).dump();
-        response.status = Channel::ResponseStatus::internal_server_error;
+        response = make_json_error(request_json, 100, e.what()).dump();
     } catch (...) {
         SILK_ERROR << "unexpected exception";
-        response.content = make_json_error(request_json, 100, "unexpected exception").dump();
-        response.status = Channel::ResponseStatus::internal_server_error;
+        response = make_json_error(request_json, 100, "unexpected exception").dump();
     }
 
     co_return;
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, Channel::Response& response) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, std::string& response) {
     try {
         nlohmann::json reply_json;
         co_await (rpc_api_.*handler)(request_json, reply_json);
-        response.content = reply_json.dump(
+        response = reply_json.dump(
             /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
-        response.status = Channel::ResponseStatus::ok;
 
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
-        response.content = make_json_error(request_json, 100, e.what()).dump();
-        response.status = Channel::ResponseStatus::internal_server_error;
+        response = make_json_error(request_json, 100, e.what()).dump();
     } catch (...) {
         SILK_ERROR << "unexpected exception";
-        response.content = make_json_error(request_json, 100, "unexpected exception").dump();
-        response.status = Channel::ResponseStatus::internal_server_error;
+        response = make_json_error(request_json, 100, "unexpected exception").dump();
     }
 
     co_return;

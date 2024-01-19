@@ -169,17 +169,17 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
     // Detect prune-mode and verify is compatible
     {
         auto db_prune_mode{db::read_prune_mode(*tx)};
-        if (db_prune_mode != *node_settings.prune_mode) {
+        if (db_prune_mode != node_settings.prune_mode) {
             // In case we have mismatching modes (cli != db) we prevent
             // further execution ONLY if we've already synced something
             if (header_download_progress) {
                 throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
-                                         db_prune_mode.to_string() + " got " + node_settings.prune_mode->to_string());
+                                         db_prune_mode.to_string() + " got " + node_settings.prune_mode.to_string());
             }
-            db::write_prune_mode(*tx, *node_settings.prune_mode);
-            node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
+            db::write_prune_mode(*tx, node_settings.prune_mode);
+            node_settings.prune_mode = db::PruneMode(db::read_prune_mode(*tx));
         }
-        log::Info("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
+        log::Info("Effective pruning", {"mode", node_settings.prune_mode.to_string()});
     }
 
     tx.commit_and_stop();

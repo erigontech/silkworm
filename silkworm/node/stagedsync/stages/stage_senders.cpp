@@ -162,7 +162,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->senders().enabled()) {
+        if (!node_settings_->prune_mode.senders().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -175,7 +175,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode->senders().value_from_head(forward_progress)};
+        const auto prune_threshold{node_settings_->prune_mode.senders().value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;

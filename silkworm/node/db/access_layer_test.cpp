@@ -30,9 +30,10 @@
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
 
@@ -115,8 +116,10 @@ static BlockBody block_body_17035047() {
 
 namespace silkworm::db {
 
+using silkworm::test_util::SetLogVerbosityGuard;
+
 TEST_CASE("Db Opening", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
     db::EnvConfig db_config{empty};
@@ -161,8 +164,8 @@ TEST_CASE("Db Opening", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     ::mdbx::map_handle main_map{1};
@@ -198,8 +201,8 @@ TEST_CASE("VersionBase primitives", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Sequences", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
@@ -245,8 +248,8 @@ TEST_CASE("Sequences", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Schema Version", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context(/*with_create_tables=*/false);
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context(/*with_create_tables=*/false);
 
     SECTION("Read/Write") {
         auto version{db::read_schema_version(context.rw_txn())};
@@ -283,8 +286,8 @@ TEST_CASE("Schema Version", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.txn()};
 
     SECTION("Prune Mode") {
@@ -340,11 +343,11 @@ TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
                 db::parse_prune_mode(prune,  //
                                      olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
                                      beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-            prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE(prune_mode->history().value_from_head(10) == 0);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE(prune_mode.history().value_from_head(10) == 0);
         }
 
         prune = "htc";
@@ -357,12 +360,12 @@ TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
                 db::parse_prune_mode(prune,  //
                                      olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
                                      beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-            prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE(prune_mode->history() != prune_mode->receipts());
-            REQUIRE(prune_mode->tx_index() == prune_mode->call_traces());
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE(prune_mode.history() != prune_mode.receipts());
+            REQUIRE(prune_mode.tx_index() == prune_mode.call_traces());
         }
 
         prune = "htc";
@@ -375,12 +378,12 @@ TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
                 db::parse_prune_mode(prune,  //
                                      olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
                                      beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-            prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE(prune_mode->receipts().value() == 10000);
-            REQUIRE(prune_mode->history().value() == kFullImmutabilityThreshold);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE(prune_mode.receipts().value() == 10000);
+            REQUIRE(prune_mode.history().value() == kFullImmutabilityThreshold);
         }
 
         prune = "hrtc";
@@ -393,25 +396,25 @@ TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
                 db::parse_prune_mode(prune,  //
                                      olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
                                      beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-            prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
-            REQUIRE(prune_mode->to_string() == expected);
-            REQUIRE(prune_mode->receipts().value() == kFullImmutabilityThreshold);
-            REQUIRE(prune_mode->tx_index().value() == kFullImmutabilityThreshold);
-            REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
-            REQUIRE(prune_mode->history().value_from_head(1'000'000) == 909'995);
-            REQUIRE(prune_mode->receipts().value_from_head(1'000'000) == 910'000);
-            REQUIRE(prune_mode->tx_index().value_from_head(1'000'000) == 910'000);
-            REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
-            REQUIRE(prune_mode->call_traces().value_from_head(1'000'000) == 9'999);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            REQUIRE(prune_mode.to_string() == expected);
+            REQUIRE(prune_mode.receipts().value() == kFullImmutabilityThreshold);
+            REQUIRE(prune_mode.tx_index().value() == kFullImmutabilityThreshold);
+            REQUIRE(prune_mode.call_traces().type() == BlockAmount::Type::kBefore);
+            REQUIRE(prune_mode.history().value_from_head(1'000'000) == 909'995);
+            REQUIRE(prune_mode.receipts().value_from_head(1'000'000) == 910'000);
+            REQUIRE(prune_mode.tx_index().value_from_head(1'000'000) == 910'000);
+            REQUIRE(prune_mode.call_traces().type() == BlockAmount::Type::kBefore);
+            REQUIRE(prune_mode.call_traces().value_from_head(1'000'000) == 9'999);
         }
     }
 }
 
 TEST_CASE("Stages", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     // Querying a non-existent stage name should throw
@@ -449,7 +452,7 @@ TEST_CASE("Stages", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Snapshots", "[silkworm][node][db][access_layer]") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     const std::vector<std::string> snapshot_list{
@@ -463,7 +466,7 @@ TEST_CASE("Snapshots", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Difficulty", "[silkworm][node][db][access_layer]") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockNum block_num{10};
@@ -477,8 +480,8 @@ TEST_CASE("Difficulty", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num{11'054'435};
@@ -595,8 +598,8 @@ TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     db::RWTxn& txn{context.rw_txn()};
 
     Buffer buffer{txn, 0};
@@ -625,8 +628,9 @@ TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
     buffer.write_to_db();
     db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     stagedsync::SyncContext sync_context{};
-    stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
+    stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
     REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
     std::optional<Account> current_account{read_account(txn, miner_a)};
@@ -643,8 +647,8 @@ TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     db::PooledCursor table{txn, table::kPlainState};
@@ -672,7 +676,7 @@ TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockNum block_num{42};
@@ -707,7 +711,7 @@ TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num1{42};
@@ -766,8 +770,8 @@ TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Storage changes", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num1{42};
@@ -846,8 +850,8 @@ TEST_CASE("Storage changes", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Chain config", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     const auto chain_config1{read_chain_config(txn)};
@@ -869,8 +873,8 @@ TEST_CASE("Chain config", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Head header", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     REQUIRE(db::read_head_header_hash(txn) == std::nullopt);
@@ -879,8 +883,8 @@ TEST_CASE("Head header", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("Last Fork Choice", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto hash1 = 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32;
@@ -897,8 +901,8 @@ TEST_CASE("Last Fork Choice", "[silkworm][node][db][access_layer]") {
 }
 
 TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num{11'054'435};
@@ -928,8 +932,8 @@ TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]")
 }
 
 TEST_CASE("write and read body w/ withdrawals", "[silkworm][node][db][access_layer]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockHeader header;

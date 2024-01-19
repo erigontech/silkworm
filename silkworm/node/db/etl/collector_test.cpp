@@ -27,11 +27,12 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::etl {
 
 namespace fs = std::filesystem;
+using silkworm::test_util::SetLogVerbosityGuard;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -60,7 +61,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 }
 
 void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
-    test::Context context;
+    db::test_util::TempChainData context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -99,17 +100,17 @@ void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
 }
 
 TEST_CASE("collect_and_default_load") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_move") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr, false);
 }
 
 TEST_CASE("collect_and_load") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;

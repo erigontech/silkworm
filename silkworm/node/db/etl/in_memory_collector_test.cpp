@@ -24,9 +24,11 @@
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::etl {
+
+using silkworm::test_util::SetLogVerbosityGuard;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -56,7 +58,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 
 template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
-    test::Context context;
+    db::test_util::TempChainData context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -118,34 +120,34 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
 }
 
 TEST_CASE("collect_and_default_load_in_memory_map") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_in_memory_vector") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_move_in_memory_map") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>(nullptr, false);
 }
 
 TEST_CASE("collect_and_default_load_move_in_memory_vector") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>(nullptr, false);
 }
 
 TEST_CASE("collect_and_load_in_memory_map") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
         table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });
 }
 
 TEST_CASE("collect_and_load_in_memory_vector") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
         table.upsert(db::to_slice(ekey), db::to_slice(evalue));
     });

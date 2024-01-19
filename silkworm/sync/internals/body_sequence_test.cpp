@@ -24,7 +24,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
@@ -47,7 +47,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     using intx::operator""_u256;
 
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
 
     auto& txn{context.rw_txn()};

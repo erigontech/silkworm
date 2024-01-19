@@ -24,13 +24,15 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db {
 
+using silkworm::test_util::SetLogVerbosityGuard;
+
 TEST_CASE("Storage update") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     const auto address{0xbe00000000000000000000000000000000000000_address};
@@ -97,8 +99,8 @@ TEST_CASE("Storage update") {
 }
 
 TEST_CASE("Account update") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    test::Context context;
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     SECTION("New EOA account") {

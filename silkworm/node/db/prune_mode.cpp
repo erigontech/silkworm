@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::db {
 
@@ -157,31 +158,31 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     write_block_amount_for_key(target, kPruneModeCallTracesKey, value.call_traces());
 }
 
-std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                                            const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
-                                            const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
-                                            const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
-                                            const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
-                                            const PruneThreshold& beforeCallTraces) {
-    std::unique_ptr<BlockAmount> history, receipts, senders, tx_index, call_traces = std::make_unique<BlockAmount>();
+PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
+                           const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
+                           const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
+                           const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
+                           const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
+                           const PruneThreshold& beforeCallTraces) {
+    std::optional<BlockAmount> history, receipts, senders, tx_index, call_traces;
 
     if (!mode.empty() && !(iequals(mode, "default") || iequals(mode, "disabled"))) {
         for (const auto& c : mode) {
             switch (c) {
                 case 'h':
-                    history = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    history = BlockAmount(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 case 'r':
-                    receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    receipts = BlockAmount(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 case 's':
-                    senders = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    senders = BlockAmount(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 case 't':
-                    tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    tx_index = BlockAmount(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 case 'c':
-                    call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    call_traces = BlockAmount(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 default:
                     throw std::invalid_argument("Invalid mode");
@@ -190,32 +191,26 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     }
 
     // Apply discrete values for 'older' if provided
-    if (olderHistory.has_value()) history = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderHistory);
-    if (olderReceipts.has_value()) receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderReceipts);
-    if (olderSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderSenders);
-    if (olderTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderTxIndex);
-    if (olderCallTraces.has_value()) {
-        call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderCallTraces);
-    }
+    if (olderHistory.has_value()) history = BlockAmount(BlockAmount::Type::kOlder, *olderHistory);
+    if (olderReceipts.has_value()) receipts = BlockAmount(BlockAmount::Type::kOlder, *olderReceipts);
+    if (olderSenders.has_value()) senders = BlockAmount(BlockAmount::Type::kOlder, *olderSenders);
+    if (olderTxIndex.has_value()) tx_index = BlockAmount(BlockAmount::Type::kOlder, *olderTxIndex);
+    if (olderCallTraces.has_value()) call_traces = BlockAmount(BlockAmount::Type::kOlder, *olderCallTraces);
 
     // Apply discrete values for 'before' if provided
-    if (beforeHistory.has_value()) history = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeHistory);
-    if (beforeReceipts.has_value()) {
-        receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeReceipts);
-    }
-    if (beforeSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeSenders);
-    if (beforeTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeTxIndex);
-    if (beforeCallTraces.has_value()) {
-        call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeCallTraces);
-    }
+    if (beforeHistory.has_value()) history = BlockAmount(BlockAmount::Type::kBefore, *beforeHistory);
+    if (beforeReceipts.has_value()) receipts = BlockAmount(BlockAmount::Type::kBefore, *beforeReceipts);
+    if (beforeSenders.has_value()) senders = BlockAmount(BlockAmount::Type::kBefore, *beforeSenders);
+    if (beforeTxIndex.has_value()) tx_index = BlockAmount(BlockAmount::Type::kBefore, *beforeTxIndex);
+    if (beforeCallTraces.has_value()) call_traces = BlockAmount(BlockAmount::Type::kBefore, *beforeCallTraces);
 
-    if (!history) history = std::make_unique<BlockAmount>();
-    if (!receipts) receipts = std::make_unique<BlockAmount>();
-    if (!senders) senders = std::make_unique<BlockAmount>();
-    if (!tx_index) tx_index = std::make_unique<BlockAmount>();
-    if (!call_traces) call_traces = std::make_unique<BlockAmount>();
+    if (!history) history = BlockAmount();
+    if (!receipts) receipts = BlockAmount();
+    if (!senders) senders = BlockAmount();
+    if (!tx_index) tx_index = BlockAmount();
+    if (!call_traces) call_traces = BlockAmount();
 
-    return std::make_unique<PruneMode>(*history, *receipts, *senders, *tx_index, *call_traces);
+    return PruneMode(*history, *receipts, *senders, *tx_index, *call_traces);
 }
 
 }  // namespace silkworm::db

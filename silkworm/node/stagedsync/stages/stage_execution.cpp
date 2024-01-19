@@ -83,8 +83,8 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
         // prune-able data
-        BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(senders_stage_progress)};
-        BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(senders_stage_progress)};
+        BlockNum prune_history{node_settings_->prune_mode.history().value_from_head(senders_stage_progress)};
+        BlockNum prune_receipts{node_settings_->prune_mode.receipts().value_from_head(senders_stage_progress)};
         if (hashstate_stage_progress) {
             prune_history = std::min(prune_history, hashstate_stage_progress - 1);
             prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
@@ -112,7 +112,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
             // Persist forward and prune progresses
             update_progress(txn, block_num_);
-            if (node_settings_->prune_mode->history().enabled() || node_settings_->prune_mode->receipts().enabled()) {
+            if (node_settings_->prune_mode.history().enabled() || node_settings_->prune_mode.receipts().enabled()) {
                 db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, block_num_);
             }
 
@@ -398,9 +398,9 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
     }
 
     try {
-        if (!node_settings_->prune_mode->history().enabled() &&
-            !node_settings_->prune_mode->receipts().enabled() &&
-            !node_settings_->prune_mode->call_traces().enabled()) {
+        if (!node_settings_->prune_mode.history().enabled() &&
+            !node_settings_->prune_mode.receipts().enabled() &&
+            !node_settings_->prune_mode.call_traces().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -415,7 +415,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         const BlockNum segment_width{forward_progress - prune_progress};
 
         // Prune history of changes (changesets)
-        if (const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{node_settings_->prune_mode.history().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
@@ -462,7 +462,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         // Prune receipts
-        if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{node_settings_->prune_mode.receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
@@ -494,7 +494,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         // Prune call traces
-        if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{node_settings_->prune_mode.receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),

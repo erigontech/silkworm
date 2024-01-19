@@ -14,38 +14,41 @@
    limitations under the License.
 */
 
-#include "context.hpp"
+#include "temp_chain_data.hpp"
+
+#include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/tables.hpp>
 
-namespace silkworm::test {
+namespace silkworm::db::test_util {
 
-Context::Context(bool with_create_tables, bool in_memory) {
-    node_settings_.data_directory = std::make_unique<DataDirectory>(tmp_dir_.path(), /*create=*/true);
-    node_settings_.chain_config = kMainnetConfig;
-    node_settings_.chain_config->genesis_hash.emplace(kMainnetGenesisHash);
-    node_settings_.chaindata_env_config = {
-        .path = node_settings_.data_directory->chaindata().path().string(),
-        .create = true,
-        .readonly = false,
-        .exclusive = false,
-        .in_memory = in_memory,
-    };
-    node_settings_.prune_mode = std::make_unique<db::PruneMode>();
-    env_ = db::open_env(node_settings_.chaindata_env_config);
+TempChainData::TempChainData(bool with_create_tables, bool in_memory)
+    : data_dir_(tmp_dir_.path(), /*create=*/true),
+      chain_config_(kMainnetConfig),
+      chaindata_env_config_(db::EnvConfig{
+          .path = data_dir_.chaindata().path().string(),
+          .create = true,
+          .readonly = false,
+          .exclusive = false,
+          .in_memory = in_memory,
+      }) {
+    chain_config_.genesis_hash.emplace(kMainnetGenesisHash);
+
+    env_ = db::open_env(chaindata_env_config_);
     txn_ = std::make_unique<db::RWTxnManaged>(env_);
+
     if (with_create_tables) {
         db::table::check_or_create_chaindata_tables(*txn_);
     }
 }
 
-void Context::add_genesis_data() {
+void TempChainData::add_genesis_data() const {
     bool allow_exceptions = false;
-    auto source_data = read_genesis_data(node_settings_.chain_config->chain_id);
+    auto source_data = read_genesis_data(chain_config().chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(*txn_, genesis_json, allow_exceptions);
 }
 
-}  // namespace silkworm::test
+}  // namespace silkworm::db::test_util

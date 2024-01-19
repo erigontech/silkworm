@@ -24,7 +24,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
 
@@ -35,11 +35,11 @@ class BodiesStage_ForTest : public stagedsync::BodiesStage {
 using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
 
 TEST_CASE("BodiesStage - data model") {
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
-    auto chain_config = *context.node_settings().chain_config;
+    auto& chain_config = context.chain_config();
 
     /* status:
      *         h0

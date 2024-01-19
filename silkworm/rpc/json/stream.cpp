@@ -60,7 +60,7 @@ Task<void> Stream::close() {
         do_write(std::make_shared<std::string>(std::move(buffer_)));
     }
 
-    co_await channel_.async_send(boost::system::error_code(), nullptr, boost::asio::use_awaitable);
+    do_write(nullptr);
     co_await synch_.async_receive(boost::asio::use_awaitable);
     co_await writer_.close();
 

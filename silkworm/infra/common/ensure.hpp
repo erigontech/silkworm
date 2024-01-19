@@ -21,10 +21,17 @@
 
 namespace silkworm {
 
-//! Ensure that condition is met, otherwise raise a logic error with specified message
+//! Ensure that condition is met, otherwise raise a logic error with specified message, only use for static messages
 inline void ensure(bool condition, const std::string& message) {
     if (!condition) [[unlikely]] {
         throw std::logic_error(message);
+    }
+}
+
+//! Ensure that condition is met, otherwise raise a logic error with dynamically built message
+inline void ensure(bool condition, const std::function<std::string()>& messageBuilder) {
+    if (!condition) {
+        throw std::logic_error(messageBuilder());
     }
 }
 

@@ -538,7 +538,7 @@ class RecSplit {
 
         const auto address = encoded_file_->address();
         ensure(position + sizeof(uint64_t) < encoded_file_->length(),
-               "position: " + std::to_string(position) + " plus 8 exceeds file length");
+               [&](){ return "position: " + std::to_string(position) + " plus 8 exceeds file length";});
         return endian::load_big_u64(address + position) & record_mask_;
     }
 

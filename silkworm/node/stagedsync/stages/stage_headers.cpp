@@ -32,12 +32,13 @@ namespace silkworm::stagedsync {
 
 HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx), data_model_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
-    ensure(headers_hash.has_value(), "Headers stage, inconsistent canonical table: not found hash at height " +
-                                         std::to_string(headers_height));
+    ensure(headers_hash.has_value(),
+           [&]() { return "Headers stage, inconsistent canonical table: not found hash at height " + std::to_string(headers_height); });
 
     std::optional<intx::uint256> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
-    ensure(headers_head_td.has_value(), "Headers stage, inconsistent total-difficulty table: not found td at height " +
-                                            std::to_string(headers_height));
+    ensure(headers_head_td.has_value(),
+           [&]() { return "Headers stage, inconsistent total-difficulty table: not found td at height " +
+                          std::to_string(headers_height); });
 
     previous_hash_ = *headers_hash;
     previous_td_ = *headers_head_td;

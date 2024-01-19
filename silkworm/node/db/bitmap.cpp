@@ -229,7 +229,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
         }
 
         // Suffix indicates the upper bound of the shard.
-        ensure(data_key_view.size() >= sizeof(BlockUpperBound), "invalid key size " + std::to_string(data_key_view.size()));
+        ensure(data_key_view.size() >= sizeof(BlockUpperBound), [&](){ return  "invalid key size " + std::to_string(data_key_view.size());});
         const auto suffix{intx::be::unsafe::load<BlockUpperBound>(&data_key_view[data_key_view.size() - sizeof(BlockUpperBound)])};
 
         // If below pruning threshold simply delete the record

@@ -85,12 +85,12 @@ void Index::build() {
 }
 
 bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) {
-    ensure(!word.empty(), "HeaderIndex: word empty i=" + std::to_string(i));
+    ensure(!word.empty(), [&](){ return "HeaderIndex: word empty i=" + std::to_string(i);});
     const uint8_t first_hash_byte{word[0]};
     const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
     ensure(hash.bytes[0] == first_hash_byte,
-           "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes));
+           [&](){ return "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes);});
     rec_split.add_key(hash.bytes, kHashLength, offset);
     return true;
 }

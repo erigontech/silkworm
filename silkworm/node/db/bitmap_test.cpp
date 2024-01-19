@@ -23,7 +23,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/node/db/etl/collector.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::bitmap {
 
@@ -110,7 +110,7 @@ TEST_CASE("Roaring Bitmaps") {
 }
 
 TEST_CASE("Bitmap Index Loader") {
-    test::Context context;
+    db::test_util::TempChainData context;
     db::RWTxn& txn{context.rw_txn()};
 
     const auto address1{0x00000000000000000001_address};
@@ -128,7 +128,7 @@ TEST_CASE("Bitmap Index Loader") {
         {Bytes(address3.bytes, kAddressLength), roaring3},
     };
 
-    etl::Collector collector(context.node_settings().data_directory->etl().path());
+    etl::Collector collector(context.dir().etl().path());
     IndexLoader bm_loader(db::table::kLogAddressIndex);
     IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());

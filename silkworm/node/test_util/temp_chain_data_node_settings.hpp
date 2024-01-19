@@ -14,24 +14,21 @@
    limitations under the License.
 */
 
-#include "remote_client.hpp"
+#pragma once
 
-#include <catch2/catch.hpp>
-
-#include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
-namespace silkworm::execution {
+namespace silkworm::node::test_util {
 
-TEST_CASE("execution::RemoteClient") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-    db::test_util::TempChainData context;
-    context.add_genesis_data();
-    context.commit_txn();
-
-    rpc::ClientContext client_context{0};
-    CHECK_NOTHROW(RemoteClient{client_context});
+inline NodeSettings make_node_settings_from_temp_chain_data(const db::test_util::TempChainData& db) {
+    return NodeSettings{
+        .data_directory = std::make_unique<DataDirectory>(db.dir().path(), false),
+        .chaindata_env_config = db.chaindata_env_config(),
+        .chain_config = db.chain_config(),
+        .prune_mode = db.prune_mode(),
+    };
 }
 
-}  // namespace silkworm::execution
+}  // namespace silkworm::node::test_util

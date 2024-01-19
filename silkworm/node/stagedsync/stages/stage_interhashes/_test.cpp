@@ -24,9 +24,9 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
-#include <silkworm/node/test/context.hpp>
 
 namespace silkworm::trie {
 
@@ -37,7 +37,7 @@ static ethash::hash256 keccak256(const evmc::address& address) {
 }
 
 TEST_CASE("Trie Cursor") {
-    test::Context db_context{};
+    db::test_util::TempChainData db_context{};
     auto txn{db_context.txn()};
 
     SECTION("Only root trie no changes") {
@@ -372,7 +372,7 @@ static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, const std::f
 }
 
 TEST_CASE("Account and storage trie") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     // ----------------------------------------------------------------
@@ -604,7 +604,7 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
@@ -655,7 +655,7 @@ static evmc::bytes32 int_to_bytes32(uint64_t i) {
 }
 
 TEST_CASE("Trie Accounts : incremental vs regeneration") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;
@@ -749,7 +749,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
 }
 
 TEST_CASE("Trie Storage : incremental vs regeneration") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;

@@ -25,8 +25,9 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/genesis.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "chain_fork_view.hpp"
 #include "header_chain.hpp"
@@ -75,16 +76,17 @@ TEST_CASE("Headers receiving and saving") {
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
     PreverifiedHashes::current.clear();  // we need to skip header/block verification because we use fake blocks
 
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
 
     // creating the ExecutionEngine
-    ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
+    ExecutionEngine_ForTest exec_engine{io, node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread

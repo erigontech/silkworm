@@ -22,7 +22,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::snapshots {
 
@@ -34,7 +34,7 @@ TEST_CASE("SnapshotSync::SnapshotSync", "[silkworm][snapshot][sync]") {
 
 TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sync]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::Context context;
+    db::test_util::TempChainData context;
     const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
     bittorrent::BitTorrentSettings bittorrent_settings{
         .repository_path = tmp_dir / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,

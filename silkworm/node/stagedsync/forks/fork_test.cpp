@@ -27,7 +27,8 @@
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
+#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "main_chain.hpp"
 
@@ -70,7 +71,7 @@ static Block generateSampleChildrenBlock(const BlockHeader& parent) {
 TEST_CASE("Fork") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
@@ -80,8 +81,9 @@ TEST_CASE("Fork") {
     PreverifiedHashes::current.clear();                           // disable preverified hashes
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    MainChain main_chain{io, context.node_settings(), db_access};
+    MainChain main_chain{io, node_settings, db_access};
 
     main_chain.open();
     auto& tx = main_chain.tx();
@@ -133,7 +135,7 @@ TEST_CASE("Fork") {
 
                 Fork_ForTest fork{forking_point,
                                   db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
-                                  context.node_settings()};
+                                  node_settings};
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);

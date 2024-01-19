@@ -21,7 +21,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
 
@@ -32,7 +32,7 @@ class HeadersStage_ForTest : public stagedsync::HeadersStage {
 using HeaderDataModel_ForTest = HeadersStage_ForTest::HeaderDataModel;
 
 TEST_CASE("HeadersStage - data model") {
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 

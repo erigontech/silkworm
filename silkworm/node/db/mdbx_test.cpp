@@ -22,7 +22,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
     {"AAA", "Lysine"},
@@ -581,7 +581,7 @@ static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
 }
 
 TEST_CASE("OF pages") {
-    test::Context context;
+    db::test_util::TempChainData context;
     db::RWTxn& txn = context.rw_txn();
 
     SECTION("Single-value map: No overflow") {

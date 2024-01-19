@@ -18,14 +18,14 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 
 namespace silkworm {
 
 // Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
-    test::Context context;
+    db::test_util::TempChainData context;
     db::ROAccess dba(context.env());  // not used in the test execution
     HeaderChain hc(kMainnetConfig);   // not used in the test execution
     BodySequence bs;                  // not used in the test execution

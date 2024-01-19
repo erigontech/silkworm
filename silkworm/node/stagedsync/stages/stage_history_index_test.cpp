@@ -25,8 +25,9 @@
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 using namespace evmc::literals;
 
@@ -35,7 +36,7 @@ namespace silkworm {
 TEST_CASE("Stage History Index") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    test::Context context;
+    db::test_util::TempChainData context;
     db::RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
 
@@ -123,8 +124,9 @@ TEST_CASE("Stage History Index") {
             db::PooledCursor account_changes(txn, db::table::kAccountChangeSet);
             REQUIRE(!account_changes.empty());
 
+            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
+            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             db::PooledCursor account_history(txn, db::table::kAccountHistory);
             db::PooledCursor storage_history(txn, db::table::kStorageHistory);
@@ -213,14 +215,15 @@ TEST_CASE("Stage History Index") {
             db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
             db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
             beforeHistory.emplace(2);  // Will delete any history before block 2
-            context.node_settings().prune_mode =
+            context.set_prune_mode(
                 db::parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
 
-            REQUIRE(context.node_settings().prune_mode->history().enabled());
+            REQUIRE(context.prune_mode().history().enabled());
 
+            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
+            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 3);
@@ -296,8 +299,9 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
 
         // Forward history
+        NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
+        stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
         db::PooledCursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
@@ -398,12 +402,16 @@ TEST_CASE("Stage History Index") {
         db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
         db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
         beforeHistory.emplace(3590);  // Will delete any history before block 2
-        context.node_settings().prune_mode =
+        context.set_prune_mode(
             db::parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+        REQUIRE(context.prune_mode().history().enabled());
 
-        REQUIRE(context.node_settings().prune_mode->history().enabled());
-        REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
+        // Recreate the stage with enabled pruning
+        NodeSettings node_settings2 = node::test_util::make_node_settings_from_temp_chain_data(context);
+        stagedsync::HistoryIndex stage_history_index2(&node_settings2, &sync_context);
+
+        REQUIRE(stage_history_index2.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Each key must have only 1 record now which has UINT64_MAX suffix AND bitmap max value must be 3590
         for (const auto& address : addresses) {

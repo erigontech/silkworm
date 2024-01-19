@@ -185,12 +185,12 @@ Task<void> Connection::open_stream() {
     /* write chunks header */
     try {
         boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_http_version_};
-        //res.keep_alive(request_keep_alive_);
+        // res.keep_alive(request_keep_alive_);
         res.set(boost::beast::http::field::content_type, "application/json");
-        //res.set(boost::beast::http::field::transfer_encoding, "chunked");
+        // res.set(boost::beast::http::field::transfer_encoding, "chunked");
         res.chunked(true);
 
-        //set_cors(res);
+        // set_cors(res);
 
         co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
@@ -204,11 +204,11 @@ Task<void> Connection::open_stream() {
 Task<std::size_t> Connection::write(std::string_view content) {
     /* write chunks */
 #ifdef notdef
-    std::cout << "write_chunk: ["  << content << "]\n";
-  
+    std::cout << "write_chunk: [" << content << "]\n";
+
     unsigned int bytes_transferred{0};
     try {
-       bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+        bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {

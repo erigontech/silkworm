@@ -53,10 +53,19 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
 class ChannelForTest : public Channel {
+  public:
     Task<void> open_stream() override { co_return; }
-    Task<void> write_rsp(Response& /* response */) override { co_return; }
+    Task<void> write_rsp(Response& response) override {
+        response_ = response;
+        co_return;
+    }
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
     Task<void> close() override { co_return; }
+
+    Response& get_response() { return response_; }
+
+  private:
+    Channel::Response response_;
 };
 
 class RequestHandler_ForTest : public http::RequestHandler {
@@ -72,12 +81,12 @@ class RequestHandler_ForTest : public http::RequestHandler {
 
     Task<void> handle_request(const std::string& request_str, Channel::Response& response) {
         co_await RequestHandler::handle(request_str);
-        response = std::move(response_);
+        response = std::move(channel_->get_response());
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    Channel::Response response_;
+    ChannelForTest* channel_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

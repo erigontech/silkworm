@@ -32,21 +32,16 @@ using roaring_bitmap_t = roaring::api::roaring_bitmap_t;
 using Roaring = roaring::Roaring;
 
 static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& inputs) {
-    const auto** x = static_cast<const roaring_bitmap_t**>(malloc(n * sizeof(roaring_bitmap_t*)));
-    if (x == nullptr) {
-        throw std::runtime_error("failed memory alloc in fast_or");
-    }
+    std::vector<const roaring_bitmap_t*> x(n);
     for (size_t k = 0; k < n; ++k) {
         x[k] = &inputs[k]->roaring;
     }
 
-    roaring_bitmap_t* c_ans = roaring_bitmap_or_many(n, x);
+    roaring_bitmap_t* c_ans = roaring_bitmap_or_many(n, x.data());
     if (c_ans == nullptr) {
-        free(x);
         throw std::runtime_error("failed memory alloc in fast_or");
     }
     Roaring ans(c_ans);
-    free(x);
     return ans;
 }
 

@@ -907,13 +907,13 @@ IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, con
 intx::uint256 OtsRpcApi::get_block_fees(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
-        auto txn = block.block.transactions[receipt.tx_index];
+        auto& txn = block.block.transactions[receipt.tx_index];
 
         intx::uint256 effective_gas_price;
         if (config.london_block && block_number >= config.london_block.value()) {
             intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-            intx::uint256 gas_price = txn.effective_gas_price(base_fee);
-            effective_gas_price = base_fee + gas_price;
+            // effective_gas_price contains already baseFee
+            effective_gas_price = txn.effective_gas_price(base_fee);
 
         } else {
             intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);

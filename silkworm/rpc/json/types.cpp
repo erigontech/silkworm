@@ -304,6 +304,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
     json["block"]["transactionCount"] = b.block.transaction_count;  // to_quantity(b.block.transaction_count);
     json["block"]["transactionsRoot"] = b.block.header.transactions_root;
+    if (b.block.header.base_fee_per_gas.has_value()) {
+        json["block"]["baseFeePerGas"] = rpc::to_quantity(b.block.header.base_fee_per_gas.value_or(0));
+    }
 
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block.ommers.size());

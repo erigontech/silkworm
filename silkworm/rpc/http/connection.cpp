@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #include "connection.hpp"
 
@@ -48,12 +42,12 @@ Connection::Connection(boost::asio::io_context& io_context,
       request_handler_{this, api, handler_table},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
-    SILK_DEBUG << "Connection::Connection socket " << &socket_ << " created";
+    SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
 
 Connection::~Connection() {
     socket_.close();
-    SILK_DEBUG << "Connection::~Connection socket " << &socket_ << " deleted";
+    SILK_TRACE << "Connection::~Connection socket " << &socket_ << " deleted";
 }
 
 Task<void> Connection::read_loop() {
@@ -63,12 +57,12 @@ Task<void> Connection::read_loop() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            SILK_DEBUG << "Connection::read_loop close from client with code: " << se.code();
+            SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
             SILK_ERROR << "Connection::read_loop system_error: " << se.what();
             throw;
         } else {
-            SILK_DEBUG << "Connection::read_loop operation_aborted: " << se.what();
+            SILK_TRACE << "Connection::read_loop operation_aborted: " << se.what();
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
@@ -77,10 +71,10 @@ Task<void> Connection::read_loop() {
 }
 
 Task<void> Connection::do_read() {
-    SILK_DEBUG << "Connection::do_read going to read...";
+    SILK_TRACE << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    unsigned long bytes_transferred;
+    unsigned long bytes_transferred{0};
     try {
         bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
@@ -102,46 +96,41 @@ Task<void> Connection::do_read() {
     if (boost::beast::websocket::is_upgrade(parser.get())) {
         co_return;
     }
-    co_await handle_request(std::move(parser.get()));
+    co_await handle_request(parser.get());
 }
 
-Task<void>
-Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
-    if (!req.body().size()) {
+Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    if (req.body().empty()) {
         std::string content;
         co_await do_write(content);
     } else {
-        SILK_TRACE << "handle HTTP request content #size: " << req.body().size();
-        SILK_TRACE << "handle HTTP request content: " << req.body();
+        SILK_TRACE << "Connection::handle_request body size: " << req.body().size() << " data: " << req.body();
 
         const auto auth_result = is_request_authorized(req);
         if (!auth_result) {
             auto content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-            co_await do_write(std::move(content), boost::beast::http::status::forbidden);
+            co_await do_write(content, boost::beast::http::status::forbidden);
         } else {
-            co_await request_handler_.handle(std::move(req.body()));
+            co_await request_handler_.handle(req.body());
         }
     }
 }
 
-/* notification from request_handler */
-Task<void>
-Connection::write_rsp(const std::string& content) {
-    /* write rsp from request_handler */
-    co_await do_write(std::move(content));
+//! Write response content to the underlying socket
+Task<void> Connection::write_rsp(const std::string& content) {
+    co_await do_write(content);
 }
 
+//! Write chunked response headers
 Task<void> Connection::open_stream() {
-    /* write chunks header */
     try {
-        boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_http_version_};
-        res.set(boost::beast::http::field::content_type, "application/json");
-        res.chunked(true);
+        boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
+        rsp.set(boost::beast::http::field::content_type, "application/json");
+        rsp.chunked(true);
 
-        // Set up the serializer
-        boost::beast::http::response_serializer<boost::beast::http::empty_body> sr{res};
+        boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
-        co_await async_write_header(socket_, sr, boost::asio::use_awaitable);
+        co_await async_write_header(socket_, serializer, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "Connection::open_stream system_error: " << se.what();
         throw;
@@ -152,8 +141,8 @@ Task<void> Connection::open_stream() {
     co_return;
 }
 
+//! Write chunked response content to the underlying socket
 Task<std::size_t> Connection::write(std::string_view content) {
-    /* write chunks */
     unsigned long bytes_transferred{0};
     try {
         bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
@@ -171,12 +160,12 @@ Task<std::size_t> Connection::write(std::string_view content) {
 
 Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status) {
     try {
-        SILK_DEBUG << "Connection::do_write response: " << content;
+        SILK_TRACE << "Connection::do_write response: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
         res.set(boost::beast::http::field::content_type, "application/json");
         res.keep_alive(request_keep_alive_);
         res.content_length(content.size());
-        res.body() = std::string(std::move(content));
+        res.body() = content;
 
         set_cors(res);
 

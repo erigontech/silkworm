@@ -24,7 +24,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
@@ -70,7 +69,7 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_getProof",            // not implemented
     "eth_feeHistory",          // history not stored, needs fixing
     "eth_sendRawTransaction",  // call to oracle fails, needs fixing or mocking
-    "eth_createAccessList",    // expected value doesn't contains gas optimzation
+    "eth_createAccessList",    // expected value doesn't contain gas optimization
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library

@@ -38,10 +38,10 @@ namespace silkworm::rpc::http {
 class RequestHandler {
   public:
     RequestHandler(Channel* channel, commands::RpcApi& rpc_api, const commands::RpcApiTable& rpc_api_table)
-        : channel_{channel}, rpc_api_{rpc_api}, rpc_api_table_(rpc_api_table) {}
+        : channel_{channel}, rpc_api_{rpc_api}, rpc_api_table_{rpc_api_table} {}
+    virtual ~RequestHandler() = default;
 
     RequestHandler(const RequestHandler&) = delete;
-    virtual ~RequestHandler() = default;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
     Task<void> handle(const std::string& content);

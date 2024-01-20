@@ -67,7 +67,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     }
 
     if (send_reply) {
-        co_await channel_->write_rsp(std::move(response));
+        co_await channel_->write_rsp(response);
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }

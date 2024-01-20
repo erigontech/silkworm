@@ -60,7 +60,7 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(std::string& response) override;
+    Task<void> write_rsp(const std::string& response) override;
     Task<void> open_stream() override;
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }
@@ -68,9 +68,9 @@ class Connection : public Channel {
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(boost::beast::http::request<boost::beast::http::string_body>& req);
+    AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    Task<void> handle_request(boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     void set_cors(boost::beast::http::response<boost::beast::http::string_body>& res);
 
@@ -78,7 +78,7 @@ class Connection : public Channel {
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

@@ -55,14 +55,14 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 class ChannelForTest : public Channel {
   public:
     Task<void> open_stream() override { co_return; }
-    Task<void> write_rsp(std::string& response) override {
+    Task<void> write_rsp(const std::string& response) override {
         response_ = response;
         co_return;
     }
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
     Task<void> close() override { co_return; }
 
-    std::string& get_response() { return response_; }
+    const std::string& get_response() { return response_; }
 
   private:
     std::string response_;

@@ -33,7 +33,7 @@ constexpr std::size_t kStreamBufferSize{4096};
 
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
-    std::string response{};
+    std::string response;
 
     bool send_reply{true};
     const auto request_json = nlohmann::json::parse(content);
@@ -67,7 +67,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     }
 
     if (send_reply) {
-        co_await channel_->write_rsp(response);
+        co_await channel_->write_rsp(std::move(response));
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }

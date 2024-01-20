@@ -46,9 +46,4 @@ inline constexpr const std::chrono::milliseconds kDefaultTimeout{10000};
 
 inline constexpr const std::size_t kHttpIncomingBufferSize{8192};
 
-inline constexpr const std::size_t kRequestContentInitialCapacity{1024};
-inline constexpr const std::size_t kRequestHeadersInitialCapacity{8};
-inline constexpr const std::size_t kRequestMethodInitialCapacity{64};
-inline constexpr const std::size_t kRequestUriInitialCapacity{64};
-
 }  // namespace silkworm

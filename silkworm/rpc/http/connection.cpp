@@ -91,8 +91,7 @@ Task<void> Connection::do_read() {
         }
     }
 
-    SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_transferred;
-    SILK_TRACE << "Connection::do_read: " << parser.get() << "\n";
+    SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]\n";
 
     if (!parser.is_done()) {
         co_return;
@@ -103,13 +102,13 @@ Task<void> Connection::do_read() {
     if (boost::beast::websocket::is_upgrade(parser.get())) {
         co_return;
     }
-    co_await handle_request(parser.get());
+    co_await handle_request(std::move(parser.get()));
 }
 
 Task<void>
-Connection::handle_request(boost::beast::http::request<boost::beast::http::string_body>& req) {
+Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (!req.body().size()) {
-        std::string content{};
+        std::string content;
         co_await do_write(content);
     } else {
         SILK_TRACE << "handle HTTP request content #size: " << req.body().size();
@@ -118,18 +117,18 @@ Connection::handle_request(boost::beast::http::request<boost::beast::http::strin
         const auto auth_result = is_request_authorized(req);
         if (!auth_result) {
             auto content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-            co_await do_write(content, boost::beast::http::status::forbidden);
+            co_await do_write(std::move(content), boost::beast::http::status::forbidden);
         } else {
-            co_await request_handler_.handle(req.body());
+            co_await request_handler_.handle(std::move(req.body()));
         }
     }
 }
 
 /* notification from request_handler */
 Task<void>
-Connection::write_rsp(std::string& content) {
+Connection::write_rsp(const std::string& content) {
     /* write rsp from request_handler */
-    co_await do_write(content);
+    co_await do_write(std::move(content));
 }
 
 Task<void> Connection::open_stream() {
@@ -170,7 +169,7 @@ Task<std::size_t> Connection::write(std::string_view content) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(std::string& content, boost::beast::http::status http_status) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status) {
     try {
         SILK_DEBUG << "Connection::do_write response: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
@@ -210,7 +209,7 @@ void Connection::set_cors(boost::beast::http::response<boost::beast::http::strin
     res.set("Access-Control-Max-Age", "600");
 }
 
-Connection::AuthorizationResult Connection::is_request_authorized(boost::beast::http::request<boost::beast::http::string_body>& req) {
+Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
         return {};
     }

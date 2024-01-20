@@ -29,7 +29,7 @@ class Channel : public StreamWriter {
     Channel& operator=(const Channel&) = delete;
 
     virtual Task<void> open_stream() = 0;
-    virtual Task<void> write_rsp(std::string& content) = 0;
+    virtual Task<void> write_rsp(const std::string& content) = 0;
 };
 
 }  // namespace silkworm::rpc

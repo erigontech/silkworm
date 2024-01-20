@@ -17,7 +17,7 @@
 #include "remote_chain_storage.hpp"
 
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc {

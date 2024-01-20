@@ -21,8 +21,8 @@
 #include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/sentry/eth/protocol.hpp>
 
 namespace silkworm::db {

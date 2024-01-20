@@ -31,9 +31,9 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshots/index.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 #include "instance.hpp"

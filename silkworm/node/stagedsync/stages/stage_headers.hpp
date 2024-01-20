@@ -19,8 +19,8 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

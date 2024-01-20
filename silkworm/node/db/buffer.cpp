@@ -24,10 +24,10 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/log_cbor.hpp>
 #include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::db {
 

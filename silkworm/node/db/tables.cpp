@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::db::table {
 

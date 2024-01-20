@@ -23,7 +23,7 @@
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 #include "extending_fork.hpp"
 

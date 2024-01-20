@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 #include "types.hpp"
 

@@ -36,9 +36,9 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>

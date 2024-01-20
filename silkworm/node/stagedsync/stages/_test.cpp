@@ -25,13 +25,13 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
 #include <silkworm/node/stagedsync/stages/stage_senders.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 using namespace silkworm;
 using namespace evmc::literals;

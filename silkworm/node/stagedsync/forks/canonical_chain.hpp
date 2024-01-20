@@ -24,9 +24,9 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

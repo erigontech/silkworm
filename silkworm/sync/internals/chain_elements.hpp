@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 #include "priority_queue.hpp"
 #include "types.hpp"

@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm {
 

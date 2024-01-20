@@ -19,9 +19,9 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

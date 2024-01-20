@@ -21,7 +21,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

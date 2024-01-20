@@ -17,8 +17,8 @@
 #pragma once
 
 #include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::db {
 //! \brief Validates provided genesis json payload

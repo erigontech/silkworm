@@ -18,9 +18,9 @@
 
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 using namespace evmc::literals;

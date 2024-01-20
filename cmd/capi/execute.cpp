@@ -33,9 +33,9 @@
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"

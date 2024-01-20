@@ -21,9 +21,9 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 using namespace silkworm;
 

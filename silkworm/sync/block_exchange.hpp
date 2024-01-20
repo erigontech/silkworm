@@ -22,7 +22,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 #include <silkworm/sentry/api/common/message_from_peer.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>

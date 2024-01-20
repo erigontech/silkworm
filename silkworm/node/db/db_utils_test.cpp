@@ -19,9 +19,9 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/store/access_layer.hpp>
 
 namespace silkworm::db {
 

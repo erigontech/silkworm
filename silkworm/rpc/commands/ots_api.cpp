@@ -122,7 +122,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
+            const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -173,7 +173,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*chain_config, *block_with_hash, receipts, block_number);
+            const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -904,21 +904,14 @@ IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, con
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::get_block_fees(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
+intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts) {
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
         auto& txn = block.block.transactions[receipt.tx_index];
 
-        intx::uint256 effective_gas_price;
-        if (config.london_block && block_number >= config.london_block.value()) {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-            // effective_gas_price contains already baseFee
-            effective_gas_price = txn.effective_gas_price(base_fee);
-
-        } else {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-            effective_gas_price = txn.effective_gas_price(base_fee);
-        }
+        // effective_gas_price contains already baseFee 
+        intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
+        auto effective_gas_price = txn.effective_gas_price(base_fee);
 
         fees += effective_gas_price * receipt.gas_used;
     }

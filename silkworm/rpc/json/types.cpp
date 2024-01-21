@@ -317,9 +317,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["uncles"] = ommer_hashes;
 
     if (b.issuance.total_reward > 0) {
-        json["issuance"]["minerReward"] = to_quantity(b.issuance.miner_reward);
-        json["issuance"]["ommersReward"] = to_quantity(b.issuance.ommers_reward);
-        json["issuance"]["totalReward"] = to_quantity(b.issuance.total_reward);
+        json["issuance"]["issuance"] = to_quantity(b.issuance.miner_reward);
+        json["issuance"]["uncleReward"] = to_quantity(b.issuance.ommers_reward);
+        json["issuance"]["blockReward"] = to_quantity(b.issuance.total_reward);
     } else {
         json["issuance"] = nlohmann::json::object();
     }

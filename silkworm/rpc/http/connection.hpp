@@ -54,7 +54,7 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(const std::string& response) override;
+    Task<void> write_rsp(const std::string& content) override;
     Task<void> open_stream() override;
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }

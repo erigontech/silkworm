@@ -22,31 +22,6 @@ namespace silkworm::rpc {
 
 class Channel : public StreamWriter {
   public:
-    enum class ResponseStatus {
-        processing_continue,
-        accepted,
-        ok,
-        created,
-        no_content,
-        multiple_choices,
-        moved_permanently,
-        moved_temporarily,
-        not_modified,
-        bad_request,
-        unauthorized,
-        forbidden,
-        not_found,
-        internal_server_error,
-        not_implemented,
-        bad_gateway,
-        service_unavailable
-    };
-
-    struct Response {
-        ResponseStatus status{ResponseStatus::ok};
-        std::string content;
-    };
-
     Channel() = default;
     ~Channel() override = default;
 
@@ -54,7 +29,7 @@ class Channel : public StreamWriter {
     Channel& operator=(const Channel&) = delete;
 
     virtual Task<void> open_stream() = 0;
-    virtual Task<void> write_rsp(Response& response) = 0;
+    virtual Task<void> write_rsp(const std::string& content) = 0;
 };
 
 }  // namespace silkworm::rpc

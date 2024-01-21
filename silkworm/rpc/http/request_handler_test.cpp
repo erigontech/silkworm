@@ -18,150 +18,53 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
+#include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm::rpc::http {
 
-TEST_CASE("check handle_request  empty content ", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        0,
-        ""};
-    Reply reply{};
-
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::thread_pool workers{1};
-        try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
-            result.get();
-        } catch (...) {
-           CHECK(false);
+#ifndef SILKWORM_SANITIZE
+TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1})"_json;
+    std::string reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{
+             "code":-32600,
+             "message":"invalid request"
         }
-
-        CHECK(reply.content == "");
-        CHECK(reply.status == 204);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "0");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
-        cp.stop();
-        context_pool_thread.join();
-    */
+    })"_json);
 }
 
-TEST_CASE("check handle_request no method", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        24,
-        R"({"jsonrpc":"2.0","id":3 })"};
-    Reply reply{};
-
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::thread_pool workers{1};
-
-        try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
-            result.get();
-        } catch (...) {
-           CHECK(false);
+TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request invalid method", "[rpc][handle_request]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1, "method":"eth_AAA"})"_json;
+    std::string reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{
+             "code":-32601,
+             "message": "the method eth_AAA does not exist/is not available"
         }
-        CHECK(reply.content == "{\"error\":{\"code\":-32600,\"message\":\"method missing\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 400);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "76");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
-        cp.stop();
-        context_pool_thread.join();
-    */
+    })"_json);
 }
 
-TEST_CASE("check handle_request invalid method", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        24,
-        R"({"jsonrpc":"2.0","id":3,"method":"eth_AAA"})"};
-    Reply reply{};
-
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::thread_pool workers{1};
-
-        try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
-            result.get();
-        } catch (...) {
-           CHECK(false);
+TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request method return failed", "[rpc][handle_request]") {
+    const auto request = R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"_json;
+    std::string reply;
+    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply) == R"({
+        "jsonrpc":"2.0",
+        "id":3,
+        "error":{
+             "code":100,
+             "message":"invalid eth_getBlockByNumber params: []"
         }
-        CHECK(reply.content == "{\"error\":{\"code\":-32601,\"message\":\"method not existent or not implemented\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 501);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "100");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
-        cp.stop();
-        context_pool_thread.join();
-    */
+    })"_json);
 }
 
-TEST_CASE("check handle_request method return failed", "[rpc][handle_request]") {
-    Request req{
-        "eth_call",
-        "",
-        1,
-        3,
-        {{"v", "1"}},
-        70,
-        R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"};
-    Reply reply{};
-
-    /*
-        ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
-        auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::thread_pool workers{1};
-
-        RequestHandler h{cp.next_context(), workers};
-        try {
-            RequestHandler h{cp.next_context(), workers};
-            auto result{boost::asio::co_spawn(cp.next_io_context(), h.handle_request(req, reply), boost::asio::use_future)};
-            result.get();
-        } catch (...) {
-           CHECK(false);
-        }
-        CHECK(reply.content == "{\"error\":{\"code\":100,\"message\":\"invalid getBlockByNumber params: []\"},\"id\":3,\"jsonrpc\":\"2.0\"}\n");
-        CHECK(reply.status == 200);
-        CHECK(reply.headers.size() == 2);
-        CHECK(reply.headers[0].name == "Content-Length");
-        CHECK(reply.headers[0].value == "94");
-        CHECK(reply.headers[1].name == "Content-Type");
-        CHECK(reply.headers[1].value == "application/json");
-        cp.stop();
-        context_pool_thread.join();
-    */
-}
+#endif
 
 }  // namespace silkworm::rpc::http

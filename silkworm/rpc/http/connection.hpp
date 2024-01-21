@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -30,14 +24,14 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/http/channel.hpp>
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
-#include <silkworm/rpc/http/request_parser.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -60,7 +54,7 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(Response& response) override;
+    Task<void> write_rsp(const std::string& response) override;
     Task<void> open_stream() override;
     Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }
@@ -68,25 +62,17 @@ class Connection : public Channel {
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(const http::Request& request);
+    AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    Task<void> handle_request(Request& request);
+    Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    //! Reset connection data
-    void clean();
-
-    void set_cors(std::vector<Header>& headers);
-
-    Task<void> write_headers();
-
-    static StatusType get_http_status(Channel::ResponseStatus status);
+    void set_cors(boost::beast::http::response<boost::beast::http::string_body>& res);
 
     //! Perform an asynchronous read operation.
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write();
-    Task<void> do_write(http::Reply& reply);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -94,21 +80,14 @@ class Connection : public Channel {
     //! The handler used to process the incoming request.
     RequestHandler request_handler_;
 
-    //! Buffer for incoming data.
-    std::array<char, kHttpIncomingBufferSize> buffer_;
-
-    //! The incoming request.
-    Request request_;
-
-    //! The parser for the incoming request.
-    RequestParser request_parser_;
-
-    //! The reply to be sent back to the client.
-    Reply reply_;
+    boost::beast::flat_buffer data_;
 
     const std::vector<std::string>& allowed_origins_;
 
     const std::optional<std::string> jwt_secret_;
+
+    bool request_keep_alive_{false};
+    unsigned int request_http_version_{11};
 };
 
 }  // namespace silkworm::rpc::http

@@ -62,7 +62,7 @@ class ChannelForTest : public Channel {
     Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
     Task<void> close() override { co_return; }
 
-    const std::string& get_response() { return response_; }
+    const std::string& response() { return response_; }
 
   private:
     std::string response_;
@@ -73,15 +73,15 @@ class RequestHandler_ForTest : public http::RequestHandler {
     RequestHandler_ForTest(ChannelForTest* channel,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : http::RequestHandler(channel, rpc_api, rpc_api_table) {}
+        : http::RequestHandler(channel, rpc_api, rpc_api_table), channel_{channel} {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<void> handle_request(const std::string& request_str, std::string& response) {
-        co_await RequestHandler::handle(request_str);
-        response = std::move(channel_->get_response());
+    Task<void> handle_request(const std::string& request, std::string& response) {
+        co_await RequestHandler::handle(request);
+        response = channel_->response();
     }
 
   private:

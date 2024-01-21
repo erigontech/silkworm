@@ -229,8 +229,7 @@ class OtsRpcApi {
     Task<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results);
     Task<void> trace_block(ethdb::Transaction& tx, BlockNum block_number, evmc::address search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
-    static intx::uint256 get_block_fees(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block,
-                                        const std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
+    static intx::uint256 get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts);
 };
 
 }  // namespace silkworm::rpc::commands

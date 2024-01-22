@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include <memory>
 #include <stack>
 #include <string>
 #include <string_view>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -34,8 +36,7 @@ static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    explicit Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold = kDefaultThreshold)
-        : io_executor_(executor), writer_(writer), threshold_(threshold) {}
+    explicit Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold = kDefaultThreshold);
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
@@ -59,7 +60,6 @@ class Stream {
     void write_field(std::string_view name, std::uint32_t value);
     void write_field(std::string_view name, std::int64_t value);
     void write_field(std::string_view name, std::uint64_t value);
-    void write_field(std::string_view name, std::float_t value);
     void write_field(std::string_view name, std::double_t value);
 
   private:
@@ -69,6 +69,9 @@ class Stream {
     void ensure_separator();
 
     void write(std::string_view str);
+    void do_write(std::shared_ptr<std::string> chunk);
+
+    Task<void> run();
 
     boost::asio::any_io_executor& io_executor_;
 
@@ -77,6 +80,10 @@ class Stream {
 
     const std::size_t threshold_;
     std::string buffer_;
+
+    bool closed_{false};
+    Task<void> runner_task_;
+    boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::shared_ptr<std::string>)> channel_;
 };
 
 }  // namespace silkworm::rpc::json

@@ -32,6 +32,7 @@
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
+#include <silkworm/rpc/http/websocket_connection.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -54,10 +55,11 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(const std::string& content) override;
     Task<void> open_stream() override;
-    Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }
+
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> write_rsp(const std::string& content) override;
 
   private:
     using AuthorizationError = std::string;
@@ -77,17 +79,22 @@ class Connection : public Channel {
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
+    commands::RpcApi& api_;
+    const commands::RpcApiTable& handler_table_;
+
     //! The handler used to process the incoming request.
     RequestHandler request_handler_;
 
-    boost::beast::flat_buffer data_;
-
     const std::vector<std::string>& allowed_origins_;
-
     const std::optional<std::string> jwt_secret_;
 
     bool request_keep_alive_{false};
     unsigned int request_http_version_{11};
+
+    boost::beast::flat_buffer data_;
+
+    // pointer to websocket if created
+    std::shared_ptr<WebSocketConnection> websocket_connection_{nullptr};
 };
 
 }  // namespace silkworm::rpc::http

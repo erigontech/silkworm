@@ -39,6 +39,8 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
+      api_{api},
+      handler_table_{handler_table},
       request_handler_{this, api, handler_table},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)} {
@@ -53,7 +55,11 @@ Connection::~Connection() {
 Task<void> Connection::read_loop() {
     try {
         while (true) {
-            co_await do_read();
+            if (websocket_connection_) {
+                co_await websocket_connection_->do_read();
+            } else {
+                co_await do_read();
+            }
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
@@ -94,6 +100,13 @@ Task<void> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
+        // Now that talking to the socket is succcessful,
+        // we tie the socket object to a websocket stream
+        boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
+
+        websocket_connection_ = std::make_shared<WebSocketConnection>(std::move(stream), api_, std::move(handler_table_));
+
+        co_await websocket_connection_->do_accept(parser.release());
         co_return;
     }
     co_await handle_request(parser.get());

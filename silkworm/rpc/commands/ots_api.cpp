@@ -911,7 +911,7 @@ intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, co
 
         // effective_gas_price contains already baseFee
         intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-        auto effective_gas_price = txn.effective_gas_price(base_fee);
+        const auto effective_gas_price = txn.effective_gas_price(base_fee);
 
         fees += effective_gas_price * receipt.gas_used;
     }

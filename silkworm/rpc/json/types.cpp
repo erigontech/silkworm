@@ -221,7 +221,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     json["gasLimit"] = rpc::to_quantity(header.gas_limit);
     json["gasUsed"] = rpc::to_quantity(header.gas_used);
     json["timestamp"] = rpc::to_quantity(header.timestamp);
-    if (header.base_fee_per_gas.has_value()) {
+    if (header.base_fee_per_gas) {
         json["baseFeePerGas"] = rpc::to_quantity(header.base_fee_per_gas.value_or(0));
     } else {
         json["baseFeePerGas"] = nullptr;

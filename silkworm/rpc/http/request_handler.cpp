@@ -176,7 +176,7 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
         stream.write_json(error);
     }
     co_await stream.close();
-    co_await channel_->close();
+
     co_return;
 }
 

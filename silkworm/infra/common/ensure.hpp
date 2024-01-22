@@ -16,13 +16,14 @@
 
 #pragma once
 
+#include <functional>
 #include <stdexcept>
 #include <string>
 
 namespace silkworm {
 
 //! Ensure that condition is met, otherwise raise a logic error with string literal message
-template <int N>
+template <unsigned int N>
 inline void ensure(bool condition, const char (&message)[N]) {
     if (!condition) [[unlikely]] {
         throw std::logic_error(message);
@@ -38,7 +39,7 @@ inline void ensure(bool condition, const std::function<std::string()>& messageBu
 }
 
 //! Similar to \code ensure with emphasis on invariant violation
-template <int N>
+template <unsigned int N>
 inline void ensure_invariant(bool condition, const char (&message)[N]) {
     if (!condition) [[unlikely]] {
         throw std::logic_error("Invariant violation: " + std::string{message});

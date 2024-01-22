@@ -185,7 +185,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
 
 bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& header) const {
     // First byte in data is first byte of header hash.
-    ensure(!item.value.empty(), [&](){ return "HeaderSnapshot: hash first byte missing at offset=" + std::to_string(item.offset);});
+    ensure(!item.value.empty(), [&]() { return "HeaderSnapshot: hash first byte missing at offset=" + std::to_string(item.offset); });
 
     // Skip hash first byte to obtain encoded header RLP data
     ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
@@ -196,7 +196,7 @@ bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& 
     }
 
     ensure(header.number >= path_.block_from(),
-           [&](){ return "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(path_.block_from());});
+           [&]() { return "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(path_.block_from()); });
     return true;
 }
 
@@ -272,7 +272,7 @@ std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
         return {};
     }
     ensure(stored_body->base_txn_id >= idx_body_number_->base_data_id(),
-           [&](){ return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(stored_body->base_txn_id);});
+           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(stored_body->base_txn_id); });
     return stored_body;
 }
 
@@ -436,7 +436,7 @@ std::pair<ByteView, ByteView> TransactionSnapshot::slice_tx_data(const WordItem&
     const auto buffer_size{buffer.size()};
     SILK_TRACE << "slice_tx_data offset: " << item.offset << " buffer: " << to_hex(buffer);
 
-    ensure(buffer_size >= kTxRlpDataOffset,[&](){ return  "TransactionSnapshot: too short record: " + std::to_string(buffer_size);});
+    ensure(buffer_size >= kTxRlpDataOffset, [&]() { return "TransactionSnapshot: too short record: " + std::to_string(buffer_size); });
 
     // Skip first byte in data as it is first byte of transaction hash
     ByteView senders_data{buffer.data() + 1, kAddressLength};

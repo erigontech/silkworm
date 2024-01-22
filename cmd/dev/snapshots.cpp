@@ -287,7 +287,7 @@ void open_index(const SnapSettings& settings) {
     std::filesystem::path segment_file_path{settings.repository_dir / *settings.snapshot_file_name};
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
-    ensure(snapshot_path.has_value(), "open_index: invalid snapshot file " + segment_file_path.filename().string());
+    ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
     const auto index_path{snapshot_path->index_file()};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     rec_split::RecSplitIndex idx{index_path.path()};
@@ -401,7 +401,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
     if (header_snapshot) {
         const auto header{header_snapshot->header_by_number(block_number)};
         ensure(header.has_value(),
-               "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename());
+               [&]() { return "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename(); });
         SILK_INFO << "Lookup header number: " << block_number << " found in: " << header_snapshot->path().filename();
         if (settings.print) {
             print_header(*header, header_snapshot->path().filename());
@@ -438,7 +438,7 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto body_snapshot{snapshot_repository.get_body_segment(*snapshot_path)};
-    ensure(body_snapshot, "lookup_body: body segment not found for snapshot file: " + snapshot_path->path().string());
+    ensure(body_snapshot, [&]() { return "lookup_body: body segment not found for snapshot file: " + snapshot_path->path().string(); });
     const auto body{body_snapshot->body_by_number(block_number)};
     if (body) {
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
@@ -461,7 +461,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     if (body_snapshot) {
         const auto body{body_snapshot->body_by_number(block_number)};
         ensure(body.has_value(),
-               "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename());
+               [&]() { return "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename(); });
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
         if (settings.print) {
             print_body(*body, body_snapshot->path().filename());

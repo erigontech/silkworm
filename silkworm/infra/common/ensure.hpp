@@ -21,35 +21,49 @@
 
 namespace silkworm {
 
-//! Ensure that condition is met, otherwise raise a logic error with specified message, only use for static messages
-inline void ensure(bool condition, const std::string& message) {
+//! Ensure that condition is met, otherwise raise a logic error with string literal message
+template <int N>
+inline void ensure(bool condition, const char (&message)[N]) {
     if (!condition) [[unlikely]] {
         throw std::logic_error(message);
     }
 }
 
 //! Ensure that condition is met, otherwise raise a logic error with dynamically built message
+//! Usage: `ensure(condition, [&]() { return "Message: " + get_str(); });`
 inline void ensure(bool condition, const std::function<std::string()>& messageBuilder) {
-    if (!condition) {
+    if (!condition) [[unlikely]] {
         throw std::logic_error(messageBuilder());
     }
 }
 
 //! Similar to \code ensure with emphasis on invariant violation
-inline void ensure_invariant(bool condition, const std::string& message) {
-    ensure(condition, "Invariant violation: " + message);
+template <int N>
+inline void ensure_invariant(bool condition, const char (&message)[N]) {
+    if (!condition) [[unlikely]] {
+        throw std::logic_error("Invariant violation: " + std::string{message});
+    }
+}
+
+//! Similar to \code ensure with emphasis on invariant violation
+inline void ensure_invariant(bool condition, const std::function<std::string()>& messageBuilder) {
+    if (!condition) [[unlikely]] {
+        throw std::logic_error("Invariant violation: " + messageBuilder());
+    }
 }
 
 //! Similar to \code ensure with emphasis on pre-condition violation
-inline void ensure_pre_condition(bool condition, const std::string& message) {
+inline void ensure_pre_condition(bool condition, const std::function<std::string()>& messageBuilder) {
     if (!condition) [[unlikely]] {
-        throw std::invalid_argument("Pre-condition violation: " + message);
+        throw std::invalid_argument("Pre-condition violation: " + messageBuilder());
     }
 }
 
 //! Similar to \code ensure with emphasis on post-condition violation
-inline void ensure_post_condition(bool condition, const std::string& message) {
-    ensure(condition, "Post-condition violation: " + message);
+inline void ensure_post_condition(bool condition, const std::function<std::string()>& messageBuilder) {
+    if (!condition) [[unlikely]] {
+        throw std::logic_error("Post-condition violation: " + messageBuilder());
+    }
 }
 
 }  // namespace silkworm

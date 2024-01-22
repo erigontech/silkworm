@@ -647,8 +647,8 @@ Stage::Result HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum 
             while (changeset_data.done) {
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
                 ensure(changeset_value_view.length() >= kAddressLength,
-                       [&](){ return "invalid account changeset value size=" + std::to_string(changeset_value_view.length()) +
-                           " at block " + std::to_string(reached_blocknum);});
+                       [&]() { return "invalid account changeset value size=" + std::to_string(changeset_value_view.length()) +
+                                      " at block " + std::to_string(reached_blocknum); });
                 evmc::address address{bytes_to_address(changeset_value_view)};
 
                 if (!changed_addresses.contains(address)) {
@@ -722,7 +722,7 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
             ensure(changeset_key_view.length() == sizeof(BlockNum) + db::kPlainStoragePrefixLength,
-                   [&](){ return "invalid storage changeset key size=" + std::to_string(changeset_key_view.length());});
+                   [&]() { return "invalid storage changeset key size=" + std::to_string(changeset_key_view.length()); });
             reached_blocknum = endian::load_big_u64(changeset_key_view.data());
             if (reached_blocknum > previous_progress) {
                 break;
@@ -750,8 +750,8 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
             while (changeset_data.done) {
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
                 ensure(changeset_value_view.length() >= kHashLength,
-                       [&](){ return "invalid storage changeset value size=" + std::to_string(changeset_value_view.length()) +
-                           " at block " + std::to_string(reached_blocknum);});
+                       [&]() { return "invalid storage changeset value size=" + std::to_string(changeset_value_view.length()) +
+                                      " at block " + std::to_string(reached_blocknum); });
                 auto location{to_bytes32(changeset_value_view)};
                 if (!storage_changes[address][incarnation].contains(location)) {
                     changeset_value_view.remove_prefix(kHashLength);

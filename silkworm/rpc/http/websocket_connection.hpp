@@ -53,10 +53,9 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
 
     ~WebSocketConnection();
 
-    template <class Body, class Allocator>
     Task<void>
-    do_accept(const boost::beast::http::request<Body, boost::beast::http::basic_fields<Allocator>>& req);
-  
+    do_accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
+
     Task<void> do_read();
 
     Task<void> open_stream() override { co_return; }

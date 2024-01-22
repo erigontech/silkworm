@@ -54,9 +54,8 @@ WebSocketConnection::~WebSocketConnection() {
     SILK_DEBUG << "WebSocketConnection::~WebSocketConnection ws deleted:" << &ws_;
 }
 
-template <class Body, class Allocator>
 Task<void>
-WebSocketConnection::do_accept(const boost::beast::http::request<Body, boost::beast::http::basic_fields<Allocator>>& req) {
+WebSocketConnection::do_accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
 

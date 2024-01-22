@@ -46,9 +46,11 @@ static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold)
     : io_executor_(executor), writer_(writer), threshold_(threshold), channel_{executor, threshold} {
     buffer_.reserve(threshold);
-    runner_task_ = co_spawn(executor, [](auto self) -> Task<void> {
-        co_await self->run();
-    }(this), boost::asio::use_awaitable);
+    runner_task_ = co_spawn(
+        executor, [](auto self) -> Task<void> {
+            co_await self->run();
+        }(this),
+        boost::asio::use_awaitable);
 }
 
 Task<void> Stream::close() {
@@ -245,9 +247,11 @@ void Stream::ensure_separator() {
 
 void Stream::do_write(std::shared_ptr<std::string> chunk) {
     if (!closed_) {
-        co_spawn(io_executor_, [](auto self, auto chunk) -> Task<void> {
-            co_await self->channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
-        }(this, std::move(chunk)), boost::asio::detached);
+        co_spawn(
+            io_executor_, [](auto self, auto chunk) -> Task<void> {
+                co_await self->channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
+            }(this, std::move(chunk)),
+            boost::asio::detached);
     }
 }
 

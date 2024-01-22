@@ -261,9 +261,8 @@ Task<void> Stream::run() {
     uint32_t write_counter{0};
     std::size_t total_send{0};
     while (true) {
-        auto ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
-
-        if (!ptr) {
+        const auto chunk_ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
+        if (!chunk_ptr) {
             break;
         }
         if (!stop_watch) {
@@ -271,7 +270,7 @@ Task<void> Stream::run() {
         }
 
         try {
-            total_send += co_await writer_.write(*ptr);
+            total_send += co_await writer_.write(*chunk_ptr);
             write_counter++;
         } catch (const std::exception& exception) {
             SILK_ERROR << "#" << std::dec << write_counter << " Exception: " << exception.what();

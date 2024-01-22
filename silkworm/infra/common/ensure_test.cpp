@@ -41,7 +41,6 @@ TEST_CASE("ensure_invariant") {
     CHECK_THROWS_MATCHES(ensure_invariant(false, "x"), std::logic_error, Message("Invariant violation: x"));
 }
 
-
 TEST_CASE("ensure_invariant dynamic message") {
     CHECK_NOTHROW(ensure_invariant(true, []() { return "ignored"; }));
     CHECK_THROWS_AS(ensure_invariant(false, []() { return "error"; }), std::logic_error);
@@ -62,6 +61,5 @@ TEST_CASE("ensure_post_condition") {
     CHECK_THROWS_MATCHES(ensure_post_condition(false, []() { return "x"; }), std::logic_error, Message("Post-condition violation: x"));
     CHECK_THROWS_MATCHES(ensure_post_condition(false, []() { return "x " + std::to_string(42); }), std::logic_error, Message("Post-condition violation: x 42"));
 }
-
 
 }  // namespace silkworm

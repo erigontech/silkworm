@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <memory>
 #include <stack>
 #include <string>
 #include <string_view>
@@ -59,7 +60,6 @@ class Stream {
     void write_field(std::string_view name, std::uint32_t value);
     void write_field(std::string_view name, std::int64_t value);
     void write_field(std::string_view name, std::uint64_t value);
-    void write_field(std::string_view name, std::float_t value);
     void write_field(std::string_view name, std::double_t value);
 
   private:
@@ -69,7 +69,7 @@ class Stream {
     void ensure_separator();
 
     void write(std::string_view str);
-    void do_write(std::shared_ptr<std::string> ptr);
+    void do_write(std::shared_ptr<std::string> chunk);
 
     Task<void> run();
 

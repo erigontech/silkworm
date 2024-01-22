@@ -46,13 +46,13 @@ static std::string kColon{":"};           // NOLINT(runtime/string)
 static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
 Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold)
-    : io_executor_(executor), writer_(writer), threshold_(threshold), channel_{executor, threshold}, synch_{executor, 1} {
+    : io_executor_(executor), writer_(writer), threshold_(threshold), channel_{executor, threshold} {
     buffer_.reserve(threshold);
-    co_spawn(
+    runner_task_ = co_spawn(
         executor, [&]() -> Task<void> {
             co_await run();
         },
-        boost::asio::detached);
+        boost::asio::use_awaitable);
 }
 
 Task<void> Stream::close() {
@@ -61,7 +61,7 @@ Task<void> Stream::close() {
     }
 
     do_write(nullptr);
-    co_await synch_.async_receive(boost::asio::use_awaitable);
+    co_await std::move(runner_task_);
     co_await writer_.close();
 
     co_return;
@@ -305,8 +305,6 @@ Task<void> Stream::run() {
         const auto [_, duration] = stop_watch->lap();
         SILK_DEBUG << "Stream::run -> actual duration " << StopWatch::format(duration);
     }
-
-    co_await synch_.async_send(boost::system::error_code(), total_send, boost::asio::use_awaitable);
 
     co_return;
 }

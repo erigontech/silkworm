@@ -82,8 +82,8 @@ class Stream {
     std::string buffer_;
 
     bool closed_{false};
+    Task<void> runner_task_;
     boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::shared_ptr<std::string>)> channel_;
-    boost::asio::experimental::concurrent_channel<void(boost::system::error_code, uint64_t)> synch_;
 };
 
 }  // namespace silkworm::rpc::json

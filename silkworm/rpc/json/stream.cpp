@@ -248,8 +248,8 @@ void Stream::ensure_separator() {
 void Stream::do_write(std::shared_ptr<std::string> chunk) {
     if (!closed_) {
         co_spawn(
-            io_executor_, [](auto self, auto chunk) -> Task<void> {
-                co_await self->channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
+            io_executor_, [](auto self, auto chunk_ptr) -> Task<void> {
+                co_await self->channel_.async_send(boost::system::error_code(), chunk_ptr, boost::asio::use_awaitable);
             }(this, std::move(chunk)),
             boost::asio::detached);
     }

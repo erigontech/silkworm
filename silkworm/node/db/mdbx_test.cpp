@@ -618,14 +618,14 @@ TEST_CASE("OF pages") {
     }
 
     // Skip the following section in debug as too big data size in multi-value map will assert
-#ifndef MDBX_DEBUG
+#ifdef NDEBUG
     SECTION("Multi-value map: No overflow, error for value too big") {
         db::PooledCursor target(txn, db::table::kPlainState);
         Bytes key(20, '\0');
         Bytes value(db::max_multivalue_size_for_leaf_page(txn) + /*any extra value*/ 1, '\0');
         CHECK_THROWS_AS(target.insert(db::to_slice(key), db::to_slice(value)), ::mdbx::exception);
     }
-#endif  // MDBX_DEBUG
+#endif  // NDEBUG
 }
 
 static uint64_t get_free_pages(const ::mdbx::env& env) {

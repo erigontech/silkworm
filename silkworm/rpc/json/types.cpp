@@ -221,7 +221,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     json["gasLimit"] = rpc::to_quantity(header.gas_limit);
     json["gasUsed"] = rpc::to_quantity(header.gas_used);
     json["timestamp"] = rpc::to_quantity(header.timestamp);
-    if (header.base_fee_per_gas.has_value()) {
+    if (header.base_fee_per_gas) {
         json["baseFeePerGas"] = rpc::to_quantity(header.base_fee_per_gas.value_or(0));
     } else {
         json["baseFeePerGas"] = nullptr;
@@ -304,6 +304,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
     json["block"]["transactionCount"] = b.block.transaction_count;  // to_quantity(b.block.transaction_count);
     json["block"]["transactionsRoot"] = b.block.header.transactions_root;
+    if (b.block.header.base_fee_per_gas.has_value()) {
+        json["block"]["baseFeePerGas"] = rpc::to_quantity(b.block.header.base_fee_per_gas.value_or(0));
+    }
 
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block.ommers.size());
@@ -314,9 +317,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["uncles"] = ommer_hashes;
 
     if (b.issuance.total_reward > 0) {
-        json["issuance"]["minerReward"] = to_quantity(b.issuance.miner_reward);
-        json["issuance"]["ommersReward"] = to_quantity(b.issuance.ommers_reward);
-        json["issuance"]["totalReward"] = to_quantity(b.issuance.total_reward);
+        json["issuance"]["issuance"] = to_quantity(b.issuance.miner_reward);
+        json["issuance"]["uncleReward"] = to_quantity(b.issuance.ommers_reward);
+        json["issuance"]["blockReward"] = to_quantity(b.issuance.total_reward);
     } else {
         json["issuance"] = nlohmann::json::object();
     }

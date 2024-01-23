@@ -618,7 +618,7 @@ TEST_CASE("OF pages") {
     }
 
     // Skip the following section in debug as too big data size in multi-value map will assert
-#if !defined(MDBX_DEBUG) || !defined(SILKWORM_SANITIZE)
+#if !defined(MDBX_DEBUG) && !defined(SILKWORM_SANITIZE)
     SECTION("Multi-value map: No overflow, error for value too big") {
         db::PooledCursor target(txn, db::table::kPlainState);
         Bytes key(20, '\0');

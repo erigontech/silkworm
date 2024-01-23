@@ -39,6 +39,8 @@ class MessageStream {
 
     void enable_compression();
 
+    using DecompressionError = MessageFrameCodec::DecompressionError;
+
   private:
     FramingCipher cipher_;
     SocketStream& stream_;

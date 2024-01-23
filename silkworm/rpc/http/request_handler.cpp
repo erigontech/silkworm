@@ -34,9 +34,16 @@ constexpr std::size_t kStreamBufferSize{4096};
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
     std::string response;
-
     bool send_reply{true};
-    const auto request_json = nlohmann::json::parse(content);
+    nlohmann::json request_json;
+    try {
+        request_json = nlohmann::json::parse(content);
+    } catch (const nlohmann::json::exception& e) {
+        SILK_ERROR << "Connection::do_read json_parse: " << e.what();
+        response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+        co_await channel_->write_rsp(response);
+        co_return;
+    }
     if (request_json.is_object()) {
         if (!is_valid_jsonrpc(request_json)) {
             response = make_json_error(0, -32600, "invalid request").dump() + "\n";

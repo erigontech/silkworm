@@ -53,10 +53,12 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
 
     ~WebSocketConnection();
 
+    boost::beast::websocket::stream<boost::beast::tcp_stream>& ws() { return ws_; }
+
     Task<void>
     do_accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    Task<void> do_read();
+    Task<void> read_loop();
 
     Task<void> open_stream() override { co_return; }
     Task<void> close() override { co_return; }
@@ -65,6 +67,8 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
     Task<std::size_t> write(std::string_view content) override;
 
   private:
+    Task<void> do_read();
+
     //! Perform an asynchronous write operation.
     Task<void> do_write(const std::string& content);
 
@@ -72,9 +76,6 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
 
     //! The handler used to process the incoming request.
     RequestHandler request_handler_;
-
-    //! Buffer for incoming data.
-    boost::beast::flat_buffer buffer_;
 };
 
 }  // namespace silkworm::rpc::http

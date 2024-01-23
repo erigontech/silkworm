@@ -39,6 +39,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
+      io_context_{io_context},
       api_{api},
       handler_table_{handler_table},
       request_handler_{this, api, handler_table},
@@ -55,11 +56,7 @@ Connection::~Connection() {
 Task<void> Connection::read_loop() {
     try {
         while (true) {
-            if (websocket_connection_) {
-                co_await websocket_connection_->do_read();
-            } else {
-                co_await do_read();
-            }
+            co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
@@ -104,9 +101,17 @@ Task<void> Connection::do_read() {
         // we tie the socket object to a websocket stream
         boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
-        websocket_connection_ = std::make_shared<WebSocketConnection>(std::move(stream), api_, std::move(handler_table_));
+        auto websocket_connection = std::make_shared<WebSocketConnection>(std::move(stream), api_, std::move(handler_table_));
+        co_await websocket_connection->do_accept(parser.release());
 
-        co_await websocket_connection_->do_accept(parser.release());
+        SILK_TRACE << "Connection::run starting connection for websocket: " << &websocket_connection->ws();
+
+        auto connection_loop = [=]() -> Task<void> { co_await websocket_connection->read_loop(); };
+
+        boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
+            if (eptr) std::rethrow_exception(eptr);
+        });
+
         co_return;
     }
     co_await handle_request(parser.get());
@@ -140,6 +145,8 @@ Task<void> Connection::open_stream() {
         boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
         rsp.set(boost::beast::http::field::content_type, "application/json");
         rsp.chunked(true);
+
+        set_cors<boost::beast::http::empty_body>(rsp);
 
         boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
@@ -180,7 +187,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         res.content_length(content.size());
         res.body() = content;
 
-        set_cors(res);
+        set_cors<boost::beast::http::string_body>(res);
 
         res.prepare_payload();
         const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
@@ -194,21 +201,6 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         throw;
     }
     co_return;
-}
-
-void Connection::set_cors(boost::beast::http::response<boost::beast::http::string_body>& res) {
-    if (allowed_origins_.empty()) {
-        return;
-    }
-
-    if (allowed_origins_.at(0) == "*") {
-        res.set("Access-Control-Allow-Origin", "*");
-    } else {
-        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
-    }
-    res.set("Access-Control-Allow-Methods", "GET, POST");
-    res.set("Access-Control-Allow-Headers", "*");
-    res.set("Access-Control-Max-Age", "600");
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -249,6 +241,22 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
         return tl::make_unexpected("invalid token");
     }
     return {};
+}
+
+template <class Body>
+void Connection::set_cors(boost::beast::http::response<Body>& res) {
+    if (allowed_origins_.empty()) {
+        return;
+    }
+
+    if (allowed_origins_.at(0) == "*") {
+        res.set("Access-Control-Allow-Origin", "*");
+    } else {
+        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
+    }
+    res.set("Access-Control-Allow-Methods", "GET, POST");
+    res.set("Access-Control-Allow-Headers", "*");
+    res.set("Access-Control-Max-Age", "600");
 }
 
 }  // namespace silkworm::rpc::http

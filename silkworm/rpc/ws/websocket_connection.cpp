@@ -63,6 +63,27 @@ WebSocketConnection::do_accept(const boost::beast::http::request<boost::beast::h
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
 }
 
+Task<void> WebSocketConnection::read_loop() {
+    try {
+        while (true) {
+            co_await do_read();
+        }
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe ||
+            se.code() == boost::asio::error::connection_reset) {
+            SILK_TRACE << "WebSocketConnection::read_loop close from client with code: " << se.code();
+        } else if (se.code() != boost::asio::error::operation_aborted) {
+            SILK_ERROR << "WebSocketConnection::read_loop system_error: " << se.what();
+            throw;
+        } else {
+            SILK_TRACE << "WebSocketConnection::read_loop operation_aborted: " << se.what();
+        }
+    } catch (const std::exception& e) {
+        SILK_ERROR << "WebSocketConnection::read_loop exception: " << e.what();
+        throw;
+    }
+}
+
 Task<void>
 WebSocketConnection::do_read() {
     std::string content;

@@ -145,8 +145,7 @@ TEST_CASE("Environment opening") {
 
 TEST_CASE("Cursor") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.in_memory = true;
+    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
 
     const db::MapConfig map_config{"GeneticCode"};
@@ -231,10 +230,36 @@ TEST_CASE("Cursor") {
     REQUIRE(other_thread_size2 == 0);
 }
 
+TEST_CASE("ROAccess/RWAccess ::mdbx::env lifecycle") {
+    const TemporaryDirectory tmp_dir;
+    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
+    auto env{db::open_env(db_config)};
+
+    SECTION("ROAccess") {
+        std::unique_ptr<db::ROAccess> access;
+        {
+            // Create ROAccess with env_copy lvalue that gets destroyed immediately after
+            ::mdbx::env env_copy{env};  // NOLINT(cppcoreguidelines-slicing)
+            access = std::make_unique<db::ROAccess>(env_copy);
+        }
+        // env is still alive so using access *must* be safe
+        CHECK(access->operator*().get_path() == env.get_path());
+    }
+    SECTION("RWAccess") {
+        std::unique_ptr<db::RWAccess> access;
+        {
+            // Create RWAccess with env_copy lvalue that gets destroyed immediately after
+            ::mdbx::env env_copy{env};  // NOLINT(cppcoreguidelines-slicing)
+            access = std::make_unique<db::RWAccess>(env_copy);
+        }
+        // env is still alive so using access *must* be safe
+        CHECK(access->operator*().get_path() == env.get_path());
+    }
+}
+
 TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.in_memory = true;
+    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
     static const char* table_name{"GeneticCode"};
 
@@ -280,8 +305,7 @@ TEST_CASE("RWTxn") {
 
 TEST_CASE("Cursor walk") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.in_memory = true;
+    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 

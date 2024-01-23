@@ -29,6 +29,8 @@
 #include <mdbx.h++>
 #pragma GCC diagnostic pop
 
+#include <utility>
+
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
@@ -333,7 +335,7 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class ROAccess {
   public:
-    explicit ROAccess(mdbx::env& env) : env_{env} {}
+    explicit ROAccess(mdbx::env env) : env_{std::move(env)} {}
     ROAccess(const ROAccess& copy) = default;
 
     ROTxnManaged start_ro_tx() { return ROTxnManaged(env_); }
@@ -341,13 +343,13 @@ class ROAccess {
     mdbx::env& operator*() { return env_; }
 
   protected:
-    mdbx::env& env_;
+    mdbx::env env_;
 };
 
 //! \brief This class create RWTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class RWAccess : public ROAccess {
   public:
-    explicit RWAccess(mdbx::env& env) : ROAccess{env} {}
+    explicit RWAccess(mdbx::env env) : ROAccess{std::move(env)} {}
     RWAccess(const RWAccess& copy) = default;
 
     RWTxnManaged start_rw_tx() { return RWTxnManaged(env_); }
@@ -521,7 +523,7 @@ inline std::filesystem::path get_datafile_path(const std::filesystem::path& base
 }
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
-enum class CursorMoveDirection {
+enum class CursorMoveDirection : uint8_t {
     Forward,
     Reverse
 };

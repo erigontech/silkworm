@@ -185,6 +185,9 @@ Task<void> Peer::handle() {
     } catch (const auth::Handshake::DisconnectError& ex) {
         log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
+    } catch (const framing::MessageStream::DecompressionError& ex) {
+        log::Debug("sentry") << "Peer::handle DecompressionError: " << ex.what();
+        disconnect_reason_.set({DisconnectReason::ProtocolError});
     } catch (const auth::Handshake::CapabilityMismatchError& ex) {
         log::Debug("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::UselessPeer});

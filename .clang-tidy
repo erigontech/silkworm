@@ -60,6 +60,7 @@ Checks: >
   -misc-redundant-expression,
   -misc-unused-using-decls,
   -misc-use-anonymous-namespace,
+  -misc-include-cleaner,
   modernize-*,
   -modernize-avoid-c-arrays,
   -modernize-macro-to-enum,

@@ -319,15 +319,18 @@ class RWTxnManaged : public RWTxn {
 };
 
 //! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
+//! is not created by this class, but can be committed or aborted.
 class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
   public:
     explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
+    ~RWTxnUnmanaged() override;
 
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
+    void abort() override;
+    void commit_and_renew() override;
+    void commit_and_stop() override;
+
+  private:
+    void commit();
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
@@ -391,12 +394,12 @@ struct EnvConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
-//! \param [in] page_size : the actually configured MDBX's page size
+//! \brief Computes the max size of single-value data to fit into a leaf data page
+//! \param [in] page_size : the actually configured MDBX page size
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(size_t page_size, size_t key_size);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
+//! \brief Computes the max size of single-value data to fit into a leaf data page
 //! \param [in] txn : the transaction used to derive pagesize from
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);

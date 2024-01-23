@@ -38,6 +38,13 @@ void Buffer::begin_block(uint64_t block_number) {
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
+    // Skip update if both initial and final state are non-existent (i.e. contract creation+destruction within the same block)
+    if (!initial && !current) {
+        // Only to perfectly match Erigon state batch size (Erigon does count any account w/ old=new=empty value).
+        batch_state_size_ += kAddressLength;
+        return;
+    }
+
     const bool equal{current == initial};
     const bool account_deleted{!current.has_value()};
 
@@ -66,11 +73,11 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
     auto it{accounts_.find(address)};
     if (it != accounts_.end()) {
-        batch_state_size_ -= it->second.has_value() ? sizeof(Account) : 0;
-        batch_state_size_ += (current ? sizeof(Account) : 0);
+        batch_state_size_ -= it->second.has_value() ? it->second->encoding_length_for_storage() : 0;
+        batch_state_size_ += (current ? current->encoding_length_for_storage() : 0);
         it->second = current;
     } else {
-        batch_state_size_ += kAddressLength + (current ? sizeof(Account) : 0);
+        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
         accounts_[address] = current;
     }
 
@@ -85,10 +92,12 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
-    // Don't overwrite already existing code so that views of it
-    // that were previously returned by read_code() are still valid.
-    if (hash_to_code_.try_emplace(code_hash, code).second) {
+    // Don't overwrite existing code so that views of it that were previously returned by read_code are still valid
+    const auto [inserted_or_existing_it, inserted] = hash_to_code_.try_emplace(code_hash, code);
+    if (inserted) {
         batch_state_size_ += kHashLength + code.length();
+    } else {
+        batch_state_size_ += code.length() - inserted_or_existing_it->second.length();
     }
 
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
@@ -111,8 +120,14 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
         }
     }
 
-    if (storage_[address][incarnation].insert_or_assign(location, current).second) {
-        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + kHashLength;
+    // Iterator in insert_or_assign return value "is pointing at the element that was inserted or updated"
+    // so we cannot use it to determine the old value size: we need to use initial instead
+    const auto [_, inserted] = storage_[address][incarnation].insert_or_assign(location, current);
+    ByteView current_val{zeroless_view(current.bytes)};
+    if (inserted) {
+        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + current_val.length();
+    } else {
+        batch_state_size_ += current_val.length() - zeroless_view(initial.bytes).length();
     }
 }
 
@@ -242,8 +257,8 @@ void Buffer::write_history_to_db(bool write_change_sets) {
 
     batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
-    log::Info("Flushed history",
-              {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
+    log::Trace("Flushed history",
+               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
 }
 
 void Buffer::write_state_to_db() {
@@ -337,9 +352,17 @@ void Buffer::write_state_to_db() {
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
-                for (const auto& [location, value] : contract_storage) {
-                    upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
-                    written_size += prefix.length() + kLocationLength + kHashLength;
+                // Extract sorted set of storage locations to insert ordered data into the DB
+                absl::btree_set<evmc::bytes32> storage_locations;
+                for (auto& storage_entry : contract_storage) {
+                    storage_locations.insert(storage_entry.first);
+                }
+                for (const auto& location : storage_locations) {
+                    if (auto storage_it{contract_storage.find(location)}; storage_it != contract_storage.end()) {
+                        const auto& value{storage_it->second};
+                        upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
+                        written_size += prefix.length() + kLocationLength + zeroless_view(value.bytes).size();
+                    }
                 }
             }
             storage_.erase(it);
@@ -397,23 +420,24 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
         touched_accounts.insert(recipient);
     }
 
-    if (not touched_accounts.empty()) {
+    if (!touched_accounts.empty()) {
         batch_history_size_ += sizeof(BlockNum);
-    }
-    absl::btree_set<Bytes> values;
-    for (const auto& account : touched_accounts) {
-        Bytes value(kAddressLength + 1, '\0');
-        std::memcpy(value.data(), account.bytes, kAddressLength);
-        if (traces.senders.contains(account)) {
-            value[kAddressLength] |= 1;
+
+        absl::btree_set<Bytes> values;
+        for (const auto& account : touched_accounts) {
+            Bytes value(kAddressLength + 1, '\0');
+            std::memcpy(value.data(), account.bytes, kAddressLength);
+            if (traces.senders.contains(account)) {
+                value[kAddressLength] |= 1;
+            }
+            if (traces.recipients.contains(account)) {
+                value[kAddressLength] |= 2;
+            }
+            batch_history_size_ += value.size();
+            values.insert(std::move(value));
         }
-        if (traces.recipients.contains(account)) {
-            value[kAddressLength] |= 2;
-        }
-        batch_history_size_ += value.size();
-        values.insert(std::move(value));
+        call_traces_.emplace(block_number, values);
     }
-    call_traces_.emplace(block_number, values);
 }
 
 evmc::bytes32 Buffer::state_root_hash() const {
@@ -482,8 +506,6 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
         return it->second;
     }
     auto db_account{db::read_account(txn_, address, historical_block_)};
-    accounts_[address] = db_account;
-    batch_state_size_ += kAddressLength + db_account.value_or(Account()).encoding_length_for_storage();
     return db_account;
 }
 
@@ -501,19 +523,14 @@ ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& location) const noexcept {
-    size_t payload_length{kAddressLength + kIncarnationLength + kLocationLength + kHashLength};
     if (auto it1{storage_.find(address)}; it1 != storage_.end()) {
-        payload_length -= kAddressLength;
         if (auto it2{it1->second.find(incarnation)}; it2 != it1->second.end()) {
-            payload_length -= kIncarnationLength;
             if (auto it3{it2->second.find(location)}; it3 != it2->second.end()) {
                 return it3->second;
             }
         }
     }
     auto db_storage{db::read_storage(txn_, address, incarnation, location, historical_block_)};
-    storage_[address][incarnation][location] = db_storage;
-    batch_state_size_ += payload_length;
     return db_storage;
 }
 

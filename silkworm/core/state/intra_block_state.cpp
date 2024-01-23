@@ -341,10 +341,6 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
     }
 
     for (const auto& [address, obj] : objects_) {
-        // Skip update if both initial and final state are empty (i.e. contract creation+destruction within the same block)
-        if (!obj.initial && !obj.current) {
-            continue;
-        }
         db_.update_account(address, obj.initial, obj.current);
         if (!obj.current) {
             continue;

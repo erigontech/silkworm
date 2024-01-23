@@ -20,7 +20,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>

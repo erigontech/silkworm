@@ -20,7 +20,6 @@
 
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/types/transaction.hpp>
 
 namespace silkworm {
 

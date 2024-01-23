@@ -40,7 +40,7 @@ using PruneThreshold = std::optional<BlockNum>;  // for 'before' type
 
 class BlockAmount {
   public:
-    enum class Type {
+    enum class Type : uint8_t {
         kOlder,  // Prune Data Older than (moving window)
         kBefore  // Prune data before (fixed)
     };
@@ -70,11 +70,11 @@ class PruneMode {
 
     explicit PruneMode(BlockAmount history, BlockAmount receipts, BlockAmount senders, BlockAmount tx_index,
                        BlockAmount call_traces)
-        : history_{std::move(history)},
-          receipts_{std::move(receipts)},
-          senders_{std::move(senders)},
-          tx_index_{std::move(tx_index)},
-          call_traces_{std::move(call_traces)} {}
+        : history_{history},
+          receipts_{receipts},
+          senders_{senders},
+          tx_index_{tx_index},
+          call_traces_{call_traces} {}
 
     [[nodiscard]] const BlockAmount& history() const { return history_; }
     [[nodiscard]] const BlockAmount& receipts() const { return receipts_; }

@@ -32,18 +32,18 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/bittorrent/client.hpp>
-#include <silkworm/node/snapshot/index.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/node/snapshot/snapshot.hpp>
-#include <silkworm/node/snapshot/sync.hpp>
+#include <silkworm/node/snapshots/bittorrent/client.hpp>
+#include <silkworm/node/snapshots/index.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/node/snapshots/snapshot.hpp>
+#include <silkworm/node/snapshots/sync.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;
-using namespace silkworm::snapshot;
+using namespace silkworm::snapshots;
 
 constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 constexpr int kDefaultRepetitions{1};
@@ -59,7 +59,7 @@ struct SnapSettings : public SnapshotSettings {
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
-struct DownloadSettings : public BitTorrentSettings {
+struct DownloadSettings : public bittorrent::BitTorrentSettings {
     std::string magnet_uri;
 };
 
@@ -286,11 +286,11 @@ void open_index(const SnapSettings& settings) {
     ensure(settings.snapshot_file_name.has_value(), "open_index: --snapshot_file must be specified");
     std::filesystem::path segment_file_path{settings.repository_dir / *settings.snapshot_file_name};
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
-    const auto snapshot_path{snapshot::SnapshotPath::parse(segment_file_path)};
+    const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), "open_index: invalid snapshot file " + segment_file_path.filename().string());
     const auto index_path{snapshot_path->index_file()};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    succinct::RecSplitIndex idx{index_path.path()};
+    rec_split::RecSplitIndex idx{index_path.path()};
     if (settings.lookup_number) {
         BlockNum number{*settings.lookup_number};
         SILK_INFO << "Open index offset for " << number << ": " << idx.ordinal_lookup(number);
@@ -307,10 +307,10 @@ void open_index(const SnapSettings& settings) {
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void download(const BitTorrentSettings& settings) {
+void download(const bittorrent::BitTorrentSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    BitTorrentClient client{settings};
+    bittorrent::BitTorrentClient client{settings};
     SILK_INFO << "Bittorrent download started in repo: " << settings.repository_path.string();
 
     boost::asio::io_context scheduler;

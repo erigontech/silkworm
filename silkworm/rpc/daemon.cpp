@@ -108,7 +108,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
         // Activate the local chaindata and snapshot access (if required)
         std::optional<mdbx::env_managed> chaindata_env;
-        std::unique_ptr<snapshot::SnapshotRepository> snapshot_repository;
+        std::unique_ptr<snapshots::SnapshotRepository> snapshot_repository;
         if (settings.datadir) {
             DataDirectory data_folder{*settings.datadir};
 
@@ -122,10 +122,10 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             *chaindata_env = silkworm::db::open_env(db_config);
 
             // Create a new snapshot repository
-            snapshot::SnapshotSettings snapshot_settings{
+            snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            snapshot_repository = std::make_unique<snapshot::SnapshotRepository>(std::move(snapshot_settings));
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings));
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());

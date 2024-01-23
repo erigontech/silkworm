@@ -26,9 +26,9 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/node/types/receipt_cbor.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 
 namespace silkworm::db {
 
@@ -963,7 +963,7 @@ void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
     write_last_fcu_field(txn, kFinalizedBlockHash, hash);
 }
 
-void DataModel::set_snapshot_repository(snapshot::SnapshotRepository* repository) {
+void DataModel::set_snapshot_repository(snapshots::SnapshotRepository* repository) {
     ensure(repository, "DataModel::set_snapshot_repository: repository is null");
     repository_ = repository;
 }
@@ -1229,7 +1229,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    repository_->view_header_segments([&](const snapshot::HeaderSnapshot* snapshot) -> bool {
+    repository_->view_header_segments([&](const snapshots::HeaderSnapshot* snapshot) -> bool {
         block_header = snapshot->header_by_hash(hash);
         return block_header.has_value();
     });

@@ -72,7 +72,7 @@ void SubNode::parse(ByteView k, ByteView v) {
     deleted = false;
 }
 
-TrieCursor::TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
+TrieCursor::TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, db::etl::Collector* collector)
     : db_cursor_(db_cursor), changed_list_{changed}, collector_{collector} {
     curr_key_.reserve(64);
     prev_key_.reserve(64);

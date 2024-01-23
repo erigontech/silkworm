@@ -35,13 +35,13 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"
 
 using namespace silkworm;
-using namespace silkworm::snapshot;
+using namespace silkworm::snapshots;
 using namespace silkworm::cmd::common;
 
 struct ExecuteBlocksSettings {
@@ -131,7 +131,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, Settings& setting
     }
 }
 
-const char* make_path(const snapshot::SnapshotPath& p) {
+const char* make_path(const snapshots::SnapshotPath& p) {
     const auto path_string{p.path().string()};
     char* path = new char[path_string.size() + 1];
     std::strcpy(path, path_string.c_str());

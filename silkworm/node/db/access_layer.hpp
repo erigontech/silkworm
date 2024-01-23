@@ -35,7 +35,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 
-namespace silkworm::snapshot {
+namespace silkworm::snapshots {
 class SnapshotRepository;
 }
 
@@ -252,7 +252,7 @@ void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash);
 
 class DataModel {
   public:
-    static void set_snapshot_repository(snapshot::SnapshotRepository* repository);
+    static void set_snapshot_repository(snapshots::SnapshotRepository* repository);
 
     explicit DataModel(db::ROTxn& txn);
     ~DataModel() = default;
@@ -342,7 +342,7 @@ class DataModel {
     [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
     [[nodiscard]] static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
 
-    static inline snapshot::SnapshotRepository* repository_{nullptr};
+    static inline snapshots::SnapshotRepository* repository_{nullptr};
 
     db::ROTxn& txn_;
 };

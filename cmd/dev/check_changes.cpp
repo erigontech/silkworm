@@ -28,7 +28,7 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        snapshot::SnapshotRepository repository;
+        snapshots::SnapshotRepository repository;
         repository.reopen_folder();
         db::DataModel::set_snapshot_repository(&repository);
         db::DataModel access_layer{txn};

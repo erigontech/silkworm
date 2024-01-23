@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <optional>
+#include <string>
+
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/tables.hpp>
 
@@ -37,12 +40,13 @@ using PruneThreshold = std::optional<BlockNum>;  // for 'before' type
 
 class BlockAmount {
   public:
-    enum Type {
+    enum class Type {
         kOlder,  // Prune Data Older than (moving window)
         kBefore  // Prune data before (fixed)
     };
 
-    explicit BlockAmount() : value_{std::nullopt}, enabled_{false}, type_{Type::kOlder} {}
+    BlockAmount() = default;
+
     explicit BlockAmount(Type type, BlockNum value) : value_{value}, enabled_{true}, type_{type} {}
 
     [[nodiscard]] bool enabled() const { return enabled_; }
@@ -55,14 +59,15 @@ class BlockAmount {
     friend bool operator==(const BlockAmount&, const BlockAmount&) = default;
 
   private:
-    const std::optional<BlockNum> value_;
-    const bool enabled_;
-    const Type type_;
+    std::optional<BlockNum> value_;
+    bool enabled_{false};
+    Type type_{Type::kOlder};
 };
 
 class PruneMode {
   public:
-    explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_() {}
+    PruneMode() = default;
+
     explicit PruneMode(BlockAmount history, BlockAmount receipts, BlockAmount senders, BlockAmount tx_index,
                        BlockAmount call_traces)
         : history_{std::move(history)},
@@ -101,11 +106,11 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value);
 
 //! \brief Parses prune mode from a string
 //! \param [in] mode : the string representation of PruneMode
-std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                                            const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
-                                            const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
-                                            const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
-                                            const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
-                                            const PruneThreshold& beforeCallTraces);
+PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
+                           const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
+                           const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
+                           const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
+                           const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
+                           const PruneThreshold& beforeCallTraces);
 
 }  // namespace silkworm::db

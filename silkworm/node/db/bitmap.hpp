@@ -39,7 +39,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
 class Collector;
 }
 

@@ -22,20 +22,22 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
-#include <silkworm/node/test/context.hpp>
 
 namespace silkworm::trie {
+
+using db::etl::Collector;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
     return silkworm::keccak256(address.bytes);
 }
 
 TEST_CASE("Trie Cursor") {
-    test::Context db_context{};
+    db::test_util::TempChainData db_context{};
     auto txn{db_context.txn()};
 
     SECTION("Only root trie no changes") {
@@ -110,7 +112,7 @@ TEST_CASE("Trie Cursor") {
     }
 
     SECTION("Root + child with changes") {
-        etl::Collector collector{db_context.dir().path()};
+        Collector collector{db_context.dir().path()};
         trie::PrefixSet changed_accounts{};
         db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts, &collector};
@@ -164,7 +166,7 @@ TEST_CASE("Trie Cursor") {
     }
 
     SECTION("Root + 16 children with changes") {
-        etl::Collector collector{db_context.dir().path()};
+        Collector collector{db_context.dir().path()};
         trie::PrefixSet changed_accounts{};
         db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts, &collector};
@@ -345,8 +347,8 @@ static Bytes nibbles_from_hex(std::string_view s) {
 
 static evmc::bytes32 increment_intermediate_hashes(db::ROTxn& txn, const std::filesystem::path& etl_path,
                                                    PrefixSet* account_changes, PrefixSet* storage_changes) {
-    etl::Collector account_trie_node_collector{etl_path};
-    etl::Collector storage_trie_node_collector{etl_path};
+    Collector account_trie_node_collector{etl_path};
+    Collector storage_trie_node_collector{etl_path};
 
     TrieLoader trie_loader(txn, account_changes, storage_changes, &account_trie_node_collector,
                            &storage_trie_node_collector);
@@ -370,7 +372,7 @@ static evmc::bytes32 regenerate_intermediate_hashes(db::ROTxn& txn, const std::f
 }
 
 TEST_CASE("Account and storage trie") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     // ----------------------------------------------------------------
@@ -524,8 +526,8 @@ TEST_CASE("Account and storage trie") {
         expected_root = 0x986b623eac8b26c8624cbaffaa60c1b48a7b88be1574bd98bd88391fc34c0a9c_bytes32;
 
         {
-            etl::Collector account_trie_node_collector{context.dir().etl().path()};
-            etl::Collector storage_trie_node_collector{context.dir().etl().path()};
+            Collector account_trie_node_collector{context.dir().etl().path()};
+            Collector storage_trie_node_collector{context.dir().etl().path()};
             TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
                                    &storage_trie_node_collector);
             computed_root = trie_loader.calculate_root();
@@ -602,7 +604,7 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
@@ -653,7 +655,7 @@ static evmc::bytes32 int_to_bytes32(uint64_t i) {
 }
 
 TEST_CASE("Trie Accounts : incremental vs regeneration") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;
@@ -747,7 +749,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
 }
 
 TEST_CASE("Trie Storage : incremental vs regeneration") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;

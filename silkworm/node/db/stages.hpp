@@ -73,15 +73,6 @@ inline constexpr const char* kFinishKey{"Finish"};
 //! \brief Not an actual stage rather placeholder for global unwind point
 inline constexpr const char* kUnwindKey{"Unwind"};
 
-//! \brief Create block for mining
-inline constexpr const char* kMiningCreateBlockKey{"MiningCreateBlock"};
-
-//! \brief  Execute mining
-inline constexpr const char* kMiningExecutionKey{"MiningExecution"};
-
-//! \brief Mining completed
-inline constexpr const char* kMiningFinishKey{"MiningFinish"};
-
 //! \brief List of all known stages
 inline constexpr const char* kAllStages[]{
     kHeadersKey,

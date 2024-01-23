@@ -60,7 +60,7 @@ inline constexpr db::MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::ke
 inline constexpr const char* kAccountHistoryName{"AccountHistory"};
 inline constexpr db::MapConfig kAccountHistory{kAccountHistoryName};
 
-//! \details Holds blockbody data
+//! \details Holds block body data
 //! \struct
 //! \verbatim
 //!   key   : block number (BE 8 bytes) + block header hash (32 bytes)

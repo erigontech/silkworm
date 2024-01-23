@@ -40,7 +40,7 @@ static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* k
                 value_type = BlockAmount::Type::kOlder;
                 // For compatibility reasons with Erigon we assume a value == UINT64_MAX means no pruning
                 if (value == UINT64_MAX) {
-                    return BlockAmount();
+                    return {};
                 }
             } else if (data2.value.as_string() == "before") {
                 value_type = BlockAmount::Type::kBefore;
@@ -51,7 +51,7 @@ static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* k
         }
         return BlockAmount(value_type, value);
     }
-    return BlockAmount();
+    return {};
 }
 
 //! \brief Writes the BlockAmount keys in db

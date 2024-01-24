@@ -36,7 +36,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     std::string response;
     bool send_reply{true};
     nlohmann::json request_json;
-    bool parse_error={false};
+    bool parse_error = {false};
     try {
         request_json = nlohmann::json::parse(content);
     } catch (const nlohmann::json::exception& e) {

@@ -36,10 +36,14 @@ Task<void> RequestHandler::handle(const std::string& content) {
     std::string response;
     bool send_reply{true};
     nlohmann::json request_json;
+    bool parse_error={false};
     try {
         request_json = nlohmann::json::parse(content);
     } catch (const nlohmann::json::exception& e) {
         SILK_ERROR << "Connection::do_read json_parse: " << e.what();
+        parse_error = true;
+    }
+    if (parse_error) {
         response = make_json_error(0, -32600, "invalid request").dump() + "\n";
         co_await channel_->write_rsp(response);
         co_return;

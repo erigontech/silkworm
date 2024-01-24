@@ -70,7 +70,7 @@ Task<void> WebSocketConnection::read_loop() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe ||
-            se.code() == boost::asio::error::connection_reset) {
+            se.code() == boost::asio::error::connection_reset || se.code() == boost::beast::websocket::error::closed) {
             SILK_TRACE << "WebSocketConnection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
             SILK_ERROR << "WebSocketConnection::read_loop system_error: " << se.what();

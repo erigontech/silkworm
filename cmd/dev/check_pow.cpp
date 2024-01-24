@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
     app.add_flag("--debug", options.debug, "May print some debug/trace info.");
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     if (options.debug) {
         log::set_verbosity(log::Level::kDebug);
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "\n Pow Verification error on block " << block_num << " : \n"
                           << "Error: " << ec << "\n"
                           << "Final hash " << to_hex(f) << " expected below " << to_hex(b) << "\n"
-                          << "Mix   hash " << to_hex(m) << " expected mix " << to_hex(m) << std::endl;
+                          << "Mix   hash " << to_hex(m) << " expected mix " << to_hex(m) << "\n";
                 break;
             }
 

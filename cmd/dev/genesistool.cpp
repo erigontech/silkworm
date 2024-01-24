@@ -60,9 +60,9 @@ void to_byte_array(fs::path& in, fs::path& out) {
     // Write bytes to output file
     std::string var_name{in.filename().replace_extension("").string()};
     std::ofstream out_stream{out.string()};
-    out_stream << "/* Generated from " << in.filename().string() << " using silkworm's genesistool*/" << std::endl;
-    out_stream << "#include \"" + var_name + ".hpp\"" << std::endl;
-    out_stream << "constexpr char " << var_name << "_data_internal[] = {" << std::endl;
+    out_stream << "/* Generated from " << in.filename().string() << " using silkworm's genesistool*/\n";
+    out_stream << "#include \"" + var_name + ".hpp\"\n";
+    out_stream << "constexpr char " << var_name << "_data_internal[] = {\n";
 
     auto max{bytes.size()};
     auto count{1u};
@@ -71,11 +71,11 @@ void to_byte_array(fs::path& in, fs::path& out) {
                    << ((count % 16 == 0) ? "\n" : " ");
         ++count;
     }
-    out_stream << "};" << std::endl;
-    out_stream << "namespace silkworm {" << std::endl;
+    out_stream << "};\n";
+    out_stream << "namespace silkworm {\n";
     out_stream << "constinit const std::string_view " << var_name << "_json{&" << var_name
-               << "_data_internal[0], sizeof(" << var_name << "_data_internal)};" << std::endl;
-    out_stream << "}" << std::endl;
+               << "_data_internal[0], sizeof(" << var_name << "_data_internal)};\n";
+    out_stream << "}\n";
     out_stream.close();
 }
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 
     app_main.add_flag("-w,--overwrite", overwrite, "Whether to overwrite existing files");
 
-    CLI11_PARSE(app_main, argc, argv);
+    CLI11_PARSE(app_main, argc, argv)
 
     // Get genesis files in input directory
     static const std::regex genesis_pattern{R"(^genesis_(.*)?\.json$)", std::regex_constants::icase};
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         }
     }
     if (input_entries.empty()) {
-        std::cerr << "\nNo files matching genesis pattern in input directory" << std::endl;
+        std::cerr << "\nNo files matching genesis pattern in input directory" << "\n";
         return -1;
     }
 
@@ -121,8 +121,7 @@ int main(int argc, char* argv[]) {
         output_file_path.replace_extension(".cpp");
         bool exists{fs::exists(output_file_path)};
         bool skip{exists && !overwrite};
-        std::cout << input_file_path.string() << (skip ? " Skipped (exists)" : " -> " + output_file_path.string())
-                  << std::endl;
+        std::cout << input_file_path.string() << (skip ? " Skipped (exists)" : " -> " + output_file_path.string()) << "\n";
         if (exists && !skip) {
             fs::remove(output_file_path);
         }

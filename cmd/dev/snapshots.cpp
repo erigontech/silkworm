@@ -64,7 +64,7 @@ struct DownloadSettings : public bittorrent::BitTorrentSettings {
 };
 
 //! The Snapshots tools
-enum class SnapshotTool {
+enum class SnapshotTool : uint8_t {
     count_bodies,
     count_headers,
     create_index,

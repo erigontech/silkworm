@@ -444,7 +444,8 @@ void do_scan(db::EnvConfig& config) {
     }
 
     std::cout << "\n"
-              << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n " << "\n";
+              << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n "
+              << "\n";
     txn.commit();
     env.close(config.shared);
 }

@@ -227,7 +227,7 @@ class ROTxnManaged : public ROTxn {
   public:
     explicit ROTxnManaged() : ROTxn{managed_txn_} {}
     explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
-    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
+    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {}
     ~ROTxnManaged() override = default;
 
     // Not copyable
@@ -291,7 +291,7 @@ class RWTxnManaged : public RWTxn {
   public:
     explicit RWTxnManaged() : RWTxn{managed_txn_} {}
     explicit RWTxnManaged(mdbx::env& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
-    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
+    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{std::move(env).start_write()} {}
     ~RWTxnManaged() override = default;
 
     // Not copyable
@@ -339,7 +339,8 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
 class ROAccess {
   public:
     explicit ROAccess(mdbx::env env) : env_{std::move(env)} {}
-    ROAccess(const ROAccess& copy) = default;
+    ROAccess(const ROAccess&) noexcept = default;
+    ROAccess(ROAccess&&) noexcept = default;
 
     ROTxnManaged start_ro_tx() { return ROTxnManaged(env_); }
 
@@ -353,7 +354,8 @@ class ROAccess {
 class RWAccess : public ROAccess {
   public:
     explicit RWAccess(mdbx::env env) : ROAccess{std::move(env)} {}
-    RWAccess(const RWAccess& copy) = default;
+    RWAccess(const RWAccess&) noexcept = default;
+    RWAccess(RWAccess&&) noexcept = default;
 
     RWTxnManaged start_rw_tx() { return RWTxnManaged(env_); }
 };

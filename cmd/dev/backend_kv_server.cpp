@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -42,7 +43,6 @@
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
-#include <utility>
 
 #include "../common/common.hpp"
 #include "../common/db_max_readers_option.hpp"

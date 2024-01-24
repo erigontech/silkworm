@@ -338,7 +338,8 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class ROAccess {
   public:
-    explicit ROAccess(mdbx::env env) : env_{std::move(env)} {}
+    explicit ROAccess(const mdbx::env& env) : env_{env} {}
+    explicit ROAccess(mdbx::env&& env) : env_{std::move(env)} {}
     ROAccess(const ROAccess&) noexcept = default;
     ROAccess(ROAccess&&) noexcept = default;
 
@@ -353,7 +354,8 @@ class ROAccess {
 //! \brief This class create RWTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class RWAccess : public ROAccess {
   public:
-    explicit RWAccess(mdbx::env env) : ROAccess{std::move(env)} {}
+    explicit RWAccess(const mdbx::env& env) : ROAccess{env} {}
+    explicit RWAccess(mdbx::env&& env) : ROAccess{std::move(env)} {}
     RWAccess(const RWAccess&) noexcept = default;
     RWAccess(RWAccess&&) noexcept = default;
 

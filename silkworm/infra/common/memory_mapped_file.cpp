@@ -39,8 +39,8 @@ namespace silkworm {
 
 MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, std::optional<MemoryMappedRegion> region, bool read_only)
     : path_(std::move(path)), managed_{not region.has_value()} {
-    ensure(std::filesystem::exists(path_), "MemoryMappedFile: " + path_.string() + " does not exist");
-    ensure(std::filesystem::is_regular_file(path_), "MemoryMappedFile: " + path_.string() + " is not regular file");
+    ensure(std::filesystem::exists(path_), [&]() { return "MemoryMappedFile: " + path_.string() + " does not exist"; });
+    ensure(std::filesystem::is_regular_file(path_), [&]() { return "MemoryMappedFile: " + path_.string() + " is not regular file"; });
 
     if (region) {
         ensure(region->address != nullptr, "MemoryMappedFile: address is null");

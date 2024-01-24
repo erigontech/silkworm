@@ -334,8 +334,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         }
 
         ensure(collector_.size() + total_empty_blocks == segment_width,
-               "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
-                   "got=" + std::to_string(collector_.size() + total_empty_blocks));
+               [&]() { return "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
+                              "got=" + std::to_string(collector_.size() + total_empty_blocks); });
 
         // Store all recovered senders into db
         log::Trace(log_prefix_, {"op", "store senders", "reached_block_num", std::to_string(target_block_num)});

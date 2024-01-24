@@ -570,7 +570,7 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-           "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)});
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
 
     std::cout << "\n Staged pipeline unwind up to block: " << unwind_point << " completed\n";
 
@@ -1106,11 +1106,11 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
 }
 
 static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
-    ensure(table1.name == table2.name, "name mismatch: " + table1.name + " vs " + table2.name);
+    ensure(table1.name == table2.name, [&]() { return "name mismatch: " + table1.name + " vs " + table2.name; });
     ensure(table1.info.key_mode() == table2.info.key_mode(),
-           "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())));
+           [&]() { return "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())); });
     ensure(table1.info.value_mode() == table2.info.value_mode(),
-           "value_mode mismatch: " + std::to_string(int(table1.info.value_mode())) + " vs " + std::to_string(int(table2.info.value_mode())));
+           [&]() { return "value_mode mismatch: " + std::to_string(int(table1.info.value_mode())) + " vs " + std::to_string(int(table2.info.value_mode())); });
 
     db::MapConfig table1_config{
         .name = table1.name.c_str(),
@@ -1204,8 +1204,8 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
 }
 
 void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, std::optional<std::string_view> table) {
-    ensure(fs::exists(target_datadir_path), "target datadir " + target_datadir_path.string() + " does not exist");
-    ensure(fs::is_directory(target_datadir_path), "target datadir " + target_datadir_path.string() + " must be a folder");
+    ensure(fs::exists(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " does not exist"; });
+    ensure(fs::is_directory(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " must be a folder"; });
 
     DataDirectory target_datadir{target_datadir_path};
     db::EnvConfig target_config{target_datadir.chaindata().path()};
@@ -1327,10 +1327,10 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
     // Use last block as max block if to is missing and perform range checks
     BlockNum last{db::block_number_from_key(last_data.key)};
     if (to) {
-        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
-        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
+        ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
     } else {
-        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= last, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last); });
         to = last;
     }
 
@@ -1341,17 +1341,17 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
         // Lookup each canonical block hash from each block number
         auto block_number_key{db::block_key(block_number)};
         auto ch_data{canonical_hashes_table->find(db::to_slice(block_number_key), /*throw_notfound=*/false)};
-        ensure(ch_data.done, "Table CanonicalHashes does not contain key=" + to_hex(block_number_key));
+        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_number_key); });
         const auto block_hash{to_bytes32(db::from_slice(ch_data.value))};
 
         // Read and decode each canonical block header
         auto block_key{db::block_key(block_number, block_hash.bytes)};
         auto bh_data{block_headers_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
-        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{db::from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
 
         // Read and decode each canonical block body
         auto bb_data{block_bodies_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
@@ -1383,10 +1383,10 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
     // Use last block as max block if to is missing and perform range checks
     BlockNum last{db::block_number_from_key(last_data.key)};
     if (to) {
-        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
-        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
+        ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
     } else {
-        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= last, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last); });
         to = last;
     }
 
@@ -1396,11 +1396,11 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
         // Read and decode each block header
         auto block_key{db::block_key(block_number)};
         auto bh_data{block_headers_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
-        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{db::from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
 
         // Read and decode each block body
         auto bb_data{block_bodies_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};

@@ -204,7 +204,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         if (block_with_hash) {
             BlockNum block_number = block_with_hash->block.header.number;
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
+            ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, full_tx};
             make_glaze_json_content(request, extended_block, reply);
         } else {
@@ -246,7 +246,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
+            ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, full_tx};
 
             make_glaze_json_content(request, extended_block, reply);

@@ -242,7 +242,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
         head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
         const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
-        ensure(head_header.has_value(), "Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != target_height) {
             throw std::logic_error("Sync pipeline: head header not at target height " + to_string(target_height) +
@@ -302,7 +302,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 
         head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
         const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
-        ensure(head_header.has_value(), "Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != unwind_point) {
             throw std::logic_error("Sync pipeline: head header not at unwind point " + to_string(unwind_point) +
@@ -357,7 +357,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
 
         head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
         const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
-        ensure(head_header.has_value(), "Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;

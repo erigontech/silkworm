@@ -123,11 +123,11 @@ class LogCborListener : public cbor::listener {
         const auto data_size{static_cast<std::size_t>(size)};
 
         if (state_ == ProcessingState::kWaitAddress) {
-            ensure(data_size == kAddressLength, "Log CBOR: unexpected address size " + std::to_string(data_size));
+            ensure(data_size == kAddressLength, [&]() { return "Log CBOR: unexpected address size " + std::to_string(data_size); });
             consumer_.on_address(std::span<const uint8_t, kAddressLength>{data, data_size});
             state_ = ProcessingState::kWaitTopics;
         } else if (state_ == ProcessingState::kWaitTopic) {
-            ensure(data_size == kHashLength, "Log CBOR: unexpected topic size " + std::to_string(data_size));
+            ensure(data_size == kHashLength, [&]() { return "Log CBOR: unexpected topic size " + std::to_string(data_size); });
             consumer_.on_topic(HashAsSpan{data, data_size});
             if (++current_topic_ == current_num_topics_) {
                 state_ = ProcessingState::kWaitData;
@@ -150,7 +150,7 @@ class LogCborListener : public cbor::listener {
             current_num_logs_ = array_size;
             current_log_ = 0;
         } else if (state_ == ProcessingState::kWaitLog) {
-            ensure(array_size == 3, "Log CBOR: unexpected number of Log fields " + std::to_string(array_size));
+            ensure(array_size == 3, [&]() { return "Log CBOR: unexpected number of Log fields " + std::to_string(array_size); });
             state_ = ProcessingState::kWaitAddress;
         } else if (state_ == ProcessingState::kWaitTopics) {
             consumer_.on_num_topics(array_size);

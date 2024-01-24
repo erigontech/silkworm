@@ -271,7 +271,7 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
                     SILKWORM_ASSERT(false);
                 }
             }
-            ensure(snapshot_valid, "invalid empty snapshot " + seg_file.filename());
+            ensure(snapshot_valid, [&]() { return "invalid empty snapshot " + seg_file.filename(); });
 
             if (seg_file.block_to() > segment_max_block) {
                 segment_max_block = seg_file.block_to() - 1;
@@ -330,9 +330,9 @@ bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     ensure(fs::exists(settings_.repository_dir),
-           "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist");
+           [&]() { return "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist"; });
     ensure(fs::is_directory(settings_.repository_dir),
-           "SnapshotRepository: " + settings_.repository_dir.string() + " is a not folder");
+           [&]() { return "SnapshotRepository: " + settings_.repository_dir.string() + " is a not folder"; });
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
     SnapshotPathList snapshot_files;

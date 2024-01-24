@@ -141,34 +141,36 @@ void check_address_index(BlockNum block_number, const evmc::address& log_address
     // Transaction log address must be present in LogAddressIndex table
     const auto log_address_key{db::log_address_key(log_address, block_number)};
     const auto log_address_data{log_address_cursor->lower_bound(db::to_slice(log_address_key), false)};
-    ensure(log_address_data.done, "LogAddressIndex does not contain key " + to_hex(log_address_key));
+    ensure(log_address_data.done, [&]() { return "LogAddressIndex does not contain key " + to_hex(log_address_key); });
 
     const auto [address_view, address_upper_bound_block] = db::split_log_address_key(log_address_data.key);
-    ensure(to_hex(address_view) == to_hex(log_address.bytes), "address mismatch in LogAddressIndex table: " + to_hex(address_view));
-    ensure(address_upper_bound_block >= block_number, "upper bound mismatch in LogAddressIndex table: " + to_hex(address_view));
+    const auto& address_view_ref = address_view;
+    ensure(to_hex(address_view) == to_hex(log_address.bytes), [&]() { return "address mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
+    ensure(address_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
 
     // Retrieved chunk of the address roaring bitmap must contain the transaction log block
     const auto& log_address_value{log_address_data.value};
     const auto address_bitmap_chunk{db::bitmap::parse32(log_address_value)};
     ensure(address_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
-           "address bitmap chunk " + address_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number));
+           [&]() { return "address bitmap chunk " + address_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
 }
 
 void check_topic_index(BlockNum block_number, const evmc::bytes32& log_topic, db::ROCursor* log_topic_cursor) {
     // Each transaction log topic must be present in LogTopicIndex table
     const auto log_topic_key{db::log_topic_key(log_topic, block_number)};
     const auto log_topic_data{log_topic_cursor->lower_bound(db::to_slice(log_topic_key), false)};
-    ensure(log_topic_data.done, "LogTopicIndex does not contain key " + to_hex(log_topic_key));
+    ensure(log_topic_data.done, [&]() { return "LogTopicIndex does not contain key " + to_hex(log_topic_key); });
 
     const auto [topic_view, topic_upper_bound_block] = db::split_log_topic_key(log_topic_data.key);
-    ensure(to_hex(topic_view) == to_hex(log_topic.bytes), "topic mismatch in LogTopicIndex table: " + to_hex(topic_view));
-    ensure(topic_upper_bound_block >= block_number, "upper bound mismatch in LogTopicIndex table: " + to_hex(topic_view));
+    const auto& topic_view_ref = topic_view;
+    ensure(to_hex(topic_view) == to_hex(log_topic.bytes), [&]() { return "topic mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
+    ensure(topic_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
 
     // Retrieved chunk of the topic roaring bitmap must contain the transaction log block
     const auto& log_topic_value{log_topic_data.value};
     const auto topic_bitmap_chunk{db::bitmap::parse32(log_topic_value)};
     ensure(topic_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
-           "topic bitmap chunk " + topic_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number));
+           [&]() { return "topic bitmap chunk " + topic_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
 }
 
 int main(int argc, char* argv[]) {

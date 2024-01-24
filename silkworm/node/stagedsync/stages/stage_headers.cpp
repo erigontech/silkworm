@@ -32,12 +32,13 @@ namespace silkworm::stagedsync {
 
 HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx), data_model_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
-    ensure(headers_hash.has_value(), "Headers stage, inconsistent canonical table: not found hash at height " +
-                                         std::to_string(headers_height));
+    ensure(headers_hash.has_value(),
+           [&]() { return "Headers stage, inconsistent canonical table: not found hash at height " + std::to_string(headers_height); });
 
     std::optional<intx::uint256> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
-    ensure(headers_head_td.has_value(), "Headers stage, inconsistent total-difficulty table: not found td at height " +
-                                            std::to_string(headers_height));
+    ensure(headers_head_td.has_value(),
+           [&]() { return "Headers stage, inconsistent total-difficulty table: not found td at height " +
+                          std::to_string(headers_height); });
 
     previous_hash_ = *headers_hash;
     previous_td_ = *headers_head_td;
@@ -56,8 +57,8 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
     // Admittance conditions
     ensure_invariant(header.parent_hash == previous_hash_,
-                     "Headers stage invariant violation: headers to process must be consecutive, at height=" +
-                         std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
+                     [&]() { return "Headers stage invariant violation: headers to process must be consecutive, at height=" +
+                                    std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex(); });
 
     // Calculate total difficulty of this header
     auto td = previous_td_ + header.difficulty;
@@ -72,7 +73,7 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
 void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
     auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
-    ensure(canonical_hash.has_value(), "Headers stage, expected canonical hash at height " + std::to_string(unwind_point));
+    ensure(canonical_hash.has_value(), [&]() { return "Headers stage, expected canonical hash at height " + std::to_string(unwind_point); });
 
     db::write_head_header_hash(tx, *canonical_hash);
 

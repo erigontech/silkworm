@@ -20,7 +20,6 @@
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -29,7 +28,7 @@ using namespace boost::asio;
 ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
-      main_chain_(ctx, ns, dba),
+      main_chain_{ctx, ns, std::move(dba)},
       block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations

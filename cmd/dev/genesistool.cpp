@@ -111,8 +111,7 @@ int main(int argc, char* argv[]) {
         }
     }
     if (input_entries.empty()) {
-        std::cerr << "\nNo files matching genesis pattern in input directory"
-                  << "\n";
+        std::cerr << "\nNo files matching genesis pattern in input directory\n";
         return -1;
     }
 

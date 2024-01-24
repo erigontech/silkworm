@@ -101,7 +101,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
     }
     auto ruleSet = protocol::rule_set_factory(*chain_config);
 
-    while (rlp_view.length() > 0) {
+    while (!rlp_view.empty()) {
         silkworm::Block block;
 
         if (!silkworm::rlp::decode(rlp_view, block, silkworm::rlp::Leftover::kAllow)) {

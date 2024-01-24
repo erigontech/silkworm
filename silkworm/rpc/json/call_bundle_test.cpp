@@ -20,9 +20,6 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/rpc/json/call_bundle.hpp>
-#include <silkworm/rpc/json/types.hpp>
-
 namespace silkworm::rpc {
 
 TEST_CASE("serialize empty call_bundle", "[rpc][to_json]") {

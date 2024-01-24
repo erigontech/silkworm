@@ -43,7 +43,7 @@ class EthStatusDataProvider {
     EthStatusDataProvider(
         db::ROAccess db_access,
         const ChainConfig& chain_config)
-        : db_access_(db_access),
+        : db_access_(std::move(db_access)),
           chain_config_(chain_config) {}
 
     using StatusData = silkworm::sentry::eth::StatusData;

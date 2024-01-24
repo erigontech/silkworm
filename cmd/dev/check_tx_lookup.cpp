@@ -21,7 +21,6 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/stages.hpp>
 
@@ -41,7 +40,7 @@ int main(int argc, char* argv[]) {
         ->capture_default_str()
         ->check(CLI::Range(1u, UINT32_MAX));
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();

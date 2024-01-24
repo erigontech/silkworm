@@ -31,8 +31,8 @@
 
 namespace silkworm {
 
-BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainConfig& chain_config)
-    : db_access_{dba},
+BlockExchange::BlockExchange(SentryClient& sentry, db::ROAccess dba, const ChainConfig& chain_config)
+    : db_access_{std::move(dba)},
       sentry_{sentry},
       chain_config_{chain_config},
       header_chain_{chain_config},
@@ -141,7 +141,7 @@ void BlockExchange::execution_loop() {
 
         log::Debug("BlockExchange") << "execution_loop is stopping...";
     } catch (std::exception& e) {
-        log::Error("BlockExchange") << "execution loop aborted due to exception: " << e.what();
+        log::Critical("BlockExchange") << "execution loop aborted due to exception: " << e.what();
     }
 
     stop();
@@ -268,7 +268,7 @@ void BlockExchange::download_blocks(BlockNum current_height, Target_Tracking) {
     // todo: handle the Target_Tracking mode
 
     auto message = std::make_shared<InternalMessage<void>>(
-        [=, this](HeaderChain& hc, BodySequence& bc) {
+        [this, current_height](HeaderChain& hc, BodySequence& bc) {
             hc.current_state(current_height);
             bc.current_state(current_height);
             downloading_active_ = true;  // must be done after sync current_state

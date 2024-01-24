@@ -35,14 +35,14 @@ class SentryClient;
 //! \brief Implement the logic needed to download headers and bodies
 class BlockExchange : public ActiveComponent {
   public:
-    BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
+    BlockExchange(SentryClient&, db::ROAccess, const ChainConfig&);
     ~BlockExchange() override;
 
     // public interface for block downloading
 
     void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the sync
 
-    enum class Target_Tracking {
+    enum class Target_Tracking : uint8_t {
         kByAnnouncements,
         kByNewPayloads
     };

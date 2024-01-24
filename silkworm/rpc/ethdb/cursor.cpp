@@ -47,7 +47,7 @@ Task<SplittedKeyValue> SplitCursor::next() {
 }
 
 bool SplitCursor::match_key(const silkworm::ByteView& key) {
-    if (key.length() == 0) {
+    if (key.empty()) {
         return false;
     }
     if (match_bytes_ == 0) {
@@ -65,7 +65,7 @@ bool SplitCursor::match_key(const silkworm::ByteView& key) {
 SplittedKeyValue SplitCursor::split_key_value(const KeyValue& kv) {
     const silkworm::Bytes& key = kv.key;
 
-    if (key.length() == 0) {
+    if (key.empty()) {
         return SplittedKeyValue{};
     }
     if (!match_key(key)) {
@@ -115,7 +115,7 @@ Task<SplittedKeyValue> SplitCursorDupSort::next_dup() {
 }
 
 bool SplitCursorDupSort::match_key(const silkworm::ByteView& key) {
-    if (key.length() == 0) {
+    if (key.empty()) {
         return false;
     }
     if (match_bytes_ == 0) {
@@ -133,7 +133,7 @@ bool SplitCursorDupSort::match_key(const silkworm::ByteView& key) {
 SplittedKeyValue SplitCursorDupSort::split_key_value(const KeyValue& kv) {
     const silkworm::Bytes& key = kv.key;
 
-    if (key.length() == 0) {
+    if (key.empty()) {
         return SplittedKeyValue{};
     }
     if (!match_key(key)) {

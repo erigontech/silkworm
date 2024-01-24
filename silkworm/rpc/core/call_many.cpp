@@ -23,22 +23,14 @@
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <evmc/hex.hpp>
 #include <evmc/instructions.h>
-#include <evmone/execution_state.hpp>
-#include <evmone/instructions.hpp>
-#include <intx/intx.hpp>
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
-#include <silkworm/rpc/core/remote_state.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -78,7 +70,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        // creates a block copy where ovverides few values
+        // creates a block copy where overrides few values
         auto block_with_hash_shared_copy = std::make_shared<BlockWithHash>();
         *block_with_hash_shared_copy = *block_with_hash;
 

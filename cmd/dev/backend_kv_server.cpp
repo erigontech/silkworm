@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -114,7 +115,7 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     db::ROAccess db_access) {
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client;
 
-    db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
+    db::EthStatusDataProvider eth_status_data_provider{std::move(db_access), node_settings.chain_config.value()};
 
     if (node_settings.remote_sentry_addresses.empty()) {
         assert(false);
@@ -213,23 +214,22 @@ int main(int argc, char* argv[]) {
         rpc::BackEndKvServer server{server_settings, backend};
 
         // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
-        boost::asio::steady_timer state_changes_timer{context_pool.next_io_context()};
-        constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
-        constexpr silkworm::BlockNum kStartBlock{100'000'000};
-        constexpr uint64_t kGasLimit{30'000'000};
-
         Task<void> tasks;
         if (settings.simulate_state_changes) {
             using namespace boost::asio::experimental::awaitable_operators;
-            auto state_changes_simulator = [&]() -> Task<void> {
+            auto state_changes_simulator = [](auto& ctx_pool, auto& be) -> Task<void> {
+                boost::asio::steady_timer state_changes_timer{ctx_pool.next_io_context()};
+                constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
+                constexpr silkworm::BlockNum kStartBlock{100'000'000};
+                constexpr uint64_t kGasLimit{30'000'000};
                 auto run = [&]() {
                     boost::system::error_code ec;
                     while (ec != boost::asio::error::operation_aborted) {
                         state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
                         state_changes_timer.wait(ec);
                         static auto block_number = kStartBlock;
-                        backend.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
-                        backend.state_change_source()->notify_batch(0, kGasLimit);
+                        be.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
+                        be.state_change_source()->notify_batch(0, kGasLimit);
                         SILK_INFO << "New batch notified for block: " << block_number;
                         ++block_number;
                     }
@@ -239,7 +239,7 @@ int main(int argc, char* argv[]) {
                 };
                 co_await concurrency::async_thread(std::move(run), std::move(stop), "state-c-sim");
             };
-            tasks = state_changes_simulator() && server.async_run("bekv-server");
+            tasks = state_changes_simulator(context_pool, backend) && server.async_run("bekv-server");
         } else {
             tasks = server.async_run("bekv-server");
         }

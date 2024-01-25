@@ -68,6 +68,8 @@ class Connection : public Channel {
 
     Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
+    Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
+
     template <class Body>
     void set_cors(boost::beast::http::response<Body>& res);
 

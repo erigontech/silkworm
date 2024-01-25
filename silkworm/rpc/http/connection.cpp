@@ -59,18 +59,9 @@ Task<void> Connection::read_loop() {
             continue_processing = co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        std::cout << "se:" << se.code() << "\n";
-        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
-        } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILK_ERROR << "Connection::read_loop system_error: " << se.what();
-            throw;
-        } else {
-            SILK_TRACE << "Connection::read_loop operation_aborted: " << se.what();
-        }
+        SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
-        throw;
     }
 }
 
@@ -78,16 +69,7 @@ Task<bool> Connection::do_read() {
     SILK_TRACE << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    unsigned long bytes_transferred{0};
-    try {
-        bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
-    } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            throw;
-        } else {
-            co_return true;
-        }
-    }
+    auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
 
     SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]\n";
 
@@ -98,23 +80,26 @@ Task<bool> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
-        // Now that talking to the socket is succcessful,
-        // we tie the socket object to a websocket stream
-        boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
-
-        auto websocket_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
-        co_await websocket_connection->accept(parser.release());
-
-        auto connection_loop = [=]() -> Task<void> { co_await websocket_connection->read_loop(); };
-
-        boost::asio::co_spawn(socket_.get_executor(), connection_loop, [&](const std::exception_ptr& eptr) {
-            if (eptr) std::rethrow_exception(eptr);
-        });
-
+        co_await do_upgrade(parser.release());
         co_return false;
     }
-    co_await handle_request(parser.get());
+    co_await handle_request(parser.release());
     co_return true;
+}
+
+Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    // Now that talking to the socket is succcessful,
+    // we tie the socket object to a websocket stream
+    boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
+
+    auto websocket_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
+    co_await websocket_connection->accept(req);
+
+    auto connection_loop = [=]() -> Task<void> { co_await websocket_connection->read_loop(); };
+
+    boost::asio::co_spawn(socket_.get_executor(), connection_loop, [&](const std::exception_ptr& eptr) {
+        if (eptr) std::rethrow_exception(eptr);
+    });
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -152,7 +137,7 @@ Task<void> Connection::open_stream() {
 
         co_await async_write_header(socket_, serializer, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::open_stream system_error: " << se.what();
+        SILK_TRACE << "Connection::open_stream system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::open_stream exception: " << e.what();
@@ -167,7 +152,7 @@ Task<std::size_t> Connection::write(std::string_view content) {
     try {
         bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::write system_error: " << se.what();
+        SILK_TRACE << "Connection::write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::write exception: " << e.what();
@@ -194,7 +179,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 
         SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::do_write system_error: " << se.what();
+        SILK_TRACE << "Connection::do_write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::do_write exception: " << e.what();

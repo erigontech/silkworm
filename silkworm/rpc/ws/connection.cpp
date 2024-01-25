@@ -70,17 +70,7 @@ Task<void> Connection::read_loop() {
             co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream ||
-            se.code() == boost::asio::error::broken_pipe ||
-            se.code() == boost::asio::error::eof ||
-            se.code() == boost::asio::error::connection_reset ||
-            se.code() == boost::beast::websocket::error::closed) {
-            SILK_TRACE << "ws::Connection::read_loop close from client with code: " << se.code();
-        } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILK_ERROR << "ws::Connection::read_loop system_error: " << se.what();
-        } else {
-            SILK_TRACE << "ws::Connection::read_loop operation_aborted: " << se.what();
-        }
+        SILK_TRACE << "ws::Connection::read_loop system_error: " << se.what();
     } catch (const std::exception& e) {
         SILK_ERROR << "ws::Connection::read_loop exception: " << e.what();
     }
@@ -115,10 +105,10 @@ Task<void> Connection::do_write(const std::string& content) {
                    << "[" << content << "]\n";
 
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "ws::Connection::open_stream system_error: " << se.what();
+        SILK_ERROR << "ws::Connection::do_write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
-        SILK_ERROR << "ws::Connection::open_stream exception: " << e.what();
+        SILK_ERROR << "ws::Connection::do_write exception: " << e.what();
         throw;
     }
 }

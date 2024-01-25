@@ -20,49 +20,55 @@
 #include <charconv>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/experimental/use_promise.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 
 namespace silkworm::rpc::json {
 
-static std::uint8_t kObjectOpen = 1;
-static std::uint8_t kArrayOpen = 2;
-static std::uint8_t kFieldWritten = 3;
-static std::uint8_t kEntryWritten = 4;
+static constexpr uint8_t kObjectOpen{1};
+static constexpr uint8_t kArrayOpen{2};
+static constexpr uint8_t kFieldWritten{3};
+static constexpr uint8_t kEntryWritten{4};
 
-static std::string kOpenBrace{"{"};       // NOLINT(runtime/string)
-static std::string kCloseBrace{"}"};      // NOLINT(runtime/string)
-static std::string kOpenBracket{"["};     // NOLINT(runtime/string)
-static std::string kCloseBracket{"]"};    // NOLINT(runtime/string)
-static std::string kFieldSeparator{","};  // NOLINT(runtime/string)
-static std::string kColon{":"};           // NOLINT(runtime/string)
-static std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
+static const std::string kOpenBrace{"{"};       // NOLINT(runtime/string)
+static const std::string kCloseBrace{"}"};      // NOLINT(runtime/string)
+static const std::string kOpenBracket{"["};     // NOLINT(runtime/string)
+static const std::string kCloseBracket{"]"};    // NOLINT(runtime/string)
+static const std::string kFieldSeparator{","};  // NOLINT(runtime/string)
+static const std::string kColon{":"};           // NOLINT(runtime/string)
+static const std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
 
-Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold)
-    : io_executor_(executor), writer_(writer), threshold_(threshold), channel_{executor, threshold} {
-    buffer_.reserve(threshold);
-    runner_task_ = co_spawn(
-        executor, [](auto self) -> Task<void> {
-            co_await self->run();
-        }(this),
-        boost::asio::use_awaitable);
+//! The maximum number of items enqueued in the chunk channel
+static constexpr std::size_t kChannelCapacity{100};
+
+Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity)
+    : writer_(writer),
+      buffer_capacity_(buffer_capacity),
+      channel_{executor, kChannelCapacity},
+      run_completion_promise_{co_spawn(
+          executor, [](auto self) -> Task<void> {
+              co_await self->run();
+          }(this),
+          boost::asio::experimental::use_promise)} {
+    buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);  // try to prevent reallocation when buffer overflows
 }
 
 Task<void> Stream::close() {
     if (!buffer_.empty()) {
-        do_write(std::make_shared<std::string>(std::move(buffer_)));
+        co_await do_async_write(std::make_shared<std::string>(std::move(buffer_)));
     }
+    co_await do_async_write(nullptr);
 
-    do_write(nullptr);
-    co_await std::move(runner_task_);
+    co_await run_completion_promise_(boost::asio::use_awaitable);
+
     co_await writer_.close();
-
-    co_return;
 }
 
 void Stream::open_object() {
@@ -100,8 +106,8 @@ void Stream::close_array() {
 }
 
 void Stream::write_json(const nlohmann::json& json) {
-    bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
-    if (isEntry) {
+    const bool is_entry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
+    if (is_entry) {
         if (stack_.top() != kEntryWritten) {
             stack_.push(kEntryWritten);
         } else {
@@ -230,7 +236,7 @@ void Stream::write_string(std::string_view str) {
 
 void Stream::write(std::string_view str) {
     buffer_ += str;
-    if (buffer_.size() >= threshold_) {
+    if (buffer_.size() >= buffer_capacity_) {
         do_write(std::make_shared<std::string>(std::move(buffer_)));
     }
 }
@@ -246,13 +252,18 @@ void Stream::ensure_separator() {
 }
 
 void Stream::do_write(std::shared_ptr<std::string> chunk) {
-    if (!closed_) {
-        co_spawn(
-            io_executor_, [](auto self, auto chunk_ptr) -> Task<void> {
-                co_await self->channel_.async_send(boost::system::error_code(), chunk_ptr, boost::asio::use_awaitable);
-            }(this, std::move(chunk)),
-            boost::asio::detached);
+    using namespace std::chrono_literals;
+    while (channel_.is_open()) {
+        if (const bool ok{channel_.try_send(boost::system::error_code(), chunk)}; ok) {
+            break;
+        }
+        SILK_TRACE << "Chunk size=" << (chunk? chunk->size() : 0) << " not enqueued, back pressure";
+        std::this_thread::sleep_for(10ms);
     }
+}
+
+Task<void> Stream::do_async_write(std::shared_ptr<std::string> chunk) {
+    co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
 }
 
 Task<void> Stream::run() {
@@ -274,19 +285,16 @@ Task<void> Stream::run() {
             write_counter++;
         } catch (const std::exception& exception) {
             SILK_ERROR << "#" << std::dec << write_counter << " Exception: " << exception.what();
-            closed_ = true;
-            channel_.close();
             break;
         }
     }
 
-    closed_ = true;
     channel_.close();
 
-    SILK_DEBUG << "Stream::run -> total write " << std::dec << write_counter << ", total sent: " << total_send;
+    SILK_TRACE << "Stream::run -> total write " << std::dec << write_counter << ", total sent: " << total_send;
     if (stop_watch) {
         const auto [_, duration] = stop_watch->lap();
-        SILK_DEBUG << "Stream::run -> actual duration " << StopWatch::format(duration);
+        SILK_TRACE << "Stream::run -> actual duration " << StopWatch::format(duration);
     }
 
     co_return;

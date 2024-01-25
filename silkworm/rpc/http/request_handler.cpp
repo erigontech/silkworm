@@ -29,8 +29,6 @@
 
 namespace silkworm::rpc::http {
 
-constexpr std::size_t kStreamBufferSize{4096};
-
 Task<void> RequestHandler::handle(const std::string& content) {
     auto start = clock_time::now();
     std::string response;
@@ -159,7 +157,7 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
 
         co_await channel_->open_stream();
         ChunkWriter chunk_writer(*channel_);
-        json::Stream stream(io_executor, chunk_writer, kStreamBufferSize);
+        json::Stream stream(io_executor, chunk_writer);
 
         co_await (rpc_api_.*handler)(request_json, stream);
 

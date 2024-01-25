@@ -25,6 +25,10 @@
 
 namespace silkworm::rpc::json {
 
+static const nlohmann::json kJsonNull{nlohmann::json::value_t::null};
+static const nlohmann::json kJsonEmptyObject{nlohmann::json::value_t::object};
+static const nlohmann::json kJsonEmptyArray{nlohmann::json::value_t::array};
+
 struct JsonStreamTest : test::ContextTestBase {
 };
 
@@ -101,7 +105,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         CHECK(string_writer.get_content() == "{}");
     }
     SECTION("empty object 2") {
-        stream.write_json(EMPTY_OBJECT);
+        stream.write_json(kJsonEmptyObject);
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{}");
@@ -114,14 +118,14 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         CHECK(string_writer.get_content() == "[]");
     }
     SECTION("empty array 2") {
-        stream.write_json(EMPTY_ARRAY);
+        stream.write_json(kJsonEmptyArray);
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[]");
     }
     SECTION("simple object 1") {
         stream.open_object();
-        stream.write_json_field("null", JSON_NULL);
+        stream.write_json_field("null", kJsonNull);
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -129,7 +133,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
     }
     SECTION("simple object 2") {
         stream.open_object();
-        stream.write_json_field("array", EMPTY_ARRAY);
+        stream.write_json_field("array", kJsonEmptyArray);
         stream.close_object();
         spawn_and_wait(stream.close());
 

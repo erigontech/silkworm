@@ -257,7 +257,7 @@ void Stream::do_write(std::shared_ptr<std::string> chunk) {
         if (const bool ok{channel_.try_send(boost::system::error_code(), chunk)}; ok) {
             break;
         }
-        SILK_TRACE << "Chunk size=" << (chunk? chunk->size() : 0) << " not enqueued, back pressure";
+        SILK_TRACE << "Chunk size=" << (chunk ? chunk->size() : 0) << " not enqueued, back pressure";
         std::this_thread::sleep_for(10ms);
     }
 }

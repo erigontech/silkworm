@@ -36,45 +36,40 @@ Task<void> RequestHandler::handle(const std::string& content) {
     std::string response;
     bool send_reply{true};
     nlohmann::json request_json;
-    bool parse_error = {false};
     try {
         request_json = nlohmann::json::parse(content);
+        if (request_json.is_object()) {
+            if (!is_valid_jsonrpc(request_json)) {
+                response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+            } else {
+                send_reply = co_await handle_request_and_create_reply(request_json, response);
+                response += "\n";
+            }
+        } else {
+            std::stringstream batch_reply_content;
+            batch_reply_content << "[";
+            int index = 0;
+            for (auto& item : request_json.items()) {
+                if (index++ > 0) {
+                    batch_reply_content << ",";
+                }
+
+                if (!is_valid_jsonrpc(item.value())) {
+                    batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
+                } else {
+                    std::string single_reply;
+                    send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
+                    batch_reply_content << single_reply;
+                }
+            }
+            batch_reply_content << "]\n";
+
+            response = batch_reply_content.str();
+        }
     } catch (const nlohmann::json::exception& e) {
         SILK_ERROR << "Connection::do_read json_parse: " << e.what();
-        parse_error = true;
-    }
-    if (parse_error) {
         response = make_json_error(0, -32600, "invalid request").dump() + "\n";
-        co_await channel_->write_rsp(response);
-        co_return;
-    }
-    if (request_json.is_object()) {
-        if (!is_valid_jsonrpc(request_json)) {
-            response = make_json_error(0, -32600, "invalid request").dump() + "\n";
-        } else {
-            send_reply = co_await handle_request_and_create_reply(request_json, response);
-            response += "\n";
-        }
-    } else {
-        std::stringstream batch_reply_content;
-        batch_reply_content << "[";
-        int index = 0;
-        for (auto& item : request_json.items()) {
-            if (index++ > 0) {
-                batch_reply_content << ",";
-            }
-
-            if (!is_valid_jsonrpc(item.value())) {
-                batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
-            } else {
-                std::string single_reply;
-                send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
-                batch_reply_content << single_reply;
-            }
-        }
-        batch_reply_content << "]\n";
-
-        response = batch_reply_content.str();
+        send_reply = true;
     }
 
     if (send_reply) {

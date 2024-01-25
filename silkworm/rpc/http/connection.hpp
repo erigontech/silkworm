@@ -32,7 +32,7 @@
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
-#include <silkworm/rpc/ws/websocket_connection.hpp>
+#include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -72,7 +72,7 @@ class Connection : public Channel {
     void set_cors(boost::beast::http::response<Body>& res);
 
     //! Perform an asynchronous read operation.
-    Task<void> do_read();
+    Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
     Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
@@ -80,13 +80,11 @@ class Connection : public Channel {
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
-    boost::asio::io_context& io_context_;
-
     commands::RpcApi& api_;
     const commands::RpcApiTable& handler_table_;
 
     //! The handler used to process the incoming request.
-    RequestHandler request_handler_;
+    http::RequestHandler request_handler_;
 
     const std::vector<std::string>& allowed_origins_;
     const std::optional<std::string> jwt_secret_;

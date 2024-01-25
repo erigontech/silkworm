@@ -20,7 +20,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "websocket_connection.hpp"
+#include "connection.hpp"
 
 #include <exception>
 #include <fstream>
@@ -39,23 +39,22 @@ namespace http = beast::http;            // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;             // from <boost/asio.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::ws {
 
-WebSocketConnection::WebSocketConnection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
-                                         commands::RpcApi& api,
-                                         const commands::RpcApiTable& handler_table)
+Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
+                       commands::RpcApi& api,
+                       const commands::RpcApiTable& handler_table)
     : ws_{std::move(stream)},
       request_handler_{this, api, handler_table} {
-    SILK_DEBUG << "WebSocketConnection::WebSocketConnection ws created:" << &ws_;
+    SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
-WebSocketConnection::~WebSocketConnection() {
-    // socket_.close();
-    SILK_DEBUG << "WebSocketConnection::~WebSocketConnection ws deleted:" << &ws_;
+Connection::~Connection() {
+    SILK_DEBUG << "ws::Connection::~Connection ws deleted:" << &ws_;
 }
 
 Task<void>
-WebSocketConnection::do_accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
 
@@ -63,62 +62,64 @@ WebSocketConnection::do_accept(const boost::beast::http::request<boost::beast::h
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
 }
 
-Task<void> WebSocketConnection::read_loop() {
+Task<void> Connection::read_loop() {
     try {
+        SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
+
         while (true) {
             co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe ||
             se.code() == boost::asio::error::connection_reset || se.code() == boost::beast::websocket::error::closed) {
-            SILK_TRACE << "WebSocketConnection::read_loop close from client with code: " << se.code();
+            SILK_TRACE << "ws::Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILK_ERROR << "WebSocketConnection::read_loop system_error: " << se.what();
+            SILK_ERROR << "ws::Connection::read_loop system_error: " << se.what();
             throw;
         } else {
-            SILK_TRACE << "WebSocketConnection::read_loop operation_aborted: " << se.what();
+            SILK_TRACE << "ws::Connection::read_loop operation_aborted: " << se.what();
         }
     } catch (const std::exception& e) {
-        SILK_ERROR << "WebSocketConnection::read_loop exception: " << e.what();
+        SILK_ERROR << "ws::Connection::read_loop exception: " << e.what();
         throw;
     }
 }
 
 Task<void>
-WebSocketConnection::do_read() {
+Connection::do_read() {
     std::string content;
     auto buf = boost::asio::dynamic_buffer(content);
     auto txs = co_await ws_.async_read(buf, boost::asio::use_awaitable);
 
-    SILK_TRACE << "WebSocketConnection::do_read bytes_read: " << txs << "[" << content << "]\n";
+    SILK_TRACE << "ws::Connection::do_read bytes_read: " << txs << "[" << content << "]\n";
 
     co_await request_handler_.handle(content);
 }
 
-Task<void> WebSocketConnection::write_rsp(const std::string& content) {
+Task<void> Connection::write_rsp(const std::string& content) {
     co_await do_write(content);
 }
 
-Task<std::size_t> WebSocketConnection::write(std::string_view content) {
+Task<std::size_t> Connection::write(std::string_view content) {
     co_await do_write(content.data());
 
     co_return content.size();
 }
 
-Task<void> WebSocketConnection::do_write(const std::string& content) {
+Task<void> Connection::do_write(const std::string& content) {
     try {
         co_await ws_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
 
-        SILK_TRACE << "WebSocketConnection::do_write: "
+        SILK_TRACE << "ws::Connection::do_write: "
                    << "[" << content << "]\n";
 
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "WebSocketConnection::open_stream system_error: " << se.what();
+        SILK_ERROR << "ws::Connection::open_stream system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
-        SILK_ERROR << "WebSocketConnection::open_stream exception: " << e.what();
+        SILK_ERROR << "ws::Connection::open_stream exception: " << e.what();
         throw;
     }
 }
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::ws

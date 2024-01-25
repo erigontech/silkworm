@@ -27,6 +27,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -38,25 +39,23 @@
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::ws {
 
 //! Represents a single connection from a client via websocket.
-class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnection>, Channel {
+class Connection : public Channel {
   public:
-    WebSocketConnection(const WebSocketConnection&) = delete;
-    WebSocketConnection& operator=(const WebSocketConnection&) = delete;
+    Connection(const Connection&) = delete;
+    Connection& operator=(const Connection&) = delete;
 
     //! Construct a connection running within the given execution context.
-    WebSocketConnection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
-                        commands::RpcApi& api,
-                        const commands::RpcApiTable& handler_table);
+    Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
+               commands::RpcApi& api,
+               const commands::RpcApiTable& handler_table);
 
-    ~WebSocketConnection();
-
-    boost::beast::websocket::stream<boost::beast::tcp_stream>& ws() { return ws_; }
+    ~Connection();
 
     Task<void>
-    do_accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> read_loop();
 
@@ -75,7 +74,7 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
 
     //! The handler used to process the incoming request.
-    RequestHandler request_handler_;
+    http::RequestHandler request_handler_;
 };
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::ws

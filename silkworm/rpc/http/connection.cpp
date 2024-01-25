@@ -39,7 +39,6 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
-      io_context_{io_context},
       api_{api},
       handler_table_{handler_table},
       request_handler_{this, api, handler_table},
@@ -55,10 +54,12 @@ Connection::~Connection() {
 
 Task<void> Connection::read_loop() {
     try {
-        while (true) {
-            co_await do_read();
+        bool continue_processing{true};
+        while (continue_processing) {
+            continue_processing = co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
+        std::cout << "se:" << se.code() << "\n";
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
             SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
@@ -73,7 +74,7 @@ Task<void> Connection::read_loop() {
     }
 }
 
-Task<void> Connection::do_read() {
+Task<bool> Connection::do_read() {
     SILK_TRACE << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
@@ -84,14 +85,14 @@ Task<void> Connection::do_read() {
         if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
             throw;
         } else {
-            co_return;
+            co_return true;
         }
     }
 
     SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]\n";
 
     if (!parser.is_done()) {
-        co_return;
+        co_return true;
     }
     request_keep_alive_ = parser.get().keep_alive();
     request_http_version_ = parser.get().version();
@@ -101,20 +102,19 @@ Task<void> Connection::do_read() {
         // we tie the socket object to a websocket stream
         boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
-        auto websocket_connection = std::make_shared<WebSocketConnection>(std::move(stream), api_, std::move(handler_table_));
-        co_await websocket_connection->do_accept(parser.release());
-
-        SILK_TRACE << "Connection::run starting connection for websocket: " << &websocket_connection->ws();
+        auto websocket_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
+        co_await websocket_connection->accept(parser.release());
 
         auto connection_loop = [=]() -> Task<void> { co_await websocket_connection->read_loop(); };
 
-        boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
+        boost::asio::co_spawn(socket_.get_executor(), connection_loop, [&](const std::exception_ptr& eptr) {
             if (eptr) std::rethrow_exception(eptr);
         });
 
-        co_return;
+        co_return false;
     }
     co_await handle_request(parser.get());
+    co_return true;
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {

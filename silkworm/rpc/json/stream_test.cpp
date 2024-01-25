@@ -25,9 +25,10 @@
 
 namespace silkworm::rpc::json {
 
-static const nlohmann::json kJsonNull{nlohmann::json::value_t::null};
-static const nlohmann::json kJsonEmptyObject{nlohmann::json::value_t::object};
-static const nlohmann::json kJsonEmptyArray{nlohmann::json::value_t::array};
+// The following constants *must* be initialized using assignment and *not* uniform initialization syntax
+static const nlohmann::json kJsonNull = nlohmann::json::value_t::null;
+static const nlohmann::json kJsonEmptyObject = nlohmann::json::value_t::object;
+static const nlohmann::json kJsonEmptyArray = nlohmann::json::value_t::array;
 
 struct JsonStreamTest : test::ContextTestBase {
 };

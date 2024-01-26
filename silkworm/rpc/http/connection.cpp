@@ -17,10 +17,10 @@
 #include "connection.hpp"
 
 #include <exception>
-#include <fstream>
 #include <string_view>
 
 #include <absl/strings/str_join.h>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/write.hpp>
@@ -58,7 +58,7 @@ Task<void> Connection::read_loop() {
             continue_processing = co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
+        SILK_TRACE << "Connection::read_loop system-error: " << se.code();
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
     }
@@ -96,9 +96,7 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
 
     auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
 
-    boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), [&](const std::exception_ptr& eptr) {
-        if (eptr) std::rethrow_exception(eptr);
-    });
+    boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), boost::asio::detached);
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {

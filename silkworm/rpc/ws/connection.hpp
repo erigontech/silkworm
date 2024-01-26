@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -52,10 +46,9 @@ class Connection : public Channel {
                commands::RpcApi& api,
                const commands::RpcApiTable& handler_table);
 
-    ~Connection();
+    ~Connection() override;
 
-    Task<void>
-    accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> read_loop();
 
@@ -69,7 +62,7 @@ class Connection : public Channel {
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content);
+    Task<std::size_t> do_write(const std::string& content);
 
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
 

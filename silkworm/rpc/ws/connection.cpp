@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #include "connection.hpp"
 
@@ -29,15 +23,8 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/system/error_code.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/common/util.hpp>
-
-namespace beast = boost::beast;          // from <boost/beast.hpp>
-namespace http = beast::http;            // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;             // from <boost/asio.hpp>
 
 namespace silkworm::rpc::ws {
 
@@ -50,13 +37,12 @@ Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>
 }
 
 Connection::~Connection() {
-    SILK_DEBUG << "ws::Connection::~Connection ws deleted:" << &ws_;
+    SILK_TRACE << "ws::Connection::~Connection ws deleted:" << &ws_;
 }
 
-Task<void>
-Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
-    ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
+    ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
@@ -76,13 +62,12 @@ Task<void> Connection::read_loop() {
     }
 }
 
-Task<void>
-Connection::do_read() {
+Task<void> Connection::do_read() {
     std::string content;
     auto buf = boost::asio::dynamic_buffer(content);
-    auto txs = co_await ws_.async_read(buf, boost::asio::use_awaitable);
+    const auto bytes_read = co_await ws_.async_read(buf, boost::asio::use_awaitable);
 
-    SILK_TRACE << "ws::Connection::do_read bytes_read: " << txs << "[" << content << "]\n";
+    SILK_TRACE << "ws::Connection::do_read bytes_read: " << bytes_read << "[" << content << "]";
 
     co_await request_handler_.handle(content);
 }
@@ -92,20 +77,17 @@ Task<void> Connection::write_rsp(const std::string& content) {
 }
 
 Task<std::size_t> Connection::write(std::string_view content) {
-    co_await do_write(content.data());
-
-    co_return content.size();
+    co_return co_await do_write(content.data());
 }
 
-Task<void> Connection::do_write(const std::string& content) {
+Task<std::size_t> Connection::do_write(const std::string& content) {
     try {
-        co_await ws_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
+        const auto written = co_await ws_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
 
-        SILK_TRACE << "ws::Connection::do_write: "
-                   << "[" << content << "]\n";
-
+        SILK_TRACE << "ws::Connection::do_write: [" << content << "]";
+        co_return written;
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "ws::Connection::do_write system_error: " << se.what();
+        SILK_TRACE << "ws::Connection::do_write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "ws::Connection::do_write exception: " << e.what();

@@ -24,7 +24,6 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/write.hpp>
-#include <boost/system/error_code.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
@@ -88,16 +87,16 @@ Task<bool> Connection::do_read() {
 }
 
 Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
-    // Now that talking to the socket is succcessful,
+    // Now that talking to the socket is successful,
     // we tie the socket object to a websocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
-    auto websocket_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
-    co_await websocket_connection->accept(req);
+    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
+    co_await ws_connection->accept(req);
 
-    auto connection_loop = [=]() -> Task<void> { co_await websocket_connection->read_loop(); };
+    auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
 
-    boost::asio::co_spawn(socket_.get_executor(), connection_loop, [&](const std::exception_ptr& eptr) {
+    boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), [&](const std::exception_ptr& eptr) {
         if (eptr) std::rethrow_exception(eptr);
     });
 }

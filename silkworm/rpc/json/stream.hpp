@@ -24,22 +24,24 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/experimental/concurrent_channel.hpp>
+#include <boost/asio/experimental/promise.hpp>
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/types/writer.hpp>
 
 namespace silkworm::rpc::json {
-static const nlohmann::json JSON_NULL = nlohmann::json::value_t::null;
-static const nlohmann::json EMPTY_OBJECT = nlohmann::json::value_t::object;
-static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
+//! Stream can be used to send big JSON data split into multiple fragments.
 class Stream {
   public:
-    explicit Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold = kDefaultThreshold);
+    inline static constexpr std::size_t kDefaultCapacity{4096};
+
+    Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity = kDefaultCapacity);
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
+    //! Flush any remaining data and close properly as per the underlying transport
     Task<void> close();
 
     void open_object();
@@ -63,27 +65,29 @@ class Stream {
     void write_field(std::string_view name, std::double_t value);
 
   private:
-    static const std::size_t kDefaultThreshold = 0x800;
+    using ChunkPtr = std::shared_ptr<std::string>;
 
     void write_string(std::string_view str);
     void ensure_separator();
 
     void write(std::string_view str);
-    void do_write(std::shared_ptr<std::string> chunk);
+    void do_write(ChunkPtr chunk);
+    Task<void> do_async_write(ChunkPtr chunk);
 
+    //! Run loop writing channeled chunks in order
     Task<void> run();
-
-    boost::asio::any_io_executor& io_executor_;
 
     StreamWriter& writer_;
     std::stack<std::uint8_t> stack_;
 
-    const std::size_t threshold_;
+    const std::size_t buffer_capacity_;
     std::string buffer_;
 
-    bool closed_{false};
-    Task<void> runner_task_;
-    boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::shared_ptr<std::string>)> channel_;
+    using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, ChunkPtr)>;
+    ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
+
+    using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
+    RunPromise run_completion_promise_;  // Rendez-vous for run loop completion
 };
 
 }  // namespace silkworm::rpc::json

@@ -13,20 +13,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #include "server.hpp"
 
-#include <memory>
 #include <string>
 #include <utility>
 
 #include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
@@ -93,11 +87,9 @@ Task<void> Server::run() {
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
             SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
-            auto connection_loop = [=]() -> Task<void> { co_await new_connection->read_loop(); };
+            auto connection_loop = [](auto connection) -> Task<void> { co_await connection->read_loop(); };
 
-            boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
-                if (eptr) std::rethrow_exception(eptr);
-            });
+            boost::asio::co_spawn(io_context_, connection_loop(new_connection), boost::asio::detached);
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::error::operation_aborted) {

@@ -32,6 +32,7 @@
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
+#include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -54,10 +55,11 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(const std::string& content) override;
     Task<void> open_stream() override;
-    Task<std::size_t> write(std::string_view content) override;
     Task<void> close() override { co_return; }
+
+    Task<std::size_t> write(std::string_view content) override;
+    Task<void> write_rsp(const std::string& content) override;
 
   private:
     using AuthorizationError = std::string;
@@ -66,10 +68,13 @@ class Connection : public Channel {
 
     Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    void set_cors(boost::beast::http::response<boost::beast::http::string_body>& res);
+    Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
+
+    template <class Body>
+    void set_cors(boost::beast::http::response<Body>& res);
 
     //! Perform an asynchronous read operation.
-    Task<void> do_read();
+    Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
     Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
@@ -77,17 +82,19 @@ class Connection : public Channel {
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
-    //! The handler used to process the incoming request.
-    RequestHandler request_handler_;
+    commands::RpcApi& api_;
+    const commands::RpcApiTable& handler_table_;
 
-    boost::beast::flat_buffer data_;
+    //! The handler used to process the incoming request.
+    http::RequestHandler request_handler_;
 
     const std::vector<std::string>& allowed_origins_;
-
     const std::optional<std::string> jwt_secret_;
 
     bool request_keep_alive_{false};
     unsigned int request_http_version_{11};
+
+    boost::beast::flat_buffer data_;
 };
 
 }  // namespace silkworm::rpc::http

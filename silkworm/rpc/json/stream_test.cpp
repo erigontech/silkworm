@@ -346,7 +346,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
     SECTION("using worker thread") {
         boost::asio::thread_pool workers;
         boost::asio::post(workers, [&]() {
-            for (int i={0}; i < 1'000; ++i) {
+            for (int i = {0}; i < 1'000; ++i) {
                 stream.write_json(json);
             }
         });

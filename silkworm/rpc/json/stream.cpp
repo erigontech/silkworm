@@ -251,7 +251,7 @@ void Stream::ensure_separator() {
     }
 }
 
-void Stream::do_write(std::shared_ptr<std::string> chunk) {
+void Stream::do_write(ChunkPtr chunk) {
     // Stream write API will usually be called by worker threads rather than I/O contexts, but we handle both
     const auto& channel_executor{channel_.get_executor()};
     if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
@@ -269,7 +269,7 @@ void Stream::do_write(std::shared_ptr<std::string> chunk) {
     }
 }
 
-Task<void> Stream::do_async_write(std::shared_ptr<std::string> chunk) {
+Task<void> Stream::do_async_write(ChunkPtr chunk) {
     try {
         co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {

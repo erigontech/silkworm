@@ -65,12 +65,14 @@ class Stream {
     void write_field(std::string_view name, std::double_t value);
 
   private:
+    using ChunkPtr = std::shared_ptr<std::string>;
+
     void write_string(std::string_view str);
     void ensure_separator();
 
     void write(std::string_view str);
-    void do_write(std::shared_ptr<std::string> chunk);
-    Task<void> do_async_write(std::shared_ptr<std::string> chunk);
+    void do_write(ChunkPtr chunk);
+    Task<void> do_async_write(ChunkPtr chunk);
 
     //! Run loop writing channeled chunks in order
     Task<void> run();
@@ -81,7 +83,6 @@ class Stream {
     const std::size_t buffer_capacity_;
     std::string buffer_;
 
-    using ChunkPtr = std::shared_ptr<std::string>;
     using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, ChunkPtr)>;
     ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
 

@@ -41,6 +41,7 @@ class Stream {
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
+    //! Flush any remaining data and close properly as per the underlying transport
     Task<void> close();
 
     void open_object();
@@ -71,6 +72,7 @@ class Stream {
     void do_write(std::shared_ptr<std::string> chunk);
     Task<void> do_async_write(std::shared_ptr<std::string> chunk);
 
+    //! Run loop writing channeled chunks in order
     Task<void> run();
 
     StreamWriter& writer_;
@@ -81,10 +83,10 @@ class Stream {
 
     using ChunkPtr = std::shared_ptr<std::string>;
     using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, ChunkPtr)>;
-    ChunkChannel channel_;
+    ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
 
     using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
-    RunPromise run_completion_promise_;
+    RunPromise run_completion_promise_;  // Rendez-vous for run loop completion
 };
 
 }  // namespace silkworm::rpc::json

@@ -18,7 +18,6 @@
 
 #include <array>
 #include <charconv>
-#include <iostream>
 #include <string>
 #include <thread>
 
@@ -28,9 +27,10 @@
 #include <boost/asio/experimental/use_promise.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/common/stopwatch.hpp>
 
 namespace silkworm::rpc::json {
+
+using namespace std::chrono_literals;
 
 static constexpr uint8_t kObjectOpen{1};
 static constexpr uint8_t kArrayOpen{2};
@@ -252,52 +252,60 @@ void Stream::ensure_separator() {
 }
 
 void Stream::do_write(std::shared_ptr<std::string> chunk) {
-    using namespace std::chrono_literals;
-    while (channel_.is_open()) {
-        if (const bool ok{channel_.try_send(boost::system::error_code(), chunk)}; ok) {
-            break;
+    // Stream write API will usually be called by worker threads rather than I/O contexts, but we handle both
+    const auto& channel_executor{channel_.get_executor()};
+    if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
+        // Delegate any back pressure to do_async_write
+        boost::asio::co_spawn(channel_executor, do_async_write(chunk), boost::asio::detached);
+    } else {
+        // Handle back pressure simply by retrying after a while // TODO(canepat) clever wait strategy
+        while (channel_.is_open()) {
+            if (const bool ok{channel_.try_send(boost::system::error_code(), chunk)}; ok) {
+                break;
+            }
+            SILK_TRACE << "Chunk size=" << (chunk ? chunk->size() : 0) << " not enqueued, worker back pressured";
+            std::this_thread::sleep_for(10ms);
         }
-        SILK_TRACE << "Chunk size=" << (chunk ? chunk->size() : 0) << " not enqueued, back pressure";
-        std::this_thread::sleep_for(10ms);
     }
 }
 
 Task<void> Stream::do_async_write(std::shared_ptr<std::string> chunk) {
-    co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
+    try {
+        co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
+    } catch (const boost::system::system_error& se) {
+        if (se.code() != boost::asio::experimental::error::channel_cancelled) {
+            SILK_ERROR << "Stream::do_async_write unexpected system_error: " << se.what();
+        }
+    } catch (const std::exception& exception) {
+        SILK_ERROR << "Stream::do_async_write unexpected exception: " << exception.what();
+    }
 }
 
 Task<void> Stream::run() {
-    std::unique_ptr<silkworm::StopWatch> stop_watch;
-
-    uint32_t write_counter{0};
-    std::size_t total_send{0};
+    uint32_t total_writes{0};
+    std::size_t total_bytes_sent{0};
     while (true) {
-        const auto chunk_ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
-        if (!chunk_ptr) {
-            break;
-        }
-        if (!stop_watch) {
-            stop_watch = std::make_unique<StopWatch>(true);
-        }
-
         try {
-            total_send += co_await writer_.write(*chunk_ptr);
-            write_counter++;
+            const auto chunk_ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
+            if (!chunk_ptr) {
+                break;
+            }
+            total_bytes_sent += co_await writer_.write(*chunk_ptr);
+            ++total_writes;
+        } catch (const boost::system::system_error& se) {
+            if (se.code() != boost::asio::experimental::error::channel_cancelled) {
+                SILK_ERROR << "Stream::run unexpected system_error: " << se.what();
+            }
+            break;
         } catch (const std::exception& exception) {
-            SILK_ERROR << "#" << std::dec << write_counter << " Exception: " << exception.what();
+            SILK_ERROR << "Stream::run unexpected exception: " << exception.what();
             break;
         }
     }
 
     channel_.close();
 
-    SILK_TRACE << "Stream::run -> total write " << std::dec << write_counter << ", total sent: " << total_send;
-    if (stop_watch) {
-        const auto [_, duration] = stop_watch->lap();
-        SILK_TRACE << "Stream::run -> actual duration " << StopWatch::format(duration);
-    }
-
-    co_return;
+    SILK_TRACE << "Stream::run total_writes: " << total_writes << " total_bytes_sent: " << total_bytes_sent;
 }
 
 }  // namespace silkworm::rpc::json

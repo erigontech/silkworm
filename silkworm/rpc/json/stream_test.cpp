@@ -18,6 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -30,13 +31,11 @@ static const nlohmann::json kJsonNull = nlohmann::json::value_t::null;
 static const nlohmann::json kJsonEmptyObject = nlohmann::json::value_t::object;
 static const nlohmann::json kJsonEmptyArray = nlohmann::json::value_t::array;
 
-struct JsonStreamTest : test::ContextTestBase {
+struct StreamTest : test::ContextTestBase {
 };
 
-TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
-    ClientContextPool pool{1};
-    pool.start();
-    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
 
     StringWriter string_writer;
     ChunkWriter chunk_writer(string_writer);
@@ -80,10 +79,8 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
     }
 }
 
-TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
-    ClientContextPool pool{1};
-    pool.start();
-    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
 
     StringWriter string_writer;
     Stream stream(io_executor, string_writer);
@@ -328,6 +325,34 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[10,10.3,true]");
+    }
+}
+
+TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
+    constexpr std::string_view kData{R"({"test":"test"})"};
+
+    StringWriter string_writer;
+    Stream stream(io_executor, string_writer, 1);  // tiny buffer capacity
+
+    const nlohmann::json json = R"({"test":"test"})"_json;
+
+    SECTION("using I/O context thread") {
+        stream.write_json(json);
+        CHECK_NOTHROW(spawn_and_wait(stream.close()));
+        CHECK(string_writer.get_content() == kData);
+    }
+
+    SECTION("using worker thread") {
+        boost::asio::thread_pool workers;
+        boost::asio::post(workers, [&]() {
+            for (int i={0}; i < 1'000; ++i) {
+                stream.write_json(json);
+            }
+        });
+        workers.join();
+        CHECK_NOTHROW(spawn_and_wait(stream.close()));
+        CHECK(string_writer.get_content().size() == kData.size() * 1'000);
     }
 }
 

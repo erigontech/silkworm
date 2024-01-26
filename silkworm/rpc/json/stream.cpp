@@ -37,13 +37,13 @@ static constexpr uint8_t kArrayOpen{2};
 static constexpr uint8_t kFieldWritten{3};
 static constexpr uint8_t kEntryWritten{4};
 
-static const std::string kOpenBrace{"{"};       // NOLINT(runtime/string)
-static const std::string kCloseBrace{"}"};      // NOLINT(runtime/string)
-static const std::string kOpenBracket{"["};     // NOLINT(runtime/string)
-static const std::string kCloseBracket{"]"};    // NOLINT(runtime/string)
-static const std::string kFieldSeparator{","};  // NOLINT(runtime/string)
-static const std::string kColon{":"};           // NOLINT(runtime/string)
-static const std::string kDoubleQuotes{"\""};   // NOLINT(runtime/string)
+static constexpr std::string_view kOpenBrace{"{"};
+static constexpr std::string_view kCloseBrace{"}"};
+static constexpr std::string_view kOpenBracket{"["};
+static constexpr std::string_view kCloseBracket{"]"};
+static constexpr std::string_view kFieldSeparator{","};
+static constexpr std::string_view kColon{":"};
+static constexpr std::string_view kDoubleQuotes{"\""};
 
 //! The maximum number of items enqueued in the chunk channel
 static constexpr std::size_t kChannelCapacity{100};

@@ -167,6 +167,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
         res.set(boost::beast::http::field::content_type, "application/json");
         res.set(boost::beast::http::field::date, get_date_time());
+        res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
         res.content_length(content.size());
         res.body() = content;
@@ -244,9 +245,13 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
 }
 
 std::string Connection::get_date_time() {
-    const auto now = boost::posix_time::second_clock::local_time();
-
-    return boost::posix_time::to_simple_string(now).c_str();
+    const boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+    const auto date = now.date();
+    const auto time = now.time_of_day();
+    std::stringstream ss;
+    ss << date.day_of_week() << ", " << date.day() << " " << date.month() << " " << date.year() << " "
+       << time.hours() << ":" << time.minutes() << ":" << time.seconds() << " GMT";
+    return ss.str();
 }
 
 }  // namespace silkworm::rpc::http

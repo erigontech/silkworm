@@ -79,7 +79,7 @@ class Connection : public Channel {
     //! Perform an asynchronous write operation.
     Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
 
-    std::string get_date_time();
+    static std::string get_date_time();
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

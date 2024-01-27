@@ -20,6 +20,9 @@
 #include <stack>
 #include <string>
 #include <string_view>
+#ifdef _WIN32
+#include <tuple>
+#endif  // _WIN32
 
 #include <silkworm/infra/concurrency/task.hpp>
 

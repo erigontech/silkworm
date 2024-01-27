@@ -20,14 +20,13 @@
 #include <stack>
 #include <string>
 #include <string_view>
-#ifdef _WIN32
-#include <tuple>
-#endif  // _WIN32
 
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/experimental/concurrent_channel.hpp>
+#ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #include <boost/asio/experimental/promise.hpp>
+#endif  // _WIN32
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
@@ -89,8 +88,14 @@ class Stream {
     using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, ChunkPtr)>;
     ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
 
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
     using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
     RunPromise run_completion_promise_;  // Rendez-vous for run loop completion
+#else
+    using SyncChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, int)>;
+    SyncChannel run_completion_channel_;  // Rendez-vous for run loop completion
+#endif  // _WIN32
 };
 
 }  // namespace silkworm::rpc::json

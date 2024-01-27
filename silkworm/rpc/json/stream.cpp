@@ -52,11 +52,21 @@ Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std
     : writer_(writer),
       buffer_capacity_(buffer_capacity),
       channel_{executor, kChannelCapacity},
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
       run_completion_promise_{co_spawn(
           executor, [](auto self) -> Task<void> {
               co_await self->run();
           }(this),
           boost::asio::experimental::use_promise)} {
+#else
+      run_completion_channel_{executor, 1} {
+    co_spawn(
+        executor, [](auto self) -> Task<void> {
+            co_await self->run();
+        }(this),
+        boost::asio::detached);
+#endif  // _WIN32
     buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);  // try to prevent reallocation when buffer overflows
 }
 
@@ -66,7 +76,12 @@ Task<void> Stream::close() {
     }
     co_await do_async_write(nullptr);
 
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
     co_await run_completion_promise_(boost::asio::use_awaitable);
+#else
+    co_await run_completion_channel_.async_receive(boost::asio::use_awaitable);
+#endif  // _WIN32
 
     co_await writer_.close();
 }
@@ -304,6 +319,11 @@ Task<void> Stream::run() {
     }
 
     channel_.close();
+
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifdef _WIN32
+    co_await run_completion_channel_.async_send(boost::system::error_code(), 0, boost::asio::use_awaitable);
+#endif  // _WIN32
 
     SILK_TRACE << "Stream::run total_writes: " << total_writes << " total_bytes_sent: " << total_bytes_sent;
 }

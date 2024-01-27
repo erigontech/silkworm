@@ -107,6 +107,10 @@ void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& setting
     cli.add_flag("--erigon_compatibility", settings.erigon_json_rpc_compatibility)
         ->description("Flag indicating if strict compatibility with Erigon RpcDaemon is enabled")
         ->capture_default_str();
+
+    cli.add_option("--websocket", settings.use_websocket)
+        ->description("Silkworm Enable the WebSocket to transport JSON-RPC to the server")
+        ->capture_default_str();
 }
 
 }  // namespace silkworm::cmd::common

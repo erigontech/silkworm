@@ -47,7 +47,8 @@ class Connection : public Channel {
                commands::RpcApi& api,
                commands::RpcApiTable& handler_table,
                const std::vector<std::string>& allowed_origins,
-               std::optional<std::string> jwt_secret);
+               std::optional<std::string> jwt_secret,
+               bool use_websocket);
     ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
@@ -95,6 +96,8 @@ class Connection : public Channel {
     unsigned int request_http_version_{11};
 
     boost::beast::flat_buffer data_;
+
+    bool use_websocket_;
 };
 
 }  // namespace silkworm::rpc::http

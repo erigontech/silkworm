@@ -66,7 +66,7 @@ Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std
             co_await self->run();
         }(this),
         boost::asio::detached);
-#endif  // _WIN32
+#endif                                                         // _WIN32
     buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);  // try to prevent reallocation when buffer overflows
 }
 

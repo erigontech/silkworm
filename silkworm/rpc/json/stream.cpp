@@ -24,7 +24,9 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/detached.hpp>
+#ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #include <boost/asio/experimental/use_promise.hpp>
+#endif  // _WIN32
 
 #include <silkworm/infra/common/log.hpp>
 
@@ -52,12 +54,23 @@ Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std
     : writer_(writer),
       buffer_capacity_(buffer_capacity),
       channel_{executor, kChannelCapacity},
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
       run_completion_promise_{co_spawn(
           executor, [](auto self) -> Task<void> {
               co_await self->run();
           }(this),
           boost::asio::experimental::use_promise)} {
-    buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);  // try to prevent reallocation when buffer overflows
+#else
+      run_completion_channel_{executor, 1} {
+    co_spawn(
+        executor, [](auto self) -> Task<void> {
+            co_await self->run();
+        }(this),
+        boost::asio::detached);
+#endif  // _WIN32
+    // Try to prevent reallocation when buffer overflows
+    buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);
 }
 
 Task<void> Stream::close() {
@@ -66,7 +79,12 @@ Task<void> Stream::close() {
     }
     co_await do_async_write(nullptr);
 
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
     co_await run_completion_promise_(boost::asio::use_awaitable);
+#else
+    co_await run_completion_channel_.async_receive(boost::asio::use_awaitable);
+#endif  // _WIN32
 
     co_await writer_.close();
 }
@@ -252,7 +270,7 @@ void Stream::ensure_separator() {
 }
 
 void Stream::do_write(ChunkPtr chunk) {
-    // Stream write API will usually be called by worker threads rather than I/O contexts, but we handle both
+    // Stream write API will usually be called by worker threads rather than I/O contexts, but we must handle both
     const auto& channel_executor{channel_.get_executor()};
     if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
         // Delegate any back pressure to do_async_write
@@ -270,6 +288,7 @@ void Stream::do_write(ChunkPtr chunk) {
 }
 
 Task<void> Stream::do_async_write(ChunkPtr chunk) {
+    // TODO(canepat) handle back pressure
     try {
         co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
@@ -304,6 +323,11 @@ Task<void> Stream::run() {
     }
 
     channel_.close();
+
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifdef _WIN32
+    co_await run_completion_channel_.async_send(boost::system::error_code(), 0, boost::asio::use_awaitable);
+#endif  // _WIN32
 
     SILK_TRACE << "Stream::run total_writes: " << total_writes << " total_bytes_sent: " << total_bytes_sent;
 }

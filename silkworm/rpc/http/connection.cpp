@@ -37,13 +37,15 @@ Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
                        const std::vector<std::string>& allowed_origins,
-                       std::optional<std::string> jwt_secret)
+                       std::optional<std::string> jwt_secret,
+                       bool use_websocket)
     : socket_{io_context},
       api_{api},
       handler_table_{handler_table},
       request_handler_{this, api, handler_table},
       allowed_origins_{allowed_origins},
-      jwt_secret_{std ::move(jwt_secret)} {
+      jwt_secret_{std ::move(jwt_secret)},
+      use_websocket_{use_websocket} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
 
@@ -80,8 +82,14 @@ Task<bool> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
-        co_await do_upgrade(parser.release());
-        co_return false;
+        if (use_websocket_) {
+            co_await do_upgrade(parser.release());
+            co_return false;
+        } else {
+            // If it does not (or cannot) upgrade the connection, it ignores the Upgrade header and sends back a regular response (OK)
+            co_await do_write("", boost::beast::http::status::ok);
+        }
+        co_return true;
     }
     co_await handle_request(parser.release());
     co_return true;

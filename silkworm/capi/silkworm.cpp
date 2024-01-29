@@ -368,10 +368,40 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEX
     return SILKWORM_OK;
 }
 
+class BlockProvider {
+  public:
+    BlockProvider(db::DataModel& access_layer, uint64_t start_block, uint64_t max_block)
+        : access_layer_{access_layer}, start_block_{start_block}, max_block_{max_block} {}
+
+    bool next(Block& block) {
+        if (current_block_ > max_block_) {
+            return false;
+        }
+
+        std::cout << "JG BlockProvider::next " << current_block_;
+        const bool success{access_layer_.read_block(current_block_, /*read_senders=*/true, block)};
+        if (!success) {
+            return false;
+        }
+        std::cout << " success\n";
+        ++current_block_;
+        return true;
+    }
+
+  private:
+    db::DataModel& access_layer_;
+    uint64_t start_block_;
+    uint64_t max_block_;
+    uint64_t current_block_{start_block_};
+};
+
 SILKWORM_EXPORT
 int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
                             uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
                             uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+
+    log::Info{"JG silkworm_execute_blocks", {"start_block", std::to_string(start_block), "max_block", std::to_string(max_block), "batch_size", std::to_string(batch_size), "write_change_sets", std::to_string(write_change_sets)}};  // NOLINT(*-unused-raii)
+
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -395,6 +425,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
+        BlockProvider block_provider{access_layer, start_block, max_block};
 
         static constexpr size_t kCacheSize{5'000};
         AnalysisCache analysis_cache{kCacheSize};
@@ -405,9 +436,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         // Transform batch size limit into gas units (Ggas = Giga gas)
         const size_t gas_max_batch_size{batch_size * 2_Kibi};  // 256MB -> 512Ggas roughly
 
-        // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
-        static constexpr size_t kMaxPrefetchedBlocks{10240};
-        boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
+        // // Preload requested blocks in batches from storage, i.e. from MDBX database or snapshots
+        // static constexpr size_t kMaxPrefetchedBlocks{10240};
+        // boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         ExecutionProgress progress{.start_time = std::chrono::steady_clock::now()};
         auto signal_check_time{progress.start_time};
@@ -415,19 +446,27 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         size_t gas_batch_size{0};
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
-            if (prefetched_blocks.empty()) {
-                const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
-                SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
-                for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
-                    prefetched_blocks.push_back();
-                    const bool success{access_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
-                    if (!success) {
-                        return SILKWORM_BLOCK_NOT_FOUND;
-                    }
-                }
-                SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
+            // if (prefetched_blocks.empty()) {
+            //     const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+            //     SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
+            //     for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+            //         prefetched_blocks.push_back();
+            //         const bool success{access_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
+            //         if (!success) {
+            //             return SILKWORM_BLOCK_NOT_FOUND;
+            //         }
+            //     }
+            //     SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
+            // }
+            // const Block& block{prefetched_blocks.front()};
+            Block block;
+            const bool success{block_provider.next(block)};
+
+            std::cout << "JG silkworm_execute_blocks using block " << block.header.number << " success " << success << "\n";
+
+            if (!success) {
+                return SILKWORM_BLOCK_NOT_FOUND;
             }
-            const Block& block{prefetched_blocks.front()};
 
             const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
             if (!protocol_rule_set) {
@@ -464,7 +503,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             progress.processed_gas += block.header.gas_used;
             gas_batch_size += block.header.gas_used;
 
-            prefetched_blocks.pop_front();
+            // prefetched_blocks.pop_front();
 
             // Always flush history for single processed block (no batching)
             state_buffer.write_history_to_db(write_change_sets);

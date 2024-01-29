@@ -24,6 +24,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/write.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
@@ -126,6 +127,7 @@ Task<void> Connection::open_stream() {
     try {
         boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
         rsp.set(boost::beast::http::field::content_type, "application/json");
+        rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
         set_cors<boost::beast::http::empty_body>(rsp);
@@ -165,6 +167,8 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         SILK_TRACE << "Connection::do_write response: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
         res.set(boost::beast::http::field::content_type, "application/json");
+        res.set(boost::beast::http::field::date, get_date_time());
+        res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
         res.content_length(content.size());
         res.body() = content;
@@ -239,6 +243,15 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
     res.set("Access-Control-Allow-Methods", "GET, POST");
     res.set("Access-Control-Allow-Headers", "*");
     res.set("Access-Control-Max-Age", "600");
+}
+
+std::string Connection::get_date_time() {
+    static const absl::TimeZone tz{absl::LocalTimeZone()};
+    const absl::Time now{absl::Now()};
+
+    std::stringstream ss;
+    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, tz) << tz.name();
+    return ss.str();
 }
 
 }  // namespace silkworm::rpc::http

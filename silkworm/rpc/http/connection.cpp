@@ -127,6 +127,7 @@ Task<void> Connection::open_stream() {
     try {
         boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
         rsp.set(boost::beast::http::field::content_type, "application/json");
+        rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
         set_cors<boost::beast::http::empty_body>(rsp);
@@ -245,12 +246,13 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
 }
 
 std::string Connection::get_date_time() {
-    const boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-    const auto date = now.date();
-    const auto time = now.time_of_day();
+    static const absl::TimeZone tz{absl::LocalTimeZone()};
+    absl::Time now{absl::Now()};
+
+    auto timezone_name{tz.name()};
     std::stringstream ss;
-    ss << date.day_of_week() << ", " << date.day() << " " << date.month() << " " << date.year() << " "
-       << time.hours() << ":" << time.minutes() << ":" << time.seconds() << " GMT";
+
+    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S GMT", now, tz);
     return ss.str();
 }
 

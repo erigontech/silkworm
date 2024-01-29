@@ -257,8 +257,10 @@ void Buffer::write_history_to_db(bool write_change_sets) {
 
     batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
-    log::Trace("Flushed history",
-               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
+    if (should_trace) {
+        log::Trace("Flushed history",
+                   {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
+    }
 }
 
 void Buffer::write_state_to_db() {

@@ -8,7 +8,7 @@
 
 namespace silkworm::snapshots {
 
-inline constexpr std::array<Entry, 108> kMainnetSnapshots{
+inline constexpr std::array<Entry, 132> kMainnetSnapshots{
     Entry{"v1-000000-000500-bodies.seg"sv, "e9b5c5d1885ee3c6ab6005919e511e1e04c7e34e"sv},
     Entry{"v1-000000-000500-headers.seg"sv, "df09957d8a28af3bc5137478885a8003677ca878"sv},
     Entry{"v1-000000-000500-transactions.seg"sv, "92bb09068baa8eab9d5ad5e69c1eecd404a82258"sv},
@@ -117,6 +117,30 @@ inline constexpr std::array<Entry, 108> kMainnetSnapshots{
     Entry{"v1-017500-018000-bodies.seg"sv, "656969e6a2cf1e704b973e20af4382ac966835ae"sv},
     Entry{"v1-017500-018000-headers.seg"sv, "a7dc19efd95e60e7d8e001d6782ee903f16af54a"sv},
     Entry{"v1-017500-018000-transactions.seg"sv, "2f60a983fbe2e4d81a7a87a2b049206c79042f20"sv},
+    Entry{"v1-018000-018100-bodies.seg"sv, "99a4b4d8382c86c7c745c81f6647672b65d2db9b"sv},
+    Entry{"v1-018000-018100-headers.seg"sv, "1ea73e8d836b5a5e5b9387cce0c5c080c810aabb"sv},
+    Entry{"v1-018000-018100-transactions.seg"sv, "725b62de447e9b83ffe6857bd60f0b1c4505ff2c"sv},
+    Entry{"v1-018100-018200-bodies.seg"sv, "dd1f25eaca5afdeb5f4b37d8da6f89d2106270eb"sv},
+    Entry{"v1-018100-018200-headers.seg"sv, "cafc01618a07828f27bb4802c5fea24ade9b10de"sv},
+    Entry{"v1-018100-018200-transactions.seg"sv, "5f508e5ee86a0fff5d05d01421ed220af657f610"sv},
+    Entry{"v1-018200-018300-bodies.seg"sv, "d5043dfedec41bceb922468df50090b70b1c4c8a"sv},
+    Entry{"v1-018200-018300-headers.seg"sv, "486184d24ad0f36b905fdc26852e2eb03de40563"sv},
+    Entry{"v1-018200-018300-transactions.seg"sv, "55c72e0467d6d440d9052a8b2d815ad4c8858a21"sv},
+    Entry{"v1-018300-018400-bodies.seg"sv, "cf8eb6732cc1755293a6a02dcd92dc1dd9cf6cb2"sv},
+    Entry{"v1-018300-018400-headers.seg"sv, "c147f7ee3641c087162bae1a7b2423f1325f99c4"sv},
+    Entry{"v1-018300-018400-transactions.seg"sv, "540eed8080b627e8978890fc1dbff840dc09c4e0"sv},
+    Entry{"v1-018400-018500-bodies.seg"sv, "fe3ac642940cb55367217ba6400b44fdadc40ed1"sv},
+    Entry{"v1-018400-018500-headers.seg"sv, "174f31c3b87f3725ed5803bea016bb50073d5271"sv},
+    Entry{"v1-018400-018500-transactions.seg"sv, "b356fe2ef6b74dfd232368a3f99ce02a7a10efe7"sv},
+    Entry{"v1-018500-018600-bodies.seg"sv, "73ad11574bdb5345373a9edab8b949ae1a564d48"sv},
+    Entry{"v1-018500-018600-headers.seg"sv, "191cacc4232ee0efe5507b8b2791246a425b65f3"sv},
+    Entry{"v1-018500-018600-transactions.seg"sv, "7b08e8986a4d56375c9075ca1395cb879a49a85d"sv},
+    Entry{"v1-018600-018700-bodies.seg"sv, "731a3579ca9e86608ea1ba668aaffb2a107a081c"sv},
+    Entry{"v1-018600-018700-headers.seg"sv, "2fa6c6ff3567fce5db32ee2d6894e9462bea897b"sv},
+    Entry{"v1-018600-018700-transactions.seg"sv, "5ce3500d15c34ee998b53148fe055c839959cc10"sv},
+    Entry{"v1-018700-018800-bodies.seg"sv, "2501ab81654fd0b234c819fead66ab197f4c0438"sv},
+    Entry{"v1-018700-018800-headers.seg"sv, "5e170d8255c60ac2c9d6b3c42ba016948181425c"sv},
+    Entry{"v1-018700-018800-transactions.seg"sv, "449df7eafd54da2c3a67db2ed4fb4fee8bae47c5"sv},
 };
 
 }

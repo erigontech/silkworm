@@ -17,10 +17,12 @@
 #include <cctype>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <string>
 #include <string_view>
 
+#include <absl/strings/match.h>
 #include <CLI/CLI.hpp>
 #include <toml.hpp>
 
@@ -44,8 +46,10 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Embed files as binary data"};
 
     std::string input_folder, output_folder;
+    bool include_beacon{false};
     app.add_option("-i,--input", input_folder, "input folder where to look for files")->required();
     app.add_option("-o,--output", output_folder, "output folder where to place generated .hpp files")->required();
+    app.add_flag("-b,--beacon-blocks", include_beacon, "includes also beacon-chain segments");
 
     // Parse the command line arguments
     try {
@@ -59,14 +63,25 @@ int main(int argc, char* argv[]) {
     // Iterating through all the files in the input folder
     for (const auto& entry : fs::recursive_directory_iterator(input_folder)) {
         const fs::path& entry_path = entry.path();
-        // Skip any file in 'history' sub-folder
-        if (entry_path.parent_path().string().ends_with("history")) {
+        // Skip any file in 'webseed' sub-folder
+        if (entry_path.parent_path().string().ends_with("webseed")) {
             continue;
         }
         // Match only required extension
         if (entry_path.extension() == ".toml") {
             std::cout << "Processing TOML file: " << entry_path.string() << "\n";
             const auto table = toml::parse_file(entry_path.string());
+
+            // Filter out the segments to exclude
+            std::map<std::string, std::string> filtered_table;
+            for (auto&& [key, value] : table) {
+                std::string key_str{key.begin(), key.end()};
+                if (!include_beacon && absl::StrContains(key_str, "beaconblocks")) {
+                    continue;
+                }
+                std::string value_str{value.as_string()->get()};
+                filtered_table[key_str] = value_str;
+            }
 
             // Open the output .hpp file
             fs::path entry_filename = entry.path().stem();
@@ -82,11 +97,9 @@ int main(int argc, char* argv[]) {
             output << "#include <array>\n\n";
             output << "#include <silkworm/node/snapshots/entry.hpp>\n\n";
             output << "namespace silkworm::snapshots {\n\n";
-            output << "inline constexpr std::array<Entry, " << table.size() << "> k" << snapshot_name << "Snapshots{\n";
-            for (auto&& [key, value] : table) {
-                std::string key_str{key.begin(), key.end()};
-                std::string val_str{value.as_string()->get()};
-                output << "    Entry{\"" << key_str << "\"sv, \"" << val_str << "\"sv},\n";
+            output << "inline constexpr std::array<Entry, " << filtered_table.size() << "> k" << snapshot_name << "Snapshots{\n";
+            for (auto&& [key, value] : filtered_table) {
+                output << "    Entry{\"" << key << "\"sv, \"" << value << "\"sv},\n";
             }
             output << "};\n\n";
             output << "}\n";

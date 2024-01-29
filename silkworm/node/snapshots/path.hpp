@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <filesystem>
 #include <functional>
 #include <optional>
@@ -32,7 +34,7 @@ namespace silkworm::snapshots {
 constexpr int kFileNameBlockScaleFactor{1'000};
 
 //! The segment size measured as number of blocks included in each segment
-constexpr uint64_t kDefaultSegmentSize{500'000};
+constexpr std::array kDefaultSegmentSizes{500'000u, 100'000u};
 
 //! The minimum segment size measured as number of blocks included in each segment
 constexpr uint64_t kMinimumSegmentSize{kFileNameBlockScaleFactor};
@@ -45,7 +47,7 @@ constexpr const char* kTmpExtension{".tmp"};
 //! The snapshot category corresponding to the snapshot file type
 //! @remark item names do NOT follow Google style to obtain the tag used in file names from magic_enum::enum_name
 //! @see SnapshotPath#build_filename
-enum SnapshotType {
+enum SnapshotType : uint8_t {
     headers = 0,
     bodies = 1,
     transactions = 2,
@@ -57,8 +59,6 @@ constexpr uint8_t kSnapshotV1{1};
 
 class SnapshotPath {
   public:
-    [[nodiscard]] static uint64_t segment_size() { return segment_size_; }
-
     [[nodiscard]] static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
     [[nodiscard]] static SnapshotPath from(const std::filesystem::path& dir,
@@ -79,6 +79,8 @@ class SnapshotPath {
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 
+    [[nodiscard]] uint64_t segment_size() const { return block_to_ - block_from_; }
+
     [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
 
     [[nodiscard]] bool exists() const {
@@ -90,7 +92,7 @@ class SnapshotPath {
     }
 
     [[nodiscard]] bool seedable() const {
-        return block_to_ - block_from_ == segment_size_;
+        return std::ranges::find(kDefaultSegmentSizes, segment_size()) != kDefaultSegmentSizes.cend();
     }
 
     [[nodiscard]] bool torrent_file_needed() const {
@@ -111,8 +113,6 @@ class SnapshotPath {
 
   protected:
     static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
-
-    inline static uint64_t segment_size_{kDefaultSegmentSize};
 
     explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 

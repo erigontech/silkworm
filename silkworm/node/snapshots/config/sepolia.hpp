@@ -3,12 +3,13 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 
 #include <silkworm/node/snapshots/entry.hpp>
 
 namespace silkworm::snapshots {
 
-inline constexpr std::array<Entry, 54> kSepoliaSnapshots{
+inline constexpr std::array kSepoliaSnapshots{
     Entry{"v1-000000-000500-bodies.seg"sv, "b3a879e769292f526282cf92398d892fac090198"sv},
     Entry{"v1-000000-000500-headers.seg"sv, "f075eb8e04b861d798a148267193c1b892079edd"sv},
     Entry{"v1-000000-000500-transactions.seg"sv, "4997c8090aa2ae0318d944793b3f5296fbda0c9c"sv},

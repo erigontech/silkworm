@@ -72,17 +72,6 @@ int main(int argc, char* argv[]) {
             std::cout << "Processing TOML file: " << entry_path.string() << "\n";
             const auto table = toml::parse_file(entry_path.string());
 
-            // Filter out the segments to exclude
-            std::map<std::string, std::string> filtered_table;
-            for (auto&& [key, value] : table) {
-                std::string key_str{key.begin(), key.end()};
-                if (!include_beacon && absl::StrContains(key_str, "beaconblocks")) {
-                    continue;
-                }
-                std::string value_str{value.as_string()->get()};
-                filtered_table[key_str] = value_str;
-            }
-
             // Open the output .hpp file
             fs::path entry_filename = entry.path().stem();
             entry_filename.replace_filename(std::regex_replace(entry_filename.string(), hyphen_re, "_"));
@@ -94,12 +83,18 @@ int main(int argc, char* argv[]) {
 
             output << "/* Generated from " << entry.path().filename().string() << " using Silkworm embed_toml */\n\n";
             output << "#pragma once\n\n";
-            output << "#include <array>\n\n";
+            output << "#include <array>\n";
+            output << "#include <string_view>\n\n";
             output << "#include <silkworm/node/snapshots/entry.hpp>\n\n";
             output << "namespace silkworm::snapshots {\n\n";
-            output << "inline constexpr std::array<Entry, " << filtered_table.size() << "> k" << snapshot_name << "Snapshots{\n";
-            for (auto&& [key, value] : filtered_table) {
-                output << "    Entry{\"" << key << "\"sv, \"" << value << "\"sv},\n";
+            output << "inline constexpr std::array k" << snapshot_name << "Snapshots{\n";
+            for (auto&& [key, value] : table) {
+                std::string key_str{key.begin(), key.end()};
+                if (!include_beacon && absl::StrContains(key_str, "beaconblocks")) {
+                    continue;
+                }
+                std::string val_str{value.as_string()->get()};
+                output << "    Entry{\"" << key_str << "\"sv, \"" << val_str << "\"sv},\n";
             }
             output << "};\n\n";
             output << "}\n";

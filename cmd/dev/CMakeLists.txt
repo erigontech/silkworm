@@ -55,7 +55,7 @@ add_executable(check_tx_lookup check_tx_lookup.cpp)
 target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(embed_toml embed_toml.cpp)
-target_link_libraries(embed_toml PRIVATE CLI11::CLI11 tomlplusplus::tomlplusplus)
+target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus)
 
 add_executable(genesistool genesistool.cpp)
 target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)

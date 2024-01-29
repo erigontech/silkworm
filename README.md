@@ -14,7 +14,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 - [Building on Linux & macOS](#build-on-unix)
 - [Building on Windows](#build-on-windows)
 - [Testing Silkworm](#testing)
-- [Contributing Guide](docs/CONTRIBUTING.md)
+- [Contributing](#contributing)
 - [License](#license)
 
 
@@ -180,6 +180,12 @@ make sentry
 $env:STOP_AT_BLOCK=15000000
 ./cmd/silkworm.exe
 ```
+
+
+<a name="contributing"></a>
+## Contributing
+
+If you want to contribute, you can read our [contribution guidelines](docs/CONTRIBUTING.md).
 
 
 <a name="license"></a>

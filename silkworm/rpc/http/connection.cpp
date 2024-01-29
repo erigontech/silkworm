@@ -247,12 +247,10 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
 
 std::string Connection::get_date_time() {
     static const absl::TimeZone tz{absl::LocalTimeZone()};
-    absl::Time now{absl::Now()};
+    const absl::Time now{absl::Now()};
 
-    auto timezone_name{tz.name()};
     std::stringstream ss;
-
-    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S GMT", now, tz);
+    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, tz) << tz.name();
     return ss.str();
 }
 

@@ -22,8 +22,8 @@
 #include <string>
 #include <string_view>
 
-#include <absl/strings/match.h>
 #include <CLI/CLI.hpp>
+#include <absl/strings/match.h>
 #include <toml.hpp>
 
 namespace fs = std::filesystem;

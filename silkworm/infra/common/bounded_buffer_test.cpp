@@ -1,6 +1,20 @@
+/*
+   Copyright 2024 The Silkworm Authors
 
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-#include "bounded_buffer.cpp"
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "bounded_buffer.hpp"
 
 #include <chrono>
 #include <fstream>
@@ -49,14 +63,14 @@ class Consumer {
     }
 };
 
-TEST_CASE("bounded_buffer can initialize") {
-    bounded_buffer<int> buffer(10);
+TEST_CASE("BoundedBuffer can initialize") {
+    BoundedBuffer<int> buffer(10);
     CHECK(buffer.size() == 0);
     CHECK(buffer.capacity() == 10);
 }
 
-TEST_CASE("bounded_buffer add and remove") {
-    bounded_buffer<std::string> buffer(10);
+TEST_CASE("BoundedBuffer add and remove") {
+    BoundedBuffer<std::string> buffer(10);
     CHECK(buffer.size() == 0);
     CHECK(buffer.capacity() == 10);
 
@@ -69,8 +83,8 @@ TEST_CASE("bounded_buffer add and remove") {
     CHECK(buffer.size() == 0);
 }
 
-TEST_CASE("bounded_buffer waits for an item to be added") {
-    bounded_buffer<std::string> buffer(10);
+TEST_CASE("BoundedBuffer waits for an item to be added") {
+    BoundedBuffer<std::string> buffer(10);
     StopWatch sw;
 
     buffer.push_front("Hello direct");
@@ -81,7 +95,7 @@ TEST_CASE("bounded_buffer waits for an item to be added") {
     CHECK(item == "Hello direct");
     CHECK(elapsed.count() < 1000);  // less than 1 microsecond
 
-    Producer<bounded_buffer<std::string>> producer(&buffer);
+    Producer<BoundedBuffer<std::string>> producer(&buffer);
     boost::thread produce(producer);
 
     buffer.pop_back(&item);
@@ -90,8 +104,8 @@ TEST_CASE("bounded_buffer waits for an item to be added") {
     CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
-TEST_CASE("bounded_buffer waits for an item to be popped") {
-    bounded_buffer<std::string> buffer(10);
+TEST_CASE("BoundedBuffer waits for an item to be popped") {
+    BoundedBuffer<std::string> buffer(10);
     StopWatch sw;
 
     sw.start();
@@ -108,7 +122,7 @@ TEST_CASE("bounded_buffer waits for an item to be popped") {
     auto [_, elapsed]{sw.lap()};
     CHECK(elapsed.count() < 1000);  // less than 1 microsecond
 
-    Consumer<bounded_buffer<std::string>> consumer(&buffer);
+    Consumer<BoundedBuffer<std::string>> consumer(&buffer);
     boost::thread consume(consumer);
 
     buffer.push_front("Hello");
@@ -116,10 +130,10 @@ TEST_CASE("bounded_buffer waits for an item to be popped") {
     CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
-TEST_CASE("bounded_buffer cycles through the buffer") {
-    bounded_buffer<std::string> buffer(10);
+TEST_CASE("BoundedBuffer cycles through the buffer") {
+    BoundedBuffer<std::string> buffer(10);
     const int iterations = 1000000;
-    Producer<bounded_buffer<std::string>> producer(&buffer, iterations, 0ms);
+    Producer<BoundedBuffer<std::string>> producer(&buffer, iterations, 0ms);
     boost::thread produce(producer);
 
     std::string item;

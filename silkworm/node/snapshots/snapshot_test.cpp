@@ -104,7 +104,7 @@ TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
 TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{kValidHeadersSegmentPath.filename()};
-    huffman::Decompressor decoder{hello_world_snapshot_file.path()};
+    seg::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
     tmp_snapshot.reopen_segment();
     CHECK(!tmp_snapshot.empty());
@@ -120,7 +120,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
 TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{kValidHeadersSegmentPath.filename()};
-    huffman::Decompressor decoder{hello_world_snapshot_file.path()};
+    seg::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
     tmp_snapshot.reopen_segment();
     CHECK_NOTHROW(tmp_snapshot.close());

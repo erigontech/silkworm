@@ -19,9 +19,9 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/node/snapshots/huffman/decompressor.hpp>
 #include <silkworm/node/snapshots/path.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split.hpp>
+#include <silkworm/node/snapshots/seg/decompressor.hpp>
 
 namespace silkworm::snapshots {
 

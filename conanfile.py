@@ -14,6 +14,7 @@
 
 from conan import ConanFile
 
+
 class SilkwormRecipe(ConanFile):
     settings = 'os', 'compiler', 'build_type', 'arch'
     generators = 'cmake_find_package'
@@ -41,20 +42,22 @@ class SilkwormRecipe(ConanFile):
         self.requires('protobuf/3.21.4')
         self.requires('roaring/1.1.2')
         self.requires('snappy/1.1.7')
+        self.requires('spdlog/1.12.0')
         self.requires('sqlitecpp/3.3.0')
         self.requires('tomlplusplus/3.3.0')
 
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'
 
-        # Currently Conan Center has Windows binaries built only with msvc16 only and mimalloc built only with option override=False.
-        # In order to build mimalloc with override=True we would need to switch to msvc17 compiler but this would trigger a full rebuild
-        # from sources of all dependencies wasting a lot of time, so we prefer to keep mimalloc override disabled on Windows.
-        # The same applies also for boost with option asio_no_deprecated, so we can skip configuration entirely on Windows.
+        # Conan Center has Windows binaries built only with msvc16 and mimalloc built only with option override=False.
+        # In order to build mimalloc with override=True we could switch to msvc17 compiler but this would trigger a full
+        # rebuild from sources of all dependencies increasing build time a lot, so we prefer to keep mimalloc override
+        # disabled on Windows.
+        # The same applies also for boost with option asio_no_deprecated, so we skip configuration entirely on Windows.
         if self.settings.os == 'Windows':
             return
 
-        # Moreover, mimalloc override=True causes a crash on macOS at startup when running rpcdaemon, so we just enable it on Linux
+        # mimalloc override=True causes a crash on macOS at startup in rpcdaemon, so we just enable it on Linux
         if self.settings.os == 'Linux':
             self.options['mimalloc'].override = True
 
@@ -65,7 +68,8 @@ class SilkwormRecipe(ConanFile):
         for component in self.boost_components_unused():
             setattr(self.options['boost'], 'without_' + component, True)
 
-    def boost_components_unused(self):
+    @staticmethod
+    def boost_components_unused() -> set[str]:
         components_all = [
             'atomic',
             'chrono',

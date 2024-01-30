@@ -40,34 +40,54 @@ In addition to the [Boost libraries permitted in the style guide](https://google
 ## Code Structure
 
 Apart from the submodules and some auxiliary directories, Silkworm contains the following components:
-* [`cmd`](./cmd)
+* [`cmd`][silkworm-cmd]
   <br /> The source code of Silkworm executable binaries.
-* [`silkworm/core`](./silkworm/core)
+* [`silkworm/core`][silkworm-core]
   <br /> This module contains the heart of the Ethereum protocol logic as described by the [Yellow Paper][ethereum-yellow-paper].
   Source code within `core` is compatible with WebAssembly and cannot use C++ exceptions.
-* [`silkworm/infra`](./silkworm/infra)
+* [`silkworm/infra`][silkworm-infra]
   <br /> This module contains common abstractions and facilities useful for networking, concurrency and system programming.
   This module depends on the `core` and `interfaces` modules.
-* [`silkworm/interfaces`](./silkworm/interfaces)
+* [`silkworm/interfaces`][silkworm-interfaces]
   <br /> This module contains the definition of our internal [gRPC][grpc] interfaces based on [Erigon architecture][erigon-interfaces] and their generated stubs and skeletons.
-* [`silkworm/node`](./silkworm/node)
-  <br /> This module contains the database, the [staged sync] and other logic necessary to function as an Ethereum node.
+* [`silkworm/node`][silkworm-node]
+  <br /> This module contains the database, the staged sync and other logic necessary to function as an Ethereum node.
   This module depends on the `core` module.
-* [`silkworm/sentry`](./silkworm/sentry)
+* [`silkworm/sentry`][silkworm-sentry]
   <br /> This module implements the networking and protocol stacks for the `Sentry` component for an Ethereum node based on [Erigon architecture][erigon-interfaces].
   This module depends on the `core`, `infra` and `node` modules.
-* [`silkworm/rpc`](./silkworm/rpc)
+* [`silkworm/rpc`][silkworm-rpc]
   <br /> This module implements the networking and protocol stacks for the `RpcDaemon` component for an Ethereum node based on [Erigon architecture][erigon-interfaces],
   exposing the vast majority of the [Ethereum JSON RPC Execution API][ethereum-execution-api]. This module depends on the `core`, `infra` and `node` modules.
-* [`silkworm/sync`](./silkworm/sync)
+* [`silkworm/sync`][silkworm-sync]
   <br /> This module implements the networking and protocol stacks for the `Consensus` component for an Ethereum node based on [Erigon architecture][erigon-interfaces],
   exposing the portion of the [Ethereum JSON RPC Execution API][ethereum-execution-api] necessary to interact with any Consensus Layer client.
   This module depends on the `core`, `infra`, `node` and `rpc` modules.
-* [`silkworm/wasm`](./silkworm/wasm)
+* [`silkworm/wasm`][silkworm-wasm]
   <br /> This module allows the `core` the run on WebAssembly. This module depends on both the `core` and `node` modules.
 
 
-[silkworm-license]: https://github.com/torquem-ch/silkworm/tree/master/LICENSE
+## Updating Snapshots
+
+If you need to update the list of builtin snapshots in Silkworm, the following procedure must be applied:
+
+* update `eriogn-snapshot` submodule to the new commit
+* generate the embedded C++ code bindings for predefined snapshots by executing from project home folder:
+```
+<build_folder>/cmd/dev/embed_toml -i third_party/erigon-snapshot -o silkworm/node/snapshots/config
+```
+
+
+[silkworm-license]: https://github.com/erigontech/silkworm/tree/master/LICENSE
+[silkworm-cmd]: https://github.com/erigontech/silkworm/tree/master/cmd
+[silkworm-core]: https://github.com/erigontech/silkworm/tree/master/silkworm/core
+[silkworm-infra]: https://github.com/erigontech/silkworm/tree/master/silkworm/infra
+[silkworm-interfaces]: https://github.com/erigontech/silkworm/tree/master/silkworm/interfaces
+[silkworm-node]: https://github.com/erigontech/silkworm/tree/master/silkworm/node
+[silkworm-sentry]: https://github.com/erigontech/silkworm/tree/master/silkworm/sentry
+[silkworm-rpc]: https://github.com/erigontech/silkworm/tree/master/silkworm/rpc
+[silkworm-sync]: https://github.com/erigontech/silkworm/tree/master/silkworm/sync
+[silkworm-wasm]: https://github.com/erigontech/silkworm/tree/master/silkworm/wasm
 [cpp-standard-iso]: https://isocpp.org
 [cpp-core-guidelines]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
 [cpp-google-style-guide]: https://google.github.io/styleguide/cppguide.html

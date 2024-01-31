@@ -79,6 +79,8 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     std::stringstream string_cout, string_cerr;
     test_util::StreamSwap cout_swap{std::cout, string_cout};
     test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
+    // Make sure logging facility is initialized
+    init();
 
     SECTION("LogBuffer stores nothing for verbosity higher than default") {
         check_log_empty<Level::kDebug>();

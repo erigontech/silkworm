@@ -29,8 +29,8 @@
 #include <tl/expected.hpp>
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
-#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/json_rpc_validator.hpp>
 

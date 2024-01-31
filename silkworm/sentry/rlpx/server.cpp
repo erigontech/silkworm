@@ -63,7 +63,7 @@ Task<void> Server::run(
         acceptor.bind(endpoint);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::address_in_use) {
-            throw std::runtime_error("Sentry RLPx server has failed to start. Port: " + std::to_string(port_) + " is busy! Try another port with --port=MMM. Error: " + ex.what());
+            throw std::runtime_error("Sentry RLPx server has failed to start because port " + std::to_string(port_) + " is already in use. Try another one with --port.");
         } else {
             throw;
         }

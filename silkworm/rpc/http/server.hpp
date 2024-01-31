@@ -34,6 +34,7 @@
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 
 namespace silkworm::rpc::http {
@@ -45,14 +46,15 @@ class Server {
     Server& operator=(const Server&) = delete;
 
     // Construct the server to listen on the specified local TCP end-point
-    explicit Server(const std::string& end_point,
-                    const std::string& api_spec,
-                    boost::asio::io_context& io_context,
-                    boost::asio::thread_pool& workers,
-                    std::vector<std::string> allowed_origins,
-                    std::optional<std::string> jwt_secret,
-                    bool use_websocket,
-                    bool compression);
+    Server(const std::string& end_point,
+           const std::string& api_spec,
+           boost::asio::io_context& io_context,
+           boost::asio::thread_pool& workers,
+           std::vector<std::string> allowed_origins,
+           std::optional<std::string> jwt_secret,
+           bool use_websocket,
+           bool compression,
+           log::InterfaceLogConfig ifc_config = {});
 
     void start();
 
@@ -81,9 +83,13 @@ class Server {
     //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;
 
+    //! Flag indicating if WebSocket protocol will be used instead of HTTP
     bool use_websocket_;
 
     bool ws_compression_;
+
+    //! The interface logging configuration
+    log::InterfaceLogConfig ifc_config_;
 };
 
 }  // namespace silkworm::rpc::http

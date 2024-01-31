@@ -26,7 +26,7 @@ namespace silkworm::log {
 
 class InterfaceLogImpl final {
   public:
-    explicit InterfaceLogImpl(std::string_view name, std::string_view folder, bool auto_flush);
+    explicit InterfaceLogImpl(InterfaceLogConfig config);
     ~InterfaceLogImpl() {
         flush();
     }
@@ -60,10 +60,10 @@ class InterfaceLogImpl final {
     std::shared_ptr<spdlog::logger> rotating_logger_;
 };
 
-InterfaceLogImpl::InterfaceLogImpl(std::string_view name, std::string_view folder, bool auto_flush)
-    : name_{name},
-      auto_flush_{auto_flush},
-      file_path_{folder / std::filesystem::path{name_ + ".log"}},
+InterfaceLogImpl::InterfaceLogImpl(InterfaceLogConfig config)
+    : name_{std::move(config.ifc_name)},
+      auto_flush_{config.auto_flush},
+      file_path_{std::move(config.container_folder) / std::filesystem::path{name_ + ".log"}},
       rotating_logger_{spdlog::rotating_logger_mt(name_, file_path_.string(), max_file_size_, max_files_)} {
     ensure(!name_.empty(), "InterfaceLogImpl: name is empty");
 
@@ -74,8 +74,8 @@ InterfaceLogImpl::InterfaceLogImpl(std::string_view name, std::string_view folde
     rotating_logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 }
 
-InterfaceLog::InterfaceLog(std::string_view name, std::string_view folder, bool auto_flush)
-    : p_impl_{std::make_unique<InterfaceLogImpl>(name, folder, auto_flush)} {
+InterfaceLog::InterfaceLog(InterfaceLogConfig config)
+    : p_impl_{std::make_unique<InterfaceLogImpl>(std::move(config))} {
 }
 
 // An explicit destructor is needed to avoid error:

@@ -30,7 +30,12 @@ namespace silkworm::log {
 TEST_CASE("InterfaceLog basic", "[infra][common][log]") {
     const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
     static int count{0};
-    auto ifc_log{std::make_unique<InterfaceLog>("eth_rpc" + std::to_string(++count), tmp_dir.string())};
+    InterfaceLogConfig config{
+        .enabled = true,
+        .ifc_name = "eth_rpc" + std::to_string(++count),
+        .container_folder = tmp_dir.string(),
+    };
+    auto ifc_log{std::make_unique<InterfaceLog>(config)};
     REQUIRE(!ifc_log->path().empty());
     ifc_log->log_req(R"({"json":"2.0"})");
     ifc_log->log_rsp(R"({"json":"2.0"})");

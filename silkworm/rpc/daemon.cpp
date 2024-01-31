@@ -296,20 +296,27 @@ DaemonChecklist Daemon::run_checklist() {
 }
 
 void Daemon::start() {
+    auto make_rpc_server = [this](const std::string& api_spec,
+                                  boost::asio::io_context& ioc,
+                                  std::optional<std::string> jwt_secret,
+                                  log::InterfaceLogConfig config = {}) {
+        return std::make_unique<http::Server>(
+            settings_.engine_end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
+            settings_.use_websocket, settings_.ws_compression, std::move(config));
+    };
+
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& ioc = context_pool_.next_io_context();
 
         if (not settings_.eth_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, settings_.cors_domain, /*jwt_secret=*/std::nullopt,
-                    settings_.use_websocket, settings_.ws_compression));
+            rpc_services_.emplace_back(make_rpc_server(settings_.eth_api_spec, ioc, /*jwt_secret=*/std::nullopt));
         }
         if (not settings_.engine_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, settings_.cors_domain, jwt_secret_,
-                    settings_.use_websocket, settings_.ws_compression));
+            log::InterfaceLogConfig ifc_config{
+                .enabled = true,
+                .ifc_name = "engine_api",
+            };
+            rpc_services_.emplace_back(make_rpc_server(kDefaultEth2ApiSpec, ioc, jwt_secret_, ifc_config));
         }
     }
 

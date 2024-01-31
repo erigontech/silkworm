@@ -29,13 +29,24 @@
 
 namespace silkworm::rpc::http {
 
-Task<void> RequestHandler::handle(const std::string& content) {
-    auto start = clock_time::now();
+RequestHandler::RequestHandler(Channel* channel,
+                               commands::RpcApi& rpc_api,
+                               const commands::RpcApiTable& rpc_api_table,
+                               log::InterfaceLogConfig ifc_config)
+    : channel_{channel},
+      rpc_api_{rpc_api},
+      rpc_api_table_{rpc_api_table},
+      ifc_log_ {ifc_config.enabled ? std::make_optional<log::InterfaceLog>(ifc_config) : std::nullopt} {}
+
+Task<void> RequestHandler::handle(const std::string& request) {
+    const auto start = clock_time::now();
     std::string response;
     bool send_reply{true};
-    nlohmann::json request_json;
     try {
-        request_json = nlohmann::json::parse(content);
+        if (ifc_log_) {
+            ifc_log_->log_req(request);
+        }
+        const auto request_json{nlohmann::json::parse(request)};
         if (request_json.is_object()) {
             if (!is_valid_jsonrpc(request_json)) {
                 response = make_json_error(0, -32600, "invalid request").dump() + "\n";
@@ -61,7 +72,6 @@ Task<void> RequestHandler::handle(const std::string& content) {
                 }
             }
             batch_reply_content << "]\n";
-
             response = batch_reply_content.str();
         }
     } catch (const nlohmann::json::exception& e) {
@@ -72,6 +82,10 @@ Task<void> RequestHandler::handle(const std::string& content) {
 
     if (send_reply) {
         co_await channel_->write_rsp(response);
+    }
+    if (ifc_log_) {
+        ifc_log_->log_rsp(response);
+        ifc_log_->flush();
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }

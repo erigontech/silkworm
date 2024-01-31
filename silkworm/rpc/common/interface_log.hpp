@@ -24,9 +24,16 @@ namespace silkworm::log {
 
 class InterfaceLogImpl;
 
+struct InterfaceLogConfig {
+    bool enabled{false};
+    std::string ifc_name;
+    std::string container_folder{"logs/"};
+    bool auto_flush{false};
+};
+
 class InterfaceLog final {
   public:
-    explicit InterfaceLog(std::string_view name, std::string_view folder = "logs/", bool auto_flush = false);
+    explicit InterfaceLog(InterfaceLogConfig config);
     ~InterfaceLog();
 
     [[nodiscard]] std::filesystem::path path() const;

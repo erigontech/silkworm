@@ -30,6 +30,7 @@
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
@@ -49,7 +50,8 @@ class Connection : public Channel {
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret,
                bool use_websocket,
-               bool ws_compression);
+               bool ws_compression,
+               log::InterfaceLogConfig ifc_config);
     ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }

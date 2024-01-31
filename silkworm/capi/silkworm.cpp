@@ -28,6 +28,7 @@
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/types/call_traces.hpp>
+#include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -370,36 +371,74 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEX
 
 class BlockProvider {
   public:
-    BlockProvider(db::DataModel& access_layer, uint64_t start_block, uint64_t max_block)
-        : access_layer_{access_layer}, start_block_{start_block}, max_block_{max_block} {}
+    BlockProvider(BoundedBuffer<Block>* block_buffer,
+                  mdbx::env env,
+                  uint64_t start_block, uint64_t max_block)
+        : block_buffer_{block_buffer},
+          env_{env},
+          start_block_{start_block},
+          max_block_{max_block} {}
 
-    bool next(Block& block) {
-        if (current_block_ > max_block_) {
-            return false;
-        }
+    // bool next() {
+    //     Block block;
+    //     if (current_block_ > max_block_) {
+    //         return false;
+    //     }
 
-        std::cout << "JG BlockProvider::next " << current_block_;
-        const bool success{access_layer_.read_block(current_block_, /*read_senders=*/true, block)};
-        if (!success) {
-            return false;
+    //     const bool success{access_layer_.read_block(current_block_, /*read_senders=*/true, block)};
+    //     if (!success) {
+    //         std::cout << "JG BlockProvider::next " << current_block_ << " FAILED!\n";
+    //         return false;
+    //     }
+    //     std::cout << "JG BlockProvider::next " << current_block_ << " \n";
+    //     ++current_block_;
+    //     block_buffer_->push_front(std::move(block));
+    //     return true;
+    // }
+
+    void operator()() {
+        // db::ROTxnUnmanaged txn{parent_txn_};
+        // db::DataModel access_layer{txn};
+
+        // db::EnvConfig db_config{"/home/jacek/dev/erigon/build/bin/mainnet/chaindata"};
+        // auto env{db::open_env(db_config)};
+
+        // TODO:JG close txn periodically every 100 blocks
+
+        db::ROTxnManaged txn{env_};
+        db::DataModel access_layer{txn};
+
+        uint64_t current_block_{start_block_};
+
+        while (current_block_ <= max_block_) {
+            Block block;
+            if (current_block_ > max_block_) {
+                return;
+            }
+
+            const bool success{access_layer.read_block(current_block_, /*read_senders=*/true, block)};
+            if (!success) {
+                std::cout << "JG BlockProvider::next " << current_block_ << " FAILED!\n";
+                log::Error() << "JG BlockProvider failed to retrieve block number" << current_block_ << "\n";
+                return;
+            }
+            ++current_block_;
+            block_buffer_->push_front(std::move(block));
         }
-        std::cout << " success\n";
-        ++current_block_;
-        return true;
     }
 
   private:
-    db::DataModel& access_layer_;
+    BoundedBuffer<Block>* block_buffer_;
+    mdbx::env env_;
+    // db::DataModel& access_layer_;
     uint64_t start_block_;
     uint64_t max_block_;
-    uint64_t current_block_{start_block_};
 };
 
 SILKWORM_EXPORT
 int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
                             uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
                             uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
-
     log::Info{"JG silkworm_execute_blocks", {"start_block", std::to_string(start_block), "max_block", std::to_string(max_block), "batch_size", std::to_string(batch_size), "write_change_sets", std::to_string(write_change_sets)}};  // NOLINT(*-unused-raii)
 
     if (!handle) {
@@ -424,8 +463,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         const auto db_path{txn.db().get_path()};
 
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
-        db::DataModel access_layer{txn};
-        BlockProvider block_provider{access_layer, start_block, max_block};
+        // db::DataModel access_layer{txn};
+        BoundedBuffer<Block> block_buffer{100};
+        BlockProvider block_provider{&block_buffer, txn.db(), start_block, max_block};
+        boost::thread block_provider_thread(block_provider);
 
         static constexpr size_t kCacheSize{5'000};
         AnalysisCache analysis_cache{kCacheSize};
@@ -445,6 +486,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         auto log_time{progress.start_time};
 
         size_t gas_batch_size{0};
+        
+        Block block;
+        
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             // if (prefetched_blocks.empty()) {
             //     const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
@@ -459,14 +503,12 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             //     SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
             // }
             // const Block& block{prefetched_blocks.front()};
-            Block block;
-            const bool success{block_provider.next(block)};
+            // const bool success{block_provider.next()};
 
-            std::cout << "JG silkworm_execute_blocks using block " << block.header.number << " success " << success << "\n";
-
-            if (!success) {
-                return SILKWORM_BLOCK_NOT_FOUND;
-            }
+            
+            block_buffer.pop_back(&block);
+            
+            // std::cout << "JG silkworm_execute_blocks using block " << block.header.number << "\n";
 
             const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
             if (!protocol_rule_set) {

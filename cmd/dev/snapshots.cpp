@@ -63,8 +63,9 @@ struct DownloadSettings : public bittorrent::BitTorrentSettings {
     std::string magnet_uri;
 };
 
-//! The Snapshots tools
-enum class SnapshotTool : uint8_t {
+//! The available subcommands in snapshots utility
+//! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11
+enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_bodies,
     count_headers,
     create_index,
@@ -133,7 +134,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         {"sync", SnapshotTool::sync},
     };
     app.add_option("--tool", settings.tool, "The snapshot tool to use")
-        ->capture_default_str()
         ->check(CLI::Range(SnapshotTool::count_bodies, SnapshotTool::sync))
         ->transform(CLI::Transformer(snapshot_tool_mapping, CLI::ignore_case))
         ->default_val(SnapshotTool::download);

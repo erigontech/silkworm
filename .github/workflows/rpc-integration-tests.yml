@@ -1,0 +1,83 @@
+name: QA - RPC Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - ready_for_review
+
+jobs:
+  integration-test-suite:
+    runs-on: self-hosted
+    env:
+      ERIGON_DATA_DIR: /opt/erigon/data-dir
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: "0"
+
+      - name: Clean Build Directory
+        run: rm -rf ${{runner.workspace}}/build/*
+
+      - name: Create Build Environment
+        # Some projects don't allow in-source building, so create a separate build directory
+        # We'll use this as our working directory for all subsequent commands
+        run: cmake -E make_directory ${{runner.workspace}}/build
+
+      - name: Configure CMake
+        working-directory: ${{runner.workspace}}/build
+        run: |
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build SilkRpc
+        working-directory: ${{runner.workspace}}/build
+        # Execute the build.  You can specify a specific target with "--target <NAME>"
+        run: cmake --build . --config Release --target rpcdaemon -j 2
+
+      - name: Request Erigon ("db-producer") termination
+        run: |
+          response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
+                 -H "Content-Type: application/json" \
+                 -d '{"status":"paused"}')
+          if [ "$response" -ne 200 ]; then
+            echo "Request failed with status $response"
+            exit 1
+          fi
+
+      - name: Run SilkRpc
+        working-directory: ${{runner.workspace}}/build/cmd
+        run: |
+          rpcdaemon &
+          RPC_DAEMON_PID=$!
+
+      - name: Run integration tests
+        run: |
+          # Run Erigon, send ctrl-c and check logs
+          python3 ./run_tests.py -c -k jwt.hex -b <chain>
+          
+          # Capture monitoring script exit status
+          monitoring_exit_status=$?
+          
+          # Clean up Erigon process if it's still running
+          if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
+            echo "Terminating rpc-daemon"
+            kill $RPC_DAEMON_PID
+            wait $RPC_DAEMON_PID
+          else
+            echo "rpc-daemon has already terminated"
+          fi
+          
+          # Check monitoring script exit status
+          if [ $monitoring_exit_status -eq 0 ]; then
+            echo "Tests completed successfully"
+            echo "::notice::Tests completed successfully"
+          else
+            echo "Error detected during tests"
+            echo "::error::Error detected during tests"
+            exit 1
+          fi

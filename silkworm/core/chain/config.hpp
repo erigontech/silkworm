@@ -142,6 +142,9 @@ SILKWORM_CONSTINIT extern const ChainConfig kMainnetConfig;
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kGoerliConfig;
 
+inline constexpr evmc::bytes32 kHoleskyGenesisHash{0xb5f7f912443c940f21fd611f12828d75b534364ed9e95ca4e307729a4661bde4_bytes32};
+SILKWORM_CONSTINIT extern const ChainConfig kHoleskyConfig;
+
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
 
@@ -155,6 +158,7 @@ SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
     {"mainnet"sv, 1},
     {"goerli"sv, 5},
+    {"holesky"sv, 17000},
     {"sepolia"sv, 11155111},
     {"polygon"sv, 137},
     {"mumbai"sv, 80001},
@@ -164,6 +168,7 @@ inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
 inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
     {*kKnownChainNameToId.find("mainnet"sv), &kMainnetConfig},
     {*kKnownChainNameToId.find("goerli"sv), &kGoerliConfig},
+    {*kKnownChainNameToId.find("holesky"sv), &kHoleskyConfig},
     {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
     {*kKnownChainNameToId.find("polygon"sv), &kPolygonConfig},
     {*kKnownChainNameToId.find("mumbai"sv), &kMumbaiConfig},

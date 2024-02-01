@@ -51,7 +51,8 @@ class Server {
                     boost::asio::thread_pool& workers,
                     std::vector<std::string> allowed_origins,
                     std::optional<std::string> jwt_secret,
-                    bool use_websocket);
+                    bool use_websocket,
+                    bool compression);
 
     void start();
 
@@ -81,6 +82,8 @@ class Server {
     std::optional<std::string> jwt_secret_;
 
     bool use_websocket_;
+
+    bool ws_compression_;
 };
 
 }  // namespace silkworm::rpc::http

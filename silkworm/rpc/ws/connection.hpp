@@ -48,7 +48,7 @@ class Connection : public Channel {
 
     ~Connection() override;
 
-    Task<void> accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> accept(const boost::beast::http::request<boost::beast::http::string_body>& req, bool ws_compression);
 
     Task<void> read_loop();
 

@@ -40,6 +40,7 @@ struct DaemonSettings {
     bool skip_protocol_check{false};
     bool erigon_json_rpc_compatibility{false};
     bool use_websocket{false};
+    bool ws_compression{false};
 };
 
 }  // namespace silkworm::rpc

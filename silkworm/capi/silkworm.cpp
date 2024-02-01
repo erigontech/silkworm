@@ -418,7 +418,6 @@ SILKWORM_EXPORT
 int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
                             uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
                             uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
-
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }

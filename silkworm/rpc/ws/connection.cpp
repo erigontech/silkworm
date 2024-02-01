@@ -47,7 +47,7 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
     if (ws_compression) {
         boost::beast::websocket::permessage_deflate opt;
         opt.client_enable = true;
-        opt.server_enable = true; 
+        opt.server_enable = true;
         ws_.set_option(opt);
     }
 

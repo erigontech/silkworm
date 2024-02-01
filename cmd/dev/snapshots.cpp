@@ -63,7 +63,7 @@ struct DownloadSettings : public bittorrent::BitTorrentSettings {
     std::string magnet_uri;
 };
 
-//! The available tools in snapshots facility
+//! The available subcommands in snapshots utility
 //! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11
 enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_bodies,

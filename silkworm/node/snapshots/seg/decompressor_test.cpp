@@ -16,6 +16,7 @@
 
 #include "decompressor.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <map>
 #include <span>
@@ -147,8 +148,6 @@ TEST_CASE("PatternTable::PatternTable", "[silkworm][node][seg][decompressor]") {
 }
 
 TEST_CASE("PatternTable::build_condensed", "[silkworm][node][seg][decompressor]") {
-    PatternTable table1{0};
-
     std::span<Pattern> patterns0{};
     Bytes v1{0x00, 0x11};
     std::vector<Pattern> patterns1{{0, v1}};
@@ -160,9 +159,10 @@ TEST_CASE("PatternTable::build_condensed", "[silkworm][node][seg][decompressor]"
         {"two patterns", std::span<Pattern>{patterns2.data(), patterns2.size()}},
     };
 
+    PatternTable table{2};  // max_depth in all patterns
     for (const auto& [test_name, pattern_span] : test_spans) {
         SECTION(test_name) {
-            CHECK(table1.build_condensed(pattern_span) == pattern_span.size());
+            CHECK(table.build_condensed(pattern_span) == pattern_span.size());
         }
     }
 }
@@ -256,11 +256,35 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompresso
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("compressed file is too short: 31"));
     }
+    SECTION("cannot build pattern tree: highest_depth reached zero") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C000000000000000400000000000000150309000000000000"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build pattern tree: highest_depth reached zero"));
+    }
+    SECTION("pattern dict is invalid: data skip failed at 22") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000016000000000000000003ff"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: data skip failed at 22"));
+    }
     SECTION("pattern dict is invalid: length read failed at 1") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x0000000000000000000000000000000000000000000000010000000000000000"));
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: length read failed at 1"));
+    }
+    SECTION("cannot build position tree: highest_depth reached zero") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C0000000000000004000000000000000000000000000000160309"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build position tree: highest_depth reached zero"));
+    }
+    SECTION("position dict is invalid: position read failed at 22") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000000000000000000001603ff"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("position dict is invalid: position read failed at 22"));
     }
 }
 

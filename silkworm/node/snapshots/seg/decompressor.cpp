@@ -156,6 +156,9 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
         const auto last_cw = insert_word(codewords_list_.back().get());
         return last_cw->table()->build_condensed(patterns, highest_depth, 0, 0, depth);
     }
+    if (highest_depth == 0) {
+        throw std::runtime_error("cannot build pattern tree: highest_depth reached zero");
+    }
     const auto b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);
     return b0 + build_condensed(patterns.subspan(b0), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
 }
@@ -272,6 +275,9 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
         lengths_[code] = 0;
         children_[code] = std::move(child_table);
         return children_[code]->build_tree(positions, highest_depth, 0, 0, depth);
+    }
+    if (highest_depth == 0) {
+        throw std::runtime_error("cannot build position tree: highest_depth reached zero");
     }
     const int b0 = build_tree(positions, highest_depth - 1, code, bits + 1, depth + 1);
     return b0 + build_tree(positions.subspan(static_cast<std::size_t>(b0)), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
@@ -409,7 +415,7 @@ void Decompressor::read_patterns(ByteView dict) {
     SILK_TRACE << "Pattern count: " << patterns.size() << " highest depth: " << pattern_highest_depth;
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
-    if (dict.length() > 0) {
+    if (!dict.empty()) {
         pattern_dict_->build_condensed({patterns.data(), patterns.size()});
     }
 
@@ -465,7 +471,7 @@ void Decompressor::read_positions(ByteView dict) {
     SILK_TRACE << "Position count: " << positions.size() << " highest depth: " << position_highest_depth;
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
-    if (dict.length() > 0) {
+    if (!dict.empty()) {
         position_dict_->build({positions.data(), positions.size()});
     }
 
@@ -732,6 +738,12 @@ ByteView Decompressor::Iterator::next_pattern() {
     const PatternTable* table = decoder_->pattern_dict_.get();
     if (table->bit_length() == 0) {
         return table->codeword(0)->pattern();
+        const auto* codeword{table->codeword(0)};
+        if (codeword == nullptr) {
+            throw std::runtime_error{
+                "Unexpected missing codeword for code: 0 in snapshot: " + decoder_->compressed_path().string()};
+        }
+        return codeword->pattern();
     }
     uint8_t length{0};
     ByteView pattern{};
@@ -740,11 +752,8 @@ ByteView Decompressor::Iterator::next_pattern() {
 
         const auto* codeword{table->search_condensed(code)};
         if (codeword == nullptr) {
-            const auto error_msg =
-                "Unexpected missing codeword for code: " + std::to_string(code) +
-                " in snapshot: " + decoder_->compressed_path().string();
-            SILK_ERROR << error_msg;
-            throw std::runtime_error{error_msg};
+            throw std::runtime_error{
+                "Unexpected missing codeword for code: " + std::to_string(code) + " in snapshot: " + decoder_->compressed_path().string()};
         }
         length = codeword->code_length();
         if (length == 0) {

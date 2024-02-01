@@ -81,7 +81,7 @@ cmake ..
 
 A custom Conan "profile" can be passed via a cmake argument, for example: 
 
-    cmake .. -DCONAN_PROFILE=macos_arm_clang_13_debug
+    cmake .. -DCONAN_PROFILE=macos_arm64_clang_13_debug
 
 will use "debug" configuration builds of dependencies.
 
@@ -89,7 +89,7 @@ See available profiles in [cmake/profiles](cmake/profiles).
 
 The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
 
-    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm_clang_13_debug .
+    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm64_clang_13_debug .
 
 
 Then run the build itself

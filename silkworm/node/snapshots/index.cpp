@@ -25,9 +25,9 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/snapshots/encode_varint.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_seq.hpp>
-#include <silkworm/node/snapshots/encode_varint.hpp>
 #include <silkworm/node/snapshots/snapshot.hpp>
 
 namespace silkworm::snapshots {

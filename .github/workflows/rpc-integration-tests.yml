@@ -12,7 +12,7 @@ jobs:
   integration-test-suite:
     runs-on: self-hosted
     env:
-      ERIGON_DATA_DIR: /opt/erigon/data-dir
+      ERIGON_DATA_DIR: /opt/erigon/datadir
 
     steps:
       - name: Check out repository

@@ -28,6 +28,7 @@ namespace silkworm::protocol {
 static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
     return std::visit<RuleSetPtr>(
         Overloaded{
+            [&](const NoPreMergeConfig&) { return nullptr; },
             [&](const EthashConfig&) { return std::make_unique<EthashRuleSet>(chain_config); },
             [&](const CliqueConfig&) { return std::make_unique<CliqueRuleSet>(chain_config); },
             [&](const BorConfig&) { return std::make_unique<BorRuleSet>(chain_config); },
@@ -37,10 +38,6 @@ static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
 
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {
     RuleSetPtr rule_set{pre_merge_rule_set(chain_config)};
-    if (!rule_set) {
-        return nullptr;
-    }
-
     if (chain_config.terminal_total_difficulty) {
         rule_set = std::make_unique<MergeRuleSet>(std::move(rule_set), chain_config);
     }

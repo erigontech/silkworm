@@ -32,16 +32,15 @@
 #include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/bor_config.hpp>
+#include <silkworm/core/protocol/ethash_config.hpp>
 
 namespace silkworm {
 
 namespace protocol {
 
-    //! \see EthashRuleSet
-    struct EthashConfig {
-        bool validate_seal{true};
-
-        bool operator==(const EthashConfig&) const = default;
+    // Already merged at genesis
+    struct NoPreMergeConfig {
+        bool operator==(const NoPreMergeConfig&) const = default;
     };
 
     //! \see CliqueRuleSet
@@ -50,7 +49,7 @@ namespace protocol {
     };
 
     //! \see IRuleSet
-    using RuleSetConfig = std::variant<EthashConfig, CliqueConfig, BorConfig>;
+    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, BorConfig>;
 
 }  // namespace protocol
 
@@ -93,7 +92,7 @@ struct ChainConfig {
     std::optional<BlockTime> cancun_time{std::nullopt};
 
     //! \brief Returns the config of the (pre-Merge) protocol rule set
-    protocol::RuleSetConfig rule_set_config{protocol::EthashConfig{.validate_seal = false}};
+    protocol::PreMergeRuleSetConfig rule_set_config{protocol::NoPreMergeConfig{}};
 
     // The Shanghai hard fork has withdrawals, but Agra does not
     [[nodiscard]] bool withdrawals_activated(uint64_t block_time) const noexcept;

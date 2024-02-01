@@ -81,6 +81,7 @@ struct State {
 
 //! Count leading zero bits.
 static inline uint32_t clz32(uint32_t x) {
+    if (x == 0) return 32;
     return static_cast<uint32_t>(__builtin_clz(x));
 }
 

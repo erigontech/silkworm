@@ -38,14 +38,16 @@ Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApiTable& handler_table,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret,
-                       bool use_websocket)
+                       bool use_websocket,
+                       bool ws_compression)
     : socket_{io_context},
       api_{api},
       handler_table_{handler_table},
       request_handler_{this, api, handler_table},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
-      use_websocket_{use_websocket} {
+      use_websocket_{use_websocket},
+      ws_compression_{ws_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
 
@@ -101,7 +103,7 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
     auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
-    co_await ws_connection->accept(req);
+    co_await ws_connection->accept(req, ws_compression_);
 
     auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
 

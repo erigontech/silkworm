@@ -40,9 +40,16 @@ Connection::~Connection() {
     SILK_TRACE << "ws::Connection::~Connection ws deleted:" << &ws_;
 }
 
-Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req, bool ws_compression) {
     // Set suggested timeout settings for the websocket
     ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
+
+    if (ws_compression) {
+        boost::beast::websocket::permessage_deflate opt;
+        opt.client_enable = true;
+        opt.server_enable = true; 
+        ws_.set_option(opt);
+    }
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);

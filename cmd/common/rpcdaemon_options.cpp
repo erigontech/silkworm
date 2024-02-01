@@ -111,6 +111,10 @@ void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& setting
     cli.add_flag("--websocket", settings.use_websocket)
         ->description("Enable WebSocket protocol for Execution Layer and Engine JSON RPC API, same port as HTTP(S)")
         ->capture_default_str();
+
+    cli.add_flag("--ws-compression", settings.ws_compression)
+        ->description("Enable ws-compression protocol for Execution Layer and Engine JSON RPC API")
+        ->capture_default_str();
 }
 
 }  // namespace silkworm::cmd::common

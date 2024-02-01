@@ -203,7 +203,7 @@ std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const 
     missing_index_list.reserve(segment_files.size());
     for (const auto& seg_file : segment_files) {
         const auto index_file = seg_file.index_file();
-        SILK_INFO << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
+        SILK_TRACE << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
         if (!std::filesystem::exists(index_file.path())) {
             std::shared_ptr<Index> index;
             switch (seg_file.type()) {
@@ -345,7 +345,7 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
         if (snapshot_file) {
             snapshot_files.push_back(snapshot_file.value());
         } else {
-            SILK_WARN << "unexpected format for file name: " << file.path().filename() << ", discarded";
+            SILK_TRACE << "unexpected format for file: " << file.path().filename() << ", skipped";
         }
     }
 

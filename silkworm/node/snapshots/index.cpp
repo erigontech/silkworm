@@ -27,9 +27,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_seq.hpp>
+#include <silkworm/node/snapshots/encode_varint.hpp>
 #include <silkworm/node/snapshots/snapshot.hpp>
-
-#include "encode_varint.hpp"
 
 namespace silkworm::snapshots {
 
@@ -182,7 +181,8 @@ void TransactionIndex::build() {
                 SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
                 auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
                 if (!decode_result) {
-                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " error: " << magic_enum::enum_name(decode_result.error());
+                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp)
+                               << " error: " << magic_enum::enum_name(decode_result.error());
                     return false;
                 }
                 body_buffer.clear();
@@ -196,7 +196,8 @@ void TransactionIndex::build() {
                         body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
                         decode_result = db::detail::decode_stored_block_body(body_rlp, body);
                         if (!decode_result) {
-                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
+                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp)
+                                       << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
                             return false;
                         }
                         body_buffer.clear();
@@ -212,6 +213,11 @@ void TransactionIndex::build() {
                     } else {
                         // Skip tx hash first byte plus address length for transaction decoding
                         constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+                        if (tx_buffer.size() <= kTxFirstByteAndAddressLength) {
+                            SILK_ERROR << "cannot decode tx envelope: record " << to_hex(tx_buffer) << " too short: "
+                                       << tx_buffer.size() << " i: " << i;
+                            return false;
+                        }
                         const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
                         ByteView tx_envelope_view{tx_envelope};
 
@@ -219,15 +225,19 @@ void TransactionIndex::build() {
                         TransactionType tx_type{};
                         decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
                         if (!decode_result) {
-                            SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
+                            SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i
+                                       << " error: " << magic_enum::enum_name(decode_result.error());
                             return false;
                         }
-                        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
-
                         if (i % 100'000 == 0) {
                             SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;
                         }
 
+                        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+                        if (tx_buffer.size() <= kTxFirstByteAndAddressLength + tx_payload_offset) {
+                            SILK_ERROR << "cannot decode tx payload: record " << to_hex(tx_buffer) << " too short: " << tx_buffer.size() << " i: " << i;
+                            return false;
+                        }
                         const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
                         const auto h256{keccak256(tx_payload)};
                         std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
@@ -243,8 +253,8 @@ void TransactionIndex::build() {
                 }
 
                 if (i != expected_tx_count) {
-                    throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
-                                             " got=" + std::to_string(i)};
+                    throw std::runtime_error{
+                        "tx count mismatch: expected=" + std::to_string(expected_tx_count) + " got=" + std::to_string(i)};
                 }
 
                 return true;

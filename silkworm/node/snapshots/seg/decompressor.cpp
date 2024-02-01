@@ -33,7 +33,7 @@
 
 namespace pb = google::protobuf::io;
 
-namespace silkworm::snapshots::huffman {
+namespace silkworm::snapshots::seg {
 
 //! Size in bytes of metadata header fields in compressed file
 constexpr std::size_t kWordsCountSize{sizeof(uint64_t)};
@@ -799,4 +799,4 @@ uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
     return code;
 }
 
-}  // namespace silkworm::snapshots::huffman
+}  // namespace silkworm::snapshots::seg

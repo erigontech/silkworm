@@ -44,11 +44,12 @@ class Connection : public Channel {
     //! Construct a connection running within the given execution context.
     Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                commands::RpcApi& api,
-               const commands::RpcApiTable& handler_table);
+               const commands::RpcApiTable& handler_table,
+               bool ws_compression = false);
 
     ~Connection() override;
 
-    Task<void> accept(const boost::beast::http::request<boost::beast::http::string_body>& req, bool ws_compression);
+    Task<void> accept(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> read_loop();
 
@@ -68,6 +69,8 @@ class Connection : public Channel {
 
     //! The handler used to process the incoming request.
     http::RequestHandler request_handler_;
+
+    bool ws_compression_{false};
 };
 
 }  // namespace silkworm::rpc::ws

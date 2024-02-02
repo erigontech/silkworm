@@ -30,9 +30,11 @@ namespace silkworm::rpc::ws {
 
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
-                       const commands::RpcApiTable& handler_table)
+                       const commands::RpcApiTable& handler_table,
+                       bool ws_compression)
     : ws_{std::move(stream)},
-      request_handler_{this, api, handler_table} {
+      request_handler_{this, api, handler_table},
+      ws_compression_{ws_compression} {
     SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
@@ -40,11 +42,11 @@ Connection::~Connection() {
     SILK_TRACE << "ws::Connection::~Connection ws deleted:" << &ws_;
 }
 
-Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req, bool ws_compression) {
+Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
     ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
 
-    if (ws_compression) {
+    if (ws_compression_) {
         boost::beast::websocket::permessage_deflate opt;
         opt.client_enable = true;
         opt.server_enable = true;

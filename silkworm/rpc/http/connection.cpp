@@ -102,8 +102,8 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
     // we tie the socket object to a websocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
-    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_));
-    co_await ws_connection->accept(req, ws_compression_);
+    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_), ws_compression_);
+    co_await ws_connection->accept(req);
 
     auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
 

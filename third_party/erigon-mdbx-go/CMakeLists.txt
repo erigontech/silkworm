@@ -15,6 +15,5 @@
 ]]
 
 set(MDBX_ENABLE_TESTS OFF)
-add_subdirectory(libmdbx)
-target_include_directories(mdbx-static INTERFACE "libmdbx")
+add_subdirectory(mdbx-go/mdbxdist)
 target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)

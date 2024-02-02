@@ -389,6 +389,9 @@ int main(int argc, char* argv[]) {
         }
         strncpy(silkworm_settings.data_dir_path, data_dir_path.c_str(), SILKWORM_PATH_SIZE - 1);
 
+        SILK_INFO << "libmdbx version: " << silkworm_libmdbx_version();
+        strncpy(silkworm_settings.libmdbx_version, ::mdbx::get_version().git.describe, sizeof(silkworm_settings.libmdbx_version) - 1);
+
         const int init_status_code = silkworm_init(&handle, &silkworm_settings);
         if (init_status_code != SILKWORM_OK) {
             SILK_ERROR << "silkworm_init failed [code=" << std::to_string(init_status_code) << "]";

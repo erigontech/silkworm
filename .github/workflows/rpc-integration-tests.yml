@@ -39,13 +39,13 @@ jobs:
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config Release --target rpcdaemon -j 2
 
-      - name: Request Erigon ("db-producer") termination
+      - name: Put Erigon ("db-producer") in paused state
         run: |
           response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
                  -H "Content-Type: application/json" \
                  -d '{"status":"paused"}')
           if [ "$response" -ne 200 ]; then
-            echo "Request failed with status $response"
+            echo "::error::Failed to pause Erigon, reason= $response"
             exit 1
           fi
 
@@ -56,6 +56,7 @@ jobs:
           RPC_DAEMON_PID=$!
 
       - name: Run integration tests
+        id: test_step
         run: |
           # Run Erigon, send ctrl-c and check logs
           python3 ./run_tests.py -c -k jwt.hex -b <chain>
@@ -76,8 +77,31 @@ jobs:
           if [ $monitoring_exit_status -eq 0 ]; then
             echo "Tests completed successfully"
             echo "::notice::Tests completed successfully"
+            echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
           else
             echo "Error detected during tests"
             echo "::error::Error detected during tests"
-            exit 1
+            echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Resume Erigon ("db-producer")
+        if: always()
+        run: |
+          response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
+                 -H "Content-Type: application/json" \
+                 -d '{"status":"resumed"}')
+          if [ "$response" -ne 200 ]; then
+            echo "Request failed with status $response"
+            echo "::warning::Failed to resume Erigon, reason= $response"
+          fi
+
+      - name: Action for Success
+        if: steps.test_step.outputs.TEST_RESULT == 'success'
+        run: echo "::notice::Tests completed successfully"
+
+      - name: Action for Not Success
+        if: steps.test_step.outputs.TEST_RESULT != 'success'
+        run: |
+          echo "::error::Error detected during tests"
+          exit 1
+

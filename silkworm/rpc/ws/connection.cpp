@@ -20,22 +20,25 @@
 #include <fstream>
 #include <string_view>
 
+#include <boost/asio/as_tuple.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 
 namespace silkworm::rpc::ws {
 
-std::chrono::milliseconds Connection::ping_interval_{4000}; // TODO
+std::chrono::milliseconds Connection::ping_interval_{kDefaultPingInterval};
 
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
                        const commands::RpcApiTable& handler_table)
     : ws_{std::move(stream)},
       request_handler_{this, api, handler_table},
-      retry_timer_{stream.get_executor()} {
+      retry_timer_{ws_.get_executor()} {
     SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
@@ -49,16 +52,27 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
+
+    // start co-routine to send periodically ping
+    concurrency::co_spawn_sw(ws_.get_executor(), ping_loop(), boost::asio::use_future);
 }
 
 Task<void> Connection::ping_loop() {
-    std::cout << "tick" << std::endl;
-
     while (true) {
-       retry_timer_.expires_after(ping_interval_);
-       co_await retry_timer_.async_wait(boost::asio::use_awaitable);
-   
-       co_await ws_.async_ping("", boost::asio::use_awaitable);
+        retry_timer_.expires_after(ping_interval_);
+        const auto [ec] = co_await retry_timer_.async_wait(as_tuple(boost::asio::use_awaitable));
+        if (ec == boost::asio::error::operation_aborted) {
+            continue;
+        }
+        try {
+            co_await ws_.async_ping("", boost::asio::use_awaitable);
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "ws::Connection::ping_loop system_error: " << se.what();
+            throw;
+        } catch (const std::exception& e) {
+            SILK_ERROR << "ws::Connection::ping_loop exception: " << e.what();
+            throw;
+        }
     }
 }
 
@@ -99,6 +113,7 @@ Task<std::size_t> Connection::do_write(const std::string& content) {
         const auto written = co_await ws_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
 
         SILK_TRACE << "ws::Connection::do_write: [" << content << "]";
+        retry_timer_.cancel();
         co_return written;
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "ws::Connection::do_write system_error: " << se.what();

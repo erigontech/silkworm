@@ -24,8 +24,8 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
@@ -35,6 +35,9 @@
 #include <silkworm/rpc/http/request_handler.hpp>
 
 namespace silkworm::rpc::ws {
+
+//! The default ping interval
+constexpr std::chrono::milliseconds kDefaultPingInterval{60'000};
 
 //! Represents a single connection from a client via websocket.
 class Connection : public Channel {
@@ -74,10 +77,8 @@ class Connection : public Channel {
 
     boost::asio::steady_timer retry_timer_;
 
-
     //! The retry interval between successive ping attempts
     static std::chrono::milliseconds ping_interval_;
-
 };
 
 }  // namespace silkworm::rpc::ws

@@ -45,7 +45,6 @@ Connection::~Connection() {
 Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
     ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
-
     if (ws_compression_) {
         boost::beast::websocket::permessage_deflate opt;
         opt.client_enable = true;

@@ -53,9 +53,9 @@ class Connection : public Channel {
 
     Task<void> read_loop();
 
+    // Methods of Channel interface
     Task<void> open_stream() override { co_return; }
     Task<void> close() override { co_return; }
-
     Task<void> write_rsp(const std::string& content) override;
     Task<std::size_t> write(std::string_view content) override;
 
@@ -65,11 +65,13 @@ class Connection : public Channel {
     //! Perform an asynchronous write operation.
     Task<std::size_t> do_write(const std::string& content);
 
+    // websocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
 
     //! The handler used to process the incoming request.
     http::RequestHandler request_handler_;
 
+    //! enable compress flag
     bool ws_compression_{false};
 };
 

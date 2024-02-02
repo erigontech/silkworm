@@ -114,7 +114,7 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
     }
     const auto& method_spec = method_spec_field->second;
 
-    if (params.size() > method_spec.size() + 1) { // allow one extra parameter for optimize_gas
+    if (params.size() > method_spec.size() + 1) {  // allow one extra parameter for optimize_gas
         result.is_valid = false;
         result.error_message = "Invalid number of parameters";
         return;
@@ -272,7 +272,7 @@ void JsonRpcValidator::validate_object(const nlohmann::json& object, const nlohm
                 if (!result.is_valid) {
                     return;
                 }
-            } else if (item.key() == "data") { //backward compability: optional `data` field is hex data
+            } else if (item.key() == "data") {  // backward compability: optional `data` field is hex data
                 validate_string(item.value(), R"({"pattern": "^0x[0-9a-f]*$"})"_json, result);
                 if (!result.is_valid) {
                     return;

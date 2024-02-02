@@ -27,12 +27,11 @@
 
 namespace silkworm::log {
 
-TEST_CASE("InterfaceLog basic", "[infra][common][log]") {
+TEST_CASE("InterfaceLog basic", "[rpc][common][interface_log]") {
     const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
-    static int count{0};
     InterfaceLogConfig config{
         .enabled = true,
-        .ifc_name = "eth_rpc" + std::to_string(++count),
+        .ifc_name = "eth_rpc",
         .container_folder = tmp_dir.string(),
     };
     auto ifc_log{std::make_unique<InterfaceLog>(config)};

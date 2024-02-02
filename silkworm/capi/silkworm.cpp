@@ -79,23 +79,25 @@ enum class MdbxVersionCheck : uint8_t {
 
 static bool is_compatible_mdbx_version(std::string_view their_version, std::string_view our_version, MdbxVersionCheck check) {
     SILK_TRACE << "is_compatible_mdbx_version their_version: " << their_version << " our_version: " << our_version;
+    bool compatible{false};
     switch (check) {
         case MdbxVersionCheck::kNone: {
-            return true;
+            compatible = true;
         } break;
         case MdbxVersionCheck::kExact: {
-            return their_version == our_version;
+            compatible = their_version == our_version;
         } break;
         case MdbxVersionCheck::kSemantic: {
             const std::vector<std::string> their_version_parts = absl::StrSplit(std::string(their_version), '.');
             const std::vector<std::string> our_version_parts = absl::StrSplit(std::string(our_version), '.');
-            return (their_version_parts.size() >= 3) &&
-                   (our_version_parts.size() >= 3) &&
-                   (their_version_parts[0] == our_version_parts[0]) &&
-                   (their_version_parts[1] == our_version_parts[1]) &&
-                   (their_version_parts[2] == our_version_parts[2]);
-        } break;
+            compatible = (their_version_parts.size() >= 3) &&
+                         (our_version_parts.size() >= 3) &&
+                         (their_version_parts[0] == our_version_parts[0]) &&
+                         (their_version_parts[1] == our_version_parts[1]) &&
+                         (their_version_parts[2] == our_version_parts[2]);
+        }
     }
+    return compatible;
 }
 
 //! Generate log arguments for Silkworm library version

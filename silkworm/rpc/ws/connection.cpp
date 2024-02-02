@@ -28,11 +28,14 @@
 
 namespace silkworm::rpc::ws {
 
+std::chrono::milliseconds Connection::ping_interval_{4000}; // TODO
+
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
                        const commands::RpcApiTable& handler_table)
     : ws_{std::move(stream)},
-      request_handler_{this, api, handler_table} {
+      request_handler_{this, api, handler_table},
+      retry_timer_{stream.get_executor()} {
     SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
@@ -46,6 +49,17 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
+}
+
+Task<void> Connection::ping_loop() {
+    std::cout << "tick" << std::endl;
+
+    while (true) {
+       retry_timer_.expires_after(ping_interval_);
+       co_await retry_timer_.async_wait(boost::asio::use_awaitable);
+   
+       co_await ws_.async_ping("", boost::asio::use_awaitable);
+    }
 }
 
 Task<void> Connection::read_loop() {

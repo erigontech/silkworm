@@ -93,7 +93,7 @@ TEST_CASE("estimate gas") {
 
     Call call;
     const silkworm::Block block;
-    const silkworm::ChainConfig config;
+    const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
     auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_);
     ethdb::TransactionDatabase tx_database{*tx};

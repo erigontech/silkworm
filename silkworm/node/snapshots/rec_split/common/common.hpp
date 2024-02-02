@@ -48,94 +48,6 @@
 #include <x86intrin.h>
 #endif
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1928)
-#include <intrin.h>
-inline int __builtin_clz(unsigned int x) {
-    unsigned long index;
-    return int(_BitScanReverse(&index, (unsigned long)x) ? 31 - index : 32);
-}
-inline int __builtin_clzl(unsigned long x) {
-    return __builtin_clz((unsigned int)x);
-}
-#if defined(_M_IX86) || defined(_M_ARM) || defined(_M_ARM64)
-inline int __builtin_clzll(unsigned long long x) {
-    if (x == 0) {
-        return 64;
-    }
-    unsigned int msb = (unsigned int)(x >> 32);
-    unsigned int lsb = (unsigned int)x;
-    return (msb != 0) ? __builtin_clz(msb) : 32 + __builtin_clz(lsb);
-}
-#else
-inline int __builtin_clzll(unsigned long long x) {
-    unsigned long index;
-    return int(_BitScanReverse64(&index, x) ? 63 - index : 64);
-}
-#endif
-inline int __builtin_ctz(unsigned int x) {
-    unsigned long index;
-    return int(_BitScanForward(&index, (unsigned long)x) ? index : 32);
-}
-inline int __builtin_ctzl(unsigned long x) {
-    return __builtin_ctz((unsigned int)x);
-}
-#if defined(_M_IX86) || defined(_M_ARM) || defined(_M_ARM64)
-inline int __builtin_ctzll(unsigned long long x) {
-    unsigned long index;
-    unsigned int msb = (unsigned int)(x >> 32);
-    unsigned int lsb = (unsigned int)x;
-    if (lsb != 0) {
-        return (int)(_BitScanForward(&index, lsb) ? index : 64);
-    } else {
-        return (int)(_BitScanForward(&index, msb) ? index + 32 : 64);
-    }
-}
-#else
-inline int __builtin_ctzll(unsigned long long x) {
-    unsigned long index;
-    return int(_BitScanForward64(&index, x) ? index : 64);
-}
-#endif
-
-inline int __builtin_ffs(int x) {
-    unsigned long index;
-    return int(_BitScanForward(&index, (unsigned long)x) ? index + 1 : 0);
-}
-inline int __builtin_ffsl(long x) {
-    return __builtin_ffs(int(x));
-}
-#if defined(_M_IX86) || defined(_M_ARM) || defined(_M_ARM64)
-inline int __builtin_ffsll(long long x) {
-    int ctzll = __builtin_ctzll((unsigned long long)x);
-    return ctzll != 64 ? ctzll + 1 : 0;
-}
-#else
-inline int __builtin_ffsll(long long x) {
-    unsigned long index;
-    return int(_BitScanForward64(&index, (unsigned long long)x) ? index + 1 : 0);
-}
-inline int __builtin_popcount(unsigned int x) {
-    return int(__popcnt(x));
-}
-
-inline int __builtin_popcountl(unsigned long x) {
-    static_assert(sizeof(x) == 4, "");
-    return int(__popcnt(x));
-}
-#endif
-
-#if defined(_M_IX86)
-inline int __builtin_popcountll(unsigned long long x) {
-    return int(__popcnt((unsigned int)(x >> 32))) +
-           int(__popcnt((unsigned int)x));
-}
-#elif defined(_M_X64)
-inline int __builtin_popcountll(unsigned long long x) {
-    return int(__popcnt64(x));
-}
-#endif
-#endif
-
 #include <algorithm>
 #include <cassert>
 #include <cinttypes>
@@ -144,6 +56,7 @@ inline int __builtin_popcountll(unsigned long long x) {
 #include <memory>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/node/common/bit_count.hpp>
 
 // Explicit branch predictions
 #define likely(x) __builtin_expect(!!(x), 1)

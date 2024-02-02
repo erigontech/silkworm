@@ -50,7 +50,8 @@ class Server {
                     boost::asio::io_context& io_context,
                     boost::asio::thread_pool& workers,
                     std::vector<std::string> allowed_origins,
-                    std::optional<std::string> jwt_secret);
+                    std::optional<std::string> jwt_secret,
+                    bool use_websocket);
 
     void start();
 
@@ -78,6 +79,8 @@ class Server {
 
     //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;
+
+    bool use_websocket_;
 };
 
 }  // namespace silkworm::rpc::http

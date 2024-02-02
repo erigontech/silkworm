@@ -21,6 +21,7 @@ find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_subdirectory(test_util)
 
@@ -50,6 +51,7 @@ set(LIBS_PRIVATE
     absl::time
     Boost::container # required for asio-grpc
     magic_enum::magic_enum
+    spdlog::spdlog
 )
 # cmake-format: on
 

@@ -40,7 +40,7 @@ using db::etl::kOptimalBufferSize;
 void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
 
-    huffman::Decompressor decoder{segment_path_.path(), segment_region_};
+    seg::Decompressor decoder{segment_path_.path(), segment_region_};
     decoder.open();
 
     const SnapshotPath index_file = segment_path_.index_file();
@@ -57,7 +57,7 @@ void Index::build() {
     do {
         iterations++;
         SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        const bool read_ok = decoder.read_ahead([&](huffman::Decompressor::Iterator it) {
+        const bool read_ok = decoder.read_ahead([&](seg::Decompressor::Iterator it) {
             Bytes word{};
             word.reserve(kPageSize);
             uint64_t i{0}, offset{0};
@@ -117,7 +117,7 @@ void TransactionIndex::build() {
     const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
-    huffman::Decompressor txs_decoder{segment_path_.path(), segment_region_};
+    seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
 
     const auto tx_count = txs_decoder.words_count();
@@ -148,10 +148,10 @@ void TransactionIndex::build() {
         .double_enum_index = false};
     RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
 
-    huffman::Decompressor bodies_decoder{bodies_segment_path.path()};
+    seg::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
 
-    using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
+    using DoubleReadAheadFunc = std::function<bool(seg::Decompressor::Iterator, seg::Decompressor::Iterator)>;
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](const DoubleReadAheadFunc& fn) -> bool {
         return txs_decoder.read_ahead([fn, &bodies_decoder](auto tx_it) -> bool {
             return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {

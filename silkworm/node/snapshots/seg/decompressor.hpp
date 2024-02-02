@@ -32,7 +32,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-namespace silkworm::snapshots::huffman {
+namespace silkworm::snapshots::seg {
 
 class DecodingTable {
   public:
@@ -298,4 +298,4 @@ class Decompressor {
     uint64_t words_length_{0};
 };
 
-}  // namespace silkworm::snapshots::huffman
+}  // namespace silkworm::snapshots::seg

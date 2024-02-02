@@ -51,7 +51,7 @@ struct Settings {
 
 //! \brief Initializes logging facilities
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
-void init(const Settings& settings);
+void init(const Settings& settings = {});
 
 //! \brief Get the current logging verbosity
 //! \note This function is not thread safe as it's meant to be used in tests

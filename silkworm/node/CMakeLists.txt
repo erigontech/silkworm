@@ -63,6 +63,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
     magic_enum::magic_enum
+    sais_lite
     silkworm_interfaces
 )
 # cmake-format: on

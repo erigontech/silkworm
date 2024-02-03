@@ -45,7 +45,7 @@ class Connection : public Channel {
     Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                commands::RpcApi& api,
                const commands::RpcApiTable& handler_table,
-               bool ws_compression = false);
+               bool compression = false);
 
     ~Connection() override;
 
@@ -72,7 +72,7 @@ class Connection : public Channel {
     http::RequestHandler request_handler_;
 
     //! enable compress flag
-    bool ws_compression_{false};
+    bool compression_{false};
 };
 
 }  // namespace silkworm::rpc::ws

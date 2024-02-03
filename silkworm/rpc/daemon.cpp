@@ -316,6 +316,9 @@ void Daemon::start() {
                 .enabled = true,
                 .ifc_name = "engine_api",
             };
+            if (settings_.datadir) {
+                ifc_config.container_folder = *settings_.datadir / "logs";
+            }
             rpc_services_.emplace_back(make_rpc_server(kDefaultEth2ApiSpec, ioc, jwt_secret_, ifc_config));
         }
     }

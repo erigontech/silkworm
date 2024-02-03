@@ -160,22 +160,28 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     auto io_executor = co_await boost::asio::this_coro::executor;
 
-    co_await channel_->open_stream();
-    ChunkWriter chunk_writer(*channel_);
-    json::Stream stream(io_executor, chunk_writer);
-
     try {
-        co_await (rpc_api_.*handler)(request_json, stream);
+        co_await channel_->open_stream();
+        ChunkWriter chunk_writer(*channel_);
+        json::Stream stream(io_executor, chunk_writer);
+
+        try {
+            co_await (rpc_api_.*handler)(request_json, stream);
+        } catch (const std::exception& e) {
+            SILK_ERROR << "exception: " << e.what();
+            const auto error = make_json_error(request_json, 100, e.what());
+            stream.write_json(error);
+        } catch (...) {
+            SILK_ERROR << "unexpected exception";
+            const auto error = make_json_error(request_json, 100, "unexpected exception");
+            stream.write_json(error);
+        }
+        co_await stream.close();
     } catch (const std::exception& e) {
-        SILK_ERROR << "exception: " << e.what();
-        const auto error = make_json_error(request_json, 100, e.what());
-        stream.write_json(error);
-    } catch (...) {
-        SILK_ERROR << "unexpected exception";
-        const auto error = make_json_error(request_json, 100, "unexpected exception");
-        stream.write_json(error);
+        const auto message = "exception: " + std::string{e.what()};
+        SILK_ERROR << message;
+        co_await channel_->write_rsp(message);
     }
-    co_await stream.close();
 
     co_return;
 }

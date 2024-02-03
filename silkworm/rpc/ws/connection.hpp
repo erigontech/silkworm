@@ -36,9 +36,6 @@
 
 namespace silkworm::rpc::ws {
 
-//! The default ping interval
-constexpr std::chrono::milliseconds kDefaultPingInterval{60'000};
-
 //! Represents a single connection from a client via websocket.
 class Connection : public Channel {
   public:
@@ -75,10 +72,9 @@ class Connection : public Channel {
     //! The handler used to process the incoming request.
     http::RequestHandler request_handler_;
 
-    boost::asio::steady_timer retry_timer_;
+    boost::asio::steady_timer ping_timer_;
 
-    //! The retry interval between successive ping attempts
-    static std::chrono::milliseconds ping_interval_;
+    bool continue_ping_loop_{true};
 };
 
 }  // namespace silkworm::rpc::ws

@@ -178,9 +178,7 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
         }
         co_await stream.close();
     } catch (const std::exception& e) {
-        const auto message = "exception: " + std::string{e.what()};
-        SILK_ERROR << message;
-        co_await channel_->write_rsp(message);
+        SILK_ERROR << "exception: " << e.what();
     }
 
     co_return;

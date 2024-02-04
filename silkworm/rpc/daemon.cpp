@@ -302,12 +302,14 @@ void Daemon::start() {
         if (not settings_.eth_end_point.empty()) {
             rpc_services_.emplace_back(
                 std::make_unique<http::Server>(
-                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, settings_.cors_domain, /*jwt_secret=*/std::nullopt, settings_.use_websocket));
+                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, settings_.cors_domain, /*jwt_secret=*/std::nullopt,
+                    settings_.use_websocket, settings_.ws_compression));
         }
         if (not settings_.engine_end_point.empty()) {
             rpc_services_.emplace_back(
                 std::make_unique<http::Server>(
-                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, settings_.cors_domain, jwt_secret_, settings_.use_websocket));
+                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, settings_.cors_domain, jwt_secret_,
+                    settings_.use_websocket, settings_.ws_compression));
         }
     }
 

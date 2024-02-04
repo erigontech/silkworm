@@ -24,7 +24,6 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -62,8 +61,6 @@ class Connection : public Channel {
   private:
     Task<void> do_read();
 
-    Task<void> ping_loop();
-
     //! Perform an asynchronous write operation.
     Task<std::size_t> do_write(const std::string& content);
 
@@ -71,8 +68,6 @@ class Connection : public Channel {
 
     //! The handler used to process the incoming request.
     http::RequestHandler request_handler_;
-
-    boost::asio::steady_timer ping_timer_;
 };
 
 }  // namespace silkworm::rpc::ws

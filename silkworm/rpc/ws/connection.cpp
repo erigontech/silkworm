@@ -20,28 +20,22 @@
 #include <fstream>
 #include <string_view>
 
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/experimental/use_promise.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 
 namespace silkworm::rpc::ws {
 
 //! The default ping interval
-constexpr std::chrono::milliseconds kDefaultPingInterval{60'000};
+constexpr std::chrono::milliseconds kDefaultPingInterval{10'000};
 
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
                        const commands::RpcApiTable& handler_table)
     : ws_{std::move(stream)},
-      request_handler_{this, api, handler_table},
-      ping_timer_{ws_.get_executor()} {
+      request_handler_{this, api, handler_table} {
     SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
@@ -51,38 +45,18 @@ Connection::~Connection() {
 
 Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
-    ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
+    boost::beast::websocket::stream_base::timeout tmo{
+        .handshake_timeout = std::chrono::seconds(30),
+        .idle_timeout = std::chrono::seconds(30),
+        .keep_alive_pings = true,
+    };
+    ws_.set_option(tmo);
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
 }
 
-Task<void> Connection::ping_loop() {
-    while (true) {
-        ping_timer_.expires_after(kDefaultPingInterval);
-        const auto [ec] = co_await ping_timer_.async_wait(as_tuple(boost::asio::use_awaitable));
-        if (ec == boost::asio::error::operation_aborted) {
-            continue;
-        }
-        try {
-            co_await ws_.async_ping("", boost::asio::use_awaitable);
-        } catch (const boost::system::system_error& se) {
-            SILK_TRACE << "ws::Connection::ping_loop system_error: " << se.what();
-            throw;
-        } catch (const std::exception& e) {
-            SILK_ERROR << "ws::Connection::ping_loop exception: " << e.what();
-            throw;
-        }
-    }
-}
-
 Task<void> Connection::read_loop() {
-    using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
-    RunPromise run_completion_promise{concurrency::co_spawn_sw(
-        ws_.get_executor(),
-        ping_loop(),
-        boost::asio::experimental::use_promise)};
-
     SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
 
     try {
@@ -94,9 +68,6 @@ Task<void> Connection::read_loop() {
     } catch (const std::exception& e) {
         SILK_ERROR << "ws::Connection::read_loop exception: " << e.what();
     }
-
-    co_await run_completion_promise(boost::asio::use_awaitable);
-    ping_timer_.cancel();
 }
 
 Task<void> Connection::do_read() {
@@ -122,7 +93,6 @@ Task<std::size_t> Connection::do_write(const std::string& content) {
         const auto written = co_await ws_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
 
         SILK_TRACE << "ws::Connection::do_write: [" << content << "]";
-        ping_timer_.cancel();
         co_return written;
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "ws::Connection::do_write system_error: " << se.what();

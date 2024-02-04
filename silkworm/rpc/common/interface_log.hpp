@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string_view>
+
+#include <silkworm/core/common/base.hpp>
 
 namespace silkworm::log {
 
@@ -28,6 +31,8 @@ struct InterfaceLogConfig {
     bool enabled{false};
     std::string ifc_name;
     std::string container_folder{"logs/"};
+    std::size_t max_file_size{1 * kMebi};
+    std::size_t max_files{100};
     bool auto_flush{false};
 };
 

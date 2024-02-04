@@ -19,7 +19,6 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::log {
@@ -55,8 +54,8 @@ class InterfaceLogImpl final {
     std::string name_;
     bool auto_flush_;
     std::filesystem::path file_path_;
-    std::size_t max_file_size_{1 * kMebi};
-    std::size_t max_files_{10};
+    std::size_t max_file_size_;
+    std::size_t max_files_;
     std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> rotating_sink_;
     std::shared_ptr<spdlog::logger> rotating_logger_;
 };
@@ -65,6 +64,8 @@ InterfaceLogImpl::InterfaceLogImpl(InterfaceLogConfig config)
     : name_{std::move(config.ifc_name)},
       auto_flush_{config.auto_flush},
       file_path_{std::move(config.container_folder) / std::filesystem::path{name_ + ".log"}},
+      max_file_size_{config.max_file_size},
+      max_files_{config.max_files},
       rotating_sink_{std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path_.string(), max_file_size_, max_files_)},
       rotating_logger_{std::make_shared<spdlog::logger>(name_, rotating_sink_)} {
     ensure(!name_.empty(), "InterfaceLogImpl: name is empty");

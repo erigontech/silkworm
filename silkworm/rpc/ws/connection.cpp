@@ -33,9 +33,11 @@ constexpr std::chrono::milliseconds kDefaultPingInterval{10'000};
 
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
-                       const commands::RpcApiTable& handler_table)
+                       const commands::RpcApiTable& handler_table,
+                       bool compression)
     : ws_{std::move(stream)},
-      request_handler_{this, api, handler_table} {
+      request_handler_{this, api, handler_table},
+      compression_{compression} {
     SILK_DEBUG << "ws::Connection::Connection ws created:" << &ws_;
 }
 
@@ -51,6 +53,14 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
         .keep_alive_pings = true,
     };
     ws_.set_option(tmo);
+  
+    if (compression_) {
+        boost::beast::websocket::permessage_deflate opt{
+            .server_enable = true,
+            .client_enable = true,
+        };
+        ws_.set_option(opt);
+    }
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);

@@ -47,14 +47,16 @@ Server::Server(const std::string& end_point,
                boost::asio::thread_pool& workers,
                std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret,
-               bool use_websocket)
+               bool use_websocket,
+               bool ws_compression)
     : rpc_api_{io_context, workers},
       handler_table_{api_spec},
       io_context_(io_context),
       acceptor_{io_context},
       allowed_origins_{std::move(allowed_origins)},
       jwt_secret_(std::move(jwt_secret)),
-      use_websocket_{use_websocket} {
+      use_websocket_{use_websocket},
+      ws_compression_{ws_compression} {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -79,7 +81,8 @@ Task<void> Server::run() {
         while (acceptor_.is_open()) {
             SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
-            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_);
+            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_,
+                                                               use_websocket_, ws_compression_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";

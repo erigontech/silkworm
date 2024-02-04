@@ -73,8 +73,6 @@ class Connection : public Channel {
     http::RequestHandler request_handler_;
 
     boost::asio::steady_timer ping_timer_;
-
-    bool continue_ping_loop_{true};
 };
 
 }  // namespace silkworm::rpc::ws

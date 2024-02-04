@@ -22,6 +22,7 @@
 
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/experimental/use_promise.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/asio/write.hpp>
@@ -46,8 +47,6 @@ Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>
 
 Connection::~Connection() {
     SILK_TRACE << "ws::Connection::~Connection ws deleted:" << &ws_;
-    ping_timer_.cancel();
-    continue_ping_loop_ = false;
 }
 
 Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -59,7 +58,7 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
 }
 
 Task<void> Connection::ping_loop() {
-    while (continue_ping_loop_) {
+    while (true) {
         ping_timer_.expires_after(kDefaultPingInterval);
         const auto [ec] = co_await ping_timer_.async_wait(as_tuple(boost::asio::use_awaitable));
         if (ec == boost::asio::error::operation_aborted) {
@@ -78,12 +77,15 @@ Task<void> Connection::ping_loop() {
 }
 
 Task<void> Connection::read_loop() {
-    // start co-routine to send periodically ping
-    concurrency::co_spawn_sw(ws_.get_executor(), ping_loop(), boost::asio::detached);
+    using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
+    RunPromise run_completion_promise{concurrency::co_spawn_sw(
+        ws_.get_executor(),
+        ping_loop(),
+        boost::asio::experimental::use_promise)};
+
+    SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
 
     try {
-        SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
-
         while (true) {
             co_await do_read();
         }
@@ -92,6 +94,9 @@ Task<void> Connection::read_loop() {
     } catch (const std::exception& e) {
         SILK_ERROR << "ws::Connection::read_loop exception: " << e.what();
     }
+
+    co_await run_completion_promise(boost::asio::use_awaitable);
+    ping_timer_.cancel();
 }
 
 Task<void> Connection::do_read() {

@@ -53,7 +53,7 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
         .keep_alive_pings = true,
     };
     ws_.set_option(tmo);
-  
+
     if (compression_) {
         boost::beast::websocket::permessage_deflate opt{
             .server_enable = true,

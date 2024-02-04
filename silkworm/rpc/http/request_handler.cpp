@@ -46,7 +46,7 @@ Task<void> RequestHandler::handle(const std::string& request) {
         if (ifc_log_) {
             ifc_log_->log_req(request);
         }
-        const auto request_json{nlohmann::json::parse(request)};
+        const auto request_json = nlohmann::json::parse(request);
         if (request_json.is_object()) {
             if (!is_valid_jsonrpc(request_json)) {
                 response = make_json_error(0, -32600, "invalid request").dump() + "\n";
@@ -75,7 +75,7 @@ Task<void> RequestHandler::handle(const std::string& request) {
             response = batch_reply_content.str();
         }
     } catch (const nlohmann::json::exception& e) {
-        SILK_ERROR << "Connection::do_read json_parse: " << e.what();
+        SILK_ERROR << "RequestHandler::handle nlohmann::json::exception: " << e.what();
         response = make_json_error(0, -32600, "invalid request").dump() + "\n";
         send_reply = true;
     }

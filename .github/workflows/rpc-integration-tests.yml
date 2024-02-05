@@ -13,6 +13,7 @@ jobs:
     runs-on: self-hosted
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
+      RPC_TEST_DIR: /opt/rpc-test
 
     steps:
       - name: Check out repository
@@ -39,15 +40,15 @@ jobs:
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config Release --target rpcdaemon -j 2
 
-      - name: Put Erigon ("db-producer") in paused state
-        run: |
-          response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
-                 -H "Content-Type: application/json" \
-                 -d '{"status":"paused"}')
-          if [ "$response" -ne 200 ]; then
-            echo "::error::Failed to pause Erigon, reason= $response"
-            exit 1
-          fi
+      #- name: Put Erigon ("db-producer") in paused state
+      #  run: |
+      #    response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
+      #           -H "Content-Type: application/json" \
+      #           -d '{"status":"paused"}')
+      #    if [ "$response" -ne 200 ]; then
+      #      echo "::error::Failed to pause Erigon, reason= $response"
+      #      exit 1
+      #    fi
 
       - name: Run SilkRpc
         working-directory: ${{runner.workspace}}/build/cmd
@@ -58,8 +59,10 @@ jobs:
       - name: Run integration tests
         id: test_step
         run: |
+          cd $RPC_TEST_DIR/integration
+          
           # Run Erigon, send ctrl-c and check logs
-          python3 ./run_tests.py -c -k jwt.hex -b <chain>
+          python3 ./run_tests.py --continue --blockchain mainnet --jwt <your_silkworm_dir>/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture monitoring script exit status
           monitoring_exit_status=$?

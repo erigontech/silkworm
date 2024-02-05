@@ -51,7 +51,7 @@ class Connection : public Channel {
                std::optional<std::string> jwt_secret,
                bool use_websocket,
                bool ws_compression,
-               log::InterfaceLogConfig ifc_config);
+               InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }

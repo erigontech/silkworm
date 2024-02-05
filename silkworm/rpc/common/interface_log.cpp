@@ -21,11 +21,11 @@
 
 #include <silkworm/infra/common/ensure.hpp>
 
-namespace silkworm::log {
+namespace silkworm::rpc {
 
 class InterfaceLogImpl final {
   public:
-    explicit InterfaceLogImpl(InterfaceLogConfig config);
+    explicit InterfaceLogImpl(InterfaceLogSettings settings);
     ~InterfaceLogImpl() {
         flush();
     }
@@ -60,12 +60,12 @@ class InterfaceLogImpl final {
     std::shared_ptr<spdlog::logger> rotating_logger_;
 };
 
-InterfaceLogImpl::InterfaceLogImpl(InterfaceLogConfig config)
-    : name_{std::move(config.ifc_name)},
-      auto_flush_{config.auto_flush},
-      file_path_{std::move(config.container_folder) / std::filesystem::path{name_ + ".log"}},
-      max_file_size_{config.max_file_size},
-      max_files_{config.max_files},
+InterfaceLogImpl::InterfaceLogImpl(InterfaceLogSettings settings)
+    : name_{std::move(settings.ifc_name)},
+      auto_flush_{settings.auto_flush},
+      file_path_{std::move(settings.container_folder) / std::filesystem::path{name_ + ".log"}},
+      max_file_size_{settings.max_file_size_mb * kMebi},
+      max_files_{settings.max_files},
       rotating_sink_{std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path_.string(), max_file_size_, max_files_)},
       rotating_logger_{std::make_shared<spdlog::logger>(name_, rotating_sink_)} {
     ensure(!name_.empty(), "InterfaceLogImpl: name is empty");
@@ -77,8 +77,8 @@ InterfaceLogImpl::InterfaceLogImpl(InterfaceLogConfig config)
     rotating_logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 }
 
-InterfaceLog::InterfaceLog(InterfaceLogConfig config)
-    : p_impl_{std::make_unique<InterfaceLogImpl>(std::move(config))} {
+InterfaceLog::InterfaceLog(InterfaceLogSettings settings)
+    : p_impl_{std::make_unique<InterfaceLogImpl>(std::move(settings))} {
 }
 
 // An explicit destructor is needed to avoid error:
@@ -103,4 +103,4 @@ void InterfaceLog::flush() {
     p_impl_->flush();
 }
 
-}  // namespace silkworm::log
+}  // namespace silkworm::rpc

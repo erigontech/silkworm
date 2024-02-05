@@ -41,7 +41,7 @@ class RequestHandler {
     RequestHandler(Channel* channel,
                    commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table,
-                   log::InterfaceLogConfig ifc_config = {});
+                   InterfaceLogSettings ifc_log_settings = {});
     virtual ~RequestHandler() = default;
 
     RequestHandler(const RequestHandler&) = delete;
@@ -73,7 +73,7 @@ class RequestHandler {
 
     JsonRpcValidator json_rpc_validator_;
 
-    std::optional<log::InterfaceLog> ifc_log_;
+    std::optional<InterfaceLog> ifc_log_;
 };
 
 }  // namespace silkworm::rpc::http

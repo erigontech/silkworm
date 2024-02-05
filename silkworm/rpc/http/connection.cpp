@@ -39,11 +39,11 @@ Connection::Connection(boost::asio::io_context& io_context,
                        std::optional<std::string> jwt_secret,
                        bool use_websocket,
                        bool ws_compression,
-                       log::InterfaceLogConfig ifc_config)
+                       InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
       api_{api},
       handler_table_{handler_table},
-      request_handler_{this, api, handler_table, std::move(ifc_config)},
+      request_handler_{this, api, handler_table, std::move(ifc_log_settings)},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
       use_websocket_{use_websocket},

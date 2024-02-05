@@ -71,7 +71,27 @@ struct ApiSpecValidator : public CLI::Validator {
     }
 };
 
+static void add_options_interface_log(CLI::App& cli, const std::string& option_prefix, const std::string& end_point_descr,
+                                      rpc::InterfaceLogSettings& settings) {
+    cli.add_flag("--" + option_prefix + ".enabled", settings.enabled)
+        ->description("Enable interface log files for " + end_point_descr)
+        ->capture_default_str();
+
+    cli.add_option("--" + option_prefix + ".max_files", settings.max_files)
+        ->description("Maximum number of distinct interface log files for " + end_point_descr)
+        ->check(CLI::Range(1, 500))
+        ->capture_default_str();
+
+    cli.add_option("--" + option_prefix + ".max_file_size", settings.max_file_size_mb)
+        ->description("Maximum size in megabytes of each interface log file for " + end_point_descr)
+        ->check(CLI::Range(1, 1024))
+        ->capture_default_str();
+}
+
 void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& settings) {
+    add_options_interface_log(cli, "eth", "Execution Layer JSON RPC API", settings.eth_ifc_log_settings);
+    add_options_interface_log(cli, "engine", "Engine JSON RPC API", settings.engine_ifc_log_settings);
+
     add_option_ip_endpoint(cli, "--eth.addr", settings.eth_end_point,
                            "Execution Layer JSON RPC API local end-point as <address>:<port>");
     add_option_ip_endpoint(cli, "--engine.addr", settings.engine_end_point,

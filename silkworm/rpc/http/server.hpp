@@ -54,7 +54,7 @@ class Server {
            std::optional<std::string> jwt_secret,
            bool use_websocket,
            bool compression,
-           log::InterfaceLogConfig ifc_config = {});
+           InterfaceLogSettings ifc_log_settings = {});
 
     void start();
 
@@ -89,7 +89,7 @@ class Server {
     bool ws_compression_;
 
     //! The interface logging configuration
-    log::InterfaceLogConfig ifc_config_;
+    InterfaceLogSettings ifc_log_settings_;
 };
 
 }  // namespace silkworm::rpc::http

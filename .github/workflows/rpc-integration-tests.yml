@@ -15,7 +15,6 @@ jobs:
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
       RPC_TEST_DIR: /opt/rpc-tests
-      SILKWORM_BUILD_DIR: ${{runner.workspace}}/silkworm/build
 
     steps:
       - name: Check out repository
@@ -25,20 +24,20 @@ jobs:
           fetch-depth: "0"
 
       - name: Clean Build Directory
-        run: rm -rf $SILKWORM_BUILD_DIR
+        run: rm -rf ${{runner.workspace}}/silkworm/build
 
       - name: Create Build Environment
         # Some projects don't allow in-source building, so create a separate build directory
         # We'll use this as our working directory for all subsequent commands
-        run: cmake -E make_directory $SILKWORM_BUILD_DIR
+        run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
       - name: Configure CMake
-        working-directory: $SILKWORM_BUILD_DIR
+        working-directory: ${{runner.workspace}}/silkworm/build
         run: |
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
       - name: Build SilkRpc
-        working-directory: $SILKWORM_BUILD_DIR
+        working-directory: ${{runner.workspace}}/silkworm/build
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config Release --target rpcdaemon -j 2
 
@@ -53,7 +52,7 @@ jobs:
       #    fi
 
       - name: Run SilkRpc
-        working-directory: $SILKWORM_BUILD_DIR/cmd
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
           RPC_DAEMON_PID=$!
@@ -64,7 +63,7 @@ jobs:
           cd $RPC_TEST_DIR/integration
           
           # Run Erigon, send ctrl-c and check logs
-          python3 ./run_tests.py --continue --blockchain mainnet --jwt $SILKWORM_BUILD_DIR/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
+          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture monitoring script exit status
           monitoring_exit_status=$?

@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -53,7 +47,7 @@ class Server {
            std::vector<std::string> allowed_origins,
            std::optional<std::string> jwt_secret,
            bool use_websocket,
-           bool compression,
+           bool ws_compression,
            InterfaceLogSettings ifc_log_settings = {});
 
     void start();
@@ -86,6 +80,7 @@ class Server {
     //! Flag indicating if WebSocket protocol will be used instead of HTTP
     bool use_websocket_;
 
+    //! Flag indicating if WebSocket protocol compression will be used
     bool ws_compression_;
 
     //! The interface logging configuration

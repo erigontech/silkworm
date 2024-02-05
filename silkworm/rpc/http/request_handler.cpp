@@ -76,7 +76,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-bool RequestHandler::is_valid_jsonrpc(const nlohmann::json&  request_json ) {
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
     auto validation_result = json_rpc_validator_.validate(request_json);
     return validation_result.is_valid;
 }

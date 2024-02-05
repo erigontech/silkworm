@@ -488,4 +488,5 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
         }
     }
 }
+
 }  // namespace silkworm::rpc::http

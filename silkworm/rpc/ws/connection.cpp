@@ -44,7 +44,13 @@ Connection::~Connection() {
 
 Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     // Set suggested timeout settings for the websocket
-    ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
+    boost::beast::websocket::stream_base::timeout timeout{
+        .handshake_timeout = std::chrono::seconds(30),
+        .idle_timeout = std::chrono::seconds(60),
+        .keep_alive_pings = true,
+    };
+    ws_.set_option(timeout);
+
     if (compression_) {
         boost::beast::websocket::permessage_deflate opt{
             .server_enable = true,
@@ -58,9 +64,9 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
 }
 
 Task<void> Connection::read_loop() {
-    try {
-        SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
+    SILK_TRACE << "ws::Connection::run starting connection for websocket: " << &ws_;
 
+    try {
         while (true) {
             co_await do_read();
         }

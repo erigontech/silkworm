@@ -13,7 +13,7 @@ jobs:
     runs-on: self-hosted
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
-      RPC_TEST_DIR: /opt/rpc-test
+      RPC_TEST_DIR: /opt/rpc-tests
 
     steps:
       - name: Check out repository
@@ -53,7 +53,7 @@ jobs:
       - name: Run SilkRpc
         working-directory: ${{runner.workspace}}/build/cmd
         run: |
-          rpcdaemon &
+          rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
           RPC_DAEMON_PID=$!
 
       - name: Run integration tests
@@ -62,7 +62,7 @@ jobs:
           cd $RPC_TEST_DIR/integration
           
           # Run Erigon, send ctrl-c and check logs
-          python3 ./run_tests.py --continue --blockchain mainnet --jwt <your_silkworm_dir>/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
+          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture monitoring script exit status
           monitoring_exit_status=$?

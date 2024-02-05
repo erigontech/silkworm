@@ -99,8 +99,9 @@ Developing and testing Silkworm as a library within Erigon requires the followin
 
 The linkage between silkworm and erigon happens through the silkworm-go repository (see `cat go.work` in the parent
 directory).
-If you are sure in advance that no change to silkworm-go will be necessary, then you can omit the last argument to the
-silkworm_go_devenv.sh script: in such case, silkworm-go checkout is automatically put in a temporary directory.
+If you are sure in advance that no change to silkworm-go will be necessary (i.e. you are going to change neither the C
+API declarations nor the Go bindings), then you can omit the last argument to the silkworm_go_devenv.sh script: in such
+case, silkworm-go checkout is automatically put in a temporary directory.
 
 
 ### Cutting C-API Release (maintainers only)
@@ -136,5 +137,5 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [erigon-interfaces]: https://github.com/ledgerwatch/interfaces
 [ethereum-execution-api]: https://github.com/ethereum/execution-apis
 
-[^1] You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`
-to avoid any early failure until the tag is available on remote.
+[^1]: You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`
+to avoid any early failure until the tag is publicly available.

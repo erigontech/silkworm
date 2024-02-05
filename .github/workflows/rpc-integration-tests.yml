@@ -63,7 +63,7 @@ jobs:
           cd $RPC_TEST_DIR/integration
           
           # Run Erigon, send ctrl-c and check logs
-          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
+          python3 ./run_tests.py --verbose 2 --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture monitoring script exit status
           monitoring_exit_status=$?

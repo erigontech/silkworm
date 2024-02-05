@@ -15,6 +15,7 @@ jobs:
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
       RPC_TEST_DIR: /opt/rpc-tests
+      RPC_PAST_TEST_RES_DIR: /opt/rpc-past-tests
 
     steps:
       - name: Check out repository
@@ -67,6 +68,9 @@ jobs:
           
           # Capture monitoring script exit status
           monitoring_exit_status=$?
+          
+          # Save test result to a directory with timestamp and commit hash
+          mv $RPC_TEST_DIR/integration/mainnet/results $RPC_PAST_TEST_RES_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)
           
           # Clean up Erigon process if it's still running
           if kill -0 $RPC_DAEMON_PID 2> /dev/null; then

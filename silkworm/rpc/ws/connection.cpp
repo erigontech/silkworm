@@ -28,9 +28,6 @@
 
 namespace silkworm::rpc::ws {
 
-//! The default ping interval
-constexpr std::chrono::milliseconds kDefaultPingInterval{10'000};
-
 Connection::Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
                        commands::RpcApi& api,
                        const commands::RpcApiTable& handler_table,

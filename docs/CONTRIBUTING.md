@@ -42,6 +42,9 @@ In addition to the [Boost libraries permitted in the style guide](https://google
 Apart from the submodules and some auxiliary directories, Silkworm contains the following components:
 * [`cmd`][silkworm-cmd]
   <br /> The source code of Silkworm executable binaries.
+* [`silkworm/capi`][silkworm-capi]
+  <br /> This module contains the C API exposed by Silkworm for inclusion into [Erigon][erigon] Golang Cgo.
+  This module depends on the `core`, `infra`, `node`, `rpc` and `sentry` modules.
 * [`silkworm/core`][silkworm-core]
   <br /> This module contains the heart of the Ethereum protocol logic as described by the [Yellow Paper][ethereum-yellow-paper].
   Source code within `core` is compatible with WebAssembly and cannot use C++ exceptions.
@@ -53,12 +56,12 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 * [`silkworm/node`][silkworm-node]
   <br /> This module contains the database, the staged sync and other logic necessary to function as an Ethereum node.
   This module depends on the `core` module.
-* [`silkworm/sentry`][silkworm-sentry]
-  <br /> This module implements the networking and protocol stacks for the `Sentry` component for an Ethereum node based on [Erigon architecture][erigon-interfaces].
-  This module depends on the `core`, `infra` and `node` modules.
 * [`silkworm/rpc`][silkworm-rpc]
   <br /> This module implements the networking and protocol stacks for the `RpcDaemon` component for an Ethereum node based on [Erigon architecture][erigon-interfaces],
   exposing the vast majority of the [Ethereum JSON RPC Execution API][ethereum-execution-api]. This module depends on the `core`, `infra` and `node` modules.
+* [`silkworm/sentry`][silkworm-sentry]
+  <br /> This module implements the networking and protocol stacks for the `Sentry` component for an Ethereum node based on [Erigon architecture][erigon-interfaces].
+  This module depends on the `core`, `infra` and `node` modules.
 * [`silkworm/sync`][silkworm-sync]
   <br /> This module implements the networking and protocol stacks for the `Consensus` component for an Ethereum node based on [Erigon architecture][erigon-interfaces],
   exposing the portion of the [Ethereum JSON RPC Execution API][ethereum-execution-api] necessary to interact with any Consensus Layer client.
@@ -71,15 +74,50 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 
 If you need to update the list of builtin snapshots in Silkworm, the following procedure must be applied:
 
-* update `eriogn-snapshot` submodule to the new commit
+* update `erigon-snapshot` submodule to the new commit
 * generate the embedded C++ code bindings for predefined snapshots by executing from project home folder:
 ```
 <build_folder>/cmd/dev/embed_toml -i third_party/erigon-snapshot -o silkworm/node/snapshots/config
 ```
 
 
+## C API for Erigon
+
+One of the main goals of Silkworm is providing fast C++ libraries directly usable within [Erigon][erigon]. In order to
+achieve this goal, Silkworm defines its [C API][silkworm-capi-header] and provides *silkworm_capi* library built by a
+dedicated build target. Such library is then integrated within Erigon using the Golang Cgo facility by means of the
+[Silkworm Go bindings][silkworm-go].
+
+### Development and Testing
+
+Developing and testing Silkworm as a library within Erigon requires the following steps:
+
+1. clone **silkworm**, **silkworm-go** and **erigon** repositories into the same parent directory
+2. build *silkworm_capi* target into silkworm/build
+3. cd erigon && ./turbo/silkworm/silkworm_go_devenv.sh $PWD/../silkworm $PWD/../silkworm/build $PWD/../silkworm-go
+4. Edit silkworm, silkworm-go and erigon sources, rebuild and run them as usual
+
+The linkage between silkworm and erigon happens through the silkworm-go repository (see `cat go.work` in the parent
+directory).
+If you are sure in advance that no change to silkworm-go will be necessary (i.e. you are going to change neither the C
+API declarations nor the Go bindings), then you can omit the last argument to the silkworm_go_devenv.sh script: in such
+case, silkworm-go checkout is automatically put in a temporary directory.
+
+
+### Cutting C-API Release (maintainers only)
+
+Updating the version of Silkworm included in Erigon requires the following steps:
+
+1. cut a new release of silkworm_capi library in silkworm by issuing a new tag named ``capi-<x.y.z>``
+2. go to Actions -> Release -> Run workflow for a new version of silkworm-go to be built and tagged as ``v<x.y.z>``
+3. wait about 20 min for this CI job to finish: https://app.circleci.com/pipelines/github/erigontech/silkworm-go
+4. update your existing PR or open a new one on erigon to upgrade the silkworm-go module by running the command
+   `go get github.com/erigontech/silkworm-go@v<x.y.z>`[^1] and then `go mod tidy`
+
+
 [silkworm-license]: https://github.com/erigontech/silkworm/tree/master/LICENSE
 [silkworm-cmd]: https://github.com/erigontech/silkworm/tree/master/cmd
+[silkworm-capi]: https://github.com/erigontech/silkworm/tree/master/silkworm/capi
 [silkworm-core]: https://github.com/erigontech/silkworm/tree/master/silkworm/core
 [silkworm-infra]: https://github.com/erigontech/silkworm/tree/master/silkworm/infra
 [silkworm-interfaces]: https://github.com/erigontech/silkworm/tree/master/silkworm/interfaces
@@ -88,10 +126,16 @@ If you need to update the list of builtin snapshots in Silkworm, the following p
 [silkworm-rpc]: https://github.com/erigontech/silkworm/tree/master/silkworm/rpc
 [silkworm-sync]: https://github.com/erigontech/silkworm/tree/master/silkworm/sync
 [silkworm-wasm]: https://github.com/erigontech/silkworm/tree/master/silkworm/wasm
+[silkworm-capi-header]: https://github.com/erigontech/silkworm/tree/master/silkworm/capi/silkworm.h
+[silkworm-go]: https://github.com/erigontech/silkworm-go
 [cpp-standard-iso]: https://isocpp.org
 [cpp-core-guidelines]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
 [cpp-google-style-guide]: https://google.github.io/styleguide/cppguide.html
 [ethereum-yellow-paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 [grpc]: https://grpc.io
+[erigon]: https://github.com/ledgerwatch/erigon
 [erigon-interfaces]: https://github.com/ledgerwatch/interfaces
 [ethereum-execution-api]: https://github.com/ethereum/execution-apis
+
+[^1]: You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`
+to avoid any early failure until the tag is publicly available.

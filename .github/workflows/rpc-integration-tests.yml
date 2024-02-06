@@ -14,15 +14,22 @@ jobs:
     runs-on: self-hosted
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
-      RPC_TEST_DIR: /opt/rpc-tests
-      RPC_PAST_TEST_RES_DIR: /opt/rpc-past-tests
+      RPC_TEST_DIR: $GITHUB_WORKSPACE/rpc-tests
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
 
     steps:
-      - name: Check out repository
+      - name: Check out silkworm repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
           fetch-depth: "0"
+
+      - name: Checkout rpc-tests repository & install requirements
+        run: |
+          git clone https://github.com/erigontech/rpc-tests $RPC_TEST_DIR
+          cd $RPC_TEST_DIR
+          git checkout main
+          pip3 install -r requirements.txt
 
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build
@@ -70,7 +77,7 @@ jobs:
           monitoring_exit_status=$?
           
           # Save test result to a directory with timestamp and commit hash
-          mv $RPC_TEST_DIR/integration/mainnet/results $RPC_PAST_TEST_RES_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)
+          mv $RPC_TEST_DIR/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)
           
           # Clean up Erigon process if it's still running
           if kill -0 $RPC_DAEMON_PID 2> /dev/null; then

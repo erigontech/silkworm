@@ -22,22 +22,28 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
-#include <silkworm/node/snapshots/encode_varint.hpp>
 #include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/node/snapshots/seg/common/varint.hpp>
 
 namespace silkworm::snapshots::test_util {
 
-using snapshots::encode_varint;
 using snapshots::SnapshotPath;
 using snapshots::SnapshotType;
 
-//! Big-endian int encoder
-template <typename int_t = uint64_t>
-std::size_t encode_big_endian(int_t value, Bytes& output) {
+//! Big-endian encoder
+inline std::size_t encode_big_endian(uint64_t value, Bytes& output) {
     const std::size_t old_size = output.size();
-    output.resize(old_size + sizeof(int_t));
+    output.resize(old_size + sizeof(uint64_t));
     endian::store_big_u64(output.data() + old_size, value);
     return output.size();
+}
+
+//! Varint encoder
+inline std::size_t encode_varint(uint64_t value, Bytes& output) {
+    Bytes encoded;
+    seg::varint::encode(encoded, value);
+    output.append(encoded);
+    return encoded.size();
 }
 
 //! Snapshot header encoder
@@ -58,18 +64,18 @@ struct SnapshotHeader {
     std::vector<SnapshotPosition> positions;
 
     void encode(Bytes& output) const {
-        encode_big_endian<uint64_t>(words_count, output);
-        encode_big_endian<uint64_t>(empty_words_count, output);
-        encode_big_endian<uint64_t>(compute_patterns_size(), output);
+        encode_big_endian(words_count, output);
+        encode_big_endian(empty_words_count, output);
+        encode_big_endian(compute_patterns_size(), output);
         for (const auto& pattern : patterns) {
-            encode_varint<uint64_t>(pattern.depth, output);
-            encode_varint<uint64_t>(pattern.data.size(), output);
+            encode_varint(pattern.depth, output);
+            encode_varint(pattern.data.size(), output);
             output.append(pattern.data.cbegin(), pattern.data.cend());
         }
-        encode_big_endian<uint64_t>(compute_positions_size(), output);
+        encode_big_endian(compute_positions_size(), output);
         for (const auto& position : positions) {
-            encode_varint<uint64_t>(position.depth, output);
-            encode_varint<uint64_t>(position.value, output);
+            encode_varint(position.depth, output);
+            encode_varint(position.value, output);
         }
     }
 
@@ -78,8 +84,8 @@ struct SnapshotHeader {
         uint64_t patterns_size{0};
         Bytes temp_buffer{};
         for (const auto& pattern : patterns) {
-            patterns_size += encode_varint<uint64_t>(pattern.depth, temp_buffer);
-            patterns_size += encode_varint<uint64_t>(pattern.data.size(), temp_buffer);
+            patterns_size += encode_varint(pattern.depth, temp_buffer);
+            patterns_size += encode_varint(pattern.data.size(), temp_buffer);
             patterns_size += pattern.data.size();
         }
         return patterns_size;
@@ -89,8 +95,8 @@ struct SnapshotHeader {
         uint64_t positions_size{0};
         Bytes temp_buffer{};
         for (const auto& position : positions) {
-            positions_size += encode_varint<uint64_t>(position.depth, temp_buffer);
-            positions_size += encode_varint<uint64_t>(position.value, temp_buffer);
+            positions_size += encode_varint(position.depth, temp_buffer);
+            positions_size += encode_varint(position.value, temp_buffer);
         }
         return positions_size;
     }

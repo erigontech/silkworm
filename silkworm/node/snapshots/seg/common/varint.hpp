@@ -17,22 +17,13 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::seg::varint {
 
-//! Varint encoder
-template <typename int_t = uint64_t>
-std::size_t encode_varint(int_t value, Bytes& output) {
-    std::size_t varint_size{0};
-    while (value > 127) {
-        output.push_back(static_cast<uint8_t>(value & 127) | 128);
-        value >>= 7;
-        ++varint_size;
-    }
-    output.push_back(static_cast<uint8_t>(value) & 127);
-    return ++varint_size;
-}
+ByteView encode(Bytes& out, uint64_t value);
+std::optional<uint64_t> decode(ByteView& data);
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::seg::varint

@@ -38,7 +38,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
         request_json = nlohmann::json::parse(content);
         if (request_json.is_object()) {
             if (!is_valid_jsonrpc(request_json)) {
-                response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+                response = make_json_error(request_json, -32600, "invalid request").dump() + "\n";
             } else {
                 send_reply = co_await handle_request_and_create_reply(request_json, response);
                 response += "\n";
@@ -53,7 +53,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
                 }
 
                 if (!is_valid_jsonrpc(item.value())) {
-                    batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
+                    batch_reply_content << make_json_error(request_json, -32600, "invalid request").dump();
                 } else {
                     std::string single_reply;
                     send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
@@ -66,7 +66,7 @@ Task<void> RequestHandler::handle(const std::string& content) {
         }
     } catch (const nlohmann::json::exception& e) {
         SILK_ERROR << "Connection::do_read json_parse: " << e.what();
-        response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+        response = make_json_error(request_json, -32600, "invalid request").dump() + "\n";
         send_reply = true;
     }
 

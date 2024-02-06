@@ -96,7 +96,6 @@ jobs:
           if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
             echo "Terminating rpc-daemon"
             kill $RPC_DAEMON_PID
-            wait $RPC_DAEMON_PID
           else
             echo "rpc-daemon has already terminated"
           fi

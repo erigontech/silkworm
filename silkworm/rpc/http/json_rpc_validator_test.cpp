@@ -383,6 +383,89 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
     CHECK(!result.is_valid);
 }
 
+TEST_CASE("rpc::http::JsonRpcValidator validates uppercase hex value", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator{create_validator_for_test()};
+
+    nlohmann::json request = {
+        {"jsonrpc", "2.0"},
+        {"method", "eth_getBlockByNumber"},
+        {"params", {"0xF42405", true}},
+        {"id", 1},
+    };
+
+    JsonRpcValidationResult result = validator.validate(request);
+    CHECK(result.is_valid);
+}
+
+TEST_CASE("rpc::http::JsonRpcValidator validates `data` field", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator{create_validator_for_test()};
+
+    nlohmann::json request = {
+        {"jsonrpc", "2.0"},
+        {"method", "eth_getBlockByNumber"},
+        {"params", {"0xF42405", true}},
+        {"id", 1},
+    };
+
+    JsonRpcValidationResult result = validator.validate(request);
+    CHECK(result.is_valid);
+}
+
+TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator{create_validator_for_test()};
+
+    auto request1 = R"({
+            "jsonrpc":"2.0",
+            "method":"eth_getLogs",
+            "params":[
+                {
+                    "fromBlock": "0x10B10B2",
+                    "toBlock": "0x10B10B3",
+                    "address": ["0x00000000219ab540356cbb839cbe05303d7705fa"],
+                    "topics": null
+                }
+            ],
+            "id":3
+    })"_json;
+    JsonRpcValidationResult result1 = validator.validate(request1);
+    CHECK(result1.is_valid);
+
+    auto request2 = R"({
+            "jsonrpc":"2.0",
+            "method":"eth_getLogs",
+            "params":[
+                {
+                    "fromBlock": "0x10B10B2",
+                    "toBlock": "0x10B10B3",
+                    "address": ["0x00000000219ab540356cbb839cbe05303d7705fa"],
+                    "topics": "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794"
+                }
+            ],
+            "id":3
+    })"_json;
+    JsonRpcValidationResult result2 = validator.validate(request2);
+    CHECK(result2.is_valid);
+
+    auto request3 = R"({
+            "jsonrpc":"2.0",
+            "method":"eth_getLogs",
+            "params":[
+                {
+                    "fromBlock": "0x10B10B2",
+                    "toBlock": "0x10B10B3",
+                    "address": ["0x00000000219ab540356cbb839cbe05303d7705fa"],
+                    "topics": [
+                        "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449794",
+                        "0x76734e0205d8c4b711990ab957e86d3dc56d129600e60750552c95448a449795"
+                        ]
+                }
+            ],
+            "id":3
+    })"_json;
+    JsonRpcValidationResult result3 = validator.validate(request3);
+    CHECK(result3.is_valid);
+}
+
 TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 

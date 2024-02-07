@@ -114,7 +114,7 @@ void JsonRpcValidator::validate_params(const nlohmann::json& request, JsonRpcVal
     }
     const auto& method_spec = method_spec_field->second;
 
-    if (params.size() > method_spec.size()) {
+    if (params.size() > method_spec.size() + 1) {  // allow one extra parameter for optimize_gas
         result.is_valid = false;
         result.error_message = "Invalid number of parameters";
         return;
@@ -205,7 +205,7 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string, const nlohm
         if (pattern_field != patterns_.end()) {
             pattern = pattern_field->second;
         } else {
-            pattern = boost::regex(schema_pattern, boost::regex::optimize);
+            pattern = boost::regex(schema_pattern, boost::regex::optimize | boost::regex::icase);
             patterns_[schema_pattern] = pattern;
         }
 
@@ -235,14 +235,14 @@ void JsonRpcValidator::validate_string(const nlohmann::json& string, const nlohm
 }
 
 void JsonRpcValidator::validate_array(const nlohmann::json& array_, const nlohmann::json& schema, JsonRpcValidationResult& result) {
-    if (!array_.is_array()) {
+    if (!array_.is_array() && !array_.is_null()) {
         result.is_valid = false;
         result.error_message = "Invalid array";
     }
 
     const auto& schema_items = schema["items"];
     for (const auto& item : array_) {
-        validate_type(item, schema_items, result);
+        validate_schema(item, schema_items, result);
         if (!result.is_valid) {
             break;
         }
@@ -269,6 +269,11 @@ void JsonRpcValidator::validate_object(const nlohmann::json& object, const nlohm
         for (const auto& item : object.items()) {
             if (schema["properties"].contains(item.key())) {
                 validate_schema(item.value(), schema["properties"][item.key()], result);
+                if (!result.is_valid) {
+                    return;
+                }
+            } else if (item.key() == "data") {  // backward compability: optional `data` field is hex data
+                validate_string(item.value(), R"({"pattern": "^0x[0-9a-f]*$"})"_json, result);
                 if (!result.is_valid) {
                     return;
                 }

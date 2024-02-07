@@ -62,20 +62,12 @@ jobs:
           
           cd ${{runner.workspace}}/rpc-tests/perf
           
-          ulimit -c unlimited
-          ulimit -n 999999
-          sudo sysctl -w "net.ipv4.ip_local_port_range=5000 65000"
-          
           # Run Erigon, send ctrl-c and check logs
           python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:10,1000:10 -r 1 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           #python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           
           # Capture monitoring script exit status
           perf_exit_status=$?
-          
-          ulimit -c 0
-          ulimit -n 1024
-          sudo sysctl -w "net.ipv4.ip_local_port_range=32768 60999"
           
           # Save test result to a directory with timestamp and commit hash
           mv ${{runner.workspace}}/rpc-tests/perf/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git rev-parse --short HEAD)        

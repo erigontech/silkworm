@@ -76,7 +76,7 @@ Task<void> RequestHandler::handle(const std::string& request) {
         }
     } catch (const nlohmann::json::exception& e) {
         SILK_ERROR << "RequestHandler::handle nlohmann::json::exception: " << e.what();
-        response = make_json_error(request_json, -32600, "invalid request").dump() + "\n";
+        response = make_json_error(0, -32600, "invalid request").dump() + "\n";
         send_reply = true;
     }
 

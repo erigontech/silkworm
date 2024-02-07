@@ -273,9 +273,13 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         // Create worker tasks for missing indexes
         for (const auto& index : needed_indexes) {
             workers.push_task([=]() {
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-                index->build();
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+                try {
+                    SILK_INFO << "Build index: " << index->path().filename() << " start";
+                    index->build();
+                    SILK_INFO << "Build index: " << index->path().filename() << " end";
+                } catch (const std::exception& ex) {
+                    SILK_CRIT << "Build index: " << index->path().filename() << " failed [" << ex.what() << "]";
+                }
             });
         }
 

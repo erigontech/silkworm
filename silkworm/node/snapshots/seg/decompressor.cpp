@@ -737,7 +737,6 @@ void Decompressor::Iterator::reset(uint64_t data_offset) {
 ByteView Decompressor::Iterator::next_pattern() {
     const PatternTable* table = decoder_->pattern_dict_.get();
     if (table->bit_length() == 0) {
-        return table->codeword(0)->pattern();
         const auto* codeword{table->codeword(0)};
         if (codeword == nullptr) {
             throw std::runtime_error{

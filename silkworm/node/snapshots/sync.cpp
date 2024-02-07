@@ -25,7 +25,6 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/infra/concurrency/thread_safe_queue.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshots/config.hpp>
@@ -215,9 +214,14 @@ void SnapshotSync::build_missing_indexes() {
     const auto missing_indexes = repository_->missing_indexes();
     for (const auto& index : missing_indexes) {
         workers.push_task([=]() {
-            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-            index->build();
-            SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+            try {
+                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+                index->build();
+                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+            } catch (const std::exception& ex) {
+                SILK_CRIT << "SnapshotSync: build index: " << index->path().filename() << " failed [" << ex.what() << "]";
+                throw;
+            }
         });
     }
 

@@ -130,6 +130,28 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         TransactionIndex tx_index{txs_snapshot_path};
         CHECK_THROWS_AS(tx_index.build(), DecodingException);
     }
+
+    SECTION("KO: unexpected tx amount") {
+        test::SampleBodySnapshotFile valid_bodies_snapshot{};
+        test::SampleTransactionSnapshotFile invalid_txs_snapshot{
+            TemporaryDirectory::get_os_temporary_path(),
+            "000000000000000C"                              // WC = 12
+            "0000000000000004"                              // EWC = 4
+            "0000000000000000"                              // PaTS = 0
+            "0000000000000016"                              // PoTS = 22
+            "010004E60304850104E5020487010301048801048401"  // PoT = 0x01...01
+            "0309"
+            "3DE6BF8FE3E608CC04681B3DFC8B2D52AB94C23DB7F86D018504E3B292008252"  // Txn position 0 block 1'500'012 START
+            "0894BB9BC244D798123FDE783FCC1C72D3BB8C1894138902292B2AD00B120000"
+            "801CA0F5D7EB932991DC38FB5A3ED2ABCC71C2ABFC098BB2A9A25552ABEC2249"
+            "A6AAF8A055CAD62B0CD8E2B6154F2EA52D308535EF634D9A207571996754A02E"
+            "59DE97C1"  // Txn position 0 block 1'500'012 END
+            // 11 txs missing here...
+        };
+        test::SampleTransactionSnapshotPath txs_snapshot_path{invalid_txs_snapshot.path()};  // necessary to tweak the block numbers
+        TransactionIndex tx_index{txs_snapshot_path};
+        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+    }
 }
 
 TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {

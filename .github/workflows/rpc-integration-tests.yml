@@ -35,8 +35,6 @@ jobs:
         run: rm -rf ${{runner.workspace}}/silkworm/build
 
       - name: Create Build Environment
-        # Some projects don't allow in-source building, so create a separate build directory
-        # We'll use this as our working directory for all subsequent commands
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
       - name: Configure CMake
@@ -46,18 +44,7 @@ jobs:
 
       - name: Build SilkRpc
         working-directory: ${{runner.workspace}}/silkworm/build
-        # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config Release --target rpcdaemon -j 8
-
-      #- name: Put Erigon ("db-producer") in paused state
-      #  run: |
-      #    response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
-      #           -H "Content-Type: application/json" \
-      #           -d '{"status":"paused"}')
-      #    if [ "$response" -ne 200 ]; then
-      #      echo "::error::Failed to pause Erigon, reason= $response"
-      #      exit 1
-      #    fi
 
       - name: Run SilkRpc
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
@@ -69,19 +56,21 @@ jobs:
       - name: Run integration tests
         id: test_step
         run: |
+          set +e # Disable exit on error
+          
           cd ${{runner.workspace}}/rpc-tests/integration
           
           # Run Erigon, send ctrl-c and check logs
           python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture monitoring script exit status
-          monitoring_exit_status=$?
+          test_exit_status=$?
           
           # Save test result to a directory with timestamp and commit hash
           mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)        
           
           # Check monitoring script exit status
-          if [ $monitoring_exit_status -eq 0 ]; then
+          if [ $test_exit_status -eq 0 ]; then
             echo "Tests completed successfully"
             echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
           else
@@ -93,24 +82,12 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           # Clean up rpcdaemon process if it's still running
-          echo "RPC_DAEMON_PID=$RPC_DAEMON_PID"
           if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
             echo "Terminating rpc-daemon"
             kill $RPC_DAEMON_PID
           else
             echo "rpc-daemon has already terminated"
           fi
-
-      #- name: Resume Erigon ("db-producer")
-      #  if: always()
-      #  run: |
-      #    response=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST http://localhost:8080/production \
-      #           -H "Content-Type: application/json" \
-      #           -d '{"status":"resumed"}')
-      #    if [ "$response" -ne 200 ]; then
-      #      echo "Request failed with status $response"
-      #      echo "::warning::Failed to resume Erigon, reason= $response"
-      #    fi
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

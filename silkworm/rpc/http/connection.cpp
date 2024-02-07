@@ -24,7 +24,6 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/write.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
@@ -39,11 +38,12 @@ Connection::Connection(boost::asio::io_context& io_context,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret,
                        bool use_websocket,
-                       bool ws_compression)
+                       bool ws_compression,
+                       InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
       api_{api},
       handler_table_{handler_table},
-      request_handler_{this, api, handler_table},
+      request_handler_{this, api, handler_table, std::move(ifc_log_settings)},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
       use_websocket_{use_websocket},

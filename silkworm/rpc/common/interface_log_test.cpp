@@ -25,12 +25,16 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::log {
+namespace silkworm::rpc {
 
-TEST_CASE("InterfaceLog basic", "[infra][common][log]") {
+TEST_CASE("InterfaceLog basic", "[rpc][common][interface_log]") {
     const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
-    static int count{0};
-    auto ifc_log{std::make_unique<InterfaceLog>("eth_rpc" + std::to_string(++count), tmp_dir.string())};
+    InterfaceLogSettings settings{
+        .enabled = true,
+        .ifc_name = "eth_rpc",
+        .container_folder = tmp_dir.string(),
+    };
+    auto ifc_log{std::make_unique<InterfaceLog>(settings)};
     REQUIRE(!ifc_log->path().empty());
     ifc_log->log_req(R"({"json":"2.0"})");
     ifc_log->log_rsp(R"({"json":"2.0"})");
@@ -64,4 +68,4 @@ TEST_CASE("InterfaceLog basic", "[infra][common][log]") {
     CHECK(log_ifstream.eof());
 }
 
-}  // namespace silkworm::log
+}  // namespace silkworm::rpc

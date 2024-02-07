@@ -16,17 +16,29 @@
 
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string_view>
 
-namespace silkworm::log {
+#include <silkworm/core/common/base.hpp>
+
+namespace silkworm::rpc {
 
 class InterfaceLogImpl;
 
+struct InterfaceLogSettings {
+    bool enabled{false};
+    std::string ifc_name;
+    std::string container_folder{"logs/"};
+    std::size_t max_file_size_mb{1};
+    std::size_t max_files{100};
+    bool auto_flush{false};
+};
+
 class InterfaceLog final {
   public:
-    explicit InterfaceLog(std::string_view name, std::string_view folder = "logs/", bool auto_flush = false);
+    explicit InterfaceLog(InterfaceLogSettings settings);
     ~InterfaceLog();
 
     [[nodiscard]] std::filesystem::path path() const;
@@ -40,4 +52,4 @@ class InterfaceLog final {
     std::unique_ptr<InterfaceLogImpl> p_impl_;
 };
 
-}  // namespace silkworm::log
+}  // namespace silkworm::rpc

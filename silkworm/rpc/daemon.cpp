@@ -296,20 +296,32 @@ DaemonChecklist Daemon::run_checklist() {
 }
 
 void Daemon::start() {
+    auto make_rpc_server = [this](const std::string& end_point,
+                                  const std::string& api_spec,
+                                  boost::asio::io_context& ioc,
+                                  std::optional<std::string> jwt_secret,
+                                  InterfaceLogSettings ilog_settings) {
+        return std::make_unique<http::Server>(
+            end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
+            settings_.use_websocket, settings_.ws_compression, std::move(ilog_settings));
+    };
+
+    if (settings_.datadir) {
+        settings_.eth_ifc_log_settings.container_folder = *settings_.datadir / "logs";
+        settings_.engine_ifc_log_settings.container_folder = *settings_.datadir / "logs";
+    }
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& ioc = context_pool_.next_io_context();
 
-        if (not settings_.eth_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, settings_.cors_domain, /*jwt_secret=*/std::nullopt,
-                    settings_.use_websocket, settings_.ws_compression));
+        if (!settings_.eth_end_point.empty()) {
+            // ETH RPC API accepts customized namespaces and does not support JWT authentication
+            rpc_services_.emplace_back(make_rpc_server(
+                settings_.eth_end_point, settings_.eth_api_spec, ioc, /*jwt_secret=*/std::nullopt, settings_.eth_ifc_log_settings));
         }
-        if (not settings_.engine_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, settings_.cors_domain, jwt_secret_,
-                    settings_.use_websocket, settings_.ws_compression));
+        if (!settings_.engine_end_point.empty()) {
+            // Engine RPC API has fixed namespaces and supports JWT authentication
+            rpc_services_.emplace_back(make_rpc_server(
+                settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, jwt_secret_, settings_.engine_ifc_log_settings));
         }
     }
 

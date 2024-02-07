@@ -19,14 +19,13 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
-namespace silkworm::log {
+namespace silkworm::rpc {
 
 class InterfaceLogImpl final {
   public:
-    explicit InterfaceLogImpl(std::string_view name, std::string_view folder, bool auto_flush);
+    explicit InterfaceLogImpl(InterfaceLogSettings settings);
     ~InterfaceLogImpl() {
         flush();
     }
@@ -55,16 +54,20 @@ class InterfaceLogImpl final {
     std::string name_;
     bool auto_flush_;
     std::filesystem::path file_path_;
-    std::size_t max_file_size_{1 * kMebi};
-    std::size_t max_files_{10};
+    std::size_t max_file_size_;
+    std::size_t max_files_;
+    std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> rotating_sink_;
     std::shared_ptr<spdlog::logger> rotating_logger_;
 };
 
-InterfaceLogImpl::InterfaceLogImpl(std::string_view name, std::string_view folder, bool auto_flush)
-    : name_{name},
-      auto_flush_{auto_flush},
-      file_path_{folder / std::filesystem::path{name_ + ".log"}},
-      rotating_logger_{spdlog::rotating_logger_mt(name_, file_path_.string(), max_file_size_, max_files_)} {
+InterfaceLogImpl::InterfaceLogImpl(InterfaceLogSettings settings)
+    : name_{std::move(settings.ifc_name)},
+      auto_flush_{settings.auto_flush},
+      file_path_{std::move(settings.container_folder) / std::filesystem::path{name_ + ".log"}},
+      max_file_size_{settings.max_file_size_mb * kMebi},
+      max_files_{settings.max_files},
+      rotating_sink_{std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path_.string(), max_file_size_, max_files_)},
+      rotating_logger_{std::make_shared<spdlog::logger>(name_, rotating_sink_)} {
     ensure(!name_.empty(), "InterfaceLogImpl: name is empty");
 
     // Hard-code log level because we want all-or-nothing in interface log
@@ -74,8 +77,8 @@ InterfaceLogImpl::InterfaceLogImpl(std::string_view name, std::string_view folde
     rotating_logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 }
 
-InterfaceLog::InterfaceLog(std::string_view name, std::string_view folder, bool auto_flush)
-    : p_impl_{std::make_unique<InterfaceLogImpl>(name, folder, auto_flush)} {
+InterfaceLog::InterfaceLog(InterfaceLogSettings settings)
+    : p_impl_{std::make_unique<InterfaceLogImpl>(std::move(settings))} {
 }
 
 // An explicit destructor is needed to avoid error:
@@ -100,4 +103,4 @@ void InterfaceLog::flush() {
     p_impl_->flush();
 }
 
-}  // namespace silkworm::log
+}  // namespace silkworm::rpc

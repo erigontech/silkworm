@@ -5,8 +5,11 @@ on:
     branches:
       - master
     types:
+      - opened
       - ready_for_review
       - synchronize
+  schedule:
+    - cron: '0 8 * * 0'  # Run every Sunday at 8:00 AM UTC
 
 jobs:
   performance-test-suite:

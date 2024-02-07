@@ -35,8 +35,11 @@ RequestHandler::RequestHandler(Channel* channel,
                                InterfaceLogSettings ifc_log_settings)
     : channel_{channel},
       rpc_api_{rpc_api},
-      rpc_api_table_{rpc_api_table},
-      ifc_log_{ifc_log_settings.enabled ? std::make_optional<InterfaceLog>(ifc_log_settings) : std::nullopt} {}
+      rpc_api_table_{rpc_api_table} {
+    if (ifc_log_settings.enabled) {
+        ifc_log_ = std::make_shared<InterfaceLog>(std::move(ifc_log_settings));
+    }
+}
 
 Task<void> RequestHandler::handle(const std::string& request) {
     const auto start = clock_time::now();

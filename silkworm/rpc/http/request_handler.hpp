@@ -73,7 +73,7 @@ class RequestHandler {
 
     JsonRpcValidator json_rpc_validator_;
 
-    std::optional<InterfaceLog> ifc_log_;
+    std::shared_ptr<InterfaceLog> ifc_log_;
 };
 
 }  // namespace silkworm::rpc::http

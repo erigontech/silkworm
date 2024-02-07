@@ -41,6 +41,14 @@ class InterfaceLog final {
     explicit InterfaceLog(InterfaceLogSettings settings);
     ~InterfaceLog();
 
+    // Not copyable
+    InterfaceLog(const InterfaceLog&) = delete;
+    InterfaceLog& operator=(const InterfaceLog&) = delete;
+
+    // Only movable
+    InterfaceLog(InterfaceLog&&) noexcept = default;
+    InterfaceLog& operator=(InterfaceLog&&) noexcept = default;
+
     [[nodiscard]] std::filesystem::path path() const;
 
     void log_req(std::string_view msg);

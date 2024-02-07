@@ -47,7 +47,7 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<void> handle(const std::string& content);
+    Task<void> handle(const std::string& request);
 
   protected:
     Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response);
@@ -73,7 +73,7 @@ class RequestHandler {
 
     JsonRpcValidator json_rpc_validator_;
 
-    std::optional<InterfaceLog> ifc_log_;
+    std::shared_ptr<InterfaceLog> ifc_log_;
 };
 
 }  // namespace silkworm::rpc::http

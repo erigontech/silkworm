@@ -175,8 +175,8 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
 
     try {
         co_await channel_->open_stream();
-        ChunkWriter chunk_writer(*channel_);
-        json::Stream stream(io_executor, chunk_writer);
+        // ChunkWriter chunk_writer(*channel_);
+        json::Stream stream(io_executor, *channel_);
 
         try {
             co_await (rpc_api_.*handler)(request_json, stream);

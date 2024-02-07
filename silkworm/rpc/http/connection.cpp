@@ -20,9 +20,11 @@
 #include <string_view>
 
 #include <absl/strings/str_join.h>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/beast/http/chunk_encode.hpp>
 #include <boost/beast/http/write.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
@@ -154,12 +156,25 @@ Task<void> Connection::open_stream() {
     }
     co_return;
 }
+Task<void> Connection::close_stream() {
+    try {
+        co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
+    } catch (const boost::system::system_error& se) {
+        SILK_TRACE << "Connection::close system_error: " << se.what();
+        throw;
+    } catch (const std::exception& e) {
+        SILK_ERROR << "Connection::close exception: " << e.what();
+        throw;
+    }
+    co_return;
+}
 
 //! Write chunked response content to the underlying socket
 Task<std::size_t> Connection::write(std::string_view content) {
     unsigned long bytes_transferred{0};
     try {
-        bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
+        boost::asio::const_buffer buffer{content.data(), content.size()};
+        bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "Connection::write system_error: " << se.what();
         throw;

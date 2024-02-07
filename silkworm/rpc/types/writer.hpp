@@ -31,8 +31,9 @@ class StreamWriter {
   public:
     virtual ~StreamWriter() = default;
 
+    virtual Task<void> open_stream() = 0;
+    virtual Task<void> close_stream() = 0;
     virtual Task<std::size_t> write(std::string_view content) = 0;
-    virtual Task<void> close() = 0;
 };
 
 class StringWriter : public StreamWriter {
@@ -43,12 +44,14 @@ class StringWriter : public StreamWriter {
         content_.reserve(initial_capacity);
     }
 
+    Task<void> open_stream() override { co_return; }
+
+    Task<void> close_stream() override { co_return; }
+
     Task<std::size_t> write(std::string_view content) override {
         content_.append(content);
         co_return content.size();
     }
-
-    Task<void> close() override { co_return; }
 
     const std::string& get_content() {
         return content_;
@@ -56,20 +59,6 @@ class StringWriter : public StreamWriter {
 
   private:
     std::string content_;
-};
-
-const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
-const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
-
-class ChunkWriter : public StreamWriter {
-  public:
-    explicit ChunkWriter(StreamWriter& writer);
-
-    Task<std::size_t> write(std::string_view content) override;
-    Task<void> close() override;
-
-  private:
-    StreamWriter& writer_;
 };
 
 }  // namespace silkworm::rpc

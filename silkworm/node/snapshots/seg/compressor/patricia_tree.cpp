@@ -26,8 +26,8 @@
 #include <utility>
 #include <vector>
 
+#include <silkworm/core/common/bit_count.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/node/common/bit_count.hpp>
 
 #include "lcp_kasai.hpp"
 

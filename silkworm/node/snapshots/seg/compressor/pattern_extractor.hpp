@@ -23,8 +23,6 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
-#include "intx/intx.hpp"
-
 namespace silkworm::snapshots::seg {
 
 /**

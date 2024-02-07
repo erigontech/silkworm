@@ -1,0 +1,101 @@
+name: QA - RPC Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
+
+jobs:
+  integration-test-suite:
+    runs-on: self-hosted
+    env:
+      ERIGON_DATA_DIR: /opt/erigon/datadir
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+
+    steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: "0"
+
+      - name: Checkout RPC Tests Repository & Install Requirements
+        run: |
+          rm -rf ${{runner.workspace}}/rpc-tests
+          git clone https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          cd ${{runner.workspace}}/rpc-tests
+          git checkout main
+          pip3 install -r requirements.txt
+
+      - name: Clean Build Directory
+        run: rm -rf ${{runner.workspace}}/silkworm/build
+
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
+
+      - name: Configure CMake
+        working-directory: ${{runner.workspace}}/silkworm/build
+        run: |
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Silkworm RpcDaemon
+        working-directory: ${{runner.workspace}}/silkworm/build
+        run: cmake --build . --config Release --target rpcdaemon -j 8
+
+      - name: Run Silkworm RpcDaemon
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd
+        run: |
+          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
+          RPC_DAEMON_PID=$!
+          echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
+
+      - name: Run RPC Integration Tests
+        id: test_step
+        run: |
+          set +e # Disable exit on error
+          
+          cd ${{runner.workspace}}/rpc-tests/integration
+          
+          # Run RPC integration test runner
+          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
+          
+          # Capture test runner script exit status
+          test_exit_status=$?
+          
+          # Save test result to a directory with timestamp and commit hash
+          mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)        
+          
+          # Check test runner exit status
+          if [ $test_exit_status -eq 0 ]; then
+            echo "Tests completed successfully"
+            echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "Error detected during tests"
+            echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stop Silkworm RpcDaemon
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd
+        run: |
+          # Clean up rpcdaemon process if it's still running
+          if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
+            echo "Terminating rpc-daemon"
+            kill $RPC_DAEMON_PID
+          else
+            echo "rpc-daemon has already terminated"
+          fi
+
+      - name: Action for Success
+        if: steps.test_step.outputs.TEST_RESULT == 'success'
+        run: echo "::notice::Tests completed successfully"
+
+      - name: Action for Not Success
+        if: steps.test_step.outputs.TEST_RESULT != 'success'
+        run: |
+          echo "::error::Error detected during tests"
+          exit 1
+

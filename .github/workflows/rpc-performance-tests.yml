@@ -19,13 +19,13 @@ jobs:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
 
     steps:
-      - name: Check out silkworm repository
+      - name: Checkout Silkworm repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
           fetch-depth: "0"
 
-      - name: Checkout rpc-tests repository & install requirements
+      - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
           git clone https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
@@ -44,35 +44,34 @@ jobs:
         run: |
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build SilkRpc
+      - name: Build Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Run SilkRpc
+      - name: Run Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
-      - name: Run performances tests
+      - name: Run RPC Performances Tests
         id: test_step
         run: |
           set +e # Disable exit on error
           
           cd ${{runner.workspace}}/rpc-tests/perf
           
-          # Run Erigon, send ctrl-c and check logs
-          python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:30,1000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
-          #python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          # Launch the RPC performance test runner
+          python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           
-          # Capture monitoring script exit status
+          # Capture test runner script exit status
           perf_exit_status=$?
           
           # Save test result to a directory with timestamp and commit hash
           mv ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git rev-parse --short HEAD)        
           
-          # Check monitoring script exit status
+          # Check test runner script exit status
           if [ $perf_exit_status -eq 0 ]; then
             echo "Tests completed successfully"
             echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
@@ -81,7 +80,7 @@ jobs:
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Stop SilkRpc
+      - name: Stop Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           # Clean up rpcdaemon process if it's still running

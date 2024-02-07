@@ -70,7 +70,7 @@ jobs:
           perf_exit_status=$?
           
           # Save test result to a directory with timestamp and commit hash
-          mv ${{runner.workspace}}/rpc-tests/perf/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git rev-parse --short HEAD)        
+          mv ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git rev-parse --short HEAD)        
           
           # Check monitoring script exit status
           if [ $perf_exit_status -eq 0 ]; then

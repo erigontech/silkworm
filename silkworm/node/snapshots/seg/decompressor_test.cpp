@@ -266,7 +266,7 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompresso
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000016000000000000000003ff"));
         Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: data skip failed at 22"));
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: data skip failed at 11"));
     }
     SECTION("pattern dict is invalid: length read failed at 1") {
         TemporaryFile tmp_file;

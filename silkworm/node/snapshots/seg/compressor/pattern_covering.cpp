@@ -24,7 +24,7 @@
 namespace silkworm::snapshots::seg {
 
 //! A result of dynamic programming for a certain starting position.
-struct DynamicCell {
+struct PatternCoveringSearchDynamicCell {
     size_t optim_start{};
     size_t cover_start{};
     int compression{};
@@ -32,6 +32,7 @@ struct DynamicCell {
     size_t pattern_index{};
 };
 
+using DynamicCell = PatternCoveringSearchDynamicCell;
 using Ring = boost::circular_buffer_space_optimized<DynamicCell>;
 using Result = PatternCoveringSearch::Result;
 

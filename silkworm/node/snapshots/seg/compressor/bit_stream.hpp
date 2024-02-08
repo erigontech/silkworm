@@ -18,21 +18,23 @@
 
 #include <cstdint>
 
-#include <silkworm/core/common/bytes.hpp>
+#include <absl/functional/function_ref.h>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::seg {
 
-//! Varint encoder
-template <typename int_t = uint64_t>
-std::size_t encode_varint(int_t value, Bytes& output) {
-    std::size_t varint_size{0};
-    while (value > 127) {
-        output.push_back(static_cast<uint8_t>(value & 127) | 128);
-        value >>= 7;
-        ++varint_size;
-    }
-    output.push_back(static_cast<uint8_t>(value) & 127);
-    return ++varint_size;
-}
+class BitStream {
+  public:
+    BitStream(absl::FunctionRef<void(uint8_t)> byte_writer)
+        : byte_writer_(byte_writer) {}
+    ~BitStream();
 
-}  // namespace silkworm::snapshots
+    void write(uint64_t code, uint8_t codeBits);
+    void flush();
+
+  private:
+    absl::FunctionRef<void(uint8_t)> byte_writer_;
+    uint8_t output_bits_{};
+    uint8_t output_byte_{};
+};
+
+}  // namespace silkworm::snapshots::seg

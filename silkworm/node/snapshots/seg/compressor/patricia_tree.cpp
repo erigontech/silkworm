@@ -33,17 +33,18 @@
 
 namespace silkworm::snapshots::seg {
 
-struct Node {
+struct PatriciaTreeNode {
     void insert(ByteView key, void* value);
     void* get(ByteView key);
 
     //! Value associated with the key.
     void* value{};
-    std::unique_ptr<Node> n0;
-    std::unique_ptr<Node> n1;
+    std::unique_ptr<PatriciaTreeNode> n0;
+    std::unique_ptr<PatriciaTreeNode> n1;
     uint32_t p0{};
     uint32_t p1{};
 };
+using Node = PatriciaTreeNode;
 
 // state represent a position anywhere inside patricia tree
 // position can be identified by combination of node, and the partitioning
@@ -54,8 +55,8 @@ struct Node {
 // For example, if the position is at the beginning of a node,
 // head would be zero, and tail would be equal to either p0 or p1,
 // depending on whether the position corresponds to going left (0) or right (1).
-struct State {
-    explicit State(Node* n1) : n(n1) {}
+struct PatriciaTreePathWalker {
+    explicit PatriciaTreePathWalker(Node* n1) : n(n1) {}
 
     void reset(Node* n1) {
         this->n = n1;
@@ -95,8 +96,8 @@ static inline uint32_t shift_right(uint32_t x, uint32_t bits) {
     return x >> bits;
 }
 
-uint32_t State::transition(unsigned char b, bool readonly) {
-    State* s = this;
+uint32_t PatriciaTreePathWalker::transition(unsigned char b, bool readonly) {
+    PatriciaTreePathWalker* s = this;
     // bits in b to process
     uint32_t bits_left = 8;
     uint32_t b32 = static_cast<uint32_t>(b) << 24;
@@ -129,12 +130,12 @@ uint32_t State::transition(unsigned char b, bool readonly) {
 
                 if (((s->head == 0) && ((s->tail & 0x80000000) == 0)) || ((s->head != 0) && ((s->head & 0x80000000) == 0))) {
                     if (s->n->n0 == nullptr) {
-                        throw std::runtime_error("State::transition: Node n0 is null");
+                        throw std::runtime_error("PatriciaTreePathWalker::transition: Node n0 is null");
                     }
                     s->n = s->n->n0.get();
                 } else {
                     if (s->n->n1 == nullptr) {
-                        throw std::runtime_error("State::transition: Node n1 is null");
+                        throw std::runtime_error("PatriciaTreePathWalker::transition: Node n1 is null");
                     }
                     s->n = s->n->n1.get();
                 }
@@ -216,7 +217,7 @@ uint32_t State::transition(unsigned char b, bool readonly) {
     return 0;
 }
 
-void State::diverge(uint32_t divergence) {
+void PatriciaTreePathWalker::diverge(uint32_t divergence) {
     if (tail == 0) {
         // try to add to the existing head
         uint32_t d_len = divergence & 0x1f;
@@ -297,17 +298,17 @@ void State::diverge(uint32_t divergence) {
 }
 
 void Node::insert(ByteView key, void* value1) {
-    State s(this);
+    PatriciaTreePathWalker walker(this);
     for (unsigned char c : key) {
-        uint32_t divergence = s.transition(c, /* readonly */ false);
+        uint32_t divergence = walker.transition(c, /* readonly */ false);
         if (divergence != 0) {
-            s.diverge(divergence);
+            walker.diverge(divergence);
         }
     }
-    s.insert(value1);
+    walker.insert(value1);
 }
 
-void State::insert(void* value) {
+void PatriciaTreePathWalker::insert(void* value) {
     if (tail != 0) {
         diverge(0);
     }
@@ -325,17 +326,17 @@ void State::insert(void* value) {
 }
 
 void* Node::get(ByteView key) {
-    State s(this);
+    PatriciaTreePathWalker walker(this);
     for (unsigned char c : key) {
-        uint32_t divergence = s.transition(c, /* readonly */ true);
+        uint32_t divergence = walker.transition(c, /* readonly */ true);
         if (divergence != 0) {
             return nullptr;
         }
     }
-    if (s.tail != 0) {
+    if (walker.tail != 0) {
         return nullptr;
     }
-    return s.n->value;
+    return walker.n->value;
 }
 
 class PatriciaTreeImpl {

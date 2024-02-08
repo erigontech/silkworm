@@ -21,8 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
@@ -31,7 +29,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace pb = google::protobuf::io;
+#include "common/varint.hpp"
 
 namespace silkworm::snapshots::seg {
 
@@ -361,55 +359,47 @@ void Decompressor::close() {
 }
 
 void Decompressor::read_patterns(ByteView dict) {
-    // Check the dictionary size to prevent overflow in pb::ArrayInputStream constructor
-    if (dict.length() > std::numeric_limits<int>::max()) {
-        throw std::runtime_error("dict is too long: " + std::to_string(dict.length()));
-    }
-
-    // Compression uses Google ProtocolBuffers encoding (see also Go "varint" encoding)
-    pb::ArrayInputStream raw_input{dict.data(), static_cast<int>(dict.length())};
-    pb::CodedInputStream coded_input{&raw_input};
-
+    ByteView raw_input = dict;
     std::vector<Pattern> patterns;
     patterns.reserve(kMaxTablePatterns);
     uint64_t pattern_highest_depth{0};
-    while (coded_input.CurrentPosition() < raw_input.ByteCount()) {
-        uint64_t pattern_depth{0};
-        bool read_ok = coded_input.ReadVarint64(&pattern_depth);
-        if (!read_ok) {
-            throw std::runtime_error{"pattern dict is invalid: depth read failed at " + std::to_string(coded_input.CurrentPosition())};
+    auto current_position = [&]() -> size_t { return dict.size() - raw_input.size(); };
+
+    while (!raw_input.empty()) {
+        auto pattern_depth_opt = varint::decode(raw_input);
+        if (!pattern_depth_opt) {
+            throw std::runtime_error{"pattern dict is invalid: depth read failed at " + std::to_string(current_position())};
         }
-        SILK_TRACE << "pattern depth: " << pattern_depth << " coded input position: " << coded_input.CurrentPosition();
+        uint64_t pattern_depth = pattern_depth_opt.value();
         if (pattern_depth > kMaxAllowedDepth) {
             throw std::runtime_error{"pattern dict is invalid: pattern depth " + std::to_string(pattern_depth) +
                                      " is greater than max allowed: " + std::to_string(kMaxAllowedDepth)};
         }
+        SILK_TRACE << "pattern depth: " << pattern_depth << " coded input position: " << current_position();
+
         if (pattern_depth > pattern_highest_depth) {
             pattern_highest_depth = pattern_depth;
             SILK_TRACE << "pattern highest depth: " << pattern_highest_depth;
         }
 
-        uint64_t pattern_data_length{0};
-        read_ok = coded_input.ReadVarint64(&pattern_data_length);
-        if (!read_ok) {
-            throw std::runtime_error{"pattern dict is invalid: length read failed at " + std::to_string(coded_input.CurrentPosition())};
+        auto pattern_data_length_opt = varint::decode(raw_input);
+        if (!pattern_data_length_opt) {
+            throw std::runtime_error{"pattern dict is invalid: length read failed at " + std::to_string(current_position())};
         }
+        uint64_t pattern_data_length = pattern_data_length_opt.value();
         if (pattern_data_length > std::numeric_limits<int>::max()) {
             throw std::runtime_error{"pattern data length is too long: " + std::to_string(pattern_data_length)};
         }
-        SILK_TRACE << "pattern data length: " << pattern_data_length << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "pattern data length: " << pattern_data_length << " coded input position: " << current_position();
 
-        ByteView pattern_data{dict.data() + coded_input.CurrentPosition(), pattern_data_length};
-        read_ok = coded_input.Skip(static_cast<int>(pattern_data_length));
-        if (!read_ok) {
-            throw std::runtime_error{"pattern dict is invalid: data skip failed at " + std::to_string(coded_input.CurrentPosition())};
+        if (raw_input.size() < pattern_data_length) {
+            throw std::runtime_error{"pattern dict is invalid: data skip failed at " + std::to_string(current_position())};
         }
-        SILK_TRACE << "count: " << patterns.size() << " data size: " << pattern_data.size() << " coded input position: " << coded_input.CurrentPosition();
+        ByteView pattern_data{raw_input.data(), pattern_data_length};
+        raw_input.remove_prefix(pattern_data_length);
+        SILK_TRACE << "count: " << patterns.size() << " data size: " << pattern_data.size() << " coded input position: " << current_position();
 
         patterns.emplace_back(Pattern{pattern_depth, pattern_data});
-    }
-    if (coded_input.CurrentPosition() != raw_input.ByteCount()) {
-        throw std::runtime_error{"pattern stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
     SILK_TRACE << "Pattern count: " << patterns.size() << " highest depth: " << pattern_highest_depth;
@@ -424,48 +414,40 @@ void Decompressor::read_patterns(ByteView dict) {
 }
 
 void Decompressor::read_positions(ByteView dict) {
-    // Check the dictionary size to prevent overflow in pb::ArrayInputStream constructor
-    if (dict.length() > std::numeric_limits<int>::max()) {
-        throw std::runtime_error("position dict is too long: " + std::to_string(dict.length()));
-    }
-
-    // Compression uses Google ProtocolBuffers encoding (see also Go "varint" encoding)
-    pb::ArrayInputStream raw_input{dict.data(), static_cast<int>(dict.length())};
-    pb::CodedInputStream coded_input{&raw_input};
-
+    ByteView raw_input = dict;
     std::vector<Position> positions;
     positions.reserve(kMaxTablePositions);
     uint64_t position_highest_depth{0};
-    while (coded_input.CurrentPosition() < raw_input.ByteCount()) {
-        uint64_t position_depth{0};
-        bool read_ok = coded_input.ReadVarint64(&position_depth);
-        if (!read_ok) {
-            throw std::runtime_error("position dict is invalid: depth read failed at " + std::to_string(coded_input.CurrentPosition()));
+    auto current_position = [&]() -> size_t { return dict.size() - raw_input.size(); };
+
+    while (!raw_input.empty()) {
+        auto position_depth_opt = varint::decode(raw_input);
+        if (!position_depth_opt) {
+            throw std::runtime_error("position dict is invalid: depth read failed at " + std::to_string(current_position()));
         }
-        SILK_TRACE << "position depth: " << position_depth << " coded input position: " << coded_input.CurrentPosition();
+        uint64_t position_depth = position_depth_opt.value();
         if (position_depth > kMaxAllowedDepth) {
             throw std::runtime_error{"position dict is invalid: position depth " + std::to_string(position_depth) +
                                      " is greater than max allowed: " + std::to_string(kMaxAllowedDepth)};
         }
+        SILK_TRACE << "position depth: " << position_depth << " coded input position: " << current_position();
+
         if (position_depth > position_highest_depth) {
             position_highest_depth = position_depth;
             SILK_TRACE << "position highest depth: " << position_highest_depth;
         }
 
-        uint64_t position{0};
-        read_ok = coded_input.ReadVarint64(&position);
-        if (!read_ok) {
-            throw std::runtime_error("position dict is invalid: position read failed at " + std::to_string(coded_input.CurrentPosition()));
+        auto position_opt = varint::decode(raw_input);
+        if (!position_opt) {
+            throw std::runtime_error("position dict is invalid: position read failed at " + std::to_string(current_position()));
         }
+        uint64_t position = position_opt.value();
         if (position > std::numeric_limits<int>::max()) {
             throw std::runtime_error("position is too long: " + std::to_string(position));
         }
-        SILK_TRACE << "count: " << positions.size() << " position: " << position << " coded input position: " << coded_input.CurrentPosition();
+        SILK_TRACE << "count: " << positions.size() << " position: " << position << " coded input position: " << current_position();
 
         positions.emplace_back(Position{position_depth, position});
-    }
-    if (coded_input.CurrentPosition() != raw_input.ByteCount()) {
-        throw std::runtime_error{"position stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
     SILK_TRACE << "Position count: " << positions.size() << " highest depth: " << position_highest_depth;

@@ -38,15 +38,14 @@ template <class T>
  */
 class BoundedBuffer {
   public:
-    typedef boost::circular_buffer<T> container_type;
-    typedef typename container_type::size_type size_type;
-    typedef typename container_type::value_type value_type;
+    using size_type = typename boost::circular_buffer<T>::size_type;
+    using value_type = typename boost::circular_buffer<T>::value_type;
 
     explicit BoundedBuffer(size_type capacity) : capacity_{capacity}, unread_(0), container_(capacity) {}
 
     void push_front(value_type&& item) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, std::bind(&BoundedBuffer<value_type>::is_not_full, this));
+        not_full_.wait(lock, [&]{ return is_not_full(); });
         container_.push_front(std::forward<value_type>(item));
         ++unread_;
         lock.unlock();
@@ -55,7 +54,7 @@ class BoundedBuffer {
 
     void pop_back(value_type* pItem) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, std::bind(&BoundedBuffer<value_type>::is_not_empty, this));
+        not_empty_.wait(lock, [&]{ return is_not_empty(); });
         *pItem = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();
@@ -78,7 +77,7 @@ class BoundedBuffer {
 
     size_type capacity_;
     size_type unread_;
-    container_type container_;
+    boost::circular_buffer<T> container_;
     std::mutex mutex_;
     std::condition_variable not_empty_;
     std::condition_variable not_full_;

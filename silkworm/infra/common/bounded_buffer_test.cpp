@@ -41,7 +41,6 @@ double CalculatePi(int depth) {
 
 template <class Buffer>
 class Producer {
-    typedef typename Buffer::value_type value_type;
     Buffer* container_;
     long iterations_;
     bool delay_;
@@ -66,7 +65,7 @@ class Producer {
 
 template <class Buffer>
 class Consumer {
-    typedef typename Buffer::value_type value_type;
+    using value_type = typename Buffer::value_type;
     Buffer* container_;
     long iterations_;
     bool delay_;

@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -34,6 +28,7 @@
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/http/request_handler.hpp>
 
 namespace silkworm::rpc::http {
@@ -45,12 +40,15 @@ class Server {
     Server& operator=(const Server&) = delete;
 
     // Construct the server to listen on the specified local TCP end-point
-    explicit Server(const std::string& end_point,
-                    const std::string& api_spec,
-                    boost::asio::io_context& io_context,
-                    boost::asio::thread_pool& workers,
-                    std::vector<std::string> allowed_origins,
-                    std::optional<std::string> jwt_secret);
+    Server(const std::string& end_point,
+           const std::string& api_spec,
+           boost::asio::io_context& io_context,
+           boost::asio::thread_pool& workers,
+           std::vector<std::string> allowed_origins,
+           std::optional<std::string> jwt_secret,
+           bool use_websocket,
+           bool ws_compression,
+           InterfaceLogSettings ifc_log_settings = {});
 
     void start();
 
@@ -78,6 +76,15 @@ class Server {
 
     //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;
+
+    //! Flag indicating if WebSocket protocol will be used instead of HTTP
+    bool use_websocket_;
+
+    //! Flag indicating if WebSocket protocol compression will be used
+    bool ws_compression_;
+
+    //! The interface logging configuration
+    InterfaceLogSettings ifc_log_settings_;
 };
 
 }  // namespace silkworm::rpc::http

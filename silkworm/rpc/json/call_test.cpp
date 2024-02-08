@@ -96,6 +96,24 @@ TEST_CASE("deserialize full call", "[silkworm::json][from_json]") {
     CHECK(c2.data == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
     CHECK(c2.value == intx::uint256{1200000});
     CHECK(c2.nonce == intx::uint256{1});
+
+    auto j3 = R"({
+        "from":"0x52c24586c31cff0485a6208bb63859290fba5bce",
+        "to":"0x0715a7794a1dc8e42615f059dd6e406a6594651a",
+        "gas":1000000,
+        "gasPrice":"0x10C388C00",
+        "input":"0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000",
+        "value":"0x124F80",
+        "nonce": 1
+    })"_json;
+    auto c3 = j3.get<Call>();
+    CHECK(c3.from == 0x52c24586c31cff0485a6208bb63859290fba5bce_address);
+    CHECK(c3.to == 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address);
+    CHECK(c3.gas == intx::uint256{1000000});
+    CHECK(c3.gas_price == intx::uint256{4499999744});
+    CHECK(c3.data == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
+    CHECK(c3.value == intx::uint256{1200000});
+    CHECK(c3.nonce == intx::uint256{1});
 }
 
 TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {

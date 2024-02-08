@@ -20,8 +20,8 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
-#include <silkworm/node/snapshots/huffman/decompressor.hpp>
 #include <silkworm/node/snapshots/index.hpp>
+#include <silkworm/node/snapshots/seg/decompressor.hpp>
 #include <silkworm/node/snapshots/test_util/common.hpp>
 
 namespace silkworm::snapshots {
@@ -58,7 +58,7 @@ static void open_snapshot(benchmark::State& state) {
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     for ([[maybe_unused]] auto _ : state) {
-        huffman::Decompressor decoder{tmp_file.path()};
+        seg::Decompressor decoder{tmp_file.path()};
         decoder.open();
     }
 }

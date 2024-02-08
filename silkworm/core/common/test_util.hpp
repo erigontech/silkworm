@@ -26,6 +26,7 @@ namespace silkworm::test {
 //! Always Frontier rules.
 inline constexpr ChainConfig kFrontierConfig{
     .chain_id = 1,
+    .rule_set_config = protocol::EthashConfig{.validate_seal = false},
 };
 
 //! Enables London from genesis.
@@ -40,6 +41,7 @@ inline constexpr ChainConfig kLondonConfig{
     .istanbul_block = 0,
     .berlin_block = 0,
     .london_block = 0,
+    .rule_set_config = protocol::EthashConfig{.validate_seal = false},
 };
 
 //! Enables Shanghai from genesis.
@@ -64,29 +66,34 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
      {
          .chain_id = 1,
          .homestead_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"FrontierToHomesteadAt5",
      {
          .chain_id = 1,
          .homestead_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"HomesteadToDaoAt5",
      {
          .chain_id = 1,
          .homestead_block = 0,
          .dao_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"EIP150",
      {
          .chain_id = 1,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"HomesteadToEIP150At5",
      {
          .chain_id = 1,
          .homestead_block = 0,
          .tangerine_whistle_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"EIP158",
      {
@@ -94,6 +101,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Byzantium",
      {
@@ -102,6 +110,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
          .byzantium_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"EIP158ToByzantiumAt5",
      {
@@ -110,6 +119,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
          .byzantium_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Constantinople",
      {
@@ -119,6 +129,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .spurious_dragon_block = 0,
          .byzantium_block = 0,
          .constantinople_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"ConstantinopleFix",
      {
@@ -129,6 +140,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .byzantium_block = 0,
          .constantinople_block = 0,
          .petersburg_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"ByzantiumToConstantinopleFixAt5",
      {
@@ -139,6 +151,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .byzantium_block = 0,
          .constantinople_block = 5,
          .petersburg_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Istanbul",
      {
@@ -150,6 +163,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .constantinople_block = 0,
          .petersburg_block = 0,
          .istanbul_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"EIP2384",
      {
@@ -162,6 +176,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .petersburg_block = 0,
          .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Berlin",
      {
@@ -175,6 +190,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .istanbul_block = 0,
          .muir_glacier_block = 0,
          .berlin_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"London", test::kLondonConfig},
     {"BerlinToLondonAt5",
@@ -190,6 +206,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .muir_glacier_block = 0,
          .berlin_block = 0,
          .london_block = 5,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"ArrowGlacier",
      {
@@ -204,6 +221,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .berlin_block = 0,
          .london_block = 0,
          .arrow_glacier_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"GrayGlacier",
      {
@@ -218,6 +236,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .berlin_block = 0,
          .london_block = 0,
          .gray_glacier_block = 0,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Merge",
      {
@@ -247,6 +266,7 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .london_block = 0,
          .arrow_glacier_block = 0,
          .terminal_total_difficulty = 0xC0000,
+         .rule_set_config = protocol::EthashConfig{.validate_seal = false},
      }},
     {"Shanghai", test::kShanghaiConfig},
     {"MergeToShanghaiAtTime15k",

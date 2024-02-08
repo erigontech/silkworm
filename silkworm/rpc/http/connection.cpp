@@ -17,14 +17,13 @@
 #include "connection.hpp"
 
 #include <exception>
-#include <fstream>
 #include <string_view>
 
 #include <absl/strings/str_join.h>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/write.hpp>
-#include <boost/system/error_code.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
@@ -37,11 +36,18 @@ Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
                        const std::vector<std::string>& allowed_origins,
-                       std::optional<std::string> jwt_secret)
+                       std::optional<std::string> jwt_secret,
+                       bool use_websocket,
+                       bool ws_compression,
+                       InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
-      request_handler_{this, api, handler_table},
+      api_{api},
+      handler_table_{handler_table},
+      request_handler_{this, api, handler_table, std::move(ifc_log_settings)},
       allowed_origins_{allowed_origins},
-      jwt_secret_{std ::move(jwt_secret)} {
+      jwt_secret_{std ::move(jwt_secret)},
+      use_websocket_{use_websocket},
+      ws_compression_{ws_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
 
@@ -52,51 +58,56 @@ Connection::~Connection() {
 
 Task<void> Connection::read_loop() {
     try {
-        while (true) {
-            co_await do_read();
+        bool continue_processing{true};
+        while (continue_processing) {
+            continue_processing = co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            SILK_TRACE << "Connection::read_loop close from client with code: " << se.code();
-        } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILK_ERROR << "Connection::read_loop system_error: " << se.what();
-            throw;
-        } else {
-            SILK_TRACE << "Connection::read_loop operation_aborted: " << se.what();
-        }
+        SILK_TRACE << "Connection::read_loop system-error: " << se.code();
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
-        throw;
     }
 }
 
-Task<void> Connection::do_read() {
+Task<bool> Connection::do_read() {
     SILK_TRACE << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    unsigned long bytes_transferred{0};
-    try {
-        bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
-    } catch (const boost::system::system_error& se) {
-        if (se.code() == boost::beast::http::error::end_of_stream || se.code() == boost::asio::error::broken_pipe) {
-            throw;
-        } else {
-            co_return;
-        }
-    }
+    auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
 
     SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]\n";
 
     if (!parser.is_done()) {
-        co_return;
+        co_return true;
     }
     request_keep_alive_ = parser.get().keep_alive();
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
-        co_return;
+        if (use_websocket_) {
+            co_await do_upgrade(parser.release());
+            co_return false;
+        } else {
+            // If it does not (or cannot) upgrade the connection, it ignores the Upgrade header and sends back a regular response (OK)
+            co_await do_write("", boost::beast::http::status::ok);
+        }
+        co_return true;
     }
-    co_await handle_request(parser.get());
+    co_await handle_request(parser.release());
+    co_return true;
+}
+
+Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    // Now that talking to the socket is successful,
+    // we tie the socket object to a websocket stream
+    boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
+
+    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_), ws_compression_);
+    co_await ws_connection->accept(req);
+
+    auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
+
+    boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), boost::asio::detached);
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -126,13 +137,16 @@ Task<void> Connection::open_stream() {
     try {
         boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
         rsp.set(boost::beast::http::field::content_type, "application/json");
+        rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
+
+        set_cors<boost::beast::http::empty_body>(rsp);
 
         boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
         co_await async_write_header(socket_, serializer, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::open_stream system_error: " << se.what();
+        SILK_TRACE << "Connection::open_stream system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::open_stream exception: " << e.what();
@@ -147,7 +161,7 @@ Task<std::size_t> Connection::write(std::string_view content) {
     try {
         bytes_transferred = co_await boost::asio::async_write(socket_, boost::asio::buffer(content), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::write system_error: " << se.what();
+        SILK_TRACE << "Connection::write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::write exception: " << e.what();
@@ -163,39 +177,26 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         SILK_TRACE << "Connection::do_write response: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
         res.set(boost::beast::http::field::content_type, "application/json");
+        res.set(boost::beast::http::field::date, get_date_time());
+        res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
         res.content_length(content.size());
         res.body() = content;
 
-        set_cors(res);
+        set_cors<boost::beast::http::string_body>(res);
 
         res.prepare_payload();
         const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
 
         SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
-        SILK_ERROR << "Connection::do_write system_error: " << se.what();
+        SILK_TRACE << "Connection::do_write system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::do_write exception: " << e.what();
         throw;
     }
     co_return;
-}
-
-void Connection::set_cors(boost::beast::http::response<boost::beast::http::string_body>& res) {
-    if (allowed_origins_.empty()) {
-        return;
-    }
-
-    if (allowed_origins_.at(0) == "*") {
-        res.set("Access-Control-Allow-Origin", "*");
-    } else {
-        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
-    }
-    res.set("Access-Control-Allow-Methods", "GET, POST");
-    res.set("Access-Control-Allow-Headers", "*");
-    res.set("Access-Control-Max-Age", "600");
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -236,6 +237,31 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
         return tl::make_unexpected("invalid token");
     }
     return {};
+}
+
+template <class Body>
+void Connection::set_cors(boost::beast::http::response<Body>& res) {
+    if (allowed_origins_.empty()) {
+        return;
+    }
+
+    if (allowed_origins_.at(0) == "*") {
+        res.set("Access-Control-Allow-Origin", "*");
+    } else {
+        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
+    }
+    res.set("Access-Control-Allow-Methods", "GET, POST");
+    res.set("Access-Control-Allow-Headers", "*");
+    res.set("Access-Control-Max-Age", "600");
+}
+
+std::string Connection::get_date_time() {
+    static const absl::TimeZone tz{absl::LocalTimeZone()};
+    const absl::Time now{absl::Now()};
+
+    std::stringstream ss;
+    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, tz) << tz.name();
+    return ss.str();
 }
 
 }  // namespace silkworm::rpc::http

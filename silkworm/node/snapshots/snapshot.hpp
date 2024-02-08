@@ -29,9 +29,9 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/node/snapshots/huffman/decompressor.hpp>
 #include <silkworm/node/snapshots/path.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_par.hpp>
+#include <silkworm/node/snapshots/seg/decompressor.hpp>
 
 namespace silkworm::snapshots {
 
@@ -101,7 +101,7 @@ class Snapshot {
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
 
-    huffman::Decompressor decoder_;
+    seg::Decompressor decoder_;
 };
 
 class HeaderSnapshot : public Snapshot {

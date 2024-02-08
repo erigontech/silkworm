@@ -16,7 +16,15 @@
 
 #include "silkworm.h"
 
+#include <charconv>
+#include <chrono>
+#include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
+
+#include <absl/strings/str_split.h>
+#include <boost/circular_buffer.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
@@ -61,6 +69,36 @@ struct ExecutionProgress {
     size_t processed_gas{0};
     float gas_state_perc{0.0};
 };
+
+//! Kind of match to perform between Erigon and Silkworm libmdbx versions
+enum class MdbxVersionCheck : uint8_t {
+    kNone,      /// no check at all
+    kExact,     /// git-describe versions must match perfectly
+    kSemantic,  /// compare semantic versions (<M1.m1.p1> == <M2.m2.p2>)
+};
+
+static bool is_compatible_mdbx_version(std::string_view their_version, std::string_view our_version, MdbxVersionCheck check) {
+    SILK_TRACE << "is_compatible_mdbx_version their_version: " << their_version << " our_version: " << our_version;
+    bool compatible{false};
+    switch (check) {
+        case MdbxVersionCheck::kNone: {
+            compatible = true;
+        } break;
+        case MdbxVersionCheck::kExact: {
+            compatible = their_version == our_version;
+        } break;
+        case MdbxVersionCheck::kSemantic: {
+            const std::vector<std::string> their_version_parts = absl::StrSplit(std::string(their_version), '.');
+            const std::vector<std::string> our_version_parts = absl::StrSplit(std::string(our_version), '.');
+            compatible = (their_version_parts.size() >= 3) &&
+                         (our_version_parts.size() >= 3) &&
+                         (their_version_parts[0] == our_version_parts[0]) &&
+                         (their_version_parts[1] == our_version_parts[1]) &&
+                         (their_version_parts[2] == our_version_parts[2]);
+        }
+    }
+    return compatible;
+}
 
 //! Generate log arguments for Silkworm library version
 static log::Args log_args_for_version() {
@@ -153,6 +191,10 @@ SILKWORM_EXPORT int silkworm_init(
         return SILKWORM_INVALID_SETTINGS;
     }
 
+    if (!is_compatible_mdbx_version(settings->libmdbx_version, silkworm_libmdbx_version(), MdbxVersionCheck::kExact)) {
+        return SILKWORM_INCOMPATIBLE_LIBMDBX;
+    }
+
     static bool is_initialized = false;
     if (is_initialized) {
         return SILKWORM_TOO_MANY_INSTANCES;
@@ -231,9 +273,13 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         // Create worker tasks for missing indexes
         for (const auto& index : needed_indexes) {
             workers.push_task([=]() {
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
-                index->build();
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+                try {
+                    SILK_INFO << "Build index: " << index->path().filename() << " start";
+                    index->build();
+                    SILK_INFO << "Build index: " << index->path().filename() << " end";
+                } catch (const std::exception& ex) {
+                    SILK_CRIT << "Build index: " << index->path().filename() << " failed [" << ex.what() << "]";
+                }
             });
         }
 
@@ -303,6 +349,10 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         .tx_snapshot = std::move(transactions_snapshot)};
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
+    return ::mdbx::get_version().git.describe;
 }
 
 SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* env) SILKWORM_NOEXCEPT {

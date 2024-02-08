@@ -23,10 +23,6 @@
 
 namespace silkworm::snapshots {
 
-TEST_CASE("SnapshotPath::segment_size", "[silkworm][node][snapshot]") {
-    CHECK(SnapshotPath::segment_size() == kDefaultSegmentSize);
-}
-
 TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
         const char* invalid_filenames[]{
@@ -64,7 +60,7 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
         const ValidFilenameExpectation valid_filenames[]{
             {"v1-014500-015000-headers.seg", 14'500'000, 15'000'000, SnapshotType::headers},
             {"v1-011500-012000-bodies.seg", 11'500'000, 12'000'000, SnapshotType::bodies},
-            {"v1-015000-015500-transactions.seg", 15'000'000, 15'500'000, SnapshotType::transactions},
+            {"v1-018300-018400-transactions.seg", 18'300'000, 18'400'000, SnapshotType::transactions},
         };
         for (const auto& filename_expectation : valid_filenames) {
             const auto snapshot_file = SnapshotPath::parse(filename_expectation.filename);
@@ -74,6 +70,7 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
                 CHECK(snapshot_file->version() == 1);
                 CHECK(snapshot_file->block_from() == filename_expectation.block_from);
                 CHECK(snapshot_file->block_to() == filename_expectation.block_to);
+                CHECK(snapshot_file->segment_size() == filename_expectation.block_to - filename_expectation.block_from);
                 CHECK(snapshot_file->type() == filename_expectation.type);
                 CHECK(snapshot_file->seedable());
                 CHECK(!snapshot_file->exists_torrent_file());

@@ -26,7 +26,7 @@
 
 namespace silkworm::test_util {
 
-//! Temporary file flushed after any data insertion
+//! Temporary file flushing data after any insertion
 class TemporaryFile {
   public:
     explicit TemporaryFile() : path_{TemporaryDirectory::get_unique_temporary_path()}, stream_{path_, std::ios::binary} {}

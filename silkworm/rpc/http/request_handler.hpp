@@ -30,6 +30,7 @@
 
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/http/json_rpc_validator.hpp>
 
@@ -37,14 +38,16 @@ namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(Channel* channel, commands::RpcApi& rpc_api, const commands::RpcApiTable& rpc_api_table)
-        : channel_{channel}, rpc_api_{rpc_api}, rpc_api_table_{rpc_api_table} {}
+    RequestHandler(Channel* channel,
+                   commands::RpcApi& rpc_api,
+                   const commands::RpcApiTable& rpc_api_table,
+                   InterfaceLogSettings ifc_log_settings = {});
     virtual ~RequestHandler() = default;
 
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<void> handle(const std::string& content);
+    Task<void> handle(const std::string& request);
 
   protected:
     Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response);
@@ -69,6 +72,8 @@ class RequestHandler {
     const commands::RpcApiTable& rpc_api_table_;
 
     JsonRpcValidator json_rpc_validator_;
+
+    std::shared_ptr<InterfaceLog> ifc_log_;
 };
 
 }  // namespace silkworm::rpc::http

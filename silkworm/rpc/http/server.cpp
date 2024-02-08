@@ -13,20 +13,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #include "server.hpp"
 
-#include <memory>
 #include <string>
 #include <utility>
 
 #include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
@@ -52,13 +46,19 @@ Server::Server(const std::string& end_point,
                boost::asio::io_context& io_context,
                boost::asio::thread_pool& workers,
                std::vector<std::string> allowed_origins,
-               std::optional<std::string> jwt_secret)
+               std::optional<std::string> jwt_secret,
+               bool use_websocket,
+               bool ws_compression,
+               InterfaceLogSettings ifc_log_settings)
     : rpc_api_{io_context, workers},
       handler_table_{api_spec},
       io_context_(io_context),
       acceptor_{io_context},
       allowed_origins_{std::move(allowed_origins)},
-      jwt_secret_(std::move(jwt_secret)) {
+      jwt_secret_(std::move(jwt_secret)),
+      use_websocket_{use_websocket},
+      ws_compression_{ws_compression},
+      ifc_log_settings_{std::move(ifc_log_settings)} {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -83,7 +83,8 @@ Task<void> Server::run() {
         while (acceptor_.is_open()) {
             SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
-            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_);
+            auto new_connection = std::make_shared<Connection>(
+                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, ifc_log_settings_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";
@@ -93,11 +94,9 @@ Task<void> Server::run() {
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
             SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
-            auto connection_loop = [=]() -> Task<void> { co_await new_connection->read_loop(); };
+            auto connection_loop = [](auto connection) -> Task<void> { co_await connection->read_loop(); };
 
-            boost::asio::co_spawn(io_context_, connection_loop, [&](const std::exception_ptr& eptr) {
-                if (eptr) std::rethrow_exception(eptr);
-            });
+            boost::asio::co_spawn(io_context_, connection_loop(new_connection), boost::asio::detached);
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::error::operation_aborted) {

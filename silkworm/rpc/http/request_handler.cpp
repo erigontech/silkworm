@@ -29,53 +29,70 @@
 
 namespace silkworm::rpc::http {
 
-constexpr std::size_t kStreamBufferSize{4096};
+RequestHandler::RequestHandler(Channel* channel,
+                               commands::RpcApi& rpc_api,
+                               const commands::RpcApiTable& rpc_api_table,
+                               InterfaceLogSettings ifc_log_settings)
+    : channel_{channel},
+      rpc_api_{rpc_api},
+      rpc_api_table_{rpc_api_table},
+      ifc_log_{ifc_log_settings.enabled ? std::make_shared<InterfaceLog>(std::move(ifc_log_settings)) : nullptr} {}
 
-Task<void> RequestHandler::handle(const std::string& content) {
-    auto start = clock_time::now();
+Task<void> RequestHandler::handle(const std::string& request) {
+    const auto start = clock_time::now();
     std::string response;
-
     bool send_reply{true};
-    const auto request_json = nlohmann::json::parse(content);
-    if (request_json.is_object()) {
-        if (!is_valid_jsonrpc(request_json)) {
-            response = make_json_error(0, -32600, "invalid request").dump() + "\n";
-        } else {
-            send_reply = co_await handle_request_and_create_reply(request_json, response);
-            response += "\n";
+    try {
+        if (ifc_log_) {
+            ifc_log_->log_req(request);
         }
-    } else {
-        std::stringstream batch_reply_content;
-        batch_reply_content << "[";
-        int index = 0;
-        for (auto& item : request_json.items()) {
-            if (index++ > 0) {
-                batch_reply_content << ",";
-            }
-
-            if (!is_valid_jsonrpc(item.value())) {
-                batch_reply_content << make_json_error(0, -32600, "invalid request").dump();
+        const auto request_json = nlohmann::json::parse(request);
+        if (request_json.is_object()) {
+            if (!is_valid_jsonrpc(request_json)) {
+                response = make_json_error(request_json, -32600, "invalid request").dump() + "\n";
             } else {
-                std::string single_reply;
-                send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
-                batch_reply_content << single_reply;
+                send_reply = co_await handle_request_and_create_reply(request_json, response);
+                response += "\n";
             }
-        }
-        batch_reply_content << "]\n";
+        } else {
+            std::stringstream batch_reply_content;
+            batch_reply_content << "[";
+            int index = 0;
+            for (auto& item : request_json.items()) {
+                if (index++ > 0) {
+                    batch_reply_content << ",";
+                }
 
-        response = batch_reply_content.str();
+                if (!is_valid_jsonrpc(item.value())) {
+                    batch_reply_content << make_json_error(request_json, -32600, "invalid request").dump();
+                } else {
+                    std::string single_reply;
+                    send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
+                    batch_reply_content << single_reply;
+                }
+            }
+            batch_reply_content << "]\n";
+            response = batch_reply_content.str();
+        }
+    } catch (const nlohmann::json::exception& e) {
+        SILK_ERROR << "RequestHandler::handle nlohmann::json::exception: " << e.what();
+        response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+        send_reply = true;
     }
 
     if (send_reply) {
         co_await channel_->write_rsp(response);
     }
+    if (ifc_log_) {
+        ifc_log_->log_rsp(response);
+        ifc_log_->flush();
+    }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& /* request_json */) {
-    // auto validation_result = json_rpc_validator_.validate(request_json);
-    // return validation_result.is_valid;
-    return true;
+bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
+    auto validation_result = json_rpc_validator_.validate(request_json);
+    return validation_result.is_valid;
 }
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
@@ -154,20 +171,27 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
 }
 
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
-    try {
-        auto io_executor = co_await boost::asio::this_coro::executor;
+    auto io_executor = co_await boost::asio::this_coro::executor;
 
+    try {
         co_await channel_->open_stream();
         ChunkWriter chunk_writer(*channel_);
-        json::Stream stream(io_executor, chunk_writer, kStreamBufferSize);
+        json::Stream stream(io_executor, chunk_writer);
 
-        co_await (rpc_api_.*handler)(request_json, stream);
-
+        try {
+            co_await (rpc_api_.*handler)(request_json, stream);
+        } catch (const std::exception& e) {
+            SILK_ERROR << "exception: " << e.what();
+            const auto error = make_json_error(request_json, 100, e.what());
+            stream.write_json(error);
+        } catch (...) {
+            SILK_ERROR << "unexpected exception";
+            const auto error = make_json_error(request_json, 100, "unexpected exception");
+            stream.write_json(error);
+        }
         co_await stream.close();
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
-    } catch (...) {
-        SILK_ERROR << "unexpected exception";
     }
 
     co_return;

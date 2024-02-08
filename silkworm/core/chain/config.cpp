@@ -50,7 +50,8 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     nlohmann::json empty_object(nlohmann::json::value_t::object);
     std::visit(
         Overloaded{
-            [&](const protocol::EthashConfig& x) { if (x.validate_seal) ret.emplace("ethash", empty_object); },
+            [&](const protocol::NoPreMergeConfig&) {},
+            [&](const protocol::EthashConfig& x) { ret.emplace("ethash", x.to_json()); },
             [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
             [&](const protocol::BorConfig& x) { ret.emplace("bor", x.to_json()); },
         },
@@ -104,7 +105,11 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     config.chain_id = json["chainId"].get<uint64_t>();
 
     if (json.contains("ethash")) {
-        config.rule_set_config = protocol::EthashConfig{};
+        std::optional<protocol::EthashConfig> ethash_config{protocol::EthashConfig::from_json(json["ethash"])};
+        if (!ethash_config) {
+            return std::nullopt;
+        }
+        config.rule_set_config = *ethash_config;
     } else if (json.contains("clique")) {
         config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
@@ -114,7 +119,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         }
         config.rule_set_config = *bor_config;
     } else {
-        config.rule_set_config = protocol::EthashConfig{.validate_seal = false};
+        config.rule_set_config = protocol::NoPreMergeConfig{};
     }
 
     read_json_config_member(json, "homesteadBlock", config.homestead_block);
@@ -277,6 +282,23 @@ SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
     .terminal_total_difficulty = 10790000,
     .shanghai_time = 1678832736,
     .rule_set_config = protocol::CliqueConfig{},
+};
+
+SILKWORM_CONSTINIT const ChainConfig kHoleskyConfig{
+    .chain_id = 17000,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .terminal_total_difficulty = 0,
+    .shanghai_time = 1696000704,
+    .cancun_time = 1707305664,
+    .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
 SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{

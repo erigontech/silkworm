@@ -16,6 +16,7 @@
 
 #include "decompressor.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <map>
 #include <span>
@@ -35,7 +36,7 @@
 
 using Catch::Matchers::Message;
 
-namespace silkworm::snapshots::huffman {
+namespace silkworm::snapshots::seg {
 
 namespace test = test_util;
 using silkworm::test_util::null_stream;
@@ -60,7 +61,7 @@ class SetCondensedTableBitLengthThresholdGuard {
     }
 };
 
-TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][seg][decompressor]") {
     std::map<std::string, std::pair<std::size_t, std::size_t>> test_params{
         {"max depth is 0", {0, 0}},
         {"max depth is < kMaxTableBitLength", {DecodingTable::kMaxTableBitLength - 1, DecodingTable::kMaxTableBitLength - 1}},
@@ -76,7 +77,7 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][huffman][decompresso
     }
 }
 
-TEST_CASE("CodeWord::CodeWord", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("CodeWord::CodeWord", "[silkworm][node][seg][decompressor]") {
     std::vector<CodeWord> codewords{};
     codewords.emplace_back();
     codewords.emplace_back(0, 0, ByteView{});
@@ -90,7 +91,7 @@ TEST_CASE("CodeWord::CodeWord", "[silkworm][node][huffman][decompressor]") {
     }
 }
 
-TEST_CASE("CodeWord::reset_content", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("CodeWord::reset_content", "[silkworm][node][seg][decompressor]") {
     CodeWord parent_cw{};
 
     uint16_t old_code{121};
@@ -117,7 +118,7 @@ TEST_CASE("CodeWord::reset_content", "[silkworm][node][huffman][decompressor]") 
     CHECK(cw.next() == &parent_cw);
 }
 
-TEST_CASE("CodeWord::set_next", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("CodeWord::set_next", "[silkworm][node][seg][decompressor]") {
     CodeWord parent1_cw{}, parent2_cw{};
     CodeWord cw{0, 0, Bytes{}, std::make_unique<PatternTable>(3), &parent1_cw};
     CHECK(cw.next() == &parent1_cw);
@@ -127,7 +128,7 @@ TEST_CASE("CodeWord::set_next", "[silkworm][node][huffman][decompressor]") {
     CHECK(cw.next() == &parent2_cw);
 }
 
-TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][node][seg][decompressor]") {
     SECTION("condensed_table_bit_length_threshold < kMaxTableBitLength") {
         CHECK_NOTHROW(SetCondensedTableBitLengthThresholdGuard(PatternTable::kMaxTableBitLength - 1));
     }
@@ -139,16 +140,14 @@ TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][
     }
 }
 
-TEST_CASE("PatternTable::PatternTable", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PatternTable::PatternTable", "[silkworm][node][seg][decompressor]") {
     PatternTable table{0};
     CHECK(table.num_codewords() == 1);
     CHECK(table.codeword(0) == nullptr);
     CHECK(table.codeword(table.num_codewords()) == nullptr);
 }
 
-TEST_CASE("PatternTable::build_condensed", "[silkworm][node][huffman][decompressor]") {
-    PatternTable table1{0};
-
+TEST_CASE("PatternTable::build_condensed", "[silkworm][node][seg][decompressor]") {
     std::span<Pattern> patterns0{};
     Bytes v1{0x00, 0x11};
     std::vector<Pattern> patterns1{{0, v1}};
@@ -160,21 +159,22 @@ TEST_CASE("PatternTable::build_condensed", "[silkworm][node][huffman][decompress
         {"two patterns", std::span<Pattern>{patterns2.data(), patterns2.size()}},
     };
 
+    PatternTable table{2};  // max_depth in all patterns
     for (const auto& [test_name, pattern_span] : test_spans) {
         SECTION(test_name) {
-            CHECK(table1.build_condensed(pattern_span) == pattern_span.size());
+            CHECK(table.build_condensed(pattern_span) == pattern_span.size());
         }
     }
 }
 
-TEST_CASE("PatternTable::search_condensed", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PatternTable::search_condensed", "[silkworm][node][seg][decompressor]") {
     PatternTable table1{0};
     CHECK(table1.search_condensed(0) == nullptr);
     PatternTable table2{DecodingTable::kMaxTableBitLength + 1};
     CHECK(table2.search_condensed(0) == nullptr);
 }
 
-TEST_CASE("PatternTable::operator<<", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PatternTable::operator<<", "[silkworm][node][seg][decompressor]") {
     PatternTable table1{0};
     CHECK_NOTHROW(null_stream() << table1);
     SetCondensedTableBitLengthThresholdGuard bit_length_threshold_guard{1};
@@ -182,7 +182,7 @@ TEST_CASE("PatternTable::operator<<", "[silkworm][node][huffman][decompressor]")
     CHECK_NOTHROW(null_stream() << table2);
 }
 
-TEST_CASE("PositionTable::PositionTable", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PositionTable::PositionTable", "[silkworm][node][seg][decompressor]") {
     PositionTable table{0};
     CHECK(table.num_positions() == 1);
     CHECK(table.position(0) == 0);
@@ -193,7 +193,7 @@ TEST_CASE("PositionTable::PositionTable", "[silkworm][node][huffman][decompresso
     CHECK(table.child(table.num_positions()) == nullptr);
 }
 
-TEST_CASE("PositionTable::operator<<", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("PositionTable::operator<<", "[silkworm][node][seg][decompressor]") {
     PositionTable table{0};
     CHECK_NOTHROW(null_stream() << table);
 }
@@ -216,7 +216,7 @@ static test::TemporarySnapshotFile create_nonempty_snapshot_file() {
     return create_snapshot_file({{0, {}}}, {{0, 1}});
 }
 
-TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][seg][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
     CHECK(!decoder.is_open());
@@ -225,7 +225,7 @@ TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][huffman][dec
     CHECK(decoder.empty_words_count() == 0);
 }
 
-TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     MemoryMappedFile mmf{tmp_snapshot.path()};
@@ -236,7 +236,7 @@ TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][huffman][d
     CHECK(decoder_from_memory.empty_words_count() == 0);
 }
 
-TEST_CASE("Decompressor::open invalid files", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("empty file") {
@@ -256,15 +256,39 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][huffman][decompr
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("compressed file is too short: 31"));
     }
+    SECTION("cannot build pattern tree: highest_depth reached zero") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C000000000000000400000000000000150309000000000000"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build pattern tree: highest_depth reached zero"));
+    }
+    SECTION("pattern dict is invalid: data skip failed at 22") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000016000000000000000003ff"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: data skip failed at 22"));
+    }
     SECTION("pattern dict is invalid: length read failed at 1") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x0000000000000000000000000000000000000000000000010000000000000000"));
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: length read failed at 1"));
     }
+    SECTION("cannot build position tree: highest_depth reached zero") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C0000000000000004000000000000000000000000000000160309"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build position tree: highest_depth reached zero"));
+    }
+    SECTION("position dict is invalid: position read failed at 22") {
+        TemporaryFile tmp_file;
+        tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000000000000000000001603ff"));
+        Decompressor decoder{tmp_file.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("position dict is invalid: position read failed at 22"));
+    }
 }
 
-TEST_CASE("Decompressor::open valid files", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::map<std::string, test::SnapshotHeader> header_tests{
@@ -305,7 +329,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][huffman][decompres
     }
 }
 
-TEST_CASE("Decompressor::read_ahead", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::read_ahead", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
@@ -323,7 +347,7 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][node][huffman][decompressor]")
     }
 }
 
-TEST_CASE("Decompressor::close", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
@@ -341,7 +365,7 @@ TEST_CASE("Decompressor::close", "[silkworm][node][huffman][decompressor]") {
     }
 }
 
-TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_empty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
@@ -425,7 +449,7 @@ const Bytes kLoremIpsumDict{*from_hex(
     "756e74203630036d6f6c6c69742036310f616e696d2036320169642036330765"
     "73742036340d6c61626f72756d203635")};
 
-TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
@@ -458,7 +482,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][huffm
     CHECK(test_function(it));
 }
 
-TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
@@ -491,7 +515,7 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][huffman][decompres
     CHECK(test_function(it));
 }
 
-TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][huffman][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
@@ -523,4 +547,4 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][huffman][dec
     CHECK(test_function(it));
 }
 
-}  // namespace silkworm::snapshots::huffman
+}  // namespace silkworm::snapshots::seg

@@ -14,7 +14,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 - [Building on Linux & macOS](#build-on-unix)
 - [Building on Windows](#build-on-windows)
 - [Testing Silkworm](#testing)
-- [Contributing Guide](docs/CONTRIBUTING.md)
+- [Contributing](#contributing)
 - [License](#license)
 
 
@@ -81,7 +81,7 @@ cmake ..
 
 A custom Conan "profile" can be passed via a cmake argument, for example: 
 
-    cmake .. -DCONAN_PROFILE=macos_arm_clang_13_debug
+    cmake .. -DCONAN_PROFILE=macos_arm64_clang_13_debug
 
 will use "debug" configuration builds of dependencies.
 
@@ -89,7 +89,7 @@ See available profiles in [cmake/profiles](cmake/profiles).
 
 The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
 
-    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm_clang_13_debug .
+    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm64_clang_13_debug .
 
 
 Then run the build itself
@@ -180,6 +180,12 @@ make sentry
 $env:STOP_AT_BLOCK=15000000
 ./cmd/silkworm.exe
 ```
+
+
+<a name="contributing"></a>
+## Contributing
+
+If you want to contribute, you can read our [contribution guidelines](docs/CONTRIBUTING.md).
 
 
 <a name="license"></a>

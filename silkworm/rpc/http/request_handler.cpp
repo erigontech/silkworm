@@ -48,8 +48,8 @@ Task<void> RequestHandler::handle(const std::string& request) {
         }
         const auto request_json = nlohmann::json::parse(request);
         if (request_json.is_object()) {
-            if (!is_valid_jsonrpc(request_json)) {
-                response = make_json_error(request_json, -32600, "invalid request").dump() + "\n";
+            if (const auto valid_result{is_valid_jsonrpc(request_json)}; !valid_result) {
+                response = make_json_error(request_json, -32600, valid_result.error()).dump() + "\n";
             } else {
                 send_reply = co_await handle_request_and_create_reply(request_json, response);
                 response += "\n";
@@ -59,15 +59,16 @@ Task<void> RequestHandler::handle(const std::string& request) {
             batch_reply_content << "[";
             int index = 0;
             for (auto& item : request_json.items()) {
+                const auto& single_request_json{item.value()};
                 if (index++ > 0) {
                     batch_reply_content << ",";
                 }
 
-                if (!is_valid_jsonrpc(item.value())) {
-                    batch_reply_content << make_json_error(request_json, -32600, "invalid request").dump();
+                if (const auto valid_result{is_valid_jsonrpc(single_request_json)}; !valid_result) {
+                    batch_reply_content << make_json_error(request_json, -32600, valid_result.error()).dump();
                 } else {
                     std::string single_reply;
-                    send_reply = co_await handle_request_and_create_reply(item.value(), single_reply);
+                    send_reply = co_await handle_request_and_create_reply(single_request_json, single_reply);
                     batch_reply_content << single_reply;
                 }
             }
@@ -90,9 +91,8 @@ Task<void> RequestHandler::handle(const std::string& request) {
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
-bool RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
-    auto validation_result = json_rpc_validator_.validate(request_json);
-    return validation_result.is_valid;
+JsonRpcValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
+    return json_rpc_validator_.validate(request_json);
 }
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response) {

@@ -45,7 +45,7 @@ class BoundedBuffer {
 
     void push_front(value_type&& item) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [&]{ return is_not_full(); });
+        not_full_.wait(lock, [&] { return is_not_full(); });
         container_.push_front(std::forward<value_type>(item));
         ++unread_;
         lock.unlock();
@@ -54,7 +54,7 @@ class BoundedBuffer {
 
     void pop_back(value_type* pItem) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [&]{ return is_not_empty(); });
+        not_empty_.wait(lock, [&] { return is_not_empty(); });
         *pItem = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();

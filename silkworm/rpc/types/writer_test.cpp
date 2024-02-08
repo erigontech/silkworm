@@ -28,7 +28,6 @@ namespace silkworm::rpc {
 struct WriterTest : test::ContextTestBase {
 };
 
-#ifdef notdef
 class JsonChunkWriter : public StreamWriter {
   public:
     explicit JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size = kDefaultChunkSize);
@@ -45,12 +44,10 @@ class JsonChunkWriter : public StreamWriter {
     const std::size_t chunk_size_;
     size_t room_left_in_chunk_;
     std::size_t written_{0};
-    std::stringstream str_chunk_size_;
 };
 
 JsonChunkWriter::JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size)
     : writer_(writer), chunk_size_(chunk_size), room_left_in_chunk_(chunk_size_) {
-    str_chunk_size_ << std::hex << chunk_size_ << kChunkSep;
 }
 
 Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
@@ -59,7 +56,6 @@ Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
     SILK_DEBUG << "JsonChunkWriter::write written_: " << written_ << " size: " << size;
 
     if (!chunk_open_) {
-        co_await writer_.write(str_chunk_size_.str());
         chunk_open_ = true;
     }
 
@@ -77,12 +73,10 @@ Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
 
         if ((room_left_in_chunk_ % chunk_size_) == 0) {
             if (chunk_open_) {
-                co_await writer_.write(kChunkSep);
                 room_left_in_chunk_ = chunk_size_;
                 chunk_open_ = false;
             }
             if (remaining_in_view > 0) {
-                co_await writer_.write(str_chunk_size_.str());
                 chunk_open_ = true;
             }
         }
@@ -97,16 +91,12 @@ Task<void> JsonChunkWriter::close_stream() {
             std::memset(buffer.get(), ' ', room_left_in_chunk_);
             co_await writer_.write(std::string_view(buffer.get(), room_left_in_chunk_));
         }
-        co_await writer_.write(kChunkSep);
         chunk_open_ = false;
         room_left_in_chunk_ = chunk_size_;
     }
 
-    co_await writer_.write(kFinalChunk);
-
     co_return;
 }
-#endif
 
 TEST_CASE_METHOD(WriterTest, "StringWriter") {
     SECTION("write") {
@@ -128,7 +118,6 @@ TEST_CASE_METHOD(WriterTest, "StringWriter") {
     }
 }
 
-#ifdef notdef
 TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
     SECTION("write&close under chunk size") {
         StringWriter s_writer;
@@ -137,7 +126,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         spawn_and_wait(writer.write("1234"));
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "10\r\n1234            \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234            ");
     }
     SECTION("write&close over chunk size 4") {
         StringWriter s_writer;
@@ -146,7 +135,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         spawn_and_wait(writer.write("1234567890"));
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n4\r\n90  \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234567890  ");
     }
     SECTION("write&close over chunk size 5") {
         StringWriter s_writer;
@@ -155,7 +144,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         spawn_and_wait(writer.write("1234567890"));
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234567890");
     }
     SECTION("write&close over chunk size 5") {
         StringWriter s_writer;
@@ -164,7 +153,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         spawn_and_wait(writer.write("123456789012"));
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n5\r\n12   \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "123456789012   ");
     }
     SECTION("close") {
         StringWriter s_writer;
@@ -172,7 +161,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
 
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "0\r\n\r\n");
+        CHECK(s_writer.get_content() == "");
     }
     SECTION("write json") {
         StringWriter s_writer;
@@ -189,9 +178,8 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         spawn_and_wait(writer.write(content));
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "30\r\n{\"accounts\":{},\"next\":\"next\",\"root\":\"root\"}     \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "{\"accounts\":{},\"next\":\"next\",\"root\":\"root\"}     ");
     }
 }
-#endif
 
 }  // namespace silkworm::rpc

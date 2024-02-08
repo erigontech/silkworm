@@ -14,20 +14,10 @@
    limitations under the License.
 */
 
-#include <deque>
-#include <iostream>
-#include <list>
-#include <string>
+#include <mutex>
+#include <thread>
 
-#include <boost/bind.hpp>
-#include <boost/call_traits.hpp>
 #include <boost/circular_buffer.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/timer/timer.hpp>
-
-#include <silkworm/infra/common/stopwatch.hpp>
 
 namespace silkworm {
 
@@ -49,22 +39,21 @@ class BoundedBuffer {
     typedef boost::circular_buffer<T> container_type;
     typedef typename container_type::size_type size_type;
     typedef typename container_type::value_type value_type;
-    typedef typename boost::call_traits<value_type>::param_type param_type;  // `param_type` represents the "best" way to pass a parameter of type `value_type` to a method.
 
-    explicit BoundedBuffer(size_type capacity) : unread_(0), container_(capacity) {}
+    explicit BoundedBuffer(size_type capacity) : capacity_{capacity}, unread_(0), container_(capacity) {}
 
-    void push_front(param_type item) {
-        boost::mutex::scoped_lock lock(mutex_);
-        not_full_.wait(lock, boost::bind(&BoundedBuffer<value_type>::is_not_full, this));
-        container_.push_front(item);
+    void push_front(value_type&& item) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        not_full_.wait(lock, std::bind(&BoundedBuffer<value_type>::is_not_full, this));
+        container_.push_front(std::forward<value_type>(item));
         ++unread_;
         lock.unlock();
         not_empty_.notify_one();
     }
 
     void pop_back(value_type* pItem) {
-        boost::mutex::scoped_lock lock(mutex_);
-        not_empty_.wait(lock, boost::bind(&BoundedBuffer<value_type>::is_not_empty, this));
+        std::unique_lock<std::mutex> lock(mutex_);
+        not_empty_.wait(lock, std::bind(&BoundedBuffer<value_type>::is_not_empty, this));
         *pItem = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();
@@ -75,8 +64,7 @@ class BoundedBuffer {
     }
 
     size_type capacity() {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        return container_.capacity();
+        return capacity_;
     }
 
   private:
@@ -84,13 +72,14 @@ class BoundedBuffer {
     BoundedBuffer& operator=(const BoundedBuffer&) = delete;  // Disabled assign operator
 
     bool is_not_empty() const { return unread_ > 0; }
-    bool is_not_full() const { return unread_ < container_.capacity(); }
+    bool is_not_full() const { return unread_ < capacity_; }
 
+    size_type capacity_;
     size_type unread_;
     container_type container_;
-    boost::mutex mutex_;
-    boost::condition_variable not_empty_;
-    boost::condition_variable not_full_;
+    std::mutex mutex_;
+    std::condition_variable not_empty_;
+    std::condition_variable not_full_;
 };
 
 }  // namespace silkworm

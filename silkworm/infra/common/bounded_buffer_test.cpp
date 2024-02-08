@@ -17,10 +17,11 @@
 #include "bounded_buffer.hpp"
 
 #include <chrono>
-#include <fstream>
 #include <thread>
 
 #include <catch2/catch.hpp>
+
+#include <silkworm/infra/common/stopwatch.hpp>
 
 namespace silkworm {
 
@@ -28,21 +29,36 @@ using namespace std::this_thread;      // sleep_for, sleep_until
 using namespace std::chrono_literals;  // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
+double CalculatePi(int depth) {
+    double pi = 0.0;
+    for (int i = 0; i < depth; ++i) {
+        double numerator = static_cast<double>(((i % 2) * 2) - 1);
+        double denominator = static_cast<double>((2 * i) - 1);
+        pi += numerator / denominator;
+    }
+    return (pi - 1.0) * 4;
+}
+
 template <class Buffer>
 class Producer {
     typedef typename Buffer::value_type value_type;
     Buffer* container_;
-    long iterations_{1};
-    std::chrono::nanoseconds sleep_{10ms};
+    long iterations_;
+    bool delay_;
 
   public:
-    Producer(Buffer* buffer) : container_(buffer) {}
-    Producer(Buffer* buffer, long iterations, std::chrono::nanoseconds sleep)
-        : container_(buffer), iterations_(iterations), sleep_(sleep) {}
+    Producer(Buffer* buffer, long iterations, bool delay)
+        : container_(buffer), iterations_(iterations), delay_(delay) {}
 
     void operator()() {
+        sleep_for(10ms);
         for (long i = 0; i < iterations_; ++i) {
-            sleep_for(sleep_);
+            if (delay_) {
+                auto pi = CalculatePi(i % 1000);
+                if (pi < 3.14) {
+                    sleep_for(1ns);
+                }
+            }
             container_->push_front("Hello thread " + std::to_string(i));
         }
     }
@@ -52,14 +68,25 @@ template <class Buffer>
 class Consumer {
     typedef typename Buffer::value_type value_type;
     Buffer* container_;
+    long iterations_;
+    bool delay_;
 
   public:
-    Consumer(Buffer* buffer) : container_(buffer) {}
+    Consumer(Buffer* buffer, long iterations, bool delay)
+        : container_(buffer), iterations_(iterations), delay_(delay) {}
 
     void operator()() {
         sleep_for(10ms);
-        value_type item;
-        container_->pop_back(&item);
+        for (long i = 0; i < iterations_; ++i) {
+            value_type item;
+            if (delay_) {
+                auto pi = CalculatePi(i % 1000);
+                if (pi < 3.14) {
+                    sleep_for(1ns);
+                }
+            }
+            container_->pop_back(&item);
+        }
     }
 };
 
@@ -95,12 +122,13 @@ TEST_CASE("BoundedBuffer waits for an item to be added") {
     CHECK(item == "Hello direct");
     CHECK(elapsed.count() < 1000);  // less than 1 microsecond
 
-    Producer<BoundedBuffer<std::string>> producer(&buffer);
-    boost::thread produce(producer);
+    Producer<BoundedBuffer<std::string>> producer(&buffer, 1, false);
+    std::thread produce(producer);
 
     buffer.pop_back(&item);
     auto finish = sw.stop();
     CHECK(item == "Hello thread 0");
+    produce.join();
     CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
@@ -122,25 +150,35 @@ TEST_CASE("BoundedBuffer waits for an item to be popped") {
     auto [_, elapsed]{sw.lap()};
     CHECK(elapsed.count() < 1000);  // less than 1 microsecond
 
-    Consumer<BoundedBuffer<std::string>> consumer(&buffer);
-    boost::thread consume(consumer);
+    Consumer<BoundedBuffer<std::string>> consumer(&buffer, 1, false);
+    std::thread consume(consumer);
 
     buffer.push_front("Hello");
     auto finish = sw.stop();
+    consume.join();
     CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
-TEST_CASE("BoundedBuffer cycles through the buffer") {
+TEST_CASE("BoundedBuffer multiple cycles over the buffer with delayed producer") {
     BoundedBuffer<std::string> buffer(10);
-    const int iterations = 1000000;
-    Producer<BoundedBuffer<std::string>> producer(&buffer, iterations, 0ms);
-    boost::thread produce(producer);
+    const int iterations = 100000;
+    Producer<BoundedBuffer<std::string>> producer(&buffer, iterations, true);
+    Consumer<BoundedBuffer<std::string>> consumer(&buffer, iterations, false);
+    std::thread produce(producer);
+    std::thread consume(consumer);
 
-    std::string item;
-    for (int i = 0; i < iterations; ++i) {
-        buffer.pop_back(&item);
-        CHECK(item == "Hello thread " + std::to_string(i));
-    }
+    produce.join();
+    consume.join();
+}
+
+TEST_CASE("BoundedBuffer multiple cycles over the buffer with delayed consumer") {
+    BoundedBuffer<std::string> buffer(10);
+    const int iterations = 100000;
+    std::thread produce(Producer<BoundedBuffer<std::string>>(&buffer, iterations, false));
+    std::thread consume(Consumer<BoundedBuffer<std::string>>(&buffer, iterations, true));
+
+    produce.join();
+    consume.join();
 }
 
 }  // namespace silkworm

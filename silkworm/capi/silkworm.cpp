@@ -16,18 +16,12 @@
 
 #include "silkworm.h"
 
-#include <charconv>
-#include <chrono>
-#include <memory>
 #include <vector>
-
-#include <boost/circular_buffer.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -37,7 +31,6 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/snapshots/index.hpp>
-#include <silkworm/rpc/daemon.hpp>
 
 #include "instance.hpp"
 
@@ -55,9 +48,7 @@ static log::Settings kLogSettingsLikeErigon{
     .log_nocolor = true,    // do not use colors
     .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
-
 static constexpr size_t kMaxBlockBufferSize{100};
-static constexpr size_t kMaxBlockProivderRefreshThreshold{100};
 
 using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
@@ -373,10 +364,12 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEX
 }
 
 class BlockProvider {
+    static constexpr size_t kTxnRefreshThreshold{100};
+
   public:
-    BlockProvider(BoundedBuffer<Block>* block_buffer,
+    BlockProvider(BoundedBuffer<std::optional<Block>>* block_buffer,
                   mdbx::env env,
-                  uint64_t start_block, uint64_t max_block)
+                  BlockNum start_block, BlockNum max_block)
         : block_buffer_{block_buffer},
           env_{env},
           start_block_{start_block},
@@ -386,32 +379,33 @@ class BlockProvider {
         db::ROTxnManaged txn{env_};
         db::DataModel access_layer{txn};
 
-        uint64_t current_block_{start_block_};
-        uint16_t refresh_counter_{kMaxBlockProivderRefreshThreshold};
+        BlockNum current_block{start_block_};
+        size_t refresh_counter{kTxnRefreshThreshold};
 
-        while (current_block_ <= max_block_) {
+        while (current_block <= max_block_) {
             Block block;
 
-            const bool success{access_layer.read_block(current_block_, /*read_senders=*/true, block)};
+            const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
             if (!success) {
-                throw std::runtime_error("Error reading the block " + std::to_string(current_block_));
+                block_buffer_->push_front(std::nullopt);
+                return;
             }
             block_buffer_->push_front(std::move(block));
-            ++current_block_;
+            ++current_block;
 
-            if (--refresh_counter_ == 0) {
+            if (--refresh_counter == 0) {
                 txn.abort();
                 txn = db::ROTxnManaged{env_};
-                refresh_counter_ = kMaxBlockProivderRefreshThreshold;
+                refresh_counter = kTxnRefreshThreshold;
             }
         }
     }
 
   private:
-    BoundedBuffer<Block>* block_buffer_;
+    BoundedBuffer<std::optional<Block>>* block_buffer_;
     mdbx::env env_;
-    uint64_t start_block_;
-    uint64_t max_block_;
+    BlockNum start_block_;
+    BlockNum max_block_;
 };
 
 SILKWORM_EXPORT
@@ -440,9 +434,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         const auto db_path{txn.db().get_path()};
 
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
-        BoundedBuffer<Block> block_buffer{kMaxBlockBufferSize};
+        BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         BlockProvider block_provider{&block_buffer, txn.db(), start_block, max_block};
-        boost::thread block_provider_thread(block_provider);
+        std::thread block_provider_thread(block_provider);
 
         static constexpr size_t kCacheSize{5'000};
         AnalysisCache analysis_cache{kCacheSize};
@@ -459,7 +453,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         size_t gas_batch_size{0};
 
-        Block block;
+        std::optional<Block> block;
 
         const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
         if (!protocol_rule_set) {
@@ -468,7 +462,11 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             block_buffer.pop_back(&block);
-            ExecutionProcessor processor{block, *protocol_rule_set, state_buffer, *chain_config};
+            if (!block) {
+                return SILKWORM_BLOCK_NOT_FOUND;
+            }
+
+            ExecutionProcessor processor{*block, *protocol_rule_set, state_buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
             CallTraces traces;
@@ -484,20 +482,20 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             }
 
             if (write_receipts) {
-                state_buffer.insert_receipts(block.header.number, receipts);
+                state_buffer.insert_receipts(block->header.number, receipts);
             }
             if (write_call_traces) {
-                state_buffer.insert_call_traces(block.header.number, traces);
+                state_buffer.insert_call_traces(block->header.number, traces);
             }
 
             if (last_executed_block) {
-                *last_executed_block = block.header.number;
+                *last_executed_block = block->header.number;
             }
 
             ++progress.processed_blocks;
-            progress.processed_transactions += block.transactions.size();
-            progress.processed_gas += block.header.gas_used;
-            gas_batch_size += block.header.gas_used;
+            progress.processed_transactions += block->transactions.size();
+            progress.processed_gas += block->header.gas_used;
+            gas_batch_size += block->header.gas_used;
 
             // Always flush history for single processed block (no batching)
             state_buffer.write_history_to_db(write_change_sets);
@@ -505,7 +503,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             // Flush state buffer if we've reached the target batch size
             if (state_buffer.current_batch_state_size() >= max_batch_size) {
                 log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_flush(state_buffer, max_batch_size, block.header.number)};
+                          log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
                 state_buffer.write_state_to_db();
                 gas_batch_size = 0;
                 StopWatch sw{/*auto_start=*/true};
@@ -527,7 +525,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
                 progress.end_time = now;
                 log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_progress(progress, block.header.number)};
+                          log_args_for_exec_progress(progress, block->header.number)};
                 log_time = now + 20s;
             }
         }

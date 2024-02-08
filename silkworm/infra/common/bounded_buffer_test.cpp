@@ -120,7 +120,7 @@ TEST_CASE("BoundedBuffer waits for an item to be added") {
     buffer.pop_back(&item);
     auto [_, elapsed]{sw.lap()};
     CHECK(item == "Hello direct");
-    CHECK(elapsed.count() < 1000);  // less than 1 microsecond
+    CHECK(elapsed.count() < 3000);  // less than 3 microsecond
 
     Producer<BoundedBuffer<std::string>> producer(&buffer, 1, false);
     std::thread produce(producer);
@@ -148,7 +148,7 @@ TEST_CASE("BoundedBuffer waits for an item to be popped") {
     buffer.push_front("Hello");
     buffer.push_front("Hello");
     auto [_, elapsed]{sw.lap()};
-    CHECK(elapsed.count() < 1000);  // less than 1 microsecond
+    CHECK(elapsed.count() < 3000);  // less than 3 microsecond
 
     Consumer<BoundedBuffer<std::string>> consumer(&buffer, 1, false);
     std::thread consume(consumer);

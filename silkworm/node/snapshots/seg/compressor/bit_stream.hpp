@@ -28,7 +28,7 @@ class BitStream {
         : byte_writer_(byte_writer) {}
     ~BitStream();
 
-    void write(uint64_t code, uint8_t codeBits);
+    void write(uint64_t code, uint8_t code_bits);
     void flush();
 
   private:

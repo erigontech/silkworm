@@ -9,7 +9,7 @@ on:
       - ready_for_review
       - synchronize
   schedule:
-    - cron: '0 8 * * 0'  # Run every Sunday at 8:00 AM UTC
+    - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
 jobs:
   performance-test-suite:
@@ -63,7 +63,13 @@ jobs:
           cd ${{runner.workspace}}/rpc-tests/perf
           
           # Launch the RPC performance test runner
-          python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          # python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          # python3 ./run_perf_tests.py -b mainnet -y eth_getLogs -p pattern/mainnet/stress_test_eth_getLogs_15M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          python3 ./run_perf_tests.py -b mainnet -y eth_getLogs -p pattern/mainnet/stress_test_eth_getLogs_15M.tar -t 1:1,100:30 -r 1 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          # python3 ./run_perf_tests.py -b mainnet -y eth_getBalance -p pattern/mainnet/stress_test_eth_getBalance_15M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          python3 ./run_perf_tests.py -b mainnet -y eth_getBalance -p pattern/mainnet/stress_test_eth_getBalance_15M.tar -t 1:1,100:30 -r 1 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          # python3 ./run_perf_tests.py -b mainnet -y eth_getBlockByHash -p pattern/mainnet/stress_test_eth_getBlockByHash_14M.tar -t 1:1,100:30,1000:20,10000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
+          python3 ./run_perf_tests.py -b mainnet -y eth_getBlockByHash -p pattern/mainnet/stress_test_eth_getBlockByHash_14M.tar -t 1:1,100:30 -r 1 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           
           # Capture test runner script exit status
           perf_exit_status=$?
@@ -100,4 +106,3 @@ jobs:
         run: |
           echo "::error::Error detected during tests"
           exit 1
-

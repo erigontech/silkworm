@@ -463,6 +463,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             block_buffer.pop_back(&block);
             if (!block) {
+                block_provider_thread.detach();
                 return SILKWORM_BLOCK_NOT_FOUND;
             }
 
@@ -534,11 +535,11 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                   log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
         StopWatch sw{/*auto_start=*/true};
-        txn.commit_and_renew();
+        txn.commit_and_stop();
         const auto [elapsed, _]{sw.stop()};
         log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
                   log_args_for_exec_commit(sw.since_start(elapsed), db_path));
-        block_provider_thread.detach();
+        block_provider_thread.join();
         return SILKWORM_OK;
 
     } catch (const mdbx::exception& e) {

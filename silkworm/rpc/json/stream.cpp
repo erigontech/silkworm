@@ -307,6 +307,7 @@ Task<void> Stream::do_async_write(ChunkPtr chunk) {
 Task<void> Stream::run() {
     uint32_t total_writes{0};
     std::size_t total_bytes_sent{0};
+    co_await open();
     while (true) {
         try {
             const auto chunk_ptr = co_await channel_.async_receive(boost::asio::use_awaitable);

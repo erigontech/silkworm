@@ -59,6 +59,8 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
         ws_.set_option(opt);
     }
 
+    ws_.auto_fragment(true);
+
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);
 }

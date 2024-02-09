@@ -55,7 +55,7 @@ class Connection : public Channel {
 
     // Methods of Channel interface
     Task<void> open_stream() override { co_return; }
-    Task<void> close() override { co_return; }
+    Task<void> close_stream() override { co_return; }
     Task<void> write_rsp(const std::string& content) override;
     Task<std::size_t> write(std::string_view content) override;
 

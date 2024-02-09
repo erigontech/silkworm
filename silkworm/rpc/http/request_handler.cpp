@@ -174,9 +174,8 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
     auto io_executor = co_await boost::asio::this_coro::executor;
 
     try {
-        co_await channel_->open_stream();
-        ChunkWriter chunk_writer(*channel_);
-        json::Stream stream(io_executor, chunk_writer);
+        json::Stream stream(io_executor, *channel_);
+        co_await stream.open();
 
         try {
             co_await (rpc_api_.*handler)(request_json, stream);

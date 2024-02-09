@@ -43,6 +43,8 @@ class Stream {
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
+    Task<void> open();
+
     //! Flush any remaining data and close properly as per the underlying transport
     Task<void> close();
 

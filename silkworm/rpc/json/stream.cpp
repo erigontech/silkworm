@@ -73,6 +73,10 @@ Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std
     buffer_.reserve(buffer_capacity_ + buffer_capacity_ / 4);
 }
 
+Task<void> Stream::open() {
+    co_await writer_.open_stream();
+}
+
 Task<void> Stream::close() {
     if (!buffer_.empty()) {
         co_await do_async_write(std::make_shared<std::string>(std::move(buffer_)));
@@ -86,7 +90,7 @@ Task<void> Stream::close() {
     co_await run_completion_channel_.async_receive(boost::asio::use_awaitable);
 #endif  // _WIN32
 
-    co_await writer_.close();
+    co_await writer_.close_stream();
 }
 
 void Stream::open_object() {

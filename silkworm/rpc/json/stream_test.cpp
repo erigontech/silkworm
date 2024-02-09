@@ -38,7 +38,6 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
     boost::asio::any_io_executor io_executor = io_context_.get_executor();
 
     StringWriter string_writer;
-    ChunkWriter chunk_writer(string_writer);
 
     SECTION("write_json in string") {
         Stream stream(io_executor, string_writer);
@@ -53,7 +52,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 1 chunk") {
-        Stream stream(io_executor, chunk_writer);
+        Stream stream(io_executor, string_writer);
 
         nlohmann::json json = R"({
             "test": "test"
@@ -62,10 +61,10 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "f\r\n{\"test\":\"test\"}\r\n0\r\n\r\n");
+        CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 2 chunks") {
-        Stream stream(io_executor, chunk_writer);
+        Stream stream(io_executor, string_writer);
 
         nlohmann::json json = R"({
             "check": "check",
@@ -75,7 +74,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "1f\r\n{\"check\":\"check\",\"test\":\"test\"}\r\n0\r\n\r\n");
+        CHECK(string_writer.get_content() == "{\"check\":\"check\",\"test\":\"test\"}");
     }
 }
 

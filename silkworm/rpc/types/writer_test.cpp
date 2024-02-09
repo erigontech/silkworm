@@ -32,8 +32,9 @@ class JsonChunkWriter : public StreamWriter {
   public:
     explicit JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size = kDefaultChunkSize);
 
+    Task<void> open_stream() override { co_return; }
+    Task<void> close_stream() override;
     Task<std::size_t> write(std::string_view content) override;
-    Task<void> close() override;
 
   private:
     static const std::size_t kDefaultChunkSize = 0x800;
@@ -43,12 +44,10 @@ class JsonChunkWriter : public StreamWriter {
     const std::size_t chunk_size_;
     size_t room_left_in_chunk_;
     std::size_t written_{0};
-    std::stringstream str_chunk_size_;
 };
 
 JsonChunkWriter::JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size)
     : writer_(writer), chunk_size_(chunk_size), room_left_in_chunk_(chunk_size_) {
-    str_chunk_size_ << std::hex << chunk_size_ << kChunkSep;
 }
 
 Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
@@ -57,7 +56,6 @@ Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
     SILK_DEBUG << "JsonChunkWriter::write written_: " << written_ << " size: " << size;
 
     if (!chunk_open_) {
-        co_await writer_.write(str_chunk_size_.str());
         chunk_open_ = true;
     }
 
@@ -75,12 +73,10 @@ Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
 
         if ((room_left_in_chunk_ % chunk_size_) == 0) {
             if (chunk_open_) {
-                co_await writer_.write(kChunkSep);
                 room_left_in_chunk_ = chunk_size_;
                 chunk_open_ = false;
             }
             if (remaining_in_view > 0) {
-                co_await writer_.write(str_chunk_size_.str());
                 chunk_open_ = true;
             }
         }
@@ -88,19 +84,16 @@ Task<std::size_t> JsonChunkWriter::write(std::string_view content) {
     co_return content.size();
 }
 
-Task<void> JsonChunkWriter::close() {
+Task<void> JsonChunkWriter::close_stream() {
     if (chunk_open_) {
         if (room_left_in_chunk_ > 0) {
             std::unique_ptr<char[]> buffer{new char[room_left_in_chunk_]};
             std::memset(buffer.get(), ' ', room_left_in_chunk_);
             co_await writer_.write(std::string_view(buffer.get(), room_left_in_chunk_));
         }
-        co_await writer_.write(kChunkSep);
         chunk_open_ = false;
         room_left_in_chunk_ = chunk_size_;
     }
-
-    co_await writer_.write(kFinalChunk);
 
     co_return;
 }
@@ -114,74 +107,14 @@ TEST_CASE_METHOD(WriterTest, "StringWriter") {
 
         CHECK(writer.get_content() == test);
     }
-    SECTION("close") {
+    SECTION("close_stream") {
         StringWriter writer(5);
         std::string test = "test";
 
         spawn_and_wait(writer.write(test));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
         CHECK(writer.get_content() == test);
-    }
-}
-
-TEST_CASE_METHOD(WriterTest, "ChunkWriter") {
-    SECTION("write&close under chunk size") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.write("1234"));
-        spawn_and_wait(writer.close());
-
-        CHECK(s_writer.get_content() == "4\r\n1234\r\n0\r\n\r\n");
-    }
-    SECTION("write over chunk size 4") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.write("1234"));
-        spawn_and_wait(writer.write("5678"));
-
-        CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n");
-    }
-    SECTION("write&close over chunk size 4") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.write("1234"));
-        spawn_and_wait(writer.write("5678"));
-        spawn_and_wait(writer.write("90"));
-        spawn_and_wait(writer.close());
-
-        CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n2\r\n90\r\n0\r\n\r\n");
-    }
-    SECTION("write over chunk size 5") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.write("12345"));
-        spawn_and_wait(writer.write("67890"));
-
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n");
-    }
-    SECTION("write&close over chunk size 5") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.write("12345"));
-        spawn_and_wait(writer.write("67890"));
-        spawn_and_wait(writer.write("12"));
-        spawn_and_wait(writer.close());
-
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n2\r\n12\r\n0\r\n\r\n");
-    }
-    SECTION("close") {
-        StringWriter s_writer;
-        ChunkWriter writer(s_writer);
-
-        spawn_and_wait(writer.close());
-
-        CHECK(s_writer.get_content() == "0\r\n\r\n");
     }
 }
 
@@ -191,44 +124,44 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         JsonChunkWriter writer(s_writer, 16);
 
         spawn_and_wait(writer.write("1234"));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "10\r\n1234            \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234            ");
     }
     SECTION("write&close over chunk size 4") {
         StringWriter s_writer;
         JsonChunkWriter writer(s_writer, 4);
 
         spawn_and_wait(writer.write("1234567890"));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n4\r\n90  \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234567890  ");
     }
     SECTION("write&close over chunk size 5") {
         StringWriter s_writer;
         JsonChunkWriter writer(s_writer, 5);
 
         spawn_and_wait(writer.write("1234567890"));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "1234567890");
     }
     SECTION("write&close over chunk size 5") {
         StringWriter s_writer;
         JsonChunkWriter writer(s_writer, 5);
 
         spawn_and_wait(writer.write("123456789012"));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n5\r\n12   \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "123456789012   ");
     }
     SECTION("close") {
         StringWriter s_writer;
         JsonChunkWriter writer(s_writer);
 
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "0\r\n\r\n");
+        CHECK(s_writer.get_content() == "");
     }
     SECTION("write json") {
         StringWriter s_writer;
@@ -243,9 +176,9 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
         const auto content = json.dump(/*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
 
         spawn_and_wait(writer.write(content));
-        spawn_and_wait(writer.close());
+        spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "30\r\n{\"accounts\":{},\"next\":\"next\",\"root\":\"root\"}     \r\n0\r\n\r\n");
+        CHECK(s_writer.get_content() == "{\"accounts\":{},\"next\":\"next\",\"root\":\"root\"}     ");
     }
 }
 

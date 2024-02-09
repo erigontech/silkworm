@@ -29,9 +29,9 @@ using namespace std::this_thread;      // sleep_for, sleep_until
 using namespace std::chrono_literals;  // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
-double CalculatePi(long depth) {
+double CalculatePi(int depth) {
     double pi = 0.0;
-    for (long i = 0; i < depth; ++i) {
+    for (int i = 0; i < depth; ++i) {
         auto numerator = static_cast<double>(((i % 2) * 2) - 1);
         auto denominator = static_cast<double>((2 * i) - 1);
         pi += numerator / denominator;
@@ -42,16 +42,16 @@ double CalculatePi(long depth) {
 template <class Buffer>
 class Producer {
     Buffer* container_;
-    long iterations_;
+    int iterations_;
     bool delay_;
 
   public:
-    Producer(Buffer* buffer, long iterations, bool delay)
+    Producer(Buffer* buffer, int iterations, bool delay)
         : container_(buffer), iterations_(iterations), delay_(delay) {}
 
     void operator()() {
         sleep_for(10ms);
-        for (long i = 0; i < iterations_; ++i) {
+        for (int i = 0; i < iterations_; ++i) {
             if (delay_) {
                 auto pi = CalculatePi(i % 1000);
                 if (pi < 3.14) {
@@ -76,7 +76,7 @@ class Consumer {
 
     void operator()() {
         sleep_for(10ms);
-        for (long i = 0; i < iterations_; ++i) {
+        for (int i = 0; i < iterations_; ++i) {
             value_type item;
             if (delay_) {
                 auto pi = CalculatePi(i % 1000);

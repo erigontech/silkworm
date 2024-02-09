@@ -320,7 +320,7 @@ class RWTxnManaged : public RWTxn {
     mdbx::txn_managed managed_txn_;
 };
 
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
+//! \brief RWTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
 //! is not created by this class, but can be committed or aborted.
 class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
   public:

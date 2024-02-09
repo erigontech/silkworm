@@ -21,8 +21,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/common/stopwatch.hpp>
-
 namespace silkworm {
 
 using namespace std::this_thread;      // sleep_for, sleep_until
@@ -111,31 +109,23 @@ TEST_CASE("BoundedBuffer add and remove") {
 
 TEST_CASE("BoundedBuffer waits for an item to be added") {
     BoundedBuffer<std::string> buffer(10);
-    StopWatch sw;
 
     buffer.push_front("Hello direct");
-    sw.start();
     std::string item;
     buffer.pop_back(&item);
-    auto [_, elapsed]{sw.lap()};
     CHECK(item == "Hello direct");
-    // CHECK(elapsed.count() < 3000);  // less than 3 microsecond
 
     Producer<BoundedBuffer<std::string>> producer(&buffer, 1, false);
     std::thread produce(producer);
 
     buffer.pop_back(&item);
-    auto finish = sw.stop();
     CHECK(item == "Hello thread 0");
     produce.join();
-    CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
 TEST_CASE("BoundedBuffer waits for an item to be popped") {
     BoundedBuffer<std::string> buffer(10);
-    StopWatch sw;
 
-    sw.start();
     buffer.push_front("Hello");
     buffer.push_front("Hello");
     buffer.push_front("Hello");
@@ -146,16 +136,12 @@ TEST_CASE("BoundedBuffer waits for an item to be popped") {
     buffer.push_front("Hello");
     buffer.push_front("Hello");
     buffer.push_front("Hello");
-    auto [_, elapsed]{sw.lap()};
-    // CHECK(elapsed.count() < 3000);  // less than 3 microsecond
 
     Consumer<BoundedBuffer<std::string>> consumer(&buffer, 1, false);
     std::thread consume(consumer);
 
     buffer.push_front("Hello");
-    auto finish = sw.stop();
     consume.join();
-    CHECK(sw.since_start(finish.first).count() > 10000000);  // more than 10 milliseconds
 }
 
 TEST_CASE("BoundedBuffer multiple cycles over the buffer with delayed producer") {

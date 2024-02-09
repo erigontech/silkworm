@@ -89,4 +89,13 @@ inline constexpr const char* kColorTealUnderline = "\x1b[4;36m";    // Cyan
 //! \remarks Is actually needed on Windows only
 void init_terminal();
 
+//! Check if specified file descriptor is a teletype (TTY) terminal
+bool is_terminal(int fd);
+
+//! Check if standard output is a TTY terminal
+bool is_terminal_stdout();
+
+//! Check if standard error is a TTY terminal
+bool is_terminal_stderr();
+
 }  // namespace silkworm

@@ -16,11 +16,16 @@
 
 #include "terminal.hpp"
 
+#include <cstdio>
+
 #if defined(_WIN32)
+#include <io.h>
 #include <windows.h>
 #if !defined(ENABLE_VIRTUAL_TERMINAL_PROCESSING)
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
+#else
+#include <unistd.h>
 #endif
 
 namespace silkworm {
@@ -39,6 +44,30 @@ void init_terminal() {
         }
     }
 #endif
+}
+
+bool is_terminal(int fd) {
+#if defined(_WIN32)
+    return _isatty(fd);
+#else
+    return isatty(fd);
+#endif
+}
+
+static bool is_terminal_stream(FILE* stream) {
+#if defined(_WIN32)
+    return is_terminal(_fileno(stream));
+#else
+    return is_terminal(fileno(stream));
+#endif
+}
+
+bool is_terminal_stdout() {
+    return is_terminal_stream(stdout);
+}
+
+bool is_terminal_stderr() {
+    return is_terminal_stream(stderr);
 }
 
 }  // namespace silkworm

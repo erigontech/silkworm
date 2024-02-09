@@ -43,7 +43,7 @@ Connection::~Connection() {
 }
 
 Task<void> Connection::accept(const boost::beast::http::request<boost::beast::http::string_body>& req) {
-    // Set suggested timeout settings for the websocket
+    // Set timeout settings for the websocket
     boost::beast::websocket::stream_base::timeout timeout{
         .handshake_timeout = std::chrono::seconds(30),
         .idle_timeout = std::chrono::seconds(60),
@@ -52,14 +52,12 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
     ws_.set_option(timeout);
 
     if (compression_) {
-        boost::beast::websocket::permessage_deflate opt{
+        boost::beast::websocket::permessage_deflate deflate{
             .server_enable = true,
             .client_enable = true,
         };
-        ws_.set_option(opt);
+        ws_.set_option(deflate);
     }
-
-    ws_.auto_fragment(true);
 
     // Accept the websocket handshake
     co_await ws_.async_accept(req, boost::asio::use_awaitable);

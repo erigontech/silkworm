@@ -21,10 +21,10 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <absl/strings/str_split.h>
-#include <boost/circular_buffer.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
@@ -421,7 +421,7 @@ class BlockProvider {
                   mdbx::env env,
                   BlockNum start_block, BlockNum max_block)
         : block_buffer_{block_buffer},
-          env_{env},
+          env_{std::move(env)},
           start_block_{start_block},
           max_block_{max_block} {}
 

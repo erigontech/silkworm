@@ -29,11 +29,11 @@ using namespace std::this_thread;      // sleep_for, sleep_until
 using namespace std::chrono_literals;  // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
-double CalculatePi(int depth) {
+double CalculatePi(long depth) {
     double pi = 0.0;
-    for (int i = 0; i < depth; ++i) {
-        double numerator = static_cast<double>(((i % 2) * 2) - 1);
-        double denominator = static_cast<double>((2 * i) - 1);
+    for (long i = 0; i < depth; ++i) {
+        auto numerator = static_cast<double>(((i % 2) * 2) - 1);
+        auto denominator = static_cast<double>((2 * i) - 1);
         pi += numerator / denominator;
     }
     return (pi - 1.0) * 4;

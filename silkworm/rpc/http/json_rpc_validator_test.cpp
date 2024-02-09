@@ -45,7 +45,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][j
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][http][json_rpc_validator]") {
@@ -57,8 +57,8 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
+    CHECK(!result);
+    CHECK(result.error() == "Request not valid, required fields: jsonrpc,id,method,params");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -66,8 +66,8 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
+    CHECK(!result);
+    CHECK(result.error() == "Request not valid, required fields: jsonrpc,id,method,params");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -75,8 +75,8 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
         {"params", {"0x0", true}},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Request not valid, required fields: jsonrpc,id,method,params");
+    CHECK(!result);
+    CHECK(result.error() == "Request not valid, required fields: jsonrpc,id,method,params");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc][http][json_rpc_validator]") {
@@ -90,8 +90,8 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Invalid field: jsonrpc");
+    CHECK(!result);
+    CHECK(result.error() == "Invalid field: jsonrpc");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -100,8 +100,8 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Invalid field: method");
+    CHECK(!result);
+    CHECK(result.error() == "Invalid field: method");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -110,8 +110,8 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Invalid field: params");
+    CHECK(!result);
+    CHECK(result.error() == "Invalid field: params");
 
     request = {
         {"jsonrpc", "2.0"},
@@ -120,8 +120,8 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
         {"id", "1"},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
-    CHECK(result.error_message == "Invalid field: id");
+    CHECK(!result);
+    CHECK(result.error() == "Invalid field: id");
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {
@@ -134,7 +134,7 @@ TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][htt
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_validator]") {
@@ -148,7 +148,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects unknown fields", "[rpc][http][jso
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator accepts missing optional parameter", "[rpc][http][json_rpc_validator]") {
@@ -162,7 +162,7 @@ TEST_CASE("rpc::http::JsonRpcValidator accepts missing optional parameter", "[rp
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http][json_rpc_validator]") {
@@ -175,7 +175,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -184,7 +184,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -193,7 +193,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -202,7 +202,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -211,7 +211,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -220,7 +220,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates optional parameter if provided", "[rpc][http][json_rpc_validator]") {
@@ -233,7 +233,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates optional parameter if provided"
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_validator]") {
@@ -246,7 +246,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_va
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
@@ -254,9 +254,9 @@ TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_va
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 
-    CHECK(result.is_valid);
+    CHECK(result);
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
@@ -264,7 +264,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_va
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates hash", "[rpc][http][json_rpc_validator]") {
@@ -277,7 +277,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates hash", "[rpc][http][json_rpc_va
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
@@ -285,7 +285,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates hash", "[rpc][http][json_rpc_va
         {"id", 1},
     };
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_validator]") {
@@ -297,7 +297,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_v
         {"method", "eth_getProof"},
         {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "0x02"}, "0x3"}}};
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -305,7 +305,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_v
         {"method", "eth_getProof"},
         {"params", {"0xaa00000000000000000000000000000000000000", {"0x01", "invalid"}, "0x3"}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_validator]") {
@@ -321,7 +321,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"terminalBlockNumber", "0x1"},
                    }}}};
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -332,7 +332,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"terminalBlockNumber", "0x1"},
                    }}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -344,7 +344,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"terminalBlockNumber", "0x1"},
                    }}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -356,7 +356,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"terminalBlockNumber", "0x1"},
                    }}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 
     request = {
         {"jsonrpc", "2.0"},
@@ -368,7 +368,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"terminalBlockNumber", "1x1"},
                    }}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
     request = {
         {"jsonrpc", "2.0"},
         {"id", 1},
@@ -380,7 +380,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
                        {"extra", "extra"},
                    }}}};
     result = validator.validate(request);
-    CHECK(!result.is_valid);
+    CHECK(!result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates uppercase hex value", "[rpc][http][json_rpc_validator]") {
@@ -394,7 +394,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates uppercase hex value", "[rpc][ht
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates `data` field", "[rpc][http][json_rpc_validator]") {
@@ -408,7 +408,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates `data` field", "[rpc][http][jso
     };
 
     JsonRpcValidationResult result = validator.validate(request);
-    CHECK(result.is_valid);
+    CHECK(result);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][json_rpc_validator]") {
@@ -428,7 +428,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][js
             "id":3
     })"_json;
     JsonRpcValidationResult result1 = validator.validate(request1);
-    CHECK(result1.is_valid);
+    CHECK(result1);
 
     auto request2 = R"({
             "jsonrpc":"2.0",
@@ -444,7 +444,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][js
             "id":3
     })"_json;
     JsonRpcValidationResult result2 = validator.validate(request2);
-    CHECK(result2.is_valid);
+    CHECK(result2);
 
     auto request3 = R"({
             "jsonrpc":"2.0",
@@ -463,7 +463,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][js
             "id":3
     })"_json;
     JsonRpcValidationResult result3 = validator.validate(request3);
-    CHECK(result3.is_valid);
+    CHECK(result3);
 }
 
 TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
@@ -479,9 +479,9 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
                 std::string request_line;
                 if (std::getline(test_stream, request_line) && request_line.starts_with(">> ")) {
                     auto request = nlohmann::json::parse(request_line.substr(3));
-                    const auto results = validator.validate(request);
+                    const auto result = validator.validate(request);
                     if (!absl::StrContains(test_name, "invalid")) {
-                        CHECK(results.is_valid);
+                        CHECK(result);
                     }
                 }
             }

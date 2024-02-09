@@ -23,9 +23,8 @@
 
 namespace silkworm {
 
-template <class T>
 /**
- * @class bounded_buffer
+ * @class BoundedBuffer
  * @brief A thread-safe bounded buffer implementation.
  *
  * The bounded_buffer class provides a fixed-size buffer that can be accessed by multiple threads concurrently.
@@ -36,12 +35,16 @@ template <class T>
  *
  * @tparam T The type of items stored in the buffer.
  */
+template <class T>
 class BoundedBuffer {
   public:
     using size_type = typename boost::circular_buffer<T>::size_type;
     using value_type = typename boost::circular_buffer<T>::value_type;
 
     explicit BoundedBuffer(size_type capacity) : capacity_{capacity}, unread_(0), container_(capacity) {}
+
+    BoundedBuffer(const BoundedBuffer&) = delete;             // Disabled copy constructor
+    BoundedBuffer& operator=(const BoundedBuffer&) = delete;  // Disabled assign operator
 
     void push_front(value_type&& item) {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -69,9 +72,6 @@ class BoundedBuffer {
     }
 
   private:
-    BoundedBuffer(const BoundedBuffer&) = delete;             // Disabled copy constructor
-    BoundedBuffer& operator=(const BoundedBuffer&) = delete;  // Disabled assign operator
-
     bool is_not_empty() const { return unread_ > 0; }
     bool is_not_full() const { return unread_ < capacity_; }
 

@@ -25,7 +25,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshots/config.hpp>
 #include <silkworm/node/snapshots/index.hpp>
@@ -251,7 +251,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    db::etl::Collector hash2bn_collector{};
+    db::etl_mdbx::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
     repository_->for_each_header([&](const BlockHeader* header) -> bool {

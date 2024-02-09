@@ -92,7 +92,7 @@ void Collector::collect(Bytes&& key, Bytes&& value) {
     }
 }
 
-void Collector::load(db::RWCursorDupSort& target, const LoadFunc& load_func, MDBX_put_flags_t flags) {
+void Collector::load(const LoadFunc& load_func) {
     using namespace std::chrono_literals;
     static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time
     auto log_time{std::chrono::steady_clock::now()};  // To check if an update of key is needed
@@ -114,17 +114,7 @@ void Collector::load(db::RWCursorDupSort& target, const LoadFunc& load_func, MDB
                 set_loading_key(etl_entry.key);
                 log_time = now + kLogInterval;
             }
-            if (load_func) {
-                load_func(etl_entry, target, flags);
-            } else {
-                mdbx::slice k{db::to_slice(etl_entry.key)};
-                if (etl_entry.value.empty()) {
-                    target.erase(k);
-                } else {
-                    mdbx::slice v{db::to_slice(etl_entry.value)};
-                    mdbx::error::success_or_throw(target.put(k, &v, flags));
-                }
-            }
+            load_func(etl_entry);
         }
 
         clear();
@@ -164,17 +154,7 @@ void Collector::load(db::RWCursorDupSort& target, const LoadFunc& load_func, MDB
         }
 
         // Process linked pairs
-        if (load_func) {
-            load_func(etl_entry, target, flags);
-        } else {
-            mdbx::slice k{db::to_slice(etl_entry.key)};
-            if (etl_entry.value.empty()) {
-                target.erase(k);
-            } else {
-                mdbx::slice v{db::to_slice(etl_entry.value)};
-                mdbx::error::success_or_throw(target.put(k, &v, flags));
-            }
-        }
+        load_func(etl_entry);
 
         // From the provider which has served the current key
         // read next "record"

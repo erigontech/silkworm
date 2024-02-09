@@ -22,8 +22,8 @@
 
 namespace silkworm::stagedsync {
 
-using db::etl::Collector;
 using db::etl::Entry;
+using db::etl_mdbx::Collector;
 
 Stage::Result BlockHashes::forward(db::RWTxn& txn) {
     /*
@@ -61,7 +61,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<Collector>(node_settings_);
+        collector_ = std::make_unique<Collector>(node_settings_->etl());
         collect_and_load(txn, previous_progress, headers_stage_progress);
         update_progress(txn, reached_block_num_);
         txn.commit_and_renew();
@@ -124,7 +124,7 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<Collector>(node_settings_);
+        collector_ = std::make_unique<Collector>(node_settings_->etl());
         collect_and_load(txn, to, previous_progress);
         update_progress(txn, to);
         txn.commit_and_renew();

@@ -22,7 +22,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
@@ -30,7 +30,7 @@
 
 namespace silkworm::trie {
 
-using db::etl::Collector;
+using db::etl_mdbx::Collector;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
     return silkworm::keccak256(address.bytes);

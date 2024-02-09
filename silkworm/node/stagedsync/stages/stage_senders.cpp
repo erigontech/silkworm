@@ -37,7 +37,7 @@ Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
       max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       batch_{std::make_shared<std::vector<AddressRecovery>>()},
-      collector_{node_settings} {
+      collector_{node_settings->etl()} {
     // Reserve space for max batch in advance
     batch_->reserve(max_batch_size_);
 }

@@ -80,7 +80,7 @@ class Senders final : public Stage {
     uint64_t collected_senders_{0};
 
     //! ETL collector writing recovered senders in bulk
-    db::etl::Collector collector_;
+    db::etl_mdbx::Collector collector_;
 
     // Stats
     std::mutex mutex_{};

@@ -161,7 +161,7 @@ TEST_CASE_METHOD(WriterTest, "JsonChunkWriter") {
 
         spawn_and_wait(writer.close_stream());
 
-        CHECK(s_writer.get_content() == "");
+        CHECK(s_writer.get_content().empty());
     }
     SECTION("write json") {
         StringWriter s_writer;

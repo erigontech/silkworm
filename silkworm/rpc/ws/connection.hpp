@@ -74,7 +74,9 @@ class Connection : public Channel {
     //! enable compress flag
     bool compression_{false};
 
+#ifdef notdef
     std::string single_response_;
+#endif
 };
 
 }  // namespace silkworm::rpc::ws

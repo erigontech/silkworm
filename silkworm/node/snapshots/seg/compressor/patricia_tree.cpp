@@ -19,6 +19,7 @@
 #include <sais.h>
 
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cstdint>
 #include <memory>
@@ -26,7 +27,6 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/core/common/bit_count.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
 #include "lcp_kasai.hpp"
@@ -80,12 +80,6 @@ struct PatriciaTreePathWalker {
     uint32_t tail{};
 };
 
-//! Count leading zero bits.
-static inline uint32_t clz32(uint32_t x) {
-    if (x == 0) return 32;
-    return static_cast<uint32_t>(__builtin_clz(x));
-}
-
 static inline uint32_t shift_left(uint32_t x, uint32_t bits) {
     if (bits >= 32) return 0;
     return x << bits;
@@ -119,7 +113,7 @@ uint32_t PatriciaTreePathWalker::transition(unsigned char b, bool readonly) {
 
         uint32_t tail_len = s->tail & 0x1f;
         // the first bit where b32 and tail are different
-        uint32_t first_diff = clz32(s->tail ^ b32);
+        uint32_t first_diff = static_cast<uint32_t>(std::countl_zero(s->tail ^ b32));
 
         if (first_diff < bits_left) {
             // divergence (where the key being searched and the existing structure of patricia tree becomes incompatible) is within currently supplied byte of the search key, b
@@ -453,7 +447,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
         }
 
         // the first bit where b32 and tail are different
-        uint32_t first_diff = clz32(tail ^ b32);
+        uint32_t first_diff = static_cast<uint32_t>(std::countl_zero(tail ^ b32));
 
         if (first_diff < bits_left) {
             // divergence (where the key being searched and the existing structure of patricia tree becomes incompatible) is within currently supplied byte of the search key, b

@@ -49,6 +49,7 @@
 #endif
 
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cinttypes>
 #include <cstdint>
@@ -56,7 +57,6 @@
 #include <memory>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/bit_count.hpp>
 
 // Explicit branch predictions
 #define likely(x) __builtin_expect(!!(x), 1)
@@ -125,7 +125,7 @@ constexpr uint8_t kSelectInByte[2048] = {
  * The behavior in zero is undefined.
  *
  */
-inline int rho(uint64_t word) { return __builtin_ctzll(word); }
+inline int rho(uint64_t word) { return std::countr_zero(word); }
 
 /** Find the index of the most significant 1-bit in a word.
  * @param word binary word.
@@ -135,7 +135,7 @@ inline int rho(uint64_t word) { return __builtin_ctzll(word); }
  * The behavior in zero is undefined.
  *
  */
-inline int lambda(uint64_t word) { return 63 ^ __builtin_clzll(word); }
+inline int lambda(uint64_t word) { return 63 ^ std::countl_zero(word); }
 
 //! Convert the number x which is assumed to be uniformly distributed over the range [0..2^64) to a number that is uniformly
 //! distributed over the range [0..n), under assumption that n is less than 2^16
@@ -159,7 +159,7 @@ inline uint64_t remap128(uint64_t x, uint64_t n) {
  * @param word binary word.
  *
  */
-inline uint64_t nu(uint64_t word) { return static_cast<uint64_t>(__builtin_popcountll(word)); }
+inline uint64_t nu(uint64_t word) { return static_cast<uint64_t>(std::popcount(word)); }
 
 /** Returns the index of the k-th 1-bit in the 64-bit word x.
  * @param x 64-bit word.

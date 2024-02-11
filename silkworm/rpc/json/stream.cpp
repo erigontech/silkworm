@@ -79,9 +79,11 @@ Task<void> Stream::open() {
 
 Task<void> Stream::close() {
     if (!buffer_.empty()) {
-        co_await do_async_write(std::make_shared<std::string>(std::move(buffer_)));
+        co_await do_async_write(std::make_shared<std::string>(std::move(buffer_)), true);
+    } else {
+        co_await do_async_write(std::make_shared<std::string>(""), true);
     }
-    co_await do_async_write(nullptr);
+    co_await do_async_write(nullptr, true);
 
 // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #ifndef _WIN32
@@ -278,7 +280,7 @@ void Stream::do_write(ChunkPtr chunk) {
     const auto& channel_executor{channel_.get_executor()};
     if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
         // Delegate any back pressure to do_async_write
-        boost::asio::co_spawn(channel_executor, do_async_write(chunk), boost::asio::detached);
+        boost::asio::co_spawn(channel_executor, do_async_write(chunk, false), boost::asio::detached);
     } else {
         // Handle back pressure simply by retrying after a while // TODO(canepat) clever wait strategy
         while (channel_.is_open()) {
@@ -291,10 +293,14 @@ void Stream::do_write(ChunkPtr chunk) {
     }
 }
 
-Task<void> Stream::do_async_write(ChunkPtr chunk) {
+Task<void> Stream::do_async_write(ChunkPtr chunk, bool fin) {
+    DataChunk data_chunk{};
+    data_chunk.chunk = std::move(chunk);
+    data_chunk.fin = fin;
+
     // TODO(canepat) handle back pressure
     try {
-        co_await channel_.async_send(boost::system::error_code(), chunk, boost::asio::use_awaitable);
+        co_await channel_.async_send(boost::system::error_code(), data_chunk, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::experimental::error::channel_cancelled) {
             SILK_ERROR << "Stream::do_async_write unexpected system_error: " << se.what();
@@ -309,11 +315,11 @@ Task<void> Stream::run() {
     std::size_t total_bytes_sent{0};
     while (true) {
         try {
-            const auto chunk_ptr = co_await channel_.async_receive(boost::asio::use_awaitable);
-            if (!chunk_ptr) {
+            const DataChunk data_chunk = co_await channel_.async_receive(boost::asio::use_awaitable);
+            if (!data_chunk.chunk) {
                 break;
             }
-            total_bytes_sent += co_await writer_.write(*chunk_ptr);
+            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.fin);
             ++total_writes;
         } catch (const boost::system::system_error& se) {
             if (se.code() != boost::asio::experimental::error::channel_cancelled) {

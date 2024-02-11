@@ -170,7 +170,7 @@ Task<void> Connection::close_stream() {
 }
 
 //! Write chunked response content to the underlying socket
-Task<std::size_t> Connection::write(std::string_view content) {
+Task<std::size_t> Connection::write(std::string_view content, bool /* fin */) {
     unsigned long bytes_transferred{0};
     try {
         boost::asio::const_buffer buffer{content.data(), content.size()};

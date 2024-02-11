@@ -33,7 +33,7 @@ class StreamWriter {
 
     virtual Task<void> open_stream() = 0;
     virtual Task<void> close_stream() = 0;
-    virtual Task<std::size_t> write(std::string_view content) = 0;
+    virtual Task<std::size_t> write(std::string_view content, bool fin) = 0;
 };
 
 class StringWriter : public StreamWriter {
@@ -48,7 +48,7 @@ class StringWriter : public StreamWriter {
 
     Task<void> close_stream() override { co_return; }
 
-    Task<std::size_t> write(std::string_view content) override {
+    Task<std::size_t> write(std::string_view content, bool /* fin */) override {
         content_.append(content);
         co_return content.size();
     }

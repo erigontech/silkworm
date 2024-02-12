@@ -104,7 +104,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
             if (call_execution_result.pre_check_error) {
                 result.error = call_execution_result.pre_check_error;
                 return result;
-                            }
+            }
 
             if ((clock_time::since(start_time) / 1000000) > timeout) {
                 std::ostringstream oss;

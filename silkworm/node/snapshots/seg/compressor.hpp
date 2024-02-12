@@ -16,17 +16,30 @@
 
 #pragma once
 
-#include <cstdint>
-#include <optional>
-
-#include <absl/functional/function_ref.h>
+#include <filesystem>
+#include <memory>
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots::seg::varint {
+namespace silkworm::snapshots::seg {
 
-ByteView encode(Bytes& out, uint64_t value);
-std::optional<uint64_t> decode(ByteView& data);
-std::optional<ByteView> read(Bytes& out, absl::FunctionRef<char()> get_char);
+class CompressorImpl;
 
-}  // namespace silkworm::snapshots::seg::varint
+class Compressor {
+  public:
+    Compressor(
+        const std::filesystem::path& path,
+        const std::filesystem::path& tmp_dir_path);
+    ~Compressor();
+
+    Compressor(Compressor&& other) noexcept;
+    Compressor& operator=(Compressor&& other) noexcept;
+
+    void add_word(ByteView word, bool is_compressed = true);
+    static void compress(Compressor compressor);
+
+  private:
+    std::unique_ptr<CompressorImpl> p_impl_;
+};
+
+}  // namespace silkworm::snapshots::seg

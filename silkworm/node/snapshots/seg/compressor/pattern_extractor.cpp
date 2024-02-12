@@ -44,9 +44,16 @@ Superstring::Superstring() {
     superstring_.reserve(kSuperstringLimit);
 }
 
-void Superstring::add_word(ByteView word) {
+bool Superstring::can_add_word(ByteView word) {
+    size_t extra_size = word.size() * 2 + 2;
+    return superstring_.size() + extra_size <= kSuperstringLimit;
+}
+
+void Superstring::add_word(ByteView word, bool skip_copy) {
+    size_t start = superstring_.size();
     superstring_.append(word.size() * 2 + 2, 0);
-    for (size_t i = 0, s = 0; i < word.size(); i++, s += 2) {
+    if (skip_copy) return;
+    for (size_t i = 0, s = start; i < word.size(); i++, s += 2) {
         superstring_[s] = 1;
         superstring_[s + 1] = word[i];
     }

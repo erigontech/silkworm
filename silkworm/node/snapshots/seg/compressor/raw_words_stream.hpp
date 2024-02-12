@@ -16,17 +16,33 @@
 
 #pragma once
 
-#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
 #include <optional>
-
-#include <absl/functional/function_ref.h>
+#include <utility>
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots::seg::varint {
+namespace silkworm::snapshots::seg {
 
-ByteView encode(Bytes& out, uint64_t value);
-std::optional<uint64_t> decode(ByteView& data);
-std::optional<ByteView> read(Bytes& out, absl::FunctionRef<char()> get_char);
+class RawWordsStream {
+  public:
+    RawWordsStream(const std::filesystem::path& path, size_t buffer_size);
+    RawWordsStream(std::iostream& stream);
 
-}  // namespace silkworm::snapshots::seg::varint
+    void write_word(ByteView word, bool is_compressed = true);
+    std::optional<std::pair<Bytes, bool>> read_word();
+
+    void flush() { stream_.flush(); }
+    void rewind() { stream_.seekg(0); }
+
+  private:
+    std::fstream file_;
+    std::iostream& stream_;
+    std::unique_ptr<char> stream_buffer_;
+    Bytes encoded_length_;
+};
+
+}  // namespace silkworm::snapshots::seg

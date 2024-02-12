@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,14 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+#pragma once
 
-# circular_buffer, iostreams (for fsync)
-find_package(Boost REQUIRED headers iostreams)
+#include <filesystem>
 
-silkworm_library(
-  silkworm_snapshots_seg
-  PUBLIC silkworm_core silkworm_infra
-  PRIVATE Boost::headers Boost::iostreams sais_lite silkworm_db_etl
-)
+namespace silkworm::snapshots::seg {
+
+void seg_zip(const std::filesystem::path& path);
+
+}  // namespace silkworm::snapshots::seg

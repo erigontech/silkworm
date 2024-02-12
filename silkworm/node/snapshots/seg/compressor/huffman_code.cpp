@@ -17,6 +17,7 @@
 #include "huffman_code.hpp"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -173,10 +174,13 @@ std::vector<HuffmanSymbolCode> huffman_code_table(const std::vector<uint64_t>& s
 }
 
 static uint64_t reverse_bytes64(uint64_t x) {
-#ifdef _MSC_VER
-#define __builtin_bswap64 _byteswap_uint64
-#endif
+#if __cplusplus >= 202302L
+    return std::byteswap(x);
+#elif defined(_MSC_VER)
+    return _byteswap_uint64(x);
+#else
     return __builtin_bswap64(x);
+#endif
 }
 
 static uint64_t reverse_bits64(uint64_t x) {

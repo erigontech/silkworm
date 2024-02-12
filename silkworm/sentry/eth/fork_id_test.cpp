@@ -43,88 +43,95 @@ TEST_CASE("ForkId.hash") {
 }
 
 struct ForksExampleSpec {
-    BlockNum head_block_num{0};
+    uint64_t head_block_num_or_time{0};
     ForkId fork_id;
 };
 
-static ForkId fork_id_at(BlockNum head_block_num, const ChainConfig& chain) {
+static ForkId fork_id_at(uint64_t head_block_num_or_time, const ChainConfig& chain) {
     REQUIRE(chain.genesis_hash.has_value());
-    return ForkId{ByteView{*chain.genesis_hash}, chain.distinct_fork_numbers(), chain.distinct_fork_times(), head_block_num};
+    return ForkId{ByteView{*chain.genesis_hash}, chain.distinct_fork_numbers(), chain.distinct_fork_times(), head_block_num_or_time};
 }
 
 TEST_CASE("ForkId.forks.mainnet") {
     std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0xfc64ec04, 1150000}},            // Unsynced
-        {1149999, ForkId{0xfc64ec04, 1150000}},      // Last Frontier block
-        {1150000, ForkId{0x97c2c34c, 1920000}},      // First Homestead block
-        {1919999, ForkId{0x97c2c34c, 1920000}},      // Last Homestead block
-        {1920000, ForkId{0x91d1f948, 2463000}},      // First DAO block
-        {2462999, ForkId{0x91d1f948, 2463000}},      // Last DAO block
-        {2463000, ForkId{0x7a64da13, 2675000}},      // First Tangerine block
-        {2674999, ForkId{0x7a64da13, 2675000}},      // Last Tangerine block
-        {2675000, ForkId{0x3edd5b10, 4370000}},      // First Spurious block
-        {4369999, ForkId{0x3edd5b10, 4370000}},      // Last Spurious block
-        {4370000, ForkId{0xa00bc324, 7280000}},      // First Byzantium block
-        {7279999, ForkId{0xa00bc324, 7280000}},      // Last Byzantium block
-        {7280000, ForkId{0x668db0af, 9069000}},      // First and last Constantinople, first Petersburg block
-        {9068999, ForkId{0x668db0af, 9069000}},      // Last Petersburg block
-        {9069000, ForkId{0x879d6e30, 9200000}},      // First Istanbul block
-        {9199999, ForkId{0x879d6e30, 9200000}},      // Last Istanbul block
-        {9200000, ForkId{0xe029e991, 12244000}},     // First Muir Glacier block
-        {12243999, ForkId{0xe029e991, 12244000}},    // Last Muir Glacier block
-        {12244000, ForkId{0x0eb440f6, 12965000}},    // First Berlin block
-        {12964999, ForkId{0x0eb440f6, 12965000}},    // Last Berlin block
-        {12965000, ForkId{0xb715077d, 13773000}},    // First London block
-        {13772999, ForkId{0xb715077d, 13773000}},    // Last London block
-        {13773000, ForkId{0x20c327fc, 15050000}},    // First Arrow Glacier block
-        {15049999, ForkId{0x20c327fc, 15050000}},    // Last Arrow Glacier block
-        {15050000, ForkId{0xf0afd0e3, 1681338455}},  // First Gray Glacier block
-        {17034869, ForkId{0xf0afd0e3, 1681338455}},  // Last Gray Glacier block
-        {1681338455, ForkId{0xdce96c2d, 0}},         // First Shanghai block
-        {2000000000, ForkId{0xdce96c2d, 0}},         // Future Shanghai block
+        {0, ForkId{0xfc64ec04, 1150000}},              // Unsynced
+        {1149999, ForkId{0xfc64ec04, 1150000}},        // Last Frontier block
+        {1150000, ForkId{0x97c2c34c, 1920000}},        // First Homestead block
+        {1919999, ForkId{0x97c2c34c, 1920000}},        // Last Homestead block
+        {1920000, ForkId{0x91d1f948, 2463000}},        // First DAO block
+        {2462999, ForkId{0x91d1f948, 2463000}},        // Last DAO block
+        {2463000, ForkId{0x7a64da13, 2675000}},        // First Tangerine block
+        {2674999, ForkId{0x7a64da13, 2675000}},        // Last Tangerine block
+        {2675000, ForkId{0x3edd5b10, 4370000}},        // First Spurious block
+        {4369999, ForkId{0x3edd5b10, 4370000}},        // Last Spurious block
+        {4370000, ForkId{0xa00bc324, 7280000}},        // First Byzantium block
+        {7279999, ForkId{0xa00bc324, 7280000}},        // Last Byzantium block
+        {7280000, ForkId{0x668db0af, 9069000}},        // First and last Constantinople, first Petersburg block
+        {9068999, ForkId{0x668db0af, 9069000}},        // Last Petersburg block
+        {9069000, ForkId{0x879d6e30, 9200000}},        // First Istanbul block
+        {9199999, ForkId{0x879d6e30, 9200000}},        // Last Istanbul block
+        {9200000, ForkId{0xe029e991, 12244000}},       // First Muir Glacier block
+        {12243999, ForkId{0xe029e991, 12244000}},      // Last Muir Glacier block
+        {12244000, ForkId{0x0eb440f6, 12965000}},      // First Berlin block
+        {12964999, ForkId{0x0eb440f6, 12965000}},      // Last Berlin block
+        {12965000, ForkId{0xb715077d, 13773000}},      // First London block
+        {13772999, ForkId{0xb715077d, 13773000}},      // Last London block
+        {13773000, ForkId{0x20c327fc, 15050000}},      // First Arrow Glacier block
+        {15049999, ForkId{0x20c327fc, 15050000}},      // Last Arrow Glacier block
+        {15050000, ForkId{0xf0afd0e3, 1681338455}},    // First Gray Glacier block
+        {17034869, ForkId{0xf0afd0e3, 1681338455}},    // Last Gray Glacier block
+        {1681338455, ForkId{0xdce96c2d, 1710338135}},  // First Shanghai block
+        {1710338123, ForkId{0xdce96c2d, 1710338135}},  // Last Shanghai block
+        {1710338135, ForkId{0x9f3d2254, 0}},           // First Cancun block
+        {1800000000, ForkId{0x9f3d2254, 0}},           // Future Cancun block
     };
 
     auto chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num_or_time, chain_config) == example.fork_id);
     }
 }
 
 TEST_CASE("ForkId.forks.goerli") {
     std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0xa3f5ab08, 1561651}},           // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople and first Petersburg block
-        {1561650, ForkId{0xa3f5ab08, 1561651}},     // Last Petersburg block
-        {1561651, ForkId{0xc25efa5c, 4460644}},     // First Istanbul block
-        {4460643, ForkId{0xc25efa5c, 4460644}},     // Last Istanbul block
-        {4460644, ForkId{0x757a1c47, 5062605}},     // First Berlin block
-        {5000000, ForkId{0x757a1c47, 5062605}},     // Last Berlin block
-        {5062605, ForkId{0xB8C6299D, 1678832736}},  // First London block
-        {6000000, ForkId{0xB8C6299D, 1678832736}},  // Last London block
-        {1678832736, ForkId{0xf9843abf, 0}},        // First Shanghai block
-        {2000000000, ForkId{0xf9843abf, 0}},        // Future Shanghai block
+        {0, ForkId{0xa3f5ab08, 1561651}},              // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople and first Petersburg block
+        {1561650, ForkId{0xa3f5ab08, 1561651}},        // Last Petersburg block
+        {1561651, ForkId{0xc25efa5c, 4460644}},        // First Istanbul block
+        {4460643, ForkId{0xc25efa5c, 4460644}},        // Last Istanbul block
+        {4460644, ForkId{0x757a1c47, 5062605}},        // First Berlin block
+        {5000000, ForkId{0x757a1c47, 5062605}},        // Last Berlin block
+        {5062605, ForkId{0xB8C6299D, 1678832736}},     // First London block
+        {6000000, ForkId{0xB8C6299D, 1678832736}},     // Last London block
+        {1678832736, ForkId{0xf9843abf, 1705473120}},  // First Shanghai block
+        {1705473108, ForkId{0xf9843abf, 1705473120}},  // Last Shanghai block
+        {1705473120, ForkId{0x70cc14e2, 0}},           // First Cancun block
+        {1800000000, ForkId{0x70cc14e2, 0}},           // Future Cancun block
     };
 
     auto chain_config{kGoerliConfig};
     chain_config.genesis_hash.emplace(kGoerliGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num_or_time, chain_config) == example.fork_id);
     }
 }
 
 TEST_CASE("ForkId.forks.sepolia") {
     std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0xfe3366e7, 1735371}},           // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople, Petersburg, Istanbul, Berlin and first London block
-        {1735370, ForkId{0xfe3366e7, 1735371}},     // Last pre-MergeNetsplit block
-        {1735371, ForkId{0xb96cbd13, 1677557088}},  // First MergeNetsplit block
-        {1735372, ForkId{0xb96cbd13, 1677557088}},  // Last MergeNetsplit block
-        {1677557088, ForkId{0xf7f9bc08, 0}},        // First Shanghai block
+        {0, ForkId{0xfe3366e7, 1735371}},              // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople, Petersburg, Istanbul, Berlin and first London block
+        {1735370, ForkId{0xfe3366e7, 1735371}},        // Last pre-MergeNetsplit block
+        {1735371, ForkId{0xb96cbd13, 1677557088}},     // First MergeNetsplit block
+        {1735372, ForkId{0xb96cbd13, 1677557088}},     // Last MergeNetsplit block
+        {1677557088, ForkId{0xf7f9bc08, 1706655072}},  // First Shanghai block
+        {1706655060, ForkId{0xf7f9bc08, 1706655072}},  // Last Shanghai block
+        {1706655072, ForkId{0x88cf81d9, 0}},           // First Cancun block
+        {1800000000, ForkId{0x88cf81d9, 0}},           // Future Cancun block
     };
 
     auto chain_config{kSepoliaConfig};
     chain_config.genesis_hash.emplace(kSepoliaGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num_or_time, chain_config) == example.fork_id);
     }
 }
 

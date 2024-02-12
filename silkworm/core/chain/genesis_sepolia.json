@@ -62,6 +62,7 @@
         "terminalTotalDifficulty": "17000000000000000",
         "mergeNetsplitBlock": 1735371,
         "shanghaiTime": 1677557088,
+        "cancunTime": 1706655072,
         "ethash": {}
     },
     "difficulty": "0x20000",

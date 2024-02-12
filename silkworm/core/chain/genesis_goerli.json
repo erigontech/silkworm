@@ -798,6 +798,7 @@
     "londonBlock": 5062605,
     "terminalTotalDifficulty": "10790000",
     "shanghaiTime": 1678832736,
+    "cancunTime": 1705473120,
     "clique": {
       "period": 15,
       "epoch": 30000

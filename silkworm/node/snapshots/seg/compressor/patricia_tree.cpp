@@ -113,7 +113,7 @@ uint32_t PatriciaTreePathWalker::transition(unsigned char b, bool readonly) {
 
         uint32_t tail_len = s->tail & 0x1f;
         // the first bit where b32 and tail are different
-        uint32_t first_diff = static_cast<uint32_t>(std::countl_zero(s->tail ^ b32));
+        auto first_diff = static_cast<uint32_t>(std::countl_zero(s->tail ^ b32));
 
         if (first_diff < bits_left) {
             // divergence (where the key being searched and the existing structure of patricia tree becomes incompatible) is within currently supplied byte of the search key, b
@@ -447,7 +447,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
         }
 
         // the first bit where b32 and tail are different
-        uint32_t first_diff = static_cast<uint32_t>(std::countl_zero(tail ^ b32));
+        auto first_diff = static_cast<uint32_t>(std::countl_zero(tail ^ b32));
 
         if (first_diff < bits_left) {
             // divergence (where the key being searched and the existing structure of patricia tree becomes incompatible) is within currently supplied byte of the search key, b

@@ -141,7 +141,9 @@ commands:
           command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
       - run:
           name: "Build Fuzzer"
-          command: cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test
+          command: |
+            cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test
+            cmake --build ~/build -j4 --target rpcdaemon_fuzzer_diagnostics
 
   test:
     parameters:

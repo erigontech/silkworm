@@ -89,7 +89,7 @@ class EVMExecutor {
         bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, std::shared_ptr<silkworm::State>& state)
+    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, std::shared_ptr<silkworm::State> state)
         : config_(config),
           workers_{workers},
           state_{state},

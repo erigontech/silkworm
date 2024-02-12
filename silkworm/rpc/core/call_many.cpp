@@ -49,8 +49,8 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
     auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
-    state::OverrideState override_state{*state, accounts_overrides};
-    EVMExecutor executor{config, workers_, state};
+    auto override_state = std::make_shared<state::OverrideState>(state::OverrideState{*state, accounts_overrides});
+    EVMExecutor executor{config, workers_, override_state};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
@@ -104,7 +104,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
             if (call_execution_result.pre_check_error) {
                 result.error = call_execution_result.pre_check_error;
                 return result;
-            }
+                            }
 
             if ((clock_time::since(start_time) / 1000000) > timeout) {
                 std::ostringstream oss;

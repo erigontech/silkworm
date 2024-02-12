@@ -56,7 +56,7 @@
 #include <memory>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/node/common/bit_count.hpp>
+#include <silkworm/core/common/bit_count.hpp>
 
 // Explicit branch predictions
 #define likely(x) __builtin_expect(!!(x), 1)

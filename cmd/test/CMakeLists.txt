@@ -32,11 +32,6 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
   find_package(GTest REQUIRED)
 
-  # Silkworm Node Tests
-  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
-  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
-  target_link_libraries(node_test silkworm_node Catch2::Catch2)
-
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/rpc/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})

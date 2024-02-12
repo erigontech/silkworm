@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "decompressor.hpp"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -34,14 +32,16 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/snapshots/test_util/common.hpp>
 
+#include "seg/decompressor.hpp"
+
+namespace silkworm::snapshots {
+
 using Catch::Matchers::Message;
-
-namespace silkworm::snapshots::seg {
-
 namespace test = test_util;
 using silkworm::test_util::null_stream;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
+using namespace snapshots::seg;
 
 //! DecodingTable exposed for white-box testing
 class DecodingTable_ForTest : public DecodingTable {
@@ -547,4 +547,4 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
     CHECK(test_function(it));
 }
 
-}  // namespace silkworm::snapshots::seg
+}  // namespace silkworm::snapshots

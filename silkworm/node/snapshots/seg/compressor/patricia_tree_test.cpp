@@ -13,6 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "patricia_tree.hpp"
 
 #include <catch2/catch.hpp>

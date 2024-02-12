@@ -22,5 +22,5 @@ find_package(Boost REQUIRED headers)
 silkworm_library(
   silkworm_snapshots_seg
   PUBLIC silkworm_core silkworm_infra
-  PRIVATE Boost::headers sais_lite
+  PRIVATE Boost::headers sais_lite silkworm_db_etl
 )

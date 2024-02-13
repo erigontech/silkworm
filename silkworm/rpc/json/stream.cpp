@@ -275,7 +275,7 @@ void Stream::ensure_separator() {
     }
 }
 
-void Stream::do_write(ChunkPtr chunk, bool final) {
+void Stream::do_write(ChunkPtr chunk, bool last) {
     // Stream write API will usually be called by worker threads rather than I/O contexts, but we must handle both
     const auto& channel_executor{channel_.get_executor()};
     if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
@@ -284,7 +284,7 @@ void Stream::do_write(ChunkPtr chunk, bool final) {
     } else {
         DataChunk data_chunk{};
         data_chunk.chunk = std::move(chunk);
-        data_chunk.final = final;
+        data_chunk.last = last;
         // Handle back pressure simply by retrying after a while // TODO(canepat) clever wait strategy
         while (channel_.is_open()) {
             if (const bool ok{channel_.try_send(boost::system::error_code(), data_chunk)}; ok) {
@@ -296,10 +296,10 @@ void Stream::do_write(ChunkPtr chunk, bool final) {
     }
 }
 
-Task<void> Stream::do_async_write(ChunkPtr chunk, bool final) {
+Task<void> Stream::do_async_write(ChunkPtr chunk, bool last) {
     DataChunk data_chunk{};
     data_chunk.chunk = std::move(chunk);
-    data_chunk.final = final;
+    data_chunk.last = last;
 
     // TODO(canepat) handle back pressure
     try {
@@ -322,7 +322,7 @@ Task<void> Stream::run() {
             if (!data_chunk.chunk) {
                 break;
             }
-            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.final);
+            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.last);
             ++total_writes;
         } catch (const boost::system::system_error& se) {
             if (se.code() != boost::asio::experimental::error::channel_cancelled) {

@@ -36,28 +36,10 @@ class Buffer {
 
     explicit Buffer(size_t optimal_size) : optimal_size_(optimal_size) { buffer_.reserve(kInitialBufferCapacity); }
 
-    void put(const Entry& entry) {
-        // Add a new entry to the buffer
-        size_ += entry.size() + sizeof(head_t);
-        buffer_.push_back(entry);
-    }
-
-    void put(Entry&& entry) {
+    void put(Entry entry) {
         // Add a new entry to the buffer
         size_ += entry.size() + sizeof(head_t);
         buffer_.push_back(std::move(entry));
-    }
-
-    void put(const Bytes& key, const Bytes& value) {
-        // Add a new entry to the buffer
-        size_ += key.size() + value.size() + sizeof(head_t);
-        buffer_.emplace_back(key, value);
-    }
-
-    void put(Bytes&& key, Bytes&& value) {
-        // Add a new entry to the buffer
-        size_ += key.size() + value.size() + sizeof(head_t);
-        buffer_.emplace_back(std::move(key), std::move(value));
     }
 
     void clear() noexcept {

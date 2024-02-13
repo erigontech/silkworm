@@ -61,11 +61,11 @@ class Collector {
 
     ~Collector();
 
-    void collect(const Entry& entry);  // Store key-value pair in memory or on disk
-    void collect(Entry&& entry);       // Store key-value pair in memory or on disk
+    // Store key-value pair in memory or on disk
+    void collect(Entry entry);
 
-    void collect(const Bytes& key, const Bytes& value);  // Store key & value in memory or on disk
-    void collect(Bytes&& key, Bytes&& value);            // Store key & value in memory or on disk
+    // Store key & value in memory or on disk
+    void collect(Bytes key, Bytes value);
 
     //! \brief Loads and optionally transforms collected entries into db
     //! \param [in] load_func : Pointer to function transforming collected entries

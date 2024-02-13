@@ -56,4 +56,21 @@ std::optional<uint64_t> decode(ByteView& data) {
     return std::nullopt;
 }
 
+std::optional<ByteView> read(Bytes& out, absl::FunctionRef<char()> get_char) {
+    out.reserve(kMaxVarintBytes);
+    out.resize(0);
+
+    bool found_last = false;
+    do {
+        auto c = static_cast<uint8_t>(get_char());
+        out.push_back(c);
+        found_last = !(c & kContMask);
+    } while ((out.size() < kMaxVarintBytes) && !found_last);
+
+    if (found_last) {
+        return out;
+    }
+    return std::nullopt;
+}
+
 }  // namespace silkworm::snapshots::seg::varint

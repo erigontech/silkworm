@@ -23,7 +23,7 @@
 
 namespace silkworm::snapshots::seg {
 
-ByteView operator""_bv(const char* data, size_t size) {
+static ByteView operator""_bv(const char* data, size_t size) {
     return string_view_to_byte_view({data, size});
 }
 

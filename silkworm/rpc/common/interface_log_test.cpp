@@ -44,7 +44,7 @@ TEST_CASE("InterfaceLog basic", "[rpc][common][interface_log]") {
     CHECK(log_ifstream.get() == -1);
     CHECK(log_ifstream.eof());
     log_ifstream.clear();
-    log_ifstream.seekg(std::ios::beg);
+    log_ifstream.seekg(0);
 
     SECTION("explicit flush") {
         // InterfaceLog instance gets flushed here but remains alive until the end

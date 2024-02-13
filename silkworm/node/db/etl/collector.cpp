@@ -56,16 +56,7 @@ void Collector::flush_buffer() {
     }
 }
 
-void Collector::collect(const Entry& entry) {
-    ++size_;
-    bytes_size_ += entry.size();
-    buffer_.put(entry);
-    if (buffer_.overflows()) {
-        flush_buffer();
-    }
-}
-
-void Collector::collect(Entry&& entry) {
+void Collector::collect(Entry entry) {
     ++size_;
     bytes_size_ += entry.size();
     buffer_.put(std::move(entry));
@@ -74,22 +65,8 @@ void Collector::collect(Entry&& entry) {
     }
 }
 
-void Collector::collect(const Bytes& key, const Bytes& value) {
-    ++size_;
-    bytes_size_ += key.size() + value.size();
-    buffer_.put(key, value);
-    if (buffer_.overflows()) {
-        flush_buffer();
-    }
-}
-
-void Collector::collect(Bytes&& key, Bytes&& value) {
-    ++size_;
-    bytes_size_ += key.size() + value.size();
-    buffer_.put(std::move(key), std::move(value));
-    if (buffer_.overflows()) {
-        flush_buffer();
-    }
+void Collector::collect(Bytes key, Bytes value) {
+    collect(Entry{std::move(key), std::move(value)});
 }
 
 void Collector::load(const LoadFunc& load_func) {

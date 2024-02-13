@@ -26,7 +26,7 @@ struct HuffmanSymbolCode {
     //! Code of a symbol. Only the lowest code_bits are meaningful.
     uint64_t code{};
     //! The number bits in the symbol code, aka code length, aka depth in the Huffman tree.
-    size_t code_bits{};
+    uint8_t code_bits{};
 
     friend bool operator==(const HuffmanSymbolCode&, const HuffmanSymbolCode&) = default;
 };
@@ -50,5 +50,9 @@ std::vector<HuffmanSymbolCode> huffman_code_table(const std::vector<uint64_t>& s
 std::vector<size_t> huffman_code_table_order_by_uses_and_code(
     const std::vector<uint64_t>& symbol_uses,
     const std::vector<HuffmanSymbolCode>& codes);
+
+std::vector<size_t> huffman_code_table_order_by_uses_and_code(
+    const std::vector<uint64_t>& symbol_uses,
+    const std::vector<uint64_t>& codes);
 
 }  // namespace silkworm::snapshots::seg

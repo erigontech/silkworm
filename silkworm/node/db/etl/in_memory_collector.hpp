@@ -76,24 +76,14 @@ class InMemoryCollector {
         entries_.reserve(optimal_size);
     }
 
-    void collect(const Bytes& key, const Bytes& value) {
+    void collect(Entry entry) {
         ++size_;
-        bytes_size_ += key.size() + value.size();
-        entries_.emplace(key, value);
+        bytes_size_ += entry.size();
+        entries_.emplace(std::move(entry.key), std::move(entry.value));
     }
 
-    void collect(Bytes&& key, Bytes&& value) {
-        ++size_;
-        bytes_size_ += key.size() + value.size();
-        entries_.emplace(std::move(key), std::move(value));
-    }
-
-    void collect(const Entry& entry) {
-        collect(entry.key, entry.value);
-    }
-
-    void collect(Entry&& entry) {
-        collect(std::move(entry.key), std::move(entry.value));
+    void collect(Bytes key, Bytes value) {
+        collect(Entry{std::move(key), std::move(value)});
     }
 
     //! \brief Loads and optionally transforms collected entries into db

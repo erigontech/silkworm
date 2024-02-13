@@ -33,7 +33,7 @@ TEST_CASE("serialize PayloadAttributesV1", "[silkworm::json][to_json]") {
     CHECK(j == R"({
         "timestamp":"0x1",
         "prevRandao":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
-        "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
+        "suggestedFeeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
     })"_json);
 }
 
@@ -41,7 +41,7 @@ TEST_CASE("deserialize PayloadAttributesV1", "[silkworm::json][from_json]") {
     nlohmann::json j = R"({
         "timestamp":"0x1",
         "prevRandao":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
-        "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
+        "suggestedFeeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
     })"_json;
 
     PayloadAttributes payload_attributes = j;

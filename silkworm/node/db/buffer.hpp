@@ -161,7 +161,7 @@ class Buffer : public State {
     absl::btree_map<Bytes, Bytes> logs_;
     absl::btree_map<BlockNum, absl::btree_set<Bytes>> call_traces_;
 
-    mutable size_t batch_state_size_{0};    // Accounts in memory data for state
+    mutable size_t batch_state_size_{0};  // Accounts in memory data for state
 
     // Current block stuff
     uint64_t block_number_{0};

@@ -49,7 +49,10 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
         .idle_timeout = std::chrono::seconds(60),
         .keep_alive_pings = true,
     };
+
     ws_.set_option(timeout);
+    ws_.write_buffer_bytes(65536);
+    ws_.auto_fragment(false);
 
     if (compression_) {
         boost::beast::websocket::permessage_deflate deflate{
@@ -91,8 +94,20 @@ Task<void> Connection::write_rsp(const std::string& content) {
     co_await do_write(content);
 }
 
-Task<std::size_t> Connection::write(std::string_view content) {
-    co_return co_await do_write(content.data());
+Task<std::size_t> Connection::write(std::string_view content, bool last) {
+    try {
+        const auto written = co_await ws_.async_write_some(last, boost::asio::buffer(content.data(), content.size()), boost::asio::use_awaitable);
+
+        SILK_TRACE << "ws::Connection::write: [" << content.data() << "]";
+        co_return written;
+
+    } catch (const boost::system::system_error& se) {
+        SILK_TRACE << "ws::Connection::write system_error: " << se.what();
+        throw;
+    } catch (const std::exception& e) {
+        SILK_ERROR << "ws::Connection::write exception: " << e.what();
+        throw;
+    }
 }
 
 Task<std::size_t> Connection::do_write(const std::string& content) {

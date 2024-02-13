@@ -77,7 +77,7 @@ Task<bool> Connection::do_read() {
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
     auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
 
-    SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]\n";
+    SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]";
 
     if (!parser.is_done()) {
         co_return true;
@@ -170,7 +170,7 @@ Task<void> Connection::close_stream() {
 }
 
 //! Write chunked response content to the underlying socket
-Task<std::size_t> Connection::write(std::string_view content) {
+Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     unsigned long bytes_transferred{0};
     try {
         boost::asio::const_buffer buffer{content.data(), content.size()};

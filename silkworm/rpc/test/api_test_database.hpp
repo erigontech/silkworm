@@ -56,7 +56,7 @@ class ChannelForTest : public Channel {
   public:
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override { co_return; }
-    Task<std::size_t> write(std::string_view /* content */) override { co_return 0; }
+    Task<std::size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
     Task<void> write_rsp(const std::string& response) override {
         response_ = response;
         co_return;

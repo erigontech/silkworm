@@ -16,19 +16,19 @@
 
 #pragma once
 
-#include <string>
+#include <silkworm/rpc/common/writer.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc {
 
-struct Header {
-    std::string name;
-    std::string value;
+class Channel : public StreamWriter {
+  public:
+    Channel() = default;
+    ~Channel() override = default;
+
+    Channel(const Channel&) = delete;
+    Channel& operator=(const Channel&) = delete;
+
+    virtual Task<void> write_rsp(const std::string& content) = 0;
 };
 
-static const Header kExpectRequestHeader{"Expect", "100-continue"};
-
-inline bool operator==(const Header& lhs, const Header& rhs) {
-    return lhs.name == rhs.name && lhs.value == rhs.value;
-}
-
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc

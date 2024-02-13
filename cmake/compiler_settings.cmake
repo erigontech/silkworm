@@ -125,7 +125,13 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else()
   add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
 
-  # # https://clang.llvm.org/docs/SafeStack.html if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND NOT
-  # SILKWORM_WASM_API AND NOT SILKWORM_SANITIZE AND NOT SILKWORM_FUZZER ) add_compile_options(-fsanitize=safe-stack)
-  # add_link_options(-fsanitize=safe-stack) endif()
+  # https://clang.llvm.org/docs/SafeStack.html
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$"
+     AND NOT SILKWORM_WASM_API
+     AND NOT SILKWORM_SANITIZE
+     AND NOT SILKWORM_FUZZER
+  )
+    add_compile_options(-fsanitize=safe-stack)
+    add_link_options(-fsanitize=safe-stack)
+  endif()
 endif()

@@ -48,7 +48,7 @@ class StringWriter : public StreamWriter {
 
     Task<void> close_stream() override { co_return; }
 
-    Task<std::size_t> write(std::string_view content, bool /* last */) override {
+    Task<std::size_t> write(std::string_view content, bool /*last*/) override {
         content_.append(content);
         co_return content.size();
     }

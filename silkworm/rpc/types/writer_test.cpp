@@ -34,7 +34,7 @@ class JsonChunkWriter : public StreamWriter {
 
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override;
-    Task<std::size_t> write(std::string_view contentm, bool last) override;
+    Task<std::size_t> write(std::string_view content, bool last) override;
 
   private:
     static const std::size_t kDefaultChunkSize = 0x800;
@@ -50,7 +50,7 @@ JsonChunkWriter::JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size)
     : writer_(writer), chunk_size_(chunk_size), room_left_in_chunk_(chunk_size_) {
 }
 
-Task<std::size_t> JsonChunkWriter::write(std::string_view content, bool /* laswt */) {
+Task<std::size_t> JsonChunkWriter::write(std::string_view content, bool /*last*/) {
     auto size = content.size();
 
     SILK_DEBUG << "JsonChunkWriter::write written_: " << written_ << " size: " << size;

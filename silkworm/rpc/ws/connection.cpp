@@ -90,17 +90,13 @@ Task<void> Connection::do_read() {
     co_await request_handler_.handle(content);
 }
 
-Task<void> Connection::close_stream() {
-    co_return;
-}
-
 Task<void> Connection::write_rsp(const std::string& content) {
     co_await do_write(content);
 }
 
-Task<std::size_t> Connection::write(std::string_view content, bool fin) {
+Task<std::size_t> Connection::write(std::string_view content, bool last) {
     try {
-        const auto written = co_await ws_.async_write_some(fin, boost::asio::buffer(content.data(), content.size()), boost::asio::use_awaitable);
+        const auto written = co_await ws_.async_write_some(last, boost::asio::buffer(content.data(), content.size()), boost::asio::use_awaitable);
 
         SILK_TRACE << "ws::Connection::write: [" << content.data() << "]";
         co_return written;

@@ -20,8 +20,8 @@
 #include <memory>
 #include <optional>
 
-#include <silkworm/node/db/etl/buffer.hpp>
-#include <silkworm/node/db/etl/util.hpp>
+#include "buffer.hpp"
+#include "util.hpp"
 
 namespace silkworm::db::etl {
 

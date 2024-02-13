@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
 

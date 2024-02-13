@@ -126,9 +126,8 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             uint64_t bucket_id;
         };
         try {
-            // Passing a void cursor is valid case for ETL when DB modification is not expected
-            db::PooledCursor empty_cursor{};
-            bucket_collector_->load(empty_cursor, [&](const db::etl::Entry& entry, auto&, MDBX_put_flags_t) {
+            // Not passing any cursor is a valid use-case for ETL when DB modification is not expected
+            bucket_collector_->load([&](const db::etl::Entry& entry) {
                 // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
                 const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
                 SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
@@ -167,8 +166,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
         // Build Elias-Fano index for offsets (if any)
         ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
-        db::PooledCursor empty_cursor{};
-        offset_collector_->load(empty_cursor, [&](const db::etl::Entry& entry, auto&, MDBX_put_flags_t) {
+        offset_collector_->load([&](const db::etl::Entry& entry) {
             const uint64_t offset = endian::load_big_u64(entry.key.data());
             ef_offsets->add_offset(offset);
         });

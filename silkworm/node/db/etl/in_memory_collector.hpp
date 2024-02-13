@@ -16,12 +16,20 @@
 
 #pragma once
 
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <map>
 #include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/db/etl/util.hpp>
-#include <silkworm/node/db/mdbx.hpp>
+
+#include "collector_settings.hpp"
+#include "util.hpp"
 
 /*
  * This is a memory-only reduced version of ETL Collector, with compatible interface
@@ -31,8 +39,7 @@
 namespace silkworm::db::etl {
 
 // Function pointer to process Load on before Load data into tables
-using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
-                                      db::RWCursorDupSort&, MDBX_put_flags_t)>;
+using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value)>;
 
 // An adaptor to use map as a collector storage
 struct MapStorage : public std::map<Bytes, Bytes> {
@@ -59,13 +66,13 @@ class InMemoryCollector {
 
     explicit InMemoryCollector() = default;
 
-    explicit InMemoryCollector([[maybe_unused]] const NodeSettings* node_settings) {
-        entries_.reserve(node_settings->etl_buffer_size);
+    explicit InMemoryCollector(const CollectorSettings& settings) {
+        entries_.reserve(settings.buffer_size);
     }
-    explicit InMemoryCollector(const std::filesystem::path&, [[maybe_unused]] size_t optimal_size) {
+    explicit InMemoryCollector(const std::filesystem::path&, size_t optimal_size) {
         entries_.reserve(optimal_size);
     }
-    explicit InMemoryCollector([[maybe_unused]] size_t optimal_size) {
+    explicit InMemoryCollector(size_t optimal_size) {
         entries_.reserve(optimal_size);
     }
 
@@ -90,12 +97,8 @@ class InMemoryCollector {
     }
 
     //! \brief Loads and optionally transforms collected entries into db
-    //! \param [in] target : a cursor opened on target table and owned by caller (can be empty)
-    //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
-    //! \param [in] flags : Optional put flags for append or upsert (default)
-    //! items
-    void load(db::RWCursorDupSort& target, const KVLoadFunc& load_func = {},
-              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT) {
+    //! \param [in] load_func : Pointer to function transforming collected entries
+    void load(const KVLoadFunc& load_func) {
         using namespace std::chrono_literals;
         [[maybe_unused]] static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time
         [[maybe_unused]] auto log_time{std::chrono::steady_clock::now()};  // To check if an update of key is needed
@@ -115,17 +118,7 @@ class InMemoryCollector {
                 log_time = now + kLogInterval;
             }
 
-            if (load_func) {
-                load_func(key, value, target, flags);
-            } else {
-                mdbx::slice k{db::to_slice(key)};
-                if (value.empty()) {
-                    target.erase(k);
-                } else {
-                    mdbx::slice v{db::to_slice(value)};
-                    mdbx::error::success_or_throw(target.put(k, &v, flags));
-                }
-            }
+            load_func(key, value);
         }
 
         clear();

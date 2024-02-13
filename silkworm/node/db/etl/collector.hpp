@@ -16,13 +16,21 @@
 
 #pragma once
 
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
-#include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/db/etl/buffer.hpp>
-#include <silkworm/node/db/etl/file_provider.hpp>
-#include <silkworm/node/db/etl/util.hpp>
-#include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/util.hpp>
+
+#include "buffer.hpp"
+#include "collector_settings.hpp"
+#include "file_provider.hpp"
+#include "util.hpp"
 
 // ETL : Extract, Transform, Load
 // https://en.wikipedia.org/wiki/Extract,_transform,_load
@@ -31,8 +39,8 @@ namespace silkworm::db::etl {
 
 inline constexpr size_t kOptimalBufferSize = 256_Mebi;
 
-// Function pointer to process Load on before Load data into tables
-using LoadFunc = std::function<void(const Entry&, db::RWCursorDupSort&, MDBX_put_flags_t)>;
+// Function pointer to process data loading
+using LoadFunc = std::function<void(const Entry&)>;
 
 // Collects data Extracted from db
 class Collector {
@@ -41,14 +49,15 @@ class Collector {
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
-    explicit Collector(const NodeSettings* node_settings)
+    explicit Collector(
+        const CollectorSettings& settings)
         : work_path_managed_{false},
-          work_path_{set_work_path(node_settings->data_directory->etl().path())},
-          buffer_{node_settings->etl_buffer_size} {};
-    explicit Collector(const std::filesystem::path& work_path, size_t optimal_size = kOptimalBufferSize)
-        : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
-    explicit Collector(size_t optimal_size = kOptimalBufferSize)
-        : work_path_managed_{true}, work_path_{set_work_path(std::nullopt)}, buffer_{optimal_size} {}
+          work_path_{settings.work_path},
+          buffer_{settings.buffer_size} {};
+    explicit Collector(const std::filesystem::path& work_path, size_t buffer_size = kOptimalBufferSize)
+        : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{buffer_size} {}
+    explicit Collector(size_t buffer_size = kOptimalBufferSize)
+        : work_path_managed_{true}, work_path_{set_work_path(std::nullopt)}, buffer_{buffer_size} {}
 
     ~Collector();
 
@@ -59,12 +68,8 @@ class Collector {
     void collect(Bytes&& key, Bytes&& value);            // Store key & value in memory or on disk
 
     //! \brief Loads and optionally transforms collected entries into db
-    //! \param [in] target : a cursor opened on target table and owned by caller (can be empty)
-    //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
-    //! \param [in] flags : Optional put flags for append or upsert (default)
-    //! items
-    void load(db::RWCursorDupSort& target, const LoadFunc& load_func = {},
-              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT);
+    //! \param [in] load_func : Pointer to function transforming collected entries
+    void load(const LoadFunc& load_func);
 
     //! \brief Returns the number of actually collected items
     [[nodiscard]] size_t size() const { return size_; }

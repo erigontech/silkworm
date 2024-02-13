@@ -16,6 +16,7 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(db/etl)
 add_subdirectory(snapshots/seg)
 
 find_package(absl REQUIRED)
@@ -50,6 +51,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
     magic_enum::magic_enum
+    silkworm_db_etl
     silkworm_interfaces
     silkworm_snapshots_seg
 )
@@ -59,5 +61,5 @@ silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "snapshots/seg"
+  EXCLUDE_REGEX "db/etl" "snapshots/seg"
 )

@@ -19,8 +19,9 @@
 #include <algorithm>
 #include <vector>
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/node/db/etl/util.hpp>
+#include <silkworm/core/common/bytes.hpp>
+
+#include "util.hpp"
 
 namespace silkworm::db::etl {
 

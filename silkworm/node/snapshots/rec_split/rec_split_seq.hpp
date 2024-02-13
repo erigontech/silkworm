@@ -126,7 +126,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             uint64_t bucket_id;
         };
         try {
-            // Passing a void cursor is valid case for ETL when DB modification is not expected
+            // Not passing any cursor is a valid use-case for ETL when DB modification is not expected
             bucket_collector_->load([&](const db::etl::Entry& entry) {
                 // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
                 const uint64_t bucket_id = endian::load_big_u64(entry.key.data());

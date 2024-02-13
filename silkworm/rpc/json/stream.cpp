@@ -290,7 +290,7 @@ void Stream::do_write(ChunkPtr chunk, bool last) {
             if (const bool ok{channel_.try_send(boost::system::error_code(), data_chunk)}; ok) {
                 break;
             }
-            SILK_TRACE << "Chunk size=" << (chunk ? chunk->size() : 0) << " not enqueued, worker back pressured";
+            SILK_TRACE << "Chunk size=" << (data_chunk.chunk ? data_chunk.chunk->size() : 0) << " not enqueued, worker back pressured";
             std::this_thread::sleep_for(10ms);
         }
     }

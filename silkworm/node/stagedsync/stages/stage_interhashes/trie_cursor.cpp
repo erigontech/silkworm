@@ -123,7 +123,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
         }
         if (!has_changes) {
             end_of_tree_ = true;  // We don't need to further traverse this trie
-            return {curr_key_, node.root_hash().value(), false};
+            return {curr_key_, node.root_hash(), false};
         }
         db_delete(node);
     } else {

@@ -261,7 +261,7 @@ void Stream::write_string(std::string_view str) {
 void Stream::write(std::string_view str) {
     buffer_ += str;
     if (buffer_.size() >= buffer_capacity_) {
-        do_write(std::make_shared<std::string>(std::move(buffer_)));
+        do_write(std::make_shared<std::string>(std::move(buffer_)), false);
     }
 }
 
@@ -275,16 +275,19 @@ void Stream::ensure_separator() {
     }
 }
 
-void Stream::do_write(ChunkPtr chunk) {
+void Stream::do_write(ChunkPtr chunk, bool final) {
     // Stream write API will usually be called by worker threads rather than I/O contexts, but we must handle both
     const auto& channel_executor{channel_.get_executor()};
     if (channel_executor.target<boost::asio::io_context::executor_type>()->running_in_this_thread()) [[unlikely]] {
         // Delegate any back pressure to do_async_write
         boost::asio::co_spawn(channel_executor, do_async_write(chunk, false), boost::asio::detached);
     } else {
+        DataChunk data_chunk{};
+        data_chunk.chunk = std::move(chunk);
+        data_chunk.final = final;
         // Handle back pressure simply by retrying after a while // TODO(canepat) clever wait strategy
         while (channel_.is_open()) {
-            if (const bool ok{channel_.try_send(boost::system::error_code(), chunk)}; ok) {
+            if (const bool ok{channel_.try_send(boost::system::error_code(), data_chunk)}; ok) {
                 break;
             }
             SILK_TRACE << "Chunk size=" << (chunk ? chunk->size() : 0) << " not enqueued, worker back pressured";
@@ -293,10 +296,10 @@ void Stream::do_write(ChunkPtr chunk) {
     }
 }
 
-Task<void> Stream::do_async_write(ChunkPtr chunk, bool fin) {
+Task<void> Stream::do_async_write(ChunkPtr chunk, bool final) {
     DataChunk data_chunk{};
     data_chunk.chunk = std::move(chunk);
-    data_chunk.fin = fin;
+    data_chunk.final = final;
 
     // TODO(canepat) handle back pressure
     try {
@@ -319,7 +322,7 @@ Task<void> Stream::run() {
             if (!data_chunk.chunk) {
                 break;
             }
-            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.fin);
+            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.final);
             ++total_writes;
         } catch (const boost::system::system_error& se) {
             if (se.code() != boost::asio::experimental::error::channel_cancelled) {

@@ -36,13 +36,13 @@ namespace silkworm::rpc::json {
 
 struct DataChunk {
     std::shared_ptr<std::string> chunk;
-    bool fin;
+    bool final;
 };
 
 //! Stream can be used to send big JSON data split into multiple fragments.
 class Stream {
   public:
-    inline static constexpr std::size_t kDefaultCapacity{65536};
+    inline static constexpr std::size_t kDefaultCapacity{5 * 1024 * 1024};
 
     Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity = kDefaultCapacity);
     Stream(const Stream& stream) = delete;
@@ -80,8 +80,8 @@ class Stream {
     void ensure_separator();
 
     void write(std::string_view str);
-    void do_write(ChunkPtr chunk);
-    Task<void> do_async_write(ChunkPtr chunk, bool fin);
+    void do_write(ChunkPtr chunk, bool final);
+    Task<void> do_async_write(ChunkPtr chunk, bool final);
 
     //! Run loop writing channeled chunks in order
     Task<void> run();

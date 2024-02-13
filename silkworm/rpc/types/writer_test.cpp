@@ -34,7 +34,7 @@ class JsonChunkWriter : public StreamWriter {
 
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override;
-    Task<std::size_t> write(std::string_view contentm, bool fin) override;
+    Task<std::size_t> write(std::string_view contentm, bool final) override;
 
   private:
     static const std::size_t kDefaultChunkSize = 0x800;

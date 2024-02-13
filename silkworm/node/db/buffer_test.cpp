@@ -231,7 +231,7 @@ TEST_CASE("Account update") {
         buffer.begin_block(1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
         REQUIRE(buffer.account_changes().empty());
-        CHECK(buffer.current_batch_state_size() == 0);    // No change in current state batch
+        CHECK(buffer.current_batch_state_size() == 0);  // No change in current state batch
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};

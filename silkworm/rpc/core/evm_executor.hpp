@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
@@ -76,7 +77,8 @@ using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
 class EVMExecutor {
   public:
-    using StateFactory = std::function<std::shared_ptr<silkworm::State>(boost::asio::any_io_executor&, BlockNum, const ChainStorage& chain_storage)>;
+    using StateFactory = std::function<std::shared_ptr<State>(boost::asio::any_io_executor&, BlockNum, const ChainStorage&)>;
+
     static Task<ExecutionResult> call(
         const silkworm::ChainConfig& config,
         const ChainStorage& storage,
@@ -89,12 +91,12 @@ class EVMExecutor {
         bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, std::shared_ptr<silkworm::State>& state)
+    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, std::shared_ptr<State> state)
         : config_(config),
           workers_{workers},
-          state_{state},
+          state_{std::move(state)},
           ibs_state_{*state_},
-          rule_set_(protocol::rule_set_factory(config)) {
+          rule_set_{protocol::rule_set_factory(config)} {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<AnalysisCacheService>(workers_)) {
             make_service<AnalysisCacheService>(workers_);
@@ -123,7 +125,7 @@ class EVMExecutor {
 
     const silkworm::ChainConfig& config_;
     boost::asio::thread_pool& workers_;
-    std::shared_ptr<silkworm::State> state_;
+    std::shared_ptr<State> state_;
     IntraBlockState ibs_state_;
     protocol::RuleSetPtr rule_set_;
 };

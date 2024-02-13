@@ -50,8 +50,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
     auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
-    state::OverrideState override_state{*state, accounts_overrides};
-    EVMExecutor executor{config, workers_, state};
+    EVMExecutor executor{config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();

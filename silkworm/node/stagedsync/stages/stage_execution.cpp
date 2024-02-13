@@ -243,7 +243,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 if (block_num_ >= prune_receipts_threshold) {
                     buffer.insert_receipts(block_num_, receipts);
                 }
-                buffer.write_to_db();
+                buffer.write_to_db(txn);
                 prefetched_blocks_.clear();
 
                 // Notify sync_loop we need to unwind
@@ -276,12 +276,12 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             // Flush whole buffer if time to
             if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
                 log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_to_db();
+                buffer.write_to_db(txn);
                 break;
             } else if (gas_history_size >= gas_max_history_size) {
                 // or flush history only if needed
                 log::Trace(log_prefix_, {"buffer", "history", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_history_to_db();
+                buffer.write_history_to_db(txn);
                 gas_history_size = 0;
             }
 

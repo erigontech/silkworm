@@ -562,7 +562,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 gas_batch_size += block->header.gas_used;
 
                 // Always flush history for single processed block (no batching)
-                state_buffer.write_history_to_db(write_change_sets);
+                state_buffer.write_history_to_db(txn, write_change_sets);
 
                 const auto now{std::chrono::steady_clock::now()};
                 if (signal_check_time <= now) {
@@ -589,7 +589,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
             StopWatch sw{/*auto_start=*/true};
-            state_buffer.write_state_to_db();
+            state_buffer.write_state_to_db(txn);
             gas_batch_size = 0;
             txn.commit_and_renew();
             const auto [elapsed, _]{sw.stop()};

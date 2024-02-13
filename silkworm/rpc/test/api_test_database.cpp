@@ -129,7 +129,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
         }
         processor.evm().state().write_to_db(block.header.number);
         db_buffer.insert_receipts(block.header.number, receipts);
-        db_buffer.write_history_to_db();
+        db_buffer.write_history_to_db(txn);
 
         // FIX 5: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;

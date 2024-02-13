@@ -125,7 +125,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
-void Buffer::write_history_to_db(bool write_change_sets) {
+void Buffer::write_history_to_db(RWTxn& rwtxn, bool write_change_sets) {
     size_t written_size{0};
     size_t total_written_size{0};
 
@@ -134,7 +134,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     sw.start();
 
     if (!block_account_changes_.empty() && write_change_sets) {
-        auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
+        auto account_change_table{db::open_cursor(rwtxn, table::kAccountChangeSet)};
         Bytes change_key(sizeof(BlockNum), '\0');
         Bytes change_value(kAddressLength + 128 /* see comment*/,
                            '\0');  // Max size of encoded value is 85. We allocate - once - some byte more for safety
@@ -164,7 +164,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         Bytes change_key(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
         Bytes change_value(kHashLength + 128, '\0');  // Se comment above (account changes) for explanation about 128
 
-        auto storage_change_table{db::open_cursor(txn_, table::kStorageChangeSet)};
+        auto storage_change_table{db::open_cursor(rwtxn, table::kStorageChangeSet)};
         for (const auto& [block_num, storage_changes] : block_storage_changes_) {
             endian::store_big_u64(&change_key[0], block_num);
             written_size += sizeof(BlockNum);
@@ -195,7 +195,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     block_storage_changes_.clear();
 
     if (!receipts_.empty()) {
-        auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
+        auto receipt_table{db::open_cursor(rwtxn, table::kBlockReceipts)};
         for (const auto& [block_key, receipts] : receipts_) {
             auto k{to_slice(block_key)};
             auto v{to_slice(receipts)};
@@ -212,7 +212,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     }
 
     if (!logs_.empty()) {
-        auto log_table{db::open_cursor(txn_, table::kLogs)};
+        auto log_table{db::open_cursor(rwtxn, table::kLogs)};
         for (const auto& [log_key, value] : logs_) {
             auto k{to_slice(log_key)};
             auto v{to_slice(value)};
@@ -230,7 +230,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
 
     if (!call_traces_.empty()) {
         Bytes call_traces_key(sizeof(BlockNum), '\0');
-        auto call_traces_cursor{txn_.rw_cursor_dup_sort(table::kCallTraceSet)};
+        auto call_traces_cursor{rwtxn.rw_cursor_dup_sort(table::kCallTraceSet)};
         for (const auto& [block_number, account_and_flags_set] : call_traces_) {
             endian::store_big_u64(call_traces_key.data(), block_number);
             written_size += sizeof(BlockNum);
@@ -256,7 +256,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     }
 }
 
-void Buffer::write_state_to_db() {
+void Buffer::write_state_to_db(RWTxn& rwtxn) {
     /*
      * ENSURE PlainState updates are Last !!!
      * Also ensure to clear unneeded memory data ASAP to let the OS cache
@@ -271,7 +271,7 @@ void Buffer::write_state_to_db() {
     sw.start();
 
     if (!incarnations_.empty()) {
-        auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
+        auto incarnation_table{db::open_cursor(rwtxn, table::kIncarnationMap)};
         Bytes data(kIncarnationLength, '\0');
         for (const auto& [address, incarnation] : incarnations_) {
             endian::store_big_u64(&data[0], incarnation);
@@ -288,7 +288,7 @@ void Buffer::write_state_to_db() {
     }
 
     if (!hash_to_code_.empty()) {
-        auto code_table{db::open_cursor(txn_, table::kCode)};
+        auto code_table{db::open_cursor(rwtxn, table::kCode)};
         for (const auto& entry : hash_to_code_) {
             code_table.upsert(to_slice(entry.first), to_slice(entry.second));
             written_size += kHashLength + entry.second.length();
@@ -303,7 +303,7 @@ void Buffer::write_state_to_db() {
     }
 
     if (!storage_prefix_to_code_hash_.empty()) {
-        auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
+        auto code_hash_table{db::open_cursor(rwtxn, table::kPlainCodeHash)};
         for (const auto& entry : storage_prefix_to_code_hash_) {
             code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
             written_size += kAddressLength + kIncarnationLength + kHashLength;
@@ -331,7 +331,7 @@ void Buffer::write_state_to_db() {
         log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
     }
 
-    auto state_table = txn_.rw_cursor_dup_sort(table::kPlainState);
+    auto state_table = rwtxn.rw_cursor_dup_sort(table::kPlainState);
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
@@ -363,6 +363,11 @@ void Buffer::write_state_to_db() {
             storage_.erase(it);
         }
     }
+
+    // TODO:JG consider clear over individual erase
+    //  accounts_.clear();
+    // storage_.clear();
+
     total_written_size += written_size;
     if (should_trace) {
         auto [_, duration]{sw.lap()};
@@ -376,12 +381,26 @@ void Buffer::write_state_to_db() {
               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(time_point))});
 }
 
-void Buffer::write_to_db(bool write_change_sets) {
-    write_history_to_db(write_change_sets);
+void Buffer::write_to_db(RWTxn& rwtxn, bool write_change_sets) {
+    write_history_to_db(rwtxn, write_change_sets);
 
     // This should be very last to be written so updated pages
     // have higher chances not to be evicted from RAM
-    write_state_to_db();
+    write_state_to_db(rwtxn);
+}
+
+void Buffer::extract_changeset(BufferChangeset& out) {
+    out.block_account_changes = std::move(block_account_changes_);
+    out.block_storage_changes = std::move(block_storage_changes_);
+    out.receipts = std::move(receipts_);
+    out.logs = std::move(logs_);
+    out.call_traces = std::move(call_traces_);
+
+    block_account_changes_ = {};
+    block_storage_changes_ = {};
+    receipts_ = {};
+    logs_ = {};
+    call_traces_ = {};
 }
 
 // Erigon WriteReceipts in core/rawdb/accessors_chain.go

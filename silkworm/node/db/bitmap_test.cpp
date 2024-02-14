@@ -22,7 +22,7 @@
 #include <absl/container/btree_map.h>
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::bitmap {
@@ -128,7 +128,7 @@ TEST_CASE("Bitmap Index Loader") {
         {Bytes(address3.bytes, kAddressLength), roaring3},
     };
 
-    etl::Collector collector(context.dir().etl().path());
+    etl_mdbx::Collector collector(context.dir().etl().path());
     IndexLoader bm_loader(db::table::kLogAddressIndex);
     IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());

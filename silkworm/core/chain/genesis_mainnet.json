@@ -26701,6 +26701,7 @@
     "grayGlacierBlock": 15050000,
     "terminalTotalDifficulty": "58750000000000000000000",
     "shanghaiTime": 1681338455,
+    "cancunTime": 1710338135,
     "ethash": {}
   },
   "difficulty": "0x0400000000",

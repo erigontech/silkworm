@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <silkworm/core/trie/node.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/node/db/etl/collector.hpp>

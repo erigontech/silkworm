@@ -29,10 +29,10 @@
 #include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/http/channel.hpp>
-#include <silkworm/rpc/http/request_handler.hpp>
+#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
@@ -62,7 +62,7 @@ class Connection : public Channel {
     Task<void> open_stream() override;
     Task<void> close_stream() override;
 
-    Task<std::size_t> write(std::string_view content) override;
+    Task<std::size_t> write(std::string_view content, bool last) override;
     Task<void> write_rsp(const std::string& content) override;
 
   private:

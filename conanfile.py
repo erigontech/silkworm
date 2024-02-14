@@ -110,8 +110,13 @@ class SilkwormRecipe(ConanFile):
             'container',
 
             # silkworm requires:
+            'iostreams',
             'system',
             'thread',
+
+            # Boost::iostreams requires
+            'random',
+            'regex',
 
             # Boost::thread requires:
             'atomic',

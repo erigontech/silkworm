@@ -28,6 +28,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
+#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
@@ -49,8 +50,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
     auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
-    state::OverrideState override_state{*state, accounts_overrides};
-    EVMExecutor executor{config, workers_, state};
+    EVMExecutor executor{config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
@@ -115,11 +115,17 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
 
             nlohmann::json reply;
             if (call_execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
-                reply["value"] = "0x" + silkworm::to_hex(call_execution_result.data);
+                if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+                    reply["value"] = silkworm::to_hex(call_execution_result.data);
+                } else {
+                    reply["value"] = "0x" + silkworm::to_hex(call_execution_result.data);
+                }
             } else {
                 const auto error_message = call_execution_result.error_message();
                 if (call_execution_result.data.empty()) {
                     reply["error"] = error_message;
+                } else if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+                    reply["error"] = nlohmann::json::object();
                 } else {
                     RevertError revert_error{{3, error_message}, call_execution_result.data};
                     reply = revert_error;

@@ -16,11 +16,11 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-# circular_buffer
-find_package(Boost REQUIRED headers)
+# circular_buffer, iostreams (for fsync)
+find_package(Boost REQUIRED headers iostreams)
 
 silkworm_library(
   silkworm_snapshots_seg
   PUBLIC silkworm_core silkworm_infra
-  PRIVATE Boost::headers sais_lite
+  PRIVATE Boost::headers Boost::iostreams sais_lite silkworm_db_etl
 )

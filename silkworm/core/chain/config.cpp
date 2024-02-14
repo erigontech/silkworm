@@ -265,6 +265,7 @@ SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .gray_glacier_block = 15'050'000,
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
+    .cancun_time = 1710338135,
     .rule_set_config = protocol::EthashConfig{},
 };
 
@@ -281,6 +282,7 @@ SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
     .london_block = 5'062'605,
     .terminal_total_difficulty = 10790000,
     .shanghai_time = 1678832736,
+    .cancun_time = 1705473120,
     .rule_set_config = protocol::CliqueConfig{},
 };
 
@@ -316,6 +318,7 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
+    .cancun_time = 1706655072,
     .rule_set_config = protocol::EthashConfig{},
 };
 

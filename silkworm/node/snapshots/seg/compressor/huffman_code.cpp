@@ -17,6 +17,7 @@
 #include "huffman_code.hpp"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -33,7 +34,7 @@ using namespace std;
 struct HuffmanTreeLeaf {
     size_t symbol_index{};
     uint64_t code{};
-    size_t code_bits{1};
+    uint8_t code_bits{1};
 };
 
 struct HuffmanTreeNode {
@@ -173,10 +174,13 @@ std::vector<HuffmanSymbolCode> huffman_code_table(const std::vector<uint64_t>& s
 }
 
 static uint64_t reverse_bytes64(uint64_t x) {
-#ifdef _MSC_VER
-#define __builtin_bswap64 _byteswap_uint64
-#endif
+#if __cplusplus >= 202302L
+    return std::byteswap(x);
+#elif defined(_MSC_VER)
+    return _byteswap_uint64(x);
+#else
     return __builtin_bswap64(x);
+#endif
 }
 
 static uint64_t reverse_bits64(uint64_t x) {
@@ -205,6 +209,20 @@ std::vector<size_t> huffman_code_table_order_by_uses_and_code(
         return (symbol_uses[i] != symbol_uses[j])
                    ? (symbol_uses[i] < symbol_uses[j])
                    : (reverse_bits64(codes[i].code) < reverse_bits64(codes[j].code));
+    });
+    return order;
+}
+
+std::vector<size_t> huffman_code_table_order_by_uses_and_code(
+    const std::vector<uint64_t>& symbol_uses,
+    const std::vector<uint64_t>& codes) {
+    std::vector<size_t> order(symbol_uses.size());
+    std::iota(order.begin(), order.end(), 0);
+
+    std::ranges::sort(order, [&](uint64_t i, uint64_t j) {
+        return (symbol_uses[i] != symbol_uses[j])
+                   ? (symbol_uses[i] < symbol_uses[j])
+                   : (reverse_bits64(codes[i]) < reverse_bits64(codes[j]));
     });
     return order;
 }

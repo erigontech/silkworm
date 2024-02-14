@@ -34,11 +34,13 @@ class Superstring {
     Superstring();
     explicit Superstring(Bytes superstring) : superstring_(std::move(superstring)) {}
 
-    void add_word(ByteView word);
+    bool can_add_word(ByteView word);
+    void add_word(ByteView word, bool skip_copy = false);
     void substr(Bytes& out, size_t pos, size_t count) const;
 
     const uint8_t* data() const { return superstring_.data(); }
     size_t size() const { return superstring_.size(); }
+    void clear() { superstring_.clear(); }
 
     inline bool has_same_chars(int i1, int j1) const {
         auto i = static_cast<size_t>(i1);

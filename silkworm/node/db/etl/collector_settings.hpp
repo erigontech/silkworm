@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,19 +16,13 @@
 
 #pragma once
 
-#include <silkworm/rpc/types/writer.hpp>
+#include <filesystem>
 
-namespace silkworm::rpc {
+namespace silkworm::db::etl {
 
-class Channel : public StreamWriter {
-  public:
-    Channel() = default;
-    ~Channel() override = default;
-
-    Channel(const Channel&) = delete;
-    Channel& operator=(const Channel&) = delete;
-
-    virtual Task<void> write_rsp(const std::string& content) = 0;
+struct CollectorSettings {
+    std::filesystem::path work_path;
+    size_t buffer_size{};
 };
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::db::etl

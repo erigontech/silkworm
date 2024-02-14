@@ -29,8 +29,8 @@
 
 namespace silkworm::stagedsync {
 
-using db::etl::Collector;
 using db::etl::Entry;
+using db::etl_mdbx::Collector;
 
 Stage::Result HashState::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -287,8 +287,10 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                 throw std::runtime_error(std::string(db::table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
-            const db::etl::LoadFunc load_func = [&storage_target](const Entry& entry, db::RWCursorDupSort& target,
-                                                                  MDBX_put_flags_t) -> void {
+            const db::etl_mdbx::LoadFunc load_func = [&storage_target](
+                                                         const Entry& entry,
+                                                         db::RWCursorDupSort& target,
+                                                         MDBX_put_flags_t) -> void {
                 if (entry.value.empty()) {
                     return;
                 }

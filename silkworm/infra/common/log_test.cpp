@@ -134,37 +134,36 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         CHECK(!absl::StrContains(log_buffer3.content(), thread_id_stream.str()));
     }
 
-    SECTION("Settings disable colorized output if log file present") {
-        // Default output is colorized
+    SECTION("Settings disables colorized output depending on TTY") {
+        // Default output is NOT colorized on non-TTY terminal
         LogBuffer_ForTest<Level::kInfo>{"test0", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output0{string_cerr.str()};
         CHECK(absl::StrContains(cerr_output0, "test0"));
-        CHECK(!absl::StrContains(cerr_output0, key_value("key1", "value1")));
-        CHECK(!absl::StrContains(cerr_output0, key_value("key2", "value2")));
-        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key1", "value1")));
-        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key2", "value2")));
+        CHECK(absl::StrContains(cerr_output0, key_value("key1", "value1")));
+        CHECK(absl::StrContains(cerr_output0, key_value("key2", "value2")));
+        CHECK(!absl::StrContains(cerr_output0, prettified_key_value("key1", "value1")));
+        CHECK(!absl::StrContains(cerr_output0, prettified_key_value("key2", "value2")));
 
         // Reset cerr replacement stream
         string_cerr.str("");
         string_cerr.clear();
 
-        // Log file setting forcibly disables colors
-        const auto temp_file{TemporaryDirectory::get_unique_temporary_path()};
-        Settings log_settings1{
-            .log_file = temp_file.string(),
+        // Log file setting forcibly disables colors even if explicitly set
+        Settings log_settings2{
+            .log_nocolor = false,  // try to enable colorized output
         };
-        init(log_settings1);
-        LogBuffer_ForTest<Level::kInfo>{"test1", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
-        const auto cerr_output1{string_cerr.str()};
-        CHECK(absl::StrContains(cerr_output1, "test1"));
-        CHECK(absl::StrContains(cerr_output1, key_value("key1", "value1")));
-        CHECK(absl::StrContains(cerr_output1, key_value("key2", "value2")));
-        CHECK(!absl::StrContains(cerr_output1, prettified_key_value("key1", "value1")));
-        CHECK(!absl::StrContains(cerr_output1, prettified_key_value("key2", "value2")));
+        init(log_settings2);
+        LogBuffer_ForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
+        const auto cerr_output2{string_cerr.str()};
+        CHECK(absl::StrContains(cerr_output2, "test2"));
+        CHECK(absl::StrContains(cerr_output2, key_value("key3", "value3")));
+        CHECK(absl::StrContains(cerr_output2, key_value("key4", "value4")));
+        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key3", "value3")));
+        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key4", "value4")));
+    }
 
-        // Reset cerr replacement stream
-        string_cerr.str("");
-        string_cerr.clear();
+    SECTION("Settings disable colorized output if log file present") {
+        const auto temp_file{TemporaryDirectory::get_unique_temporary_path()};
 
         // Log file setting forcibly disables colors even if explicitly set
         Settings log_settings2{

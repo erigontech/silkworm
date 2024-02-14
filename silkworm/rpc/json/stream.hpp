@@ -30,14 +30,19 @@
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/types/writer.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 
 namespace silkworm::rpc::json {
+
+struct DataChunk {
+    std::shared_ptr<std::string> chunk;
+    bool last{false};
+};
 
 //! Stream can be used to send big JSON data split into multiple fragments.
 class Stream {
   public:
-    inline static constexpr std::size_t kDefaultCapacity{4096};
+    inline static constexpr std::size_t kDefaultCapacity{5 * 1024 * 1024};
 
     Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity = kDefaultCapacity);
     Stream(const Stream& stream) = delete;
@@ -75,8 +80,8 @@ class Stream {
     void ensure_separator();
 
     void write(std::string_view str);
-    void do_write(ChunkPtr chunk);
-    Task<void> do_async_write(ChunkPtr chunk);
+    void do_write(ChunkPtr chunk, bool last);
+    Task<void> do_async_write(ChunkPtr chunk, bool last);
 
     //! Run loop writing channeled chunks in order
     Task<void> run();
@@ -87,7 +92,7 @@ class Stream {
     const std::size_t buffer_capacity_;
     std::string buffer_;
 
-    using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, ChunkPtr)>;
+    using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, DataChunk)>;
     ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
 
 // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281

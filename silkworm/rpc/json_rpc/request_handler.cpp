@@ -24,8 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/commands/eth_api.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/http/header.hpp>
-#include <silkworm/rpc/types/writer.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 
 namespace silkworm::rpc::http {
 

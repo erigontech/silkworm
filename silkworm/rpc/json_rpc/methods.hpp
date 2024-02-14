@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "header.hpp"
-
 namespace silkworm::rpc::http::method {
 
 // Constants defined here have a different naming from our standard: k_<JSON_RPC_API>

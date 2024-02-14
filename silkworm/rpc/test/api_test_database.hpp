@@ -38,10 +38,10 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
+#include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
-#include <silkworm/rpc/http/channel.hpp>
-#include <silkworm/rpc/http/request_handler.hpp>
+#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc::test {

@@ -160,7 +160,6 @@ inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
     {"holesky"sv, 17000},
     {"mainnet"sv, 1},
     {"mumbai"sv, 80001},
-    {"polygon"sv, 137},
     {"sepolia"sv, 11155111},
 };
 

@@ -73,6 +73,9 @@ PatternExtractor::PatternExtractor(std::optional<size_t> pattern_score_min)
 }
 
 void PatternExtractor::extract_patterns(const Superstring& superstring, absl::FunctionRef<void(ByteView, uint64_t)> collector) {
+    if (superstring.size() == 0)
+        return;
+
     auto& lcp = lcp_;
     auto& sa = sa_;
     auto& inv = inv_;

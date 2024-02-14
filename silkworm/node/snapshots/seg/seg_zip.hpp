@@ -21,5 +21,6 @@
 namespace silkworm::snapshots::seg {
 
 void seg_zip(const std::filesystem::path& path);
+void seg_unzip(const std::filesystem::path& path);
 
 }  // namespace silkworm::snapshots::seg

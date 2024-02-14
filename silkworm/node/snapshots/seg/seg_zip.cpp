@@ -17,15 +17,17 @@
 #include "seg_zip.hpp"
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 #include "compressor.hpp"
 #include "compressor/raw_words_stream.hpp"
+#include "decompressor.hpp"
 
 namespace silkworm::snapshots::seg {
 
 void seg_zip(const std::filesystem::path& path) {
-    RawWordsStream words{path, 1_Mebi};
+    RawWordsStream words{path, RawWordsStream::OpenMode::kOpen, 1_Mebi};
 
     auto out_path = path;
     out_path.replace_extension("seg");
@@ -37,6 +39,24 @@ void seg_zip(const std::filesystem::path& path) {
     }
 
     Compressor::compress(std::move(compressor));
+}
+
+void seg_unzip(const std::filesystem::path& path) {
+    Decompressor decompressor{path};
+    decompressor.open();
+
+    auto out_path = path;
+    out_path.replace_extension("idt");
+    RawWordsStream words{out_path, RawWordsStream::OpenMode::kCreate, 1_Mebi};
+
+    decompressor.read_ahead([&](Decompressor::Iterator it) -> bool {
+        Bytes word;
+        while (it.has_next()) {
+            it.next(word);
+            words.write_word(word);
+        }
+        return true;
+    });
 }
 
 }  // namespace silkworm::snapshots::seg

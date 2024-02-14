@@ -40,16 +40,16 @@ class PatternCoveringSearchImpl {
   public:
     PatternCoveringSearchImpl(
         const PatriciaTree& patterns_tree,
-        absl::FunctionRef<uint64_t(void*)> pattern_score_getter)
+        std::function<uint64_t(void*)> pattern_score_getter)
         : match_finder_(patterns_tree),
-          pattern_score_getter_(pattern_score_getter),
+          pattern_score_getter_(std::move(pattern_score_getter)),
           cell_ring_(std::numeric_limits<size_t>::max()) {}
 
     const Result& cover_word(ByteView word);
 
   private:
     PatriciaTreeMatchFinder match_finder_;
-    absl::FunctionRef<uint64_t(void*)> pattern_score_getter_;
+    std::function<uint64_t(void*)> pattern_score_getter_;
     Ring cell_ring_;
     std::vector<size_t> pattern_indexes_;
     Result result_;
@@ -166,7 +166,7 @@ const Result& PatternCoveringSearchImpl::cover_word(ByteView word) {
 
 PatternCoveringSearch::PatternCoveringSearch(
     const PatriciaTree& patterns_tree,
-    absl::FunctionRef<uint64_t(void*)> pattern_score_getter)
+    std::function<uint64_t(void*)> pattern_score_getter)
     : p_impl_(std::make_unique<PatternCoveringSearchImpl>(patterns_tree, pattern_score_getter)) {}
 PatternCoveringSearch::~PatternCoveringSearch() { static_assert(true); }
 

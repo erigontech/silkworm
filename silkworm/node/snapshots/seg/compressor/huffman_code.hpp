@@ -39,19 +39,24 @@ struct HuffmanSymbolCode {
 std::vector<HuffmanSymbolCode> huffman_code_table(const std::vector<uint64_t>& symbol_uses);
 
 /**
- * Produce an ordering of codes by symbol frequency and code bits.
+ * Produce an ordering of codes by code bits.
  * This is used as a Huffman table representation for serialization.
  * If only the symbol code lengths are stored in this order,
  * then the whole code table can be recovered.
- * @param symbol_uses Symbol usage frequencies.
  * @param codes Huffman codes of each symbol.
  * @return Reordered indexes of codes.
  */
-std::vector<size_t> huffman_code_table_order_by_uses_and_code(
-    const std::vector<uint64_t>& symbol_uses,
+std::vector<size_t> huffman_code_table_order_by_codes(
     const std::vector<HuffmanSymbolCode>& codes);
 
-std::vector<size_t> huffman_code_table_order_by_uses_and_code(
+/**
+ * Produce an ordering of codes by symbol frequency and code bits.
+ * This is used to produce a stable order for the huffman_code_table input.
+ * @param symbol_uses Symbol usage frequencies.
+ * @param codes Temporary Huffman codes of each symbol.
+ * @return Reordered indexes of codes.
+ */
+std::vector<size_t> huffman_code_table_order_by_uses_and_codes(
     const std::vector<uint64_t>& symbol_uses,
     const std::vector<uint64_t>& codes);
 

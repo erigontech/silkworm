@@ -39,7 +39,7 @@ class OutputFileTransactionImpl {
     OutputFileTransactionImpl(const filesystem::path& path, size_t buffer_size)
         : path_(path),
           tmp_path_(make_tmp_path(path)),
-          fd_sink_(tmp_path_.string(), ios::out | ios::binary),
+          fd_sink_(tmp_path_.string(), ios::out | ios::binary | ios::trunc),
           stream_(fd_sink_, static_cast<streamsize>(buffer_size)) {
         stream_.exceptions(ios::failbit | ios::badbit);
     }

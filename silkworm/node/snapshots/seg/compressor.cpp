@@ -19,6 +19,7 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <numeric>
 #include <vector>
 
@@ -54,7 +55,7 @@ class CompressorImpl {
         const std::filesystem::path& tmp_dir_path)
         : path_(path),
           raw_words_file_path_(make_raw_words_file_path(path, tmp_dir_path)),
-          raw_words_(raw_words_file_path_, kOutputStreamBufferSize),
+          raw_words_(raw_words_file_path_, RawWordsStream::OpenMode::kCreate, kOutputStreamBufferSize),
           pattern_aggregator_(tmp_dir_path) {}
     ~CompressorImpl();
 
@@ -112,8 +113,9 @@ void CompressorImpl::consume_superstring(const Superstring& superstring) {
     });
 }
 
-static std::vector<uint64_t> vector_reorder(const std::vector<uint64_t>& items, const std::vector<size_t>& order) {
-    std::vector<uint64_t> result(items.size(), 0);
+template <typename T>
+static std::vector<T> vector_reorder(const std::vector<T>& items, const std::vector<size_t>& order) {
+    std::vector<T> result(items.size());
     for (size_t i = 0; i < result.size(); i++)
         result[i] = items[order[i]];
     return result;
@@ -132,10 +134,10 @@ void CompressorImpl::compress() {
     raw_words_.flush();
     consume_superstring(current_superstring_);
 
-    auto patterns = PatternAggregator::aggregate(std::move(pattern_aggregator_));
+    auto candidate_patterns = PatternAggregator::aggregate(std::move(pattern_aggregator_));
 
     PatriciaTree patterns_patricia_tree;
-    for (auto& pattern : patterns) {
+    for (auto& pattern : candidate_patterns) {
         patterns_patricia_tree.insert(pattern.data, &pattern);
     }
 
@@ -153,12 +155,12 @@ void CompressorImpl::compress() {
     Bytes word_uncovered_data;
 
     // a pattern code for the intermediate file is equal to the index
-    std::vector<uint64_t> intermediate_pattern_codes(patterns.size());
+    std::vector<uint64_t> intermediate_pattern_codes(candidate_patterns.size());
     std::iota(intermediate_pattern_codes.begin(), intermediate_pattern_codes.end(), 0);
 
     size_t words_count = 0;
     size_t empty_words_count = 0;
-    std::vector<uint64_t> pattern_uses(patterns.size(), 0);
+    std::vector<uint64_t> pattern_uses(candidate_patterns.size(), 0);
     PositionsMap positions_map;
 
     raw_words_.rewind();
@@ -176,7 +178,7 @@ void CompressorImpl::compress() {
 
             for (auto [pattern_pos, pattern_ptr] : result.pattern_positions) {
                 auto pattern = reinterpret_cast<Pattern*>(pattern_ptr);
-                auto pattern_index = static_cast<size_t>(std::distance(&patterns[0], pattern));
+                auto pattern_index = static_cast<size_t>(std::distance(&candidate_patterns[0], pattern));
 
                 pattern_uses[pattern_index]++;
 
@@ -202,29 +204,56 @@ void CompressorImpl::compress() {
     }
     intermediate_stream.flush();
 
-    // pattern_uses_order maps patterns_code_table indexes to patterns indexes
-    auto pattern_uses_order = huffman_code_table_order_by_uses_and_code(pattern_uses, intermediate_pattern_codes);
-    // pattern2code_index maps patterns indexes to patterns_code_table indexes
-    auto pattern2code_index = invert_order(pattern_uses_order);
-    // sort pattern_uses by uses and intermediate codes
-    auto pattern_uses_sorted = vector_reorder(pattern_uses, pattern_uses_order);
+    // once we ran pattern_covering_search on all the words, we know which candidate patterns are actually used
+    // let's remove the unused candidate patterns from consideration
+    std::vector<Bytes> patterns;
+    size_t used_patterns_count = 0;
+    // candidate2pattern_index maps candidate patterns indexes to the used patterns indexes
+    std::vector<size_t> candidate2pattern_index(candidate_patterns.size(), std::numeric_limits<size_t>::max());
+    for (size_t i = 0; i < candidate_patterns.size(); i++) {
+        if (pattern_uses[i] == 0) continue;
+        patterns.emplace_back(std::move(candidate_patterns[i].data));
+        intermediate_pattern_codes[used_patterns_count] = intermediate_pattern_codes[i];
+        pattern_uses[used_patterns_count] = pattern_uses[i];
+        candidate2pattern_index[i] = used_patterns_count;
+        used_patterns_count++;
+    }
+    intermediate_pattern_codes.resize(used_patterns_count);
+    pattern_uses.resize(used_patterns_count);
 
-    auto patterns_code_table = huffman_code_table(pattern_uses_sorted);
-    auto patterns_code_table_order = huffman_code_table_order_by_uses_and_code(pattern_uses_sorted, patterns_code_table);
+    {
+        // sort patterns and pattern_uses by uses and intermediate codes
+        auto pattern_uses_order = huffman_code_table_order_by_uses_and_codes(pattern_uses, intermediate_pattern_codes);
+        patterns = vector_reorder(patterns, pattern_uses_order);
+        pattern_uses = vector_reorder(pattern_uses, pattern_uses_order);
+
+        // pattern2code_index maps old pattern indexes to patterns_code_table indexes
+        auto pattern2code_index = invert_order(pattern_uses_order);
+        for (size_t& index : candidate2pattern_index) {
+            if (index < std::numeric_limits<size_t>::max()) {
+                index = pattern2code_index[index];
+            }
+        }
+    }
+
+    auto patterns_code_table = huffman_code_table(pattern_uses);
+    auto patterns_code_table_order = huffman_code_table_order_by_codes(patterns_code_table);
 
     // calculate position uses
     auto positions = positions_map.list_positions();
     auto position_uses = positions_map.list_uses();
 
-    // an intermediate position code is equal to the position value
-    auto& intermediate_position_codes = positions;
-    // position_uses_order maps positions_code_table indexes to positions indexes
-    auto position_uses_order = huffman_code_table_order_by_uses_and_code(position_uses, intermediate_position_codes);
-    // sort position_uses by uses and intermediate codes
-    auto position_uses_sorted = vector_reorder(position_uses, position_uses_order);
+    {
+        // sort positions and position_uses by uses and intermediate codes
+        // an intermediate position code is equal to the position value
+        auto& intermediate_position_codes = positions;
+        auto position_uses_order = huffman_code_table_order_by_uses_and_codes(position_uses, intermediate_position_codes);
+        positions = vector_reorder(positions, position_uses_order);
+        position_uses = vector_reorder(position_uses, position_uses_order);
+    }
 
-    auto positions_code_table = huffman_code_table(position_uses_sorted);
-    auto positions_code_table_order = huffman_code_table_order_by_uses_and_code(position_uses_sorted, positions_code_table);
+    auto positions_code_table = huffman_code_table(position_uses);
+    auto positions_code_table_order = huffman_code_table_order_by_codes(positions_code_table);
 
     SegStream::Header seg_header{
         .words_count = words_count,
@@ -232,11 +261,11 @@ void CompressorImpl::compress() {
     };
 
     for (size_t i : patterns_code_table_order) {
-        size_t pattern_index = pattern_uses_order[i];
-        auto& pattern = patterns[pattern_index];
+        uint8_t code_bits = patterns_code_table[i].code_bits;
+        auto& pattern = patterns[i];
         seg_header.patterns.push_back(SegStream::HuffmanCodeTableSymbol<ByteView>{
-            patterns_code_table[i].code_bits,
-            pattern.data,
+            .code_bits = code_bits,
+            .data = pattern,
         });
     }
 
@@ -247,11 +276,11 @@ void CompressorImpl::compress() {
     };
 
     for (size_t i : positions_code_table_order) {
-        size_t position_index = position_uses_order[i];
-        auto position = static_cast<size_t>(positions[position_index]);
+        uint8_t code_bits = positions_code_table[i].code_bits;
+        auto position = static_cast<size_t>(positions[i]);
         seg_header.positions.push_back(SegStream::HuffmanCodeTableSymbol<size_t>{
-            positions_code_table[i].code_bits,
-            position,
+            .code_bits = code_bits,
+            .data = position,
         });
         pos2code_index[position] = i;
     }
@@ -276,16 +305,22 @@ void CompressorImpl::compress() {
 
         size_t uncovered_data_size = raw_length;
         size_t prev_pattern_position = 0;
-        for (auto [pattern_position, pattern_index] : compressed_word1->pattern_positions) {
+        size_t prev_pattern_end = 0;
+        for (auto [pattern_position, candidate_pattern_index] : compressed_word1->pattern_positions) {
             auto position = PositionsMap::position(pattern_position, prev_pattern_position);
             auto& position_code = pos2code(position);
             prev_pattern_position = pattern_position;
 
-            size_t pattern_code_index = pattern2code_index[pattern_index];
-            auto& pattern_code = patterns_code_table[pattern_code_index];
+            size_t pattern_index = candidate2pattern_index[candidate_pattern_index];
+            auto& pattern_code = patterns_code_table[pattern_index];
 
             auto& pattern = patterns[pattern_index];
-            uncovered_data_size -= pattern.data.size();
+            size_t pattern_end = pattern_position + pattern.size();
+            // the patterns might overlap (pattern_position < prev_pattern_end),
+            // in this case covered_size is less than the pattern size
+            size_t covered_size = pattern_end - std::max(pattern_position, prev_pattern_end);
+            uncovered_data_size -= covered_size;
+            prev_pattern_end = pattern_end;
 
             write_code(position_code);
             write_code(pattern_code);

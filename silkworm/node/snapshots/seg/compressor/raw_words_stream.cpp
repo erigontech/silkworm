@@ -25,8 +25,8 @@ namespace silkworm::snapshots::seg {
 
 using namespace std;
 
-RawWordsStream::RawWordsStream(const filesystem::path& path, size_t buffer_size)
-    : file_(path, ios::in | ios::out | ios::binary),
+RawWordsStream::RawWordsStream(const filesystem::path& path, OpenMode open_mode, size_t buffer_size)
+    : file_(path, ios::in | ios::out | ios::binary | ((open_mode == OpenMode::kCreate) ? ios::trunc : ios::openmode{})),
       stream_(file_) {
     stream_.exceptions(ios::failbit | ios::badbit);
 

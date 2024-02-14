@@ -36,6 +36,7 @@ void lcp_kasai(const TDataPosComparator& data, const int* sa, const int* inv, in
         // defined for this substring, we put zero.
         if (inv[i] == n - 1) {
             k = 0;
+            lcp[inv[i]] = 0;
             continue;
         }
 

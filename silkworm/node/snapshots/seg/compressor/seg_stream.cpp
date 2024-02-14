@@ -16,7 +16,7 @@
 
 #include "seg_stream.hpp"
 
-#include <absl/functional/function_ref.h>
+#include <functional>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
@@ -27,7 +27,7 @@ namespace silkworm::snapshots::seg {
 using namespace std;
 
 SegStream::SegStream(const filesystem::path& path)
-    : file_(path, ios::in | ios::out | ios::binary),
+    : file_(path, ios::in | ios::out | ios::binary | ios::trunc),
       stream_(file_),
       bit_stream_([this](uint8_t b) { stream_.write(byte_ptr_cast(&b), 1); }) {
     stream_.exceptions(ios::failbit | ios::badbit);
@@ -53,12 +53,12 @@ class ScopedSegHeaderSectionSizeWriter {
   public:
     ScopedSegHeaderSectionSizeWriter(
         ostream& stream,
-        absl::FunctionRef<void(size_t)> write_size)
+        function<void(size_t)> write_size)
         : stream_(stream),
-          write_size_(write_size) {
+          write_size_(std::move(write_size)) {
         section_size_offset_ = stream_.tellp();
         // write a section size placeholder
-        write_size(0);
+        write_size_(0);
         section_start_offset_ = stream_.tellp();
     }
 
@@ -76,10 +76,10 @@ class ScopedSegHeaderSectionSizeWriter {
     }
 
   private:
-    std::ostream& stream_;
-    absl::FunctionRef<void(size_t)> write_size_;
-    std::ostream::pos_type section_size_offset_;
-    std::ostream::pos_type section_start_offset_;
+    ostream& stream_;
+    function<void(size_t)> write_size_;
+    ostream::pos_type section_size_offset_;
+    ostream::pos_type section_start_offset_;
 };
 
 void SegStream::write_header(const Header& header) {

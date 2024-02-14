@@ -79,6 +79,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     lookup_body,
     lookup_txn,
     seg_zip,
+    seg_unzip,
     sync
 };
 
@@ -164,6 +165,10 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
     commands[SnapshotTool::seg_zip]
         ->add_option("file", snapshot_settings.input_file_path, "Raw words file to compress")
+        ->required()
+        ->check(CLI::ExistingFile);
+    commands[SnapshotTool::seg_unzip]
+        ->add_option("file", snapshot_settings.input_file_path, ".seg file to decompress")
         ->required()
         ->check(CLI::ExistingFile);
 
@@ -721,6 +726,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::seg_zip:
                 seg::seg_zip(settings.snapshot_settings.input_file_path);
+                break;
+            case SnapshotTool::seg_unzip:
+                seg::seg_unzip(settings.snapshot_settings.input_file_path);
                 break;
             case SnapshotTool::sync:
                 sync(settings.snapshot_settings);

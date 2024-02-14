@@ -26,7 +26,7 @@ using namespace std;
 IntermediateCompressedStream::IntermediateCompressedStream(
     const filesystem::path& path,
     size_t buffer_size)
-    : file_(path, ios::in | ios::out | ios::binary),
+    : file_(path, ios::in | ios::out | ios::binary | ios::trunc),
       stream_(file_) {
     stream_.exceptions(ios::failbit | ios::badbit);
 
@@ -44,6 +44,8 @@ void IntermediateCompressedStream::write_varint(size_t value) {
 
 void IntermediateCompressedStream::write_word(const CompressedWord& word) {
     write_varint(word.raw_length);
+    if (word.raw_length == 0) return;
+
     write_varint(word.pattern_positions.size());
     for (auto [pattern_pos, pattern_code] : word.pattern_positions) {
         write_varint(pattern_pos);
@@ -77,6 +79,8 @@ std::optional<IntermediateCompressedStream::CompressedWord> IntermediateCompress
 
     CompressedWord word;
     word.raw_length = read_varint();
+    if (word.raw_length == 0)
+        return word;
 
     size_t pattern_positions_count = read_varint();
     word.pattern_positions.reserve(pattern_positions_count);

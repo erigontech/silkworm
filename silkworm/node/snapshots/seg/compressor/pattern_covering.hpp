@@ -16,11 +16,10 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/bytes.hpp>
 
@@ -34,7 +33,7 @@ class PatternCoveringSearch {
   public:
     PatternCoveringSearch(
         const PatriciaTree& patterns_tree,
-        absl::FunctionRef<uint64_t(void*)> pattern_score_getter);
+        std::function<uint64_t(void*)> pattern_score_getter);
     ~PatternCoveringSearch();
 
     struct Result {

@@ -29,7 +29,12 @@ namespace silkworm::snapshots::seg {
 
 class RawWordsStream {
   public:
-    RawWordsStream(const std::filesystem::path& path, size_t buffer_size);
+    enum class OpenMode {
+        kCreate,
+        kOpen,
+    };
+
+    RawWordsStream(const std::filesystem::path& path, OpenMode open_mode, size_t buffer_size);
     RawWordsStream(std::iostream& stream);
 
     void write_word(ByteView word, bool is_compressed = true);

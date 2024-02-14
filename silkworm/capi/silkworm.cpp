@@ -444,8 +444,11 @@ class BlockProvider {
             ++current_block;
 
             if (--refresh_counter == 0) {
+                log::Info{"[4/12 Execution] BlockProvider Refreshing txn"};
+                // txn.renew();
                 txn.abort();
                 txn = db::ROTxnManaged{env_};
+                log::Info{"[4/12 Execution] BlockProvider Refreshed txn"};
                 refresh_counter = kTxnRefreshThreshold;
             }
         }
@@ -488,12 +491,19 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
     SignalHandlerGuard signal_guard;
     try {
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
-        db::RWTxnUnmanaged txn{mdbx_txn};
-        const auto db_path{txn.db().get_path()};
 
-        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
+        db::RWTxnUnmanaged external_txn{mdbx_txn};
+        auto db_env = external_txn.db();
+        auto db_env2 = external_txn.db();
+        auto db_env3 = external_txn.db();
+        external_txn.abort();
+
+        db::ROTxnManaged txn_ro{db_env};
+        db::RWTxnManaged txn_rw{db_env2};
+
+        db::Buffer state_buffer{txn_ro, /*prune_history_threshold=*/0};
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
-        BlockProvider block_provider{&block_buffer, txn.db(), start_block, max_block};
+        BlockProvider block_provider{&block_buffer, db_env3, start_block, max_block};
         std::thread block_provider_thread(block_provider);
 
         static constexpr size_t kCacheSize{5'000};
@@ -520,7 +530,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         BlockNum block_number{start_block};
         while (block_number <= max_block) {
-            while (block_number <= max_block && state_buffer.current_batch_state_size() < max_batch_size) {
+            while (block_number <= max_block && block_number % 120 != 0
+                   // state_buffer.current_batch_state_size() < max_batch_size
+            ) {
                 // log::Info{"[4/12 Execution] Processing block",  // NOLINT(*-unused-raii)
                 //           {"block number", std::to_string(block_number)}};
 
@@ -562,7 +574,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 gas_batch_size += block->header.gas_used;
 
                 // Always flush history for single processed block (no batching)
-                state_buffer.write_history_to_db(txn, write_change_sets);
+                state_buffer.write_history_to_db(txn_rw, write_change_sets);
 
                 const auto now{std::chrono::steady_clock::now()};
                 if (signal_check_time <= now) {
@@ -589,28 +601,45 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
             StopWatch sw{/*auto_start=*/true};
-            state_buffer.write_state_to_db(txn);
+            log::Info{"step 1"};
+            state_buffer.write_state_to_db(txn_rw);
+            log::Info{"step 2"};
             gas_batch_size = 0;
-            txn.commit_and_renew();
+            txn_rw.commit_and_renew();
+            log::Info{"step 3"};
+            // txn_ro.renew();
+            log::Info{"step 4"};
+            // txn_ro = db::ROTxnManaged{db_env};
+            log::Info{"step 5"};
             const auto [elapsed, _]{sw.stop()};
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
+                      log_args_for_exec_commit(sw.since_start(elapsed), db_env.get_path()));
         }
 
         block_provider_thread.join();
+
+        external_txn.renew(db_env);
+
         return SILKWORM_OK;
 
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {
             *mdbx_error_code = e.error().code();
         }
+        log::Error{"[4/12 Execution] mdbx::exception"};
+        SILK_ERROR << "mdbx::exception exception " << e.what();
         return SILKWORM_MDBX_ERROR;
     } catch (const DecodingError&) {
+        log::Error{"[4/12 Execution] DecodingError"};
+        SILK_ERROR << "DecodingError exception ";
         return SILKWORM_DECODING_ERROR;
     } catch (const std::exception& e) {
+        log::Error{"[4/12 Execution] std::exception"};
         SILK_ERROR << "exception: " << e.what();
         return SILKWORM_INTERNAL_ERROR;
     } catch (...) {
+        log::Error{"[4/12 Execution] unknown exception"};
+        SILK_ERROR << "unknown exception";
         return SILKWORM_UNKNOWN_ERROR;
     }
 }

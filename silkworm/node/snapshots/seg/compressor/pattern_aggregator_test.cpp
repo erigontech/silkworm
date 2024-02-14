@@ -44,7 +44,8 @@ TEST_CASE("PatternAggregator") {
         {"CAFE"_hex, 1},
     };
 
-    CHECK(PatternAggregator::aggregate(std::move(aggregator)) == expected_patterns);
+    auto actual_patterns = PatternAggregator::aggregate(std::move(aggregator));
+    CHECK(actual_patterns == expected_patterns);
 }
 
 }  // namespace silkworm::snapshots::seg

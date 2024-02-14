@@ -1,11 +1,14 @@
 # Silkworm - C++ Ethereum Execution Client
 
-C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
+C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon architecture].
 
-[![Linux](https://circleci.com/gh/erigontech/silkworm.svg?style=shield)](https://circleci.com/gh/erigontech/silkworm)
+[![Linux](https://img.shields.io/circleci/build/gh/erigontech/silkworm?label=Linux)](https://circleci.com/gh/erigontech/silkworm)
 [![macOS](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml)
 [![Windows](https://github.com/erigontech/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/windows.yml)
 [![codecov](https://codecov.io/gh/erigontech/silkworm/graph/badge.svg?token=89IPVJGR4Q)](https://codecov.io/gh/erigontech/silkworm)
+
+[![JSON RPC Integration Tests](https://github.com/erigontech/silkworm/actions/workflows/rpc-integration-tests.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/rpc-integration-tests.yml)
+[![JSON RPC Performance Tests](https://github.com/erigontech/silkworm/actions/workflows/rpc-performance-tests.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/rpc-performance-tests.yml)
 
 ## Table of Contents
 
@@ -21,7 +24,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 <a name="about"></a>
 ## About Silkworm
 
-Silkworm is a greenfield C++ implementation of the Ethereum protocol based on the [Erigon Thorax architecture].
+Silkworm is a greenfield C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 It aims to be the fastest Ethereum client while maintaining the high quality and readability of its source code.
 Silkworm uses [libmdbx] as the database engine.
 
@@ -197,7 +200,7 @@ See [LICENSE](LICENSE) for more information.
 
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon Thorax architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
+[Erigon architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
 [staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md

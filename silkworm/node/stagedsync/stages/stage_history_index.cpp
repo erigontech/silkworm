@@ -57,14 +57,14 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
 
         // If this is first time we forward AND we have "prune history" set
         // do not process all blocks rather only what is needed
-        if (node_settings_->prune_mode->history().enabled()) {
+        if (node_settings_->prune_mode.history().enabled()) {
             if (!previous_progress_accounts)
-                previous_progress_accounts = node_settings_->prune_mode->history().value_from_head(target_progress);
+                previous_progress_accounts = node_settings_->prune_mode.history().value_from_head(target_progress);
             if (!previous_progress_storage)
-                previous_progress_storage = node_settings_->prune_mode->history().value_from_head(target_progress);
+                previous_progress_storage = node_settings_->prune_mode.history().value_from_head(target_progress);
         }
 
-        collector_ = std::make_unique<etl::Collector>(node_settings_);
+        collector_ = std::make_unique<db::etl_mdbx::Collector>(node_settings_->etl());
         if (previous_progress_accounts < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
             txn.commit_and_renew();
@@ -170,7 +170,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
     operation_ = OperationType::Prune;
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->history().enabled()) {
+        if (!node_settings_->prune_mode.history().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -184,7 +184,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)};
+        const auto prune_threshold{node_settings_->prune_mode.history().value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;

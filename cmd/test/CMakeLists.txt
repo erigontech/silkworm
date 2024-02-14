@@ -32,11 +32,6 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
   find_package(GTest REQUIRED)
 
-  # Silkworm Node Tests
-  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
-  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
-  target_link_libraries(node_test silkworm_node Catch2::Catch2)
-
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/rpc/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
@@ -44,23 +39,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
-
-    # Silkworm RpcDaemon Problem Investigation, to be deleted once the fuzzer is stable
-    find_package(nlohmann_json REQUIRED)
-    find_package(asio-grpc REQUIRED)
-    add_executable(rpcdaemon_fuzzer_investigation fuzzer_investigation.cpp)
-    target_compile_options(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=address,leak,undefined,fuzzer)
-    target_link_libraries(
-      rpcdaemon_fuzzer_investigation
-      PUBLIC nlohmann_json::nlohmann_json asio-grpc::asio-grpc
-      PRIVATE -fsanitize=address,leak,undefined
-    )
-    if(SILKWORM_FUZZER_LIBFUZZER_PATH)
-      target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
-    else()
-      target_link_libraries(rpcdaemon_fuzzer_investigation PRIVATE -fsanitize=fuzzer)
-    endif()
-
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=address,leak,undefined,fuzzer)

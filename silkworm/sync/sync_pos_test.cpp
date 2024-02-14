@@ -24,11 +24,12 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/node/test/mock_execution_client.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
-#include <silkworm/sync/test/mock_block_exchange.hpp>
+
+#include "test_util/mock_block_exchange.hpp"
+#include "test_util/mock_execution_client.hpp"
 
 namespace silkworm::chainsync {
 
@@ -36,8 +37,8 @@ struct PoSSyncTest : public rpc::test::ContextTestBase {
     SentryClient sentry_client_{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     mdbx::env_managed chaindata_env_{};
     db::ROAccess db_access_{chaindata_env_};
-    test::MockBlockExchange block_exchange_{sentry_client_, db_access_, kGoerliConfig};
-    test::MockClient execution_client_;
+    test_util::MockBlockExchange block_exchange_{sentry_client_, db_access_, kGoerliConfig};
+    test_util::MockClient execution_client_;
     PoSSync sync_{block_exchange_, execution_client_};
 };
 

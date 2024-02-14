@@ -25,8 +25,7 @@ namespace silkworm::execution {
 using namespace std::chrono;
 namespace asio = boost::asio;
 
-Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, dba} {
-}
+Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, std::move(dba)} {}
 
 bool Server::stop() {
     io_context_.stop();

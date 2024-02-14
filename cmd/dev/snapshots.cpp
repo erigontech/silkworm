@@ -15,6 +15,7 @@
 */
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <stdexcept>
@@ -32,24 +33,26 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/bittorrent/client.hpp>
-#include <silkworm/node/snapshot/index.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/node/snapshot/snapshot.hpp>
-#include <silkworm/node/snapshot/sync.hpp>
+#include <silkworm/node/snapshots/bittorrent/client.hpp>
+#include <silkworm/node/snapshots/index.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/node/snapshots/seg/seg_zip.hpp>
+#include <silkworm/node/snapshots/snapshot.hpp>
+#include <silkworm/node/snapshots/sync.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;
-using namespace silkworm::snapshot;
+using namespace silkworm::snapshots;
 
 constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 constexpr int kDefaultRepetitions{1};
 
 //! The settings for handling Thorax snapshots customized for this tool
 struct SnapSettings : public SnapshotSettings {
+    std::filesystem::path input_file_path;
     std::optional<std::string> snapshot_file_name;
     int page_size{kDefaultPageSize};
     bool skip_system_txs{true};
@@ -59,12 +62,13 @@ struct SnapSettings : public SnapshotSettings {
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
-struct DownloadSettings : public BitTorrentSettings {
+struct DownloadSettings : public bittorrent::BitTorrentSettings {
     std::string magnet_uri;
 };
 
-//! The Snapshots tools
-enum class SnapshotTool {
+//! The available subcommands in snapshots utility
+//! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11
+enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_bodies,
     count_headers,
     create_index,
@@ -74,6 +78,7 @@ enum class SnapshotTool {
     lookup_header,
     lookup_body,
     lookup_txn,
+    seg_zip,
     sync
 };
 
@@ -82,7 +87,6 @@ struct SnapshotToolboxSettings {
     log::Settings log_settings;
     SnapSettings snapshot_settings;
     DownloadSettings download_settings;
-    SnapshotTool tool{SnapshotTool::download};
     int repetitions{kDefaultRepetitions};
 };
 
@@ -120,23 +124,12 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
     add_logging_options(app, log_settings);
 
-    std::map<std::string, SnapshotTool> snapshot_tool_mapping{
-        {"count_bodies", SnapshotTool::count_bodies},
-        {"count_headers", SnapshotTool::count_headers},
-        {"create_index", SnapshotTool::create_index},
-        {"open_index", SnapshotTool::open_index},
-        {"decode_segment", SnapshotTool::decode_segment},
-        {"download", SnapshotTool::download},
-        {"lookup_header", SnapshotTool::lookup_header},
-        {"lookup_body", SnapshotTool::lookup_body},
-        {"lookup_txn", SnapshotTool::lookup_txn},
-        {"sync", SnapshotTool::sync},
-    };
-    app.add_option("--tool", settings.tool, "The snapshot tool to use")
-        ->capture_default_str()
-        ->check(CLI::Range(SnapshotTool::count_bodies, SnapshotTool::sync))
-        ->transform(CLI::Transformer(snapshot_tool_mapping, CLI::ignore_case))
-        ->default_val(SnapshotTool::download);
+    std::map<SnapshotTool, CLI::App*> commands;
+    for (auto& [tool, name] : magic_enum::enum_entries<SnapshotTool>()) {
+        commands[tool] = app.add_subcommand(std::string{name});
+    }
+    app.require_subcommand(1);
+
     app.add_option("--repetitions", settings.repetitions, "The test repetitions")
         ->capture_default_str()
         ->check(CLI::Range(1, 100));
@@ -168,6 +161,11 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     app.add_option("--number", snapshot_settings.lookup_number, "The block number to lookup in snapshot files")
         ->capture_default_str()
         ->check(BlockNumberValidator{});
+
+    commands[SnapshotTool::seg_zip]
+        ->add_option("file", snapshot_settings.input_file_path, "Raw words file to compress")
+        ->required()
+        ->check(CLI::ExistingFile);
 
     app.parse(argc, argv);
 }
@@ -286,11 +284,11 @@ void open_index(const SnapSettings& settings) {
     ensure(settings.snapshot_file_name.has_value(), "open_index: --snapshot_file must be specified");
     std::filesystem::path segment_file_path{settings.repository_dir / *settings.snapshot_file_name};
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
-    const auto snapshot_path{snapshot::SnapshotPath::parse(segment_file_path)};
-    ensure(snapshot_path.has_value(), "open_index: invalid snapshot file " + segment_file_path.filename().string());
+    const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
+    ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
     const auto index_path{snapshot_path->index_file()};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    succinct::RecSplitIndex idx{index_path.path()};
+    rec_split::RecSplitIndex idx{index_path.path()};
     if (settings.lookup_number) {
         BlockNum number{*settings.lookup_number};
         SILK_INFO << "Open index offset for " << number << ": " << idx.ordinal_lookup(number);
@@ -307,10 +305,10 @@ void open_index(const SnapSettings& settings) {
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void download(const BitTorrentSettings& settings) {
+void download(const bittorrent::BitTorrentSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    BitTorrentClient client{settings};
+    bittorrent::BitTorrentClient client{settings};
     SILK_INFO << "Bittorrent download started in repo: " << settings.repository_path.string();
 
     boost::asio::io_context scheduler;
@@ -401,7 +399,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
     if (header_snapshot) {
         const auto header{header_snapshot->header_by_number(block_number)};
         ensure(header.has_value(),
-               "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename());
+               [&]() { return "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename(); });
         SILK_INFO << "Lookup header number: " << block_number << " found in: " << header_snapshot->path().filename();
         if (settings.print) {
             print_header(*header, header_snapshot->path().filename());
@@ -438,7 +436,7 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto body_snapshot{snapshot_repository.get_body_segment(*snapshot_path)};
-    ensure(body_snapshot, "lookup_body: body segment not found for snapshot file: " + snapshot_path->path().string());
+    ensure(body_snapshot, [&]() { return "lookup_body: body segment not found for snapshot file: " + snapshot_path->path().string(); });
     const auto body{body_snapshot->body_by_number(block_number)};
     if (body) {
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
@@ -461,7 +459,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     if (body_snapshot) {
         const auto body{body_snapshot->body_by_number(block_number)};
         ensure(body.has_value(),
-               "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename());
+               [&]() { return "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename(); });
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
         if (settings.print) {
             print_body(*body, body_snapshot->path().filename());
@@ -690,28 +688,43 @@ int main(int argc, char* argv[]) {
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_INFO << "Snapshots toolbox build info: " << node_name;
 
-        if (settings.tool == SnapshotTool::count_bodies) {
-            count_bodies(settings.snapshot_settings, settings.repetitions);
-        } else if (settings.tool == SnapshotTool::count_headers) {
-            count_headers(settings.snapshot_settings, settings.repetitions);
-        } else if (settings.tool == SnapshotTool::create_index) {
-            create_index(settings.snapshot_settings, settings.repetitions);
-        } else if (settings.tool == SnapshotTool::open_index) {
-            open_index(settings.snapshot_settings);
-        } else if (settings.tool == SnapshotTool::decode_segment) {
-            decode_segment(settings.snapshot_settings, settings.repetitions);
-        } else if (settings.tool == SnapshotTool::download) {
-            download(settings.download_settings);
-        } else if (settings.tool == SnapshotTool::lookup_header) {
-            lookup_header(settings.snapshot_settings);
-        } else if (settings.tool == SnapshotTool::lookup_body) {
-            lookup_body(settings.snapshot_settings);
-        } else if (settings.tool == SnapshotTool::lookup_txn) {
-            lookup_transaction(settings.snapshot_settings);
-        } else if (settings.tool == SnapshotTool::sync) {
-            sync(settings.snapshot_settings);
-        } else {
-            throw std::invalid_argument{"unknown tool: " + std::string{magic_enum::enum_name<>(settings.tool)}};
+        auto command_name = app.get_subcommands().front()->get_name();
+        auto tool = magic_enum::enum_cast<SnapshotTool>(command_name).value();
+
+        switch (tool) {
+            case SnapshotTool::count_bodies:
+                count_bodies(settings.snapshot_settings, settings.repetitions);
+                break;
+            case SnapshotTool::count_headers:
+                count_headers(settings.snapshot_settings, settings.repetitions);
+                break;
+            case SnapshotTool::create_index:
+                create_index(settings.snapshot_settings, settings.repetitions);
+                break;
+            case SnapshotTool::open_index:
+                open_index(settings.snapshot_settings);
+                break;
+            case SnapshotTool::decode_segment:
+                decode_segment(settings.snapshot_settings, settings.repetitions);
+                break;
+            case SnapshotTool::download:
+                download(settings.download_settings);
+                break;
+            case SnapshotTool::lookup_header:
+                lookup_header(settings.snapshot_settings);
+                break;
+            case SnapshotTool::lookup_body:
+                lookup_body(settings.snapshot_settings);
+                break;
+            case SnapshotTool::lookup_txn:
+                lookup_transaction(settings.snapshot_settings);
+                break;
+            case SnapshotTool::seg_zip:
+                seg::seg_zip(settings.snapshot_settings.input_file_path);
+                break;
+            case SnapshotTool::sync:
+                sync(settings.snapshot_settings);
+                break;
         }
 
         SILK_INFO << "Snapshots toolbox exiting [pid=" << std::to_string(pid) << "]";

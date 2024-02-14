@@ -1610,30 +1610,30 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
     co_return ret_entry_tracer->found();
 }
 
-Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream) {
+Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
     SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.from_block);
     if (!from_block_with_hash) {
         const Error error{-32000, "invalid parameters: fromBlock not found"};
-        stream->write_json_field("error", error);
+        stream.write_json_field("error", error);
         co_return;
     }
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, trace_filter.to_block);
     if (!to_block_with_hash) {
         const Error error{-32000, "invalid parameters: toBlock not found"};
-        stream->write_json_field("error", error);
+        stream.write_json_field("error", error);
         co_return;
     }
 
     if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
-        stream->write_json_field("error", error);
+        stream.write_json_field("error", error);
         co_return;
     }
 
-    stream->write_field("result");
-    stream->open_array();
+    stream.write_field("result");
+    stream.open_array();
 
     Filter filter;
     filter.from_addresses.insert(trace_filter.from_addresses.begin(), trace_filter.from_addresses.end());
@@ -1649,7 +1649,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
                    << " block_number: " << block_number - 1
                    << " block: " << block;
 
-        co_await trace_block(*block_with_hash, filter, stream);
+        co_await trace_block(*block_with_hash, filter, &stream);
 
         if (filter.count == 0) {
             break;
@@ -1662,7 +1662,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
         }
     }
 
-    stream->close_array();
+    stream.close_array();
 
     SILK_TRACE << "TraceCallExecutor::trace_filter: end";
 

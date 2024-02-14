@@ -14,6 +14,11 @@
    limitations under the License.
 ]]
 
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+
+add_subdirectory(db/etl)
+add_subdirectory(snapshots/seg)
+
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers container)
@@ -22,23 +27,6 @@ find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
-
-file(
-  GLOB_RECURSE
-  SILKWORM_NODE_SRC
-  CONFIGURE_DEPENDS
-  "*.cpp"
-  "*.hpp"
-  "*.c"
-  "*.h"
-  "*.cc"
-)
-list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
-list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
-
-add_library(silkworm_node "${SILKWORM_NODE_SRC}")
-
-target_include_directories(silkworm_node PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(SILKWORM_NODE_PUBLIC_LIBS
     silkworm_core
@@ -63,12 +51,15 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
     magic_enum::magic_enum
+    silkworm_db_etl
     silkworm_interfaces
+    silkworm_snapshots_seg
 )
 # cmake-format: on
 
-target_link_libraries(
+silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
+  EXCLUDE_REGEX "db/etl" "snapshots/seg"
 )

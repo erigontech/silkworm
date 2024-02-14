@@ -40,14 +40,14 @@ int main(int argc, char* argv[]) {
     uint64_t to{UINT64_MAX};
     app.add_option("--to", to, "check up to block number (exclusive)");
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     if (from > to) {
         std::cerr << "--from (" << from << ") must be less than or equal to --to (" << to << ").\n";
         return -1;
     }
 
-    int retvar{0};
+    int rv{0};
 
     // Note: If Erigon is actively syncing its database (syncing), it is important not to create
     // long-running database reads transactions even though that may make your processing faster.
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
 
             // Report and reset counters
             if ((block_num % 50000) == 0) {
-                std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
+                std::cout << block_num << "," << nTxs << "," << nErrors << "\n";
                 nTxs = nErrors = 0;
 
             } else if ((block_num % 100) == 0) {
@@ -125,9 +125,9 @@ int main(int argc, char* argv[]) {
         }
 
     } catch (std::exception& ex) {
-        std::cout << ex.what() << std::endl;
-        retvar = -1;
+        std::cout << ex.what() << "\n";
+        rv = -1;
     }
 
-    return retvar;
+    return rv;
 }

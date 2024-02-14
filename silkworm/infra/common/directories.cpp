@@ -138,7 +138,8 @@ DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chainda
 
 std::filesystem::path silkworm::DataDirectory::get_default_storage_path() {
     std::string base_dir_str{};
-    const char* env{std::getenv("XDG_DATA_HOME")};
+    // C++11 guarantees some thread safety for std::getenv
+    const char* env{std::getenv("XDG_DATA_HOME")};  // NOLINT(concurrency-mt-unsafe)
     if (env) {
         // Got storage path from docker
         base_dir_str.assign(env);
@@ -148,7 +149,7 @@ std::filesystem::path silkworm::DataDirectory::get_default_storage_path() {
 #else
         std::string env_name{"HOME"};
 #endif
-        env = std::getenv(env_name.c_str());
+        env = std::getenv(env_name.c_str());  // NOLINT(concurrency-mt-unsafe)
         if (!env) {
             // We don't actually know where to store data
             // fallback to current directory

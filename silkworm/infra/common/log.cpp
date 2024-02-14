@@ -37,6 +37,7 @@ constexpr auto kThreadNameFixedSize{11};
 static Settings settings_{};
 static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
+static bool is_terminal{false};
 thread_local std::string thread_name_{};
 
 void init(const Settings& settings) {
@@ -50,6 +51,8 @@ void init(const Settings& settings) {
         gpr_set_log_function(gpr_silkworm_log);
     }
     init_terminal();
+    is_terminal = settings_.log_std_out ? is_terminal_stdout() : is_terminal_stderr();
+    settings_.log_nocolor = settings_.log_nocolor || !is_terminal;
 }
 
 void tee_file(const std::filesystem::path& path) {
@@ -125,9 +128,9 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
     // Prefix
     auto log_tag{settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level};
     ss_ << kColorReset
-        << (settings_.log_trim ? "" : " ") << color << log_tag
+        << (settings_.log_trim && !is_terminal ? "[" : (settings_.log_trim ? "" : " ")) << color << log_tag
         << kColorReset
-        << (settings_.log_trim ? "" : " ");
+        << (settings_.log_trim && !is_terminal ? "] " : (settings_.log_trim ? "" : " "));
 
     // TimeStamp
     static const absl::TimeZone tz{settings_.log_utc ? absl::UTCTimeZone() : absl::LocalTimeZone()};
@@ -160,12 +163,12 @@ void BufferBase::flush() {
     }
     std::unique_lock out_lck{out_mtx};
     auto& out = settings_.log_std_out ? std::cout : std::cerr;
-    out << line << std::endl;
+    out << line << '\n';
     if (file_ && file_->is_open()) {
         if (colorized) {
             line = std::regex_replace(line, color_pattern, "");
         }
-        *file_ << line << std::endl;
+        *file_ << line << '\n';
     }
 }
 

@@ -18,8 +18,8 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 namespace silkworm::trie {
@@ -27,7 +27,7 @@ namespace silkworm::trie {
 class TrieLoader {
   public:
     explicit TrieLoader(db::ROTxn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
-                        etl::Collector* account_trie_node_collector, etl::Collector* storage_trie_node_collector);
+                        db::etl::Collector* account_trie_node_collector, db::etl::Collector* storage_trie_node_collector);
 
     //! \brief (re)calculates root hash on behalf of collected hashed changes and existing data in TrieOfAccount and
     //! TrieOfStorage buckets
@@ -45,8 +45,8 @@ class TrieLoader {
     db::ROTxn& txn_;
     PrefixSet* account_changes_;
     PrefixSet* storage_changes_;
-    etl::Collector* account_trie_node_collector_;
-    etl::Collector* storage_trie_node_collector_;
+    db::etl::Collector* account_trie_node_collector_;
+    db::etl::Collector* storage_trie_node_collector_;
 
     std::string log_key_{};         // To export logging key
     mutable std::mutex log_mtx_{};  // Guards async logging

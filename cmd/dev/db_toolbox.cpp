@@ -249,7 +249,7 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
         if (std::regex_search(user_input, matches, pattern, std::regex_constants::match_default)) {
             break;
         }
-        std::cout << "Hmmm... maybe you didn't read carefully. I repeat:" << std::endl;
+        std::cout << "Unexpected user input: " << user_input << "\n";
     } while (true);
 
     if (matches[2].length()) {
@@ -272,7 +272,7 @@ void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vecto
 
     for (const auto& tablename : table_names) {
         if (!db::has_map(txn, tablename.c_str())) {
-            std::cout << "Table " << tablename << " not found" << std::endl;
+            std::cout << "Table " << tablename << " not found\n";
             continue;
         }
 
@@ -280,7 +280,7 @@ void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vecto
         size_t rcount{txn.get_map_stat(table_map).ms_entries};
 
         if (!rcount && !drop) {
-            std::cout << " Table " << tablename << " is already empty. Skipping" << std::endl;
+            std::cout << " Table " << tablename << " is already empty. Skipping\n";
             continue;
         }
 
@@ -290,12 +290,12 @@ void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vecto
 
         if (!always_yes) {
             if (!user_confirmation()) {
-                std::cout << "  Skipped." << std::endl;
+                std::cout << "  Skipped.\n";
                 continue;
             }
         }
 
-        std::cout << (dry ? "Simulating commit ..." : "Committing ...") << std::endl;
+        std::cout << (dry ? "Simulating commit ..." : "Committing ...") << "\n";
 
         if (drop) {
             txn.drop_map(table_map);
@@ -387,12 +387,11 @@ void do_scan(db::EnvConfig& config) {
 
     auto tablesInfo{get_tables_info(txn)};
 
-    std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n"
-              << std::endl;
+    std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n\n";
 
     if (!tablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Total")
-                  << std::endl;
+                  << "\n";
         std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
                       std::string(13, '-') % std::string(13, '-') % std::string(13, '-'))
                   << std::flush;
@@ -445,7 +444,7 @@ void do_scan(db::EnvConfig& config) {
     }
 
     std::cout << "\n"
-              << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n " << std::endl;
+              << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n\n";
     txn.commit();
     env.close(config.shared);
 }
@@ -465,8 +464,8 @@ void do_stages(db::EnvConfig& config) {
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
         std::cout << "\n"
-                  << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
-        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
+                  << (boost::format(fmt_hdr) % "Stage Name" % "Block") << "\n";
+        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << "\n";
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
         while (result) {
@@ -482,14 +481,12 @@ void do_stages(db::EnvConfig& config) {
             bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
             std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                           (Known ? std::string(8, ' ') : "Unknown"))
-                      << std::endl;
+                      << "\n";
             result = crs.to_next(/*throw_notfound =*/false);
         }
-        std::cout << "\n"
-                  << std::endl;
+        std::cout << "\n\n";
     } else {
-        std::cout << "\n There are no stages to list\n"
-                  << std::endl;
+        std::cout << "\n There are no stages to list\n\n";
     }
 
     txn.commit();
@@ -512,26 +509,24 @@ void do_migrations(db::EnvConfig& config) {
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
         std::cout << "\n"
-                  << (boost::format(fmt_hdr) % "Migration Name") << std::endl;
-        std::cout << (boost::format(fmt_hdr) % std::string(24, '-')) << std::endl;
+                  << (boost::format(fmt_hdr) % "Migration Name") << "\n";
+        std::cout << (boost::format(fmt_hdr) % std::string(24, '-')) << "\n";
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
         while (result) {
-            std::cout << (boost::format(fmt_row) % result.key.as_string()) << std::endl;
+            std::cout << (boost::format(fmt_row) % result.key.as_string()) << "\n";
             result = crs.to_next(/*throw_notfound =*/false);
         }
-        std::cout << "\n"
-                  << std::endl;
+        std::cout << "\n\n";
     } else {
-        std::cout << "\n There are no migrations to list\n"
-                  << std::endl;
+        std::cout << "\n There are no migrations to list\n\n";
     }
 
     txn.commit();
     env.close(config.shared);
 }
 
-void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(db::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
 
     if (!config.exclusive) {
@@ -553,8 +548,7 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
         txn.commit_and_renew();
     }
 
-    std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n"
-              << std::endl;
+    std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n\n";
 }
 
 void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
@@ -576,7 +570,7 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-           "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)});
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
 
     std::cout << "\n Staged pipeline unwind up to block: " << unwind_point << " completed\n";
 
@@ -633,18 +627,18 @@ void do_tables(db::EnvConfig& config) {
     auto dbTablesInfo{get_tables_info(txn)};
     auto dbFreeInfo{get_free_info(txn)};
 
-    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << std::endl;
+    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << "\n";
     std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n"
-              << std::endl;
+              << "\n";
 
     if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
                       "Size" % "Key" % "Value")
-                  << std::endl;
+                  << "\n";
         std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(26, '-') % std::string(10, '-') %
                       std::string(2, '-') % std::string(10, '-') % std::string(10, '-') % std::string(10, '-') %
                       std::string(12, '-') % std::string(10, '-') % std::string(10, '-'))
-                  << std::endl;
+                  << "\n";
 
         for (auto& item : dbTablesInfo.tables) {
             auto keyMode = magic_enum::enum_name(item.info.key_mode());
@@ -652,7 +646,7 @@ void do_tables(db::EnvConfig& config) {
             std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
                           item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
                           human_size(item.size()) % keyMode % valueMode)
-                      << std::endl;
+                      << "\n";
         }
     }
 
@@ -664,8 +658,7 @@ void do_tables(db::EnvConfig& config) {
               << " Free pages size      (C) : " << (boost::format("%13s") % human_size(dbFreeInfo.size)) << "\n"
               << " Reclaimable space        : "
               << (boost::format("%13s") % human_size(dbTablesInfo.file_size - dbTablesInfo.size + dbFreeInfo.size))
-              << " == A - B + C \n"
-              << std::endl;
+              << " == A - B + C \n\n";
 
     txn.commit();
     env.close(config.shared);
@@ -683,15 +676,14 @@ void do_freelist(db::EnvConfig& config, bool detail) {
         std::cout << "\n"
                   << (boost::format(fmt_hdr) % "TxId" % "Pages" % "Size") << "\n"
                   << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
-                  << std::endl;
+                  << "\n";
         for (auto& item : db_free_info.entries) {
-            std::cout << (boost::format(fmt_row) % item.id % item.pages % human_size(item.size)) << std::endl;
+            std::cout << (boost::format(fmt_row) % item.id % item.pages % human_size(item.size)) << "\n";
         }
     }
     std::cout << "\n Record count         : " << boost::format("%13u") % db_free_info.entries.size() << "\n"
               << " Free pages count     : " << boost::format("%13u") % db_free_info.pages << "\n"
-              << " Free pages size      : " << boost::format("%13s") % human_size(db_free_info.size) << "\n"
-              << std::endl;
+              << " Free pages size      : " << boost::format("%13s") % human_size(db_free_info.size) << "\n\n";
 
     txn.commit();
     env.close(config.shared);
@@ -706,8 +698,7 @@ void do_schema(db::EnvConfig& config) {
         throw std::runtime_error("Not a Silkworm db or no schema version found");
     }
     std::cout << "\n"
-              << "Database schema version : " << schema_version->to_string() << "\n"
-              << std::endl;
+              << "Database schema version : " << schema_version->to_string() << "\n\n";
 
     env.close(config.shared);
 }
@@ -746,9 +737,9 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
     }
 
     std::cout << "\n Compacting database from " << config.path << "\n into " << target_file_path
-              << "\n Please be patient as there is no progress report ..." << std::endl;
+              << "\n Please be patient as there is no progress report ...\n";
     env.copy(/*destination*/ target_file_path.string(), /*compactify*/ true, /*forcedynamic*/ true);
-    std::cout << "\n Database compaction " << (SignalHandler::signalled() ? "aborted !" : "completed ...") << std::endl;
+    std::cout << "\n Database compaction " << (SignalHandler::signalled() ? "aborted !" : "completed ...") << "\n";
     env.close();
 
     if (!SignalHandler::signalled()) {
@@ -763,7 +754,7 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
             auto source_file_path{db::get_datafile_path(fs::path(config.path))};
             // Create a backup copy before replacing ?
             if (!nobak) {
-                std::cout << " Creating backup copy of origin database ..." << std::endl;
+                std::cout << " Creating backup copy of origin database ...\n";
                 std::string src_file_back{db::kDbDataFileName};
                 src_file_back.append(".bak");
                 fs::path src_path_bak{source_file_path.parent_path() / fs::path{src_file_back}};
@@ -773,7 +764,7 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
                 fs::rename(source_file_path, src_path_bak);
             }
 
-            std::cout << " Replacing origin database with compacted ..." << std::endl;
+            std::cout << " Replacing origin database with compacted ...\n";
             if (fs::exists(source_file_path)) {
                 fs::remove(source_file_path);
             }
@@ -829,7 +820,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
     }
 
     size_t bytesWritten{0};
-    std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress" << std::endl;
+    std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress\n";
     std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
 
     // Loop source tables
@@ -951,7 +942,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
         std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
     }
 
-    std::cout << "\n All done!" << std::endl;
+    std::cout << "\n All done!\n";
 }
 
 static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDupSort* cursor2, bool force_print = false) {
@@ -1115,11 +1106,11 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
 }
 
 static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
-    ensure(table1.name == table2.name, "name mismatch: " + table1.name + " vs " + table2.name);
+    ensure(table1.name == table2.name, [&]() { return "name mismatch: " + table1.name + " vs " + table2.name; });
     ensure(table1.info.key_mode() == table2.info.key_mode(),
-           "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())));
+           [&]() { return "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())); });
     ensure(table1.info.value_mode() == table2.info.value_mode(),
-           "value_mode mismatch: " + std::to_string(int(table1.info.value_mode())) + " vs " + std::to_string(int(table2.info.value_mode())));
+           [&]() { return "value_mode mismatch: " + std::to_string(int(table1.info.value_mode())) + " vs " + std::to_string(int(table2.info.value_mode())); });
 
     db::MapConfig table1_config{
         .name = table1.name.c_str(),
@@ -1213,8 +1204,8 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
 }
 
 void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, std::optional<std::string_view> table) {
-    ensure(fs::exists(target_datadir_path), "target datadir " + target_datadir_path.string() + " does not exist");
-    ensure(fs::is_directory(target_datadir_path), "target datadir " + target_datadir_path.string() + " must be a folder");
+    ensure(fs::exists(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " does not exist"; });
+    ensure(fs::is_directory(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " must be a folder"; });
 
     DataDirectory target_datadir{target_datadir_path};
     db::EnvConfig target_config{target_datadir.chaindata().path()};
@@ -1336,10 +1327,10 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
     // Use last block as max block if to is missing and perform range checks
     BlockNum last{db::block_number_from_key(last_data.key)};
     if (to) {
-        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
-        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
+        ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
     } else {
-        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= last, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last); });
         to = last;
     }
 
@@ -1350,17 +1341,17 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
         // Lookup each canonical block hash from each block number
         auto block_number_key{db::block_key(block_number)};
         auto ch_data{canonical_hashes_table->find(db::to_slice(block_number_key), /*throw_notfound=*/false)};
-        ensure(ch_data.done, "Table CanonicalHashes does not contain key=" + to_hex(block_number_key));
+        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_number_key); });
         const auto block_hash{to_bytes32(db::from_slice(ch_data.value))};
 
         // Read and decode each canonical block header
         auto block_key{db::block_key(block_number, block_hash.bytes)};
         auto bh_data{block_headers_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
-        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{db::from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
 
         // Read and decode each canonical block body
         auto bb_data{block_bodies_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
@@ -1392,10 +1383,10 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
     // Use last block as max block if to is missing and perform range checks
     BlockNum last{db::block_number_from_key(last_data.key)};
     if (to) {
-        ensure(from <= *to, "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to));
-        ensure(*to <= last, "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
+        ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
     } else {
-        ensure(from <= last, "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last));
+        ensure(from <= last, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than last=" + std::to_string(last); });
         to = last;
     }
 
@@ -1405,11 +1396,11 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
         // Read and decode each block header
         auto block_key{db::block_key(block_number)};
         auto bh_data{block_headers_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
-        ensure(bh_data.done, "Table Headers does not contain key=" + to_hex(block_key));
+        ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{db::from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)));
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
 
         // Read and decode each block body
         auto bb_data{block_bodies_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
@@ -1454,7 +1445,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     code_cursor.to_first();
     cursor_for_each(code_cursor,
                     [&histogram, &batch_size, &progress](ByteView, ByteView value) {
-                        if (value.length() > 0) {
+                        if (!value.empty()) {
                             uint8_t first_byte{value.at(0)};
                             ++histogram[first_byte];
                         }
@@ -1467,10 +1458,9 @@ void do_first_byte_analysis(db::EnvConfig& config) {
 
     BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
     progress.set_current(total_entries);
-    std::cout << progress.print_interval('.') << std::endl;
+    std::cout << progress.print_interval('.') << "\n";
 
-    std::cout << "\n Last block : " << last_block << "\n Contracts  : " << total_entries << "\n"
-              << std::endl;
+    std::cout << "\n Last block : " << last_block << "\n Contracts  : " << total_entries << "\n\n";
 
     // Sort histogram by usage (from most used to less used)
     std::vector<std::pair<uint8_t, size_t>> histogram_sorted;
@@ -1483,14 +1473,13 @@ void do_first_byte_analysis(db::EnvConfig& config) {
 
     if (!histogram_sorted.empty()) {
         std::cout << (boost::format(" %-4s %8s") % "Byte" % "Count") << "\n"
-                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << std::endl;
+                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << "\n";
         for (const auto& [byte_code, usage_count] : histogram_sorted) {
-            std::cout << (boost::format(" 0x%02x %8u") % static_cast<int>(byte_code) % usage_count) << std::endl;
+            std::cout << (boost::format(" 0x%02x %8u") % static_cast<int>(byte_code) % usage_count) << "\n";
         }
     }
 
-    std::cout << "\n"
-              << std::endl;
+    std::cout << "\n\n";
 }
 
 void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
@@ -1510,7 +1499,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream << "/* Generated by Silkworm toolbox's extract headers */\n"
                << "#include <cstdint>\n"
                << "#include <cstddef>\n"
-               << "static const uint64_t preverified_hashes_mainnet_internal[] = {" << std::endl;
+               << "static const uint64_t preverified_hashes_mainnet_internal[] = {\n";
 
     BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
     BlockNum max_height{0};
@@ -1529,7 +1518,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
             std::string hex{to_hex(chuncks[i], true)};
             out_stream << hex << ",";
         }
-        out_stream << std::endl;
+        out_stream << "\n";
         max_height = block_num;
     }
 
@@ -1537,8 +1526,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
         << "};\n"
         << "const uint64_t* preverified_hashes_mainnet_data(){return &preverified_hashes_mainnet_internal[0];}\n"
         << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(preverified_hashes_mainnet_internal);}\n"
-        << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n"
-        << std::endl;
+        << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n\n";
     out_stream.close();
 }
 
@@ -1577,17 +1565,16 @@ void do_trie_account_analysis(db::EnvConfig& config) {
                     });
 
     progress.set_current(total_entries);
-    std::cout << progress.print_interval('.') << std::endl;
+    std::cout << progress.print_interval('.') << "\n";
 
     if (!histogram.empty()) {
         std::cout << (boost::format(" %-4s %8s") % "Size" % "Count") << "\n"
-                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << std::endl;
+                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << "\n";
         for (const auto& [size, usage_count] : histogram) {
-            std::cout << (boost::format(" %4u %8u") % size % usage_count) << std::endl;
+            std::cout << (boost::format(" %4u %8u") % size % usage_count) << "\n";
         }
     }
-    std::cout << "\n"
-              << std::endl;
+    std::cout << "\n\n";
 }
 
 void do_trie_scan(db::EnvConfig& config, bool del) {
@@ -1601,11 +1588,11 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
             break;
         }
         db::PooledCursor cursor(txn, map_config);
-        std::cout << " Scanning " << map_config.name << std::endl;
+        std::cout << " Scanning " << map_config.name << "\n";
         auto data{cursor.to_first(false)};
         while (data) {
             if (data.value.empty()) {
-                std::cout << "Empty value at key " << to_hex(db::from_slice(data.key), true) << std::endl;
+                std::cout << "Empty value at key " << to_hex(db::from_slice(data.key), true) << "\n";
                 if (del) {
                     cursor.erase();
                 }
@@ -1622,8 +1609,7 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
     if (!SignalHandler::signalled()) {
         txn.commit();
     }
-    std::cout << "\n"
-              << std::endl;
+    std::cout << "\n\n";
 }
 
 void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
@@ -1690,7 +1676,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                     throw std::runtime_error(what);
                 }
                 is_healthy = false;
-                std::cout << " " << what << std::endl;
+                std::cout << " " << what << "\n";
             }
 
             if (!trie::is_subset(node_tree_mask, node_state_mask)) {
@@ -1718,7 +1704,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                     throw std::runtime_error(what);
                 }
                 is_healthy = false;
-                std::cout << " " << what << std::endl;
+                std::cout << " " << what << "\n";
             } else {
                 node_has_root = (effective_hashes_count == expected_hashes_count + 1u);
             }
@@ -1732,7 +1718,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                     throw std::runtime_error(what);
                 }
                 is_healthy = false;
-                std::cout << " " << what << std::endl;
+                std::cout << " " << what << "\n";
             } else if (!node_k.empty() && node_has_root) {
                 log::Warning("Unexpected root hash", {"key", to_hex(data1_k, true)});
             }
@@ -1814,7 +1800,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                             throw std::runtime_error(what);
                         }
                         is_healthy = false;
-                        std::cout << " " << what << std::endl;
+                        std::cout << " " << what << "\n";
                     }
                 }
 
@@ -1829,7 +1815,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                         throw std::runtime_error(what);
                     }
                     is_healthy = false;
-                    std::cout << " " << what << std::endl;
+                    std::cout << " " << what << "\n";
                 }
             }
 
@@ -1853,7 +1839,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                 auto bits_to_match{buffer.length() * 4};
 
-                // >>> See Erigon's /ethdb/kv_util.go::BytesMask
+                // >>> See Erigon /ethdb/kv_util.go::BytesMask
                 uint8_t mask{0xff};
                 auto fixed_bytes{(bits_to_match + 7) / 8};
                 auto shift_bits{bits_to_match & 7};
@@ -1872,7 +1858,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                     Bytes seek{trie::pack_nibbles(buffer)};
 
-                    // On first loop we search HashedAccounts (which is not dupsorted)
+                    // On first loop we search HashedAccounts (which is not dup-sorted)
                     if (!loop_id) {
                         auto data3{state_cursor.lower_bound(db::to_slice(seek), false)};
                         if (data3) {
@@ -1894,7 +1880,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                             throw std::runtime_error(what);
                         }
                     } else {
-                        // On second loop we search HashedStorage (which is dupsorted)
+                        // On second loop we search HashedStorage (which is dup-sorted)
                         auto data3{state_cursor.lower_bound_multivalue(db::to_slice(data1_k.substr(0, prefix_len)),
                                                                        db::to_slice(seek), false)};
                         if (data3) {
@@ -2360,14 +2346,13 @@ int main(int argc, char* argv[]) {
 
         if (!*cmd_initgenesis) {
             if (!data_dir.chaindata().exists() || data_dir.is_pristine()) {
-                std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty"
-                          << std::endl;
+                std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty\n";
                 return -1;
             }
             auto mdbx_path{db::get_datafile_path(data_dir.chaindata().path())};
             if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
                 std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not contain "
-                          << db::kDbDataFileName << std::endl;
+                          << db::kDbDataFileName << "\n";
                 return -1;
             }
         }
@@ -2414,8 +2399,7 @@ int main(int argc, char* argv[]) {
                             *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u,
                             static_cast<bool>(*app_dry_opt));
             if (*app_dry_opt) {
-                std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n"
-                          << std::endl;
+                std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n\n";
                 fs::remove_all(data_dir.path());
             }
         } else if (*cmd_chainconfig) {

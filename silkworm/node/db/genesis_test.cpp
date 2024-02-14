@@ -20,12 +20,12 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db {
 
 TEST_CASE("Database genesis initialization") {
-    test::Context context;
+    db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     SECTION("Initialize with Mainnet") {

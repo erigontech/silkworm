@@ -379,7 +379,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
 
-        co_await executor.trace_filter(trace_filter, *chain_storage, &stream);
+        co_await executor.trace_filter(trace_filter, *chain_storage, stream);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
 

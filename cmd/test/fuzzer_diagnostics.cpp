@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Request: " << request_json.dump(4) << "\n";
     }
 
-    silkworm::rpc::Channel::Response reply;
+    std::string reply;
 
     try {
         auto context = silkworm::rpc::test::TestDatabaseContext();
@@ -107,12 +107,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << "Reply Status: " << static_cast<int>(reply.status) << "\n";
-
-    if (nlohmann::json::accept(reply.content)) {
-        std::cout << "Reply Content: " << nlohmann::json::parse(reply.content).dump(4) << "\n";
+    if (nlohmann::json::accept(reply)) {
+        std::cout << "Reply Content: " << nlohmann::json::parse(reply).dump(4) << "\n";
     } else {
-        std::cout << "Reply Content: " << reply.content << "\n";
+        std::cout << "Reply Content (non JSON): " << reply << "\n";
     }
 
     return 0;

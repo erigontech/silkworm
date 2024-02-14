@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include <array>
+
 #include <silkworm/core/trie/node.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/etl/collector.hpp>
 
 namespace silkworm::trie {
 
@@ -71,7 +73,7 @@ class SubNode : public Node {
 
 class TrieCursor {
   public:
-    explicit TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, etl::Collector* collector = nullptr);
+    explicit TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, db::etl::Collector* collector = nullptr);
 
     // Not copyable nor movable
     TrieCursor(const TrieCursor&) = delete;
@@ -102,10 +104,10 @@ class TrieCursor {
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer
 
-    db::ROCursor& db_cursor_;    // The underlying db cursor (TrieAccount/TrieStorage)
-    PrefixSet* changed_list_;    // The collection of changed nibbled keys
-    ByteView next_created_{};    // The next created account/location in changed list
-    etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
+    db::ROCursor& db_cursor_;        // The underlying db cursor (TrieAccount/TrieStorage)
+    PrefixSet* changed_list_;        // The collection of changed nibbled keys
+    ByteView next_created_{};        // The next created account/location in changed list
+    db::etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 
     bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed

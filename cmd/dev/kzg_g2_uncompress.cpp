@@ -62,5 +62,5 @@ int main() {
     print_blst_fp(out.z.fp[0]);
     std::cout << ",\n  ";
     print_blst_fp(out.z.fp[1]);
-    std::cout << "}}" << std::endl;
+    std::cout << "}}\n";
 }

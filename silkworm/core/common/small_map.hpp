@@ -59,6 +59,9 @@ class SmallMap {
         }
     }
     constexpr SmallMap& operator=(const SmallMap& other) {
+        if (this == &other) {
+            return *this;
+        }
         size_ = other.size_;
         for (size_t i{0}; i < max_size; ++i) {
             data_[i] = other.data_[i];

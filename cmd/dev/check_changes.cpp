@@ -28,7 +28,7 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        snapshot::SnapshotRepository repository;
+        snapshots::SnapshotRepository repository;
         repository.reopen_folder();
         db::DataModel::set_snapshot_repository(&repository);
         db::DataModel access_layer{txn};
@@ -194,8 +194,8 @@ int main(int argc, char* argv[]) {
                 auto calculated_it{calculated_storage_changes.cbegin()};
                 auto db_it{db_storage_changes.cbegin()};
                 for (; calculated_it != calculated_storage_changes.cend() && db_it != db_storage_changes.cend(); ++calculated_it, ++db_it) {
-                    auto calculated_change{*calculated_it};
-                    auto stored_change{*db_it};
+                    const auto& calculated_change{*calculated_it};
+                    const auto& stored_change{*db_it};
                     if (calculated_change != stored_change) {
                         std::cout << "Mismatch number " << mismatch_count + 1 << ") is:\n- calculated change:\n";
                         print_storage_changes(calculated_change.first, calculated_change.second);

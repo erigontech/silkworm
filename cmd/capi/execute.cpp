@@ -35,13 +35,13 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"
 
 using namespace silkworm;
-using namespace silkworm::snapshot;
+using namespace silkworm::snapshots;
 using namespace silkworm::cmd::common;
 
 struct ExecuteBlocksSettings {
@@ -131,7 +131,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, Settings& setting
     }
 }
 
-const char* make_path(const snapshot::SnapshotPath& p) {
+const char* make_path(const snapshots::SnapshotPath& p) {
     const auto path_string{p.path().string()};
     char* path = new char[path_string.size() + 1];
     std::strcpy(path, path_string.c_str());
@@ -193,7 +193,7 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
             } break;
             default:
-                ensure(false, "unexpected snapshot type: " + std::string{magic_enum::enum_name(segment_file.type())});
+                ensure(false, [&]() { return "unexpected snapshot type: " + std::string{magic_enum::enum_name(segment_file.type())}; });
         }
     }
 
@@ -388,6 +388,9 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         strncpy(silkworm_settings.data_dir_path, data_dir_path.c_str(), SILKWORM_PATH_SIZE - 1);
+
+        SILK_INFO << "libmdbx version: " << silkworm_libmdbx_version();
+        strncpy(silkworm_settings.libmdbx_version, ::mdbx::get_version().git.describe, sizeof(silkworm_settings.libmdbx_version) - 1);
 
         const int init_status_code = silkworm_init(&handle, &silkworm_settings);
         if (init_status_code != SILKWORM_OK) {

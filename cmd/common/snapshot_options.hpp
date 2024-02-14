@@ -18,11 +18,11 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/node/snapshots/settings.hpp>
 
 namespace silkworm::cmd::common {
 
 //! \brief Setup options to populate snapshot settings after cli.parse()
-void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_settings);
+void add_snapshot_options(CLI::App& cli, snapshots::SnapshotSettings& snapshot_settings);
 
 }  // namespace silkworm::cmd::common

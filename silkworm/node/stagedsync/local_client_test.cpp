@@ -19,18 +19,22 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm::execution {
 
 TEST_CASE("execution::LocalClient") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
-    Server embedded_server{context.node_settings(), db::RWAccess{context.env()}};
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
+    db::RWAccess db_access{context.env()};
+
+    Server embedded_server{node_settings, db_access};
     CHECK_NOTHROW(LocalClient{embedded_server});
 }
 

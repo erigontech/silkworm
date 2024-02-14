@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db {
 
@@ -88,7 +88,7 @@ struct MemoryMutationCursorTest {
     RWTxnManaged main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn};
     MemoryMutation mutation{overlay};
-    test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814

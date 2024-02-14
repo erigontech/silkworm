@@ -29,6 +29,8 @@
 #include <mdbx.h++>
 #pragma GCC diagnostic pop
 
+#include <utility>
+
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
@@ -123,7 +125,7 @@ class ROCursor {
 //! \brief Read-only key-value cursor for multi-value tables
 class ROCursorDupSort : public virtual ROCursor {
   public:
-    virtual ~ROCursorDupSort() = default;  // NOLINT(modernize-use-override)
+    ~ROCursorDupSort() override = default;
 
     virtual CursorResult to_previous_last_multi() = 0;
     virtual CursorResult to_previous_last_multi(bool throw_notfound) = 0;
@@ -141,8 +143,8 @@ class ROCursorDupSort : public virtual ROCursor {
     virtual CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;                    // NOLINT(modernize-use-override)
-    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;  // NOLINT(modernize-use-override)
+    MoveResult move(MoveOperation operation, bool throw_notfound) override = 0;
+    MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
     [[nodiscard]] virtual std::size_t count_multivalue() const = 0;
 };
@@ -150,7 +152,7 @@ class ROCursorDupSort : public virtual ROCursor {
 //! \brief Read-write key-value cursor for single-value tables
 class RWCursor : public virtual ROCursor {
   public:
-    virtual ~RWCursor() = default;  // NOLINT(modernize-use-override)
+    ~RWCursor() override = default;
 
     virtual MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept = 0;
     virtual void insert(const Slice& key, Slice value) = 0;
@@ -170,16 +172,16 @@ class RWCursor : public virtual ROCursor {
 //! \brief Read-write key-value cursor for multi-value tables
 class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
   public:
-    virtual ~RWCursorDupSort() = default;  // NOLINT(modernize-use-override)
+    ~RWCursorDupSort() override = default;
 
     //! \brief Remove all multi-values at the current cursor position.
-    virtual bool erase() = 0;                       // NOLINT(modernize-use-override)
-    virtual bool erase(bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
+    bool erase() override = 0;
+    bool erase(bool whole_multivalue) override = 0;
 
     //! \brief Seek and remove whole multi-value of the given key.
     //! \return true if the key is found and a value(s) is removed.
-    virtual bool erase(const Slice& key) = 0;                         // NOLINT(modernize-use-override)
-    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
+    bool erase(const Slice& key) override = 0;
+    bool erase(const Slice& key, bool whole_multivalue) override = 0;
 
     //! \brief Seek and remove the particular multi-value entry of the key.
     //! \return true if the given key-value pair is found and removed
@@ -225,7 +227,7 @@ class ROTxnManaged : public ROTxn {
   public:
     explicit ROTxnManaged() : ROTxn{managed_txn_} {}
     explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
-    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
+    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {}
     ~ROTxnManaged() override = default;
 
     // Not copyable
@@ -289,7 +291,7 @@ class RWTxnManaged : public RWTxn {
   public:
     explicit RWTxnManaged() : RWTxn{managed_txn_} {}
     explicit RWTxnManaged(mdbx::env& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
-    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
+    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{std::move(env).start_write()} {}
     ~RWTxnManaged() override = default;
 
     // Not copyable
@@ -318,37 +320,44 @@ class RWTxnManaged : public RWTxn {
     mdbx::txn_managed managed_txn_;
 };
 
-//! \brief ROTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
-//! lifecycle is not touched by this class. This implies that this class does not commit nor abort the transaction.
+//! \brief RWTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
+//! is not created by this class, but can be committed or aborted.
 class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
   public:
     explicit RWTxnUnmanaged(MDBX_txn* ptr) : RWTxn{static_cast<::mdbx::txn&>(*this)}, ::mdbx::txn{ptr} {}
-    ~RWTxnUnmanaged() override = default;
+    ~RWTxnUnmanaged() override;
 
-    void abort() override {}
-    void commit_and_renew() override {}
-    void commit_and_stop() override {}
+    void abort() override;
+    void commit_and_renew() override;
+    void commit_and_stop() override;
+
+  private:
+    void commit();
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class ROAccess {
   public:
-    explicit ROAccess(mdbx::env& env) : env_{env} {}
-    ROAccess(const ROAccess& copy) = default;
+    explicit ROAccess(const mdbx::env& env) : env_{env} {}
+    explicit ROAccess(mdbx::env&& env) : env_{std::move(env)} {}
+    ROAccess(const ROAccess&) noexcept = default;
+    ROAccess(ROAccess&&) noexcept = default;
 
     ROTxnManaged start_ro_tx() { return ROTxnManaged(env_); }
 
     mdbx::env& operator*() { return env_; }
 
   protected:
-    mdbx::env& env_;
+    mdbx::env env_;
 };
 
 //! \brief This class create RWTxn(s) on demand, it is used to enforce in some method signatures the type of db access
 class RWAccess : public ROAccess {
   public:
-    explicit RWAccess(mdbx::env& env) : ROAccess{env} {}
-    RWAccess(const RWAccess& copy) = default;
+    explicit RWAccess(const mdbx::env& env) : ROAccess{env} {}
+    explicit RWAccess(mdbx::env&& env) : ROAccess{std::move(env)} {}
+    RWAccess(const RWAccess&) noexcept = default;
+    RWAccess(RWAccess&&) noexcept = default;
 
     RWTxnManaged start_rw_tx() { return RWTxnManaged(env_); }
 };
@@ -391,12 +400,12 @@ struct EnvConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
-//! \param [in] page_size : the actually configured MDBX's page size
+//! \brief Computes the max size of single-value data to fit into a leaf data page
+//! \param [in] page_size : the actually configured MDBX page size
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(size_t page_size, size_t key_size);
 
-//! \brief Computes the max size of value data to fit in a leaf data page
+//! \brief Computes the max size of single-value data to fit into a leaf data page
 //! \param [in] txn : the transaction used to derive pagesize from
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);
@@ -521,7 +530,7 @@ inline std::filesystem::path get_datafile_path(const std::filesystem::path& base
 }
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
-enum class CursorMoveDirection {
+enum class CursorMoveDirection : uint8_t {
     Forward,
     Reverse
 };

@@ -37,6 +37,7 @@
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
+#include <silkworm/rpc/json_rpc/json_rpc_validator.hpp>
 
 namespace silkworm::rpc {
 
@@ -107,7 +108,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
         // Activate the local chaindata and snapshot access (if required)
         std::optional<mdbx::env_managed> chaindata_env;
-        std::unique_ptr<snapshot::SnapshotRepository> snapshot_repository;
+        std::unique_ptr<snapshots::SnapshotRepository> snapshot_repository;
         if (settings.datadir) {
             DataDirectory data_folder{*settings.datadir};
 
@@ -121,10 +122,10 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             *chaindata_env = silkworm::db::open_env(db_config);
 
             // Create a new snapshot repository
-            snapshot::SnapshotSettings snapshot_settings{
+            snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            snapshot_repository = std::make_unique<snapshot::SnapshotRepository>(std::move(snapshot_settings));
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings));
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());
@@ -223,6 +224,9 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
+
+    // Load JSON RPC specification for Ethereum API
+    rpc::http::JsonRpcValidator::load_specification();
 }
 
 void Daemon::add_private_services() {
@@ -292,18 +296,36 @@ DaemonChecklist Daemon::run_checklist() {
 }
 
 void Daemon::start() {
+    auto make_rpc_server = [this](const std::string& end_point,
+                                  const std::string& api_spec,
+                                  boost::asio::io_context& ioc,
+                                  std::optional<std::string> jwt_secret,
+                                  InterfaceLogSettings ilog_settings) {
+        return std::make_unique<http::Server>(
+            end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
+            settings_.use_websocket, settings_.ws_compression, std::move(ilog_settings));
+    };
+
+    // Put the interface logs into the data folder in case we run with local data
+    if (settings_.datadir) {
+        std::filesystem::path logs_folder{*settings_.datadir / "logs"};
+        settings_.eth_ifc_log_settings.container_folder = logs_folder.string();
+        settings_.engine_ifc_log_settings.container_folder = logs_folder.string();
+    }
+
+    // Create and start the configured RPC services for each execution context
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& ioc = context_pool_.next_io_context();
 
-        if (not settings_.eth_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, settings_.cors_domain, /*jwt_secret=*/std::nullopt));
+        if (!settings_.eth_end_point.empty()) {
+            // ETH RPC API accepts customized namespaces and does not support JWT authentication
+            rpc_services_.emplace_back(make_rpc_server(
+                settings_.eth_end_point, settings_.eth_api_spec, ioc, /*jwt_secret=*/std::nullopt, settings_.eth_ifc_log_settings));
         }
-        if (not settings_.engine_end_point.empty()) {
-            rpc_services_.emplace_back(
-                std::make_unique<http::Server>(
-                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, settings_.cors_domain, jwt_secret_));
+        if (!settings_.engine_end_point.empty()) {
+            // Engine RPC API has fixed namespaces and supports JWT authentication
+            rpc_services_.emplace_back(make_rpc_server(
+                settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, jwt_secret_, settings_.engine_ifc_log_settings));
         }
     }
 

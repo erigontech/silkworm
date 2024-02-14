@@ -58,6 +58,7 @@ extern "C" {
 #define SILKWORM_INVALID_SETTINGS 14
 #define SILKWORM_TERMINATION_SIGNAL 15
 #define SILKWORM_SERVICE_ALREADY_STARTED 16
+#define SILKWORM_INCOMPATIBLE_LIBMDBX 17
 
 typedef struct MDBX_env MDBX_env;
 typedef struct MDBX_txn MDBX_txn;
@@ -98,6 +99,8 @@ struct SilkwormChainSnapshot {
 struct SilkwormSettings {
     //! Data directory path in UTF-8.
     char data_dir_path[SILKWORM_PATH_SIZE];
+    //! libmdbx version string in git describe format.
+    char libmdbx_version[32];
 };
 
 /**
@@ -128,6 +131,12 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Get libmdbx version for compatibility checks.
+ * \return A string in git describe format.
+ */
+SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT;
 
 /**
  * \brief Start Silkworm RPC daemon.

@@ -39,7 +39,11 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::db::etl {
+class Collector;
+}
+
+namespace silkworm::db::etl_mdbx {
 class Collector;
 }
 
@@ -54,8 +58,8 @@ class IndexLoader {
     //! \param txn [in] : An MDBX transaction holder
     //! \param key_size [in] : The actual length of key in the list of bitmap shards (the index)
     //! \param collector [in] : A pointer to the etl::collector holding the bitmaps to be merged
-    void merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector);
-    void merge_bitmaps32(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector);
+    void merge_bitmaps(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
+    void merge_bitmaps32(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
 
     //! \brief Provided a list of keys for which the unwind should be applied this removes right values from shards
     //! \param txn [in] : An MDBX transaction holder
@@ -90,7 +94,7 @@ class IndexLoader {
 
   private:
     template <typename RoaringMap, typename BlockUpperBound>
-    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector);
+    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
 
     template <typename RoaringMap, typename BlockUpperBound>
     void unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<Bytes, bool>& keys);

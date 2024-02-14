@@ -26,9 +26,9 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/node/types/receipt_cbor.hpp>
+#include <silkworm/node/snapshots/repository.hpp>
 
 namespace silkworm::db {
 
@@ -405,7 +405,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             auto body = detail::decode_stored_block_body(raw_body);
             std::swap(block.ommers, body.ommers);
             // ...transactions
-            ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for number=" + std::to_string(height));
+            ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for number=" + std::to_string(height); });
             read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, block.transactions);
             // ...senders
             if (!block.transactions.empty() && read_senders) {
@@ -415,7 +415,9 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             // ...header
             auto [block_num, hash] = split_block_key(key);
             const bool present = read_header(txn, hash, block_num, block.header);
-            ensure(present, "header not found for body number= " + std::to_string(block_num) + ", hash= " + silkworm::to_hex(hash));
+            auto ref_bn = block_num;
+            auto ref_hash = hash;
+            ensure(present, [&]() { return "header not found for body number= " + std::to_string(ref_bn) + ", hash= " + silkworm::to_hex(ref_hash); });
             // invoke handler
             process_func(block);
         },
@@ -445,7 +447,7 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
 
     std::swap(out.ommers, body.ommers);
     std::swap(out.withdrawals, body.withdrawals);
-    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + to_hex(key));
+    ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + to_hex(key); });
     read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, out.transactions);
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
@@ -461,7 +463,7 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& has
 
     ByteView data_view{from_slice(data.value)};
     const auto body{detail::decode_stored_block_body(data_view)};
-    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(height));
+    ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(height); });
     read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
 
     return true;
@@ -963,7 +965,7 @@ void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
     write_last_fcu_field(txn, kFinalizedBlockHash, hash);
 }
 
-void DataModel::set_snapshot_repository(snapshot::SnapshotRepository* repository) {
+void DataModel::set_snapshot_repository(snapshots::SnapshotRepository* repository) {
     ensure(repository, "DataModel::set_snapshot_repository: repository is null");
     repository_ = repository;
 }
@@ -1229,7 +1231,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    repository_->view_header_segments([&](const snapshot::HeaderSnapshot* snapshot) -> bool {
+    repository_->view_header_segments([&](const snapshots::HeaderSnapshot* snapshot) -> bool {
         block_header = snapshot->header_by_hash(hash);
         return block_header.has_value();
     });

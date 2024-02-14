@@ -17,11 +17,13 @@
 #include <cctype>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <string>
 #include <string_view>
 
 #include <CLI/CLI.hpp>
+#include <absl/strings/match.h>
 #include <toml.hpp>
 
 namespace fs = std::filesystem;
@@ -44,8 +46,10 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Embed files as binary data"};
 
     std::string input_folder, output_folder;
+    bool include_beacon{false};
     app.add_option("-i,--input", input_folder, "input folder where to look for files")->required();
     app.add_option("-o,--output", output_folder, "output folder where to place generated .hpp files")->required();
+    app.add_flag("-b,--beacon-blocks", include_beacon, "includes also beacon-chain segments");
 
     // Parse the command line arguments
     try {
@@ -59,8 +63,8 @@ int main(int argc, char* argv[]) {
     // Iterating through all the files in the input folder
     for (const auto& entry : fs::recursive_directory_iterator(input_folder)) {
         const fs::path& entry_path = entry.path();
-        // Skip any file in 'history' sub-folder
-        if (entry_path.parent_path().string().ends_with("history")) {
+        // Skip any file in 'webseed' sub-folder
+        if (entry_path.parent_path().string().ends_with("webseed")) {
             continue;
         }
         // Match only required extension
@@ -79,12 +83,16 @@ int main(int argc, char* argv[]) {
 
             output << "/* Generated from " << entry.path().filename().string() << " using Silkworm embed_toml */\n\n";
             output << "#pragma once\n\n";
-            output << "#include <array>\n\n";
-            output << "#include <silkworm/node/snapshot/entry.hpp>\n\n";
-            output << "namespace silkworm::snapshot {\n\n";
-            output << "inline constexpr std::array<Entry, " << table.size() << "> k" << snapshot_name << "Snapshots{\n";
+            output << "#include <array>\n";
+            output << "#include <string_view>\n\n";
+            output << "#include <silkworm/node/snapshots/entry.hpp>\n\n";
+            output << "namespace silkworm::snapshots {\n\n";
+            output << "inline constexpr std::array k" << snapshot_name << "Snapshots{\n";
             for (auto&& [key, value] : table) {
                 std::string key_str{key.begin(), key.end()};
+                if (!include_beacon && absl::StrContains(key_str, "beaconblocks")) {
+                    continue;
+                }
                 std::string val_str{value.as_string()->get()};
                 output << "    Entry{\"" << key_str << "\"sv, \"" << val_str << "\"sv},\n";
             }

@@ -85,7 +85,11 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         created.initial = prev->initial;
         if (prev->current) {
             created.current->balance = prev->current->balance;
-            prev_incarnation = prev->current->incarnation;
+            if (prev->initial) {
+                prev_incarnation = std::max(prev->current->incarnation, prev->initial->incarnation);
+            } else {
+                prev_incarnation = prev->current->incarnation;
+            }
         } else if (prev->initial) {
             prev_incarnation = prev->initial->incarnation;
         }
@@ -97,8 +101,12 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
     if (!prev_incarnation || prev_incarnation == 0) {
         prev_incarnation = db_.previous_incarnation(address);
     }
+    if (prev && prev_incarnation < prev->current->previous_incarnation) {
+        prev_incarnation = prev->current->previous_incarnation;
+    }
 
     created.current->incarnation = *prev_incarnation + 1;
+    created.current->previous_incarnation = *prev_incarnation;
 
     objects_[address] = created;
 
@@ -333,10 +341,6 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
     }
 
     for (const auto& [address, obj] : objects_) {
-        // Skip update if both initial and final state are empty (i.e. contract creation+destruction within the same block)
-        if (!obj.initial && !obj.current) {
-            continue;
-        }
         db_.update_account(address, obj.initial, obj.current);
         if (!obj.current) {
             continue;

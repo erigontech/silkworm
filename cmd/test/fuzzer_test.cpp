@@ -18,7 +18,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
@@ -28,19 +27,20 @@ using namespace silkworm::rpc::test;
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     static auto context = TestDatabaseContext();
 
-    auto request_str = std::string(reinterpret_cast<const char*>(Data), Size);
-    if (!nlohmann::json::accept(request_str)) {
+    auto request = std::string(reinterpret_cast<const char*>(Data), Size);
+    if (!nlohmann::json::accept(request)) {
         return -1;
     }
+    const auto request_json = nlohmann::json::parse(request);
 
     auto request_handler = RpcApiTestBase<RequestHandler_ForTest>(context.db);
-    auto request_json = nlohmann::json::parse(request_str);
-    silkworm::rpc::Channel::Response reply;
-    request_handler.run<&RequestHandler_ForTest::handle_request>(request_str, reply);
+    std::string reply;
+    request_handler.run<&RequestHandler_ForTest::handle_request>(request, reply);
 
-    if (reply.status == silkworm::rpc::Channel::ResponseStatus::ok) {
-        return 0;
+    if (!nlohmann::json::accept(reply)) {
+        return -1;
     }
+    const auto reply_json = nlohmann::json::parse(reply);
 
-    return -1;
+    return 0;
 }

@@ -33,6 +33,8 @@
 
 namespace silkworm::stagedsync {
 
+using db::etl_mdbx::Collector;
+
 Stage::Result InterHashes::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
@@ -441,8 +443,8 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
         txn->clear_map(db::table::kTrieOfStorage.name);
         txn.commit_and_renew();
 
-        account_collector_ = std::make_unique<etl::Collector>(node_settings_);
-        storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
+        account_collector_ = std::make_unique<Collector>(node_settings_->etl());
+        storage_collector_ = std::make_unique<Collector>(node_settings_->etl());
 
         log_lck.lock();
         current_source_ = "HashState";
@@ -497,8 +499,8 @@ Stage::Result InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNu
     Stage::Result ret{Stage::Result::kSuccess};
 
     try {
-        account_collector_ = std::make_unique<etl::Collector>(node_settings_);
-        storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
+        account_collector_ = std::make_unique<Collector>(node_settings_->etl());
+        storage_collector_ = std::make_unique<Collector>(node_settings_->etl());
 
         // Cache of hashed addresses
         absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};

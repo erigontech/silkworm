@@ -22,6 +22,9 @@
 
 namespace silkworm::stagedsync {
 
+using db::etl::Entry;
+using db::etl_mdbx::Collector;
+
 Stage::Result BlockHashes::forward(db::RWTxn& txn) {
     /*
      * Creates HeaderNumber index by transforming
@@ -58,7 +61,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<etl::Collector>(node_settings_);
+        collector_ = std::make_unique<Collector>(node_settings_->etl());
         collect_and_load(txn, previous_progress, headers_stage_progress);
         update_progress(txn, reached_block_num_);
         txn.commit_and_renew();
@@ -121,7 +124,7 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<etl::Collector>(node_settings_);
+        collector_ = std::make_unique<Collector>(node_settings_->etl());
         collect_and_load(txn, to, previous_progress);
         update_progress(txn, to);
         txn.commit_and_renew();
@@ -191,9 +194,9 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
                                                           " expected " + std::to_string(kHashLength));
         }
 
-        collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::Forward
-                                                                              ? Bytes{db::from_slice(data.key)}
-                                                                              : Bytes{}});
+        collector_->collect(Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::Forward
+                                                                         ? Bytes{db::from_slice(data.key)}
+                                                                         : Bytes{}});
 
         // Do we need to abort ?
         if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {

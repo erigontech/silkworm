@@ -22,7 +22,8 @@
 #include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/etl_mdbx_collector.hpp>
+#include <silkworm/node/db/util.hpp>
 
 namespace silkworm::db::bitmap {
 
@@ -87,7 +88,7 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
 }
 
 template <typename RoaringMap, typename BlockUpperBound>
-void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
     // Cannot use db::block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes last_shard_suffix{upper_bound_suffix(std::numeric_limits<BlockUpperBound>::max())};
 
@@ -95,9 +96,10 @@ void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl::Collector
         db::max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(BlockUpperBound))};
 
     db::PooledCursor target(txn, index_config_);
-    etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,
-                                                                      RWCursorDupSort& index_cursor,
-                                                                      MDBX_put_flags_t put_flags) -> void {
+    etl_mdbx::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
+                                     const etl::Entry& entry,
+                                     RWCursorDupSort& index_cursor,
+                                     MDBX_put_flags_t put_flags) -> void {
         auto new_bitmap{db::bitmap::parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
 
         // Check whether we have any previous shard to merge with
@@ -193,11 +195,11 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
     current_key_.clear();
 }
 
-void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring, uint32_t>(txn, key_size, bitmaps_collector);
 }
 
-void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring64Map, uint64_t>(txn, key_size, bitmaps_collector);
 }
 
@@ -229,7 +231,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
         }
 
         // Suffix indicates the upper bound of the shard.
-        ensure(data_key_view.size() >= sizeof(BlockUpperBound), "invalid key size " + std::to_string(data_key_view.size()));
+        ensure(data_key_view.size() >= sizeof(BlockUpperBound), [&]() { return "invalid key size " + std::to_string(data_key_view.size()); });
         const auto suffix{intx::be::unsafe::load<BlockUpperBound>(&data_key_view[data_key_view.size() - sizeof(BlockUpperBound)])};
 
         // If below pruning threshold simply delete the record

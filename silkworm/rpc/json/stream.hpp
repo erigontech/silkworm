@@ -16,29 +16,41 @@
 
 #pragma once
 
+#include <memory>
 #include <stack>
 #include <string>
 #include <string_view>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/experimental/concurrent_channel.hpp>
+#ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#include <boost/asio/experimental/promise.hpp>
+#endif  // _WIN32
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/types/writer.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 
 namespace silkworm::rpc::json {
-static const nlohmann::json JSON_NULL = nlohmann::json::value_t::null;
-static const nlohmann::json EMPTY_OBJECT = nlohmann::json::value_t::object;
-static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
+struct DataChunk {
+    std::shared_ptr<std::string> chunk;
+    bool last{false};
+};
+
+//! Stream can be used to send big JSON data split into multiple fragments.
 class Stream {
   public:
-    explicit Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t threshold = kDefaultThreshold)
-        : io_executor_(executor), writer_(writer), threshold_(threshold) {}
+    inline static constexpr std::size_t kDefaultCapacity{5 * 1024 * 1024};
+
+    Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity = kDefaultCapacity);
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
+    Task<void> open();
+
+    //! Flush any remaining data and close properly as per the underlying transport
     Task<void> close();
 
     void open_object();
@@ -59,24 +71,38 @@ class Stream {
     void write_field(std::string_view name, std::uint32_t value);
     void write_field(std::string_view name, std::int64_t value);
     void write_field(std::string_view name, std::uint64_t value);
-    void write_field(std::string_view name, std::float_t value);
     void write_field(std::string_view name, std::double_t value);
 
   private:
-    static const std::size_t kDefaultThreshold = 0x800;
+    using ChunkPtr = std::shared_ptr<std::string>;
 
     void write_string(std::string_view str);
     void ensure_separator();
 
     void write(std::string_view str);
+    void do_write(ChunkPtr chunk, bool last);
+    Task<void> do_async_write(ChunkPtr chunk, bool last);
 
-    boost::asio::any_io_executor& io_executor_;
+    //! Run loop writing channeled chunks in order
+    Task<void> run();
 
     StreamWriter& writer_;
     std::stack<std::uint8_t> stack_;
 
-    const std::size_t threshold_;
+    const std::size_t buffer_capacity_;
     std::string buffer_;
+
+    using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, DataChunk)>;
+    ChunkChannel channel_;  // Chunks enqueued waiting to be written asynchronously
+
+// Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
+#ifndef _WIN32
+    using RunPromise = boost::asio::experimental::promise<void(std::exception_ptr)>;
+    RunPromise run_completion_promise_;  // Rendez-vous for run loop completion
+#else
+    using SyncChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, int)>;
+    SyncChannel run_completion_channel_;  // Rendez-vous for run loop completion
+#endif  // _WIN32
 };
 
 }  // namespace silkworm::rpc::json

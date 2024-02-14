@@ -22,6 +22,7 @@
 
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/node/db/util.hpp>
 
 namespace silkworm::trie {
 
@@ -72,7 +73,7 @@ void SubNode::parse(ByteView k, ByteView v) {
     deleted = false;
 }
 
-TrieCursor::TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
+TrieCursor::TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, db::etl::Collector* collector)
     : db_cursor_(db_cursor), changed_list_{changed}, collector_{collector} {
     curr_key_.reserve(64);
     prev_key_.reserve(64);
@@ -122,7 +123,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
         }
         if (!has_changes) {
             end_of_tree_ = true;  // We don't need to further traverse this trie
-            return {curr_key_, node.root_hash().value(), false};
+            return {curr_key_, node.root_hash(), false};
         }
         db_delete(node);
     } else {

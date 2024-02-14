@@ -37,7 +37,7 @@ Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
       max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       batch_{std::make_shared<std::vector<AddressRecovery>>()},
-      collector_{node_settings} {
+      collector_{node_settings->etl()} {
     // Reserve space for max batch in advance
     batch_->reserve(max_batch_size_);
 }
@@ -162,7 +162,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->senders().enabled()) {
+        if (!node_settings_->prune_mode.senders().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -175,7 +175,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode->senders().value_from_head(forward_progress)};
+        const auto prune_threshold{node_settings_->prune_mode.senders().value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
@@ -278,7 +278,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
         if (!context) throw std::runtime_error("Could not create elliptic curve context");
-        [[maybe_unused]] auto _ = gsl::finally([&]() { if (context) std::free(context); });
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+        [[maybe_unused]] auto _ = gsl::finally([&]() { std::free(context); });
 
         BlockNum start_block_num{previous_progress + 1u};
 
@@ -333,8 +334,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         }
 
         ensure(collector_.size() + total_empty_blocks == segment_width,
-               "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
-                   "got=" + std::to_string(collector_.size() + total_empty_blocks));
+               [&]() { return "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
+                              "got=" + std::to_string(collector_.size() + total_empty_blocks); });
 
         // Store all recovered senders into db
         log::Trace(log_prefix_, {"op", "store senders", "reached_block_num", std::to_string(target_block_num)});

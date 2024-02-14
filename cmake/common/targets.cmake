@@ -34,6 +34,7 @@ function(silkworm_library TARGET)
 
   file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
   list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
+  list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
   list_filter(SRC ARG_EXCLUDE_REGEX)
   add_library(${TARGET} ${SRC})
 

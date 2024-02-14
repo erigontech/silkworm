@@ -21,9 +21,8 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/etl/collector.hpp>
 
 using namespace silkworm;
 
@@ -41,12 +40,12 @@ int main(int argc, char* argv[]) {
         ->capture_default_str()
         ->check(CLI::Range(1u, UINT32_MAX));
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
+    db::etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};

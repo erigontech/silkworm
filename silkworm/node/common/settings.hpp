@@ -30,6 +30,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/directories.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 
@@ -47,11 +48,15 @@ struct NodeSettings {
     std::vector<std::string> remote_sentry_addresses;      // Remote Sentry API addresses (host:port,host2:port2,...)
     bool fake_pow{false};                                  // Whether to verify Proof-of-Work (PoW)
     std::optional<evmc::address> etherbase{std::nullopt};  // Coinbase address (PoW only)
-    std::unique_ptr<db::PruneMode> prune_mode;             // Prune mode
+    db::PruneMode prune_mode;                              // Prune mode
     uint32_t sync_loop_throttle_seconds{0};                // Minimum interval amongst sync cycle
     uint32_t sync_loop_log_interval_seconds{30};           // Interval for sync loop to emit logs
     std::string node_name;                                 // The node identifying name
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
+
+    inline db::etl::CollectorSettings etl() const {
+        return {data_directory->etl().path(), etl_buffer_size};
+    }
 };
 
 }  // namespace silkworm

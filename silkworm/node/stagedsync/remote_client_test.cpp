@@ -20,13 +20,13 @@
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/test/context.hpp>
+#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::execution {
 
 TEST_CASE("execution::RemoteClient") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-    test::Context context;
+    db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 

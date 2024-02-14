@@ -59,7 +59,15 @@ Task<void> Server::run(
     acceptor.set_option(detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT>(true));
 #endif
 
-    acceptor.bind(endpoint);
+    try {
+        acceptor.bind(endpoint);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::address_in_use) {
+            throw std::runtime_error("Sentry RLPx server has failed to start because port " + std::to_string(port_) + " is already in use. Try another one with --port.");
+        } else {
+            throw;
+        }
+    }
     acceptor.listen();
 
     EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_, port_};

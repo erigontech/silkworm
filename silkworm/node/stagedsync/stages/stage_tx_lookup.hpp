@@ -33,7 +33,7 @@ class TxLookup : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    std::unique_ptr<etl::Collector> collector_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

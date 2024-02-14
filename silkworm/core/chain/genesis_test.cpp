@@ -100,6 +100,13 @@ TEST_CASE("Goerli genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kGoerliGenesisHash));
 }
 
+TEST_CASE("Holesky genesis") {
+    test_genesis_config(kHoleskyConfig);
+    nlohmann::json genesis_json = sanity_checked_json(kHoleskyConfig.chain_id);
+    BlockHeader header{read_genesis_header(genesis_json, state_root(genesis_json))};
+    CHECK(to_hex(header.hash()) == to_hex(kHoleskyGenesisHash));
+}
+
 // https://sepolia.etherscan.io/block/0
 TEST_CASE("Sepolia genesis") {
     test_genesis_config(kSepoliaConfig);

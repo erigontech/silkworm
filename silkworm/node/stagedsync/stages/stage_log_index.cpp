@@ -21,7 +21,7 @@
 #include <gsl/narrow>
 #include <magic_enum.hpp>
 
-#include <silkworm/node/types/log_cbor.hpp>
+#include <silkworm/node/db/log_cbor.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -88,9 +88,9 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
 
         // If this is first time we forward AND we have "prune history" set
         // do not process all blocks rather only what is needed
-        if (node_settings_->prune_mode->history().enabled()) {
+        if (node_settings_->prune_mode.history().enabled()) {
             if (!previous_progress)
-                previous_progress = node_settings_->prune_mode->history().value_from_head(target_progress);
+                previous_progress = node_settings_->prune_mode.history().value_from_head(target_progress);
         }
 
         if (previous_progress < target_progress)
@@ -190,7 +190,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->history().enabled()) {
+        if (!node_settings_->prune_mode.history().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -204,7 +204,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)};
+        const auto prune_threshold{node_settings_->prune_mode.history().value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
@@ -253,13 +253,15 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 }
 
 void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+    using db::etl_mdbx::Collector;
+
     const db::MapConfig source_config{db::table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_ = false;
-    topics_collector_ = std::make_unique<etl::Collector>(node_settings_);
-    addresses_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    topics_collector_ = std::make_unique<Collector>(node_settings_->etl());
+    addresses_collector_ = std::make_unique<Collector>(node_settings_->etl());
     current_source_ = std::string(source_config.name);
     current_target_.clear();
     current_key_.clear();

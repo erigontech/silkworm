@@ -23,11 +23,14 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 
 namespace silkworm::rpc {
 
 struct DaemonSettings {
     log::Settings log_settings;
+    InterfaceLogSettings eth_ifc_log_settings{.ifc_name = "eth_rpc_api"};
+    InterfaceLogSettings engine_ifc_log_settings{.ifc_name = "engine_rpc_api"};
     concurrency::ContextPoolSettings context_pool_settings;
     std::optional<std::filesystem::path> datadir;
     std::string eth_end_point{kDefaultEth1EndPoint};
@@ -39,6 +42,8 @@ struct DaemonSettings {
     std::optional<std::string> jwt_secret_file;
     bool skip_protocol_check{false};
     bool erigon_json_rpc_compatibility{false};
+    bool use_websocket{false};
+    bool ws_compression{false};
 };
 
 }  // namespace silkworm::rpc

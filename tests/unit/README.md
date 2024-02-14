@@ -8,18 +8,16 @@ It works with multiple compilers and build configurations.
 $cd tests/unit
 
 $./run_unit_test_loop.py
-Usage: ./run_unit_test_loop.py [-h] [-i iterations] [-m modules] [-t test] builddir
+Usage: ./run_unit_test_loop.py [-h] [-i iterations] [-t test] modules
 
 Launch an automated unit test sequence on target build configuration
 
-builddir
-        the path of the target build folder
+modules
+        comma-separated list of unit test executables to launch
 
 -h      print this help
 -i      iterations
         the number of iterations for each configuration (default: 1000)
--m      modules
-        the list of unit test modules to launch (default: ['core_test', 'node_test', 'rpcdaemon_test', 'sentry_test', 'sync_test'])
 -o      options
         the Catch2 options to pass to the launcher enclosed in string (default: "" i.e. none)
 -t      test
@@ -29,11 +27,9 @@ builddir
 ## Examples
 
 ```
-$cd tests/unit
+$./run_unit_test_loop.py -i 100 build/silkworm/node/silkworm_node_test
 
-$./run_unit_test_loop.py -i 100 -m node_test ../../cmake-build-clang-release
+$./run_unit_test_loop.py -i 100 -o "-d yes" build/silkworm/node/silkworm_node_test
 
-$./run_unit_test_loop.py -i 100 -m node_test -o "-d yes" ../../cmake-build-clang-release
-
-$./run_unit_test_loop.py -i 100 -m node_test -t "MemoryMutationCursor: to_next" ../../cmake-build-clang-release
+$./run_unit_test_loop.py -i 100 -t "MemoryMutationCursor: to_next" build/silkworm/node/silkworm_node_test
 ```

@@ -13,12 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-//
-// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
 
 #pragma once
 
@@ -30,14 +24,16 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
+#include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/http/channel.hpp>
-#include <silkworm/rpc/http/reply.hpp>
-#include <silkworm/rpc/http/request.hpp>
-#include <silkworm/rpc/http/request_handler.hpp>
-#include <silkworm/rpc/http/request_parser.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
+#include <silkworm/rpc/json_rpc/request_handler.hpp>
+#include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -52,7 +48,10 @@ class Connection : public Channel {
                commands::RpcApi& api,
                commands::RpcApiTable& handler_table,
                const std::vector<std::string>& allowed_origins,
-               std::optional<std::string> jwt_secret);
+               std::optional<std::string> jwt_secret,
+               bool use_websocket,
+               bool ws_compression,
+               InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
@@ -60,55 +59,52 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
-    Task<void> write_rsp(Response& response) override;
     Task<void> open_stream() override;
-    Task<std::size_t> write(std::string_view content) override;
-    Task<void> close() override { co_return; }
+    Task<void> close_stream() override;
+
+    Task<std::size_t> write(std::string_view content, bool last) override;
+    Task<void> write_rsp(const std::string& content) override;
 
   private:
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(const http::Request& request);
+    AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    Task<void> handle_request(Request& request);
+    Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    //! Reset connection data
-    void clean();
+    Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    void set_cors(std::vector<Header>& headers);
-
-    Task<void> write_headers();
-
-    static StatusType get_http_status(Channel::ResponseStatus status);
+    template <class Body>
+    void set_cors(boost::beast::http::response<Body>& res);
 
     //! Perform an asynchronous read operation.
-    Task<void> do_read();
+    Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write();
-    Task<void> do_write(http::Reply& reply);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
+
+    static std::string get_date_time();
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
+    commands::RpcApi& api_;
+    const commands::RpcApiTable& handler_table_;
+
     //! The handler used to process the incoming request.
-    RequestHandler request_handler_;
-
-    //! Buffer for incoming data.
-    std::array<char, kHttpIncomingBufferSize> buffer_;
-
-    //! The incoming request.
-    Request request_;
-
-    //! The parser for the incoming request.
-    RequestParser request_parser_;
-
-    //! The reply to be sent back to the client.
-    Reply reply_;
+    http::RequestHandler request_handler_;
 
     const std::vector<std::string>& allowed_origins_;
-
     const std::optional<std::string> jwt_secret_;
+
+    bool request_keep_alive_{false};
+    unsigned int request_http_version_{11};
+
+    boost::beast::flat_buffer data_;
+
+    bool use_websocket_;
+
+    bool ws_compression_;
 };
 
 }  // namespace silkworm::rpc::http

@@ -18,7 +18,7 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
@@ -102,10 +102,12 @@ class InterHashes final : public Stage {
     amount of iterations will not be big.
     */
 
-    std::unique_ptr<trie::TrieLoader> trie_loader_;      // The loader which (re)builds the trees
-    std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
-    std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
-    std::unique_ptr<etl::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)
+    // The loader which (re)builds the trees
+    std::unique_ptr<trie::TrieLoader> trie_loader_;
+
+    std::unique_ptr<db::etl_mdbx::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
+    std::unique_ptr<db::etl_mdbx::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
+    std::unique_ptr<db::etl_mdbx::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)
 
     // Logger info
     std::mutex log_mtx_{};                 // Guards async logging

@@ -92,7 +92,7 @@ class MemoryMutationCursor : public RWCursorDupSort {
     static inline void throw_error_nodata();
     static inline void throw_error_notfound();
 
-    enum class MoveType {
+    enum class MoveType : uint8_t {
         kNone,
         kNext,
         kNextDup,

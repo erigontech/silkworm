@@ -18,6 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -25,16 +26,18 @@
 
 namespace silkworm::rpc::json {
 
-struct JsonStreamTest : test::ContextTestBase {
+// The following constants *must* be initialized using assignment and *not* uniform initialization syntax
+static const nlohmann::json kJsonNull = nlohmann::json::value_t::null;
+static const nlohmann::json kJsonEmptyObject = nlohmann::json::value_t::object;
+static const nlohmann::json kJsonEmptyArray = nlohmann::json::value_t::array;
+
+struct StreamTest : test::ContextTestBase {
 };
 
-TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
-    ClientContextPool pool{1};
-    pool.start();
-    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
 
     StringWriter string_writer;
-    ChunkWriter chunk_writer(string_writer);
 
     SECTION("write_json in string") {
         Stream stream(io_executor, string_writer);
@@ -49,7 +52,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
         CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 1 chunk") {
-        Stream stream(io_executor, chunk_writer);
+        Stream stream(io_executor, string_writer);
 
         nlohmann::json json = R"({
             "test": "test"
@@ -58,10 +61,10 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "f\r\n{\"test\":\"test\"}\r\n0\r\n\r\n");
+        CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
     }
     SECTION("write_json in 2 chunks") {
-        Stream stream(io_executor, chunk_writer);
+        Stream stream(io_executor, string_writer);
 
         nlohmann::json json = R"({
             "check": "check",
@@ -71,14 +74,12 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream[json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "1f\r\n{\"check\":\"check\",\"test\":\"test\"}\r\n0\r\n\r\n");
+        CHECK(string_writer.get_content() == "{\"check\":\"check\",\"test\":\"test\"}");
     }
 }
 
-TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
-    ClientContextPool pool{1};
-    pool.start();
-    boost::asio::any_io_executor io_executor = pool.next_io_context().get_executor();
+TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
 
     StringWriter string_writer;
     Stream stream(io_executor, string_writer);
@@ -101,7 +102,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         CHECK(string_writer.get_content() == "{}");
     }
     SECTION("empty object 2") {
-        stream.write_json(EMPTY_OBJECT);
+        stream.write_json(kJsonEmptyObject);
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "{}");
@@ -114,14 +115,14 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         CHECK(string_writer.get_content() == "[]");
     }
     SECTION("empty array 2") {
-        stream.write_json(EMPTY_ARRAY);
+        stream.write_json(kJsonEmptyArray);
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[]");
     }
     SECTION("simple object 1") {
         stream.open_object();
-        stream.write_json_field("null", JSON_NULL);
+        stream.write_json_field("null", kJsonNull);
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -129,7 +130,7 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
     }
     SECTION("simple object 2") {
         stream.open_object();
-        stream.write_json_field("array", EMPTY_ARRAY);
+        stream.write_json_field("array", kJsonEmptyArray);
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -323,6 +324,34 @@ TEST_CASE_METHOD(JsonStreamTest, "JsonStream calls") {
         spawn_and_wait(stream.close());
 
         CHECK(string_writer.get_content() == "[10,10.3,true]");
+    }
+}
+
+TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
+    boost::asio::any_io_executor io_executor = io_context_.get_executor();
+    constexpr std::string_view kData{R"({"test":"test"})"};
+
+    StringWriter string_writer;
+    Stream stream(io_executor, string_writer, 1);  // tiny buffer capacity
+
+    const nlohmann::json json = R"({"test":"test"})"_json;
+
+    SECTION("using I/O context thread") {
+        stream.write_json(json);
+        CHECK_NOTHROW(spawn_and_wait(stream.close()));
+        CHECK(string_writer.get_content() == kData);
+    }
+
+    SECTION("using worker thread") {
+        boost::asio::thread_pool workers;
+        boost::asio::post(workers, [&]() {
+            for (int i{0}; i < 1'000; ++i) {
+                stream.write_json(json);
+            }
+        });
+        workers.join();
+        CHECK_NOTHROW(spawn_and_wait(stream.close()));
+        CHECK(string_writer.get_content().size() == kData.size() * 1'000);
     }
 }
 

@@ -64,7 +64,7 @@ static Bytes snappy_decompress(ByteView data) {
         data.size(),
         reinterpret_cast<char*>(output.data()));
     if (!ok)
-        throw std::runtime_error("MessageFrameCodec: invalid snappy data");
+        throw MessageFrameCodec::DecompressionError();
     return output;
 }
 

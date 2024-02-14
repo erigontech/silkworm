@@ -92,8 +92,8 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
     else {
         auto parent = data_model_.read_header(height - 1, parent_hash);
         ensure_invariant(parent.has_value(),
-                         "canonical chain could not find parent with hash " + to_hex(parent_hash) +
-                             " and height " + std::to_string(height - 1));
+                         [&]() { return "canonical chain could not find parent with hash " + to_hex(parent_hash) +
+                                        " and height " + std::to_string(height - 1); });
 
         auto ancestor_hash = parent->parent_hash;
         auto ancestor_height = height - 2;
@@ -114,9 +114,9 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
 
 void CanonicalChain::advance(BlockNum height, Hash header_hash) {
     ensure_invariant(current_head_.number == height - 1,
-                     std::string("canonical chain must advance gradually,") +
-                         " current head " + std::to_string(current_head_.number) +
-                         " expected head " + std::to_string(height - 1));
+                     [&]() { return std::string("canonical chain must advance gradually,") +
+                                    " current head " + std::to_string(current_head_.number) +
+                                    " expected head " + std::to_string(height - 1); });
 
     db::write_canonical_hash(tx_, height, header_hash);
     if (cache_enabled()) canonical_hash_cache_->put(height, header_hash);
@@ -140,8 +140,8 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
 
         auto ancestor = data_model_.read_header(ancestor_height, ancestor_hash);
         ensure_invariant(ancestor.has_value(),
-                         "fix canonical chain failed at ancestor= " + std::to_string(ancestor_height) +
-                             " hash=" + ancestor_hash.to_hex());
+                         [&]() { return "fix canonical chain failed at ancestor= " + std::to_string(ancestor_height) +
+                                        " hash=" + ancestor_hash.to_hex(); });
 
         ancestor_hash = ancestor->parent_hash;
         --ancestor_height;
@@ -162,7 +162,7 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
     current_head_.number = unwind_point;
     auto current_head_hash = db::read_canonical_hash(tx_, unwind_point);
     ensure_invariant(current_head_hash.has_value(),
-                     "hash not found on canonical at height " + std::to_string(unwind_point));
+                     [&]() { return "hash not found on canonical at height " + std::to_string(unwind_point); });
 
     current_head_.hash = *current_head_hash;
 

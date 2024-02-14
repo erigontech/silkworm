@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/http/methods.hpp>
+#include <silkworm/rpc/json_rpc/methods.hpp>
 
 namespace silkworm::rpc::commands {
 

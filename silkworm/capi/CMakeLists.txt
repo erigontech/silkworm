@@ -31,10 +31,9 @@ set(PRIVATE_LIBS
 
 set(TARGET silkworm_capi)
 silkworm_library(
-    ${TARGET}
-    PUBLIC ${PUBLIC_LIBS}
-    PRIVATE ${PRIVATE_LIBS}
-    TYPE SHARED
+  ${TARGET}
+  PUBLIC ${PUBLIC_LIBS}
+  PRIVATE ${PRIVATE_LIBS} TYPE SHARED
 )
 
 # Remove custom stack_size linker option for this target

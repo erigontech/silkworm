@@ -32,7 +32,15 @@ function(silkworm_library TARGET)
     "PUBLIC;PRIVATE;EXCLUDE_REGEX;TYPE"
   )
 
-  file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
+  file(
+    GLOB_RECURSE
+    SRC
+    CONFIGURE_DEPENDS
+    "*.cpp"
+    "*.hpp"
+    "*.c"
+    "*.h"
+  )
   list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
   list_filter(SRC ARG_EXCLUDE_REGEX)

@@ -19,11 +19,11 @@
 #include <bit>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/genesis_bor_mainnet.hpp>
 #include <silkworm/core/chain/genesis_goerli.hpp>
 #include <silkworm/core/chain/genesis_holesky.hpp>
 #include <silkworm/core/chain/genesis_mainnet.hpp>
 #include <silkworm/core/chain/genesis_mumbai.hpp>
-#include <silkworm/core/chain/genesis_polygon.hpp>
 #include <silkworm/core/chain/genesis_sepolia.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -44,8 +44,8 @@ std::string_view read_genesis_data(ChainId chain_id) {
             return genesis_holesky_json;
         case *kKnownChainNameToId.find("sepolia"sv):
             return genesis_sepolia_json;
-        case *kKnownChainNameToId.find("polygon"sv):
-            return genesis_polygon_json;
+        case *kKnownChainNameToId.find("bor-mainnet"sv):
+            return genesis_bor_mainnet_json;
         case *kKnownChainNameToId.find("mumbai"sv):
             return genesis_mumbai_json;
         default:

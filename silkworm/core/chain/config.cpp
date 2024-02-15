@@ -53,7 +53,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
             [&](const protocol::NoPreMergeConfig&) {},
             [&](const protocol::EthashConfig& x) { ret.emplace("ethash", x.to_json()); },
             [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
-            [&](const protocol::BorConfig& x) { ret.emplace("bor", x.to_json()); },
+            [&](const protocol::bor::Config& x) { ret.emplace("bor", x.to_json()); },
         },
         rule_set_config);
 
@@ -113,7 +113,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     } else if (json.contains("clique")) {
         config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
-        std::optional<protocol::BorConfig> bor_config{protocol::BorConfig::from_json(json["bor"])};
+        std::optional<protocol::bor::Config> bor_config{protocol::bor::Config::from_json(json["bor"])};
         if (!bor_config) {
             return std::nullopt;
         }
@@ -180,7 +180,7 @@ evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) 
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
 
-    const protocol::BorConfig* bor{std::get_if<protocol::BorConfig>(&rule_set_config)};
+    const auto* bor{std::get_if<protocol::bor::Config>(&rule_set_config)};
     if (bor && block_number >= bor->agra_block) return EVMC_SHANGHAI;
 
     if (london_block && block_number >= london_block) return EVMC_LONDON;
@@ -215,7 +215,7 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     ret.insert(gray_glacier_block.value_or(0));
     ret.insert(merge_netsplit_block.value_or(0));
 
-    if (const protocol::BorConfig * bor{std::get_if<protocol::BorConfig>(&rule_set_config)}; bor) {
+    if (const auto* bor{std::get_if<protocol::bor::Config>(&rule_set_config)}; bor) {
         ret.insert(bor->agra_block);
     }
 
@@ -322,7 +322,7 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kPolygonConfig{
+SILKWORM_CONSTINIT const ChainConfig kBorMainnetConfig{
     .chain_id = 137,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -338,12 +338,13 @@ SILKWORM_CONSTINIT const ChainConfig kPolygonConfig{
         {23'850'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
         {50'523'000, 0x7A8ed27F4C30512326878652d20fC85727401854_address},
     },
-    .rule_set_config = protocol::BorConfig{
+    .rule_set_config = protocol::bor::Config{
         .period = {{0, 2}},
         .sprint = {
             {0, 64},
             {38'189'056, 16},
         },
+        .validator_contract = 0x0000000000000000000000000000000000001000_address,
         .rewrite_code = {
             {
                 22'156'660,
@@ -814,7 +815,7 @@ SILKWORM_CONSTINIT const ChainConfig kMumbaiConfig{
         {22'640'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
         {41'874'000, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
     },
-    .rule_set_config = protocol::BorConfig{
+    .rule_set_config = protocol::bor::Config{
         .period = {
             {0, 2},
             {25'275'000, 5},
@@ -824,6 +825,7 @@ SILKWORM_CONSTINIT const ChainConfig kMumbaiConfig{
             {0, 64},
             {29'638'656, 16},
         },
+        .validator_contract = 0x0000000000000000000000000000000000001000_address,
         .rewrite_code = {
             {
                 22'244'000,

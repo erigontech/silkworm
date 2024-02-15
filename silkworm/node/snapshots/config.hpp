@@ -53,7 +53,7 @@ inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownSnapshotConfigs
     {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
     {*kKnownChainNameToId.find("goerli"sv), {kGoerliSnapshots.data(), kGoerliSnapshots.size()}},
     {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
-    {*kKnownChainNameToId.find("polygon"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
     {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},
 };
 

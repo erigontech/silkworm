@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "bor_config.hpp"
+#include "config.hpp"
 
 #include <set>
 #include <string>
@@ -24,15 +24,15 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 
-namespace silkworm::protocol {
+namespace silkworm::protocol::bor {
 
-uint64_t BorConfig::sprint_size(BlockNum number) const noexcept {
-    const uint64_t* size{bor_config_value_lookup(sprint, number)};
+uint64_t Config::sprint_size(BlockNum number) const noexcept {
+    const uint64_t* size{config_value_lookup(sprint, number)};
     SILKWORM_ASSERT(size);
     return *size;
 }
 
-nlohmann::json BorConfig::to_json() const noexcept {
+nlohmann::json Config::to_json() const noexcept {
     nlohmann::json ret;
     for (const auto& [from, val] : period) {
         ret["period"][std::to_string(from)] = val;
@@ -40,10 +40,11 @@ nlohmann::json BorConfig::to_json() const noexcept {
     for (const auto& [from, val] : sprint) {
         ret["sprint"][std::to_string(from)] = val;
     }
+    ret["validatorContract"] = to_hex(validator_contract.bytes, /*with_prefix=*/true);
     for (const auto& [block, rewrites] : rewrite_code) {
         const std::string block_str{std::to_string(block)};
         for (const auto& [address, code] : rewrites) {
-            const std::string code_hex{to_hex(string_view_to_byte_view(code), true)};
+            const std::string code_hex{to_hex(string_view_to_byte_view(code), /*with_prefix=*/true)};
             ret["blockAlloc"][block_str][to_hex(address.bytes, true)]["code"] = code_hex;
         }
     }
@@ -52,12 +53,12 @@ nlohmann::json BorConfig::to_json() const noexcept {
     return ret;
 }
 
-std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexcept {
+std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
     if (json.is_discarded() || !json.is_object()) {
         return std::nullopt;
     }
 
-    BorConfig config;
+    Config config;
 
     std::vector<std::pair<BlockNum, uint64_t>> period;
     for (const auto& item : json["period"].items()) {
@@ -72,6 +73,11 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
         sprint.emplace_back(from, item.value().get<uint64_t>());
     }
     config.sprint = {sprint.begin(), sprint.end()};
+
+    config.validator_contract = hex_to_address(json["validatorContract"].get<std::string>(), /*return_zero_on_err=*/true);
+    if (is_zero(config.validator_contract)) {
+        return std::nullopt;
+    }
 
     SILKWORM_THREAD_LOCAL std::set<Bytes> codes;
     if (json.contains("blockAlloc")) {
@@ -104,4 +110,4 @@ std::optional<BorConfig> BorConfig::from_json(const nlohmann::json& json) noexce
     return config;
 }
 
-}  // namespace silkworm::protocol
+}  // namespace silkworm::protocol::bor

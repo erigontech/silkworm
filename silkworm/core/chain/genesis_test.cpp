@@ -122,9 +122,9 @@ TEST_CASE("Sepolia genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kSepoliaGenesisHash));
 }
 
-TEST_CASE("Polygon genesis") {
-    test_genesis_config(kPolygonConfig);
-    nlohmann::json genesis_json = sanity_checked_json(kPolygonConfig.chain_id);
+TEST_CASE("Polygon PoS genesis") {
+    test_genesis_config(kBorMainnetConfig);
+    nlohmann::json genesis_json = sanity_checked_json(kBorMainnetConfig.chain_id);
 
     auto expected_state_root{0x654f28d19b44239d1012f27038f1f71b3d4465dc415a382fb2b7009cba1527c8_bytes32};
     auto actual_state_root{state_root(genesis_json)};
@@ -132,7 +132,7 @@ TEST_CASE("Polygon genesis") {
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kPolygonGenesisHash));
+    CHECK(to_hex(computed_hash) == to_hex(kBorMainnetGenesisHash));
 }
 
 TEST_CASE("Mumbai genesis") {

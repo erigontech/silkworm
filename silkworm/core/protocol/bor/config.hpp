@@ -25,11 +25,13 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/small_map.hpp>
 
-namespace silkworm::protocol {
+namespace silkworm::protocol::bor {
 
-struct BorConfig {
+struct Config {
     SmallMap<BlockNum, uint64_t> period;
     SmallMap<BlockNum, uint64_t> sprint;  // from block -> sprint size
+
+    evmc::address validator_contract;
 
     SmallMap<BlockNum, SmallMap<evmc::address, std::string_view>> rewrite_code;
 
@@ -42,9 +44,9 @@ struct BorConfig {
 
     [[nodiscard]] nlohmann::json to_json() const noexcept;
 
-    [[nodiscard]] static std::optional<BorConfig> from_json(const nlohmann::json& json) noexcept;
+    [[nodiscard]] static std::optional<Config> from_json(const nlohmann::json& json) noexcept;
 
-    bool operator==(const BorConfig&) const = default;
+    bool operator==(const Config&) const = default;
 };
 
 // Looks up a config value as of a given block number.
@@ -55,7 +57,7 @@ struct BorConfig {
 //
 // N.B. Similar to borKeyValueConfigHelper in Erigon.
 template <typename T>
-[[nodiscard]] constexpr const T* bor_config_value_lookup(const SmallMap<BlockNum, T>& config, BlockNum number) noexcept {
+[[nodiscard]] constexpr const T* config_value_lookup(const SmallMap<BlockNum, T>& config, BlockNum number) noexcept {
     auto it{config.begin()};
     if (config.empty() || it->first > number) {
         return nullptr;
@@ -68,4 +70,4 @@ template <typename T>
     return &(it->second);
 }
 
-}  // namespace silkworm::protocol
+}  // namespace silkworm::protocol::bor

@@ -23,7 +23,6 @@
 #include <CLI/CLI.hpp>
 #include <gsl/util>
 
-#include <silkworm/rpc/http/channel.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
@@ -32,7 +31,8 @@ void print_stack_trace() {
     void* trace[16];
     int trace_size = backtrace(trace, 16);
     char** messages = backtrace_symbols(trace, trace_size);
-    [[maybe_unused]] auto _ = gsl::finally([&messages] { free(messages); });
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+    [[maybe_unused]] auto _ = gsl::finally([&messages] { free(reinterpret_cast<void*>(messages)); });
     std::cout << "Stack Trace:\n";
     for (int i = 0; i < trace_size; i++) {
         std::cout << messages[i] << "\n";
@@ -46,7 +46,7 @@ void print_stack_trace() {
                 *end = '\0';
                 // use addr2line to get the file name and line number
                 std::string command = "addr2line -e ./rpcdaemon_fuzzer_diagnostics " + std::string(address);
-                auto command_result = system(command.c_str());  // NOLINT(cert-*)
+                auto command_result = system(command.c_str());  // NOLINT(cert-*,concurrency-*)
                 if (command_result != 0) {
                     std::cout << "addr2line failed\n";
                 }
@@ -55,8 +55,10 @@ void print_stack_trace() {
     }
 }
 
+using namespace silkworm::rpc::test;
+
 int main(int argc, char* argv[]) {
-    CLI::App app{"Debugs or rerun a single fuzzer test"};
+    CLI::App app{"Debug or rerun a single fuzzer test"};
 
     std::string input_str;
     std::string input_file;
@@ -91,10 +93,10 @@ int main(int argc, char* argv[]) {
     std::string reply;
 
     try {
-        auto context = silkworm::rpc::test::TestDatabaseContext();
-        auto request_handler = new silkworm::rpc::test::RpcApiTestBase<silkworm::rpc::test::RequestHandler_ForTest>(context.db);
+        auto context = TestDatabaseContext();
+        auto request_handler = new RpcApiTestBase<RequestHandler_ForTest>(context.db);
 
-        request_handler->run<&silkworm::rpc::test::RequestHandler_ForTest::handle_request>(input_str, reply);
+        request_handler->run<&RequestHandler_ForTest::handle_request>(input_str, reply);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {

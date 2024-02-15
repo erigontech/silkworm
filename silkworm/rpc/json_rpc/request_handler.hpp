@@ -32,9 +32,9 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/json_rpc/json_rpc_validator.hpp>
+#include <silkworm/rpc/json_rpc/validator.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 class RequestHandler {
   public:
@@ -76,4 +76,4 @@ class RequestHandler {
     std::shared_ptr<InterfaceLog> ifc_log_;
 };
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

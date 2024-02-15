@@ -67,12 +67,12 @@ class ChannelForTest : public Channel {
     std::string response_;
 };
 
-class RequestHandler_ForTest : public http::RequestHandler {
+class RequestHandler_ForTest : public json_rpc::RequestHandler {
   public:
     RequestHandler_ForTest(ChannelForTest* channel,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : http::RequestHandler(channel, rpc_api, rpc_api_table), channel_{channel} {}
+        : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table), channel_{channel} {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);

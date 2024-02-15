@@ -26,7 +26,7 @@
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/log.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -48,7 +48,7 @@ class NetRpcApi {
     Task<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 
     ethbackend::BackEnd* backend_;
 };

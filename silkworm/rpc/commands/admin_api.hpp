@@ -26,7 +26,7 @@
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/log.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -49,6 +49,6 @@ class AdminRpcApi {
   private:
     ethbackend::BackEnd* backend_;
 
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 }  // namespace silkworm::rpc::commands

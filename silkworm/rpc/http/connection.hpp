@@ -92,7 +92,7 @@ class Connection : public Channel {
     const commands::RpcApiTable& handler_table_;
 
     //! The handler used to process the incoming request.
-    http::RequestHandler request_handler_;
+    json_rpc::RequestHandler request_handler_;
 
     const std::vector<std::string>& allowed_origins_;
     const std::optional<std::string> jwt_secret_;

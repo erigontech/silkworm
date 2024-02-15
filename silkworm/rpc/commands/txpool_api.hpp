@@ -26,7 +26,7 @@
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/txpool/transaction_pool.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -50,7 +50,7 @@ class TxPoolRpcApi {
     ethdb::Database* database_;
     txpool::TransactionPool* tx_pool_;
 
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
 }  // namespace silkworm::rpc::commands

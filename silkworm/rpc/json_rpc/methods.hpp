@@ -18,7 +18,7 @@
 
 #include <string>
 
-namespace silkworm::rpc::http::method {
+namespace silkworm::rpc::json_rpc::method {
 
 // Constants defined here have a different naming from our standard: k_<JSON_RPC_API>
 // where <JSON_RPC_API> is *exactly* the JSON RPC API method
@@ -156,4 +156,4 @@ inline constexpr const char* k_ots_getInternalOperations{"ots_getInternalOperati
 inline constexpr const char* k_ots_search_transactions_after{"ots_searchTransactionsAfter"};
 inline constexpr const char* k_ots_search_transactions_before{"ots_searchTransactionsBefore"};
 
-}  // namespace silkworm::rpc::http::method
+}  // namespace silkworm::rpc::json_rpc::method

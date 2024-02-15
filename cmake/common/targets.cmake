@@ -29,14 +29,14 @@ function(silkworm_library TARGET)
     "ARG"
     ""
     ""
-    "PUBLIC;PRIVATE;EXCLUDE_REGEX"
+    "PUBLIC;PRIVATE;EXCLUDE_REGEX;TYPE"
   )
 
-  file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+  file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
   list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
   list_filter(SRC ARG_EXCLUDE_REGEX)
-  add_library(${TARGET} ${SRC})
+  add_library(${TARGET} ${TYPE} ${SRC})
 
   target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
   target_link_libraries(

@@ -180,26 +180,26 @@ class SignalHandlerGuard {
     ~SignalHandlerGuard() { SignalHandler::reset(); }
 };
 
-SILKWORM_EXPORT int silkworm_init(
-    SilkwormHandle* handle,
-    const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
+static bool is_initialized{false};
+
+SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!settings) {
         return SILKWORM_INVALID_SETTINGS;
     }
-
+    if (std::strlen(settings->data_dir_path) == 0) {
+        return SILKWORM_INVALID_PATH;
+    }
     if (!is_compatible_mdbx_version(settings->libmdbx_version, silkworm_libmdbx_version(), MdbxVersionCheck::kExact)) {
         return SILKWORM_INCOMPATIBLE_LIBMDBX;
     }
-
-    static bool is_initialized = false;
     if (is_initialized) {
         return SILKWORM_TOO_MANY_INSTANCES;
-    } else {
-        is_initialized = true;
     }
+
+    is_initialized = true;
 
     log::init(kLogSettingsLikeErigon);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
@@ -614,5 +614,8 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
         return SILKWORM_INVALID_HANDLE;
     }
     delete handle;
+
+    is_initialized = false;
+
     return SILKWORM_OK;
 }

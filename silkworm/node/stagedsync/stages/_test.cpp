@@ -351,7 +351,7 @@ TEST_CASE("Sync Stages") {
         actual_validation_result =
             magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
         REQUIRE(expected_validation_result == actual_validation_result);
-        REQUIRE_NOTHROW(buffer.write_to_db());
+        REQUIRE_NOTHROW(buffer.write_to_db(txn));
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit_and_renew());
 

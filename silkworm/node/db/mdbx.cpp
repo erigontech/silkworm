@@ -284,6 +284,14 @@ void RWTxnUnmanaged::abort() {
     }
 }
 
+void RWTxnUnmanaged::renew(mdbx::env& env) {
+    if (handle_) {
+        abort();
+    }
+    ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &handle_));
+    SILKWORM_ASSERT(handle_);
+}
+
 void RWTxnUnmanaged::commit_and_renew() {
     if (commit_disabled_) {
         return;

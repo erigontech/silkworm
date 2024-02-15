@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -226,8 +227,12 @@ class ROTxn {
 class ROTxnManaged : public ROTxn {
   public:
     explicit ROTxnManaged() : ROTxn{managed_txn_} {}
-    explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
-    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {}
+    explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {
+        // std::cout << "ROTxnManaged::ROTxnManaged(mdbx::env& env)" << std::endl;
+    }
+    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {
+        std::cout << "ROTxnManaged::ROTxnManaged(mdbx::env&& env)" << std::endl;
+    }
     ~ROTxnManaged() override = default;
 
     // Not copyable
@@ -242,6 +247,9 @@ class ROTxnManaged : public ROTxn {
     }
 
     void abort() override { managed_txn_.abort(); }
+    void renew(mdbx::env& env) {
+        managed_txn_ = env.start_read();
+    }
 
   protected:
     explicit ROTxnManaged(mdbx::txn_managed&& source) : ROTxn{managed_txn_}, managed_txn_{std::move(source)} {}
@@ -290,8 +298,12 @@ class RWTxn : public ROTxn {
 class RWTxnManaged : public RWTxn {
   public:
     explicit RWTxnManaged() : RWTxn{managed_txn_} {}
-    explicit RWTxnManaged(mdbx::env& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
-    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{std::move(env).start_write()} {}
+    explicit RWTxnManaged(mdbx::env& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {
+        // std::cout << "RWTxnManaged::RWTxnManaged(mdbx::env& env)" << std::endl;
+    }
+    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{std::move(env).start_write()} {
+        std::cout << "RWTxnManaged::RWTxnManaged(mdbx::env&& env)" << std::endl;
+    }
     ~RWTxnManaged() override = default;
 
     // Not copyable
@@ -328,6 +340,7 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
     ~RWTxnUnmanaged() override;
 
     void abort() override;
+    void renew(mdbx::env& env);
     void commit_and_renew() override;
     void commit_and_stop() override;
 

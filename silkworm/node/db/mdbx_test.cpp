@@ -93,7 +93,7 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
-TEST_CASE("Environment opening") {
+TEST_CASE("MDBX Environment opening") {
     SECTION("Default page size on creation") {
         const TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{
@@ -144,7 +144,7 @@ TEST_CASE("Environment opening") {
     }
 }
 
-TEST_CASE("Cursor") {
+TEST_CASE("MDBX Cursor") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
@@ -231,7 +231,7 @@ TEST_CASE("Cursor") {
     REQUIRE(other_thread_size2 == 0);
 }
 
-TEST_CASE("ROAccess/RWAccess ::mdbx::env lifecycle") {
+TEST_CASE("MDBX ROAccess/RWAccess ::mdbx::env lifecycle") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
@@ -258,7 +258,7 @@ TEST_CASE("ROAccess/RWAccess ::mdbx::env lifecycle") {
     }
 }
 
-TEST_CASE("RWTxn") {
+TEST_CASE("MDBX RWTxn") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
@@ -374,7 +374,7 @@ TEST_CASE("RWTxn") {
     }
 }
 
-TEST_CASE("Cursor walk") {
+TEST_CASE("MDBX Cursor walk") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
@@ -604,7 +604,7 @@ static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
     return page_space(txn.env()) / kDupSortNodes - 2 * kNodeHeaderSize;
 }
 
-TEST_CASE("OF pages") {
+TEST_CASE("MDBX OF pages") {
     db::test_util::TempChainData context;
     db::RWTxn& txn = context.rw_txn();
 
@@ -676,7 +676,7 @@ static uint64_t get_free_pages(const ::mdbx::env& env) {
     return free_pages;
 }
 
-TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
+TEST_CASE("MDBX Single-value erase+upsert w/ same value increases free pages") {
     TemporaryDirectory tmp_dir{};
     auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
     db::EnvConfig env_config{
@@ -840,7 +840,7 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
     }
 }
 
-TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
+TEST_CASE("MDBX Multi-value erase+upsert w/ same value increases free pages") {
     TemporaryDirectory tmp_dir{};
     auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
     db::EnvConfig env_config{

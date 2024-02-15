@@ -160,6 +160,8 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
     progress.processed_blocks = 0;
     progress.processed_transactions = 0;
     progress.processed_gas = 0;
+    std::stringstream progress_stream;
+    progress_stream << std::fixed << std::setprecision(2) << progress.gas_state_perc * 100 << "%";
     return {
         "number",
         std::to_string(current_block),
@@ -169,8 +171,8 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
         float_to_string(speed_transactions),
         "Mgas/s",
         float_to_string(speed_mgas),
-        "gasState",
-        float_to_string(progress.gas_state_perc)};
+        "batchProgress",
+        progress_stream.str()};
 }
 
 //! A signal handler guard using RAII pattern to acquire/release signal handling
@@ -443,11 +445,11 @@ class BlockProvider {
             ++current_block;
 
             if (--refresh_counter == 0) {
-                log::Info{"[4/12 Execution] BlockProvider Refreshing txn"};
+                // log::Info{"[4/12 Execution] BlockProvider Refreshing txn"};
                 // txn.renew();
                 txn.abort();
                 txn = db::ROTxnManaged{env_};
-                log::Info{"[4/12 Execution] BlockProvider Refreshed txn"};
+                // log::Info{"[4/12 Execution] BlockProvider Refreshed txn"};
                 refresh_counter = kTxnRefreshThreshold;
             }
         }
@@ -458,6 +460,43 @@ class BlockProvider {
     mdbx::env env_;
     BlockNum start_block_;
     BlockNum max_block_;
+};
+
+class ChangeSetWriter {
+  public:
+    ChangeSetWriter(BoundedBuffer<std::optional<db::BufferChangeset>>* changeset_buffer, mdbx::env env)
+        : changeset_buffer_{changeset_buffer},
+          env_{std::move(env)} {}
+
+    void operator()() {
+        db::RWTxnManaged txn{env_};
+        while (true) {
+            std::optional<db::BufferChangeset> changeset;
+            changeset_buffer_->pop_back(&changeset);
+            if (!changeset) {
+                txn.commit_and_stop();
+                return;
+            }
+
+            auto tmp = changeset.value();
+
+            db::Buffer state_buffer{txn, /*prune_history_threshold=*/0, tmp, std::nullopt};
+            state_buffer.write_history_to_db(txn);
+
+            if (changeset->block_account_changes.size() > 1 || changeset->block_storage_changes.size() > 1) {
+                log::Info{"[4/12 Execution] ChangeSetWriter received changeset",
+                          {"account", std::to_string(changeset->block_account_changes.size()),
+                           "storage", std::to_string(changeset->block_storage_changes.size()),
+                           "receipts", std::to_string(changeset->receipts.size()),
+                           "logs", std::to_string(changeset->logs.size()),
+                           "call_traces", std::to_string(changeset->call_traces.size())}};
+            }
+        }
+    }
+
+  private:
+    BoundedBuffer<std::optional<db::BufferChangeset>>* changeset_buffer_;
+    mdbx::env env_;
 };
 
 SILKWORM_EXPORT
@@ -472,6 +511,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                         std::to_string(write_receipts),
                         "write_call_traces",
                         std::to_string(write_call_traces)}};
+
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -495,14 +535,15 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         auto db_env = external_txn.db();
         auto db_env2 = external_txn.db();
         auto db_env3 = external_txn.db();
+        auto db_env4 = external_txn.db();
         external_txn.abort();
 
         db::ROTxnManaged txn_ro{db_env};
-        db::RWTxnManaged txn_rw{db_env2};
 
         db::Buffer state_buffer{txn_ro, /*prune_history_threshold=*/0};
-        BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
-        BlockProvider block_provider{&block_buffer, db_env3, start_block, max_block};
+        BoundedBuffer<std::optional<Block>> buffer1_preloaded_block{kMaxBlockBufferSize};
+        BoundedBuffer<std::optional<db::BufferChangeset>> buffer4_changeset{kMaxBlockBufferSize};
+        BlockProvider block_provider{&buffer1_preloaded_block, db_env3, start_block, max_block};
         std::thread block_provider_thread(block_provider);
 
         static constexpr size_t kCacheSize{5'000};
@@ -512,7 +553,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         const size_t max_batch_size{batch_size};
 
         // Transform batch size limit into gas units (Ggas = Giga gas)
-        const size_t gas_max_batch_size{batch_size * 2_Kibi};  // 256MB -> 512Ggas roughly
+        const size_t gas_max_batch_size{(batch_size) * 2_Kibi};  // 256MB -> 512Ggas roughly
 
         ExecutionProgress progress{.start_time = std::chrono::steady_clock::now()};
         auto signal_check_time{progress.start_time};
@@ -529,13 +570,13 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         BlockNum block_number{start_block};
         while (block_number <= max_block) {
-            while (block_number <= max_block && block_number % 120 != 0
-                   // state_buffer.current_batch_state_size() < max_batch_size
-            ) {
+            std::thread changeset_writer_thread(ChangeSetWriter{&buffer4_changeset, db_env4});
+
+            while (block_number <= max_block && state_buffer.current_batch_state_size() < max_batch_size) {
                 // log::Info{"[4/12 Execution] Processing block",  // NOLINT(*-unused-raii)
                 //           {"block number", std::to_string(block_number)}};
 
-                block_buffer.pop_back(&block);
+                buffer1_preloaded_block.pop_back(&block);
                 if (!block) {
                     block_provider_thread.detach();
                     return SILKWORM_BLOCK_NOT_FOUND;
@@ -573,7 +614,15 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 gas_batch_size += block->header.gas_used;
 
                 // Always flush history for single processed block (no batching)
-                state_buffer.write_history_to_db(txn_rw, write_change_sets);
+                // state_buffer.write_history_to_db(txn_rw, write_change_sets);
+                db::BufferChangeset changeset;
+                state_buffer.extract_changeset(changeset);
+                if (changeset.block_account_changes.size() > 1 || changeset.block_storage_changes.size() > 1) {
+                    log::Info{"[4/12 Execution] Extracted changeset",
+                              {"account", std::to_string(changeset.block_account_changes.size()),
+                               "storage", std::to_string(changeset.block_storage_changes.size())}};
+                }
+                buffer4_changeset.push_front(std::move(changeset));
 
                 const auto now{std::chrono::steady_clock::now()};
                 if (signal_check_time <= now) {
@@ -600,16 +649,24 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
             StopWatch sw{/*auto_start=*/true};
-            log::Info{"step 1"};
+
+            // log::Info{"step A"};
+            buffer4_changeset.push_front(std::nullopt);  // send terminate signal
+            // log::Info{"step B"};
+            changeset_writer_thread.join();
+
+            // log::Info{"step 1"};
+            txn_ro.abort();
+            // log::Info{"step 2"};
+            db::RWTxnManaged txn_rw{db_env2};
+            // log::Info{"step 3"};
             state_buffer.write_state_to_db(txn_rw);
-            log::Info{"step 2"};
+            // log::Info{"step 4"};
+            txn_rw.commit_and_stop();
+            // log::Info{"step 5"};
+            txn_ro.renew(db_env);
+            // log::Info{"step 6"};
             gas_batch_size = 0;
-            txn_rw.commit_and_renew();
-            log::Info{"step 3"};
-            // txn_ro.renew();
-            log::Info{"step 4"};
-            // txn_ro = db::ROTxnManaged{db_env};
-            log::Info{"step 5"};
             const auto [elapsed, _]{sw.stop()};
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
                       log_args_for_exec_commit(sw.since_start(elapsed), db_env.get_path()));

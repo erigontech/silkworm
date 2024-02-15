@@ -117,7 +117,7 @@ TEST_CASE("Stage History Index") {
         block.transactions[0].data = *from_hex(new_val);
 
         CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-        buffer.write_to_db();
+        buffer.write_to_db(txn);
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
         SECTION("Forward and Unwind") {

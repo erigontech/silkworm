@@ -624,7 +624,7 @@ TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
     // miner_a gets another block reward
     REQUIRE(execute_block(block3, buffer, test::kFrontierConfig) == ValidationResult::kOk);
 
-    buffer.write_to_db();
+    buffer.write_to_db(txn);
     db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);

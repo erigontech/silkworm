@@ -32,7 +32,7 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/json_rpc/json_rpc_validator.hpp>
+#include <silkworm/rpc/json_rpc/validator.hpp>
 
 namespace silkworm::rpc::http {
 

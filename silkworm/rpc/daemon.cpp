@@ -37,7 +37,7 @@
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
-#include <silkworm/rpc/json_rpc/json_rpc_validator.hpp>
+#include <silkworm/rpc/json_rpc/validator.hpp>
 
 namespace silkworm::rpc {
 

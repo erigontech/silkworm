@@ -30,11 +30,15 @@ set(PRIVATE_LIBS
 )
 
 set(TARGET silkworm_capi)
+
+# cmake-format: off
 silkworm_library(
   ${TARGET}
   PUBLIC ${PUBLIC_LIBS}
-  PRIVATE ${PRIVATE_LIBS} TYPE SHARED
+  PRIVATE ${PRIVATE_LIBS}
+  TYPE SHARED
 )
+# cmake-format: on
 
 # Remove custom stack_size linker option for this target
 get_target_property(LINK_OPTIONS ${TARGET} LINK_OPTIONS)

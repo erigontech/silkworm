@@ -23,7 +23,7 @@
 #include <nlohmann/json.hpp>
 #include <tl/expected.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 using JsonRpcValidationResult = tl::expected<void, std::string>;
 
@@ -52,4 +52,4 @@ class JsonRpcValidator {
     bool accept_unknown_methods_{true};
 };
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

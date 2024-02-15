@@ -69,7 +69,7 @@ class Connection : public Channel {
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
 
     //! The handler used to process the incoming request.
-    http::RequestHandler request_handler_;
+    json_rpc::RequestHandler request_handler_;
 
     //! enable compress flag
     bool compression_{false};

@@ -20,7 +20,7 @@
 
 #include <silkworm/rpc/test/api_test_database.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
@@ -67,4 +67,4 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request method return failed
 
 #endif
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

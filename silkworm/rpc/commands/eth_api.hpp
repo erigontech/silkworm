@@ -41,7 +41,7 @@
 #include <silkworm/rpc/types/log.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -129,7 +129,7 @@ class EthereumRpcApi {
     FilterStorage* filter_storage_;
     boost::asio::thread_pool& workers_;
 
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
 }  // namespace silkworm::rpc::commands

@@ -22,7 +22,7 @@
 
 #include "specification.hpp"
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 static const std::string kRequestFieldJsonRpc{"jsonrpc"};
 static const std::string kRequestFieldId{"id"};
@@ -283,4 +283,4 @@ JsonRpcValidationResult JsonRpcValidator::validate_null(const nlohmann::json& va
     return tl::make_unexpected("Invalid null");
 }
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

@@ -32,7 +32,7 @@
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -77,7 +77,7 @@ class DebugRpcApi {
     boost::asio::thread_pool& workers_;
     ethbackend::BackEnd* backend_;
 
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
 Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, BlockNum start_block_number, BlockNum end_block_number);

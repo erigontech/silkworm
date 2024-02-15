@@ -21,7 +21,7 @@
 
 #include <silkworm/rpc/test/api_test_database.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 //! Ensure JSON RPC spec has been loaded before creating JsonRpcValidator instance
 static JsonRpcValidator create_validator_for_test() {
@@ -489,4 +489,4 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
     }
 }
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

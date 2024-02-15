@@ -26,7 +26,7 @@
 #include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/common/writer.hpp>
 
-namespace silkworm::rpc::http {
+namespace silkworm::rpc::json_rpc {
 
 RequestHandler::RequestHandler(Channel* channel,
                                commands::RpcApi& rpc_api,
@@ -195,4 +195,4 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
     co_return;
 }
 
-}  // namespace silkworm::rpc::http
+}  // namespace silkworm::rpc::json_rpc

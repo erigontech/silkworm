@@ -33,7 +33,7 @@
 #include <silkworm/rpc/commands/txpool_api.hpp>
 #include <silkworm/rpc/commands/web3_api.hpp>
 
-namespace silkworm::http {
+namespace silkworm::rpc::json_rpc {
 class RequestHandler;
 }
 
@@ -72,7 +72,7 @@ class RpcApi : protected EthereumRpcApi,
     RpcApi& operator=(const RpcApi&) = delete;
 
     friend class RpcApiTable;
-    friend class silkworm::http::RequestHandler;
+    friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
 }  // namespace silkworm::rpc::commands

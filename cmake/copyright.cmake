@@ -56,7 +56,7 @@ file(
   LIST_DIRECTORIES false
   "cmd/*.?pp" "silkworm/*.?pp"
 )
-list(FILTER SRC EXCLUDE REGEX [[silkworm/core/chain/genesis_[a-z]+\.cpp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/core/chain/genesis_[a-z_]+\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/core/common/lru_cache(_test)?\..pp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/core/crypto/kzg\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/infra/concurrency/thread_pool\.hpp$]])

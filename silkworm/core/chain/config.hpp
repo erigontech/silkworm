@@ -31,7 +31,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/protocol/bor_config.hpp>
+#include <silkworm/core/protocol/bor/config.hpp>
 #include <silkworm/core/protocol/ethash_config.hpp>
 
 namespace silkworm {
@@ -49,7 +49,7 @@ namespace protocol {
     };
 
     //! \see IRuleSet
-    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, BorConfig>;
+    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, bor::Config>;
 
 }  // namespace protocol
 
@@ -147,20 +147,20 @@ SILKWORM_CONSTINIT extern const ChainConfig kHoleskyConfig;
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
 
-inline constexpr evmc::bytes32 kPolygonGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kPolygonConfig;
+inline constexpr evmc::bytes32 kBorMainnetGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
+SILKWORM_CONSTINIT extern const ChainConfig kBorMainnetConfig;
 
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
-    {"mainnet"sv, 1},
+    {"bor-mainnet"sv, 137},
     {"goerli"sv, 5},
     {"holesky"sv, 17000},
-    {"sepolia"sv, 11155111},
-    {"polygon"sv, 137},
+    {"mainnet"sv, 1},
     {"mumbai"sv, 80001},
+    {"sepolia"sv, 11155111},
 };
 
 //! \brief Known chain IDs mapped to their respective chain configs
@@ -169,7 +169,7 @@ inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
     {*kKnownChainNameToId.find("goerli"sv), &kGoerliConfig},
     {*kKnownChainNameToId.find("holesky"sv), &kHoleskyConfig},
     {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
-    {*kKnownChainNameToId.find("polygon"sv), &kPolygonConfig},
+    {*kKnownChainNameToId.find("bor-mainnet"sv), &kBorMainnetConfig},
     {*kKnownChainNameToId.find("mumbai"sv), &kMumbaiConfig},
 };
 

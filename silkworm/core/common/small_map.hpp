@@ -28,7 +28,7 @@
 
 namespace silkworm {
 
-// SmallMap is a constexpr-friendly map suitable for a small number of elements.
+// SmallMap is a constexpr-friendly immutable map suitable for a small number of elements.
 template <std::totally_ordered Key, std::default_initializable T, std::size_t max_size = 8>
 class SmallMap {
   public:

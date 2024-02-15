@@ -31,7 +31,7 @@ static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
             [&](const NoPreMergeConfig&) { return nullptr; },
             [&](const EthashConfig&) { return std::make_unique<EthashRuleSet>(chain_config); },
             [&](const CliqueConfig&) { return std::make_unique<CliqueRuleSet>(chain_config); },
-            [&](const BorConfig&) { return std::make_unique<BorRuleSet>(chain_config); },
+            [&](const bor::Config&) { return std::make_unique<BorRuleSet>(chain_config); },
         },
         chain_config.rule_set_config);
 }

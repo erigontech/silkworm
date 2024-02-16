@@ -439,9 +439,17 @@ class BlockProvider {
             const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
             if (!success) {
                 block_buffer_->push_front(std::nullopt);
+                txn.abort();
                 return;
             }
             block_buffer_->push_front(std::move(block));
+
+            if (SignalHandler::signalled()) {
+                log::Info{"[4/12 Execution] BlockProvider received signal, stopping"};
+                txn.abort();
+                return;
+            }
+
             ++current_block;
 
             if (--refresh_counter == 0) {
@@ -473,6 +481,14 @@ class ChangeSetWriter {
         while (true) {
             std::optional<db::BufferChangeset> changeset;
             changeset_buffer_->pop_back(&changeset);
+
+            if (SignalHandler::signalled()) {
+                log::Info{"[4/12 Execution] ChangeSetWriter received signal, stopping"};
+                txn.abort();
+                return;
+            }
+
+            // empty changeset signals termination
             if (!changeset) {
                 txn.commit_and_stop();
                 return;
@@ -536,7 +552,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         auto db_env2 = external_txn.db();
         auto db_env3 = external_txn.db();
         auto db_env4 = external_txn.db();
-        external_txn.abort();
+        external_txn.commit_and_stop();
 
         db::ROTxnManaged txn_ro{db_env};
 
@@ -550,10 +566,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         AnalysisCache analysis_cache{kCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
 
-        const size_t max_batch_size{batch_size};
+        const size_t max_batch_size{batch_size / 10};
 
         // Transform batch size limit into gas units (Ggas = Giga gas)
-        const size_t gas_max_batch_size{(batch_size) * 2_Kibi};  // 256MB -> 512Ggas roughly
+        const size_t gas_max_batch_size{(batch_size / 10) * 2_Kibi};  // 256MB -> 512Ggas roughly
 
         ExecutionProgress progress{.start_time = std::chrono::steady_clock::now()};
         auto signal_check_time{progress.start_time};
@@ -627,8 +643,18 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 const auto now{std::chrono::steady_clock::now()};
                 if (signal_check_time <= now) {
                     if (SignalHandler::signalled()) {
-                        log::Info{"[4/12 Execution] Signal received, stopping"};
-                        block_provider_thread.detach();
+                        log::Info{"[4/12 Execution] Signal received, stopping1"};
+                        block_provider_thread.join();
+                        log::Info{"[4/12 Execution] Signal received, stopping2"};
+                        buffer4_changeset.push_front(std::nullopt); 
+                        log::Info{"[4/12 Execution] Signal received, stopping3"};
+                        changeset_writer_thread.join();
+                        log::Info{"[4/12 Execution] Signal received, stopping4"};
+                        txn_ro.abort();
+                        log::Info{"[4/12 Execution] Signal received, stopping5"};
+                        external_txn.renew(db_env);
+                        log::Info{"[4/12 Execution] Signal received, stopping6"};
+
                         log::Info{"[4/12 Execution] Terminated by signal"};
                         return SILKWORM_TERMINATION_SIGNAL;
                     }

@@ -16,10 +16,13 @@
 
 #include <condition_variable>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
 #include <boost/circular_buffer.hpp>
+
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 
 namespace silkworm {
 
@@ -35,6 +38,7 @@ namespace silkworm {
  *
  * @tparam T The type of items stored in the buffer.
  */
+
 template <class T>
 class BoundedBuffer {
   public:
@@ -48,7 +52,13 @@ class BoundedBuffer {
 
     void push_front(value_type&& item) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [&] { return is_not_full(); });
+        not_full_.wait(lock, [&] { return is_not_full() || silkworm::SignalHandler::signalled(); });
+
+        if (silkworm::SignalHandler::signalled()) {
+            std::cout << "BoundedBuffer::push_front signalled" << std::endl;
+            return;
+        }
+
         container_.push_front(std::forward<value_type>(item));
         ++unread_;
         lock.unlock();
@@ -57,7 +67,13 @@ class BoundedBuffer {
 
     void pop_back(value_type* pItem) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [&] { return is_not_empty(); });
+        not_empty_.wait(lock, [&] { return is_not_empty() || silkworm::SignalHandler::signalled(); });
+
+        if (silkworm::SignalHandler::signalled()) {
+            std::cout << "BoundedBuffer::pop_back signalled" << std::endl;
+            return;
+        }
+
         *pItem = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();

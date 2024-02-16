@@ -22,15 +22,14 @@
 
 namespace silkworm {
 
-// TODO fails on macOS
-#ifndef __APPLE__
+#if !defined(__APPLE__) || defined(NDEBUG)
 TEST_CASE("Signal Handler") {
-    SignalHandler::init();
+    SignalHandler::init({}, /*silent=*/true);
     CHECK(std::raise(SIGINT) == 0);
     CHECK(SignalHandler::signalled());
     SignalHandler::reset();
     CHECK(SignalHandler::signalled() == false);
 }
-#endif  // __APPLE__
+#endif  // !defined(__APPLE__) || defined(NDEBUG)
 
 }  // namespace silkworm

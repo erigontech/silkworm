@@ -26,10 +26,11 @@
 namespace silkworm::rpc::fee_history {
 
 void to_json(nlohmann::json& json, const Rewards& rewards) {
-    json = nlohmann::json::array();
+    std::vector<std::string> rewards_list;
     for (const auto& reward : rewards) {
-        json.push_back(to_quantity(reward));
+        rewards_list.push_back(to_quantity(reward));
     }
+    json = rewards_list;
 }
 
 void to_json(nlohmann::json& json, const FeeHistory& fh) {
@@ -41,19 +42,21 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     json["oldestBlock"] = to_quantity(fh.oldest_block);
 
     if (!fh.base_fees_per_gas.empty()) {
-        json["baseFeePerGas"] = nlohmann::json::array();
+        std::vector<std::string> fee_string_list;
         for (const auto& fee : fh.base_fees_per_gas) {
-            json["baseFeePerGas"].push_back(to_quantity(fee));
+            fee_string_list.push_back(to_quantity(fee));
         }
+        json["baseFeePerGas"] = fee_string_list;
     }
 
     if (!fh.rewards.empty()) {
-        json["reward"] = nlohmann::json::array();
+        std::vector<nlohmann::json> json_list;
         for (const auto& rewards : fh.rewards) {
             nlohmann::json item;
             to_json(item, rewards);
-            json["reward"].push_back(item);
+            json_list.push_back(item);
         }
+        json["reward"] = json_list;
     }
 }
 

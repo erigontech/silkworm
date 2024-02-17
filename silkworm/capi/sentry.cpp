@@ -15,6 +15,7 @@
 */
 
 #include <exception>
+#include <filesystem>
 #include <latch>
 #include <stdexcept>
 #include <string_view>
@@ -26,6 +27,7 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>

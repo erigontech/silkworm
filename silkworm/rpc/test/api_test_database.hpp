@@ -64,13 +64,13 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
     RequestHandler_ForTest(ChannelForTest* channel,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table), channel_{channel} {}
+        : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table) {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
-    Task<std::optional<std::string>> handle_request(const std::string& request, std::string& response) {
+    Task<void> handle_request(const std::string& request, std::string& response) {
         auto answer = co_await RequestHandler::handle(request);
         if (answer) {
             response = *answer;
@@ -79,7 +79,6 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    ChannelForTest* channel_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

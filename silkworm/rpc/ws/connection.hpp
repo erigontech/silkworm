@@ -30,13 +30,13 @@
 #include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/common/channel.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 
 namespace silkworm::rpc::ws {
 
 //! Represents a single connection from a client via websocket.
-class Connection : public Channel {
+class Connection : public StreamWriter {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -53,10 +53,9 @@ class Connection : public Channel {
 
     Task<void> read_loop();
 
-    // Methods of Channel interface
+    // Methods of StreamWriter interface
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override { co_return; }
-    Task<void> write_rsp(const std::string& content) override;
     Task<std::size_t> write(std::string_view content, bool last) override;
 
   private:

@@ -87,11 +87,10 @@ Task<void> Connection::do_read() {
 
     SILK_TRACE << "ws::Connection::do_read bytes_read: " << bytes_read << "[" << content << "]";
 
-    co_await request_handler_.handle(content);
-}
-
-Task<void> Connection::write_rsp(const std::string& content) {
-    co_await do_write(content);
+    auto answer = co_await request_handler_.handle(content);
+    if (answer) {
+        co_await do_write(*answer);
+    }
 }
 
 Task<std::size_t> Connection::write(std::string_view content, bool last) {

@@ -124,14 +124,12 @@ Task<void> Connection::handle_request(const boost::beast::http::request<boost::b
             auto content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
             co_await do_write(content, boost::beast::http::status::forbidden);
         } else {
-            co_await request_handler_.handle(req.body());
+            auto answer = co_await request_handler_.handle(req.body());
+            if (answer) {
+                co_await do_write(*answer);
+            }
         }
     }
-}
-
-//! Write response content to the underlying socket
-Task<void> Connection::write_rsp(const std::string& content) {
-    co_await do_write(content);
 }
 
 //! Write chunked response headers

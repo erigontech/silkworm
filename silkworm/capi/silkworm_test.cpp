@@ -37,7 +37,7 @@ struct CApiTest {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 
-template <size_t N = 32>
+template <size_t N>
 static void c_string_copy(char dst[N], const char* src) {
     std::strncpy(dst, src, N - 1);
     dst[N - 1] = '\0';
@@ -58,7 +58,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
     SilkwormSettings settings{
         .data_dir_path = "",
     };
-    c_string_copy(settings.libmdbx_version, silkworm_libmdbx_version());
+    c_string_copy<32>(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INVALID_PATH);
     CHECK(!handle);
@@ -88,7 +88,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
     SilkwormSettings settings{
         .data_dir_path = SILKWORM_CAPI_TEST_DATA_DIR_PATH,
     };
-    c_string_copy(settings.libmdbx_version, silkworm_libmdbx_version());
+    c_string_copy<32>(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_OK);
     CHECK(handle);
@@ -104,7 +104,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
     SilkwormSettings settings{
         .data_dir_path = SILKWORM_CAPI_TEST_DATA_DIR_PATH,
     };
-    c_string_copy(settings.libmdbx_version, silkworm_libmdbx_version());
+    c_string_copy<32>(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     REQUIRE(silkworm_init(&handle, &settings) == SILKWORM_OK);
     CHECK(silkworm_fini(handle) == SILKWORM_OK);

@@ -15,7 +15,6 @@
 */
 
 #include <exception>
-#include <filesystem>
 #include <latch>
 #include <stdexcept>
 #include <string_view>
@@ -27,7 +26,6 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
@@ -37,6 +35,7 @@
 
 using namespace silkworm;
 using namespace silkworm::sentry;
+using silkworm::concurrency::ContextPoolSettings;
 
 static std::vector<EnodeUrl> parse_peer_urls(const char (&c_urls)[SILKWORM_SENTRY_SETTINGS_PEERS_MAX][200]) {
     std::vector<EnodeUrl> urls;
@@ -62,7 +61,7 @@ static nat::NatOption parse_nat_option(const char (&c_nat)[50]) {
 
 static Settings make_settings(
     const struct SilkwormSentrySettings& settings,
-    concurrency::ContextPoolSettings context_pool_settings,
+    ContextPoolSettings context_pool_settings,
     std::filesystem::path data_dir_path) {
     std::string api_address = "127.0.0.1:" + std::to_string(settings.api_port);
 

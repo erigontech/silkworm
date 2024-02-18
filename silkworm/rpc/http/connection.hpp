@@ -29,16 +29,16 @@
 #include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
 
 //! Represents a single connection from a client.
-class Connection : public Channel {
+class Connection : public StreamWriter {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -59,11 +59,10 @@ class Connection : public Channel {
     //! Start the asynchronous read loop for the connection.
     Task<void> read_loop();
 
+    /* StreamWriter Interface */
     Task<void> open_stream() override;
     Task<void> close_stream() override;
-
     Task<std::size_t> write(std::string_view content, bool last) override;
-    Task<void> write_rsp(const std::string& content) override;
 
   private:
     using AuthorizationError = std::string;

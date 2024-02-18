@@ -114,24 +114,22 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
-        std::string content;
-        co_await do_write(content);
+        std::string rsp_content;
+        co_await do_write(rsp_content);
     } else {
         SILK_TRACE << "Connection::handle_request body size: " << req.body().size() << " data: " << req.body();
 
         const auto auth_result = is_request_authorized(req);
         if (!auth_result) {
-            auto content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-            co_await do_write(content, boost::beast::http::status::forbidden);
+            auto rsp_content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
+            co_await do_write(rsp_content, boost::beast::http::status::forbidden);
         } else {
-            co_await request_handler_.handle(req.body());
+            auto rsp_content = co_await request_handler_.handle(req.body());
+            if (rsp_content) {
+                co_await do_write(*rsp_content);
+            }
         }
     }
-}
-
-//! Write response content to the underlying socket
-Task<void> Connection::write_rsp(const std::string& content) {
-    co_await do_write(content);
 }
 
 //! Write chunked response headers

@@ -38,8 +38,8 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
-#include <silkworm/rpc/common/channel.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
@@ -52,19 +52,11 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
 
 void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
 
-class ChannelForTest : public Channel {
+class ChannelForTest : public StreamWriter {
   public:
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override { co_return; }
     Task<std::size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
-    Task<void> write_rsp(const std::string& response) override {
-        response_ = response;
-        co_return;
-    }
-    const std::string& response() { return response_; }
-
-  private:
-    std::string response_;
 };
 
 class RequestHandler_ForTest : public json_rpc::RequestHandler {
@@ -72,20 +64,21 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
     RequestHandler_ForTest(ChannelForTest* channel,
                            commands::RpcApi& rpc_api,
                            const commands::RpcApiTable& rpc_api_table)
-        : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table), channel_{channel} {}
+        : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table) {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
         co_await RequestHandler::handle_request_and_create_reply(request_json, response);
     }
 
     Task<void> handle_request(const std::string& request, std::string& response) {
-        co_await RequestHandler::handle(request);
-        response = channel_->response();
+        auto answer = co_await RequestHandler::handle(request);
+        if (answer) {
+            response = *answer;
+        }
     }
 
   private:
     inline static const std::vector<std::string> allowed_origins;
-    ChannelForTest* channel_;
 };
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {

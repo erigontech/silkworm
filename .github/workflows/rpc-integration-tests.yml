@@ -86,7 +86,6 @@ jobs:
             else
                echo "Error(websocket) detected during tests"
                echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
-            
           else
             echo "Error(http) detected during tests"
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"

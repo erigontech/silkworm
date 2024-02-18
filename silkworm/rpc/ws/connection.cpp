@@ -81,15 +81,15 @@ Task<void> Connection::read_loop() {
 }
 
 Task<void> Connection::do_read() {
-    std::string content;
-    auto buf = boost::asio::dynamic_buffer(content);
-    const auto bytes_read = co_await ws_.async_read(buf, boost::asio::use_awaitable);
+    std::string req_content;
+    auto req_buffer = boost::asio::dynamic_buffer(req_content);
+    const auto bytes_read = co_await ws_.async_read(req_buffer, boost::asio::use_awaitable);
 
-    SILK_TRACE << "ws::Connection::do_read bytes_read: " << bytes_read << "[" << content << "]";
+    SILK_TRACE << "ws::Connection::do_read bytes_read: " << bytes_read << " [" << req_content << "]";
 
-    auto answer = co_await request_handler_.handle(content);
-    if (answer) {
-        co_await do_write(*answer);
+    auto rsp_content = co_await request_handler_.handle(req_content);
+    if (rsp_content) {
+        co_await do_write(*rsp_content);
     }
 }
 

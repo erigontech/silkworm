@@ -48,7 +48,7 @@ jobs:
       - name: Run Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
+          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
@@ -59,7 +59,7 @@ jobs:
           
           cd ${{runner.workspace}}/rpc-tests/integration
           
-          # Run RPC integration test runner
+          # Run RPC integration test runner via http
           python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture test runner script exit status
@@ -67,13 +67,28 @@ jobs:
           
           # Save test result to a directory with timestamp and commit hash
           mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)        
-          
           # Check test runner exit status
           if [ $test_exit_status -eq 0 ]; then
-            echo "Tests completed successfully"
+            echo "Tests on http completed successfully"
             echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+
+            # Run RPC integration test runner via websocket 
+            python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json --websocket
+
+            # Capture test runner script exit status
+            test_exit_status=$?
+
+            # Save test result to a directory with timestamp and commit hash
+            mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)        
+            if [ $test_exit_status -eq 0 ]; then
+               echo "Tests on websocket completed successfully"
+               echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+            else
+               echo "Error(websocket) detected during tests"
+               echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
+            
           else
-            echo "Error detected during tests"
+            echo "Error(http) detected during tests"
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
           fi
 

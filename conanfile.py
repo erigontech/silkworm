@@ -23,7 +23,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('catch2/2.13.9')
         self.requires('magic_enum/0.8.2')
         self.requires('ms-gsl/4.0.0')
-        self.requires('nlohmann_json/3.11.2')
+        self.requires('nlohmann_json/3.11.3')
         self.requires('tl-expected/1.1.0')
         if self.settings.arch == 'wasm':
             return

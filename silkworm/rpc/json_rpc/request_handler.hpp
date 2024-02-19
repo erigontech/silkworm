@@ -53,6 +53,7 @@ class RequestHandler {
     Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response);
 
   private:
+    nlohmann::json prevalidate_and_parse(const std::string& request);
     JsonRpcValidationResult is_valid_jsonrpc(const nlohmann::json& request_json);
 
     Task<void> handle_request(

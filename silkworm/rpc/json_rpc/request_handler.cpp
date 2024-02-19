@@ -45,7 +45,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
         if (ifc_log_) {
             ifc_log_->log_req(request);
         }
-        const auto request_json = nlohmann::json::parse(request);
+        const auto request_json = prevalidate_and_parse(request);
         if (request_json.is_object()) {
             if (const auto valid_result{is_valid_jsonrpc(request_json)}; !valid_result) {
                 response = make_json_error(request_json, -32600, valid_result.error()).dump() + "\n";
@@ -78,6 +78,10 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
         SILK_ERROR << "RequestHandler::handle nlohmann::json::exception: " << e.what();
         response = make_json_error(0, -32600, "invalid request").dump() + "\n";
         return_reply = true;
+    } catch (const std::runtime_error& re) {
+        SILK_ERROR << "RequestHandler::handle runtime error: " << re.what();
+        response = make_json_error(0, -32601, "invalid request").dump() + "\n";
+        return_reply = true;
     }
 
     if (ifc_log_) {
@@ -91,6 +95,29 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
     } else {
         co_return std::nullopt;
     }
+}
+
+/**
+ * @brief Prevalidates and parses the JSON request. Specifically, it checks for nil characters that are only allowed inside quoted strings.
+ * @param request The JSON request
+ * @return The parsed JSON request
+ */
+nlohmann::json RequestHandler::prevalidate_and_parse(const std::string& request) {
+    bool inside_quote = false;
+    bool previous_char_escape = false;
+    for (auto it = request.begin(); it != request.end(); it++) {
+        if (!inside_quote && *it == 0x0) {
+            throw std::runtime_error("invalid request: nil character");
+        }
+
+        if (*it == '"' && !previous_char_escape) {
+            inside_quote = !inside_quote;
+        }
+        previous_char_escape = *it == '\\' && !previous_char_escape;
+    }
+
+    const auto request_json = nlohmann::json::parse(request);
+    return request_json;
 }
 
 JsonRpcValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {

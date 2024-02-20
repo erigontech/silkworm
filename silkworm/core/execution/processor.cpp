@@ -28,6 +28,24 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
     : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
     evm_.transfer = rule_set.transfer_func();
+
+    evm1_block_ = {
+        .number = static_cast<int64_t>(block.header.number),
+        .timestamp = static_cast<int64_t>(block.header.timestamp),
+        .gas_limit = static_cast<int64_t>(block.header.gas_limit),
+        .coinbase = block.header.beneficiary,
+        .difficulty = static_cast<int64_t>(block.header.difficulty),
+        .prev_randao = block.header.difficulty == 0 ? block.header.prev_randao : intx::be::store<evmone::state::bytes32>(intx::uint256{block.header.difficulty}),
+        .base_fee = static_cast<uint64_t>(block.header.base_fee_per_gas.value_or(0)),
+        .excess_blob_gas = block.header.excess_blob_gas.value_or(0),
+        .blob_base_fee = block.header.blob_gas_price().value_or(0),
+    };
+    for (const auto& o : block.ommers)
+        evm1_block_.ommers.emplace_back(evmone::state::Ommer{o.beneficiary, static_cast<uint32_t>(block.header.number - o.number)});
+    if (block.withdrawals) {
+        for (const auto& w : *block.withdrawals)
+            evm1_block_.withdrawals.emplace_back(evmone::state::Withdrawal{w.index, w.validator_index, w.address, w.amount});
+    }
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {

@@ -31,6 +31,7 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/grpc/unary_rpc.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::ethbackend {
 

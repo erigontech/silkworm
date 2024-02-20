@@ -35,6 +35,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include "co_spawn_sw.hpp"
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::concurrency::awaitable_wait_for_one {
 

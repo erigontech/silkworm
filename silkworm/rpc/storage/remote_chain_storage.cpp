@@ -19,6 +19,7 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc {
 

@@ -25,6 +25,7 @@
 #include <silkworm/rpc/commands/eth_api.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/common/writer.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::json_rpc {
 

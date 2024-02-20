@@ -52,6 +52,7 @@
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::commands {
 

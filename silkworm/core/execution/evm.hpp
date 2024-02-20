@@ -103,6 +103,8 @@ class EVM {
 
     evmc::address beneficiary;  // block.header.beneficiary by default; may be overridden for Clique
 
+    [[nodiscard]] evmc::bytes32 get_block_hash(int64_t block_number) noexcept;
+
   private:
     friend class EvmHost;
     friend class StateView;

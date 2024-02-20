@@ -51,7 +51,7 @@ add_library(
   evmone/lib/evmone_precompiles/kzg.cpp
 )
 set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.12.0")
-target_include_directories(evmone PUBLIC evmone/include evmone/lib)
+target_include_directories(evmone PUBLIC evmone/include evmone/lib .)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx blst::blst

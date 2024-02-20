@@ -106,7 +106,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         .value = txn.value,
         // access_list
         // blob_hashes
-        .chain_id = static_cast<uint64_t>(txn.chain_id.value()),
+        .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
         .nonce = txn.nonce};
     for (const auto& ae : txn.access_list)
         e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);

@@ -111,6 +111,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     for (const auto& ae : txn.access_list)
         e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);
     for (const auto& h : txn.blob_versioned_hashes)
+        e1_tx.blob_hashes.emplace_back(static_cast<const evmc::bytes32&>(h));
         e1_tx.blob_hashes.emplace_back(h);
 
     StateView sv{state_};

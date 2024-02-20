@@ -125,6 +125,8 @@ class EVM {
 
     bool bailout{false};
 
+    [[nodiscard]] evmc::bytes32 get_block_hash(int64_t block_num) noexcept;
+
   private:
     friend class EvmHost;
 

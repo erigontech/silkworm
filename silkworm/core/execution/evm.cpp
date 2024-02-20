@@ -130,6 +130,9 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         for (const auto& w : *block_.withdrawals)
             e1_bi.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
     }
+    const auto min_block_number = std::max(e1_bi.number - 257, int64_t{0});
+    for (auto n = min_block_number; n < e1_bi.number; ++n)
+        e1_bi.known_block_hashes.insert({n, get_block_hash(n)});
 
     StateView sv{state_};
 

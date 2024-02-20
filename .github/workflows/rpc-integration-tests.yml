@@ -45,12 +45,14 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Run Silkworm RpcDaemon
+      - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check &
+          echo "Silkworm RpcDaemon starting..."
+          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
+          echo "Silkworm RpcDaemon started"
 
       - name: Run RPC Integration Tests
         id: test_step
@@ -59,22 +61,39 @@ jobs:
           
           cd ${{runner.workspace}}/rpc-tests/integration
           
-          # Run RPC integration test runner
+          # Run RPC integration test runner via http
           python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json
           
           # Capture test runner script exit status
           test_exit_status=$?
           
-          # Save test result to a directory with timestamp and commit hash
-          mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)        
-          
           # Check test runner exit status
           if [ $test_exit_status -eq 0 ]; then
-            echo "Tests completed successfully"
-            echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+            echo "HTTP: tests completed successfully"
+            echo
+
+            # Run RPC integration test runner via websocket 
+            python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json --websocket
+
+            # Capture test runner script exit status
+            test_exit_status=$?
+
+            if [ $test_exit_status -eq 0 ]; then
+               echo "WebSockets: tests completed successfully"
+               echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+            else
+               echo "WebSockets: error detected during tests"
+               echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
+               
+               # Save failed results to a directory with timestamp and commit hash
+               mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)_ws
+            fi
           else
-            echo "Error detected during tests"
+            echo "HTTP: error detected during tests"
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
+            
+            # Save failed results to a directory with timestamp and commit hash
+            mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)_http
           fi
 
       - name: Stop Silkworm RpcDaemon
@@ -82,17 +101,18 @@ jobs:
         run: |
           # Clean up rpcdaemon process if it's still running
           if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
-            echo "Terminating rpc-daemon"
+            echo "Silkworm RpcDaemon stopping..."
             kill $RPC_DAEMON_PID
+            echo "Silkworm RpcDaemon stopped"
           else
-            echo "rpc-daemon has already terminated"
+            echo "Silkworm RpcDaemon has already terminated"
           fi
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'
         run: echo "::notice::Tests completed successfully"
 
-      - name: Action for Not Success
+      - name: Action for Failure
         if: steps.test_step.outputs.TEST_RESULT != 'success'
         run: |
           echo "::error::Error detected during tests"

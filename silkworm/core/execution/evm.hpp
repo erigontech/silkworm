@@ -128,6 +128,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
+    evmc::VM e1_vm_;
     evmone::VM* evm1_{nullptr};
 };
 

@@ -86,10 +86,11 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+      e1_vm_{evmc_create_evmone()},
+      evm1_{static_cast<evmone::VM*>(e1_vm_.get_raw_pointer())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
-EVM::~EVM() { evm1_->destroy(evm1_); }
+EVM::~EVM() {}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     assert(txn.sender());  // sender must be valid

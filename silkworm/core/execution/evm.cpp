@@ -60,6 +60,27 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
+class StateView : public evmone::state::StateView {
+    IntraBlockState& state_;
+
+  public:
+    explicit StateView(IntraBlockState& state) noexcept : state_{state} {}
+
+    std::optional<Account> get_account(evmc::address addr) const noexcept override {
+        if (!state_.exists(addr))
+            return std::nullopt;
+        return Account{.nonce = state_.get_nonce(addr), .balance = state_.get_balance(addr), .code_hash = state_.get_code_hash(addr)};
+    }
+
+    evmone::bytes get_account_code(evmc::address addr) const noexcept override {
+        return evmone::bytes{state_.get_code(addr)};
+    }
+
+    evmc::bytes32 get_storage(evmc::address addr, evmc::bytes32 key) const noexcept override {
+        return state_.get_original_storage(addr, key);
+    }
+};
+
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
@@ -91,6 +112,8 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);
     for (const auto& h : txn.blob_versioned_hashes)
         e1_tx.blob_hashes.emplace_back(h);
+
+    StateView sv{state_};
 
     txn_ = &txn;
 

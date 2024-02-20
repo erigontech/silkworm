@@ -105,6 +105,7 @@ class EVM {
 
   private:
     friend class EvmHost;
+    friend class StateView;
 
     evmc::Result create(const evmc_message& message) noexcept;
 

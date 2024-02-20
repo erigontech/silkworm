@@ -112,7 +112,24 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);
     for (const auto& h : txn.blob_versioned_hashes)
         e1_tx.blob_hashes.emplace_back(static_cast<const evmc::bytes32&>(h));
-        e1_tx.blob_hashes.emplace_back(h);
+
+    evmone::state::BlockInfo e1_bi{
+        .number = static_cast<int64_t>(block_.header.number),
+        .timestamp = static_cast<int64_t>(block_.header.number),
+        .gas_limit = static_cast<int64_t>(block_.header.gas_limit),
+        .coinbase = block_.header.beneficiary,
+        .difficulty = static_cast<int64_t>(block_.header.difficulty),
+        .prev_randao = block_.header.prev_randao,
+        .base_fee = static_cast<uint64_t>(block_.header.base_fee_per_gas.value_or(0)),
+        .excess_blob_gas = block_.header.excess_blob_gas.value_or(0),
+        .blob_base_fee = block_.header.blob_gas_price().value_or(0),
+    };
+    for (const auto& obh : block_.ommers)
+        e1_bi.ommers.emplace_back(obh.beneficiary, block_.header.number - obh.number);
+    if (block_.withdrawals) {
+        for (const auto& w : *block_.withdrawals)
+            e1_bi.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
+    }
 
     StateView sv{state_};
 

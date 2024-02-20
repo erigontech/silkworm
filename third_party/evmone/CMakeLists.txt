@@ -49,9 +49,20 @@ add_library(
   evmone/lib/evmone_precompiles/ripemd160.cpp
   evmone/lib/evmone_precompiles/sha256.cpp
   evmone/lib/evmone_precompiles/kzg.cpp
+  evmone/lib/evmone_precompiles/bn254.cpp
+  evmone/lib/evmone_precompiles/secp256k1.cpp
+  evmone/test/state/host.cpp
+  evmone/test/state/precompiles.cpp
+  evmone/test/state/state.cpp
+  evmone/test/state/bloom_filter.cpp
 )
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.12.0")
-target_include_directories(evmone PUBLIC evmone/include evmone/lib .)
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.11.0")
+target_include_directories(
+  evmone
+  PUBLIC evmone/include evmone/lib
+  INTERFACE .
+  PRIVATE ../..
+)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx blst::blst
@@ -63,7 +74,7 @@ if(MSVC)
 else()
   target_compile_options(
     evmone
-    PRIVATE -fno-exceptions
+    PRIVATE
             # evmone uses vendor specific attributes without macro guards.
             # https://github.com/ethereum/evmone/blob/master/CMakeLists.txt#L62-L66
             $<$<CXX_COMPILER_ID:GNU>:-Wno-attributes>

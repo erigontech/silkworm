@@ -45,7 +45,7 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Run Silkworm RpcDaemon
+      - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           echo "Silkworm RpcDaemon starting..."
@@ -69,7 +69,8 @@ jobs:
           
           # Check test runner exit status
           if [ $test_exit_status -eq 0 ]; then
-            echo "HTTP: tests completed successfully\n"
+            echo "HTTP: tests completed successfully"
+            echo
 
             # Run RPC integration test runner via websocket 
             python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json --websocket

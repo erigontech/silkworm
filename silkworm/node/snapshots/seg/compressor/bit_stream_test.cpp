@@ -35,7 +35,7 @@ struct ByteWriter {
     void write(uint8_t b) {
         storage.push_back(b);
     }
-    operator absl::FunctionRef<void(uint8_t)>() const {
+    operator std::function<void(uint8_t)>() const {
         return func;
     }
 };

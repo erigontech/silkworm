@@ -17,22 +17,21 @@
 #pragma once
 
 #include <cstdint>
-
-#include <absl/functional/function_ref.h>
+#include <functional>
 
 namespace silkworm::snapshots::seg {
 
 class BitStream {
   public:
-    BitStream(absl::FunctionRef<void(uint8_t)> byte_writer)
-        : byte_writer_(byte_writer) {}
+    BitStream(std::function<void(uint8_t)> byte_writer)
+        : byte_writer_(std::move(byte_writer)) {}
     ~BitStream();
 
     void write(uint64_t code, uint8_t code_bits);
     void flush();
 
   private:
-    absl::FunctionRef<void(uint8_t)> byte_writer_;
+    std::function<void(uint8_t)> byte_writer_;
     uint8_t output_bits_{};
     uint8_t output_byte_{};
 };

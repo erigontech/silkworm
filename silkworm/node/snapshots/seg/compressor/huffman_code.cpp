@@ -199,27 +199,24 @@ static uint64_t reverse_bits64(uint64_t x) {
     return reverse_bytes64(x);
 }
 
-std::vector<size_t> huffman_code_table_order_by_uses_and_code(
-    const std::vector<uint64_t>& symbol_uses,
+std::vector<size_t> huffman_code_table_order_by_codes(
     const std::vector<HuffmanSymbolCode>& codes) {
-    std::vector<size_t> order(symbol_uses.size());
+    std::vector<size_t> order(codes.size());
     std::iota(order.begin(), order.end(), 0);
 
-    std::ranges::sort(order, [&](uint64_t i, uint64_t j) {
-        return (symbol_uses[i] != symbol_uses[j])
-                   ? (symbol_uses[i] < symbol_uses[j])
-                   : (reverse_bits64(codes[i].code) < reverse_bits64(codes[j].code));
+    std::ranges::sort(order, [&](size_t i, size_t j) {
+        return reverse_bits64(codes[i].code) < reverse_bits64(codes[j].code);
     });
     return order;
 }
 
-std::vector<size_t> huffman_code_table_order_by_uses_and_code(
+std::vector<size_t> huffman_code_table_order_by_uses_and_codes(
     const std::vector<uint64_t>& symbol_uses,
     const std::vector<uint64_t>& codes) {
     std::vector<size_t> order(symbol_uses.size());
     std::iota(order.begin(), order.end(), 0);
 
-    std::ranges::sort(order, [&](uint64_t i, uint64_t j) {
+    std::ranges::sort(order, [&](size_t i, size_t j) {
         return (symbol_uses[i] != symbol_uses[j])
                    ? (symbol_uses[i] < symbol_uses[j])
                    : (reverse_bits64(codes[i]) < reverse_bits64(codes[j]));

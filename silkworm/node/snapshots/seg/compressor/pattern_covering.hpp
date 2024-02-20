@@ -33,7 +33,7 @@ class PatternCoveringSearch {
   public:
     PatternCoveringSearch(
         const PatriciaTree& patterns_tree,
-        std::function<uint64_t(void*)> pattern_score_getter);
+        const std::function<uint64_t(void*)>& pattern_score_getter);
     ~PatternCoveringSearch();
 
     struct Result {

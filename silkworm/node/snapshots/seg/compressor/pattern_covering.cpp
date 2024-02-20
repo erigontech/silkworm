@@ -166,8 +166,9 @@ const Result& PatternCoveringSearchImpl::cover_word(ByteView word) {
 
 PatternCoveringSearch::PatternCoveringSearch(
     const PatriciaTree& patterns_tree,
-    std::function<uint64_t(void*)> pattern_score_getter)
+    const std::function<uint64_t(void*)>& pattern_score_getter)
     : p_impl_(std::make_unique<PatternCoveringSearchImpl>(patterns_tree, pattern_score_getter)) {}
+
 PatternCoveringSearch::~PatternCoveringSearch() { static_assert(true); }
 
 const Result& PatternCoveringSearch::cover_word(ByteView word) {

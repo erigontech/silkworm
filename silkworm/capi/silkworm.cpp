@@ -646,7 +646,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                         log::Info{"[4/12 Execution] Signal received, stopping1"};
                         block_provider_thread.join();
                         log::Info{"[4/12 Execution] Signal received, stopping2"};
-                        buffer4_changeset.push_front(std::nullopt); 
+                        buffer4_changeset.push_front(std::nullopt);
                         log::Info{"[4/12 Execution] Signal received, stopping3"};
                         changeset_writer_thread.join();
                         log::Info{"[4/12 Execution] Signal received, stopping4"};

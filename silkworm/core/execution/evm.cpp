@@ -95,27 +95,6 @@ EVM::~EVM() {}
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     assert(txn.sender());  // sender must be valid
 
-    evmone::state::BlockInfo e1_bi{
-        .number = static_cast<int64_t>(block_.header.number),
-        .timestamp = static_cast<int64_t>(block_.header.number),
-        .gas_limit = static_cast<int64_t>(block_.header.gas_limit),
-        .coinbase = block_.header.beneficiary,
-        .difficulty = static_cast<int64_t>(block_.header.difficulty),
-        .prev_randao = block_.header.prev_randao,
-        .base_fee = static_cast<uint64_t>(block_.header.base_fee_per_gas.value_or(0)),
-        .excess_blob_gas = block_.header.excess_blob_gas.value_or(0),
-        .blob_base_fee = block_.header.blob_gas_price().value_or(0),
-    };
-    for (const auto& obh : block_.ommers)
-        e1_bi.ommers.emplace_back(obh.beneficiary, block_.header.number - obh.number);
-    if (block_.withdrawals) {
-        for (const auto& w : *block_.withdrawals)
-            e1_bi.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
-    }
-    const auto min_block_number = std::max(e1_bi.number - 257, int64_t{0});
-    for (auto n = min_block_number; n < e1_bi.number; ++n)
-        e1_bi.known_block_hashes.insert({n, get_block_hash(n)});
-
     StateView sv{state_};
 
     txn_ = &txn;

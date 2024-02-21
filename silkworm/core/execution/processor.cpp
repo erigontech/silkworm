@@ -83,7 +83,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         .gas_limit = static_cast<int64_t>(block.header.gas_limit),
         .coinbase = block.header.beneficiary,
         .difficulty = static_cast<int64_t>(block.header.difficulty),
-        .prev_randao = block.header.prev_randao,
+        .prev_randao = block.header.difficulty == 0 ? block.header.prev_randao : intx::be::store<evmone::state::bytes32>(intx::uint256{block.header.difficulty}),
         .base_fee = static_cast<uint64_t>(block.header.base_fee_per_gas.value_or(0)),
         .excess_blob_gas = block.header.excess_blob_gas.value_or(0),
         .blob_base_fee = block.header.blob_gas_price().value_or(0),

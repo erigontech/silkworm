@@ -79,7 +79,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const auto& block = evm_.block();
     evmone::state::BlockInfo e1_bi{
         .number = static_cast<int64_t>(block.header.number),
-        .timestamp = static_cast<int64_t>(block.header.number),
+        .timestamp = static_cast<int64_t>(block.header.timestamp),
         .gas_limit = static_cast<int64_t>(block.header.gas_limit),
         .coinbase = block.header.beneficiary,
         .difficulty = static_cast<int64_t>(block.header.difficulty),

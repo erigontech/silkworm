@@ -60,8 +60,8 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
     kBlockchainDir / "GeneralStateTests" / "stQuadraticComplexityTest",
     //    kBlockchainDir / "GeneralStateTests" / "stRandom",
-    kBlockchainDir / "GeneralStateTests" / "stSolidityTest",
-    kBlockchainDir / "ValidBlocks" / "bcExploitTest",
+    //    kBlockchainDir / "GeneralStateTests" / "stSolidityTest",
+    //    kBlockchainDir / "ValidBlocks" / "bcExploitTest",
 };
 
 static const std::vector<fs::path> kFailingTests{};
@@ -291,7 +291,7 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     RunResults total;
 
     for (const auto& test : json.items()) {
-        std::cerr << " - " << test.key() << "\n";
+        // std::cerr << " - " << test.key() << "\n";
         const RunResults r{runner(test.value())};
         total += r;
         if (r.failed || r.skipped) {
@@ -480,7 +480,7 @@ int main(int argc, char* argv[]) {
         //        {kTransactionDir, transaction_test},
     };
 
-    fs::path single_file = "/home/chfast/Projects/ethereum/silkworm/third_party/ethereum-tests/BlockchainTests/GeneralStateTests/stRandom/randomStatetest303.json";
+    fs::path single_file = "";
     if (!single_file.empty()) {
         run_test_file(single_file, blockchain_test);
     } else {
@@ -499,7 +499,7 @@ int main(int argc, char* argv[]) {
                 } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                     const fs::path path{*i};
                     thread_pool.push_task([=]() {
-                    std::cerr << path << "\n";
+                    // std::cerr << path << "\n";
                     run_test_file(path, runner); });
                 }
             }

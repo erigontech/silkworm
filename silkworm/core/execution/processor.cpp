@@ -182,6 +182,12 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.cumulative_gas_used = cumulative_gas_used_;
     receipt.bloom = logs_bloom(state_.logs());
     std::swap(receipt.logs, state_.logs());
+
+    if (e1_receipt.status == EVMC_FAILURE) {  // imprecise error code
+        SILKWORM_ASSERT(!receipt.success);
+    } else {
+        SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
+    }
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {

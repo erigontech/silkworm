@@ -81,6 +81,8 @@ class EVM {
 
     ~EVM();
 
+    [[nodiscard]] evmc::VM& vm() noexcept { return e1_vm_; }
+
     [[nodiscard]] const Block& block() const noexcept { return block_; }
 
     [[nodiscard]] const ChainConfig& config() const noexcept { return config_; }

@@ -183,6 +183,23 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.bloom = logs_bloom(state_.logs());
     std::swap(receipt.logs, state_.logs());
 
+    if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {
+        std::cerr << "g: " << e1_receipt.gas_used << ", silkworm: " << gas_used << "\n";
+        SILKWORM_ASSERT(static_cast<uint64_t>(e1_receipt.gas_used) == gas_used);
+    }
+
+    SILKWORM_ASSERT(receipt.logs.size() == e1_receipt.logs.size());
+    for (size_t i = 0; i < receipt.logs.size(); ++i) {
+        const auto& e1l = e1_receipt.logs[i];
+        const auto& exp = receipt.logs[i];
+        SILKWORM_ASSERT(e1l.addr == exp.address);
+        SILKWORM_ASSERT(e1l.topics.size() == exp.topics.size());
+        for (size_t j = 0; j < exp.topics.size(); ++j) {
+            SILKWORM_ASSERT(e1l.topics[j] == exp.topics[j]);
+        }
+        SILKWORM_ASSERT(e1l.data == exp.data);
+    }
+
     const auto& e1_state_diff = e1_receipt.state_diff;
     for (const auto& [a, c] : e1_state_diff.modified_storage) {
         if (e1_state_diff.deleted_accounts.contains(a))
@@ -195,6 +212,26 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
                 receipt.success = false;
                 __builtin_trap();
             }
+        }
+    }
+    for (const auto& a : e1_state_diff.deleted_accounts) {
+        SILKWORM_ASSERT(!state_.exists(a));
+    }
+    for (const auto& [a, m] : e1_state_diff.modified_accounts) {
+        if (e1_state_diff.deleted_accounts.contains(a))
+            continue;
+
+        if (m.nonce) {
+            SILKWORM_ASSERT(state_.get_nonce(a) == *m.nonce);
+        }
+        if (m.balance) {
+            if (*m.balance != state_.get_balance(a)) {
+                std::cerr << "b: " << hex(a) << " " << to_string(*m.balance) << ", silkworm: " << to_string(state_.get_balance(a)) << "\n";
+                SILKWORM_ASSERT(state_.get_balance(a) == *m.balance);
+            }
+        }
+        if (m.code) {
+            SILKWORM_ASSERT(state_.get_code(a) == *m.code);
         }
     }
 

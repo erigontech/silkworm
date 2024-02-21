@@ -59,6 +59,9 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
     kBlockchainDir / "GeneralStateTests" / "stQuadraticComplexityTest",
+    //    kBlockchainDir / "GeneralStateTests" / "stStackTests",
+    //    kBlockchainDir / "GeneralStateTests" / "stBadOpcodes",
+    //    kBlockchainDir / "GeneralStateTests" / "stMemExpandingEIP150Calls",
     //    kBlockchainDir / "GeneralStateTests" / "stRandom",
     //    kBlockchainDir / "GeneralStateTests" / "stSolidityTest",
     //    kBlockchainDir / "ValidBlocks" / "bcExploitTest",
@@ -211,6 +214,10 @@ struct [[nodiscard]] RunResults {
 RunResults blockchain_test(const nlohmann::json& json_test) {
     const auto network{json_test["network"].get<std::string>()};
     const auto config_it{test::kNetworkConfig.find(network)};
+
+    //    if (network != "Istanbul")
+    //        return Status::kSkipped;
+
     if (config_it == test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;
         return Status::kSkipped;
@@ -297,6 +304,8 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner) {
         if (r.failed || r.skipped) {
             print_test_status(test.key(), r);
         }
+        if (r.failed)
+            break;
     }
 
     total_passed += total.passed;

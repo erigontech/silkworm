@@ -191,8 +191,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         for (const auto& [k, v] : c) {
             auto expected = state_.get_current_storage(a, k);
             if (v != expected) {
-                std::cerr << "k: " << hex(k) << "e1: " << hex(v) << ", silkworm: " << hex(expected) << "\n";
-                receipt.success = !receipt.success;
+                std::cerr << "k: " << hex(k) << " e1: " << hex(v) << ", silkworm: " << hex(expected) << "\n";
+                receipt.success = false;
+                __builtin_trap();
             }
         }
     }

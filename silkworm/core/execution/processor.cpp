@@ -17,6 +17,7 @@
 #include "processor.hpp"
 
 #include <evmone/test/state/block.hpp>
+#include <evmone/test/state/state_view.hpp>
 #include <evmone/test/state/transaction.hpp>
 
 #include <silkworm/core/common/assert.hpp>
@@ -25,6 +26,28 @@
 #include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm {
+namespace {
+    class StateView : public evmone::state::StateView {
+        IntraBlockState& state_;
+
+      public:
+        explicit StateView(IntraBlockState& state) noexcept : state_{state} {}
+
+        std::optional<Account> get_account(const evmc::address& addr) const noexcept override {
+            if (!state_.exists(addr))
+                return std::nullopt;
+            return Account{.nonce = state_.get_nonce(addr), .balance = state_.get_balance(addr), .code_hash = state_.get_code_hash(addr)};
+        }
+
+        evmone::bytes get_account_code(const evmc::address& addr) const noexcept override {
+            return evmone::bytes{state_.get_code(addr)};
+        }
+
+        evmc::bytes32 get_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override {
+            return state_.get_original_storage(addr, key);
+        }
+    };
+}  // namespace
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,
                                        const ChainConfig& config)
@@ -76,6 +99,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const auto min_block_number = std::max(e1_bi.number - 257, int64_t{0});
     for (auto n = min_block_number; n < e1_bi.number; ++n)
         e1_bi.known_block_hashes.insert({n, evm_.get_block_hash(n)});
+
+    StateView sv{state_};
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());

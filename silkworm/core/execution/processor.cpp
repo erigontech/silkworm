@@ -100,6 +100,14 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     StateView sv{state_};
 
+    static const auto MAX_GAS = std::numeric_limits<int64_t>::max();
+    const auto e1_res = evmone::state::transition(sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
+    if (holds_alternative<std::error_code>(e1_res)) {
+        std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
+        SILKWORM_ASSERT(!"tx invalid");
+    }
+    const auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
+
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());
 

@@ -16,6 +16,8 @@
 
 #include "processor.hpp"
 
+#include <evmone/test/state/transaction.hpp>
+
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
@@ -32,6 +34,25 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     SILKWORM_ASSERT(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
+
+    evmone::state::Transaction e1_tx{
+        .type = static_cast<evmone::state::Transaction::Type>(txn.type),
+        .data = txn.data,
+        .gas_limit = static_cast<int64_t>(txn.gas_limit),
+        .max_gas_price = txn.max_fee_per_gas,
+        .max_priority_gas_price = txn.max_priority_fee_per_gas,
+        .max_blob_gas_price = txn.max_fee_per_blob_gas,
+        .sender = *txn.sender(),
+        .to = txn.to,
+        .value = txn.value,
+        // access_list
+        // blob_hashes
+        .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
+        .nonce = txn.nonce};
+    for (const auto& ae : txn.access_list)
+        e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);
+    for (const evmc::bytes32& h : txn.blob_versioned_hashes)
+        e1_tx.blob_hashes.emplace_back(h);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());

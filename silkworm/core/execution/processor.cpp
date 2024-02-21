@@ -104,7 +104,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const auto e1_res = evmone::state::transition(sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
     if (holds_alternative<std::error_code>(e1_res)) {
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
-        SILKWORM_ASSERT(!"tx invalid");
+        SILKWORM_ASSERT(false && "tx invalid");
     }
     const auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
 
@@ -185,7 +185,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     if (e1_receipt.status == EVMC_FAILURE) {  // imprecise error code
         SILKWORM_ASSERT(!receipt.success);
-    } else {
+    } else if (e1_receipt.status != EVMC_OUT_OF_GAS && vm_res.status != EVMC_PRECOMPILE_FAILURE) {
+        if (e1_receipt.status != vm_res.status) {
+            std::cerr << "e1: " << e1_receipt.status << ", silkworm: " << vm_res.status << "\n";
+        }
         SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
     }
 }

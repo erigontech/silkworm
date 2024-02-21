@@ -99,6 +99,8 @@ class EVM {
 
     ~EVM();
 
+    evmc::VM& vm() noexcept { return e1_vm_; }
+
     const Block& block() const noexcept { return block_; }
 
     const ChainConfig& config() const noexcept { return config_; }
@@ -147,6 +149,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
+    evmc::VM e1_vm_;
     evmone::VM* evm1_{nullptr};
 };
 

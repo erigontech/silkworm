@@ -71,7 +71,7 @@ namespace {
 
     /// Checks the result of the transaction execution in evmone (APIv2)
     /// against the result produced by Silkworm.
-    void check_evm1_execution_result(const evmone::state::StateDiff& state_diff, const IntraBlockState& state) {
+    [[maybe_unused]] void check_evm1_execution_result(const evmone::state::StateDiff& state_diff, const IntraBlockState& state) {
         for (const auto& entry : state_diff.modified_accounts) {
             if (std::ranges::find(state_diff.deleted_accounts, entry.addr) != state_diff.deleted_accounts.end()) {
                 continue;
@@ -180,60 +180,60 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         receipt.logs.emplace_back(Log{addr, std::move(topics), std::move(data)});
     receipt.bloom = logs_bloom(receipt.logs);
 
-    state_.clear_journal_and_substate();
-    auto snap = state_.take_snapshot();
+    // state_.clear_journal_and_substate();
+    // auto snap = state_.take_snapshot();
+    //
+    // const std::optional<evmc::address> sender{txn.sender()};
+    // SILKWORM_ASSERT(sender);
+    //
+    // update_access_lists(*sender, txn, rev);
+    //
+    // if (txn.to) {
+    //     // EVM itself increments the nonce for contract creation
+    //     state_.set_nonce(*sender, txn.nonce + 1);
+    // }
+    //
+    // const BlockHeader& header{evm_.block().header};
+    //
+    // const intx::uint256 sender_initial_balance{state_.get_balance(*sender)};
+    // const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
+    //
+    // // EIP-1559 normal gas cost
+    // const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
+    // const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    // state_.subtract_from_balance(*sender, txn.gas_limit * effective_gas_price);
+    //
+    // // EIP-4844 blob gas cost (calc_data_fee)
+    // const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
+    // state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
+    //
+    // const CallResult vm_res = evm_.execute(txn, execution_gas_limit);
+    // SILKWORM_ASSERT((vm_res.status == EVMC_SUCCESS) == receipt.success);
+    // SILKWORM_ASSERT(state_.logs().size() == receipt.logs.size());
+    //
+    // refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
+    //
+    // // award the fee recipient
+    // const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
+    // state_.add_to_balance(evm_.beneficiary, amount);
+    //
+    // if (rev >= EVMC_LONDON) {
+    //     const evmc::address* burnt_contract{protocol::bor::config_value_lookup(evm_.config().burnt_contract,
+    //                                                                            header.number)};
+    //     if (burnt_contract) {
+    //         const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
+    //         state_.add_to_balance(*burnt_contract, would_be_burnt);
+    //     }
+    // }
+    //
+    // rule_set_.add_fee_transfer_log(state_, amount, *sender, sender_initial_balance,
+    //                                evm_.beneficiary, recipient_initial_balance);
+    //
+    // state_.finalize_transaction(rev);
+    //
+    // check_evm1_execution_result(evm1_receipt.state_diff, state_);
 
-    const std::optional<evmc::address> sender{txn.sender()};
-    SILKWORM_ASSERT(sender);
-
-    update_access_lists(*sender, txn, rev);
-
-    if (txn.to) {
-        // EVM itself increments the nonce for contract creation
-        state_.set_nonce(*sender, txn.nonce + 1);
-    }
-
-    const BlockHeader& header{evm_.block().header};
-
-    const intx::uint256 sender_initial_balance{state_.get_balance(*sender)};
-    const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
-
-    // EIP-1559 normal gas cost
-    const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
-    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state_.subtract_from_balance(*sender, txn.gas_limit * effective_gas_price);
-
-    // EIP-4844 blob gas cost (calc_data_fee)
-    const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
-    state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
-
-    const CallResult vm_res = evm_.execute(txn, execution_gas_limit);
-    SILKWORM_ASSERT((vm_res.status == EVMC_SUCCESS) == receipt.success);
-    SILKWORM_ASSERT(state_.logs().size() == receipt.logs.size());
-
-    refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
-
-    // award the fee recipient
-    const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
-    state_.add_to_balance(evm_.beneficiary, amount);
-
-    if (rev >= EVMC_LONDON) {
-        const evmc::address* burnt_contract{protocol::bor::config_value_lookup(evm_.config().burnt_contract,
-                                                                               header.number)};
-        if (burnt_contract) {
-            const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
-            state_.add_to_balance(*burnt_contract, would_be_burnt);
-        }
-    }
-
-    rule_set_.add_fee_transfer_log(state_, amount, *sender, sender_initial_balance,
-                                   evm_.beneficiary, recipient_initial_balance);
-
-    state_.finalize_transaction(rev);
-
-    check_evm1_execution_result(evm1_receipt.state_diff, state_);
-
-    state_.revert_to_snapshot(snap);  // revert all what happened
+    // state_.revert_to_snapshot(snap);  // revert all what happened
 
     const auto& state_diff = evm1_receipt.state_diff;
     for (const auto& m : state_diff.modified_accounts) {

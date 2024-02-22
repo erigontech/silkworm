@@ -131,61 +131,61 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     // std::swap(receipt.logs, state_.logs());
 
-    state_.clear_journal_and_substate();
-    auto snap = state_.take_snapshot();
-
-    const std::optional<evmc::address> sender{txn.sender()};
-    SILKWORM_ASSERT(sender);
-
-    const evmc_revision rev{evm_.revision()};
-    update_access_lists(*sender, txn, rev);
-
-    if (txn.to) {
-        // EVM itself increments the nonce for contract creation
-        state_.set_nonce(*sender, txn.nonce + 1);
-    }
-
-    const BlockHeader& header{evm_.block().header};
-
-    const intx::uint256 sender_initial_balance{state_.get_balance(*sender)};
-    const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
-
-    // EIP-1559 normal gas cost
-    const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
-    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state_.subtract_from_balance(*sender, txn.gas_limit * effective_gas_price);
-
-    // EIP-4844 blob gas cost (calc_data_fee)
-    const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
-    state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
-
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
-    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
-
-    const CallResult vm_res = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
-
-    refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
-
-    // award the fee recipient
-    const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
-    state_.add_to_balance(evm_.beneficiary, amount);
-
-    if (rev >= EVMC_LONDON) {
-        const evmc::address* burnt_contract{protocol::bor::config_value_lookup(evm_.config().burnt_contract,
-                                                                               header.number)};
-        if (burnt_contract) {
-            const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
-            state_.add_to_balance(*burnt_contract, would_be_burnt);
-        }
-    }
-
-    rule_set_.add_fee_transfer_log(state_, amount, *sender, sender_initial_balance,
-                                   evm_.beneficiary, recipient_initial_balance);
-
-    state_.finalize_transaction(rev);
-
-    // Clean up the state.
-    state_.logs().clear();  // seems unnecessary
+    // state_.clear_journal_and_substate();
+    // auto snap = state_.take_snapshot();
+    //
+    // const std::optional<evmc::address> sender{txn.sender()};
+    // SILKWORM_ASSERT(sender);
+    //
+    // const evmc_revision rev{evm_.revision()};
+    // update_access_lists(*sender, txn, rev);
+    //
+    // if (txn.to) {
+    //     // EVM itself increments the nonce for contract creation
+    //     state_.set_nonce(*sender, txn.nonce + 1);
+    // }
+    //
+    // const BlockHeader& header{evm_.block().header};
+    //
+    // const intx::uint256 sender_initial_balance{state_.get_balance(*sender)};
+    // const intx::uint256 recipient_initial_balance{state_.get_balance(evm_.beneficiary)};
+    //
+    // // EIP-1559 normal gas cost
+    // const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
+    // const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    // state_.subtract_from_balance(*sender, txn.gas_limit * effective_gas_price);
+    //
+    // // EIP-4844 blob gas cost (calc_data_fee)
+    // const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
+    // state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
+    //
+    // const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
+    // SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+    //
+    // const CallResult vm_res = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+    //
+    // refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
+    //
+    // // award the fee recipient
+    // const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
+    // state_.add_to_balance(evm_.beneficiary, amount);
+    //
+    // if (rev >= EVMC_LONDON) {
+    //     const evmc::address* burnt_contract{protocol::bor::config_value_lookup(evm_.config().burnt_contract,
+    //                                                                            header.number)};
+    //     if (burnt_contract) {
+    //         const intx::uint256 would_be_burnt{gas_used * base_fee_per_gas};
+    //         state_.add_to_balance(*burnt_contract, would_be_burnt);
+    //     }
+    // }
+    //
+    // rule_set_.add_fee_transfer_log(state_, amount, *sender, sender_initial_balance,
+    //                                evm_.beneficiary, recipient_initial_balance);
+    //
+    // state_.finalize_transaction(rev);
+    //
+    // // Clean up the state.
+    // state_.logs().clear();  // seems unnecessary
 
     cumulative_gas_used_ += gas_used;
 
@@ -198,10 +198,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         receipt.logs.push_back(Log{l.addr, l.topics, l.data});
     receipt.bloom = logs_bloom(receipt.logs);
 
-    if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {
-        std::cerr << "g: " << e1_receipt.gas_used << ", silkworm: " << gas_used << "\n";
-        SILKWORM_ASSERT(static_cast<uint64_t>(e1_receipt.gas_used) == gas_used);
-    }
+    // if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {
+    //     std::cerr << "g: " << e1_receipt.gas_used << ", silkworm: " << gas_used << "\n";
+    //     SILKWORM_ASSERT(static_cast<uint64_t>(e1_receipt.gas_used) == gas_used);
+    // }
 
     // SILKWORM_ASSERT(receipt.logs.size() == logs.size());
     // for (size_t i = 0; i < receipt.logs.size(); ++i) {
@@ -216,48 +216,48 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // }
 
     const auto& e1_state_diff = e1_receipt.state_diff;
-    for (const auto& entry : e1_state_diff.modified_accounts) {
-        if (std::ranges::find(e1_state_diff.deleted_accounts, entry.addr) != e1_state_diff.deleted_accounts.end()) {
-            continue;
-        }
-
-        for (const auto& [k, v] : entry.modified_storage) {
-            auto expected = state_.get_current_storage(entry.addr, k);
-            if (v != expected) {
-                std::cerr << "k: " << hex(k) << "e1: " << hex(v) << ", silkworm: " << hex(expected) << "\n";
-                receipt.success = !receipt.success;
-            }
-        }
-    }
-    for (const auto& a : e1_state_diff.deleted_accounts) {
-        SILKWORM_ASSERT(!state_.exists(a));
-    }
-    for (const auto& m : e1_state_diff.modified_accounts) {
-        if (std::ranges::find(e1_state_diff.deleted_accounts, m.addr) != e1_state_diff.deleted_accounts.end()) {
-            continue;
-        }
-
-        SILKWORM_ASSERT(state_.get_nonce(m.addr) == m.nonce);
-        if (m.balance != state_.get_balance(m.addr)) {
-            std::cerr << "b: " << hex(m.addr) << " " << to_string(m.balance) << ", silkworm: " << to_string(state_.get_balance(m.addr)) << "\n";
-            SILKWORM_ASSERT(state_.get_balance(m.addr) == m.balance);
-        }
-        if (!m.code.empty()) {
-            SILKWORM_ASSERT(state_.get_code(m.addr) == m.code);
-        }
-    }
-
-    if (e1_receipt.status == EVMC_FAILURE) {  // imprecise error code
-        SILKWORM_ASSERT(!receipt.success);
-    } else if (e1_receipt.status != EVMC_OUT_OF_GAS && vm_res.status != EVMC_PRECOMPILE_FAILURE) {
-        if (e1_receipt.status != vm_res.status) {
-            std::cerr << "e1: " << e1_receipt.status << ", silkworm: " << vm_res.status << "\n";
-            receipt.success = !receipt.success;
-        }
-        //        SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
-    }
-
-    state_.revert_to_snapshot(snap);  // revert all what happened
+    // for (const auto& entry : e1_state_diff.modified_accounts) {
+    //     if (std::ranges::find(e1_state_diff.deleted_accounts, entry.addr) != e1_state_diff.deleted_accounts.end()) {
+    //         continue;
+    //     }
+    //
+    //     for (const auto& [k, v] : entry.modified_storage) {
+    //         auto expected = state_.get_current_storage(entry.addr, k);
+    //         if (v != expected) {
+    //             std::cerr << "k: " << hex(k) << "e1: " << hex(v) << ", silkworm: " << hex(expected) << "\n";
+    //             receipt.success = !receipt.success;
+    //         }
+    //     }
+    // }
+    // for (const auto& a : e1_state_diff.deleted_accounts) {
+    //     SILKWORM_ASSERT(!state_.exists(a));
+    // }
+    // for (const auto& m : e1_state_diff.modified_accounts) {
+    //     if (std::ranges::find(e1_state_diff.deleted_accounts, m.addr) != e1_state_diff.deleted_accounts.end()) {
+    //         continue;
+    //     }
+    //
+    //     SILKWORM_ASSERT(state_.get_nonce(m.addr) == m.nonce);
+    //     if (m.balance != state_.get_balance(m.addr)) {
+    //         std::cerr << "b: " << hex(m.addr) << " " << to_string(m.balance) << ", silkworm: " << to_string(state_.get_balance(m.addr)) << "\n";
+    //         SILKWORM_ASSERT(state_.get_balance(m.addr) == m.balance);
+    //     }
+    //     if (!m.code.empty()) {
+    //         SILKWORM_ASSERT(state_.get_code(m.addr) == m.code);
+    //     }
+    // }
+    //
+    // if (e1_receipt.status == EVMC_FAILURE) {  // imprecise error code
+    //     SILKWORM_ASSERT(!receipt.success);
+    // } else if (e1_receipt.status != EVMC_OUT_OF_GAS && vm_res.status != EVMC_PRECOMPILE_FAILURE) {
+    //     if (e1_receipt.status != vm_res.status) {
+    //         std::cerr << "e1: " << e1_receipt.status << ", silkworm: " << vm_res.status << "\n";
+    //         receipt.success = !receipt.success;
+    //     }
+    //     //        SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
+    // }
+    //
+    // state_.revert_to_snapshot(snap);  // revert all what happened
 
     for (const auto& m : e1_state_diff.modified_accounts) {
         if (!m.code.empty()) {

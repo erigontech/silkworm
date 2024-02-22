@@ -107,6 +107,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         SILKWORM_ASSERT(false && "tx invalid");
     }
     auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
+    const auto gas_used = static_cast<uint64_t>(e1_receipt.gas_used);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     // std::swap(receipt.logs, state_.logs());
@@ -155,7 +156,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
 
-    const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left, vm_res.gas_refund)};
+    refund_gas(txn, vm_res.gas_left, vm_res.gas_refund);
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};

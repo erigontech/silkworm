@@ -109,7 +109,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
-    std::swap(receipt.logs, state_.logs());
+    // std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
 
@@ -180,8 +180,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.type = txn.type;
     receipt.success = vm_res.status == EVMC_SUCCESS;
     receipt.cumulative_gas_used = cumulative_gas_used_;
-    receipt.bloom = logs_bloom(state_.logs());
-    std::swap(receipt.logs, state_.logs());
+    receipt.logs = std::move(state_.logs());
+    receipt.bloom = logs_bloom(receipt.logs);
 
     if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {
         std::cerr << "g: " << e1_receipt.gas_used << ", silkworm: " << gas_used << "\n";

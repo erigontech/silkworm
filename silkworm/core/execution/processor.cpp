@@ -106,7 +106,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
         SILKWORM_ASSERT(false && "tx invalid");
     }
-    const auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
+    auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     // std::swap(receipt.logs, state_.logs());
@@ -175,12 +175,18 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.finalize_transaction(rev);
 
+    // Clean up the state.
+    state_.logs().clear();  // seems unnecessary
+
     cumulative_gas_used_ += gas_used;
 
     receipt.type = txn.type;
     receipt.success = e1_receipt.status == EVMC_SUCCESS;
     receipt.cumulative_gas_used = cumulative_gas_used_;
-    receipt.logs = std::move(state_.logs());
+    receipt.logs.clear();  // can be dirty
+    receipt.logs.reserve(e1_receipt.logs.size());
+    for (auto& l : e1_receipt.logs)
+        receipt.logs.push_back(Log{l.addr, l.topics, l.data});
     receipt.bloom = logs_bloom(receipt.logs);
 
     if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {
@@ -188,17 +194,17 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         SILKWORM_ASSERT(static_cast<uint64_t>(e1_receipt.gas_used) == gas_used);
     }
 
-    SILKWORM_ASSERT(receipt.logs.size() == e1_receipt.logs.size());
-    for (size_t i = 0; i < receipt.logs.size(); ++i) {
-        const auto& e1l = e1_receipt.logs[i];
-        const auto& exp = receipt.logs[i];
-        SILKWORM_ASSERT(e1l.addr == exp.address);
-        SILKWORM_ASSERT(e1l.topics.size() == exp.topics.size());
-        for (size_t j = 0; j < exp.topics.size(); ++j) {
-            SILKWORM_ASSERT(e1l.topics[j] == exp.topics[j]);
-        }
-        SILKWORM_ASSERT(e1l.data == exp.data);
-    }
+    // SILKWORM_ASSERT(receipt.logs.size() == logs.size());
+    // for (size_t i = 0; i < receipt.logs.size(); ++i) {
+    //     const auto& e1l = logs[i];
+    //     const auto& exp = receipt.logs[i];
+    //     SILKWORM_ASSERT(e1l.address == exp.address);
+    //     SILKWORM_ASSERT(e1l.topics.size() == exp.topics.size());
+    //     for (size_t j = 0; j < exp.topics.size(); ++j) {
+    //         SILKWORM_ASSERT(e1l.topics[j] == exp.topics[j]);
+    //     }
+    //     SILKWORM_ASSERT(e1l.data == exp.data);
+    // }
 
     const auto& e1_state_diff = e1_receipt.state_diff;
     for (const auto& [a, c] : e1_state_diff.modified_storage) {

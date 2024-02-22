@@ -55,14 +55,14 @@ Task<void> Connection::accept(const boost::beast::http::request<boost::beast::ht
     ws_.auto_fragment(false);
 
     if (compression_) {
-        boost::beast::websocket::permessage_deflate rsp_compression_option;
+        boost::beast::websocket::permessage_deflate permessage_deflate{
+            .server_enable = true,
+            .client_enable = true,
+            .server_no_context_takeover = true,
+            .client_no_context_takeover = true,
+        };
 
-        ws_.get_option(rsp_compression_option);
-        rsp_compression_option.server_enable = true;
-        rsp_compression_option.client_enable = true;
-        rsp_compression_option.server_no_context_takeover = true,
-        rsp_compression_option.client_no_context_takeover = true,
-        ws_.set_option(rsp_compression_option);
+        ws_.set_option(permessage_deflate);
     }
 
     // Accept the websocket handshake

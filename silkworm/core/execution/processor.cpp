@@ -132,6 +132,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
+    auto snap = state_.take_snapshot();
 
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
@@ -255,6 +256,27 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         }
         //        SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
     }
+
+    state_.revert_to_snapshot(snap);  // revert all what happened
+
+    for (const auto& m : e1_state_diff.modified_accounts) {
+        if (!m.code.empty()) {
+            state_.create_contract(m.addr);  // bump incarnation?
+            state_.set_code(m.addr, m.code);
+            SILKWORM_ASSERT(state_.get_code(m.addr) == m.code);
+        }
+        state_.set_nonce(m.addr, m.nonce);
+        state_.set_balance(m.addr, m.balance);
+
+        for (const auto& [k, v] : m.modified_storage) {
+            state_.set_storage(m.addr, k, v);
+        }
+    }
+
+    for (const auto& a : e1_state_diff.deleted_accounts) {
+        state_.destruct(a);
+    }
+    state_.finalize_transaction(evm_.revision());  // commit storage. TODO: any other side effects?
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {

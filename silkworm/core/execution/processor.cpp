@@ -113,6 +113,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
+    auto snap = state_.take_snapshot();
 
     const std::optional<evmc::address> sender{txn.sender()};
     assert(sender);
@@ -251,6 +252,31 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         }
         //        SILKWORM_ASSERT(e1_receipt.status == vm_res.status);
     }
+
+    state_.revert_to_snapshot(snap);  // revert all what happened
+
+    for (const auto& [a, m] : e1_state_diff.modified_accounts) {
+        if (m.code) {
+            state_.create_contract(a);  // bump incarnation?
+            state_.set_code(a, *m.code);
+            SILKWORM_ASSERT(state_.get_code(a) == *m.code);
+        }
+        if (m.nonce) {
+            state_.set_nonce(a, *m.nonce);
+        }
+        if (m.balance) {
+            state_.set_balance(a, *m.balance);
+        }
+    }
+    for (const auto& [a, s] : e1_state_diff.modified_storage) {
+        for (const auto& [k, v] : s) {
+            state_.set_storage(a, k, v);
+        }
+    }
+    for (const auto& a : e1_state_diff.deleted_accounts) {
+        state_.destruct(a);
+    }
+    state_.finalize_transaction(evm_.revision());  // commit storage. TODO: any other side effects?
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {

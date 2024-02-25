@@ -51,7 +51,6 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
                 response = make_json_error(request_json, -32600, valid_result.error()).dump() + "\n";
             } else {
                 return_reply = co_await handle_request_and_create_reply(request_json, response);
-                response += "\n";
             }
         } else {
             std::stringstream batch_reply_content;
@@ -71,7 +70,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
                     batch_reply_content << single_reply;
                 }
             }
-            batch_reply_content << "]\n";
+            batch_reply_content << "]";
             response = batch_reply_content.str();
         }
     } catch (const nlohmann::json::exception& e) {

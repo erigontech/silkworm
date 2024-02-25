@@ -80,7 +80,7 @@ class Connection : public StreamWriter {
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status = boost::beast::http::status::ok);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status);
 
     static std::string get_date_time();
 

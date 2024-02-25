@@ -137,6 +137,19 @@ TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][htt
     CHECK(result);
 }
 
+TEST_CASE("rpc::http::JsonRpcValidator rejects missing params field if required", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator{create_validator_for_test()};
+
+    nlohmann::json request = {
+        {"jsonrpc", "2.0"},
+        {"method", "eth_getBlockReceipts"},
+        {"id", 1},
+    };
+
+    JsonRpcValidationResult result = validator.validate(request);
+    CHECK(!result);
+}
+
 TEST_CASE("rpc::http::JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 

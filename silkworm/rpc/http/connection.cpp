@@ -114,7 +114,7 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
-        co_await do_write(std::string{}, boost::beast::http::status::ok);  // TODO(canepat) is this status::ok correct?
+        co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
         co_return;
     }
 

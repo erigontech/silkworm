@@ -52,6 +52,7 @@ void seg_unzip(const std::filesystem::path& path) {
     decompressor.read_ahead([&](Decompressor::Iterator it) -> bool {
         Bytes word;
         while (it.has_next()) {
+            word.clear();
             it.next(word);
             words.write_word(word);
         }

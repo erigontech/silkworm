@@ -70,6 +70,8 @@ class Connection : public StreamWriter {
     AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
 

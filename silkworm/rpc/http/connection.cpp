@@ -113,6 +113,38 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    if (req.method() == boost::beast::http::verb::options && req["Access-Control-Request-Method"] == "") {
+        co_await handle_preflight(req);
+    } else {
+        co_await handle_actual_request(req);
+    }
+}
+
+    Task<void> Connection::handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::ok, request_http_version_};
+
+    std::string vary = req[boost::beast::http::field::vary];
+    if (vary.empty()) {
+        res.set(boost::beast::http::field::vary, "Origin");
+    } else {
+        vary.append("Origin");
+        res.set(boost::beast::http::field::vary, vary);
+    }
+
+    auto origin = req[boost::beast::http::field::origin];
+    if (!origin.empty()) {
+        if (allowed_origins_.empty()) {
+            res.set(boost::beast::http::field::access_control_allow_origin, "*");
+        } else {
+            res.set(boost::beast::http::field::access_control_allow_origin, origin);
+        }
+    }
+
+    res.prepare_payload();
+    co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
+}
+
+Task<void> Connection::handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
         co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
         co_return;

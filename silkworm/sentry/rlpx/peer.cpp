@@ -217,7 +217,7 @@ Task<void> Peer::handle() {
         log::Error("sentry") << "Peer::handle system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "Peer::handle exception: " << ex.what();
+        log::Trace("sentry") << "Peer::handle exception: " << ex.what();
         throw;
     }
 }

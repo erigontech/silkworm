@@ -84,7 +84,7 @@ Task<void> PeerManager::run_peer(std::shared_ptr<rlpx::Peer> peer) {
             log::Error("sentry") << "PeerManager::run_peer Peer::run system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "PeerManager::run_peer Peer::run exception: " << ex.what();
+        log::Trace("sentry") << "PeerManager::run_peer Peer::run exception: " << ex.what();
     }
 
     handshaking_peers_.remove(peer);

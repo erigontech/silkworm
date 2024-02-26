@@ -233,9 +233,12 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
             SILKWORM_ASSERT(state_.get_nonce(a) == *m.nonce);
         }
         if (m.balance) {
-            if (*m.balance != state_.get_balance(a)) {
-                std::cerr << "b: " << hex(a) << " " << to_string(*m.balance) << ", silkworm: " << to_string(state_.get_balance(a)) << "\n";
-                SILKWORM_ASSERT(state_.get_balance(a) == *m.balance);
+            const auto e1_b = *m.balance;
+            const auto exp_b = state_.get_balance(a);
+            if (e1_b != exp_b) {
+                std::cerr << "b: " << hex(a) << " " << to_string(e1_b) << " vs " << to_string(exp_b) << " diff: " << to_string(e1_b - exp_b) << "\n";
+                std::cerr << "block: " << block.header.number << " tx: " << hex(txn.hash()) << "\n";
+                SILKWORM_ASSERT(e1_b == exp_b);
             }
         }
         if (m.code) {

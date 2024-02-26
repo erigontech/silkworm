@@ -171,6 +171,8 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
     }
 
     if (evm_.revision() >= EVMC_BYZANTIUM) {
+        // Prior to Byzantium (EIP-658), receipts contained the root of the state after each individual transaction.
+        // We don't calculate such intermediate state roots and thus can't verify the receipt root before Byzantium.
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {

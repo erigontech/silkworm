@@ -42,6 +42,7 @@
 #include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
+#include <silkworm/rpc/json_rpc/validator.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
 
 namespace silkworm::rpc::test {
@@ -127,11 +128,18 @@ class TestDatabaseContext {
 
 class RpcApiE2ETest : public TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
   public:
-    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {}
+    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {
+        // Ensure JSON RPC spec has been loaded into the validator
+        if (!jsonrpc_spec_loaded) {
+            json_rpc::JsonRpcValidator::load_specification();
+            jsonrpc_spec_loaded = true;
+        }
+    }
     using RpcApiTestBase<RequestHandler_ForTest>::run;
 
   private:
     static inline test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
+    static inline bool jsonrpc_spec_loaded{false};
 };
 
 }  // namespace silkworm::rpc::test

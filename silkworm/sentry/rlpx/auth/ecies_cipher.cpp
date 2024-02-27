@@ -27,6 +27,8 @@
 #include <silkworm/sentry/rlpx/crypto/hmac.hpp>
 #include <silkworm/sentry/rlpx/crypto/sha256.hpp>
 
+#include "ecies_cipher_error.hpp"
+
 namespace silkworm::sentry::rlpx::auth {
 
 static const std::size_t kKeySize = 16;
@@ -44,7 +46,7 @@ Bytes EciesCipher::compute_shared_secret(PublicKeyView public_key_view, PrivateK
     SecP256K1Context ctx;
     bool ok = ctx.compute_ecdh_secret(shared_secret, &public_key, private_key);
     if (!ok) {
-        throw std::runtime_error("EciesCipher::compute_shared_secret failed to ECDH-agree public and private key");
+        throw EciesCipherError(EciesCipherErrorCode::kSharedSecretFailure, "EciesCipher::compute_shared_secret failed to ECDH-agree public and private key");
     }
 
     return shared_secret;
@@ -83,7 +85,7 @@ Bytes EciesCipher::decrypt_message(
 
     Bytes mac = hmac(sha256(mac_key), message.iv, message.cipher_text, mac_extra_data);
     if (mac != message.mac) {
-        throw std::runtime_error("EciesCipher::decrypt_message: invalid MAC");
+        throw EciesCipherError(EciesCipherErrorCode::kInvalidMAC, "EciesCipher::decrypt_message: invalid MAC");
     }
 
     return aes_decrypt(message.cipher_text, aes_key, message.iv);
@@ -135,7 +137,7 @@ EciesCipher::Message EciesCipher::deserialize_message(ByteView message_data) {
 
     const std::size_t min_size = key_size + iv_size + mac_size;
     if (message_data.size() < min_size) {
-        throw std::runtime_error("EciesCipher::deserialize_message: message data is too short");
+        throw EciesCipherError(EciesCipherErrorCode::kDataSizeTooShort, "EciesCipher::deserialize_message: message data is too short");
     }
     const std::size_t cipher_text_size = message_data.size() - min_size;
 

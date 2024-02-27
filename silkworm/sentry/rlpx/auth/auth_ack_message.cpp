@@ -23,6 +23,7 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
+#include "auth_message_error.hpp"
 #include "ecies_cipher.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
@@ -55,7 +56,7 @@ void AuthAckMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
     auto result = rlp::decode(data, rlp::Leftover::kAllow, public_key_data, nonce_);
     if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
-        throw DecodingException(result.error(), "Failed to decode AuthAckMessage RLP");
+        throw AuthMessageErrorBadRLP(AuthMessageType::kAuthAck, result.error());
     }
     ephemeral_public_key_ = EccPublicKey::deserialize(public_key_data);
 }
@@ -68,7 +69,11 @@ Bytes AuthAckMessage::serialize_size(size_t body_size) {
 
 Bytes AuthAckMessage::decrypt_body(ByteView data, ByteView initiator_private_key) {
     Bytes size = serialize_size(data.size());
-    return EciesCipher::decrypt(data, initiator_private_key, size);
+    try {
+        return EciesCipher::decrypt(data, initiator_private_key, size);
+    } catch (const EciesCipherError& ex) {
+        throw AuthMessageErrorDecryptFailure(AuthMessageType::kAuthAck, Bytes{data}, ex);
+    }
 }
 
 Bytes AuthAckMessage::serialize() const {

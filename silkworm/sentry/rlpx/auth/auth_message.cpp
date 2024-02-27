@@ -26,6 +26,7 @@
 #include <silkworm/sentry/common/crypto/xor.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
+#include "auth_message_error.hpp"
 #include "ecies_cipher.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
@@ -79,7 +80,7 @@ void AuthMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
     auto result = rlp::decode(data, rlp::Leftover::kAllow, signature_, public_key_data, nonce_);
     if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
-        throw DecodingException(result.error(), "Failed to decode AuthMessage RLP");
+        throw AuthMessageErrorBadRLP(AuthMessageType::kAuth, result.error());
     }
     initiator_public_key_ = EccPublicKey::deserialize(public_key_data);
 }
@@ -92,7 +93,11 @@ Bytes AuthMessage::serialize_size(size_t body_size) {
 
 Bytes AuthMessage::decrypt_body(ByteView data, ByteView recipient_private_key) {
     Bytes size = serialize_size(data.size());
-    return EciesCipher::decrypt(data, recipient_private_key, size);
+    try {
+        return EciesCipher::decrypt(data, recipient_private_key, size);
+    } catch (const EciesCipherError& ex) {
+        throw AuthMessageErrorDecryptFailure(AuthMessageType::kAuth, Bytes{data}, ex);
+    }
 }
 
 Bytes AuthMessage::serialize() const {

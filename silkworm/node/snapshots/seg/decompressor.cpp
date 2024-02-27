@@ -564,12 +564,12 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     }
 
     // Track position into buffer where to insert part of the word
-    std::size_t buffer_position = buffer.size();
-    std::size_t last_uncovered = buffer.size();
-    buffer.resize(buffer.length() + word_length);
-    SILK_TRACE << "Iterator::next buffer resized to: " << buffer.length();
+    std::size_t buffer_offset = buffer.size();
+    buffer.resize(buffer_offset + word_length);
+    SILK_TRACE << "Iterator::next buffer resized to: " << buffer.size();
 
     // Fill in the patterns
+    std::size_t buffer_position = buffer_offset;
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
@@ -591,7 +591,8 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     (void)next_position(true);
 
     // Restore the beginning of buffer
-    buffer_position = last_uncovered;
+    buffer_position = buffer_offset;
+    std::size_t last_uncovered = buffer_offset;
 
     // Fill in data which is not the patterns
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
@@ -607,8 +608,8 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
         }
         last_uncovered = buffer_position + next_pattern().size();
     }
-    if (word_length > last_uncovered) {
-        std::size_t position_diff = word_length - last_uncovered;
+    if (buffer_offset + word_length > last_uncovered) {
+        std::size_t position_diff = buffer_offset + word_length - last_uncovered;
         SILK_TRACE << "Iterator::next other-data last_uncovered=" << last_uncovered
                    << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                    << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
@@ -642,8 +643,7 @@ uint64_t Decompressor::Iterator::next_uncompressed(Bytes& buffer) {
     }
     uint64_t word_position = word_offset_;
     word_offset_ += word_length;
-    buffer.resize(word_length);
-    data().copy(buffer.data(), word_length, word_position);
+    buffer.append(data().substr(word_position, word_length));
     return word_offset_;
 }
 

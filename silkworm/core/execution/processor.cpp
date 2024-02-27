@@ -26,6 +26,8 @@
 
 namespace silkworm {
 namespace {
+    thread_local evmone::MegaContext e1_ctx;
+
     class StateView : public evmone::state::StateView {
         IntraBlockState& state_;
 
@@ -101,7 +103,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     StateView sv{state_};
 
     static const auto MAX_GAS = std::numeric_limits<int64_t>::max();
-    const auto e1_res = evmone::state::transition(sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
+    const auto e1_res = evmone::state::transition(e1_ctx, sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
     if (holds_alternative<std::error_code>(e1_res)) {
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
         SILKWORM_ASSERT(false && "tx invalid");

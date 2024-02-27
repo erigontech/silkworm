@@ -54,6 +54,27 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IRuleSet& r
                                        const ChainConfig& config)
     : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
+
+    e1_block_ = {
+        .number = static_cast<int64_t>(block.header.number),
+        .timestamp = static_cast<int64_t>(block.header.timestamp),
+        .gas_limit = static_cast<int64_t>(block.header.gas_limit),
+        .coinbase = block.header.beneficiary,
+        .difficulty = static_cast<int64_t>(block.header.difficulty),
+        .prev_randao = block.header.difficulty == 0 ? block.header.prev_randao : intx::be::store<evmone::state::bytes32>(intx::uint256{block.header.difficulty}),
+        .base_fee = static_cast<uint64_t>(block.header.base_fee_per_gas.value_or(0)),
+        .excess_blob_gas = block.header.excess_blob_gas.value_or(0),
+        .blob_base_fee = block.header.blob_gas_price().value_or(0),
+    };
+    // for (const auto& obh : block.ommers)
+    //     e1_block_.ommers.emplace_back(obh.beneficiary, block.header.number - obh.number);
+    // if (block.withdrawals) {
+    //     for (const auto& w : *block.withdrawals)
+    //         e1_block_.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
+    // }
+    const auto min_block_number = std::max(e1_block_.number - 257, int64_t{0});
+    for (auto n = min_block_number; n < e1_block_.number; ++n)
+        e1_block_.known_block_hashes.insert({n, evm_.get_block_hash(n)});
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
@@ -78,32 +99,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     for (const auto& h : txn.blob_versioned_hashes)
         e1_tx.blob_hashes.emplace_back(static_cast<const evmc::bytes32&>(h));
 
-    const auto& block = evm_.block();
-    evmone::state::BlockInfo e1_bi{
-        .number = static_cast<int64_t>(block.header.number),
-        .timestamp = static_cast<int64_t>(block.header.timestamp),
-        .gas_limit = static_cast<int64_t>(block.header.gas_limit),
-        .coinbase = block.header.beneficiary,
-        .difficulty = static_cast<int64_t>(block.header.difficulty),
-        .prev_randao = block.header.difficulty == 0 ? block.header.prev_randao : intx::be::store<evmone::state::bytes32>(intx::uint256{block.header.difficulty}),
-        .base_fee = static_cast<uint64_t>(block.header.base_fee_per_gas.value_or(0)),
-        .excess_blob_gas = block.header.excess_blob_gas.value_or(0),
-        .blob_base_fee = block.header.blob_gas_price().value_or(0),
-    };
-    for (const auto& obh : block.ommers)
-        e1_bi.ommers.emplace_back(obh.beneficiary, block.header.number - obh.number);
-    if (block.withdrawals) {
-        for (const auto& w : *block.withdrawals)
-            e1_bi.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
-    }
-    const auto min_block_number = std::max(e1_bi.number - 257, int64_t{0});
-    for (auto n = min_block_number; n < e1_bi.number; ++n)
-        e1_bi.known_block_hashes.insert({n, evm_.get_block_hash(n)});
-
     StateView sv{state_};
 
     static const auto MAX_GAS = std::numeric_limits<int64_t>::max();
-    const auto e1_res = evmone::state::transition(e1_ctx, sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
+    const auto e1_res = evmone::state::transition(e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
     if (holds_alternative<std::error_code>(e1_res)) {
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
         SILKWORM_ASSERT(false && "tx invalid");

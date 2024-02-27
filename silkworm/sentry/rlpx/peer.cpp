@@ -23,6 +23,7 @@
 #include <boost/system/system_error.hpp>
 #include <gsl/util>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
@@ -30,6 +31,7 @@
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
+#include "auth/auth_message_error.hpp"
 #include "auth/handshake.hpp"
 #include "common/disconnect_message.hpp"
 #include "ping_message.hpp"
@@ -185,6 +187,14 @@ Task<void> Peer::handle() {
     } catch (const auth::Handshake::DisconnectError& ex) {
         log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
+    } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
+        log::Debug("sentry") << "Peer::handle AuthMessageErrorDecryptFailure"
+                             << " remote_endpoint: " << remote_endpoint() << ";"
+                             << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
+                             << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
+                             << " auth_message: " << to_hex(ex.message_data()) << ";"
+                             << " description: " << ex.what() << ";";
+        disconnect_reason_.set({DisconnectReason::ProtocolError});
     } catch (const framing::MessageStream::DecompressionError& ex) {
         log::Debug("sentry") << "Peer::handle DecompressionError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::ProtocolError});
@@ -233,6 +243,20 @@ Task<void> Peer::drop(DisconnectReason reason) {
     } catch (const auth::Handshake::DisconnectError& ex) {
         log::Debug("sentry") << "Peer::drop DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
+    } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
+        log::Debug("sentry") << "Peer::drop AuthMessageErrorDecryptFailure"
+                             << " remote_endpoint: " << remote_endpoint() << ";"
+                             << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
+                             << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
+                             << " auth_message: " << to_hex(ex.message_data()) << ";"
+                             << " description: " << ex.what() << ";";
+        disconnect_reason_.set({DisconnectReason::ProtocolError});
+    } catch (const framing::MessageStream::DecompressionError& ex) {
+        log::Debug("sentry") << "Peer::drop DecompressionError: " << ex.what();
+        disconnect_reason_.set({DisconnectReason::ProtocolError});
+    } catch (const auth::Handshake::CapabilityMismatchError& ex) {
+        log::Debug("sentry") << "Peer::drop CapabilityMismatchError: " << ex.what();
+        disconnect_reason_.set({DisconnectReason::UselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {

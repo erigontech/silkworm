@@ -358,7 +358,7 @@ CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
     if (result.done && result.key != key) {
         return CursorResult{{}, {}, false};
     }
-    if (!cursor_->is_multi_value() and current_memory_entry_.key == key and current_db_entry_.key == key) {
+    if (!cursor_->is_multi_value() && current_memory_entry_.key == key && current_db_entry_.key == key) {
         // Choose memory value if both memory and db entries match the specified key
         return current_memory_entry_;
     }
@@ -387,7 +387,7 @@ CursorResult MemoryMutationCursor::lower_bound(const Slice& key, bool throw_notf
 }
 
 MoveResult MemoryMutationCursor::move(MoveOperation operation, bool throw_notfound) {
-    if (operation != MoveOperation::next and operation != MoveOperation::previous) {
+    if (operation != MoveOperation::next && operation != MoveOperation::previous) {
         throw std::runtime_error{"MemoryMutationCursor::move not implemented for operation=" + std::to_string(operation)};
     }
 

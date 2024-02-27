@@ -135,7 +135,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         Daemon rpc_daemon{settings, chaindata_env};
 
         // Check protocol version compatibility with Core Services
-        if (not settings.skip_protocol_check) {
+        if (!settings.skip_protocol_check) {
             SILK_INFO << "Checking protocol version compatibility with core services...";
 
             const auto checklist = rpc_daemon.run_checklist();

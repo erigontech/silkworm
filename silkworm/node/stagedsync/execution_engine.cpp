@@ -173,7 +173,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         if (!updated) return false;
 
         last_fork_choice_ = main_chain_.last_chosen_head();
-        if (head_block_hash == main_chain_.current_head().hash and node_settings_.parallel_fork_tracking_enabled) {
+        if (head_block_hash == main_chain_.current_head().hash && node_settings_.parallel_fork_tracking_enabled) {
             log::Info("ExecutionEngine") << "activate parallel fork tracking at head " << head_block_hash.to_hex();
             fork_tracking_active_ = true;
         }

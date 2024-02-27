@@ -81,7 +81,7 @@ std::string load_jwt_token(const std::filesystem::path& file_path) {
 
     // Check input file has expected size
     const auto file_size = std::filesystem::file_size(file_path);
-    if (file_size != kPrefixedTokenSize and file_size != kTokenSize) {
+    if (file_size != kPrefixedTokenSize && file_size != kTokenSize) {
         const auto error_msg{"Unexpected JWT file size: " + std::to_string(file_size)};
         SILK_ERROR << error_msg;
         throw std::runtime_error{error_msg};
@@ -95,7 +95,7 @@ std::string load_jwt_token(const std::filesystem::path& file_path) {
     read_file >> jwt_token;
 
     // Get rid of prefix if any
-    if (jwt_token.starts_with("0x") or jwt_token.starts_with("0X")) {
+    if (jwt_token.starts_with("0x") || jwt_token.starts_with("0X")) {
         jwt_token = jwt_token.substr(2);
     }
 

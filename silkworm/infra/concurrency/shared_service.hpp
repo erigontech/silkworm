@@ -43,7 +43,7 @@ class SharedService : public BaseService<SharedService<T>> {
 
 template <typename T>
 void add_shared_service(boost::asio::execution_context& context, std::shared_ptr<T> shared) {
-    if (not has_service<SharedService<T>>(context)) {
+    if (!has_service<SharedService<T>>(context)) {
         make_service<SharedService<T>>(context);
     }
     use_service<SharedService<T>>(context).set_shared(std::move(shared));
@@ -51,7 +51,7 @@ void add_shared_service(boost::asio::execution_context& context, std::shared_ptr
 
 template <typename T>
 T* use_shared_service(boost::asio::execution_context& context) {
-    if (not has_service<SharedService<T>>(context)) {
+    if (!has_service<SharedService<T>>(context)) {
         return nullptr;
     }
     return use_service<SharedService<T>>(context).ptr();
@@ -59,7 +59,7 @@ T* use_shared_service(boost::asio::execution_context& context) {
 
 template <typename T>
 T* must_use_shared_service(boost::asio::execution_context& context) {
-    if (not has_service<SharedService<T>>(context)) {
+    if (!has_service<SharedService<T>>(context)) {
         throw std::logic_error{"unregistered shared service: " + std::string{typeid(T).name()}};
     }
     return use_service<SharedService<T>>(context).ptr();

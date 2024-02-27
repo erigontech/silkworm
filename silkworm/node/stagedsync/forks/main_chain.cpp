@@ -243,13 +243,13 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
 }
 
 bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    if (finalized_block_hash and not canonical_chain_.has(*finalized_block_hash)) {
+    if (finalized_block_hash && !canonical_chain_.has(*finalized_block_hash)) {
         return false;  // finalized block not found
     }
 
     const auto head_block_number{get_block_number(head_block_hash)};
     ensure_invariant(head_block_number.has_value(), "unknown block number for head block hash");
-    if (is_canonical_head_ancestor(head_block_hash) and head_block_number <= last_fork_choice_.number) {
+    if (is_canonical_head_ancestor(head_block_hash) && head_block_number <= last_fork_choice_.number) {
         // FCU selects an old canonical block already targeted by a previous FCU
         return true;
     }
@@ -259,7 +259,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     // 2) (PoW) previous verify_chain returned InvalidChain so CL is issuing a FCU with a previous valid head
 
     // When FCU selects a non-canonical block or our last canonical is not valid, we need to verify the resulting chain
-    if (not canonical_chain_.has(head_block_hash) or not std::holds_alternative<ValidChain>(canonical_head_status_)) {
+    if (!canonical_chain_.has(head_block_hash) || !std::holds_alternative<ValidChain>(canonical_head_status_)) {
         verify_chain(head_block_hash);  // this will reset canonical chain to head_block_hash
         ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
                          "canonical head not aligned with fork choice");
@@ -444,7 +444,7 @@ bool MainChain::is_canonical(BlockNum block_height, const Hash& block_hash) cons
 }
 
 bool MainChain::is_canonical_head_ancestor(const Hash& block_hash) const {
-    return canonical_chain_.has(block_hash) and canonical_chain_.current_head().hash != block_hash;
+    return canonical_chain_.has(block_hash) && canonical_chain_.current_head().hash != block_hash;
 }
 
 void MainChain::forward(BlockNum head_height, const Hash& head_hash) {

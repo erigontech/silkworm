@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
         Settings settings{parse_cli_settings(argc, argv)};
         log::init(settings.log_settings);
 
-        ensure(not settings.block_to or *settings.block_to >= settings.block_from, "Invalid input: block_from is greater than block_to");
+        ensure(!settings.block_to || *settings.block_to >= settings.block_from, "Invalid input: block_from is greater than block_to");
 
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
         log::Info() << "Build info: " << node_name;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
         ensure(logs_data.done, "Nonexistent block range: block_from not found");
         while (logs_data.done) {
             const auto [block_number, tx_id] = db::split_log_key(logs_data.key);
-            if (settings.block_to and block_number > *settings.block_to) {
+            if (settings.block_to && block_number > *settings.block_to) {
                 log::Info() << "Target block " << *settings.block_to << " reached";
                 break;
             }

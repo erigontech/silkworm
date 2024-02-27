@@ -528,7 +528,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
             const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
             const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
             CHECK(it.has_prefix(expected_word.substr(0, expected_word.size() / 2)));
-            if (not expected_word.empty()) {
+            if (!expected_word.empty()) {
                 Bytes modified_word{expected_word};
                 modified_word[expected_word.size() - 1]++;
                 CHECK(!it.has_prefix(modified_word));

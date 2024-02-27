@@ -29,7 +29,7 @@ namespace silkworm::cmd::common {
 struct OptionalExistingDirectory : public CLI::detail::ExistingDirectoryValidator {
     explicit OptionalExistingDirectory() {
         func_ = [](const std::optional<std::filesystem::path>& value) -> std::string {
-            if (not value) return {};
+            if (!value) return {};
 
             const auto path_result = CLI::detail::check_path(value->string().c_str());
             if (path_result == CLI::detail::path_type::nonexistent) {

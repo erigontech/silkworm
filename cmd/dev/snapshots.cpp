@@ -217,7 +217,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
         const bool success = snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
             // If *system transactions* should not be counted, skip first and last tx in block body
             const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
-            const auto txn_count{settings.skip_system_txs and b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
+            const auto txn_count{settings.skip_system_txs && b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
             SILK_DEBUG << "Body number: " << number << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
                        << " #ommers: " << b->ommers.size();
             num_bodies++;
@@ -382,7 +382,7 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     });
     if (matching_snapshot) {
         SILK_INFO << "Lookup header hash: " << hash->to_hex() << " found in: " << matching_snapshot->path().filename();
-        if (matching_header and settings.print) {
+        if (matching_header && settings.print) {
             print_header(*matching_header, matching_snapshot->path().filename());
         }
     } else {
@@ -418,7 +418,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
 }
 
 void lookup_header(const SnapSettings& settings) {
-    ensure(settings.lookup_hash or settings.lookup_number, "lookup_header: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_number, "lookup_header: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_header_by_hash(settings);
     } else {
@@ -655,7 +655,7 @@ void lookup_txn_by_id(const SnapSettings& settings, uint64_t txn_id) {
 }
 
 void lookup_transaction(const SnapSettings& settings) {
-    ensure(settings.lookup_hash or settings.lookup_number, "lookup_transaction: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_number, "lookup_transaction: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_txn_by_hash(settings, *settings.lookup_hash);
     } else {

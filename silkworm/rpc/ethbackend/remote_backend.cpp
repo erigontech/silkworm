@@ -234,7 +234,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& has
     }
     if (read_senders) {
         ByteView senders{byte_view_of_string(reply.senders())};
-        if (senders.size() % kAddressLength == 0 and senders.size() / kAddressLength == block.transactions.size()) {
+        if (senders.size() % kAddressLength == 0 && senders.size() / kAddressLength == block.transactions.size()) {
             std::vector<evmc::address> sender_addresses;
             sender_addresses.reserve(block.transactions.size());
             for (size_t i{0}; i < block.transactions.size(); ++i) {

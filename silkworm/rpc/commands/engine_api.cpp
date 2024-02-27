@@ -263,14 +263,14 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
         // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
-        if (payload.timestamp < config->shanghai_time and payload.version != ExecutionPayload::V1) {
+        if (payload.timestamp < config->shanghai_time && payload.version != ExecutionPayload::V1) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV1 if timestamp lower than Shanghai";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kInvalidParams, error_msg);
             co_await tx->close();
             co_return;
         }
-        if (payload.timestamp >= config->shanghai_time and payload.version != ExecutionPayload::V2) {
+        if (payload.timestamp >= config->shanghai_time && payload.version != ExecutionPayload::V2) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV2 if timestamp greater or equal to Shanghai";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kInvalidParams, error_msg);
@@ -384,13 +384,13 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
             ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
             // We MUST check that CL has sent the expected PayloadAttributes version [Specification for params]
-            if (attributes.timestamp < config->shanghai_time and attributes.version != PayloadAttributes::V1) {
+            if (attributes.timestamp < config->shanghai_time && attributes.version != PayloadAttributes::V1) {
                 const auto error_msg = "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai";
                 SILK_ERROR << error_msg;
                 reply = make_json_error(request, kInvalidParams, error_msg);
                 co_return;
             }
-            if (attributes.timestamp >= config->shanghai_time and attributes.version != PayloadAttributes::V2) {
+            if (attributes.timestamp >= config->shanghai_time && attributes.version != PayloadAttributes::V2) {
                 const auto error_msg = "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai";
                 SILK_ERROR << error_msg;
                 reply = make_json_error(request, kInvalidParams, error_msg);

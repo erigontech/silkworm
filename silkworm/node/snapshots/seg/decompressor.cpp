@@ -479,7 +479,7 @@ ByteView Decompressor::Iterator::data() const {
     }
     const auto word_length = --next_data_position;  // because when we create HT we do ++ (0 is terminator)
     SILK_TRACE << "Iterator::has_prefix start_offset=" << start_offset << " word_length=" << word_length;
-    if (word_length == 0 or word_length < prefix_size) {
+    if (word_length == 0 || word_length < prefix_size) {
         if (bit_position_ > 0) {
             ++word_offset_;
             bit_position_ = 0;
@@ -515,7 +515,7 @@ ByteView Decompressor::Iterator::data() const {
     // Second pass: we check spaces not covered by the patterns
     std::size_t last_uncovered{0};
     buffer_position = 0;
-    for (auto pos{next_position(false)}; pos != 0 and last_uncovered < prefix_size; pos = next_position(false)) {
+    for (auto pos{next_position(false)}; pos != 0 && last_uncovered < prefix_size; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
         if (buffer_position > last_uncovered) {
@@ -531,7 +531,7 @@ ByteView Decompressor::Iterator::data() const {
         }
         last_uncovered = buffer_position + next_pattern().size();
     }
-    if (prefix_size > last_uncovered and word_length > last_uncovered) {
+    if (prefix_size > last_uncovered && word_length > last_uncovered) {
         const std::size_t position_diff = word_length - last_uncovered;
         SILK_TRACE << "Iterator::has_prefix other-data last_uncovered=" << last_uncovered
                    << " buffer_position=" << buffer_position << " position_diff=" << position_diff

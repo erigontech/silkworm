@@ -43,7 +43,7 @@ class PrivateService : public BaseService<PrivateService<T>> {
 
 template <typename T>
 void add_private_service(boost::asio::execution_context& context, std::unique_ptr<T>&& unique) {
-    if (not has_service<PrivateService<T>>(context)) {
+    if (!has_service<PrivateService<T>>(context)) {
         make_service<PrivateService<T>>(context);
     }
     use_service<PrivateService<T>>(context).set_unique(std::move(unique));
@@ -51,7 +51,7 @@ void add_private_service(boost::asio::execution_context& context, std::unique_pt
 
 template <typename T>
 T* use_private_service(boost::asio::execution_context& context) {
-    if (not has_service<PrivateService<T>>(context)) {
+    if (!has_service<PrivateService<T>>(context)) {
         return nullptr;
     }
     return use_service<PrivateService<T>>(context).ptr();
@@ -59,7 +59,7 @@ T* use_private_service(boost::asio::execution_context& context) {
 
 template <typename T>
 T* must_use_private_service(boost::asio::execution_context& context) {
-    if (not has_service<PrivateService<T>>(context)) {
+    if (!has_service<PrivateService<T>>(context)) {
         throw std::logic_error{"unregistered private service: " + std::string{typeid(T).name()}};
     }
     return use_service<PrivateService<T>>(context).ptr();

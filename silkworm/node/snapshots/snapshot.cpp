@@ -90,7 +90,7 @@ std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView 
     if (!data_iterator.has_next()) {
         return item;
     }
-    if (not prefix.empty() and not data_iterator.has_prefix(prefix)) {
+    if (!prefix.empty() && !data_iterator.has_prefix(prefix)) {
         return item;
     }
 
@@ -164,14 +164,14 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
     // Finally, read the next header at specified offset
     auto header = next_header(block_header_offset, block_hash);
     // We *must* ensure that the retrieved header hash matches because there is no way to know if key exists in MPHF
-    if (header and header->hash() != block_hash) {
+    if (header && header->hash() != block_hash) {
         header.reset();
     }
     return header;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
-    if (!idx_header_hash_ or block_height < path_.block_from() or block_height >= path_.block_to()) {
+    if (!idx_header_hash_ || block_height < path_.block_from() || block_height >= path_.block_to()) {
         return {};
     }
 
@@ -277,7 +277,7 @@ std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
 }
 
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
-    if (!idx_body_number_ or block_height < idx_body_number_->base_data_id()) {
+    if (!idx_body_number_ || block_height < idx_body_number_->base_data_id()) {
         return {};
     }
 
@@ -360,7 +360,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash
     // Finally, read the next transaction at specified offset
     auto txn = next_txn(txn_offset, txn_hash);
     // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
-    if (txn and txn->hash() != txn_hash) {
+    if (txn && txn->hash() != txn_hash) {
         return {};
     }
     return txn;
@@ -472,7 +472,7 @@ DecodingResult TransactionSnapshot::decode_txn(const WordItem& item, Transaction
 }
 
 void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const {
-    if (!idx_txn_hash_ or txn_count == 0) {
+    if (!idx_txn_hash_ || txn_count == 0) {
         return;
     }
 

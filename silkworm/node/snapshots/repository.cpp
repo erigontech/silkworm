@@ -31,7 +31,7 @@ namespace fs = std::filesystem;
 
 template <ConcreteSnapshot T>
 const T* get_segment(const SnapshotsByPath<T>& segments, const SnapshotPath& path) {
-    if (not segments.contains(path.path())) {
+    if (!segments.contains(path.path())) {
         return nullptr;
     }
     return segments.find(path.path())->second.get();
@@ -358,17 +358,17 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
 BlockNum SnapshotRepository::max_idx_available() const {
     BlockNum max_block_headers{0};
     for (auto& [_, header_seg] : header_segments_) {
-        if (not header_seg->idx_header_hash()) break;
+        if (!header_seg->idx_header_hash()) break;
         max_block_headers = header_seg->block_to() - 1;
     }
     BlockNum max_block_bodies{0};
     for (auto& [_, body_seg] : body_segments_) {
-        if (not body_seg->idx_body_number()) break;
+        if (!body_seg->idx_body_number()) break;
         max_block_bodies = body_seg->block_to() - 1;
     }
     BlockNum max_block_txs{0};
     for (auto& [_, tx_seg] : tx_segments_) {
-        if (not tx_seg->idx_txn_hash() or not tx_seg->idx_txn_hash_2_block()) break;
+        if (!tx_seg->idx_txn_hash() || !tx_seg->idx_txn_hash_2_block()) break;
         max_block_txs = tx_seg->block_to() - 1;
     }
 

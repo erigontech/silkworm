@@ -565,7 +565,7 @@ bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
         }
         // TODO(canepat) IMHO we should remove the following check entirely, alternatively check must be based on TD
         // Quick-and-dirty validity check based on header difficulty and hard-coded Ethereum PoS merge block
-        if (header.difficulty == 0 and header.number < 15'537'393) {
+        if (header.difficulty == 0 && header.number < 15'537'393) {
             log::Warning("HeaderStage") << "received header w/ zero difficulty, block num=" << header.number;
             return true;
         }

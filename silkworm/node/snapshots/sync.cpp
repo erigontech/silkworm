@@ -95,7 +95,7 @@ void SnapshotSync::reopen() {
 
 bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
     const auto missing_block_ranges = repository_->missing_block_ranges();
-    if (not missing_block_ranges.empty()) {
+    if (!missing_block_ranges.empty()) {
         SILK_WARN << "SnapshotSync: downloading missing snapshots";
     }
 
@@ -170,7 +170,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     });
 
     // Wait for download completion of all snapshots or stop request
-    while (not download_done.try_wait() and not is_stopping()) {
+    while (!download_done.try_wait() && !is_stopping()) {
         std::this_thread::sleep_for(kCheckCompletionInterval);
     }
 
@@ -226,7 +226,7 @@ void SnapshotSync::build_missing_indexes() {
     }
 
     // Wait for all missing indexes to be built or stop request
-    while (workers.get_tasks_total() and not is_stopping()) {
+    while (workers.get_tasks_total() && !is_stopping()) {
         std::this_thread::sleep_for(kCheckCompletionInterval);
     }
     // Wait for any already-started-but-unfinished work in case of stop request

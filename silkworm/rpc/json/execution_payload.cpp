@@ -97,7 +97,7 @@ void to_json(nlohmann::json& json, const ExecutionPayloadAndValue& reply) {
 }
 
 void to_json(nlohmann::json& json, const ExecutionPayloadBody& body) {
-    if (not body.transactions) {
+    if (!body.transactions) {
         json = nlohmann::json::value_t::null;
         return;
     }

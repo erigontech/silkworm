@@ -48,7 +48,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["v"] = rpc::to_quantity(uint64_t(transaction.odd_y_parity));
         json["accessList"] = transaction.access_list;  // EIP2930
         // Erigon currently at 2.48.1 does not yet support yParity field
-        if (not rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+        if (!rpc::compatibility::is_erigon_json_api_compatibility_required()) {
             json["yParity"] = rpc::to_quantity(transaction.odd_y_parity);
         }
     } else if (transaction.chain_id) {
@@ -102,7 +102,7 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
         json_tx.access_list = std::make_optional(std::move(glaze_access_list));
 
         //  Erigon currently at 2.48.1 does not yet support yParity field
-        if (not rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+        if (!rpc::compatibility::is_erigon_json_api_compatibility_required()) {
             json_tx.yparity = std::make_optional(rpc::to_quantity(tx.odd_y_parity));
         }
     } else if (tx.chain_id) {

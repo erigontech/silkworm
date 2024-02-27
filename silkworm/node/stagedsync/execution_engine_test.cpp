@@ -357,8 +357,8 @@ TEST_CASE("ExecutionEngine") {
 
             CHECK(exec_engine.get_canonical_hash(2) == block2b_hash);
             CHECK(exec_engine.get_canonical_header(2).has_value());
-            CHECK(not exec_engine.get_canonical_header(3).has_value());
-            CHECK(not exec_engine.get_canonical_header(4).has_value());
+            CHECK_FALSE(exec_engine.get_canonical_header(3).has_value());
+            CHECK_FALSE(exec_engine.get_canonical_header(4).has_value());
 
             std::tie(head_height, head_hash) = db::read_canonical_head(tx);
             CHECK(head_height == 2);

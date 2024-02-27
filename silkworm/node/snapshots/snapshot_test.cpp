@@ -236,7 +236,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 
     // transaction hash not present in snapshot (first txn hash in block 1'500'014)
     block_number = tx_snapshot.block_num_by_txn_hash(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
-    CHECK(not block_number.has_value());
+    CHECK_FALSE(block_number.has_value());
 }
 
 // https://etherscan.io/block/1500012
@@ -429,7 +429,7 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
     // Verify that reopening the index removes the index file because it was created in the past
     CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));
     header_snapshot.reopen_index();
-    CHECK(not std::filesystem::exists(header_snapshot.path().index_file().path()));
+    CHECK_FALSE(std::filesystem::exists(header_snapshot.path().index_file().path()));
 }
 
 TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
@@ -451,7 +451,7 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
     // Verify that reopening the index removes the index file if created in the past
     CHECK(std::filesystem::exists(body_snapshot.path().index_file().path()));
     body_snapshot.reopen_index();
-    CHECK(not std::filesystem::exists(body_snapshot.path().index_file().path()));
+    CHECK_FALSE(std::filesystem::exists(body_snapshot.path().index_file().path()));
 }
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
@@ -473,7 +473,7 @@ TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][sn
     // Verify that reopening the index removes the index file if created in the past
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));
     tx_snapshot.reopen_index();
-    CHECK(not std::filesystem::exists(tx_snapshot.path().index_file().path()));
+    CHECK_FALSE(std::filesystem::exists(tx_snapshot.path().index_file().path()));
 }
 
 }  // namespace silkworm::snapshots

@@ -188,8 +188,9 @@ Task<void> Peer::handle() {
         log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
     } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
-        log::Debug("sentry") << "Peer::handle AuthMessageErrorDecryptFailure"
+        log::Trace("sentry") << "Peer::handle AuthMessageErrorDecryptFailure"
                              << " remote_endpoint: " << remote_endpoint() << ";"
+                             << " local_endpoint: " << local_endpoint() << ";"
                              << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
                              << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
                              << " auth_message: " << to_hex(ex.message_data()) << ";"
@@ -244,8 +245,9 @@ Task<void> Peer::drop(DisconnectReason reason) {
         log::Debug("sentry") << "Peer::drop DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
     } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
-        log::Debug("sentry") << "Peer::drop AuthMessageErrorDecryptFailure"
+        log::Trace("sentry") << "Peer::drop AuthMessageErrorDecryptFailure"
                              << " remote_endpoint: " << remote_endpoint() << ";"
+                             << " local_endpoint: " << local_endpoint() << ";"
                              << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
                              << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
                              << " auth_message: " << to_hex(ex.message_data()) << ";"

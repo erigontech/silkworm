@@ -42,7 +42,7 @@ constexpr std::size_t kDictionaryLengthSize{sizeof(uint64_t)};
 constexpr std::size_t kMinimumFileSize = 32;
 
 //! Maximum allowed depth in compressed file
-constexpr std::size_t kMaxAllowedDepth = 2048;
+constexpr std::size_t kMaxAllowedDepth = 50;
 
 DecodingTable::DecodingTable(std::size_t max_depth) : max_depth_(max_depth) {
     bit_length_ = max_depth_ > kMaxTableBitLength ? kMaxTableBitLength : max_depth_;

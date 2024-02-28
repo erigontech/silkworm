@@ -182,9 +182,10 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     try {
         Stage::Result result = Stage::Result::kSuccess;
 
-        // We'll check if we're forced to start/stop at any particular stage for debugging purposes
+        // We'll check if we're forced to start/stop at any particular stage/height for debugging purposes
         auto start_stage_name{Environment::get_start_at_stage()};
         const auto stop_stage_name{Environment::get_stop_before_stage()};
+        const auto stop_at_block = Environment::get_stop_at_block();
 
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -229,7 +230,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             } /* clang-format on */
 
             auto stage_head_number = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
-            if (stage_head_number != target_height) {
+            if (!stop_at_block && stage_head_number != target_height) {
                 throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
                                        to_string(target_height) + " reached= " + to_string(stage_head_number));
             }
@@ -251,7 +252,6 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
         log::Info("ExecPipeline") << "Forward done ---------------------------";
 
-        const auto stop_at_block = Environment::get_stop_at_block();  // User can specify to stop at some block
         if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
 
         return result;

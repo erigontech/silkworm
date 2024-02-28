@@ -23,6 +23,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/etl_mdbx_collector.hpp>
@@ -291,10 +292,12 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     db::write_head_header_hash(txn, *canonical_hash);
     SILK_INFO << "SnapshotSync: database table HeadHeader updated";
 
-    // Update Headers stage progress to the max block in snapshots
-    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, max_block_available);
+    // Update Headers stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
+    const auto stop_at_block = Environment::get_stop_at_block();
+    const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
+    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, stage_progress);
 
-    SILK_INFO << "SnapshotSync: database Headers stage progress updated";
+    SILK_INFO << "SnapshotSync: database Headers stage progress updated [" << stage_progress << "]";
 }
 
 void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_available) {
@@ -311,10 +314,12 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
     SILK_INFO << "SnapshotSync: database table BlockTransactions sequence reset";
 
-    // Update BlockBodies stage progress to the max block in snapshots
-    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, max_block_available);
+    // Update BlockBodies stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
+    const auto stop_at_block = Environment::get_stop_at_block();
+    const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, stage_progress);
 
-    SILK_INFO << "SnapshotSync: database BlockBodies stage progress updated";
+    SILK_INFO << "SnapshotSync: database BlockBodies stage progress updated [" << stage_progress << "]";
 }
 
 void SnapshotSync::update_block_hashes(db::RWTxn& txn, BlockNum max_block_available) {
@@ -324,10 +329,12 @@ void SnapshotSync::update_block_hashes(db::RWTxn& txn, BlockNum max_block_availa
         return;
     }
 
-    // Update BlockHashes stage progress to the max block in snapshots
-    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, max_block_available);
+    // Update BlockHashes stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
+    const auto stop_at_block = Environment::get_stop_at_block();
+    const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, stage_progress);
 
-    SILK_INFO << "SnapshotSync: database BlockHashes stage progress updated";
+    SILK_INFO << "SnapshotSync: database BlockHashes stage progress updated [" << stage_progress << "]";
 }
 
 void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_available) {
@@ -337,10 +344,12 @@ void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_avail
         return;
     }
 
-    // Update Senders stage progress to the max block in snapshots
-    db::stages::write_stage_progress(txn, db::stages::kSendersKey, max_block_available);
+    // Update Senders stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
+    const auto stop_at_block = Environment::get_stop_at_block();
+    const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
+    db::stages::write_stage_progress(txn, db::stages::kSendersKey, stage_progress);
 
-    SILK_INFO << "SnapshotSync: database Senders stage progress updated";
+    SILK_INFO << "SnapshotSync: database Senders stage progress updated [" << stage_progress << "]";
 }
 
 }  // namespace silkworm::snapshots

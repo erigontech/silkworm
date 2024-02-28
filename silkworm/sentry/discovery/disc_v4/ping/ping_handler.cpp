@@ -59,6 +59,11 @@ Task<bool> PingHandler::handle(
         co_return false;
     }
 
+    // in misconfigured systems we might receive a ping from "ourselves"
+    if (sender_public_key == local_node_id) {
+        co_return false;
+    }
+
     // save a ping sender node as if it was discovered by find_neighbors()
     bool is_inserted = co_await db.upsert_node_address(sender_public_key, message.sender_node_address());
     if (is_inserted) {

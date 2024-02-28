@@ -172,8 +172,16 @@ class DiscoveryImpl : private MessageHandler {
     Task<void> ping_check(EccPublicKey node_id) {
         using namespace std::chrono_literals;
 
+        auto local_node_url = node_url_();
+        if (node_id == local_node_url.public_key()) {
+            log::Warning("sentry") << "disc_v4::DiscoveryImpl::ping_check: "
+                                   << "ignoring an attempt to ping the local node, "
+                                   << "please delete it from the NodeDb by node_id=" << node_id.hex();
+            co_return;
+        }
+
         try {
-            auto ping_check_result = co_await ping::ping_check(node_id, node_url_(), local_enr_seq_num(), server_, on_pong_signal_, node_db_);
+            auto ping_check_result = co_await ping::ping_check(node_id, local_node_url, local_enr_seq_num(), server_, on_pong_signal_, node_db_);
             if (ping_check_result.is_skipped()) {
                 co_return;
             }

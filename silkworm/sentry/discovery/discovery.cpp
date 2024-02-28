@@ -97,14 +97,22 @@ DiscoveryImpl::DiscoveryImpl(
 Task<void> DiscoveryImpl::run() {
     setup_node_db();
 
+    auto local_node_id = node_id_();
+
     for (auto& url : peer_urls_) {
+        auto& node_id = url.public_key();
+        if (node_id == local_node_id) {
+            log::Warning("sentry") << "Discovery: ignoring the local node in the static peers list, please remove " << url.to_string();
+            continue;
+        }
+
         auto& db = node_db_.interface();
         co_await db.upsert_node_address(
-            url.public_key(),
+            node_id,
             NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
-        co_await db.update_distance(url.public_key(), disc_v4::node_distance(url.public_key(), node_id_()));
+        co_await db.update_distance(node_id, disc_v4::node_distance(node_id, local_node_id));
         if (!with_dynamic_discovery_) {
-            co_await db.update_last_pong_time(url.public_key(), std::chrono::system_clock::now() + std::chrono::years(1));
+            co_await db.update_last_pong_time(node_id, std::chrono::system_clock::now() + std::chrono::years(1));
         }
     }
 
@@ -115,11 +123,17 @@ Task<void> DiscoveryImpl::run() {
         }
 
         for (auto& url : bootnode_urls) {
+            auto& node_id = url.public_key();
+            if (node_id == local_node_id) {
+                log::Warning("sentry") << "Discovery: ignoring the local node in the bootnodes list, please remove " << url.to_string();
+                continue;
+            }
+
             auto& db = node_db_.interface();
             co_await db.upsert_node_address(
-                url.public_key(),
+                node_id,
                 NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
-            co_await db.update_distance(url.public_key(), disc_v4::node_distance(url.public_key(), node_id_()));
+            co_await db.update_distance(node_id, disc_v4::node_distance(node_id, local_node_id));
         }
     }
 

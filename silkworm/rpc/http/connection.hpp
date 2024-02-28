@@ -73,19 +73,19 @@ class Connection : public StreamWriter {
     Task<void> handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
     Task<void> handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
-    bool is_origin_allowed(const std::vector<std::string>& allowed_origins, std::string origin);
+    bool is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin);
     bool is_method_allowed(boost::beast::http::verb method);
 
     Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     template <class Body>
-    void set_cors(const boost::beast::http::request<boost::beast::http::string_body>& req, boost::beast::http::response<Body>& res);
+    void set_cors(boost::beast::http::response<Body>& res);
 
     //! Perform an asynchronous read operation.
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const boost::beast::http::request<boost::beast::http::string_body>& req, const std::string& content, boost::beast::http::status http_status);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status);
 
     static std::string get_date_time();
 
@@ -110,7 +110,9 @@ class Connection : public StreamWriter {
 
     bool ws_compression_;
 
-    boost::beast::http::request<boost::beast::http::string_body> last_req_{};
+    std::string vary_;
+    std::string origin_;
+    boost::beast::http::verb method_{boost::beast::http::verb::unknown};
 };
 
 }  // namespace silkworm::rpc::http

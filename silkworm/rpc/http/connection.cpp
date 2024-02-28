@@ -19,7 +19,6 @@
 #include <exception>
 #include <string_view>
 
-#include <absl/strings/str_join.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -94,7 +93,7 @@ Task<bool> Connection::do_read() {
             co_return false;
         } else {
             // If it does not (or cannot) upgrade the connection, it ignores the Upgrade header and sends back a regular response (OK)
-            co_await do_write(parser.get(), "", boost::beast::http::status::ok);
+            co_await do_write("", boost::beast::http::status::ok);
         }
         co_return true;
     }
@@ -126,32 +125,36 @@ Task<void> Connection::handle_request(const boost::beast::http::request<boost::b
 
 Task<void> Connection::handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_http_version_};
-    set_cors(req, res);
+    std::string vary = req[boost::beast::http::field::vary];
+
+    if (vary.empty()) {
+        res.set(boost::beast::http::field::vary, "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+    } else {
+        vary.append(" Origin");
+        res.set(boost::beast::http::field::vary, vary);
+    }
+
+    std::string origin = req[boost::beast::http::field::origin];
+    if (!origin.empty() &&
+        is_origin_allowed(allowed_origins_, origin) &&
+        is_method_allowed(req.method())) {
+        if (allowed_origins_.at(0) == "*") {
+            res.set(boost::beast::http::field::access_control_allow_origin, "*");
+        } else {
+            res.set(boost::beast::http::field::access_control_allow_origin, origin);
+        }
+
+        res.set(boost::beast::http::field::access_control_request_method, req[boost::beast::http::field::access_control_request_method]);
+        res.set(boost::beast::http::field::access_control_allow_headers, allow_headers);
+        res.set(boost::beast::http::field::access_control_max_age, max_age);
+    }
     res.prepare_payload();
     co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
 }
 
-bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origins, std::string origin) {
-    if (allowed_origins.size() == 1 && allowed_origins[0] == "*") {
-        return true;
-    }
-    for (auto& curr_origin : allowed_origins) {
-        if (curr_origin == origin) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Connection::is_method_allowed(boost::beast::http::verb method) {
-    return (method == boost::beast::http::verb::options ||
-            method == boost::beast::http::verb::post ||
-            method == boost::beast::http::verb::get);
-}
-
 Task<void> Connection::handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
-        co_await do_write(req, std::string{}, boost::beast::http::status::ok);  // just like Erigon
+        co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like "Erigon"
         co_return;
     }
 
@@ -159,14 +162,18 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
 
     if (const auto auth_result = is_request_authorized(req); !auth_result) {
         auto rsp_content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-        co_await do_write(req, rsp_content, boost::beast::http::status::forbidden);
+        co_await do_write(rsp_content, boost::beast::http::status::forbidden);
         co_return;
     }
 
-    last_req_ = req;
+    // save few fields of the request to be used in set_cors
+    vary_ = req[boost::beast::http::field::vary];
+    origin_ = req[boost::beast::http::field::origin];
+    method_ = req.method();
+
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(req, rsp_content->append("\n"), boost::beast::http::status::ok);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok);
     }
 }
 
@@ -178,7 +185,7 @@ Task<void> Connection::open_stream() {
         rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
-        set_cors(last_req_, rsp);
+        set_cors(rsp);
 
         boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
@@ -192,6 +199,7 @@ Task<void> Connection::open_stream() {
     }
     co_return;
 }
+
 Task<void> Connection::close_stream() {
     try {
         co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
@@ -223,7 +231,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const boost::beast::http::request<boost::beast::http::string_body>& req, const std::string& content, boost::beast::http::status http_status) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status) {
     try {
         SILK_TRACE << "Connection::do_write response: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
@@ -234,7 +242,7 @@ Task<void> Connection::do_write(const boost::beast::http::request<boost::beast::
         res.content_length(content.size());
         res.body() = content;
 
-        set_cors<boost::beast::http::string_body>(req, res);
+        set_cors<boost::beast::http::string_body>(res);
 
         res.prepare_payload();
         const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
@@ -291,50 +299,50 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
 }
 
 template <class Body>
-void Connection::set_cors(const boost::beast::http::request<boost::beast::http::string_body>& req, boost::beast::http::response<Body>& res) {
-    bool is_preflight = (req.method() == boost::beast::http::verb::options && !req[boost::beast::http::field::access_control_request_method].empty());
-    std::string vary = req[boost::beast::http::field::vary];
-
-    if (is_preflight) {
-        if (vary.empty()) {
-            res.set(boost::beast::http::field::vary, "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
-        } else {
-            vary.append(" Origin");
-            res.set(boost::beast::http::field::vary, vary);
-        }
+void Connection::set_cors(boost::beast::http::response<Body>& res) {
+    if (vary_.empty()) {
+        res.set(boost::beast::http::field::vary, "Origin");
     } else {
-        if (vary.empty()) {
-            res.set(boost::beast::http::field::vary, "Origin");
-        } else {
-            vary.append(" Origin");
-            res.set(boost::beast::http::field::vary, vary);
-        }
+        vary_.append(" Origin");
+        res.set(boost::beast::http::field::vary, vary_);
     }
 
-    std::string origin = req[boost::beast::http::field::origin];
-    if (origin.empty()) {
+    if (origin_.empty()) {
         return;
     }
 
-    if (!is_origin_allowed(allowed_origins_, origin)) {
+    if (!is_origin_allowed(allowed_origins_, origin_)) {
         return;
     }
 
-    if (!is_method_allowed(req.method())) {
+    if (!is_method_allowed(method_)) {
         return;
     }
 
     if (allowed_origins_.at(0) == "*") {
         res.set(boost::beast::http::field::access_control_allow_origin, "*");
     } else {
-        res.set(boost::beast::http::field::access_control_allow_origin, origin);
+        res.set(boost::beast::http::field::access_control_allow_origin, origin_);
+    }
+}
+
+bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin) {
+    if (allowed_origins.size() == 1 && allowed_origins[0] == "*") {
+        return true;
     }
 
-    if (is_preflight) {
-        res.set(boost::beast::http::field::access_control_request_method, req[boost::beast::http::field::access_control_request_method]);
-        res.set(boost::beast::http::field::access_control_allow_headers, allow_headers);
-        res.set(boost::beast::http::field::access_control_max_age, max_age);
+    for (const auto& curr_origin : allowed_origins) {
+        if (curr_origin == origin) {
+            return true;
+        }
     }
+    return false;
+}
+
+bool Connection::is_method_allowed(boost::beast::http::verb method) {
+    return (method == boost::beast::http::verb::options ||
+            method == boost::beast::http::verb::post ||
+            method == boost::beast::http::verb::get);
 }
 
 std::string Connection::get_date_time() {

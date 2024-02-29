@@ -33,8 +33,7 @@
 
 namespace silkworm::rpc::http {
 
-inline constexpr const char* allow_headers = "*";
-inline constexpr const char* max_age = "600";
+inline constexpr std::string_view kMaxAge{"600"};
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -102,8 +101,7 @@ Task<bool> Connection::do_read() {
 }
 
 Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
-    // Now that talking to the socket is successful,
-    // we tie the socket object to a websocket stream
+    // Now that talking to the socket is successful, we tie the socket object to a WebSocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
     auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_), ws_compression_);
@@ -145,8 +143,8 @@ Task<void> Connection::handle_preflight(const boost::beast::http::request<boost:
         }
 
         res.set(boost::beast::http::field::access_control_request_method, req[boost::beast::http::field::access_control_request_method]);
-        res.set(boost::beast::http::field::access_control_allow_headers, allow_headers);
-        res.set(boost::beast::http::field::access_control_max_age, max_age);
+        res.set(boost::beast::http::field::access_control_allow_headers, "*");
+        res.set(boost::beast::http::field::access_control_max_age, kMaxAge);
     }
     res.prepare_payload();
     co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
@@ -154,7 +152,7 @@ Task<void> Connection::handle_preflight(const boost::beast::http::request<boost:
 
 Task<void> Connection::handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
-        co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like "Erigon"
+        co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
         co_return;
     }
 
@@ -166,7 +164,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
-    // save few fields of the request to be used in set_cors
+    // Save few fields of the request to be used in set_cors
     vary_ = req[boost::beast::http::field::vary];
     origin_ = req[boost::beast::http::field::origin];
     method_ = req.method();

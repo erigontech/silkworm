@@ -328,11 +328,9 @@ bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origi
         return true;
     }
 
-    for (const auto& curr_origin : allowed_origins) {
-        if (curr_origin == origin) {
-            return true;
-        }
-    }
+    if (std::ranges::any_of(allowed_origins.begin(), allowed_origins.end(), [origin](const std::string& curr_origin) {
+            return origin == curr_origin;
+        })) return true;
     return false;
 }
 

@@ -133,9 +133,7 @@ Task<void> Connection::handle_preflight(const boost::beast::http::request<boost:
     }
 
     std::string origin = req[boost::beast::http::field::origin];
-    if (!origin.empty() &&
-        is_origin_allowed(allowed_origins_, origin) &&
-        is_method_allowed(req.method())) {
+    if (!origin.empty() && is_origin_allowed(allowed_origins_, origin) && is_method_allowed(req.method())) {
         if (allowed_origins_.at(0) == "*") {
             res.set(boost::beast::http::field::access_control_allow_origin, "*");
         } else {
@@ -146,6 +144,7 @@ Task<void> Connection::handle_preflight(const boost::beast::http::request<boost:
         res.set(boost::beast::http::field::access_control_allow_headers, "*");
         res.set(boost::beast::http::field::access_control_max_age, kMaxAge);
     }
+
     res.prepare_payload();
     co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
 }

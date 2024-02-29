@@ -205,8 +205,7 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
         }
     }
     if (txn.gas_limit < g0) {
-        std::string from = address_to_hex(*txn.sender());
-        std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
+        std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         return error;
     }
     return std::nullopt;
@@ -260,7 +259,7 @@ ExecutionResult EVMExecutor::call(
         if (!gas_bailout) {
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());
-            std::string msg = "insufficient funds for gas * price + value: address " + from + ", have " + intx::to_string(have) + ", want " + intx::to_string(want + txn.value);
+            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
             return {std::nullopt, txn.gas_limit, data, msg};
         }
     } else {
@@ -278,6 +277,7 @@ ExecutionResult EVMExecutor::call(
             ibs_state_.access_storage(ae.account, key);
         }
     }
+
     silkworm::CallResult result;
     try {
         SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";

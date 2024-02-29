@@ -19,7 +19,6 @@
 #include <exception>
 #include <string_view>
 
-#include <absl/strings/str_join.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -33,6 +32,8 @@
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::http {
+
+inline constexpr std::string_view kMaxAge{"600"};
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -100,8 +101,7 @@ Task<bool> Connection::do_read() {
 }
 
 Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
-    // Now that talking to the socket is successful,
-    // we tie the socket object to a websocket stream
+    // Now that talking to the socket is successful, we tie the socket object to a WebSocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
     auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_), ws_compression_);
@@ -113,6 +113,43 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
 }
 
 Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    if (req.method() == boost::beast::http::verb::options &&
+        !req[boost::beast::http::field::access_control_request_method].empty()) {
+        co_await handle_preflight(req);
+    } else {
+        co_await handle_actual_request(req);
+    }
+}
+
+Task<void> Connection::handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_http_version_};
+    std::string vary = req[boost::beast::http::field::vary];
+
+    if (vary.empty()) {
+        res.set(boost::beast::http::field::vary, "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+    } else {
+        vary.append(" Origin");
+        res.set(boost::beast::http::field::vary, vary);
+    }
+
+    std::string origin = req[boost::beast::http::field::origin];
+    if (!origin.empty() && is_origin_allowed(allowed_origins_, origin) && is_method_allowed(req.method())) {
+        if (allowed_origins_.at(0) == "*") {
+            res.set(boost::beast::http::field::access_control_allow_origin, "*");
+        } else {
+            res.set(boost::beast::http::field::access_control_allow_origin, origin);
+        }
+
+        res.set(boost::beast::http::field::access_control_request_method, req[boost::beast::http::field::access_control_request_method]);
+        res.set(boost::beast::http::field::access_control_allow_headers, "*");
+        res.set(boost::beast::http::field::access_control_max_age, kMaxAge);
+    }
+
+    res.prepare_payload();
+    co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
+}
+
+Task<void> Connection::handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
     if (req.body().empty()) {
         co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
         co_return;
@@ -125,6 +162,11 @@ Task<void> Connection::handle_request(const boost::beast::http::request<boost::b
         co_await do_write(rsp_content, boost::beast::http::status::forbidden);
         co_return;
     }
+
+    // Save few fields of the request to be used in set_cors
+    vary_ = req[boost::beast::http::field::vary];
+    origin_ = req[boost::beast::http::field::origin];
+    method_ = req.method();
 
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
@@ -140,7 +182,7 @@ Task<void> Connection::open_stream() {
         rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
-        set_cors<boost::beast::http::empty_body>(rsp);
+        set_cors(rsp);
 
         boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
@@ -154,6 +196,7 @@ Task<void> Connection::open_stream() {
     }
     co_return;
 }
+
 Task<void> Connection::close_stream() {
     try {
         co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
@@ -254,18 +297,49 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
 
 template <class Body>
 void Connection::set_cors(boost::beast::http::response<Body>& res) {
-    if (allowed_origins_.empty()) {
+    if (vary_.empty()) {
+        res.set(boost::beast::http::field::vary, "Origin");
+    } else {
+        vary_.append(" Origin");
+        res.set(boost::beast::http::field::vary, vary_);
+    }
+
+    if (origin_.empty()) {
+        return;
+    }
+
+    if (!is_origin_allowed(allowed_origins_, origin_)) {
+        return;
+    }
+
+    if (!is_method_allowed(method_)) {
         return;
     }
 
     if (allowed_origins_.at(0) == "*") {
-        res.set("Access-Control-Allow-Origin", "*");
+        res.set(boost::beast::http::field::access_control_allow_origin, "*");
     } else {
-        res.set("Access-Control-Allow-Origin", absl::StrJoin(allowed_origins_, ","));
+        res.set(boost::beast::http::field::access_control_allow_origin, origin_);
     }
-    res.set("Access-Control-Allow-Methods", "GET, POST");
-    res.set("Access-Control-Allow-Headers", "*");
-    res.set("Access-Control-Max-Age", "600");
+}
+
+bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin) {
+    if (allowed_origins.size() == 1 && allowed_origins[0] == "*") {
+        return true;
+    }
+
+    for (const auto& curr_origin : allowed_origins) {
+        if (curr_origin == origin) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Connection::is_method_allowed(boost::beast::http::verb method) {
+    return (method == boost::beast::http::verb::options ||
+            method == boost::beast::http::verb::post ||
+            method == boost::beast::http::verb::get);
 }
 
 std::string Connection::get_date_time() {

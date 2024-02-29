@@ -70,6 +70,11 @@ class Connection : public StreamWriter {
     AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req);
+
+    bool is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin);
+    bool is_method_allowed(boost::beast::http::verb method);
 
     Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
@@ -104,6 +109,10 @@ class Connection : public StreamWriter {
     bool use_websocket_;
 
     bool ws_compression_;
+
+    std::string vary_;
+    std::string origin_;
+    boost::beast::http::verb method_{boost::beast::http::verb::unknown};
 };
 
 }  // namespace silkworm::rpc::http

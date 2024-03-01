@@ -159,7 +159,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_await do_write(std::string{}, boost::beast::http::status::method_not_allowed);
         co_return;
     }
-    if (req.has_content_length() && req.body().length() > 30 * 1024 * 1024)  { // 30 Mega
+    if (req.has_content_length() && req.body().length() > 30 * 1024 * 1024) {  // 30 Mega
         co_await do_write(std::string{}, boost::beast::http::status::payload_too_large);
         co_return;
     }

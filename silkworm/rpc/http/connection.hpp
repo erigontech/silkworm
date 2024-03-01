@@ -77,7 +77,6 @@ class Connection : public StreamWriter {
     bool is_method_allowed(boost::beast::http::verb method);
     bool is_accepted_content_type(const std::string& content_type);
 
-
     Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
 
     template <class Body>

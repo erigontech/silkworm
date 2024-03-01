@@ -155,6 +155,21 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
+    if (req.method() == boost::beast::http::verb::delete_ || req.method() == boost::beast::http::verb::put) {
+        co_await do_write(std::string{}, boost::beast::http::status::method_not_allowed);
+        co_return;
+    }
+    if (req.has_content_length() && req.body().length() > 30 * 1024 * 1024)  { // 30 Mega
+        co_await do_write(std::string{}, boost::beast::http::status::payload_too_large);
+        co_return;
+    }
+    if (req.method() != boost::beast::http::verb::options && req.method() != boost::beast::http::verb::get) {
+        if (!is_accepted_content_type(req[boost::beast::http::field::content_type])) {
+            co_await do_write(std::string{}, boost::beast::http::status::bad_request);
+            co_return;
+        }
+    }
+
     SILK_TRACE << "Connection::handle_request body size: " << req.body().size() << " data: " << req.body();
 
     if (const auto auth_result = is_request_authorized(req); !auth_result) {
@@ -333,6 +348,16 @@ bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origi
             return true;
         }
     }
+    return false;
+}
+
+bool Connection::is_accepted_content_type(const std::string& content_type) {
+    static std::vector<std::string> accepted_content_type{"application/json", "application/jsonrequest", "application/json-rpc"};
+
+    if (std::ranges::any_of(accepted_content_type, [&](const auto& accepted_content_type) { return content_type == accepted_content_type; })) {
+        return true;
+    }
+
     return false;
 }
 

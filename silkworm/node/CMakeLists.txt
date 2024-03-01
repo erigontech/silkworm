@@ -17,7 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(db/etl)
-add_subdirectory(snapshots/seg)
+add_subdirectory(snapshots)
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
@@ -25,6 +25,7 @@ find_package(Boost REQUIRED headers container)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
 
@@ -32,6 +33,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     silkworm_core
     silkworm_infra
     silkworm_sentry
+    silkworm_snapshots
     absl::btree
     absl::flat_hash_map
     absl::flat_hash_set
@@ -43,17 +45,17 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
     roaring::roaring
-    torrent-rasterbar
 )
 
 # cmake-format: off
 set(SILKWORM_NODE_PRIVATE_LIBS
+    absl::strings
     cborcpp
     evmone
     magic_enum::magic_enum
+    Microsoft.GSL::GSL
     silkworm_db_etl
     silkworm_interfaces
-    silkworm_snapshots_seg
 )
 # cmake-format: on
 
@@ -61,5 +63,5 @@ silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "db/etl" "snapshots/seg"
+  EXCLUDE_REGEX "db/etl" "snapshots"
 )

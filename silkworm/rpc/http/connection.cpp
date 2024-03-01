@@ -155,7 +155,9 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
-    if (req.method() == boost::beast::http::verb::delete_ || req.method() == boost::beast::http::verb::put) {
+    if (req.method() != boost::beast::http::verb::post &&
+        req.method() != boost::beast::http::verb::get &&
+        req.method() != boost::beast::http::verb::options) {
         co_await do_write(std::string{}, boost::beast::http::status::method_not_allowed);
         co_return;
     }
@@ -351,10 +353,10 @@ bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origi
     return false;
 }
 
-bool Connection::is_accepted_content_type(const std::string& content_type) {
+bool Connection::is_accepted_content_type(const std::string& req_content_type) {
     static std::vector<std::string> accepted_content_type{"application/json", "application/jsonrequest", "application/json-rpc"};
 
-    if (std::ranges::any_of(accepted_content_type, [&](const auto& accepted_content_type) { return content_type == accepted_content_type; })) {
+    if (std::ranges::any_of(accepted_content_type, [&](const auto& content_type) { return req_content_type == content_type; })) {
         return true;
     }
 

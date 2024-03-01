@@ -16,6 +16,7 @@
 
 #include "connection.hpp"
 
+#include <array>
 #include <exception>
 #include <string_view>
 
@@ -33,14 +34,16 @@
 
 namespace silkworm::rpc::http {
 
-inline constexpr std::string_view kMaxAge{"600"};
+static constexpr std::string_view kMaxAge{"600"};
+static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
+static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret,
-                       bool use_websocket,
+                       bool ws_upgrade_enabled,
                        bool ws_compression,
                        InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
@@ -49,7 +52,7 @@ Connection::Connection(boost::asio::io_context& io_context,
       request_handler_{this, api, handler_table, std::move(ifc_log_settings)},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
-      use_websocket_{use_websocket},
+      ws_upgrade_enabled_{ws_upgrade_enabled},
       ws_compression_{ws_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
@@ -87,7 +90,7 @@ Task<bool> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
-        if (use_websocket_) {
+        if (ws_upgrade_enabled_) {
             co_await do_upgrade(parser.release());
             co_return false;
         } else {
@@ -96,6 +99,7 @@ Task<bool> Connection::do_read() {
         }
         co_return true;
     }
+
     co_await handle_request(parser.release());
     co_return true;
 }
@@ -155,13 +159,11 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
-    if (req.method() != boost::beast::http::verb::post &&
-        req.method() != boost::beast::http::verb::get &&
-        req.method() != boost::beast::http::verb::options) {
+    if (!is_method_allowed(req.method())) {
         co_await do_write(std::string{}, boost::beast::http::status::method_not_allowed);
         co_return;
     }
-    if (req.has_content_length() && req.body().length() > 30 * 1024 * 1024) {  // 30 Mega
+    if (req.has_content_length() && req.body().length() > kMaxPayloadSize) {
         co_await do_write(std::string{}, boost::beast::http::status::payload_too_large);
         co_return;
     }
@@ -352,13 +354,7 @@ bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origi
 }
 
 bool Connection::is_accepted_content_type(const std::string& req_content_type) {
-    static std::vector<std::string> accepted_content_type{"application/json", "application/jsonrequest", "application/json-rpc"};
-
-    if (std::ranges::any_of(accepted_content_type, [&](const auto& content_type) { return req_content_type == content_type; })) {
-        return true;
-    }
-
-    return false;
+    return std::ranges::any_of(kAcceptedContentTypes, [&](const auto& content_type) { return req_content_type == content_type; });
 }
 
 bool Connection::is_method_allowed(boost::beast::http::verb method) {

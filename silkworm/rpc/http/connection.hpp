@@ -49,7 +49,7 @@ class Connection : public StreamWriter {
                commands::RpcApiTable& handler_table,
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret,
-               bool use_websocket,
+               bool ws_upgrade_enabled,
                bool ws_compression,
                InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
@@ -107,7 +107,7 @@ class Connection : public StreamWriter {
 
     boost::beast::flat_buffer data_;
 
-    bool use_websocket_;
+    bool ws_upgrade_enabled_;
 
     bool ws_compression_;
 

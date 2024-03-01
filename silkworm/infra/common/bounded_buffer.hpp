@@ -48,7 +48,12 @@ class BoundedBuffer {
 
     void push_front(value_type&& item) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [&] { return is_not_full(); });
+        not_full_.wait(lock, [&] { return is_stopped() || is_not_full(); });
+
+        if (is_stopped()) {  // If the buffer is stopped, do not push the item
+            return;
+        }
+
         container_.push_front(std::forward<value_type>(item));
         ++unread_;
         lock.unlock();
@@ -57,10 +62,28 @@ class BoundedBuffer {
 
     void pop_back(value_type* pItem) {
         std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [&] { return is_not_empty(); });
+        not_empty_.wait(lock, [&] { return is_stopped() || is_not_empty(); });
+
+        if (is_stopped()) {  // If the buffer is stopped, do not pop the item
+            pItem = nullptr;
+            return;
+        }
+
         *pItem = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();
+    }
+
+    void terminate_and_release_all() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        stop_ = true;
+        lock.unlock();
+        not_empty_.notify_all();
+        not_full_.notify_all();
+    }
+
+    bool is_stopped() {
+        return stop_;
     }
 
     size_type size() {
@@ -75,6 +98,7 @@ class BoundedBuffer {
     bool is_not_empty() const { return unread_ > 0; }
     bool is_not_full() const { return unread_ < capacity_; }
 
+    bool stop_{false};
     size_type capacity_;
     size_type unread_;
     boost::circular_buffer<T> container_;

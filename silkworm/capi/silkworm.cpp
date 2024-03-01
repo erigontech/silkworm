@@ -38,6 +38,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshots/index.hpp>
 
 #include "instance.hpp"
@@ -430,9 +431,12 @@ class BlockProvider {
 
         BlockNum current_block{start_block_};
         size_t refresh_counter{kTxnRefreshThreshold};
+        Block block;
 
         while (current_block <= max_block_) {
-            Block block;
+            if (block_buffer_->is_stopped()) {
+                return;
+            }
 
             const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
             if (!success) {
@@ -511,8 +515,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             block_buffer.pop_back(&block);
-            if (!block) {
-                block_provider_thread.detach();
+            if (!block || !block.has_value()) {
+                block_buffer.terminate_and_release_all();
+                block_provider_thread.join();
                 return SILKWORM_BLOCK_NOT_FOUND;
             }
 
@@ -528,6 +533,8 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             std::vector<Receipt> receipts;
             const auto result{processor.execute_and_write_block(receipts)};
             if (result != ValidationResult::kOk) {
+                block_buffer.terminate_and_release_all();
+                block_provider_thread.join();
                 return SILKWORM_INVALID_BLOCK;
             }
 
@@ -555,6 +562,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                           log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
                 state_buffer.write_state_to_db();
+                db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block->header.number);
                 gas_batch_size = 0;
                 StopWatch sw{/*auto_start=*/true};
                 txn.commit_and_renew();
@@ -566,7 +574,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             const auto now{std::chrono::steady_clock::now()};
             if (signal_check_time <= now) {
                 if (SignalHandler::signalled()) {
-                    block_provider_thread.detach();
+                    block_buffer.terminate_and_release_all();
+                    block_provider_thread.join();
+                    txn.abort();
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
                 signal_check_time = now + 5s;

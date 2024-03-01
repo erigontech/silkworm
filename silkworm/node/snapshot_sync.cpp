@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync.hpp"
+#include "snapshot_sync.hpp"
 
 #include <exception>
 #include <latch>
@@ -32,10 +32,12 @@
 #include <silkworm/node/snapshots/index.hpp>
 #include <silkworm/node/snapshots/path.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::node {
 
 //! Interval between successive checks for either completion or stop requested
 static constexpr std::chrono::seconds kCheckCompletionInterval{1};
+
+using namespace silkworm::snapshots;
 
 SnapshotSync::SnapshotSync(SnapshotRepository* repository, const ChainConfig& config)
     : repository_{repository},
@@ -352,4 +354,4 @@ void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_avail
     SILK_INFO << "SnapshotSync: database Senders stage progress updated [" << stage_progress << "]";
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::node

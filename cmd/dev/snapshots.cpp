@@ -34,12 +34,12 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/common/block_body_for_storage.hpp>
+#include <silkworm/node/snapshot_sync.hpp>
 #include <silkworm/node/snapshots/bittorrent/client.hpp>
 #include <silkworm/node/snapshots/index.hpp>
 #include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/node/snapshots/seg/seg_zip.hpp>
 #include <silkworm/node/snapshots/snapshot.hpp>
-#include <silkworm/node/snapshots/sync.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"
@@ -667,7 +667,7 @@ void lookup_transaction(const SnapSettings& settings) {
 void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SnapshotRepository snapshot_repository{settings};
-    SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
+    node::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
     std::vector<std::string> snapshot_file_names;
     if (settings.snapshot_file_name) {
         snapshot_file_names.push_back(*settings.snapshot_file_name);

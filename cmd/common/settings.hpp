@@ -18,9 +18,9 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/settings.hpp>
-#include <silkworm/node/snapshots/settings.hpp>
 #include <silkworm/rpc/settings.hpp>
 #include <silkworm/sentry/settings.hpp>
+#include <silkworm/snapshots/settings.hpp>
 
 namespace silkworm::cmd::common {
 

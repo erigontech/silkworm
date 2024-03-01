@@ -35,11 +35,11 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/snapshot_sync.hpp>
-#include <silkworm/node/snapshots/bittorrent/client.hpp>
-#include <silkworm/node/snapshots/index.hpp>
-#include <silkworm/node/snapshots/repository.hpp>
-#include <silkworm/node/snapshots/seg/seg_zip.hpp>
-#include <silkworm/node/snapshots/snapshot.hpp>
+#include <silkworm/snapshots/bittorrent/client.hpp>
+#include <silkworm/snapshots/index.hpp>
+#include <silkworm/snapshots/repository.hpp>
+#include <silkworm/snapshots/seg/seg_zip.hpp>
+#include <silkworm/snapshots/snapshot.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"

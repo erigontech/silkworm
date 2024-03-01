@@ -35,8 +35,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/rpc/daemon.hpp>
+#include <silkworm/snapshots/repository.hpp>
 
 #include "../common/common.hpp"
 

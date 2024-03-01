@@ -28,9 +28,9 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/snapshots/config.hpp>
-#include <silkworm/node/snapshots/index.hpp>
-#include <silkworm/node/snapshots/path.hpp>
+#include <silkworm/snapshots/config.hpp>
+#include <silkworm/snapshots/index.hpp>
+#include <silkworm/snapshots/path.hpp>
 
 namespace silkworm::node {
 

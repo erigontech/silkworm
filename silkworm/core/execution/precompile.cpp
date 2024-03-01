@@ -21,7 +21,10 @@
 #include <algorithm>
 #include <bit>
 #include <cstring>
+#include <fstream>
 #include <limits>
+
+#include <absl/container/flat_hash_set.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -419,11 +422,34 @@ uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
+struct Dumper {
+    absl::flat_hash_set<std::string> collection;
+
+    void add(ByteView input) {
+        collection.insert(evmc::hex(input));
+        if (collection.size() == 1000)
+            dump();
+    }
+
+    void dump() {
+        std::ofstream of{"precompile.dump", std::ios::out | std::ios::app};
+        for (const auto& s : collection)
+            of << s << '\n';
+        of << '\n';
+        collection.clear();
+    }
+
+    ~Dumper() { dump(); }
+};
+
 std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     if (input.length() % kSnarkvStride != 0) {
         return std::nullopt;
     }
     size_t k{input.length() / kSnarkvStride};
+
+    static Dumper dumper;
+    dumper.add(input);
 
     init_libff();
     using namespace libff;

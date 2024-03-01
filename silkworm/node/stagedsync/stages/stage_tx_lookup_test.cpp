@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>

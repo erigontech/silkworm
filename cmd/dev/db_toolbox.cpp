@@ -45,6 +45,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>

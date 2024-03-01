@@ -27,6 +27,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::rpc {

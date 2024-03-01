@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "util.hpp"
+#include "block_body_for_storage.hpp"
 
 #include <catch2/catch.hpp>
 

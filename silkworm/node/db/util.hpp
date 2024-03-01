@@ -146,23 +146,4 @@ std::optional<ByteView> find_value_suffix(ROCursorDupSort& table, ByteView key, 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
 void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
-namespace detail {
-
-    // See Erigon BodyForStorage
-    struct BlockBodyForStorage {
-        uint64_t base_txn_id{0};
-        uint64_t txn_count{0};
-        std::vector<BlockHeader> ommers;
-        std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // EIP-4895
-
-        [[nodiscard]] Bytes encode() const;
-
-        friend bool operator==(const BlockBodyForStorage&, const BlockBodyForStorage&) = default;
-    };
-
-    DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to);
-
-    BlockBodyForStorage decode_stored_block_body(ByteView& from);
-
-}  // namespace detail
 }  // namespace silkworm::db

@@ -33,6 +33,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/snapshots/bittorrent/client.hpp>
 #include <silkworm/node/snapshots/index.hpp>
 #include <silkworm/node/snapshots/repository.hpp>

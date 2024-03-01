@@ -28,7 +28,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/os.hpp>
-#include <silkworm/node/db/util.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/snapshots/path.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_par.hpp>
 #include <silkworm/node/snapshots/seg/decompressor.hpp>

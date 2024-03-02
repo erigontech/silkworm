@@ -1723,6 +1723,9 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 
                     tracers.push_back(std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses));
                 }
+                if (index != -1) {
+                    traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
+                }
                 const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 if (execution_result.pre_check_error) {

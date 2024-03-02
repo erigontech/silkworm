@@ -24,6 +24,8 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/experimental/concurrent_channel.hpp>
+
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #include <boost/asio/experimental/promise.hpp>
 #endif  // _WIN32
@@ -72,6 +74,7 @@ class Stream {
     void write_field(std::string_view name, std::int64_t value);
     void write_field(std::string_view name, std::uint64_t value);
     void write_field(std::string_view name, std::double_t value);
+    void write_field(std::string_view name, evmc::bytes32 value);
 
   private:
     using ChunkPtr = std::shared_ptr<std::string>;

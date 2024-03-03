@@ -25,6 +25,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/node/snapshots/rec_split/rec_split_seq.hpp>
 #include <silkworm/node/snapshots/seg/common/varint.hpp>

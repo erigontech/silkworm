@@ -25,8 +25,8 @@
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/resource_usage.hpp>
+#include <silkworm/node/snapshot_sync.hpp>
 #include <silkworm/node/snapshots/bittorrent/client.hpp>
-#include <silkworm/node/snapshots/sync.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::node {
@@ -109,7 +109,7 @@ void NodeImpl::setup_snapshots() {
         db::RWTxnManaged rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
-        snapshots::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
+        SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
         snapshot_sync.download_and_index_snapshots(rw_txn);
 
         rw_txn.commit_and_stop();

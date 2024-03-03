@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync.hpp"
+#include "snapshot_sync.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -24,7 +24,9 @@
 #include <silkworm/infra/test_util/temporary_file.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::node {
+
+using namespace snapshots;
 
 TEST_CASE("SnapshotSync::SnapshotSync", "[silkworm][snapshot][sync]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -75,4 +77,4 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
     }
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::node

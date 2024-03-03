@@ -25,6 +25,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>

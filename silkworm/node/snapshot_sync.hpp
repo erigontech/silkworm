@@ -27,11 +27,11 @@
 #include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/node/snapshots/settings.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::node {
 
 class SnapshotSync : public Stoppable {
   public:
-    SnapshotSync(SnapshotRepository* repository, const ChainConfig& config);
+    SnapshotSync(snapshots::SnapshotRepository* repository, const ChainConfig& config);
     ~SnapshotSync() override;
 
     bool stop() override;
@@ -49,11 +49,11 @@ class SnapshotSync : public Stoppable {
     static void update_block_hashes(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_senders(db::RWTxn& txn, BlockNum max_block_available);
 
-    SnapshotRepository* repository_;
-    const SnapshotSettings& settings_;
+    snapshots::SnapshotRepository* repository_;
+    const snapshots::SnapshotSettings& settings_;
     const ChainConfig& config_;
-    bittorrent::BitTorrentClient client_;
+    snapshots::bittorrent::BitTorrentClient client_;
     std::thread client_thread_;
 };
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::node

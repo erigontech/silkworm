@@ -239,18 +239,11 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             CallTracer tracer{traces};
             processor.evm().add_tracer(tracer);
 
-            const auto res{processor.execute_and_write_block(receipts)};
-
-            // Save receipts and call traces independently of result
-            if (block_num_ >= prune_receipts_threshold) {
-                buffer.insert_receipts(block_num_, receipts);
-            }
-            if (block_num_ >= prune_call_traces_threshold) {
-                buffer.insert_call_traces(block_num_, traces);
-            }
-
-            if (res != ValidationResult::kOk) {
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 // Persist work done so far
+                if (block_num_ >= prune_receipts_threshold) {
+                    buffer.insert_receipts(block_num_, receipts);
+                }
                 buffer.write_to_db();
                 prefetched_blocks_.clear();
 
@@ -264,6 +257,13 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                               "hash", to_hex(block.header.hash().bytes, true),
                               "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
                 return Stage::Result::kInvalidBlock;
+            }
+
+            if (block_num_ >= prune_receipts_threshold) {
+                buffer.insert_receipts(block_num_, receipts);
+            }
+            if (block_num_ >= prune_call_traces_threshold) {
+                buffer.insert_call_traces(block_num_, traces);
             }
 
             // Stats

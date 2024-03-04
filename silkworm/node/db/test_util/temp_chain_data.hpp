@@ -52,8 +52,6 @@ class TempChainData {
 
     void commit_txn() const { txn_->commit_and_stop(); }
 
-    void renew_txn() { txn_ = std::make_unique<db::RWTxnManaged>(env_); }
-
     void commit_and_renew_txn() const { txn_->commit_and_renew(); }
 
     [[nodiscard]] const db::PruneMode& prune_mode() const { return prune_mode_; }

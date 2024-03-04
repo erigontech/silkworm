@@ -311,8 +311,6 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    SILK_INFO << "[Silkworm AddSnapshot] Header segment: " << hs.segment.file_path << " length: " << hs.segment.memory_length
-              << " index: " << hs.header_hash_index.file_path << " length: " << hs.header_hash_index.memory_length;
     snapshots::MappedHeadersSnapshot mapped_h_snapshot{
         .segment = make_region(hs.segment),
         .header_hash_index = make_region(hs.header_hash_index)};
@@ -328,8 +326,6 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    SILK_INFO << "[Silkworm AddSnapshot] Body segment: " << bs.segment.file_path << " length: " << bs.segment.memory_length
-              << " index: " << bs.block_num_index.file_path << " length: " << bs.block_num_index.memory_length;
     snapshots::MappedBodiesSnapshot mapped_b_snapshot{
         .segment = make_region(bs.segment),
         .block_num_index = make_region(bs.block_num_index)};
@@ -345,9 +341,6 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    SILK_INFO << "[Silkworm AddSnapshot] Tx segment: " << ts.segment.file_path << " length: " << ts.segment.memory_length
-              << " hash index: " << ts.tx_hash_index.file_path << " length: " << ts.tx_hash_index.memory_length
-              << " hash2block index: " << ts.tx_hash_2_block_index.file_path << " length: " << ts.tx_hash_2_block_index.memory_length;
     snapshots::MappedTransactionsSnapshot mapped_t_snapshot{
         .segment = make_region(ts.segment),
         .tx_hash_index = make_region(ts.tx_hash_index),
@@ -363,9 +356,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         .bodies_snapshot = std::move(bodies_snapshot),
         .tx_snapshot_path = *transactions_segment_path,
         .tx_snapshot = std::move(transactions_snapshot)};
-    SILK_INFO << "[Silkworm AddSnapshot] before add_snapshot_bundle";
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
-    SILK_INFO << "[Silkworm AddSnapshot] END";
     return SILKWORM_OK;
 }
 
@@ -505,7 +496,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
 
     // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
     db::EnvUnmanaged unmanaged_env{mdbx_env};
-    SILK_INFO << "[Silkworm Exec] env=" << unmanaged_env.get_path().string() << " external_txn=" << std::boolalpha << use_external_txn;
+    SILK_TRACE << "[Silkworm Exec] env=" << unmanaged_env.get_path().string() << " external_txn=" << std::boolalpha << use_external_txn;
 
     SignalHandlerGuard signal_guard;
     try {

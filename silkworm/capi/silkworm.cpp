@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <absl/strings/str_split.h>
+#include <boost/thread/scoped_thread.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
@@ -144,7 +145,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
         const auto size = std::snprintf(nullptr, 0, "%.1f", static_cast<double>(f));
         std::string s(static_cast<size_t>(size + 1), '\0');                       // +1 for null terminator
         (void)std::snprintf(s.data(), s.size(), "%.1f", static_cast<double>(f));  // certain to fit
-        return s;
+        return s.substr(0, s.size() - 1);                                         // remove null terminator
     };
 
     const auto elapsed{progress.end_time - progress.start_time};
@@ -303,10 +304,15 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_SNAPSHOT;
     }
     const SilkwormHeadersSnapshot& hs = snapshot->headers;
+    if (!hs.segment.file_path || !hs.header_hash_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
     const auto headers_segment_path = snapshots::SnapshotPath::parse(hs.segment.file_path);
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
+    SILK_INFO << "[Silkworm AddSnapshot] Header segment: " << hs.segment.file_path << " length: " << hs.segment.memory_length
+              << " index: " << hs.header_hash_index.file_path << " length: " << hs.header_hash_index.memory_length;
     snapshots::MappedHeadersSnapshot mapped_h_snapshot{
         .segment = make_region(hs.segment),
         .header_hash_index = make_region(hs.header_hash_index)};
@@ -315,10 +321,15 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     headers_snapshot->reopen_index();
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
+    if (!bs.segment.file_path || !bs.block_num_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
     const auto bodies_segment_path = snapshots::SnapshotPath::parse(bs.segment.file_path);
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
+    SILK_INFO << "[Silkworm AddSnapshot] Body segment: " << bs.segment.file_path << " length: " << bs.segment.memory_length
+              << " index: " << bs.block_num_index.file_path << " length: " << bs.block_num_index.memory_length;
     snapshots::MappedBodiesSnapshot mapped_b_snapshot{
         .segment = make_region(bs.segment),
         .block_num_index = make_region(bs.block_num_index)};
@@ -327,10 +338,16 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     bodies_snapshot->reopen_index();
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
+    if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
     const auto transactions_segment_path = snapshots::SnapshotPath::parse(ts.segment.file_path);
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
+    SILK_INFO << "[Silkworm AddSnapshot] Tx segment: " << ts.segment.file_path << " length: " << ts.segment.memory_length
+              << " hash index: " << ts.tx_hash_index.file_path << " length: " << ts.tx_hash_index.memory_length
+              << " hash2block index: " << ts.tx_hash_2_block_index.file_path << " length: " << ts.tx_hash_2_block_index.memory_length;
     snapshots::MappedTransactionsSnapshot mapped_t_snapshot{
         .segment = make_region(ts.segment),
         .tx_hash_index = make_region(ts.tx_hash_index),
@@ -346,7 +363,9 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         .bodies_snapshot = std::move(bodies_snapshot),
         .tx_snapshot_path = *transactions_segment_path,
         .tx_snapshot = std::move(transactions_snapshot)};
+    SILK_INFO << "[Silkworm AddSnapshot] before add_snapshot_bundle";
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    SILK_INFO << "[Silkworm AddSnapshot] END";
     return SILKWORM_OK;
 }
 
@@ -362,9 +381,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         return SILKWORM_SERVICE_ALREADY_STARTED;
     }
 
-    struct EnvUnmanaged : public ::mdbx::env {
-        explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
-    } unmanaged_env{env};
+    db::EnvUnmanaged unmanaged_env{env};
 
     // TODO(canepat) add RPC options in API and convert them
     rpc::DaemonSettings settings{
@@ -431,22 +448,30 @@ class BlockProvider {
         BlockNum current_block{start_block_};
         size_t refresh_counter{kTxnRefreshThreshold};
 
-        while (current_block <= max_block_) {
-            Block block;
+        try {
+            while (current_block <= max_block_) {
+                Block block;
 
-            const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
-            if (!success) {
-                block_buffer_->push_front(std::nullopt);
-                return;
-            }
-            block_buffer_->push_front(std::move(block));
-            ++current_block;
+                const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
+                if (!success) {
+                    block_buffer_->push_front(std::nullopt);
+                    return;
+                }
+                block_buffer_->push_front(std::move(block));
+                ++current_block;
 
-            if (--refresh_counter == 0) {
-                txn.abort();
-                txn = db::ROTxnManaged{env_};
-                refresh_counter = kTxnRefreshThreshold;
+                if (--refresh_counter == 0) {
+                    txn.abort();
+                    txn = db::ROTxnManaged{env_};
+                    refresh_counter = kTxnRefreshThreshold;
+                }
             }
+        } catch (const boost::thread_interrupted& ti) {
+            SILK_TRACE << "thread_interrupted in block provider thread";
+        } catch (const std::exception& ex) {
+            SILK_WARN << "unexpected exception in block provider thread: what=" << ex.what();
+        } catch (...) {
+            SILK_ERROR << "unknown exception in block provider thread";
         }
     }
 
@@ -458,14 +483,15 @@ class BlockProvider {
 };
 
 SILKWORM_EXPORT
-int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-                            uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
+int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn* mdbx_txn, uint64_t chain_id,
+                            uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                            bool write_change_sets, bool write_receipts, bool write_call_traces,
                             uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    if (!mdbx_txn) {
-        return SILKWORM_INVALID_MDBX_TXN;
+    if (!mdbx_env) {
+        return SILKWORM_INVALID_MDBX_ENV;
     }
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
@@ -475,17 +501,29 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         return SILKWORM_UNKNOWN_CHAIN_ID;
     }
     const ChainConfig* chain_config{*chain_info};
+    const bool use_external_txn{mdbx_txn != nullptr};
+
+    // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
+    db::EnvUnmanaged unmanaged_env{mdbx_env};
+    SILK_INFO << "[Silkworm Exec] env=" << unmanaged_env.get_path().string() << " external_txn=" << std::boolalpha << use_external_txn;
 
     SignalHandlerGuard signal_guard;
     try {
-        // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
-        db::RWTxnUnmanaged txn{mdbx_txn};
-        const auto db_path{txn.db().get_path()};
+        std::unique_ptr<db::RWTxn> txn;
+        if (use_external_txn) {
+            // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither committed nor aborted
+            txn = std::make_unique<db::RWTxnUnmanaged>(mdbx_txn);
+        } else {
+            // Create a *managed* MDBX txn, i.e. MDBX txn is used and then either committed or aborted
+            txn = std::make_unique<db::RWTxnManaged>(unmanaged_env);
+        }
 
-        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
+        const auto db_path{txn->db().get_path()};
+
+        db::Buffer state_buffer{*txn, /*prune_history_threshold=*/0};
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
-        BlockProvider block_provider{&block_buffer, txn.db(), start_block, max_block};
-        std::thread block_provider_thread(block_provider);
+        BlockProvider block_provider{&block_buffer, txn->db(), start_block, max_block};
+        boost::strict_scoped_thread<boost::interrupt_and_join_if_joinable> block_provider_thread(block_provider);
 
         static constexpr size_t kCacheSize{5'000};
         AnalysisCache analysis_cache{kCacheSize};
@@ -502,19 +540,26 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 
         size_t gas_batch_size{0};
 
-        std::optional<Block> block;
-
         const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
         if (!protocol_rule_set) {
             return SILKWORM_UNKNOWN_CHAIN_ID;
         }
 
+        std::optional<Block> block;
+        db::DataModel da_layer{*txn};
+        Block b;
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
-            block_buffer.pop_back(&block);
+            if (use_external_txn) {
+                if (const bool ok{da_layer.read_block(block_number, /*read_senders=*/true, b)}; ok) {
+                    block = std::move(b);
+                }
+            } else {
+                block_buffer.pop_back(&block);
+            }
             if (!block) {
-                block_provider_thread.detach();
                 return SILKWORM_BLOCK_NOT_FOUND;
             }
+            SILKWORM_ASSERT(block->header.number == block_number);
 
             ExecutionProcessor processor{*block, *protocol_rule_set, state_buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;
@@ -556,8 +601,12 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                           log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
                 state_buffer.write_state_to_db();
                 gas_batch_size = 0;
+                if (use_external_txn) {
+                    // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
+                    return SILKWORM_OK;
+                }
                 StopWatch sw{/*auto_start=*/true};
-                txn.commit_and_renew();
+                txn->commit_and_renew();
                 const auto [elapsed, _]{sw.stop()};
                 log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
                           log_args_for_exec_commit(sw.since_start(elapsed), db_path));
@@ -566,7 +615,6 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
             const auto now{std::chrono::steady_clock::now()};
             if (signal_check_time <= now) {
                 if (SignalHandler::signalled()) {
-                    block_provider_thread.detach();
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
                 signal_check_time = now + 5s;
@@ -583,12 +631,15 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
+        if (use_external_txn) {
+            // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
+            return SILKWORM_OK;
+        }
         StopWatch sw{/*auto_start=*/true};
-        txn.commit_and_stop();
+        txn->commit_and_stop();
         const auto [elapsed, _]{sw.stop()};
         log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
                   log_args_for_exec_commit(sw.since_start(elapsed), db_path));
-        block_provider_thread.join();
         return SILKWORM_OK;
 
     } catch (const mdbx::exception& e) {
@@ -602,6 +653,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         SILK_ERROR << "exception: " << e.what();
         return SILKWORM_INTERNAL_ERROR;
     } catch (...) {
+        SILK_ERROR << "unknown exception";
         return SILKWORM_UNKNOWN_ERROR;
     }
 }

@@ -25,9 +25,9 @@
 
 namespace silkworm::db::test_util {
 
-//! \brief Context is a helper resource manager for test temporary directory and inmemory database.
-//! Upon construction, it creates all the necessary data directories and DB tables.
-//! \remarks Context follows the RAII idiom and cleans up its temporary directory upon destruction.
+//! \brief TempChainData is a helper resource manager for a temporary directory plus an in-memory database.
+//! Upon construction, it creates all the necessary data directories and database tables.
+//! \remarks TempChainData follows the RAII idiom and cleans up its temporary directory upon destruction.
 class TempChainData {
   public:
     explicit TempChainData(bool with_create_tables = true, bool in_memory = true);
@@ -51,6 +51,8 @@ class TempChainData {
     [[nodiscard]] db::RWTxn& rw_txn() const { return *txn_; }
 
     void commit_txn() const { txn_->commit_and_stop(); }
+
+    void renew_txn() { txn_ = std::make_unique<db::RWTxnManaged>(env_); }
 
     void commit_and_renew_txn() const { txn_->commit_and_renew(); }
 

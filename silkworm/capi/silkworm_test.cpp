@@ -239,7 +239,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
     block.header.gas_limit = 5'000'000;
     block.header.gas_used = 21'000;
 
-    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
     std::vector<Receipt> receipts{
         {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
     };
@@ -325,7 +325,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     block.header.gas_limit = 5'000'000;
     block.header.gas_used = 21'000;
 
-    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
     std::vector<Receipt> receipts{
         {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
     };

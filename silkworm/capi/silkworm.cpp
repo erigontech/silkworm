@@ -38,7 +38,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/snapshots/index.hpp>
+#include <silkworm/snapshots/index.hpp>
 
 #include "instance.hpp"
 

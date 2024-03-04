@@ -26,8 +26,8 @@
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/resource_usage.hpp>
 #include <silkworm/node/snapshot_sync.hpp>
-#include <silkworm/node/snapshots/bittorrent/client.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
+#include <silkworm/snapshots/bittorrent/client.hpp>
 
 namespace silkworm::node {
 

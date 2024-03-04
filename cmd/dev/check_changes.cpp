@@ -28,7 +28,7 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/snapshots/repository.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;

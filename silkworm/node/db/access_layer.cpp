@@ -29,7 +29,7 @@
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/snapshots/repository.hpp>
+#include <silkworm/snapshots/repository.hpp>
 
 namespace silkworm::db {
 

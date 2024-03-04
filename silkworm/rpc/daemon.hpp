@@ -27,10 +27,10 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/version.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/snapshots/repository.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/rpc/http/server.hpp>
+#include <silkworm/snapshots/repository.hpp>
 
 #include "settings.hpp"
 

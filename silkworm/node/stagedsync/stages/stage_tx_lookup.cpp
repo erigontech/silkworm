@@ -50,10 +50,10 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
         // Snapshots already have TxLookup index, so we must start after max frozen block here
         const auto highest_frozen_block_number{db::DataModel::highest_frozen_block_number()};
         if (highest_frozen_block_number > previous_progress) {
-            previous_progress = highest_frozen_block_number;
+            previous_progress = std::min(highest_frozen_block_number, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
             if (node_settings_->prune_mode.tx_index().enabled()) {
-                set_prune_progress(txn, highest_frozen_block_number);
+                set_prune_progress(txn, previous_progress);
             }
         }
 

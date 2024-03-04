@@ -187,6 +187,13 @@ void Stream::write_field(std::string_view name, const char* value) {
     write_string(std::string_view(value, strlen(value)));
 }
 
+void Stream::write_field(std::string_view name, evmc::bytes32 value) {
+    ensure_separator();
+    write_string(name);
+    write(kColon);
+    write_string("0x" + to_hex(value));
+}
+
 void Stream::write_field(std::string_view name, std::int32_t value) {
     ensure_separator();
     write_string(name);

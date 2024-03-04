@@ -55,7 +55,7 @@ class Execution final : public Stage {
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
     Stage::Result execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                 ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
-                                BlockNum prune_receipts_threshold);
+                                BlockNum prune_receipts_threshold, BlockNum prune_call_traces_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
     static void unwind_state_from_changeset(db::ROCursor& source_changeset, db::RWCursorDupSort& plain_state_table,

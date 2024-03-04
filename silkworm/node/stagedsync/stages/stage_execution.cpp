@@ -23,6 +23,7 @@
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -85,9 +86,11 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         // prune-able data
         BlockNum prune_history{node_settings_->prune_mode.history().value_from_head(senders_stage_progress)};
         BlockNum prune_receipts{node_settings_->prune_mode.receipts().value_from_head(senders_stage_progress)};
+        BlockNum prune_call_traces{node_settings_->prune_mode.call_traces().value_from_head(senders_stage_progress)};
         if (hashstate_stage_progress) {
             prune_history = std::min(prune_history, hashstate_stage_progress - 1);
             prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
+            prune_call_traces = std::min(prune_call_traces, hashstate_stage_progress - 1);
         }
 
         static constexpr size_t kCacheSize{5'000};
@@ -98,12 +101,8 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         while (block_num_ <= max_block_num) {
             throw_if_stopping();
-            const auto execution_result{execute_batch(txn,
-                                                      max_block_num,
-                                                      analysis_cache,
-                                                      state_pool,
-                                                      prune_history,
-                                                      prune_receipts)};
+            const auto execution_result{execute_batch(txn, max_block_num, analysis_cache, state_pool,
+                                                      prune_history, prune_receipts, prune_call_traces)};
 
             // If we return with success we must persist data
             if (execution_result != Stage::Result::kSuccess) {
@@ -197,7 +196,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 
 Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                        ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
-                                       BlockNum prune_receipts_threshold) {
+                                       BlockNum prune_receipts_threshold, BlockNum prune_call_traces_threshold) {
     Stage::Result ret{Stage::Result::kSuccess};
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -236,7 +235,9 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            // TODO Add Tracer and collect call traces
+            CallTraces traces;
+            CallTracer tracer{traces};
+            processor.evm().add_tracer(tracer);
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 // Persist work done so far
@@ -260,6 +261,9 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
 
             if (block_num_ >= prune_receipts_threshold) {
                 buffer.insert_receipts(block_num_, receipts);
+            }
+            if (block_num_ >= prune_call_traces_threshold) {
+                buffer.insert_call_traces(block_num_, traces);
             }
 
             // Stats
@@ -494,7 +498,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         // Prune call traces
-        if (const auto prune_threshold{node_settings_->prune_mode.receipts().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{node_settings_->prune_mode.call_traces().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),

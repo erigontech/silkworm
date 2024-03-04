@@ -174,7 +174,7 @@ struct SilkwormSentrySettings {
 /**
  * \brief Start Silkworm Sentry.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.Must not be zero.
- * \param[in] env An valid MDBX environment. Must not be zero.
+ * \param[in] settings The Sentry configuration settings. Must not be zero.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct SilkwormSentrySettings* settings) SILKWORM_NOEXCEPT;

@@ -166,4 +166,24 @@ TEST_CASE("BoundedBuffer multiple cycles over the buffer with delayed consumer")
     consume.join();
 }
 
+TEST_CASE("BoundedBuffer can terminate producer") {
+    BoundedBuffer<std::string> buffer(10);
+    const int iterations = 100;
+    std::thread produce(Producer<BoundedBuffer<std::string>>(&buffer, iterations, true));
+
+    buffer.terminate_and_release_all();
+
+    produce.join();
+}
+
+TEST_CASE("BoundedBuffer can terminate consumer") {
+    BoundedBuffer<std::string> buffer(10);
+    const int iterations = 100;
+    std::thread consume(Consumer<BoundedBuffer<std::string>>(&buffer, iterations, true));
+
+    buffer.terminate_and_release_all();
+
+    consume.join();
+}
+
 }  // namespace silkworm

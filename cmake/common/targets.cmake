@@ -63,8 +63,7 @@ function(silkworm_library TARGET)
     if(TARGET_TYPE STREQUAL SHARED_LIBRARY)
       target_link_libraries(
         ${TEST_TARGET}
-        PUBLIC ${TARGET} "${ARG_PUBLIC}"
-        PRIVATE "${ARG_PRIVATE}" Catch2::Catch2
+        PRIVATE ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}" Catch2::Catch2
       )
     else()
       target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} Catch2::Catch2)

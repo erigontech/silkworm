@@ -21,7 +21,6 @@ find_package(Microsoft.GSL REQUIRED)
 set(PUBLIC_LIBS "")
 set(PRIVATE_LIBS
     glaze::glaze
-    mdbx-static
     Microsoft.GSL::GSL
     silkworm_core
     silkworm_infra

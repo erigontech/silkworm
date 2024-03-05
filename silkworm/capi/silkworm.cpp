@@ -610,9 +610,6 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
             if (signal_check_time <= now) {
                 if (SignalHandler::signalled()) {
                     block_buffer.terminate_and_release_all();
-                    if (!use_external_txn) {
-                        txn->abort();
-                    }
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
                 signal_check_time = now + 5s;

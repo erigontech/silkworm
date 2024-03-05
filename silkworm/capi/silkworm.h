@@ -47,7 +47,7 @@ extern "C" {
 #define SILKWORM_INVALID_HANDLE 3
 #define SILKWORM_INVALID_PATH 4
 #define SILKWORM_INVALID_SNAPSHOT 5
-#define SILKWORM_INVALID_MDBX_TXN 6
+#define SILKWORM_INVALID_MDBX_ENV 6
 #define SILKWORM_INVALID_BLOCK_RANGE 7
 #define SILKWORM_BLOCK_NOT_FOUND 8
 #define SILKWORM_UNKNOWN_CHAIN_ID 9
@@ -95,12 +95,13 @@ struct SilkwormChainSnapshot {
 };
 
 #define SILKWORM_PATH_SIZE 260
+#define SILKWORM_GIT_VERSION_SIZE 32
 
 struct SilkwormSettings {
     //! Data directory path in UTF-8.
     char data_dir_path[SILKWORM_PATH_SIZE];
     //! libmdbx version string in git describe format.
-    char libmdbx_version[32];
+    char libmdbx_version[SILKWORM_GIT_VERSION_SIZE];
 };
 
 /**
@@ -109,9 +110,7 @@ struct SilkwormSettings {
  * \param[in] settings General Silkworm settings.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_init(
-    SilkwormHandle* handle,
-    const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Build a set of indexes for the given snapshots.
@@ -149,7 +148,6 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
 /**
  * \brief Stop Silkworm RPC daemon and wait for its termination.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init. Must not be zero.
- * \param[in] snapshot A snapshot to use.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEXCEPT;
@@ -173,13 +171,26 @@ struct SilkwormSentrySettings {
     size_t max_peers;
 };
 
+/**
+ * \brief Start Silkworm Sentry.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.Must not be zero.
+ * \param[in] settings The Sentry configuration settings. Must not be zero.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
 SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct SilkwormSentrySettings* settings) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Stop Silkworm Sentry and wait for its termination.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init. Must not be zero.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
 SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Execute a batch of blocks and write resulting changes into the database.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] txn A valid read-write MDBX transaction. Must not be zero.
+ * \param[in] env An valid MDBX environment. Must not be zero.
+ * \param[in] txn A valid external read-write MDBX transaction or zero if an internal one must be used.
  * This function does not commit nor abort the transaction.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
  * \param[in] start_block The block height to start the execution from.
@@ -199,7 +210,7 @@ SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEP
  * (blocks up to and incl. last_executed_block were still executed).
  */
 SILKWORM_EXPORT int silkworm_execute_blocks(
-    SilkwormHandle handle, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
+    SilkwormHandle handle, MDBX_env* env, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
     uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
     uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
 

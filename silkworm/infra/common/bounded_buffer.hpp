@@ -14,25 +14,25 @@
    limitations under the License.
 */
 
-#include <condition_variable>
 #include <functional>
-#include <mutex>
-#include <thread>
 
 #include <boost/circular_buffer.hpp>
+// Apple Clang does not support std::stop_token yet, so we use boost::thread and its related facilities
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace silkworm {
 
 /**
  * @class BoundedBuffer
  * @brief A thread-safe bounded buffer implementation.
- *
  * The bounded_buffer class provides a fixed-size buffer that can be accessed by multiple threads concurrently.
  * It uses boost::circular_buffer as the underlying container and provides methods for pushing and popping items.
  * The buffer ensures that it is not full before pushing an item and not empty before popping an item.
- * The class is designed to be used in a producer-consumer scenario, where one or more threads produce items and one or more threads consume them.
+ * The class is designed to be used in a producer-consumer scenario, where one or more threads produce items and
+ * one or more threads consume them.
  * The class is thread-safe and can be used in a multi-threaded environment.
- *
  * @tparam T The type of items stored in the buffer.
  */
 template <class T>
@@ -47,27 +47,27 @@ class BoundedBuffer {
     BoundedBuffer& operator=(const BoundedBuffer&) = delete;  // Disabled assign operator
 
     void push_front(value_type&& item) {
-        std::unique_lock<std::mutex> lock(mutex_);
+        boost::unique_lock<boost::mutex> lock(mutex_);
         not_full_.wait(lock, [&] { return is_not_full(); });
-        container_.push_front(std::forward<value_type>(item));
+        container_.push_front(std::move(item));
         ++unread_;
         lock.unlock();
         not_empty_.notify_one();
     }
 
-    void pop_back(value_type* pItem) {
-        std::unique_lock<std::mutex> lock(mutex_);
+    void pop_back(value_type* item) {
+        boost::unique_lock<boost::mutex> lock(mutex_);
         not_empty_.wait(lock, [&] { return is_not_empty(); });
-        *pItem = container_[--unread_];
+        *item = container_[--unread_];
         lock.unlock();
         not_full_.notify_one();
     }
 
-    size_type size() {
+    size_type size() const {
         return unread_;
     }
 
-    size_type capacity() {
+    size_type capacity() const {
         return capacity_;
     }
 
@@ -78,9 +78,9 @@ class BoundedBuffer {
     size_type capacity_;
     size_type unread_;
     boost::circular_buffer<T> container_;
-    std::mutex mutex_;
-    std::condition_variable not_empty_;
-    std::condition_variable not_full_;
+    boost::mutex mutex_;
+    boost::condition_variable not_empty_;
+    boost::condition_variable not_full_;
 };
 
 }  // namespace silkworm

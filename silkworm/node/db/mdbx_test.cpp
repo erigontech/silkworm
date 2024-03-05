@@ -346,7 +346,9 @@ TEST_CASE("RWTxn") {
                 table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
             }
 
-            tx.commit_and_renew();
+            CHECK_THROWS_AS(tx.commit_and_renew(), std::runtime_error);
+
+            ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
         db::PooledCursor cursor(ro_txn, {table_name});
@@ -366,7 +368,9 @@ TEST_CASE("RWTxn") {
                 table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
             }
 
-            tx.commit_and_stop();
+            CHECK_THROWS_AS(tx.commit_and_stop(), std::runtime_error);
+
+            ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
         db::PooledCursor cursor(ro_txn, {table_name});

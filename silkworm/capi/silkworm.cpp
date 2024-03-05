@@ -595,15 +595,13 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
                 state_buffer.write_state_to_db();
                 db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block->header.number);
                 gas_batch_size = 0;
-                if (use_external_txn) {
-                    // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
-                    return SILKWORM_OK;
+                if (!use_external_txn) {
+                    StopWatch sw{/*auto_start=*/true};
+                    txn->commit_and_renew();
+                    const auto [elapsed, _]{sw.stop()};
+                    log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                              log_args_for_exec_commit(sw.since_start(elapsed), db_path));
                 }
-                StopWatch sw{/*auto_start=*/true};
-                txn->commit_and_renew();
-                const auto [elapsed, _]{sw.stop()};
-                log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_commit(sw.since_start(elapsed), db_path));
             }
 
             const auto now{std::chrono::steady_clock::now()};
@@ -626,15 +624,14 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
         log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
-        if (use_external_txn) {
-            // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
-            return SILKWORM_OK;
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, max_block);
+        if (!use_external_txn) {
+            StopWatch sw{/*auto_start=*/true};
+            txn->commit_and_stop();
+            const auto [elapsed, _]{sw.stop()};
+            log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         }
-        StopWatch sw{/*auto_start=*/true};
-        txn->commit_and_stop();
-        const auto [elapsed, _]{sw.stop()};
-        log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                  log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         return SILKWORM_OK;
 
     } catch (const mdbx::exception& e) {

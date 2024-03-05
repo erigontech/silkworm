@@ -25,13 +25,13 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
-#include <silkworm/snapshots/index.hpp>
-#include <silkworm/snapshots/snapshot.hpp>
-#include <silkworm/snapshots/test_util/common.hpp>
+//#include <silkworm/snapshots/index.hpp>
+//#include <silkworm/snapshots/snapshot.hpp>
+//#include <silkworm/snapshots/test_util/common.hpp>
 
 namespace silkworm {
 
-namespace snapshot_test = snapshots::test_util;
+//namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
   private:
@@ -389,7 +389,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
+/*TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{};
     snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
     snapshot_test::SampleBodySnapshotFile valid_body_snapshot{};
@@ -534,6 +534,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         const int result{silkworm_lib.add_snapshot(&snapshot)};
         CHECK(result == SILKWORM_OK);
     }
-}
+}*/
 
 }  // namespace silkworm

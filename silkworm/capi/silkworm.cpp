@@ -593,8 +593,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
                 log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                           log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
                 state_buffer.write_state_to_db();
+                // Always save the Execution stage progess when state batch is flushed
                 db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block->header.number);
                 gas_batch_size = 0;
+                // Commit and renew only in case of internally managed transaction
                 if (!use_external_txn) {
                     StopWatch sw{/*auto_start=*/true};
                     txn->commit_and_renew();
@@ -624,7 +626,9 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
         log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
+        // Always save the Execution stage progess when last state batch is flushed
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, max_block);
+        // Commit only in case of internally managed transaction
         if (!use_external_txn) {
             StopWatch sw{/*auto_start=*/true};
             txn->commit_and_stop();

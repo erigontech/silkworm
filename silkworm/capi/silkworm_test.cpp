@@ -25,13 +25,13 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
-//#include <silkworm/snapshots/index.hpp>
-//#include <silkworm/snapshots/snapshot.hpp>
-//#include <silkworm/snapshots/test_util/common.hpp>
+// #include <silkworm/snapshots/index.hpp>
+// #include <silkworm/snapshots/snapshot.hpp>
+// #include <silkworm/snapshots/test_util/common.hpp>
 
 namespace silkworm {
 
-//namespace snapshot_test = snapshots::test_util;
+// namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
   private:

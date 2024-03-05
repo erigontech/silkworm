@@ -23,7 +23,6 @@ set(PRIVATE_LIBS
     glaze::glaze
     Microsoft.GSL::GSL
     silkworm_core
-    silkworm_infra
     silkworm_node
     silkworm_sentry
     silkworm_rpcdaemon

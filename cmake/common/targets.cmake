@@ -61,10 +61,7 @@ function(silkworm_library TARGET)
     add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
     get_target_property(TARGET_TYPE ${TARGET} TYPE)
     if(TARGET_TYPE STREQUAL SHARED_LIBRARY)
-      target_link_libraries(
-        ${TEST_TARGET}
-        PRIVATE ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}" Catch2::Catch2
-      )
+      target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}" Catch2::Catch2)
     else()
       target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} Catch2::Catch2)
     endif()

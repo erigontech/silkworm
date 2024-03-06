@@ -1,5 +1,5 @@
 #[[
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,43 +16,36 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(db)
+add_subdirectory(etl)
 
-find_package(absl REQUIRED strings)
-find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED headers container)
-find_package(gRPC REQUIRED)
-find_package(magic_enum REQUIRED)
+find_package(absl REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
-find_package(Protobuf REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(roaring REQUIRED)
 
-set(SILKWORM_NODE_PUBLIC_LIBS
+set(LIBS_PUBLIC
+    absl::btree
+    absl::flat_hash_map
+    absl::flat_hash_set
+    absl::strings
+    mdbx-static
+    roaring::roaring
     silkworm_core
-    silkworm_db
-    silkworm_infra
-    silkworm_sentry
-    silkworm_snapshots
-    asio-grpc::asio-grpc
-    Boost::container
-    Boost::headers
-    gRPC::grpc++
-    protobuf::libprotobuf
 )
 
 # cmake-format: off
-set(SILKWORM_NODE_PRIVATE_LIBS
-    absl::strings
-    evmone
-    magic_enum::magic_enum
+set(LIBS_PRIVATE
+    cborcpp
     Microsoft.GSL::GSL
-    silkworm_db_etl
-    silkworm_interfaces
+    nlohmann_json::nlohmann_json
+    silkworm_infra
+    silkworm_snapshots
 )
 # cmake-format: on
 
 silkworm_library(
-  silkworm_node
-  PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
-  PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "db"
+  silkworm_db
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+  EXCLUDE_REGEX "db/etl"
 )

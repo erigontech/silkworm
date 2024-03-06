@@ -16,7 +16,9 @@
 
 #include "rec_split_seq.hpp"
 
+#include <fstream>
 #include <iomanip>  // for std::setw and std::setfill
+#include <stdexcept>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -38,7 +40,7 @@ using test_util::next_pseudo_random;
 //! Make the MPHF predictable just for testing
 constexpr int kTestSalt{1};
 
-TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8: key_count=0", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -51,7 +53,7 @@ TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
     CHECK_THROWS_AS(rs("first_key"), std::logic_error);
 }
 
-TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8: key_count=1", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -65,7 +67,7 @@ TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
     CHECK_NOTHROW(rs("first_key"));
 }
 
-TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit8: key_count=2", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -127,7 +129,7 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_gol
 using RecSplit4 = RecSplit<kTestLeaf>;
 auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(db::etl::kOptimalBufferSize); }
 
-TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
 
@@ -165,7 +167,7 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
+TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
 
@@ -212,7 +214,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
+TEST_CASE("RecSplit8: index lookup", "[silkworm][snapshots][recsplit][ignore]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -235,7 +237,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][ignore]") {
     }
 }
 
-TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]") {
+TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit][ignore]") {
     SetLogVerbosityGuard guard{log::Level::kInfo};
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -256,6 +258,38 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][ignore]"
         CHECK(enumeration_index == i);
         CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
     }
+}
+
+TEST_CASE("RecSplit8: unsupported feature", "[silkworm][snapshots][recsplit][ignore]") {
+    SetLogVerbosityGuard guard{log::Level::kInfo};
+
+    // Generate valid RecSplit index
+    TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs1{settings, seq_build_strategy(), /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    // Purposely alter the index file to insert an unsupported feature value
+    std::ifstream input{index_file.path(), std::ios::binary};
+    std::vector<unsigned char> buffer{std::istreambuf_iterator<char>(input), {}};
+    const auto feature_flag_offset{394};
+    const auto invalid_feature_value{250};
+    buffer[feature_flag_offset] = invalid_feature_value;
+    std::ofstream output{index_file.path(), std::ios::binary};
+    for (const auto b : buffer) {
+        output << b;
+    }
+    output.close();
+
+    CHECK_THROWS_AS(RecSplit8{index_file.path()}, std::runtime_error);
 }
 
 #endif  // _WIN32

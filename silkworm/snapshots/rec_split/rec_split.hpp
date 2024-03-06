@@ -166,7 +166,7 @@ static constexpr std::size_t kLeafSizeLength{sizeof(uint16_t)};
 static constexpr std::size_t kSaltSizeLength{sizeof(uint32_t)};
 static constexpr std::size_t kStartSeedSizeLength{sizeof(uint8_t)};
 
-static constexpr std::size_t kDoubleIndexFlagLength{sizeof(uint8_t)};
+static constexpr std::size_t kFeaturesFlagLength{sizeof(uint8_t)};
 static constexpr std::size_t kGolombParamSizeLength{sizeof(uint32_t)};  // Erigon writes 4-instead-of-2 bytes
 static constexpr std::size_t kEliasFano32CountLength{sizeof(uint64_t)};
 static constexpr std::size_t kEliasFano32ULength{sizeof(uint64_t)};
@@ -183,6 +183,41 @@ struct RecSplitSettings {
     uint64_t base_data_id;             // Application-specific base data ID written in index header
     bool double_enum_index{true};      // Flag indicating if 2-level index is required
 };
+
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_or(e);
+    })
+constexpr auto operator|(const T lhs, const T rhs) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_and(e);
+    })
+constexpr auto operator&(const T lhs, const T rhs) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_not(e);
+    })
+constexpr auto operator~(const T t) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(~static_cast<underlying>(t));
+}
+
+enum class RecSplitFeatures : uint8_t {
+    kNone = 0b0,   // no specific feature
+    kEnums = 0b1,  // 2-level index with PHT pointing to enumeration and enumeration pointing to offsets
+};
+consteval void enable_bitmask_operator_and(RecSplitFeatures);
+consteval void enable_bitmask_operator_or(RecSplitFeatures);
+consteval void enable_bitmask_operator_not(RecSplitFeatures);
+
+constexpr std::array kSupportedFeatures{RecSplitFeatures::kEnums};
 
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
@@ -279,10 +314,12 @@ class RecSplit {
         }
         SILKWORM_ASSERT(start_seed == kStartSeed);
 
-        // Read double-index flag
-        check_minimum_length(offset + kDoubleIndexFlagLength);
-        double_enum_index_ = (address + offset)[0] != 0;
-        offset += kDoubleIndexFlagLength;
+        // Read features flag (see RecSplitFeatures)
+        check_minimum_length(offset + kFeaturesFlagLength);
+        const RecSplitFeatures features{(address + offset)[0]};
+        check_supported_features(features);
+        double_enum_index_ = (features & RecSplitFeatures::kEnums) != RecSplitFeatures::kNone;
+        offset += kFeaturesFlagLength;
 
         if (double_enum_index_) {
             check_minimum_length(offset + kEliasFano32CountLength + kEliasFano32ULength);
@@ -763,7 +800,18 @@ class RecSplit {
 
     void check_minimum_length(std::size_t minimum_length) {
         if (encoded_file_ && encoded_file_->length() < minimum_length) {
-            throw std::runtime_error("RecSplit encoded file is too short: " + std::to_string(encoded_file_->length()));
+            throw std::runtime_error("index " + encoded_file_->path().filename().string() + " is too short: " +
+                                     std::to_string(encoded_file_->length()));
+        }
+    }
+
+    void check_supported_features(RecSplitFeatures features) {
+        for (const auto supported_feature : kSupportedFeatures) {
+            features = features & ~supported_feature;
+        }
+        if (RecSplitFeatures{features} != RecSplitFeatures::kNone) {
+            throw std::runtime_error("index " + encoded_file_->path().filename().string() + " has unsupported features: " +
+                                     std::to_string(uint8_t(features)));
         }
     }
 

@@ -23,11 +23,15 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::snapshots::rec_split::encoding {
 
 template <UnsignedIntegral T>
 using UnsignedIntegralSequence = std::vector<T>;
+
+//! Max integer sequence length capped at some arbitrary hard limit
+constexpr std::size_t kMaxUnsignedIntegralSequenceSize{1 * kMebi};
 
 using Uint32Sequence = UnsignedIntegralSequence<uint32_t>;
 using Uint64Sequence = UnsignedIntegralSequence<uint64_t>;
@@ -50,7 +54,9 @@ std::istream& operator>>(std::istream& is, UnsignedIntegralSequence<T>& s) {
     // Deserialize the integer sequence size using 8-bytes
     Bytes buffer(sizeof(uint64_t), '\0');
     is.read(reinterpret_cast<char*>(buffer.data()), sizeof(uint64_t));
-    uint64_t size = endian::load_big_u64(buffer.data());
+    const uint64_t size = endian::load_big_u64(buffer.data());
+    ensure(size <= kMaxUnsignedIntegralSequenceSize,
+           [&] { return "decoded sequence size is too big: " + std::to_string(size); });
 
     // Deserialize the integer sequence
     s.resize(size);

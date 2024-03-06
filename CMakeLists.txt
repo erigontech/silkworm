@@ -109,7 +109,7 @@ list(FILTER UNIT_TEST_TARGETS INCLUDE REGEX "_test$")
 list(REMOVE_ITEM UNIT_TEST_TARGETS backend_kv_test benchmark_test sentry_client_test)
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   # avoid fatal error C1002: compiler is out of heap space
-  list(REMOVE_ITEM UNIT_TEST_TARGETS rpcdaemon_test)
+  list(REMOVE_ITEM UNIT_TEST_TARGETS silkworm_rpcdaemon_test)
 endif()
 message(STATUS "UNIT_TEST_TARGETS: ${UNIT_TEST_TARGETS}")
 add_custom_target(all_unit_tests DEPENDS ${UNIT_TEST_TARGETS})

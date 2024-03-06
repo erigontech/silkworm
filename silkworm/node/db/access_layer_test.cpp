@@ -26,12 +26,12 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
-#include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm {
 

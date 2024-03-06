@@ -16,6 +16,7 @@
 
 #include "silkworm.h"
 
+#include <cstring>
 #include <iostream>
 
 #include <catch2/catch.hpp>
@@ -81,7 +82,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm][capi]") {
     SilkwormSettings settings{};
-    copy_path(settings.data_dir_path, db.get_path().c_str());
+    copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "");
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INCOMPATIBLE_LIBMDBX);
@@ -90,7 +91,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm]
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[silkworm][capi]") {
     SilkwormSettings settings{};
-    copy_path(settings.data_dir_path, db.get_path().c_str());
+    copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "v0.1.0");
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INCOMPATIBLE_LIBMDBX);
@@ -99,7 +100,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[si
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
     SilkwormSettings settings{};
-    copy_path(settings.data_dir_path, db.get_path().c_str());
+    copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_OK);
@@ -114,7 +115,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: not initialized", "[silkworm][ca
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
     SilkwormSettings settings{};
-    copy_path(settings.data_dir_path, db.get_path().c_str());
+    copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     REQUIRE(silkworm_init(&handle, &settings) == SILKWORM_OK);
@@ -126,7 +127,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
 struct SilkwormLibrary {
     explicit SilkwormLibrary(const std::filesystem::path& db_path) {
         SilkwormSettings settings{};
-        copy_path(settings.data_dir_path, db_path.c_str());
+        copy_path(settings.data_dir_path, db_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);
     }

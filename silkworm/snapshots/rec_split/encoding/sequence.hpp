@@ -31,7 +31,7 @@ template <UnsignedIntegral T>
 using UnsignedIntegralSequence = std::vector<T>;
 
 //! Max integer sequence length capped at some arbitrary hard limit
-constexpr std::size_t kMaxUnsignedIntegralSequenceSize{1 * kMebi};
+constexpr std::size_t kMaxUnsignedIntegralSequenceSize{10 * kMebi};
 
 using Uint32Sequence = UnsignedIntegralSequence<uint32_t>;
 using Uint64Sequence = UnsignedIntegralSequence<uint64_t>;

@@ -22,7 +22,7 @@ set(PRIVATE_LIBS
     Boost::headers
     mdbx-static
     silkworm_infra
-    silkworm_node
+    silkworm_db
     silkworm_rpcdaemon
     silkworm_capi
     cmd_common

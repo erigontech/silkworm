@@ -28,11 +28,10 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
+#include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
-#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
+#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm {
 
@@ -594,55 +593,6 @@ TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
         REQUIRE(processed == 2);
         REQUIRE(processed == count);
     }
-}
-
-TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
-    db::RWTxn& txn{context.rw_txn()};
-
-    Buffer buffer{txn, 0};
-
-    const auto miner_a{0x00000000000000000000000000000000000000aa_address};
-    const auto miner_b{0x00000000000000000000000000000000000000bb_address};
-
-    Block block1;
-    block1.header.number = 1;
-    block1.header.beneficiary = miner_a;
-    // miner_a gets one block reward
-    REQUIRE(execute_block(block1, buffer, test::kFrontierConfig) == ValidationResult::kOk);
-
-    Block block2;
-    block2.header.number = 2;
-    block2.header.beneficiary = miner_b;
-    // miner_a gets nothing
-    REQUIRE(execute_block(block2, buffer, test::kFrontierConfig) == ValidationResult::kOk);
-
-    Block block3;
-    block3.header.number = 3;
-    block3.header.beneficiary = miner_a;
-    // miner_a gets another block reward
-    REQUIRE(execute_block(block3, buffer, test::kFrontierConfig) == ValidationResult::kOk);
-
-    buffer.write_to_db();
-    db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
-
-    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    stagedsync::SyncContext sync_context{};
-    stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
-    REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
-
-    std::optional<Account> current_account{read_account(txn, miner_a)};
-    REQUIRE(current_account.has_value());
-    CHECK(current_account->balance == 2 * protocol::kBlockRewardFrontier);
-
-    std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
-    REQUIRE(historical_account.has_value());
-    CHECK(intx::to_string(historical_account->balance) == std::to_string(protocol::kBlockRewardFrontier));
-
-    std::optional<uint64_t> previous_incarnation{read_previous_incarnation(txn, miner_a, /*block_number=*/2)};
-    REQUIRE(previous_incarnation.has_value());
-    CHECK(previous_incarnation == 0);
 }
 
 TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {

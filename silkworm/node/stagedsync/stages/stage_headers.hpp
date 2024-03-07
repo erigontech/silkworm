@@ -61,7 +61,7 @@ namespace silkworm::stagedsync {
  */
 class HeadersStage : public Stage {
   public:
-    HeadersStage(NodeSettings*, SyncContext*);
+    HeadersStage(SyncContext*);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
 

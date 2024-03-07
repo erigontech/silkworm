@@ -78,7 +78,7 @@ TEST_CASE("Stage Transaction Lookups") {
         // Execute stage forward
         NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup(&node_settings, &sync_context);
+        stagedsync::TxLookup stage_tx_lookup{&sync_context, node_settings.etl(), node_settings.prune_mode.tx_index()};
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         db::PooledCursor lookup_table(txn, db::table::kTxLookup);
@@ -130,7 +130,7 @@ TEST_CASE("Stage Transaction Lookups") {
         // Execute stage forward
         NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup(&node_settings, &sync_context);
+        stagedsync::TxLookup stage_tx_lookup{&sync_context, node_settings.etl(), node_settings.prune_mode.tx_index()};
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Only leave block 2 alive

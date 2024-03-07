@@ -16,15 +16,18 @@
 
 #pragma once
 
+#include <silkworm/node/db/etl/collector_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class HashState final : public Stage {
   public:
-    explicit HashState(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kHashStateKey, node_settings),
-          collector_(std::make_unique<db::etl_mdbx::Collector>(node_settings->etl())) {}
+    HashState(
+        SyncContext* sync_context,
+        db::etl::CollectorSettings etl_settings)
+        : Stage(sync_context, db::stages::kHashStateKey),
+          collector_(std::make_unique<db::etl_mdbx::Collector>(etl_settings)) {}
     ~HashState() override = default;
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;

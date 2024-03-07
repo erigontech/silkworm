@@ -46,10 +46,10 @@ class ExecutionPipeline::LogTimer : public Timer {
     ExecutionPipeline* pipeline_;
 
   public:
-    LogTimer(ExecutionPipeline* pipeline)
+    LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
         : Timer{
-              pipeline->node_settings_->asio_context.get_executor(),
-              pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
+              executor,
+              interval_seconds * 1'000,
               [this] { return expired(); },
               /*.auto_start=*/true},
           pipeline_{pipeline} {}
@@ -63,6 +63,13 @@ class ExecutionPipeline::LogTimer : public Timer {
         return true;
     }
 };
+
+std::unique_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
+    return std::make_unique<LogTimer>(
+        this->node_settings_->asio_context.get_executor(),
+        this,
+        this->node_settings_->sync_loop_log_interval_seconds);
+}
 
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
@@ -107,27 +114,27 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 
 void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
-                    std::make_unique<stagedsync::HeadersStage>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
     stages_.emplace(db::stages::kBlockBodiesKey,
-                    std::make_unique<stagedsync::BodiesStage>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config));
     stages_.emplace(db::stages::kBlockHashesKey,
-                    std::make_unique<stagedsync::BlockHashes>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kSendersKey,
-                    std::make_unique<stagedsync::Senders>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Senders>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.senders()));
     stages_.emplace(db::stages::kExecutionKey,
-                    std::make_unique<stagedsync::Execution>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Execution>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->prune_mode));
     stages_.emplace(db::stages::kHashStateKey,
-                    std::make_unique<stagedsync::HashState>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HashState>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kIntermediateHashesKey,
-                    std::make_unique<stagedsync::InterHashes>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::InterHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kHistoryIndexKey,
-                    std::make_unique<stagedsync::HistoryIndex>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
     stages_.emplace(db::stages::kLogIndexKey,
-                    std::make_unique<stagedsync::LogIndex>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
     stages_.emplace(db::stages::kTxLookupKey,
-                    std::make_unique<stagedsync::TxLookup>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
     stages_.emplace(db::stages::kFinishKey,
-                    std::make_unique<stagedsync::Finish>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
@@ -174,7 +181,7 @@ bool ExecutionPipeline::stop() {
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
+    auto log_timer = make_log_timer();
 
     sync_context_->target_height = target_height;
     log::Info("ExecPipeline") << "Forward start --------------------------";
@@ -217,7 +224,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 break;
             }
 
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
 
             // forward
             const auto stage_result = current_stage_->second->forward(cycle_txn);
@@ -266,7 +273,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
+    auto log_timer = make_log_timer();
     log::Info("ExecPipeline") << "Unwind start ---------------------------";
 
     try {
@@ -282,7 +289,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
 
             // Do unwind on current stage
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
@@ -326,7 +333,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 
 Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
+    auto log_timer = make_log_timer();
 
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -340,7 +347,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
 
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(), {"op", "Prune", "returned",

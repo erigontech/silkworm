@@ -25,10 +25,11 @@ class HashState final : public Stage {
   public:
     HashState(
         SyncContext* sync_context,
-        db::etl::CollectorSettings etl_settings)
+        const db::etl::CollectorSettings& etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
           collector_(std::make_unique<db::etl_mdbx::Collector>(etl_settings)) {}
     ~HashState() override = default;
+
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
     Stage::Result prune(db::RWTxn& txn) final;

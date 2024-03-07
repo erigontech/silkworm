@@ -31,6 +31,7 @@ class InterHashes final : public Stage {
         : Stage(sync_context, db::stages::kIntermediateHashesKey),
           etl_settings_(std::move(etl_settings)) {}
     ~InterHashes() override = default;
+
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
     Stage::Result prune(db::RWTxn& txn) final;

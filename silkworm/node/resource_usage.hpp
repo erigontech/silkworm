@@ -18,22 +18,20 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/steady_timer.hpp>
+#include <silkworm/infra/common/directories.hpp>
 
-#include <silkworm/node/common/settings.hpp>
-
-namespace silkworm {
+namespace silkworm::node {
 
 //! Log for resource usage
 class ResourceUsageLog {
   public:
-    explicit ResourceUsageLog(NodeSettings& settings);
+    explicit ResourceUsageLog(const DataDirectory& data_directory)
+        : data_directory_(data_directory) {}
 
     Task<void> run();
 
   private:
-    NodeSettings& settings_;
-    boost::asio::steady_timer timer_;
+    const DataDirectory& data_directory_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::node

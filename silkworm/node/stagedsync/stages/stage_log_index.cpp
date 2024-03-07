@@ -88,9 +88,9 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
 
         // If this is first time we forward AND we have "prune history" set
         // do not process all blocks rather only what is needed
-        if (node_settings_->prune_mode.history().enabled()) {
+        if (prune_mode_history_.enabled()) {
             if (!previous_progress)
-                previous_progress = node_settings_->prune_mode.history().value_from_head(target_progress);
+                previous_progress = prune_mode_history_.value_from_head(target_progress);
         }
 
         if (previous_progress < target_progress)
@@ -190,7 +190,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode.history().enabled()) {
+        if (!prune_mode_history_.enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -204,7 +204,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode.history().value_from_head(forward_progress)};
+        const auto prune_threshold{prune_mode_history_.value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
@@ -260,8 +260,8 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_ = false;
-    topics_collector_ = std::make_unique<Collector>(node_settings_->etl());
-    addresses_collector_ = std::make_unique<Collector>(node_settings_->etl());
+    topics_collector_ = std::make_unique<Collector>(etl_settings_);
+    addresses_collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(source_config.name);
     current_target_.clear();
     current_key_.clear();
@@ -388,14 +388,14 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
         cbor_decode({static_cast<uint8_t*>(source_data.value.data()), source_data.value.length()}, bitmap_builder);
 
         // Flush bitmaps batch by batch
-        if (topics_bitmaps_size > node_settings_->batch_size) {
+        if (topics_bitmaps_size > batch_size_) {
             db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps,
                                                           topics_collector_.get(),
                                                           topics_flush_count++);
             topics_bitmaps_size = 0;
         }
 
-        if (addresses_bitmaps_size > node_settings_->batch_size) {
+        if (addresses_bitmaps_size > batch_size_) {
             db::bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps,
                                                           addresses_collector_.get(),
                                                           addresses_flush_count++);

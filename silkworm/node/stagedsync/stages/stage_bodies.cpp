@@ -95,9 +95,9 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& blo
     return data_model_.read_canonical_block(height, block);
 }
 
-BodiesStage::BodiesStage(NodeSettings* ns, SyncContext* sc)
-    : Stage(sc, db::stages::kBlockBodiesKey, ns) {
-}
+BodiesStage::BodiesStage(SyncContext* sync_context, const ChainConfig& chain_config)
+    : Stage(sync_context, db::stages::kBlockBodiesKey),
+      chain_config_(chain_config) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
@@ -129,7 +129,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
                        "span", std::to_string(target_height - current_height_)});
         }
 
-        BodyDataModel body_persistence(tx, current_height_, node_settings_->chain_config.value());
+        BodyDataModel body_persistence(tx, current_height_, chain_config_);
         body_persistence.set_preverified_height(PreverifiedHashes::current.height);
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve

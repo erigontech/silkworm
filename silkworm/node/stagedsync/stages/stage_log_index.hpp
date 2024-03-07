@@ -19,14 +19,23 @@
 #include <stdexcept>
 
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
+#include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class LogIndex : public Stage {
   public:
-    explicit LogIndex(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kLogIndexKey, node_settings){};
+    LogIndex(
+        SyncContext* sync_context,
+        size_t batch_size,
+        db::etl::CollectorSettings etl_settings,
+        db::BlockAmount prune_mode_history)
+        : Stage(sync_context, db::stages::kLogIndexKey),
+          batch_size_(batch_size),
+          etl_settings_(std::move(etl_settings)),
+          prune_mode_history_(prune_mode_history) {}
     ~LogIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -35,6 +44,10 @@ class LogIndex : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    size_t batch_size_;
+    db::etl::CollectorSettings etl_settings_;
+    db::BlockAmount prune_mode_history_;
+
     std::unique_ptr<db::etl_mdbx::Collector> topics_collector_{nullptr};
     std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_{nullptr};
     std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};

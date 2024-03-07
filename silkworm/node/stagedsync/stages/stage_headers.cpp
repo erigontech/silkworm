@@ -85,8 +85,8 @@ std::optional<BlockHeader> HeadersStage::HeaderDataModel::get_canonical_header(B
 }
 
 // HeadersStage
-HeadersStage::HeadersStage(NodeSettings* ns, SyncContext* sc)
-    : Stage(sc, db::stages::kHeadersKey, ns) {
+HeadersStage::HeadersStage(SyncContext* sync_context)
+    : Stage(sync_context, db::stages::kHeadersKey) {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {

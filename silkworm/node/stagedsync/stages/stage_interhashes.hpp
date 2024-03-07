@@ -19,6 +19,7 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
@@ -26,8 +27,9 @@ namespace silkworm::stagedsync {
 
 class InterHashes final : public Stage {
   public:
-    explicit InterHashes(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kIntermediateHashesKey, node_settings){};
+    explicit InterHashes(SyncContext* sync_context, db::etl::CollectorSettings etl_settings)
+        : Stage(sync_context, db::stages::kIntermediateHashesKey),
+          etl_settings_(std::move(etl_settings)) {}
     ~InterHashes() override = default;
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
@@ -104,6 +106,8 @@ class InterHashes final : public Stage {
 
     // The loader which (re)builds the trees
     std::unique_ptr<trie::TrieLoader> trie_loader_;
+
+    db::etl::CollectorSettings etl_settings_;
 
     std::unique_ptr<db::etl_mdbx::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<db::etl_mdbx::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage

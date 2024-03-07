@@ -35,6 +35,18 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
+stagedsync::HistoryIndex make_stage_history_index(
+    stagedsync::SyncContext* sync_context,
+    const db::test_util::TempChainData& chain_data) {
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(chain_data);
+    return stagedsync::HistoryIndex{
+        sync_context,
+        node_settings.batch_size,
+        node_settings.etl(),
+        node_settings.prune_mode.history(),
+    };
+}
+
 TEST_CASE("Stage History Index") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
@@ -126,9 +138,8 @@ TEST_CASE("Stage History Index") {
             db::PooledCursor account_changes(txn, db::table::kAccountChangeSet);
             REQUIRE(!account_changes.empty());
 
-            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+            stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             db::PooledCursor account_history(txn, db::table::kAccountHistory);
             db::PooledCursor storage_history(txn, db::table::kStorageHistory);
@@ -223,9 +234,8 @@ TEST_CASE("Stage History Index") {
 
             REQUIRE(context.prune_mode().history().enabled());
 
-            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+            stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 3);
@@ -301,9 +311,8 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
 
         // Forward history
-        NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+        stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
         db::PooledCursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
@@ -410,8 +419,7 @@ TEST_CASE("Stage History Index") {
         REQUIRE(context.prune_mode().history().enabled());
 
         // Recreate the stage with enabled pruning
-        NodeSettings node_settings2 = node::test_util::make_node_settings_from_temp_chain_data(context);
-        stagedsync::HistoryIndex stage_history_index2(&node_settings2, &sync_context);
+        stagedsync::HistoryIndex stage_history_index2 = make_stage_history_index(&sync_context, context);
 
         REQUIRE(stage_history_index2.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
@@ -463,9 +471,8 @@ TEST_CASE("HistoryIndex + Account access_layer") {
     buffer.write_to_db();
     db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
-    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     stagedsync::SyncContext sync_context{};
-    stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+    stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
     REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
     std::optional<Account> current_account{read_account(txn, miner_a)};

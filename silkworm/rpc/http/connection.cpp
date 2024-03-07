@@ -169,8 +169,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
     if (req.has_content_length() && req.body().length() > kMaxPayloadSize) {
-        auto error_msg = "content length too large: " + req.body().length();
-        co_await do_write(error_msg, boost::beast::http::status::payload_too_large);
+        co_await do_write("content length too large\n", boost::beast::http::status::payload_too_large);
         co_return;
     }
     if (req.method() != boost::beast::http::verb::options && req.method() != boost::beast::http::verb::get) {

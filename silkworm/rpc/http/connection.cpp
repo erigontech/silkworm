@@ -90,7 +90,6 @@ Task<bool> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
-
         if (const auto auth_result = is_request_authorized(parser.get()); !auth_result) {
             co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden);
             co_return false;

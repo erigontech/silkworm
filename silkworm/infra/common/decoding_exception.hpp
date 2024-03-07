@@ -40,4 +40,10 @@ inline void success_or_throw(const tl::expected<T, DecodingError>& res, const st
     }
 }
 
+template <class T>
+inline T unwrap_or_throw(tl::expected<T, DecodingError> res, const std::string& error_message = "") {
+    success_or_throw(res, error_message);
+    return std::move(*res);
+}
+
 }  // namespace silkworm

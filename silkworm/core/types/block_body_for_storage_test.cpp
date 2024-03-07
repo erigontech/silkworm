@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkworm::db::detail {
+namespace silkworm {
 
 TEST_CASE("BlockBodyForStorage encoding") {
     BlockHeader header{
@@ -43,8 +43,9 @@ TEST_CASE("BlockBodyForStorage encoding") {
     BlockBodyForStorage body{.base_txn_id = 15, .txn_count = 3, .ommers = {header}};
     Bytes encoded{body.encode()};
     ByteView view{encoded};
-    BlockBodyForStorage decoded{decode_stored_block_body(view)};
-    CHECK(decoded == body);
+    auto decoded = decode_stored_block_body(view);
+    REQUIRE(decoded.has_value());
+    CHECK(*decoded == body);
 
     // With withdrawals
     body.ommers.clear();  // no uncles after The Merge
@@ -57,7 +58,8 @@ TEST_CASE("BlockBodyForStorage encoding") {
     encoded = body.encode();
     view = encoded;
     decoded = decode_stored_block_body(view);
-    CHECK(decoded == body);
+    REQUIRE(decoded.has_value());
+    CHECK(*decoded == body);
 }
 
-}  // namespace silkworm::db::detail
+}  // namespace silkworm

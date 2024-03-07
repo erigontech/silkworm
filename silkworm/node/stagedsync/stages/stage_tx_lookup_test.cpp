@@ -17,8 +17,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
@@ -42,7 +42,7 @@ TEST_CASE("Stage Transaction Lookups") {
     db::PooledCursor bodies_table(txn, db::table::kBlockBodies);
     db::PooledCursor transactions_table(txn, db::table::kBlockTransactions);
 
-    db::detail::BlockBodyForStorage block{};
+    BlockBodyForStorage block;
     auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1 + 2;  // + 2: 2 system txs (1 at the beginning and 1 at the end)

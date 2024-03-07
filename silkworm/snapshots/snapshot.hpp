@@ -27,8 +27,8 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/infra/common/os.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/snapshots/path.hpp>
 #include <silkworm/snapshots/rec_split/rec_split_par.hpp>
 #include <silkworm/snapshots/seg/decompressor.hpp>
@@ -134,7 +134,7 @@ class HeaderSnapshot : public Snapshot {
     std::optional<MemoryMappedRegion> idx_header_hash_region_;
 };
 
-using StoredBlockBody = db::detail::BlockBodyForStorage;
+using StoredBlockBody = BlockBodyForStorage;
 
 class BodySnapshot : public Snapshot {
   public:

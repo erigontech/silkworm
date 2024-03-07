@@ -22,7 +22,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>
 
@@ -95,9 +94,13 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& blo
     return data_model_.read_canonical_block(height, block);
 }
 
-BodiesStage::BodiesStage(SyncContext* sync_context, const ChainConfig& chain_config)
+BodiesStage::BodiesStage(
+    SyncContext* sync_context,
+    const ChainConfig& chain_config,
+    std::function<uint64_t()> preverified_hashes_height)
     : Stage(sync_context, db::stages::kBlockBodiesKey),
-      chain_config_(chain_config) {}
+      chain_config_(chain_config),
+      preverified_hashes_height_(std::move(preverified_hashes_height)) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
@@ -130,7 +133,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         }
 
         BodyDataModel body_persistence(tx, current_height_, chain_config_);
-        body_persistence.set_preverified_height(PreverifiedHashes::current.height);
+        body_persistence.set_preverified_height(preverified_hashes_height_());
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);

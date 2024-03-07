@@ -90,6 +90,12 @@ Task<bool> Connection::do_read() {
     request_http_version_ = parser.get().version();
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
+
+        if (const auto auth_result = is_request_authorized(parser.get()); !auth_result) {
+            co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden);
+            co_return false;
+        }
+
         if (ws_upgrade_enabled_) {
             co_await do_upgrade(parser.release());
             co_return false;
@@ -160,16 +166,17 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     }
 
     if (!is_method_allowed(req.method())) {
-        co_await do_write(std::string{}, boost::beast::http::status::method_not_allowed);
+        co_await do_write("method not allowed\n", boost::beast::http::status::method_not_allowed);
         co_return;
     }
     if (req.has_content_length() && req.body().length() > kMaxPayloadSize) {
-        co_await do_write(std::string{}, boost::beast::http::status::payload_too_large);
+        auto error_msg = "content length too large: " + req.body().length();
+        co_await do_write(error_msg, boost::beast::http::status::payload_too_large);
         co_return;
     }
     if (req.method() != boost::beast::http::verb::options && req.method() != boost::beast::http::verb::get) {
         if (!is_accepted_content_type(req[boost::beast::http::field::content_type])) {
-            co_await do_write(std::string{}, boost::beast::http::status::bad_request);
+            co_await do_write("invalid content type\n, only application/json is supported\n", boost::beast::http::status::bad_request);
             co_return;
         }
     }
@@ -177,8 +184,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     SILK_TRACE << "Connection::handle_request body size: " << req.body().size() << " data: " << req.body();
 
     if (const auto auth_result = is_request_authorized(req); !auth_result) {
-        auto rsp_content = make_json_error(0, 403, auth_result.error()).dump() + "\n";
-        co_await do_write(rsp_content, boost::beast::http::status::forbidden);
+        co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden);
         co_return;
     }
 
@@ -249,9 +255,15 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
 
 Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status) {
     try {
-        SILK_TRACE << "Connection::do_write response: " << content;
+        SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
-        res.set(boost::beast::http::field::content_type, "application/json");
+
+        if (http_status != boost::beast::http::status::ok) {
+            res.set(boost::beast::http::field::content_type, "text/plain");
+        } else {
+            res.set(boost::beast::http::field::content_type, "application/json");
+        }
+
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
@@ -282,7 +294,7 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
     auto it = req.find("Authorization");
     if (it == req.end()) {
         SILK_ERROR << "JWT request without Authorization Header: " << req.body();
-        return tl::make_unexpected("missing Authorization header");
+        return tl::make_unexpected("missing token");
     }
 
     std::string client_token;
@@ -297,7 +309,7 @@ Connection::AuthorizationResult Connection::is_request_authorized(const boost::b
         auto decoded_client_token = jwt::decode(client_token);
         if (decoded_client_token.has_issued_at() == 0) {
             SILK_ERROR << "JWT iat (Issued At) not defined";
-            return tl::make_unexpected("iat(Issued At) not defined");
+            return tl::make_unexpected("missing issued-at");
         }
         // Validate token
         auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});

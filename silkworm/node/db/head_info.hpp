@@ -1,5 +1,5 @@
-#[[
-   Copyright 2023 The Silkworm Authors
+/*
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,20 +12,16 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-find_package(Boost REQUIRED headers)
+#pragma once
 
-add_executable(execute execute.cpp)
+#include <silkworm/core/types/head_info.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 
-set(PRIVATE_LIBS
-    Boost::headers
-    mdbx-static
-    silkworm_infra
-    silkworm_db
-    silkworm_rpcdaemon
-    silkworm_capi
-    cmd_common
-)
+namespace silkworm::db {
 
-target_link_libraries(execute PRIVATE ${PRIVATE_LIBS})
+HeadInfo read_head_info(ROTxn& txn);
+HeadInfo read_head_info(db::ROAccess db_access);
+
+}  // namespace silkworm::db

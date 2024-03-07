@@ -38,8 +38,9 @@
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/eth_status_data_provider.hpp>
+#include <silkworm/node/db/head_info.hpp>
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
@@ -115,7 +116,10 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     db::ROAccess db_access) {
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client;
 
-    db::EthStatusDataProvider eth_status_data_provider{std::move(db_access), node_settings.chain_config.value()};
+    auto head_info_provider = [db_access = std::move(db_access)]() {
+        return db::read_head_info(db_access);
+    };
+    silkworm::sentry::eth::StatusDataProvider eth_status_data_provider{std::move(head_info_provider), node_settings.chain_config.value()};
 
     if (node_settings.remote_sentry_addresses.empty()) {
         assert(false);

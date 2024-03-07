@@ -32,11 +32,6 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
   find_package(GTest REQUIRED)
 
-  # Silkworm RpcDaemon Tests
-  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/rpc/*_test.cpp")
-  add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
-  target_link_libraries(rpcdaemon_test silkworm_rpcdaemon Catch2::Catch2 GTest::gmock)
-
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
     # macOS on 64-bit ARM does not support option -fsanitize=leak

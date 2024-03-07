@@ -31,7 +31,7 @@ namespace silkworm::stagedsync {
 
 class StageError;
 
-//! \brief Holds informations across all stages
+//! \brief Holds information across all stages
 struct SyncContext {
     SyncContext() = default;
     ~SyncContext() = default;

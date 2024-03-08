@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/server_settings.hpp>
-#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/snapshots/settings.hpp>
 

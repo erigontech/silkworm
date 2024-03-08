@@ -18,6 +18,7 @@
 
 #include <utility>
 
+#include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
@@ -26,7 +27,6 @@
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/resource_usage.hpp>
-#include <silkworm/node/snapshot_sync.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::node {

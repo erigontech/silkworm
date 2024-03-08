@@ -20,6 +20,7 @@ add_subdirectory(etl)
 add_subdirectory(snapshots)
 
 find_package(absl REQUIRED)
+find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
@@ -37,8 +38,10 @@ set(LIBS_PUBLIC
 # cmake-format: off
 set(LIBS_PRIVATE
     cborcpp
+    magic_enum::magic_enum
     Microsoft.GSL::GSL
     nlohmann_json::nlohmann_json
+    silkworm_db_etl
     silkworm_infra
     silkworm_snapshots
 )

@@ -31,6 +31,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
@@ -38,7 +39,6 @@
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/snapshot_sync.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"

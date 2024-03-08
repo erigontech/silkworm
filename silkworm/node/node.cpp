@@ -18,6 +18,7 @@
 
 #include <utility>
 
+#include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -27,7 +28,6 @@
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/snapshot_sync.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
-#include <silkworm/snapshots/bittorrent/client.hpp>
 
 namespace silkworm::node {
 

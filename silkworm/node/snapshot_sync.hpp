@@ -22,10 +22,10 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
-#include <silkworm/snapshots/bittorrent/client.hpp>
-#include <silkworm/snapshots/repository.hpp>
-#include <silkworm/snapshots/settings.hpp>
 
 namespace silkworm::node {
 

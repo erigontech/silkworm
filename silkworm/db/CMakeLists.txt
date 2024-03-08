@@ -17,6 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(etl)
+add_subdirectory(snapshots)
 
 find_package(absl REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
@@ -47,5 +48,5 @@ silkworm_library(
   silkworm_db
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
-  EXCLUDE_REGEX "db/etl"
+  EXCLUDE_REGEX "db/etl" "db/snapshots"
 )

@@ -33,6 +33,7 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -40,7 +41,6 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/snapshots/index.hpp>
 
 #include "instance.hpp"
 

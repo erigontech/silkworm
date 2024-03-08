@@ -26,10 +26,10 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/snapshots/repository.hpp>
 
 namespace silkworm::db {
 

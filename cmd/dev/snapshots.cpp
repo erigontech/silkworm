@@ -31,14 +31,14 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/snapshot_sync.hpp>
-#include <silkworm/snapshots/bittorrent/client.hpp>
-#include <silkworm/snapshots/index.hpp>
-#include <silkworm/snapshots/repository.hpp>
-#include <silkworm/snapshots/seg/seg_zip.hpp>
-#include <silkworm/snapshots/snapshot.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"

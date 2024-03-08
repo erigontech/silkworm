@@ -22,11 +22,20 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
-#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 using namespace evmc::literals;
 
 namespace silkworm {
+
+stagedsync::TxLookup make_tx_lookup_stage(
+    stagedsync::SyncContext* sync_context,
+    const db::test_util::TempChainData& chain_data) {
+    return stagedsync::TxLookup{
+        sync_context,
+        db::etl::CollectorSettings{chain_data.dir().etl().path(), 256_Mebi},
+        chain_data.prune_mode().tx_index(),
+    };
+}
 
 TEST_CASE("Stage Transaction Lookups") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
@@ -76,9 +85,8 @@ TEST_CASE("Stage Transaction Lookups") {
 
     SECTION("Forward checks and unwind") {
         // Execute stage forward
-        NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup{&sync_context, node_settings.etl(), node_settings.prune_mode.tx_index()};
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         db::PooledCursor lookup_table(txn, db::table::kTxLookup);
@@ -128,9 +136,8 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(context.prune_mode().tx_index().value_from_head(2) == 1);
 
         // Execute stage forward
-        NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup{&sync_context, node_settings.etl(), node_settings.prune_mode.tx_index()};
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Only leave block 2 alive

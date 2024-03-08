@@ -27,33 +27,36 @@
 #include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm {
+class StateView : public evmone::state::StateView {
+    IntraBlockState& state_;
+
+  public:
+    explicit StateView(IntraBlockState& state) noexcept : state_{state} {}
+
+    std::optional<Account> get_account(const evmc::address& addr) const noexcept override {
+        const auto* obj = state_.get_object(addr);
+        if (obj == nullptr || !obj->current.has_value())
+            return std::nullopt;
+
+        const auto& cur = *obj->current;
+        return Account{
+            .nonce = cur.nonce,
+            .balance = cur.balance,
+            .code_hash = cur.code_hash,
+            .has_storage = state_.has_storage(addr),
+        };
+    }
+
+    evmone::bytes get_account_code(const evmc::address& addr) const noexcept override {
+        return evmone::bytes{state_.get_code(addr)};
+    }
+
+    evmc::bytes32 get_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override {
+        return state_.get_original_storage(addr, key);
+    }
+};
+
 namespace {
-    class StateView : public evmone::state::StateView {
-        IntraBlockState& state_;
-
-      public:
-        explicit StateView(IntraBlockState& state) noexcept : state_{state} {}
-
-        std::optional<Account> get_account(const evmc::address& addr) const noexcept override {
-            if (!state_.exists(addr))
-                return std::nullopt;
-            return Account{
-                .nonce = state_.get_nonce(addr),
-                .balance = state_.get_balance(addr),
-                .code_hash = state_.get_code_hash(addr),
-                .has_storage = state_.has_storage(addr),
-            };
-        }
-
-        evmone::bytes get_account_code(const evmc::address& addr) const noexcept override {
-            return evmone::bytes{state_.get_code(addr)};
-        }
-
-        evmc::bytes32 get_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override {
-            return state_.get_original_storage(addr, key);
-        }
-    };
-
     class BlockHashProvider : public evmone::state::BlockHashProvider {
         EVM& evm_;
 

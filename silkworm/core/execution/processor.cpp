@@ -30,9 +30,10 @@ namespace {
 
     class StateView : public evmone::state::StateView {
         IntraBlockState& state_;
+        EVM& evm_;
 
       public:
-        explicit StateView(IntraBlockState& state) noexcept : state_{state} {}
+        explicit StateView(IntraBlockState& state, EVM& evm) noexcept : state_{state}, evm_{evm} {}
 
         std::optional<Account> get_account(evmc::address addr) const noexcept override {
             if (!state_.exists(addr))
@@ -46,6 +47,10 @@ namespace {
 
         evmc::bytes32 get_storage(evmc::address addr, evmc::bytes32 key) const noexcept override {
             return state_.get_original_storage(addr, key);
+        }
+
+        evmc::bytes32 get_block_hash(int64_t n) const override {
+            return evm_.get_block_hash(n);
         }
     };
 }  // namespace
@@ -72,9 +77,9 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IRuleSet& r
     //     for (const auto& w : *block.withdrawals)
     //         e1_block_.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
     // }
-    const auto min_block_number = std::max(e1_block_.number - 257, int64_t{0});
-    for (auto n = min_block_number; n < e1_block_.number; ++n)
-        e1_block_.known_block_hashes.insert({n, evm_.get_block_hash(n)});
+    // const auto min_block_number = std::max(e1_block_.number - 257, int64_t{0});
+    // for (auto n = min_block_number; n < e1_block_.number; ++n)
+    //     e1_block_.known_block_hashes.insert({n, evm_.get_block_hash(n)});
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
@@ -99,7 +104,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     for (const auto& h : txn.blob_versioned_hashes)
         e1_tx.blob_hashes.emplace_back(static_cast<const evmc::bytes32&>(h));
 
-    StateView sv{state_};
+    StateView sv{state_, evm_};
 
     static const auto MAX_GAS = std::numeric_limits<int64_t>::max();
     const auto e1_res = evmone::state::transition(e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);

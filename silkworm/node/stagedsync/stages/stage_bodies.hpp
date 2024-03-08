@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
@@ -27,7 +28,7 @@ namespace silkworm::stagedsync {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(NodeSettings*, SyncContext*);
+    BodiesStage(SyncContext*, const ChainConfig&);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage() override = default;
@@ -38,6 +39,7 @@ class BodiesStage : public Stage {
 
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
+    const ChainConfig& chain_config_;
     std::atomic<BlockNum> current_height_{0};
 
   protected:

@@ -25,10 +25,13 @@
 
 #include <evmc/evmc.h>
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
+#include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -47,13 +50,20 @@ using AddressRecoveryBatch = std::vector<AddressRecovery>;
 
 class Senders final : public Stage {
   public:
-    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context);
+    Senders(
+        SyncContext* sync_context,
+        const ChainConfig& chain_config,
+        size_t batch_size,
+        const db::etl::CollectorSettings& etl_settings,
+        db::BlockAmount prune_mode_senders);
     ~Senders() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
     Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
+
+    void set_prune_mode_senders(db::BlockAmount prune_mode_senders);
 
   private:
     Stage::Result parallel_recover(db::RWTxn& txn);
@@ -66,6 +76,9 @@ class Senders final : public Stage {
 
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(std::size_t delta);
+
+    const ChainConfig& chain_config_;
+    db::BlockAmount prune_mode_senders_;
 
     //! The size of recovery batches
     std::size_t max_batch_size_;

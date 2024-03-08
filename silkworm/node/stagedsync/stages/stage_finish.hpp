@@ -16,14 +16,17 @@
 
 #pragma once
 
+#include <string>
+
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class Finish : public Stage {
   public:
-    explicit Finish(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kFinishKey, node_settings){};
+    explicit Finish(SyncContext* sync_context, std::string build_info)
+        : Stage(sync_context, db::stages::kFinishKey),
+          build_info_(std::move(build_info)) {}
     ~Finish() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -31,5 +34,8 @@ class Finish : public Stage {
 
     // Finish does not prune.
     Stage::Result prune(db::RWTxn&) final { return Stage::Result::kSuccess; };
+
+  private:
+    std::string build_info_;
 };
 }  // namespace silkworm::stagedsync

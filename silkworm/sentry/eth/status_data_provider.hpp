@@ -20,47 +20,35 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <intx/intx.hpp>
-
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/sentry/eth/status_data.hpp>
+#include <silkworm/core/types/head_info.hpp>
 
-namespace silkworm::db {
+#include "status_data.hpp"
 
-class EthStatusDataProvider {
-    struct HeadInfo {
-        BlockNum block_num{0};
-        Hash hash;
-        intx::uint256 total_difficulty;
+namespace silkworm::sentry::eth {
 
-        void debug_log() const;
-    };
-
+class StatusDataProvider {
   public:
-    EthStatusDataProvider(
-        db::ROAccess db_access,
+    StatusDataProvider(
+        std::function<HeadInfo()> head_info_provider,
         const ChainConfig& chain_config)
-        : db_access_(std::move(db_access)),
+        : head_info_provider_(std::move(head_info_provider)),
           chain_config_(chain_config) {}
 
     using StatusData = silkworm::sentry::eth::StatusData;
     [[nodiscard]] StatusData get_status_data(uint8_t eth_version);
 
-    using StatusDataProvider = std::function<Task<StatusData>(uint8_t eth_version)>;
-    [[nodiscard]] StatusDataProvider to_factory_function();
+    using StatusDataProviderFactory = std::function<Task<StatusData>(uint8_t eth_version)>;
+    [[nodiscard]] StatusDataProviderFactory to_factory_function();
 
   private:
-    static HeadInfo read_head_info(ROTxn& txn);
     static StatusData make_status_data(
         HeadInfo head_info,
         uint8_t eth_version,
         const ChainConfig& chain_config);
 
-    db::ROAccess db_access_;
+    std::function<HeadInfo()> head_info_provider_;
     const ChainConfig& chain_config_;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sentry::eth

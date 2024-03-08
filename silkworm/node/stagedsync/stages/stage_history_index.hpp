@@ -17,14 +17,23 @@
 #pragma once
 
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
+#include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class HistoryIndex : public Stage {
   public:
-    explicit HistoryIndex(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kHistoryIndexKey, node_settings){};
+    HistoryIndex(
+        SyncContext* sync_context,
+        size_t batch_size,
+        db::etl::CollectorSettings etl_settings,
+        db::BlockAmount prune_mode_history)
+        : Stage(sync_context, db::stages::kHistoryIndexKey),
+          batch_size_(batch_size),
+          etl_settings_(std::move(etl_settings)),
+          prune_mode_history_(prune_mode_history) {}
     ~HistoryIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -33,6 +42,10 @@ class HistoryIndex : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    size_t batch_size_;
+    db::etl::CollectorSettings etl_settings_;
+    db::BlockAmount prune_mode_history_;
+
     std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
     std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
 

@@ -25,6 +25,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -38,6 +39,17 @@ using namespace evmc::literals;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
     return silkworm::keccak256(address.bytes);
+}
+
+static stagedsync::Execution make_execution_stage(
+    stagedsync::SyncContext* sync_context,
+    const NodeSettings& node_settings) {
+    return stagedsync::Execution{
+        sync_context,
+        *node_settings.chain_config,
+        node_settings.batch_size,
+        node_settings.prune_mode,
+    };
 }
 
 TEST_CASE("Sync Stages") {
@@ -76,7 +88,7 @@ TEST_CASE("Sync Stages") {
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
             stagedsync::SyncContext sync_context{};
-            stagedsync::BlockHashes stage(&node_settings, &sync_context);
+            stagedsync::BlockHashes stage(&sync_context, node_settings.etl());
 
             // (previous_progress == headers_progress == 0)
             REQUIRE(stage.forward(txn) == stagedsync::Stage::Result::kSuccess);
@@ -103,7 +115,7 @@ TEST_CASE("Sync Stages") {
             REQUIRE_NOTHROW(txn.commit_and_renew());
 
             stagedsync::SyncContext sync_context{};
-            stagedsync::BlockHashes stage(&node_settings, &sync_context);
+            stagedsync::BlockHashes stage(&sync_context, node_settings.etl());
 
             // Forward
             auto stage_result{stage.forward(txn)};
@@ -190,7 +202,13 @@ TEST_CASE("Sync Stages") {
 
         // Prepare stage
         stagedsync::SyncContext sync_context{};
-        stagedsync::Senders stage(&node_settings, &sync_context);
+        stagedsync::Senders stage{
+            &sync_context,
+            *node_settings.chain_config,
+            node_settings.batch_size,
+            node_settings.etl(),
+            node_settings.prune_mode.senders(),
+        };
 
         // Insert a martian stage progress
         stage.update_progress(txn, 5);
@@ -250,15 +268,7 @@ TEST_CASE("Sync Stages") {
 
         // Check prune works
         // Override prune mode and issue pruning
-        node_settings.prune_mode =
-            db::parse_prune_mode(/*mode=*/"s",
-                                 /*olderHistory=*/std::nullopt, /*olderReceipts=*/std::nullopt,
-                                 /*olderSenders=*/std::nullopt, /*olderTxIndex=*/std::nullopt,
-                                 /*olderCallTraces=*/std::nullopt,
-                                 /*beforeHistory=*/std::nullopt, /*beforeReceipts=*/std::nullopt,
-                                 /*beforeSenders=*/2, /*beforeTxIndex=*/std::nullopt,
-                                 /*beforeCallTraces=*/std::nullopt);
-
+        stage.set_prune_mode_senders(db::BlockAmount(db::BlockAmount::Type::kBefore, 2));
         stage_result = stage.prune(txn);
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
         auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
@@ -361,7 +371,7 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             stagedsync::SyncContext sync_context{};
             sync_context.unwind_point.emplace(2);
-            stagedsync::Execution stage(&node_settings, &sync_context);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
             db::Buffer buffer2{txn, 0};
@@ -386,7 +396,7 @@ TEST_CASE("Sync Stages") {
         SECTION("Execution Prune Default") {
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage(&node_settings, &sync_context);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
             // With default settings nothing should be pruned
@@ -417,7 +427,7 @@ TEST_CASE("Sync Stages") {
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             REQUIRE(node_settings.prune_mode.history().enabled());
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage(&node_settings, &sync_context);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
             db::PooledCursor account_changeset_table(txn, db::table::kAccountChangeSet);
@@ -431,7 +441,7 @@ TEST_CASE("Sync Stages") {
 
         SECTION("HashState") {
             stagedsync::SyncContext sync_context{};
-            stagedsync::HashState stage(&node_settings, &sync_context);
+            stagedsync::HashState stage{&sync_context, node_settings.etl()};
             auto expected_stage_result{
                 magic_enum::enum_name<stagedsync::Stage::Result>(stagedsync::Stage::Result::kSuccess)};
             auto actual_stage_result = magic_enum::enum_name<stagedsync::Stage::Result>(stage.forward(txn));

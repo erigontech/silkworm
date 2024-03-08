@@ -24,7 +24,7 @@
 #include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

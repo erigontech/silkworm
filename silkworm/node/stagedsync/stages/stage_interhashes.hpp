@@ -20,7 +20,7 @@
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/node/db/etl/collector.hpp>
 #include <silkworm/node/db/etl/collector_settings.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/db/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
 namespace silkworm::stagedsync {

@@ -21,7 +21,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/db/stage.hpp>
 
 #include "main_chain.hpp"
 

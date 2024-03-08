@@ -22,7 +22,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

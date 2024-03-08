@@ -17,9 +17,9 @@
 #include "account_walker.hpp"
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/util.hpp>
+#include <silkworm/db/bitmap.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 

@@ -53,7 +53,7 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/db/etl/collector.hpp>
 #include <silkworm/snapshots/rec_split/rec_split.hpp>
 
 namespace silkworm::snapshots::rec_split {

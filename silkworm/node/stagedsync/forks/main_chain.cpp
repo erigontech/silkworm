@@ -21,9 +21,9 @@
 #include <gsl/util>
 #include <magic_enum.hpp>
 
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 
 #include "extending_fork.hpp"
 

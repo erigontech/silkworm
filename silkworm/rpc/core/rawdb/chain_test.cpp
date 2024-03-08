@@ -28,8 +28,8 @@
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/test/mock_database_reader.hpp>
 

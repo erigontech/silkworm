@@ -21,7 +21,7 @@
 #include <optional>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
+#include <silkworm/db/etl/collector.hpp>
 
 namespace silkworm::snapshots::seg {
 

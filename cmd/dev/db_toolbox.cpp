@@ -41,16 +41,16 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/genesis.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
-#include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 

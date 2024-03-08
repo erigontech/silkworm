@@ -21,8 +21,8 @@
 #include <gsl/narrow>
 
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/node/db/util.hpp>
 
 namespace silkworm::trie {
 

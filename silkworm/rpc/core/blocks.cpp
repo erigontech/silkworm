@@ -18,8 +18,8 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 

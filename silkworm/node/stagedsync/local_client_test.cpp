@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 

@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/tables.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm::rpc::stages {
 

@@ -22,8 +22,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 #include <silkworm/snapshots/index.hpp>
 #include <silkworm/snapshots/snapshot.hpp>

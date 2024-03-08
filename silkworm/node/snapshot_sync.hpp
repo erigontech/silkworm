@@ -21,8 +21,8 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/snapshots/bittorrent/client.hpp>
 #include <silkworm/snapshots/repository.hpp>
 #include <silkworm/snapshots/settings.hpp>

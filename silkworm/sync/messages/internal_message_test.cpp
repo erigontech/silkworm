@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 
 namespace silkworm {

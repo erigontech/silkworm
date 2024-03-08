@@ -21,9 +21,9 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/tables.hpp>
 
 namespace silkworm::trie {
 

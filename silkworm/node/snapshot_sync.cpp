@@ -22,12 +22,12 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/etl_mdbx_collector.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/db/etl_mdbx_collector.hpp>
-#include <silkworm/node/db/stages.hpp>
 #include <silkworm/snapshots/config.hpp>
 #include <silkworm/snapshots/index.hpp>
 #include <silkworm/snapshots/path.hpp>

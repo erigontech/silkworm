@@ -21,12 +21,12 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/db/db_utils.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/node/db/db_utils.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::stagedsync {
 

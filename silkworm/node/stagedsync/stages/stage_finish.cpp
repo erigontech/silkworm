@@ -19,7 +19,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -27,11 +27,11 @@
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>

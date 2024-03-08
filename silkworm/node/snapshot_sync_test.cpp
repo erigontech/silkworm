@@ -19,10 +19,10 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::node {
 

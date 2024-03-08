@@ -26,8 +26,8 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 #include <silkworm/rpc/test/mock_database_reader.hpp>
 

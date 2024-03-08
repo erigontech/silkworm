@@ -16,7 +16,6 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(db)
 add_subdirectory(stagedsync/stages)
 
 find_package(absl REQUIRED strings)
@@ -55,5 +54,5 @@ silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "node/db" "node/stagedsync/stages"
+  EXCLUDE_REGEX "node/stagedsync/stages"
 )

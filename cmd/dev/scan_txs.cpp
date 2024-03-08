@@ -21,9 +21,9 @@
 
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};

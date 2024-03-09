@@ -73,16 +73,16 @@ struct ApiSpecValidator : public CLI::Validator {
 
 static void add_options_interface_log(CLI::App& cli, const std::string& option_prefix, const std::string& end_point_descr,
                                       rpc::InterfaceLogSettings& settings) {
-    cli.add_flag("--" + option_prefix + ".enabled", settings.enabled)
+    cli.add_flag("--" + option_prefix + ".log.enabled", settings.enabled)
         ->description("Enable interface log files for " + end_point_descr)
         ->capture_default_str();
 
-    cli.add_option("--" + option_prefix + ".max_files", settings.max_files)
+    cli.add_option("--" + option_prefix + ".log.max_files", settings.max_files)
         ->description("Maximum number of distinct interface log files for " + end_point_descr)
         ->check(CLI::Range(1, 500))
         ->capture_default_str();
 
-    cli.add_option("--" + option_prefix + ".max_file_size", settings.max_file_size_mb)
+    cli.add_option("--" + option_prefix + ".log.max_file_size", settings.max_file_size_mb)
         ->description("Maximum size in megabytes of each interface log file for " + end_point_descr)
         ->check(CLI::Range(1, 1024))
         ->capture_default_str();

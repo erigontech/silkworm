@@ -21,10 +21,8 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 
-/*
-Part of the compatibility layer with the Turbo-Geth DB format;
-see its common/dbutils/bucket.go.
-*/
+/// Part of the compatibility layer with the Erigon DB format.
+
 namespace silkworm::db::table {
 
 inline constexpr VersionBase kRequiredSchemaVersion{3, 0, 0};  // We're compatible with this
@@ -124,9 +122,29 @@ inline constexpr db::MapConfig kBodiesSnapshotInfo{kBodiesSnapshotInfoName};
 inline constexpr const char* kCallTraceSetName{"CallTraceSet"};
 inline constexpr db::MapConfig kCallTraceSet{kCallTraceSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+//! \details Stores the list of blocks in which a specific call sender (i.e. "from") has been traced
+//! \struct
+//! \verbatim
+//!   key   : address (20 bytes) + suffix (BE 64bit unsigned integer)
+//!   value : binary bitmap holding list of blocks
+//! \endverbatim
+//! \remark Each record key holds a suffix which is a 64bit unsigned integer specifying the "upper bound" limit
+//! of the list of blocks contained in the value part. When this integer is equal to UINT64_MAX, it means this
+//! record holds the last known chunk of blocks which contain the address as sender for some call. This is due
+//! to how roaring bitmaps work.
 inline constexpr const char* kCallFromIndexName{"CallFromIndex"};
 inline constexpr db::MapConfig kCallFromIndex{kCallFromIndexName};
 
+//! \details Stores the list of blocks in which a specific call receiver (i.e. "to") has been traced
+//! \struct
+//! \verbatim
+//!   key   : address (20 bytes) + suffix (BE 64bit unsigned integer)
+//!   value : binary bitmap holding list of blocks
+//! \endverbatim
+//! \remark Each record key holds a suffix which is a 64bit unsigned integer specifying the "upper bound" limit
+//! of the list of blocks contained in the value part. When this integer is equal to UINT64_MAX, it means this
+//! record holds the last known chunk of blocks which contain the address as receiver for some call. This is due
+//! to how roaring bitmaps work.
 inline constexpr const char* kCallToIndexName{"CallToIndex"};
 inline constexpr db::MapConfig kCallToIndex{kCallToIndexName};
 

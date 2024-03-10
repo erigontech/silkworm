@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,18 +25,13 @@
 
 namespace silkworm::stagedsync {
 
-class LogIndex : public Stage {
+class CallTraceIndex : public Stage {
   public:
-    LogIndex(
-        SyncContext* sync_context,
-        size_t batch_size,
-        db::etl::CollectorSettings etl_settings,
-        db::BlockAmount prune_mode_history)
-        : Stage(sync_context, db::stages::kLogIndexKey),
-          batch_size_(batch_size),
-          etl_settings_(std::move(etl_settings)),
-          prune_mode_history_(prune_mode_history) {}
-    ~LogIndex() override = default;
+    CallTraceIndex(SyncContext* sync_context,
+                   size_t batch_size,
+                   db::etl::CollectorSettings etl_settings,
+                   db::BlockAmount prune_mode);
+    ~CallTraceIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
@@ -44,35 +39,43 @@ class LogIndex : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    size_t batch_size_;
-    db::etl::CollectorSettings etl_settings_;
-    db::BlockAmount prune_mode_history_;
-
-    std::unique_ptr<db::etl_mdbx::Collector> topics_collector_{nullptr};
-    std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_{nullptr};
-    std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
-
-    std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
-    std::string current_source_;       // Current source of data
-    std::string current_target_;       // Current target of transformed data
-    std::string current_key_;          // Actual processing key
-
     void forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to);
     void unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to);
     void prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfig& target);
 
-    //! \brief Collects bitmaps of block numbers for each log entry
-    void collect_bitmaps_from_logs(db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to);
+    //! \brief Collect bitmaps of block numbers for each call trace entry
+    void collect_bitmaps_from_call_traces(
+        db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to);
 
-    //! \brief Collects unique keys for log entries within provided boundaries
-    void collect_unique_keys_from_logs(
+    //! \brief Collect unique keys for call trace entries within provided boundaries
+    void collect_unique_keys_from_call_traces(
         db::RWTxn& txn,
         const db::MapConfig& source_config,
         BlockNum from, BlockNum to,
-        std::map<Bytes, bool>& addresses,
-        std::map<Bytes, bool>& topics);
+        std::map<Bytes, bool>& senders,
+        std::map<Bytes, bool>& receivers);
 
     void reset_log_progress();  // Clears out all logging vars
+
+    std::size_t batch_size_;
+    db::etl::CollectorSettings etl_settings_;
+    db::BlockAmount prune_mode_;
+
+    std::unique_ptr<db::etl_mdbx::Collector> call_from_collector_;
+    std::unique_ptr<db::etl_mdbx::Collector> call_to_collector_;
+    std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
+
+    //! Flag indicating if we're in ETL loading phase (for logging purposes)
+    std::atomic_bool loading_{false};
+
+    //! Current source of data (for logging purposes)
+    std::string current_source_;
+
+    //! Current target of transformed data (for logging purposes)
+    std::string current_target_;
+
+    //! Actual processing key (for logging purposes)
+    std::string current_key_;
 };
 
 }  // namespace silkworm::stagedsync

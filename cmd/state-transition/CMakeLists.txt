@@ -28,7 +28,13 @@ find_package(nlohmann_json REQUIRED)
 
 add_executable(state_transition state_transition.cpp expected_state.cpp state_transition.hpp runner.cpp)
 target_link_libraries(
-  state_transition PRIVATE silkworm_node CLI11::CLI11 absl::time ethash::keccak nlohmann_json::nlohmann_json
+  state_transition
+  PRIVATE CLI11::CLI11
+          absl::time
+          ethash::keccak
+          nlohmann_json::nlohmann_json
+          silkworm_core
+          silkworm_sentry
 )
 
 configure_file(state_transition_sample1.json ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample1.json COPYONLY)

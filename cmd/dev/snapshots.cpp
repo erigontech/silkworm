@@ -16,7 +16,6 @@
 
 #include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -293,19 +292,30 @@ void open_index(const SnapSettings& settings) {
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
     const auto index_path{snapshot_path->index_file()};
+    SILK_INFO << "Index file: " << index_path.path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     rec_split::RecSplitIndex idx{index_path.path()};
-    if (settings.lookup_number) {
-        BlockNum number{*settings.lookup_number};
-        SILK_INFO << "Open index offset for " << number << ": " << idx.ordinal_lookup(number);
-    } else {
-        for (size_t n{snapshot_path->block_from()}; n < snapshot_path->block_to(); ++n) {
-            if ((n - snapshot_path->block_from()) % 50'000 == 0) {
-                SILK_INFO << "Open index offset for " << n << ": " << idx.ordinal_lookup(n);
+    SILK_INFO << "Index properties: empty=" << idx.empty() << " base_data_id=" << idx.base_data_id()
+              << " double_enum_index=" << idx.double_enum_index() << " less_false_positives=" << idx.less_false_positives();
+    if (idx.double_enum_index()) {
+        if (settings.lookup_number) {
+            const uint64_t data_id{*settings.lookup_number};
+            const uint64_t enumeration{data_id - idx.base_data_id()};
+            if (enumeration < idx.key_count()) {
+                SILK_INFO << "Offset by ordinal lookup for " << data_id << ": " << idx.ordinal_lookup(enumeration);
+            } else {
+                SILK_WARN << "Invalid absolute data number " << data_id << " for ordinal lookup";
+            }
+        } else {
+            for (size_t i{0}; i < idx.key_count(); ++i) {
+                if (i % (idx.key_count() / 10) == 0) {
+                    SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.ordinal_lookup(i)
+                              << " [existence filter: " << int(idx.existence_filter()[i]) << "]";
+                }
             }
         }
-        const auto last{snapshot_path->block_to() - 1};
-        SILK_INFO << "Open index offset for " << last << ": " << idx.ordinal_lookup(last);
+    } else {
+        SILK_INFO << "Index does not support 2-layer enum indexing";
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";

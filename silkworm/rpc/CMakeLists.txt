@@ -14,30 +14,19 @@
    limitations under the License.
 ]]
 
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers container)
 find_package(gRPC REQUIRED)
+find_package(GTest REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
 
-# Silkrpc library
-file(
-  GLOB_RECURSE
-  SILKWORM_RPCDAEMON_SRC
-  CONFIGURE_DEPENDS
-  "*.cpp"
-  "*.cc"
-  "*.hpp"
-  "*.c"
-  "*.h"
-)
-list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
-list(FILTER SILKWORM_RPCDAEMON_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
-
 set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
-    silkworm_node
+    silkworm_db
     silkworm_core
     silkworm_interfaces
     asio-grpc::asio-grpc
@@ -47,8 +36,6 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     gRPC::grpc++
     jwt-cpp::jwt-cpp
     nlohmann_json::nlohmann_json
-    absl::flat_hash_map
-    absl::flat_hash_set
     absl::btree
     Boost::container
     Boost::headers
@@ -57,12 +44,17 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     pico_http_parser
 )
 
-set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
+# cmake-format: off
+set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES
+    absl::strings
+    evmc::instructions
+    roaring::roaring
+)
+# cmake-format: on
 
-add_library(silkworm_rpcdaemon "${SILKWORM_RPCDAEMON_SRC}")
-
-target_link_libraries(
+silkworm_library(
   silkworm_rpcdaemon
   PUBLIC ${SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES}
   PRIVATE ${SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES}
+  LIBS_TEST GTest::gmock
 )

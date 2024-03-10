@@ -39,6 +39,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+#include <silkworm/node/db/stages.hpp>
 #include <silkworm/snapshots/index.hpp>
 
 #include "instance.hpp"
@@ -440,9 +441,8 @@ class BlockProvider {
         size_t refresh_counter{kTxnRefreshThreshold};
 
         try {
-            while (current_block <= max_block_) {
-                Block block;
-
+            Block block;
+            while (current_block <= max_block_ && !block_buffer_->is_stopped()) {
                 const bool success{access_layer.read_block(current_block, /*read_senders=*/true, block)};
                 if (!success) {
                     block_buffer_->push_front(std::nullopt);
@@ -547,7 +547,8 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
             } else {
                 block_buffer.pop_back(&block);
             }
-            if (!block) {
+            if (!block || !block.has_value()) {
+                block_buffer.terminate_and_release_all();
                 return SILKWORM_BLOCK_NOT_FOUND;
             }
             SILKWORM_ASSERT(block->header.number == block_number);
@@ -564,6 +565,7 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
             std::vector<Receipt> receipts;
             const auto result{processor.execute_and_write_block(receipts)};
             if (result != ValidationResult::kOk) {
+                block_buffer.terminate_and_release_all();
                 return SILKWORM_INVALID_BLOCK;
             }
 
@@ -591,21 +593,23 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
                 log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                           log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
                 state_buffer.write_state_to_db();
+                // Always save the Execution stage progess when state batch is flushed
+                db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block->header.number);
                 gas_batch_size = 0;
-                if (use_external_txn) {
-                    // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
-                    return SILKWORM_OK;
+                // Commit and renew only in case of internally managed transaction
+                if (!use_external_txn) {
+                    StopWatch sw{/*auto_start=*/true};
+                    txn->commit_and_renew();
+                    const auto [elapsed, _]{sw.stop()};
+                    log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                              log_args_for_exec_commit(sw.since_start(elapsed), db_path));
                 }
-                StopWatch sw{/*auto_start=*/true};
-                txn->commit_and_renew();
-                const auto [elapsed, _]{sw.stop()};
-                log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_commit(sw.since_start(elapsed), db_path));
             }
 
             const auto now{std::chrono::steady_clock::now()};
             if (signal_check_time <= now) {
                 if (SignalHandler::signalled()) {
+                    block_buffer.terminate_and_release_all();
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
                 signal_check_time = now + 5s;
@@ -622,15 +626,16 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
         log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                   log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
         state_buffer.write_state_to_db();
-        if (use_external_txn) {
-            // We *must* return to have commit/abort happen outside and keep all-or-nothing guarantee
-            return SILKWORM_OK;
+        // Always save the Execution stage progess when last state batch is flushed
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, max_block);
+        // Commit only in case of internally managed transaction
+        if (!use_external_txn) {
+            StopWatch sw{/*auto_start=*/true};
+            txn->commit_and_stop();
+            const auto [elapsed, _]{sw.stop()};
+            log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         }
-        StopWatch sw{/*auto_start=*/true};
-        txn->commit_and_stop();
-        const auto [elapsed, _]{sw.stop()};
-        log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                  log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         return SILKWORM_OK;
 
     } catch (const mdbx::exception& e) {

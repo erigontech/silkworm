@@ -11,6 +11,8 @@ parse:
         PUBLIC: '*'
         PRIVATE: '*'
         EXCLUDE_REGEX: '*'
+        TYPE: '*'
+        LIBS_TEST: '*'
 
 format:
   line_width: 120

@@ -33,8 +33,9 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/db/eth_status_data_provider.hpp>
+#include <silkworm/node/db/head_info.hpp>
 #include <silkworm/node/node.hpp>
+#include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/sentry_client_factory.hpp>
 #include <silkworm/sync/sync.hpp>
 
@@ -276,7 +277,12 @@ int main(int argc, char* argv[]) {
         settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
-        db::EthStatusDataProvider eth_status_data_provider{db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
+
+        auto head_info_provider = [db_access = db::ROAccess{chaindata_db}] {
+            return db::read_head_info(db_access);
+        };
+        sentry::eth::StatusDataProvider eth_status_data_provider{std::move(head_info_provider), node_settings.chain_config.value()};
+
         auto [sentry_client, sentry_server] = sentry::SentryClientFactory::make_sentry(
             std::move(settings.sentry_settings),
             settings.node_settings.remote_sentry_addresses,

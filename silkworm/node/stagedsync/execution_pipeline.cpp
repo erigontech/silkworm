@@ -24,6 +24,7 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_finish.hpp>
 #include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
@@ -46,10 +47,10 @@ class ExecutionPipeline::LogTimer : public Timer {
     ExecutionPipeline* pipeline_;
 
   public:
-    LogTimer(ExecutionPipeline* pipeline)
+    LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
         : Timer{
-              pipeline->node_settings_->asio_context.get_executor(),
-              pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
+              executor,
+              interval_seconds * 1'000,
               [this] { return expired(); },
               /*.auto_start=*/true},
           pipeline_{pipeline} {}
@@ -63,6 +64,13 @@ class ExecutionPipeline::LogTimer : public Timer {
         return true;
     }
 };
+
+std::unique_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
+    return std::make_unique<LogTimer>(
+        this->node_settings_->asio_context.get_executor(),
+        this,
+        this->node_settings_->sync_loop_log_interval_seconds);
+}
 
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
@@ -89,45 +97,44 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 /*
  * Stages from Erigon -> Silkworm
  *  1 StageHeaders ->  stagedsync::HeadersStage
- *  2 StageCumulativeIndex -> TBD
+ *  2 StageBodies -> stagedsync::BodiesStage
  *  3 StageBlockHashes -> stagedsync::BlockHashes
- *  4 StageBodies -> stagedsync::BodiesStage
- *  5 StageIssuance -> TBD
- *  6 StageSenders -> stagedsync::Senders
- *  7 StageExecuteBlocks -> stagedsync::Execution
- *  8 StageTranspile -> TBD
- *  9 StageHashState -> stagedsync::HashState
- * 10 StageTrie -> stagedsync::InterHashes
- * 11 StageHistory -> stagedsync::HistoryIndex
- * 12 StageLogIndex -> stagedsync::LogIndex
- * 13 StageCallTraces -> TBD
- * 14 StageTxLookup -> stagedsync::TxLookup
- * 15 StageFinish -> stagedsync::Finish
+ *  4 StageSenders -> stagedsync::Senders
+ *  5 StageExecution -> stagedsync::Execution
+ *  6 StageHashState -> stagedsync::HashState
+ *  7 StageInterHashes -> stagedsync::InterHashes
+ *  8 StageIndexes -> stagedsync::HistoryIndex
+ *  9 StageLogIndex -> stagedsync::LogIndex
+ * 10 StageCallTraces -> stagedsync::CallTraceIndex
+ * 11 StageTxLookup -> stagedsync::TxLookup
+ * 12 StageFinish -> stagedsync::Finish
  */
 
 void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
-                    std::make_unique<stagedsync::HeadersStage>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
     stages_.emplace(db::stages::kBlockBodiesKey,
-                    std::make_unique<stagedsync::BodiesStage>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config));
     stages_.emplace(db::stages::kBlockHashesKey,
-                    std::make_unique<stagedsync::BlockHashes>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kSendersKey,
-                    std::make_unique<stagedsync::Senders>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Senders>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.senders()));
     stages_.emplace(db::stages::kExecutionKey,
-                    std::make_unique<stagedsync::Execution>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Execution>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->prune_mode));
     stages_.emplace(db::stages::kHashStateKey,
-                    std::make_unique<stagedsync::HashState>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HashState>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kIntermediateHashesKey,
-                    std::make_unique<stagedsync::InterHashes>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::InterHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kHistoryIndexKey,
-                    std::make_unique<stagedsync::HistoryIndex>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
     stages_.emplace(db::stages::kLogIndexKey,
-                    std::make_unique<stagedsync::LogIndex>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
+    stages_.emplace(db::stages::kCallTracesKey,
+                    std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
     stages_.emplace(db::stages::kTxLookupKey,
-                    std::make_unique<stagedsync::TxLookup>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
     stages_.emplace(db::stages::kFinishKey,
-                    std::make_unique<stagedsync::Finish>(node_settings_, sync_context_.get()));
+                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
@@ -141,6 +148,7 @@ void ExecutionPipeline::load_stages() {
                                      db::stages::kIntermediateHashesKey,
                                      db::stages::kHistoryIndexKey,
                                      db::stages::kLogIndexKey,
+                                     db::stages::kCallTracesKey,
                                      db::stages::kTxLookupKey,
                                      db::stages::kFinishKey,
                                  });
@@ -149,6 +157,7 @@ void ExecutionPipeline::load_stages() {
                                 {
                                     db::stages::kFinishKey,
                                     db::stages::kTxLookupKey,
+                                    db::stages::kCallTracesKey,
                                     db::stages::kLogIndexKey,
                                     db::stages::kHistoryIndexKey,
                                     db::stages::kHashStateKey,
@@ -174,10 +183,10 @@ bool ExecutionPipeline::stop() {
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
+    auto log_timer = make_log_timer();
 
     sync_context_->target_height = target_height;
-    log::Info("ExecPipeline") << "Forward start --------------------------";
+    log::Info("ExecutionPipeline") << "Forward start";
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
@@ -217,7 +226,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 break;
             }
 
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
 
             // forward
             const auto stage_result = current_stage_->second->forward(cycle_txn);
@@ -250,7 +259,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                                    ", head_header_height= " + to_string(head_header_number_));
         }
 
-        log::Info("ExecPipeline") << "Forward done ---------------------------";
+        log::Info("ExecutionPipeline") << "Forward done";
 
         if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
 
@@ -266,8 +275,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
-    log::Info("ExecPipeline") << "Unwind start ---------------------------";
+    auto log_timer = make_log_timer();
+    log::Info("ExecutionPipeline") << "Unwind start";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -282,7 +291,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
 
             // Do unwind on current stage
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
@@ -314,7 +323,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
-        log::Info("ExecPipeline") << "Unwind done ----------------------------";
+        log::Info("ExecutionPipeline") << "Unwind done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
@@ -326,7 +335,8 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 
 Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
-    LogTimer log_timer{this};
+    auto log_timer = make_log_timer();
+    log::Info("ExecutionPipeline") << "Prune start";
 
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -340,7 +350,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
 
-            log_timer.reset();  // Resets the interval for next log line from now
+            log_timer->reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(), {"op", "Prune", "returned",
@@ -360,6 +370,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
+        log::Info("ExecutionPipeline") << "Prune done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {

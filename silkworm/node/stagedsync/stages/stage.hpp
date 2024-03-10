@@ -23,7 +23,6 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
-#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/etl_mdbx_collector.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
@@ -32,7 +31,7 @@ namespace silkworm::stagedsync {
 
 class StageError;
 
-//! \brief Holds informations across all stages
+//! \brief Holds information across all stages
 struct SyncContext {
     SyncContext() = default;
     ~SyncContext() = default;
@@ -56,7 +55,6 @@ class Stage : public Stoppable {
   public:
     enum class [[nodiscard]] Result {
         kSuccess,                 // valid chain
-        kUnknownChainId,          //
         kUnknownProtocolRuleSet,  //
         kBadChainSequence,        //
         kInvalidProgress,         //
@@ -78,7 +76,8 @@ class Stage : public Stoppable {
         Unwind,   // Executing Unwind
         Prune,    // Executing Prune
     };
-    explicit Stage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings);
+
+    Stage(SyncContext* sync_context, const char* stage_name);
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
     //! \param [in] txn : A db transaction holder
@@ -128,7 +127,6 @@ class Stage : public Stoppable {
   protected:
     SyncContext* sync_context_;                                  // Shared context across stages
     const char* stage_name_;                                     // Human friendly identifier of the stage
-    NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
     std::mutex sl_mutex_;                                        // To synchronize access by outer sync loop
     std::string log_prefix_;                                     // Log lines prefix holding the progress among stages

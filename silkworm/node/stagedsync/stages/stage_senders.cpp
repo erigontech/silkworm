@@ -33,11 +33,18 @@ namespace silkworm::stagedsync {
 
 using namespace std::chrono_literals;
 
-Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
-    : Stage(sync_context, db::stages::kSendersKey, node_settings),
-      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
+Senders::Senders(
+    SyncContext* sync_context,
+    const ChainConfig& chain_config,
+    size_t batch_size,
+    const db::etl::CollectorSettings& etl_settings,
+    db::BlockAmount prune_mode_senders)
+    : Stage(sync_context, db::stages::kSendersKey),
+      chain_config_(chain_config),
+      prune_mode_senders_(prune_mode_senders),
+      max_batch_size_{batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       batch_{std::make_shared<std::vector<AddressRecovery>>()},
-      collector_{node_settings->etl()} {
+      collector_{etl_settings} {
     // Reserve space for max batch in advance
     batch_->reserve(max_batch_size_);
 }
@@ -162,7 +169,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode.senders().enabled()) {
+        if (!prune_mode_senders_.enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -175,7 +182,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode.senders().value_from_head(forward_progress)};
+        const auto prune_threshold{prune_mode_senders_.value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
@@ -238,6 +245,10 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
 
     operation_ = OperationType::None;
     return ret;
+}
+
+void Senders::set_prune_mode_senders(db::BlockAmount prune_mode_senders) {
+    prune_mode_senders_ = prune_mode_senders;
 }
 
 Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
@@ -370,7 +381,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, 
     }
 
     // We're only interested in revisions up to London, so it's OK to not detect time-based forks.
-    const evmc_revision rev{node_settings_->chain_config->revision(block_num, /*block_time=*/0)};
+    const evmc_revision rev{chain_config_.revision(block_num, /*block_time=*/0)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
 
@@ -392,7 +403,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, 
                 log::Error(log_prefix_) << "EIP-155 signature for transaction #" << tx_id << " in block #" << block_num
                                         << " before Spurious Dragon";
                 return Stage::Result::kInvalidTransaction;
-            } else if (transaction.chain_id.value() != node_settings_->chain_config->chain_id) {
+            } else if (transaction.chain_id.value() != chain_config_.chain_id) {
                 log::Error(log_prefix_) << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
                 return Stage::Result::kInvalidTransaction;
             }

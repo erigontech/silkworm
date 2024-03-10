@@ -37,9 +37,6 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
     operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
-        if (!node_settings_->chain_config.has_value()) {
-            throw StageError(Stage::Result::kUnknownChainId);
-        }
         if (!rule_set_) {
             throw StageError(Stage::Result::kUnknownProtocolRuleSet);
         }
@@ -84,9 +81,9 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
         // prune-able data
-        BlockNum prune_history{node_settings_->prune_mode.history().value_from_head(senders_stage_progress)};
-        BlockNum prune_receipts{node_settings_->prune_mode.receipts().value_from_head(senders_stage_progress)};
-        BlockNum prune_call_traces{node_settings_->prune_mode.call_traces().value_from_head(senders_stage_progress)};
+        BlockNum prune_history{prune_mode_.history().value_from_head(senders_stage_progress)};
+        BlockNum prune_receipts{prune_mode_.receipts().value_from_head(senders_stage_progress)};
+        BlockNum prune_call_traces{prune_mode_.call_traces().value_from_head(senders_stage_progress)};
         if (hashstate_stage_progress) {
             prune_history = std::min(prune_history, hashstate_stage_progress - 1);
             prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
@@ -111,7 +108,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
             // Persist forward and prune progresses
             update_progress(txn, block_num_);
-            if (node_settings_->prune_mode.history().enabled() || node_settings_->prune_mode.receipts().enabled()) {
+            if (prune_mode_.history().enabled() || prune_mode_.receipts().enabled()) {
                 db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, block_num_);
             }
 
@@ -206,8 +203,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
         std::vector<Receipt> receipts;
 
         // Transform batch_size limit into Ggas
-        size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
-        size_t gas_max_batch_size{gas_max_history_size * 20};                  // 256Ggas -> 5Tgas roughly
+        size_t gas_max_history_size{batch_size_ * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
+        size_t gas_max_batch_size{gas_max_history_size * 20};   // 256Ggas -> 5Tgas roughly
         size_t gas_history_size{0};
         size_t gas_batch_size{0};
 
@@ -231,7 +228,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 log_time = now + 5s;
             }
 
-            ExecutionProcessor processor(block, *rule_set_, buffer, node_settings_->chain_config.value());
+            ExecutionProcessor processor(block, *rule_set_, buffer, chain_config_);
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -402,9 +399,9 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
     }
 
     try {
-        if (!node_settings_->prune_mode.history().enabled() &&
-            !node_settings_->prune_mode.receipts().enabled() &&
-            !node_settings_->prune_mode.call_traces().enabled()) {
+        if (!prune_mode_.history().enabled() &&
+            !prune_mode_.receipts().enabled() &&
+            !prune_mode_.call_traces().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -419,7 +416,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         const BlockNum segment_width{forward_progress - prune_progress};
 
         // Prune history of changes (changesets)
-        if (const auto prune_threshold{node_settings_->prune_mode.history().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{prune_mode_.history().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
@@ -466,7 +463,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         // Prune receipts
-        if (const auto prune_threshold{node_settings_->prune_mode.receipts().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{prune_mode_.receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
@@ -498,7 +495,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         // Prune call traces
-        if (const auto prune_threshold{node_settings_->prune_mode.call_traces().value_from_head(forward_progress)}; prune_threshold) {
+        if (const auto prune_threshold{prune_mode_.call_traces().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),

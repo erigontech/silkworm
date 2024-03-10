@@ -166,10 +166,11 @@ static constexpr std::size_t kLeafSizeLength{sizeof(uint16_t)};
 static constexpr std::size_t kSaltSizeLength{sizeof(uint32_t)};
 static constexpr std::size_t kStartSeedSizeLength{sizeof(uint8_t)};
 
-static constexpr std::size_t kDoubleIndexFlagLength{sizeof(uint8_t)};
+static constexpr std::size_t kFeaturesFlagLength{sizeof(uint8_t)};
 static constexpr std::size_t kGolombParamSizeLength{sizeof(uint32_t)};  // Erigon writes 4-instead-of-2 bytes
 static constexpr std::size_t kEliasFano32CountLength{sizeof(uint64_t)};
 static constexpr std::size_t kEliasFano32ULength{sizeof(uint64_t)};
+static constexpr std::size_t kExistenceFilterSizeLength{sizeof(uint64_t)};
 
 //! Size in bytes of 2nd fixed metadata header in RecSplit-encoded file
 constexpr std::size_t kSecondMetadataHeaderLength{
@@ -181,8 +182,45 @@ struct RecSplitSettings {
     uint16_t bucket_size;              // The number of keys in each bucket (except probably last one)
     std::filesystem::path index_path;  // The path of the generated RecSplit index file
     uint64_t base_data_id;             // Application-specific base data ID written in index header
-    bool double_enum_index{true};      // Flag indicating if 2-level index is required
+    bool double_enum_index{true};      // Flag indicating if 2-layer index is required
+    bool less_false_positives{false};  // Flag indicating if existence filter to reduce false-positives is required
 };
+
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_or(e);
+    })
+constexpr auto operator|(const T lhs, const T rhs) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_and(e);
+    })
+constexpr auto operator&(const T lhs, const T rhs) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+template <typename T>
+    requires(std::is_enum_v<T> and requires(T e) {
+        enable_bitmask_operator_not(e);
+    })
+constexpr auto operator~(const T t) {
+    using underlying = std::underlying_type_t<T>;
+    return static_cast<T>(~static_cast<underlying>(t));
+}
+
+enum class RecSplitFeatures : uint8_t {
+    kNone = 0b0,                 // no specific feature
+    kEnums = 0b1,                // 2-layer index with PHT pointing to enumeration and enumeration pointing to offsets
+    kLessFalsePositives = 0b10,  // reduce false-positives to 1/256=0.4% at the cost of 1byte per key
+};
+consteval void enable_bitmask_operator_and(RecSplitFeatures);
+consteval void enable_bitmask_operator_or(RecSplitFeatures);
+consteval void enable_bitmask_operator_not(RecSplitFeatures);
+
+constexpr std::array kSupportedFeatures{RecSplitFeatures::kEnums, RecSplitFeatures::kLessFalsePositives};
 
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
@@ -279,12 +317,15 @@ class RecSplit {
         }
         SILKWORM_ASSERT(start_seed == kStartSeed);
 
-        // Read double-index flag
-        check_minimum_length(offset + kDoubleIndexFlagLength);
-        double_enum_index_ = (address + offset)[0] != 0;
-        offset += kDoubleIndexFlagLength;
+        // Read features flag (see RecSplitFeatures)
+        check_minimum_length(offset + kFeaturesFlagLength);
+        const RecSplitFeatures features{(address + offset)[0]};
+        check_supported_features(features);
+        double_enum_index_ = (features & RecSplitFeatures::kEnums) != RecSplitFeatures::kNone;
+        less_false_positives_ = (features & RecSplitFeatures::kLessFalsePositives) != RecSplitFeatures::kNone;
+        offset += kFeaturesFlagLength;
 
-        if (double_enum_index_) {
+        if (double_enum_index_ && key_count_ > 0) {
             check_minimum_length(offset + kEliasFano32CountLength + kEliasFano32ULength);
 
             // Read Elias-Fano index for offsets
@@ -295,6 +336,21 @@ class RecSplit {
             std::span<uint8_t> remaining_data{address + offset, encoded_file_->length() - offset};
             ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
             offset += ef_offsets_->data().size() * sizeof(uint64_t);
+
+            if (less_false_positives_) {
+                // Read 1-byte-per-key existence filter used to reduce false positives
+                const uint64_t filter_size = endian::load_big_u64(address + offset);
+                offset += kExistenceFilterSizeLength;
+                if (filter_size != key_count_) {
+                    throw std::runtime_error{
+                        "Incompatible index format: existence filter length " + std::to_string(filter_size) +
+                        " != key count " + std::to_string(key_count_)};
+                }
+                std::span<uint8_t> filter_data{address + offset, filter_size};
+                existence_filter_.resize(filter_size);
+                std::copy(filter_data.begin(), filter_data.end(), existence_filter_.data());
+                offset += filter_size;
+            }
         }
 
         // Read the number of Golomb-Rice code params
@@ -459,11 +515,19 @@ class RecSplit {
         hasher_->reset_seed(salt_);
     }
 
-    /** Return the value associated with the given 128-bit hash.
-     * Note that this method is mainly useful for benchmarking.
-     * @param hash a 128-bit hash.
-     * @return the associated value.
-     */
+    //! Check if the given bucket hash is present as i-th element in the index
+    //! \return true if hash is present as i-th element, false otherwise
+    bool has(const hash128_t& hash, std::size_t i) const {
+        if (less_false_positives_ && i < existence_filter_.size()) {
+            return existence_filter_.at(i) == static_cast<uint8_t>(hash.first);
+        }
+        // If existence filter not applicable, default is true: MPHF has no presence indicator
+        return true;
+    }
+
+    //! Return the value associated with the given 128-bit bucket hash
+    //! \param hash a 128-bit bucket hash
+    //! \return the associated value
     std::size_t operator()(const hash128_t& hash) const {
         ensure(built_, "RecSplit: perfect hash function not built yet");
         ensure(key_count_ > 0, "RecSplit: invalid lookup with zero keys, use empty() to guard");
@@ -555,6 +619,12 @@ class RecSplit {
     [[nodiscard]] uint64_t bucket_count() const { return bucket_count_; }
     [[nodiscard]] uint16_t bucket_size() const { return bucket_size_; }
 
+    [[nodiscard]] bool double_enum_index() const { return double_enum_index_; }
+    [[nodiscard]] bool less_false_positives() const { return less_false_positives_; }
+
+    //! Return the presence filter for the index. It can be empty if less false-positives feature is not enabled
+    [[nodiscard]] std::vector<uint8_t> existence_filter() const { return existence_filter_; }
+
     [[nodiscard]] std::size_t file_size() const { return std::filesystem::file_size(index_path_); }
 
     [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
@@ -580,10 +650,9 @@ class RecSplit {
         return golomb_param(m, memo);
     }
 
-    // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
-    // of a splitting (upper 5 bits), the number of nodes in the associated subtree
-    // (following 11 bits) and the sum of the Golomb-Rice code lengths in the same
-    // subtree (lower 16 bits).
+    //! Generate the precomputed table of 32-bit values holding the Golomb-Rice code of a splitting (upper 5 bits),
+    //! the number of nodes in the associated subtree (following 11 bits) and the sum of the Golomb-Rice code lengths
+    //! in the same subtree (lower 16 bits)
     static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, kMaxBucketSize>* memo) {
         std::array<std::size_t, kMaxFanout> k{0};
 
@@ -601,7 +670,8 @@ class RecSplit {
         }
 
         const double p = sqrt(m) / (pow(2 * std::numbers::pi, (static_cast<double>(fanout) - 1.) * 0.5) * sqrt_prod);
-        auto golomb_rice_length = math::int_ceil<uint32_t>(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p)));  // log2 Golomb modulus
+        std::integral auto golomb_rice_length =
+            math::int_ceil<uint32_t>(log2(-std::log((sqrt(5) + 1) * 0.5) / log1p(-p)));  // log2 Golomb modulus
 
         SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;
@@ -632,12 +702,12 @@ class RecSplit {
     }
 
     //! Apply the RecSplit algorithm to the given bucket
-    template <typename GRBUILDER>
+    template <typename GRBuilder>
     static void recsplit(std::vector<uint64_t>& keys,
                          std::vector<uint64_t>& offsets,
                          std::vector<uint64_t>& buffer_keys,     // temporary buffer for keys
                          std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
-                         GRBUILDER& gr_builder,
+                         GRBuilder& gr_builder,
                          std::ostream& index_ofs,
                          uint16_t& golomb_param_max_index,
                          uint8_t bytes_per_record) {
@@ -645,7 +715,7 @@ class RecSplit {
                  gr_builder, index_ofs, golomb_param_max_index, bytes_per_record);
     }
 
-    template <typename GRBUILDER>
+    template <typename GRBuilder>
     static void recsplit(int level,  // NOLINT
                          std::vector<uint64_t>& keys,
                          std::vector<uint64_t>& offsets,         // aka values
@@ -653,7 +723,7 @@ class RecSplit {
                          std::vector<uint64_t>& buffer_offsets,  // temporary buffer for offsets
                          std::size_t start,
                          std::size_t end,
-                         GRBUILDER& gr_builder,
+                         GRBuilder& gr_builder,
                          std::ostream& index_ofs,
                          uint16_t& golomb_param_max_index,
                          uint8_t bytes_per_record) {
@@ -758,12 +828,23 @@ class RecSplit {
         return h;
     }
 
-    // Maps a 128-bit to a bucket using the first 64-bit half.
+    //! Maps a 128-bit to a bucket using the first 64-bit half
     [[nodiscard]] inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
     void check_minimum_length(std::size_t minimum_length) {
         if (encoded_file_ && encoded_file_->length() < minimum_length) {
-            throw std::runtime_error("RecSplit encoded file is too short: " + std::to_string(encoded_file_->length()));
+            throw std::runtime_error("index " + encoded_file_->path().filename().string() + " is too short: " +
+                                     std::to_string(encoded_file_->length()));
+        }
+    }
+
+    void check_supported_features(RecSplitFeatures features) {
+        for (const auto supported_feature : kSupportedFeatures) {
+            features = features & ~supported_feature;
+        }
+        if (RecSplitFeatures{features} != RecSplitFeatures::kNone) {
+            throw std::runtime_error("index " + encoded_file_->path().filename().string() + " has unsupported features: " +
+                                     std::to_string(uint8_t(features)));
         }
     }
 
@@ -819,7 +900,7 @@ class RecSplit {
     //! Helper to encode the sequences of key offsets in the single EF code
     std::unique_ptr<EliasFano> ef_offsets_;
 
-    //! Minimal app-specific ID of entries of this index - helps app understand what data stored in given shard - persistent field
+    //! Minimal app-specific ID of entries in this index - helps understanding what data stored in given shard - persistent field
     uint64_t base_data_id_;
 
     //! The path of the index file generated
@@ -831,8 +912,14 @@ class RecSplit {
     //! The bitmask to be used to interpret record data
     uint64_t record_mask_{0};
 
-    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is enabled or not
     bool double_enum_index_{true};
+
+    //! Flag indicating if less false-positives feature is enabled or not
+    bool less_false_positives_{false};
+
+    //! The 1-byte per key positional existence filter used to have less false-positives
+    std::vector<uint8_t> existence_filter_;
 
     //! Flag indicating that the MPHF has been built and no more keys can be added
     bool built_{false};

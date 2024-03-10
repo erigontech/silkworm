@@ -52,7 +52,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
         if (highest_frozen_block_number > previous_progress) {
             previous_progress = std::min(highest_frozen_block_number, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
-            if (node_settings_->prune_mode.tx_index().enabled()) {
+            if (prune_mode_tx_index_.enabled()) {
                 set_prune_progress(txn, previous_progress);
             }
         }
@@ -69,8 +69,8 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
 
         // If this is first time we forward AND we have "prune history" set
         // do not process all blocks rather only what is needed
-        if (!previous_progress && node_settings_->prune_mode.tx_index().enabled())
-            previous_progress = node_settings_->prune_mode.tx_index().value_from_head(target_progress);
+        if (!previous_progress && prune_mode_tx_index_.enabled())
+            previous_progress = prune_mode_tx_index_.value_from_head(target_progress);
 
         if (previous_progress < target_progress)
             forward_impl(txn, previous_progress, target_progress);
@@ -173,7 +173,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode.tx_index().enabled()) {
+        if (!prune_mode_tx_index_.enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -187,7 +187,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
-        const auto prune_threshold{node_settings_->prune_mode.tx_index().value_from_head(forward_progress)};
+        const auto prune_threshold{prune_mode_tx_index_.value_from_head(forward_progress)};
         if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
@@ -204,8 +204,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
         }
 
         if (!prune_progress || prune_progress < forward_progress) {
-            const auto previous_prune_threshold{
-                node_settings_->prune_mode.tx_index().value_from_head(prune_progress)};
+            const auto previous_prune_threshold = prune_mode_tx_index_.value_from_head(prune_progress);
             prune_impl(txn, previous_prune_threshold, prune_threshold);
         }
 
@@ -239,7 +238,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_.store(false);
-    collector_ = std::make_unique<Collector>(node_settings_->etl());
+    collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
@@ -271,7 +270,7 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Unwind;
     loading_.store(false);
-    collector_ = std::make_unique<Collector>(node_settings_->etl());
+    collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
@@ -304,7 +303,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Prune;
     loading_.store(false);
-    collector_ = std::make_unique<Collector>(node_settings_->etl());
+    collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(source_config.name);
     current_target_.clear();
     current_key_.clear();

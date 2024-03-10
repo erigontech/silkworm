@@ -17,14 +17,21 @@
 #pragma once
 
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/etl/collector_settings.hpp>
+#include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class TxLookup : public Stage {
   public:
-    explicit TxLookup(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kTxLookupKey, node_settings){};
+    TxLookup(
+        SyncContext* sync_context,
+        db::etl::CollectorSettings etl_settings,
+        db::BlockAmount prune_mode_tx_index)
+        : Stage(sync_context, db::stages::kTxLookupKey),
+          etl_settings_(std::move(etl_settings)),
+          prune_mode_tx_index_(prune_mode_tx_index) {}
     ~TxLookup() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -33,6 +40,9 @@ class TxLookup : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    db::etl::CollectorSettings etl_settings_;
+    db::BlockAmount prune_mode_tx_index_;
+
     std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase

@@ -18,7 +18,9 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -32,6 +34,18 @@
 using namespace evmc::literals;
 
 namespace silkworm {
+
+stagedsync::HistoryIndex make_stage_history_index(
+    stagedsync::SyncContext* sync_context,
+    const db::test_util::TempChainData& chain_data) {
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(chain_data);
+    return stagedsync::HistoryIndex{
+        sync_context,
+        node_settings.batch_size,
+        node_settings.etl(),
+        node_settings.prune_mode.history(),
+    };
+}
 
 TEST_CASE("Stage History Index") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
@@ -124,9 +138,8 @@ TEST_CASE("Stage History Index") {
             db::PooledCursor account_changes(txn, db::table::kAccountChangeSet);
             REQUIRE(!account_changes.empty());
 
-            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+            stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             db::PooledCursor account_history(txn, db::table::kAccountHistory);
             db::PooledCursor storage_history(txn, db::table::kStorageHistory);
@@ -221,9 +234,8 @@ TEST_CASE("Stage History Index") {
 
             REQUIRE(context.prune_mode().history().enabled());
 
-            NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             stagedsync::SyncContext sync_context{};
-            stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+            stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 3);
@@ -299,9 +311,8 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
 
         // Forward history
-        NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
         stagedsync::SyncContext sync_context{};
-        stagedsync::HistoryIndex stage_history_index(&node_settings, &sync_context);
+        stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
         db::PooledCursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
@@ -408,8 +419,7 @@ TEST_CASE("Stage History Index") {
         REQUIRE(context.prune_mode().history().enabled());
 
         // Recreate the stage with enabled pruning
-        NodeSettings node_settings2 = node::test_util::make_node_settings_from_temp_chain_data(context);
-        stagedsync::HistoryIndex stage_history_index2(&node_settings2, &sync_context);
+        stagedsync::HistoryIndex stage_history_index2 = make_stage_history_index(&sync_context, context);
 
         REQUIRE(stage_history_index2.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
@@ -428,6 +438,54 @@ TEST_CASE("Stage History Index") {
     }
 
     log::set_verbosity(log::Level::kInfo);
+}
+
+TEST_CASE("HistoryIndex + Account access_layer") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    db::test_util::TempChainData context;
+    db::RWTxn& txn{context.rw_txn()};
+
+    db::Buffer buffer{txn, 0};
+
+    const auto miner_a{0x00000000000000000000000000000000000000aa_address};
+    const auto miner_b{0x00000000000000000000000000000000000000bb_address};
+
+    Block block1;
+    block1.header.number = 1;
+    block1.header.beneficiary = miner_a;
+    // miner_a gets one block reward
+    REQUIRE(execute_block(block1, buffer, test::kFrontierConfig) == ValidationResult::kOk);
+
+    Block block2;
+    block2.header.number = 2;
+    block2.header.beneficiary = miner_b;
+    // miner_a gets nothing
+    REQUIRE(execute_block(block2, buffer, test::kFrontierConfig) == ValidationResult::kOk);
+
+    Block block3;
+    block3.header.number = 3;
+    block3.header.beneficiary = miner_a;
+    // miner_a gets another block reward
+    REQUIRE(execute_block(block3, buffer, test::kFrontierConfig) == ValidationResult::kOk);
+
+    buffer.write_to_db();
+    db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
+
+    stagedsync::SyncContext sync_context{};
+    stagedsync::HistoryIndex stage_history_index = make_stage_history_index(&sync_context, context);
+    REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
+
+    std::optional<Account> current_account{read_account(txn, miner_a)};
+    REQUIRE(current_account.has_value());
+    CHECK(current_account->balance == 2 * protocol::kBlockRewardFrontier);
+
+    std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
+    REQUIRE(historical_account.has_value());
+    CHECK(intx::to_string(historical_account->balance) == std::to_string(protocol::kBlockRewardFrontier));
+
+    std::optional<uint64_t> previous_incarnation{read_previous_incarnation(txn, miner_a, /*block_number=*/2)};
+    REQUIRE(previous_incarnation.has_value());
+    CHECK(previous_incarnation == 0);
 }
 
 }  // namespace silkworm

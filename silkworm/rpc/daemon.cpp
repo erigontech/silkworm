@@ -305,20 +305,22 @@ void Daemon::start() {
             end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
             settings_.use_websocket, settings_.ws_compression, std::move(ilog_settings));
     };
-    auto set_container_folder = [](InterfaceLogSettings& ilog_settings, const std::filesystem::path& datadir) {
-        ilog_settings.container_folder = datadir / ilog_settings.container_folder;
-    };
 
     // Put the interface logs into the data folder
     std::filesystem::path data_folder{};
     if (chaindata_env_) {
-        data_folder = chaindata_env_->get_path().parent_path();
+        auto chaindata_path{chaindata_env_->get_path()};
+        // Trick to remove any empty filename because MDBX chaindata path ends with '/'
+        if (chaindata_path.filename().empty()) {
+            chaindata_path = chaindata_path.parent_path();
+        }
+        data_folder = chaindata_path.parent_path();
     }
     if (settings_.datadir) {
         data_folder = *settings_.datadir;
     }
-    set_container_folder(settings_.eth_ifc_log_settings, data_folder);
-    set_container_folder(settings_.engine_ifc_log_settings, data_folder);
+    settings_.eth_ifc_log_settings.container_folder = data_folder / settings_.eth_ifc_log_settings.container_folder;
+    settings_.engine_ifc_log_settings.container_folder = data_folder / settings_.engine_ifc_log_settings.container_folder;
 
     // Create and start the configured RPC services for each execution context
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {

@@ -305,13 +305,20 @@ void Daemon::start() {
             end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
             settings_.use_websocket, settings_.ws_compression, std::move(ilog_settings));
     };
+    auto set_container_folder = [](InterfaceLogSettings& ilog_settings, const std::filesystem::path& datadir) {
+        ilog_settings.container_folder = datadir / ilog_settings.container_folder;
+    };
 
-    // Put the interface logs into the data folder in case we run with local data
-    if (settings_.datadir) {
-        std::filesystem::path logs_folder{*settings_.datadir / "logs"};
-        settings_.eth_ifc_log_settings.container_folder = logs_folder.string();
-        settings_.engine_ifc_log_settings.container_folder = logs_folder.string();
+    // Put the interface logs into the data folder
+    std::filesystem::path data_folder{};
+    if (chaindata_env_) {
+        data_folder = chaindata_env_->get_path().parent_path();
     }
+    if (settings_.datadir) {
+        data_folder = *settings_.datadir;
+    }
+    set_container_folder(settings_.eth_ifc_log_settings, data_folder);
+    set_container_folder(settings_.engine_ifc_log_settings, data_folder);
 
     // Create and start the configured RPC services for each execution context
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {

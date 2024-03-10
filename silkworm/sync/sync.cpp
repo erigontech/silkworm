@@ -39,6 +39,7 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             .log_settings = {
                 .log_verbosity = rpc_settings.log_verbosity,
             },
+            .engine_ifc_log_settings = rpc_settings.engine_ifc_log_settings,
             .context_pool_settings{
                 .num_contexts = 1,                             // single-client so just one scheduler is OK
                 .wait_mode = concurrency::WaitMode::blocking,  // single-client so no need to play w/ strategies

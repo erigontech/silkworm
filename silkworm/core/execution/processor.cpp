@@ -240,13 +240,15 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         if (!m.code.empty()) {
             state_.create_contract(m.addr);  // bump incarnation?
             state_.set_code(m.addr, m.code);
-            SILKWORM_ASSERT(state_.get_code(m.addr) == m.code);
         }
-        state_.set_nonce(m.addr, m.nonce);
-        state_.set_balance(m.addr, m.balance);
 
+        auto& acc = state_.get_or_create_object(m.addr);
+        acc.current->nonce = m.nonce;
+        acc.current->balance = m.balance;
+
+        auto& storage = state_.storage_[m.addr];
         for (const auto& [k, v] : m.modified_storage) {
-            state_.set_storage(m.addr, k, v);
+            storage.committed[k].original = v;
         }
     }
 

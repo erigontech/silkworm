@@ -63,7 +63,7 @@ class InterfaceLogImpl final {
 InterfaceLogImpl::InterfaceLogImpl(InterfaceLogSettings settings)
     : name_{std::move(settings.ifc_name)},
       auto_flush_{settings.auto_flush},
-      file_path_{std::move(settings.container_folder) / std::filesystem::path{name_ + ".log"}},
+      file_path_{settings.container_folder / std::filesystem::path{name_ + ".log"}},
       max_file_size_{settings.max_file_size_mb * kMebi},
       max_files_{settings.max_files},
       rotating_sink_{std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path_.string(), max_file_size_, max_files_)},

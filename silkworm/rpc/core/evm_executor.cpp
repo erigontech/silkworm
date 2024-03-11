@@ -205,7 +205,8 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
         }
     }
     if (txn.gas_limit < g0) {
-        std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
+        std::string from = address_to_hex(*txn.sender());
+        std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         return error;
     }
     return std::nullopt;

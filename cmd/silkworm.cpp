@@ -306,6 +306,7 @@ int main(int argc, char* argv[]) {
         // ChainSync: the chain synchronization process based on the consensus protocol
         chainsync::EngineRpcSettings rpc_settings{
             .engine_end_point = settings.rpcdaemon_settings.engine_end_point,
+            .engine_ifc_log_settings = settings.rpcdaemon_settings.engine_ifc_log_settings,
             .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
             .log_verbosity = settings.log_settings.log_verbosity,
             .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,

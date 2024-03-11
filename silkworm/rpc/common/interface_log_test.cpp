@@ -32,7 +32,7 @@ TEST_CASE("InterfaceLog basic", "[rpc][common][interface_log]") {
     InterfaceLogSettings settings{
         .enabled = true,
         .ifc_name = "eth_rpc",
-        .container_folder = tmp_dir.string(),
+        .container_folder = tmp_dir,
     };
     auto ifc_log{std::make_unique<InterfaceLog>(settings)};
     REQUIRE(!ifc_log->path().empty());

@@ -55,5 +55,5 @@ silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "db" "stagedsync/stages"
+  EXCLUDE_REGEX "node/db" "node/stagedsync/stages"
 )

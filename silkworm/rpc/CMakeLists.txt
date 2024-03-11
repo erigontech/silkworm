@@ -56,5 +56,6 @@ silkworm_library(
   silkworm_rpcdaemon
   PUBLIC ${SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES}
   PRIVATE ${SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES}
-  LIBS_TEST GTest::gmock
 )
+
+target_link_libraries(silkworm_rpcdaemon_test PRIVATE GTest::gmock)

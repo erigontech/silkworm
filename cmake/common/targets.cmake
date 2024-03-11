@@ -28,8 +28,8 @@ function(silkworm_library TARGET)
     1
     "ARG"
     ""
-    ""
-    "PUBLIC;PRIVATE;TYPE;LIBS_TEST"
+    "TYPE"
+    "PUBLIC;PRIVATE"
   )
 
   file(
@@ -69,12 +69,6 @@ function(silkworm_library TARGET)
     endif()
     set(TEST_TARGET ${TARGET}_test)
     add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
-    list(APPEND ARG_LIBS_TEST Catch2::Catch2)
-    get_target_property(TARGET_TYPE ${TARGET} TYPE)
-    if(TARGET_TYPE STREQUAL SHARED_LIBRARY)
-      target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}" "${ARG_LIBS_TEST}")
-    else()
-      target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} "${ARG_LIBS_TEST}")
-    endif()
+    target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}")
   endif()
 endfunction()

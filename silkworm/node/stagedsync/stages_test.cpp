@@ -18,6 +18,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
@@ -30,6 +31,7 @@
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
 #include <silkworm/node/stagedsync/stages/stage_senders.hpp>
@@ -49,6 +51,17 @@ static stagedsync::Execution make_execution_stage(
         *node_settings.chain_config,
         node_settings.batch_size,
         node_settings.prune_mode,
+    };
+}
+
+static stagedsync::CallTraceIndex make_call_traces_stage(
+    stagedsync::SyncContext* sync_context,
+    const NodeSettings& node_settings) {
+    return stagedsync::CallTraceIndex{
+        sync_context,
+        node_settings.batch_size,
+        node_settings.etl(),
+        node_settings.prune_mode.call_traces(),
     };
 }
 
@@ -501,5 +514,118 @@ TEST_CASE("Sync Stages") {
                 CHECK(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == unwind_to);
             }
         }
+    }
+
+    SECTION("Execution and CallTraceIndex") {
+        using namespace magic_enum;
+        using StageResult = stagedsync::Stage::Result;
+
+        // Prepare block 1
+        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const auto sender{0x9b9e32061f64f6c3f570a63b97a178d84e961db1_address};
+        const auto receiver{miner};
+
+        Block block{};
+        block.header.number = 1;
+        block.header.beneficiary = receiver;
+        block.header.gas_limit = 100'000;
+        block.header.gas_used = 21'000;
+
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        std::vector<Receipt> receipts{
+            {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
+        };
+        block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+
+        block.transactions.resize(1);
+        block.transactions[0].gas_limit = block.header.gas_limit;
+        block.transactions[0].type = TransactionType::kLegacy;
+
+        block.transactions[0].to = miner;
+        static_cast<void>(block.transactions[0].set_v(27));
+        block.transactions[0].r =
+            intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
+        block.transactions[0].s =
+            intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
+        block.transactions[0].value = 0;
+
+        db::write_header(txn, block.header, /*with_header_numbers=*/true);
+        db::write_body(txn, block, block.header.hash(), block.header.number);
+        db::write_canonical_header_hash(txn, block.header.hash().bytes, block.header.number);
+
+        // Stage Execution up to block 1
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kSendersKey, 1));
+
+        stagedsync::SyncContext sync_context{};
+        sync_context.target_height = 1;
+        stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings);
+        CHECK(stage_execution.forward(txn) == StageResult::kSuccess);
+
+        // Post-condition: CallTraceSet table
+        {
+            auto call_traces_cursor{txn.ro_cursor(db::table::kCallTraceSet)};
+            REQUIRE(call_traces_cursor->size() == 2);
+            const auto call_traces_record1{call_traces_cursor->to_next(/*throw_notfound=*/false)};
+            REQUIRE(call_traces_record1.done);
+            const auto call_traces_record2{call_traces_cursor->to_next(/*throw_notfound=*/false)};
+            REQUIRE(call_traces_record2.done);
+            auto check_call_trace_record = [&](const auto record, const auto& address, bool is_sender, bool is_receiver) {
+                const auto block_number = endian::load_big_u64(static_cast<const uint8_t*>(record.key.data()));
+                CHECK(block_number == 1);
+                const ByteView value{static_cast<const uint8_t*>(record.value.data()), record.value.length()};
+                REQUIRE(value.size() == kAddressLength + 1);
+                CHECK(value.substr(0, kAddressLength) == address);
+                CHECK(bool(value[kAddressLength] & 1) == is_sender);
+                CHECK(bool(value[kAddressLength] & 2) == is_receiver);
+            };
+            check_call_trace_record(call_traces_record1, receiver, /*.from=*/false, /*.to=*/true);
+            check_call_trace_record(call_traces_record2, sender, /*.from=*/true, /*.to=*/false);
+        }
+
+        // Stage CallTraceIndex up to block 1
+        stagedsync::CallTraceIndex stage_call_traces = make_call_traces_stage(&sync_context, node_settings);
+        REQUIRE(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 0);
+        const auto forward_result{stage_call_traces.forward(txn)};
+        CHECK(enum_name(forward_result) == enum_name(StageResult::kSuccess));
+        CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 1);
+
+        // Post-condition: CallFromIndex table
+        {
+            auto call_from_cursor{txn.ro_cursor(db::table::kCallFromIndex)};
+            REQUIRE(call_from_cursor->size() == 1);
+            const auto call_from_record{call_from_cursor->to_next(/*throw_notfound=*/false)};
+            REQUIRE(call_from_record.done);
+            const auto address_data{db::from_slice(call_from_record.key)};
+            REQUIRE(address_data.size() == kAddressLength + sizeof(uint64_t));
+            CHECK(bytes_to_address(address_data.substr(0, kAddressLength)) == sender);
+            const auto bitmap_encoded{byte_view_to_string_view(db::from_slice(call_from_record.value))};
+            const auto bitmap{db::bitmap::parse(bitmap_encoded)};
+            CHECK(db::bitmap::seek(bitmap, 1));
+        }
+
+        // Post-condition: CallToIndex table
+        {
+            auto call_to_cursor{txn.ro_cursor(db::table::kCallToIndex)};
+            REQUIRE(call_to_cursor->size() == 1);
+            const auto call_to_record{call_to_cursor->to_next(/*throw_notfound=*/false)};
+            REQUIRE(call_to_record.done);
+            const auto address_data{db::from_slice(call_to_record.key)};
+            REQUIRE(address_data.size() == kAddressLength + sizeof(uint64_t));
+            CHECK(bytes_to_address(address_data.substr(0, kAddressLength)) == receiver);
+            const auto bitmap_encoded{byte_view_to_string_view(db::from_slice(call_to_record.value))};
+            const auto bitmap{db::bitmap::parse(bitmap_encoded)};
+            CHECK(db::bitmap::seek(bitmap, 1));
+        }
+
+        // Unwind the stage down to block 0 (i.e. block 0 *is* applied)
+        const BlockNum unwind_to{0};
+        sync_context.unwind_point.emplace(unwind_to);
+        const auto unwind_result{stage_call_traces.unwind(txn)};
+        CHECK(enum_name(unwind_result) == enum_name(StageResult::kSuccess));
+        CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == unwind_to);
+        auto call_from_cursor{txn.ro_cursor(db::table::kCallFromIndex)};
+        CHECK(call_from_cursor->empty());
+        auto call_to_cursor{txn.ro_cursor(db::table::kCallToIndex)};
+        CHECK(call_to_cursor->empty());
     }
 }

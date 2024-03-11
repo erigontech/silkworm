@@ -260,18 +260,20 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         if (m.code) {
             state_.create_contract(a);  // bump incarnation?
             state_.set_code(a, *m.code);
-            SILKWORM_ASSERT(state_.get_code(a) == *m.code);
         }
+
+        auto& acc = state_.get_or_create_object(a);
         if (m.nonce) {
-            state_.set_nonce(a, *m.nonce);
+            acc.current->nonce = *m.nonce;
         }
         if (m.balance) {
-            state_.set_balance(a, *m.balance);
+            acc.current->balance = *m.balance;
         }
     }
     for (const auto& [a, s] : e1_state_diff.modified_storage) {
+        auto& storage = state_.storage_[a];
         for (const auto& [k, v] : s) {
-            state_.set_storage(a, k, v);
+            storage.committed[k].original = v;
         }
     }
     for (const auto& a : e1_state_diff.deleted_accounts) {

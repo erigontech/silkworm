@@ -44,9 +44,21 @@ add_library(
   evmone/lib/evmone/tracing.hpp
   evmone/lib/evmone/vm.cpp
   evmone/lib/evmone/vm.hpp
+  evmone/test/state/host.cpp
+  evmone/test/state/precompiles.cpp
+  evmone/test/state/state.cpp
+  evmone/test/state/bloom_filter.cpp
+  evmone/lib/evmmax/evmmax.cpp
+  evmone/lib/evmone_precompiles/bn254.cpp
+  evmone/lib/evmone_precompiles/secp256k1.cpp
 )
 set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.11.0")
-target_include_directories(evmone PUBLIC evmone/include evmone/lib)
+target_include_directories(
+  evmone
+  PUBLIC evmone/include evmone/lib
+  INTERFACE .
+  PRIVATE ../..
+)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
@@ -56,5 +68,11 @@ target_link_libraries(
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc /w)
 else()
-  target_compile_options(evmone PRIVATE -fno-exceptions)
+  # target_compile_options(evmone PRIVATE -fno-exceptions)
+endif()
+
+if(SILKWORM_CORE_USE_ABSEIL)
+  find_package(absl REQUIRED)
+  target_compile_definitions(evmone PRIVATE SILKWORM_CORE_USE_ABSEIL)
+  target_link_libraries(evmone PRIVATE absl::flat_hash_map absl::flat_hash_set)
 endif()

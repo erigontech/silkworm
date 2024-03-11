@@ -25,6 +25,7 @@
 
 #include <ethash/keccak.hpp>
 #include <evmone/evmone.h>
+#include <evmone/test/state/state.hpp>
 #include <evmone/tracing.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
@@ -64,10 +65,11 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+      e1_vm_{evmc_create_evmone()},
+      evm1_{static_cast<evmone::VM*>(e1_vm_.get_raw_pointer())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
-EVM::~EVM() { evm1_->destroy(evm1_); }
+EVM::~EVM() {}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     assert(txn.sender());  // sender must be valid
@@ -498,17 +500,17 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     return context;
 }
 
-evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
+evmc::bytes32 EVM::get_block_hash(int64_t block_number) noexcept {
     assert(block_number >= 0);
-    const uint64_t current_block_num{evm_.block_.header.number};
+    const uint64_t current_block_num{block_.header.number};
     assert(static_cast<uint64_t>(block_number) < current_block_num);
     const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_number)};
     assert(std::in_range<std::size_t>(new_size_u64));
     const size_t new_size{static_cast<size_t>(new_size_u64)};
 
-    std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
+    std::vector<evmc::bytes32>& hashes{block_hashes_};
     if (hashes.empty()) {
-        hashes.push_back(evm_.block_.header.parent_hash);
+        hashes.push_back(block_.header.parent_hash);
     }
 
     const size_t old_size{hashes.size()};
@@ -517,7 +519,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
     }
 
     for (size_t i{old_size}; i < new_size; ++i) {
-        std::optional<BlockHeader> header{evm_.state().db().read_header(current_block_num - i, hashes[i - 1])};
+        std::optional<BlockHeader> header{state().db().read_header(current_block_num - i, hashes[i - 1])};
         if (!header) {
             break;
         }
@@ -525,6 +527,10 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
     }
 
     return hashes[new_size - 1];
+}
+
+evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
+    return evm_.get_block_hash(block_number);
 }
 
 void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,

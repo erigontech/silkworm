@@ -48,6 +48,7 @@
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::commands {
 

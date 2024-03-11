@@ -28,6 +28,7 @@
 #include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::commands {
 

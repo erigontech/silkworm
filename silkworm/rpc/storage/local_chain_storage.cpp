@@ -20,6 +20,7 @@
 
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc {
 

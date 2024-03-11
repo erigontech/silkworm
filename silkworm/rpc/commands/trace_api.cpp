@@ -32,6 +32,7 @@
 #include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/call.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::commands {
 

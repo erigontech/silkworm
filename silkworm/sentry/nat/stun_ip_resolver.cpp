@@ -41,6 +41,8 @@
 #include <stun++/message.h>
 #pragma GCC diagnostic pop
 
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+
 namespace silkworm::sentry::nat {
 
 using namespace boost::asio;

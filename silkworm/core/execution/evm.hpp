@@ -81,6 +81,8 @@ class EVM {
 
     ~EVM();
 
+    [[nodiscard]] evmc::VM& vm() noexcept { return e1_vm_; }
+
     [[nodiscard]] const Block& block() const noexcept { return block_; }
 
     [[nodiscard]] const ChainConfig& config() const noexcept { return config_; }
@@ -103,8 +105,11 @@ class EVM {
 
     evmc::address beneficiary;  // block.header.beneficiary by default; may be overridden for Clique
 
+    [[nodiscard]] evmc::bytes32 get_block_hash(int64_t block_number) noexcept;
+
   private:
     friend class EvmHost;
+    friend class StateView;
 
     evmc::Result create(const evmc_message& message) noexcept;
 
@@ -125,6 +130,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
+    evmc::VM e1_vm_;
     evmone::VM* evm1_{nullptr};
 };
 

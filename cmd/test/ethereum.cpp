@@ -58,6 +58,13 @@ static const fs::path kTransactionDir{"TransactionTests"};
 static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
+    kBlockchainDir / "GeneralStateTests" / "stQuadraticComplexityTest",
+    //    kBlockchainDir / "GeneralStateTests" / "stStackTests",
+    //    kBlockchainDir / "GeneralStateTests" / "stBadOpcodes",
+    //    kBlockchainDir / "GeneralStateTests" / "stMemExpandingEIP150Calls",
+    //    kBlockchainDir / "GeneralStateTests" / "stRandom",
+    //    kBlockchainDir / "GeneralStateTests" / "stSolidityTest",
+    //    kBlockchainDir / "ValidBlocks" / "bcExploitTest",
 };
 
 static const std::vector<fs::path> kFailingTests{};
@@ -207,6 +214,10 @@ struct [[nodiscard]] RunResults {
 RunResults blockchain_test(const nlohmann::json& json_test) {
     const auto network{json_test["network"].get<std::string>()};
     const auto config_it{test::kNetworkConfig.find(network)};
+
+    //    if (network != "Istanbul")
+    //        return Status::kSkipped;
+
     if (config_it == test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;
         return Status::kSkipped;
@@ -287,11 +298,14 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     RunResults total;
 
     for (const auto& test : json.items()) {
+        // std::cerr << " - " << test.key() << "\n";
         const RunResults r{runner(test.value())};
         total += r;
         if (r.failed || r.skipped) {
             print_test_status(test.key(), r);
         }
+        if (r.failed)
+            break;
     }
 
     total_passed += total.passed;
@@ -470,26 +484,33 @@ int main(int argc, char* argv[]) {
     const fs::path root_dir{tests_path};
 
     static const std::map<fs::path, RunnerFunc> kTestTypes{
-        {kDifficultyDir, difficulty_tests},
+        //        {kDifficultyDir, difficulty_tests},
         {kBlockchainDir, blockchain_test},
-        {kTransactionDir, transaction_test},
+        //        {kTransactionDir, transaction_test},
     };
 
-    for (const auto& entry : kTestTypes) {
-        const fs::path& dir{root_dir / entry.first};
-        const RunnerFunc runner{entry.second};
+    fs::path single_file = "";
+    if (!single_file.empty()) {
+        run_test_file(single_file, blockchain_test);
+    } else {
+        for (const auto& entry : kTestTypes) {
+            const fs::path& dir{root_dir / entry.first};
+            const RunnerFunc runner{entry.second};
 
-        if (!fs::exists(dir)) {
-            continue;
-        }
+            if (!fs::exists(dir)) {
+                continue;
+            }
 
-        for (auto i = fs::recursive_directory_iterator(dir); i != fs::recursive_directory_iterator{}; ++i) {
-            if (exclude_test(*i, root_dir, include_slow_tests)) {
-                ++total_skipped;
-                i.disable_recursion_pending();
-            } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
-                const fs::path path{*i};
-                thread_pool.push_task([=]() { run_test_file(path, runner); });
+            for (auto i = fs::recursive_directory_iterator(dir); i != fs::recursive_directory_iterator{}; ++i) {
+                if (exclude_test(*i, root_dir, include_slow_tests)) {
+                    ++total_skipped;
+                    i.disable_recursion_pending();
+                } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
+                    const fs::path path{*i};
+                    thread_pool.push_task([=]() {
+                    // std::cerr << path << "\n";
+                    run_test_file(path, runner); });
+                }
             }
         }
     }

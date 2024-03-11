@@ -20,6 +20,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/grpc/unary_rpc.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::txpool {
 

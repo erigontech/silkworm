@@ -131,6 +131,7 @@ class IntraBlockState {
     friend class state::StorageAccessDelta;
     friend class state::AccountAccessDelta;
     friend class state::TransientStorageChangeDelta;
+    friend class StateView;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 

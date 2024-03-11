@@ -26,6 +26,8 @@
 #include "auth_recipient.hpp"
 #include "ecies_cipher.hpp"
 
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+
 namespace silkworm::sentry::rlpx::auth {
 
 using namespace std::chrono_literals;

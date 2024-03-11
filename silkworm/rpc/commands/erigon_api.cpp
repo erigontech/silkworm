@@ -37,6 +37,7 @@
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 
 namespace silkworm::rpc::commands {
 

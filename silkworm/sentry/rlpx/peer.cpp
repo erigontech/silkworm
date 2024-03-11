@@ -101,14 +101,11 @@ Task<void> Peer::handle() {
 
     log::Trace("sentry") << "Peer::handle";
 
-    bool is_handshake_completed = false;
-    [[maybe_unused]] auto _ = gsl::finally([this, &is_handshake_completed] {
-        if (!is_handshake_completed) {
-            try {
-                this->handshake_promise_.set_value(false);
-            } catch (const std::exception& e) {
-                log::Debug("sentry") << "Peer::handle finally exception: " << e.what();
-            }
+    [[maybe_unused]] auto _ = gsl::finally([this] {
+        try {
+            this->handshake_promise_.set_value(false);
+        } catch (const concurrency::AwaitablePromise<bool>::AlreadySatisfiedError&) {
+            log::Trace("sentry") << "Peer::handle AlreadySatisfiedError";
         }
         this->close();
     });
@@ -141,7 +138,6 @@ Task<void> Peer::handle() {
         }
 
         handshake_promise_.set_value(true);
-        is_handshake_completed = true;
 
         bool is_disconnecting = false;
         bool is_cancelled = false;

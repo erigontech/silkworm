@@ -50,11 +50,9 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
     auto* obj{get_object(address)};
 
     if (obj == nullptr) {
-        journal_.emplace_back(std::make_unique<state::CreateDelta>(address));
         obj = &objects_[address];
         obj->current = Account{};
     } else if (obj->current == std::nullopt) {
-        journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, *obj));
         obj->current = Account{};
     }
 
@@ -93,9 +91,6 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         } else if (prev->initial) {
             prev_incarnation = prev->initial->incarnation;
         }
-        journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, *prev));
-    } else {
-        journal_.emplace_back(std::make_unique<state::CreateDelta>(address));
     }
 
     if (!prev_incarnation || prev_incarnation == 0) {
@@ -112,9 +107,7 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
 
     auto it{storage_.find(address)};
     if (it == storage_.end()) {
-        journal_.emplace_back(std::make_unique<state::StorageCreateDelta>(address));
     } else {
-        journal_.emplace_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
         storage_.erase(address);
     }
 }
@@ -126,14 +119,12 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
     // and https://github.com/ethereum/EIPs/issues/716
     static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
     if (inserted && address != kRipemdAddress) {
-        journal_.emplace_back(std::make_unique<state::TouchDelta>(address));
     }
 }
 
 bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
     const bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
-        journal_.emplace_back(std::make_unique<state::SuicideDelta>(address));
     }
     return inserted;
 }
@@ -173,21 +164,18 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const n
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(std::make_unique<state::UpdateBalanceDelta>(address, obj.current->balance));
     obj.current->balance = value;
     touch(address);
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(std::make_unique<state::UpdateBalanceDelta>(address, obj.current->balance));
     obj.current->balance += addend;
     touch(address);
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(std::make_unique<state::UpdateBalanceDelta>(address, obj.current->balance));
     obj.current->balance -= subtrahend;
     touch(address);
 }
@@ -199,7 +187,6 @@ uint64_t IntraBlockState::get_nonce(const evmc::address& address) const noexcept
 
 void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.current->nonce = nonce;
     touch(address);
 }
@@ -236,7 +223,6 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 
 void IntraBlockState::set_code(const evmc::address& address, ByteView code) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.current->code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
 
     // Don't overwrite already existing code so that views of it
@@ -248,7 +234,6 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
     const bool cold_read{accessed_addresses_.insert(address).second};
     if (cold_read) {
-        journal_.emplace_back(std::make_unique<state::AccountAccessDelta>(address));
     }
     return cold_read ? EVMC_ACCESS_COLD : EVMC_ACCESS_WARM;
 }
@@ -256,7 +241,6 @@ evmc_access_status IntraBlockState::access_account(const evmc::address& address)
 evmc_access_status IntraBlockState::access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept {
     const bool cold_read{accessed_storage_keys_[address].insert(key).second};
     if (cold_read) {
-        journal_.emplace_back(std::make_unique<state::StorageAccessDelta>(address, key));
     }
     return cold_read ? EVMC_ACCESS_COLD : EVMC_ACCESS_WARM;
 }
@@ -314,9 +298,7 @@ evmc::bytes32 IntraBlockState::get_transient_storage(const evmc::address& addr, 
 
 void IntraBlockState::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) {
     auto& v = transient_storage_[addr][key];
-    const auto prev = v;
     v = value;
-    journal_.emplace_back(std::make_unique<state::TransientStorageChangeDelta>(addr, key, prev));
 }
 
 void IntraBlockState::write_to_db(uint64_t block_num) {
@@ -356,16 +338,11 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
 
 IntraBlockState::Snapshot IntraBlockState::take_snapshot() const noexcept {
     IntraBlockState::Snapshot snapshot;
-    snapshot.journal_size_ = journal_.size();
     snapshot.log_size_ = logs_.size();
     return snapshot;
 }
 
 void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapshot) noexcept {
-    for (size_t i = journal_.size(); i > snapshot.journal_size_; --i) {
-        journal_[i - 1]->revert(*this);
-    }
-    journal_.resize(snapshot.journal_size_);
     logs_.resize(snapshot.log_size_);
 }
 
@@ -377,8 +354,6 @@ void IntraBlockState::finalize_transaction(evmc_revision rev) {
 }
 
 void IntraBlockState::clear_journal_and_substate() {
-    journal_.clear();
-
     // and the substate
     self_destructs_.clear();
     logs_.clear();

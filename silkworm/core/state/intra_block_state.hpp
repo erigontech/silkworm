@@ -149,8 +149,6 @@ class IntraBlockState {
     mutable FlatHashMap<evmc::bytes32, ByteView> existing_code_;
     FlatHashMap<evmc::bytes32, std::vector<uint8_t>> new_code_;
 
-    std::vector<std::unique_ptr<state::Delta>> journal_;
-
     // substate
     FlatHashSet<evmc::address> self_destructs_;
     std::vector<Log> logs_;

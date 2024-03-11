@@ -253,7 +253,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     for (const auto& a : state_diff.deleted_accounts) {
         state_.destruct(a);
     }
-    state_.finalize_transaction(evm_.revision());  // commit storage. TODO: any other side effects?
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {

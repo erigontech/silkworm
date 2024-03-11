@@ -97,20 +97,6 @@ namespace state {
         evmc::address address_;
     };
 
-    // Storage value changed.
-    class StorageChangeDelta : public Delta {
-      public:
-        StorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
-                           const evmc::bytes32& previous) noexcept;
-
-        void revert(IntraBlockState& state) noexcept override;
-
-      private:
-        evmc::address address_;
-        evmc::bytes32 key_;
-        evmc::bytes32 previous_;
-    };
-
     // Entire storage deleted.
     class StorageWipeDelta : public Delta {
       public:

@@ -125,7 +125,6 @@ class IntraBlockState {
     friend class state::UpdateBalanceDelta;
     friend class state::SuicideDelta;
     friend class state::TouchDelta;
-    friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
     friend class state::StorageCreateDelta;
     friend class state::StorageAccessDelta;

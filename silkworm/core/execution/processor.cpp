@@ -277,7 +277,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     for (const auto& a : e1_state_diff.deleted_accounts) {
         state_.destruct(a);
     }
-    state_.finalize_transaction(evm_.revision());  // commit storage. TODO: any other side effects?
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {

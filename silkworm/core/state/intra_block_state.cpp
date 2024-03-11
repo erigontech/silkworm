@@ -266,20 +266,13 @@ evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address
 }
 
 evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const evmc::bytes32& key,
-                                           bool original) const noexcept {
+                                           bool /*original*/) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
         return {};
     }
 
     state::Storage& storage{storage_[address]};
-
-    if (!original) {
-        auto it{storage.current.find(key)};
-        if (it != storage.current.end()) {
-            return it->second;
-        }
-    }
 
     auto it{storage.committed.find(key)};
     if (it != storage.committed.end()) {
@@ -306,8 +299,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    storage_[address].current[key] = value;
-    journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
+    storage_[address].committed[key].original = value;
 }
 
 evmc::bytes32 IntraBlockState::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) {
@@ -375,13 +367,6 @@ void IntraBlockState::finalize_transaction(evmc_revision rev) {
     destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         destruct_touched_dead();
-    }
-    for (auto& x : storage_) {
-        state::Storage& storage{x.second};
-        for (const auto& [key, val] : storage.current) {
-            storage.committed[key].original = val;
-        }
-        storage.current.clear();
     }
 }
 

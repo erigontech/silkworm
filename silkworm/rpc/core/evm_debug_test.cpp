@@ -23,7 +23,7 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/node/db/tables.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>

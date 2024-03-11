@@ -25,7 +25,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 namespace {
 #ifdef _WIN32

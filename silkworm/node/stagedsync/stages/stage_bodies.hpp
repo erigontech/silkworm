@@ -21,10 +21,10 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/stage.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -31,12 +31,12 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/capi/silkworm.h>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/rpc/daemon.hpp>
-#include <silkworm/snapshots/repository.hpp>
 
 #include "../common/common.hpp"
 

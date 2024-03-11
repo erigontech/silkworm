@@ -25,10 +25,10 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -20,8 +20,8 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
 

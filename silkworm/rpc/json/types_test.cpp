@@ -27,9 +27,9 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::rpc {
 

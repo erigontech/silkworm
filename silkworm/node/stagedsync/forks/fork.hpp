@@ -23,10 +23,10 @@
 #include <vector>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/memory_mutation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"
-#include "silkworm/node/db/memory_mutation.hpp"
 #include "verification_result.hpp"
 
 namespace silkworm::stagedsync {

@@ -25,9 +25,9 @@
 #include <silkworm/core/common/singleton.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/db_utils.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "algorithm.hpp"

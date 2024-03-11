@@ -26,8 +26,8 @@
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 

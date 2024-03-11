@@ -22,12 +22,12 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/bitmap.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
 
 using namespace evmc::literals;

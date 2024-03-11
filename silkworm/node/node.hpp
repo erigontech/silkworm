@@ -20,13 +20,13 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/settings.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/snapshots/settings.hpp>
 
 namespace silkworm::node {
 

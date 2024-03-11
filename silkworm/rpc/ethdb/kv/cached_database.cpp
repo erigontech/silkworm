@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/node/db/tables.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 
 namespace silkworm::rpc::ethdb::kv {

@@ -29,11 +29,11 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/db/head_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/db/head_info.hpp>
 #include <silkworm/node/node.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/sentry_client_factory.hpp>

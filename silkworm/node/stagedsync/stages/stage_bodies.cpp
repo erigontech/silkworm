@@ -20,10 +20,10 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::stagedsync {
 

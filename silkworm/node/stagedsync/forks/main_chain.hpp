@@ -26,8 +26,8 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/db/memory_mutation.hpp>
-#include <silkworm/node/db/stage.hpp>
+#include <silkworm/db/memory_mutation.hpp>
+#include <silkworm/db/stage.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"

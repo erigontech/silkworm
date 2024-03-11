@@ -23,10 +23,10 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/account_walker.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>

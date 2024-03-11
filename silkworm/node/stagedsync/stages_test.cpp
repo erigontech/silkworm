@@ -25,11 +25,11 @@
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/genesis.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>

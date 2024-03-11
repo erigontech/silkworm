@@ -24,9 +24,9 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/daemon.hpp>

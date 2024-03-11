@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include <silkworm/node/db/stage.hpp>
+#include <silkworm/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

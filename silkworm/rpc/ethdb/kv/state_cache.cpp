@@ -23,9 +23,9 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/rawdb/util.hpp>
 #include <silkworm/rpc/ethdb/transaction_database.hpp>

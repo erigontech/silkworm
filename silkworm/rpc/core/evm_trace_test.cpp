@@ -26,9 +26,9 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>

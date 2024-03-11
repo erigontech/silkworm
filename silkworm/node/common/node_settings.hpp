@@ -29,10 +29,10 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/db/etl/collector_settings.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/prune_mode.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/etl/collector_settings.hpp>
-#include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
 
 namespace silkworm {
 

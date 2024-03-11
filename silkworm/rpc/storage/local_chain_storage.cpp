@@ -19,7 +19,7 @@
 #include <bit>
 
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::rpc {
 

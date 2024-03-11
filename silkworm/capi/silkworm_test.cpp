@@ -22,12 +22,12 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/snapshot.hpp>
+#include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
-#include <silkworm/snapshots/index.hpp>
-#include <silkworm/snapshots/snapshot.hpp>
-#include <silkworm/snapshots/test_util/common.hpp>
 
 namespace silkworm {
 

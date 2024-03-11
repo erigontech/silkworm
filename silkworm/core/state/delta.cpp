@@ -46,12 +46,6 @@ TouchDelta::TouchDelta(const evmc::address& address) noexcept : address_{address
 
 void TouchDelta::revert(IntraBlockState& state) noexcept { state.touched_.erase(address_); }
 
-StorageChangeDelta::StorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
-                                       const evmc::bytes32& previous) noexcept
-    : address_{address}, key_{key}, previous_{previous} {}
-
-void StorageChangeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_].current[key_] = previous_; }
-
 StorageWipeDelta::StorageWipeDelta(const evmc::address& address, Storage storage) noexcept
     : address_{address}, storage_{std::move(storage)} {}
 

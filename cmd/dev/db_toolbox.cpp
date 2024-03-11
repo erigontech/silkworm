@@ -39,13 +39,14 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
@@ -229,7 +230,7 @@ static void print_header(const BlockHeader& header) {
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
 }
 
-static void print_body(const db::detail::BlockBodyForStorage& body) {
+static void print_body(const BlockBodyForStorage& body) {
     std::cout << "Body:\nbase_txn_id=" << body.base_txn_id << "\n"
               << "txn_count=" << body.txn_count << "\n"
               << "#ommers=" << body.ommers.size() << "\n"
@@ -1360,7 +1361,7 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
             break;
         }
         ByteView block_body_data{db::from_slice(bb_data.value)};
-        const auto stored_body{db::detail::decode_stored_block_body(block_body_data)};
+        const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
         std::cout << "\nBlock number=" << block_number << "\n\n";
@@ -1409,7 +1410,7 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
             break;
         }
         ByteView block_body_data{db::from_slice(bb_data.value)};
-        const auto stored_body{db::detail::decode_stored_block_body(block_body_data)};
+        const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
         std::cout << "\nBlock number=" << block_number << "\n\n";

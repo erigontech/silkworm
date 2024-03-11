@@ -23,12 +23,12 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/stages.hpp>
 
 #include "../common/common.hpp"
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
             // Decode block body data as RLP buffer
             auto body_rlp{db::from_slice(bodies_data.value)};
-            auto body{db::detail::decode_stored_block_body(body_rlp)};
+            auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
             // Process block transactions one-by-one
             log::Debug() << "Processing block: " << block_number << " txn count: " << body.txn_count;

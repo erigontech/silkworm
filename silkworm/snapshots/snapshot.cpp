@@ -232,7 +232,7 @@ BodySnapshot::~BodySnapshot() {
 
 bool BodySnapshot::for_each_body(const Walker& walker) {
     return for_each_item([&](const WordItem& item) -> bool {
-        db::detail::BlockBodyForStorage body;
+        BlockBodyForStorage body;
         success_or_throw(decode_body(item, body));
         const BlockNum number = path_.block_from() + item.position;
         return walker(number, &body);
@@ -292,7 +292,7 @@ std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_heigh
 DecodingResult BodySnapshot::decode_body(const Snapshot::WordItem& item, StoredBlockBody& body) {
     ByteView body_rlp{item.value.data(), item.value.length()};
     SILK_TRACE << "decode_body offset: " << item.offset << " body_rlp: " << to_hex(body_rlp);
-    const auto result = db::detail::decode_stored_block_body(body_rlp, body);
+    const auto result = decode_stored_block_body(body_rlp, body);
     SILK_TRACE << "decode_body offset: " << item.offset << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
     return result;
 }

@@ -29,7 +29,6 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 using namespace evmc::literals;
 
@@ -38,12 +37,11 @@ namespace silkworm {
 stagedsync::HistoryIndex make_stage_history_index(
     stagedsync::SyncContext* sync_context,
     const db::test_util::TempChainData& chain_data) {
-    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(chain_data);
     return stagedsync::HistoryIndex{
         sync_context,
-        node_settings.batch_size,
-        node_settings.etl(),
-        node_settings.prune_mode.history(),
+        /* batch_size = */ 512_Mebi,
+        db::etl::CollectorSettings{chain_data.dir().etl().path(), 256_Mebi},
+        chain_data.prune_mode().history(),
     };
 }
 

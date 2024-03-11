@@ -19,6 +19,8 @@
 #include <chrono>
 
 #include <boost/asio/experimental/as_tuple.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -26,25 +28,26 @@
 #include <silkworm/infra/common/mem_usage.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 
-namespace silkworm {
+namespace silkworm::node {
 
 using namespace std::chrono_literals;
 using std::chrono::steady_clock;
 
 constexpr auto kResourceUsageInterval{300s};
 
-ResourceUsageLog::ResourceUsageLog(NodeSettings& settings) : settings_{settings}, timer_{settings_.asio_context} {}
-
 Task<void> ResourceUsageLog::run() {
+    auto executor = co_await boost::asio::this_coro::executor;
+    boost::asio::steady_timer timer{executor};
+
     const auto start_time = steady_clock::now();
     while (true) {
         try {
-            timer_.expires_after(kResourceUsageInterval);
-            co_await timer_.async_wait(boost::asio::use_awaitable);
+            timer.expires_after(kResourceUsageInterval);
+            co_await timer.async_wait(boost::asio::use_awaitable);
 
             log::Info("Resource usage", {"mem", human_size(os::get_mem_usage()),
-                                         "chain", human_size(settings_.data_directory->chaindata().size()),
-                                         "etl-tmp", human_size(settings_.data_directory->etl().size()),
+                                         "chain", human_size(data_directory_.chaindata().size()),
+                                         "etl-tmp", human_size(data_directory_.etl().size()),
                                          "uptime", StopWatch::format(steady_clock::now() - start_time)});
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled) {
@@ -54,4 +57,4 @@ Task<void> ResourceUsageLog::run() {
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::node

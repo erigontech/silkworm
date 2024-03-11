@@ -22,10 +22,10 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/receipt_cbor.hpp>
 #include <silkworm/node/db/tables.hpp>
@@ -403,7 +403,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             // read block...
             Block block;
             // ...ommers
-            auto body = detail::decode_stored_block_body(raw_body);
+            auto body = unwrap_or_throw(decode_stored_block_body(raw_body));
             std::swap(block.ommers, body.ommers);
             // ...transactions
             ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for number=" + std::to_string(height); });
@@ -444,7 +444,7 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
         return false;
     }
     ByteView data_view{from_slice(data.value)};
-    auto body{detail::decode_stored_block_body(data_view)};
+    auto body{unwrap_or_throw(decode_stored_block_body(data_view))};
 
     std::swap(out.ommers, body.ommers);
     std::swap(out.withdrawals, body.withdrawals);
@@ -463,7 +463,7 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& has
     if (!data) return false;
 
     ByteView data_view{from_slice(data.value)};
-    const auto body{detail::decode_stored_block_body(data_view)};
+    const auto body{unwrap_or_throw(decode_stored_block_body(data_view))};
     ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(height); });
     read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
 
@@ -503,7 +503,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 }
 
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
-    detail::BlockBodyForStorage body_for_storage{};
+    BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.withdrawals = body.withdrawals;
     body_for_storage.txn_count = body.transactions.size() + 2;
@@ -519,7 +519,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
 }
 
 void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
-    detail::BlockBodyForStorage body_for_storage{};
+    BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.withdrawals = body.withdrawals;
     body_for_storage.txn_count = body.transactions.size();

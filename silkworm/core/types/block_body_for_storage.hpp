@@ -24,14 +24,12 @@
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/withdrawal.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 
 // keep below
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
-// TODO: bad namespace - this file is misplaced until we decide how to better structure the db module
-namespace silkworm::db::detail {
+namespace silkworm {
 
 // See Erigon BodyForStorage
 struct BlockBodyForStorage {
@@ -47,7 +45,7 @@ struct BlockBodyForStorage {
 
 DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to);
 
-BlockBodyForStorage decode_stored_block_body(ByteView& from);
+tl::expected<BlockBodyForStorage, DecodingError> decode_stored_block_body(ByteView& from);
 
 inline Bytes BlockBodyForStorage::encode() const {
     rlp::Header header{.list = true, .payload_length = 0};
@@ -102,10 +100,12 @@ inline DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStora
     return {};
 }
 
-inline BlockBodyForStorage decode_stored_block_body(ByteView& from) {
+inline tl::expected<BlockBodyForStorage, DecodingError> decode_stored_block_body(ByteView& from) {
     BlockBodyForStorage to;
-    success_or_throw(decode_stored_block_body(from, to));
+    DecodingResult result = decode_stored_block_body(from, to);
+    if (!result)
+        return tl::unexpected{result.error()};
     return to;
 }
 
-}  // namespace silkworm::db::detail
+}  // namespace silkworm

@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::node::test_util {

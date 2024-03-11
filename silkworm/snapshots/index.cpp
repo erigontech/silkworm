@@ -22,10 +22,10 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
 #include <silkworm/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/snapshots/rec_split/rec_split_seq.hpp>
 #include <silkworm/snapshots/seg/common/varint.hpp>
@@ -171,7 +171,7 @@ void TransactionIndex::build() {
             [&, first_tx_id = first_tx_id, expected_tx_count = expected_tx_count](auto tx_it, auto body_it) -> bool {
                 BlockNum block_number = first_block_num;
 
-                db::detail::BlockBodyForStorage body;
+                BlockBodyForStorage body;
 
                 Bytes tx_buffer{}, body_buffer{};
                 tx_buffer.reserve(kPageSize);
@@ -180,7 +180,7 @@ void TransactionIndex::build() {
                 body_it.next(body_buffer);
                 ByteView body_rlp{body_buffer.data(), body_buffer.length()};
                 SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
-                auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                auto decode_result = decode_stored_block_body(body_rlp, body);
                 if (!decode_result) {
                     SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp)
                                << " error: " << magic_enum::enum_name(decode_result.error());
@@ -195,7 +195,7 @@ void TransactionIndex::build() {
                         if (!body_it.has_next()) return false;
                         body_it.next(body_buffer);
                         body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
-                        decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                        decode_result = decode_stored_block_body(body_rlp, body);
                         if (!decode_result) {
                             SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp)
                                        << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());

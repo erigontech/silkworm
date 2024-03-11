@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm {

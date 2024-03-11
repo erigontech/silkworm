@@ -32,7 +32,7 @@
 
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>

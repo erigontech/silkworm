@@ -22,7 +22,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/trie/vector_root.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>

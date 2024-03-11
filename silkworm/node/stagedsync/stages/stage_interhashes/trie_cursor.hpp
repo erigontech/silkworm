@@ -21,7 +21,7 @@
 #include <silkworm/core/trie/node.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 namespace silkworm::trie {
 

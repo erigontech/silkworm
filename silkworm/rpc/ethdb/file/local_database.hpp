@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 

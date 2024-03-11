@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "etl/collector.hpp"
+#include <silkworm/db/etl/collector.hpp>
+
 #include "mdbx.hpp"
-#include "util.hpp"
 
 namespace silkworm::db::etl_mdbx {
 

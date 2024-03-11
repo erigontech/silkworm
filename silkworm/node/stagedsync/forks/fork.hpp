@@ -23,7 +23,7 @@
 #include <vector>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/memory_mutation.hpp>
+#include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"

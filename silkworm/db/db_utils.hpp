@@ -23,7 +23,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 namespace silkworm {
 

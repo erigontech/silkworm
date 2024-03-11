@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 #include "memory_mutation.hpp"
 

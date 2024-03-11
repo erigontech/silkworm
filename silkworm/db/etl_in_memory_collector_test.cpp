@@ -20,12 +20,12 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
+#include <silkworm/db/etl/in_memory_collector.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-#include "etl/in_memory_collector.hpp"
-#include "mdbx.hpp"
 #include "util.hpp"
 
 namespace silkworm::db::etl_mdbx {

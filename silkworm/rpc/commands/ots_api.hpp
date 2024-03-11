@@ -24,7 +24,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/db/bitmap.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>

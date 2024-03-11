@@ -587,4 +587,12 @@ size_t cursor_erase(RWCursor& cursor, ByteView set_key,
 //! \param [in] prefix : Delete keys starting with this prefix
 size_t cursor_erase_prefix(RWCursor& cursor, ByteView prefix);
 
+inline Slice to_slice(ByteView value) {
+    return {value.data(), value.length()};
+}
+
+inline ByteView from_slice(const Slice slice) {
+    return {static_cast<const uint8_t*>(slice.data()), slice.length()};
+}
+
 }  // namespace silkworm::db

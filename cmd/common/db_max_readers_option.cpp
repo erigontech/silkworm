@@ -16,7 +16,7 @@
 
 #include "db_max_readers_option.hpp"
 
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 namespace silkworm::cmd::common {
 

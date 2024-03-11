@@ -22,12 +22,11 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/random_number.hpp>
+#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-
-#include "etl_mdbx_collector.hpp"
 
 namespace silkworm::db::etl {
 

@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 #include "chain_storage.hpp"
 

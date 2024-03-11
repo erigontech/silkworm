@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/settings.hpp>

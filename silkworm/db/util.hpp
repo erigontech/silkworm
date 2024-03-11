@@ -31,7 +31,7 @@ see its package dbutils.
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
 
@@ -124,18 +124,12 @@ std::tuple<ByteView, uint32_t> split_log_topic_key(const mdbx::slice& key);
 //! while technically in PlainState it's the first part of the value.
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(ByteView key, ByteView value);
 
-inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
-
 inline mdbx::slice to_slice(const evmc::bytes32& value) {
     return to_slice(ByteView{value.bytes});
 }
 
 inline mdbx::slice to_slice(const evmc::address& address) {
     return to_slice(ByteView{address.bytes});
-}
-
-inline ByteView from_slice(const mdbx::slice slice) {
-    return {static_cast<const uint8_t*>(slice.data()), slice.length()};
 }
 
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,

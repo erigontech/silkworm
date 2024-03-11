@@ -24,7 +24,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/bitmap.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/tables.hpp>

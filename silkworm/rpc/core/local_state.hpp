@@ -27,7 +27,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 

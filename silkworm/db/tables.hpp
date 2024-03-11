@@ -18,7 +18,7 @@
 
 #include <optional>
 
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 /// Part of the compatibility layer with the Erigon DB format.

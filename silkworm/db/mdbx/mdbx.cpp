@@ -18,7 +18,6 @@
 
 #include <stdexcept>
 
-#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db {

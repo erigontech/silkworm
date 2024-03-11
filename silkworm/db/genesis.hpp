@@ -18,7 +18,7 @@
 
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
 //! \brief Validates provided genesis json payload

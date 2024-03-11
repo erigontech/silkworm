@@ -16,6 +16,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+set(TARGET silkworm_capi)
+
 find_package(Microsoft.GSL REQUIRED)
 
 set(PUBLIC_LIBS "")
@@ -28,7 +30,10 @@ set(PRIVATE_LIBS
     silkworm_rpcdaemon
 )
 
-set(TARGET silkworm_capi)
+# Temporarily skip unit test runner for silkworm_capi target in ASAN build (failures after PR #1879)
+if(SILKWORM_SANITIZE)
+  set(NO_TEST "NO_TEST")
+endif()
 
 # cmake-format: off
 silkworm_library(
@@ -36,6 +41,7 @@ silkworm_library(
   PUBLIC ${PUBLIC_LIBS}
   PRIVATE ${PRIVATE_LIBS}
   TYPE SHARED
+  ${NO_TEST}
 )
 # cmake-format: on
 

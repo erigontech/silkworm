@@ -27,7 +27,7 @@ function(silkworm_library TARGET)
     PARSE_ARGV
     1
     "ARG"
-    ""
+    "NO_TEST"
     "TYPE"
     "PUBLIC;PRIVATE"
   )
@@ -62,11 +62,7 @@ function(silkworm_library TARGET)
   )
 
   # unit tests
-  if(TEST_SRC)
-    # Temporarily skip unit test runner for silkworm_capi target in ASAN build (failures after PR #1879)
-    if(${TARGET} STREQUAL "silkworm_capi" AND SILKWORM_SANITIZE)
-      return()
-    endif()
+  if(TEST_SRC AND NOT ${ARG_NO_TEST})
     set(TEST_TARGET ${TARGET}_test)
     add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
     target_link_libraries(${TEST_TARGET} PRIVATE Catch2::Catch2 ${TARGET} "${ARG_PUBLIC}" "${ARG_PRIVATE}")

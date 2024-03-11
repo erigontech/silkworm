@@ -7,6 +7,8 @@ parse:
         BUILD: '*'
         PROFILE: '*'
     silkworm_library:
+      flags:
+        - NO_TEST
       kwargs:
         PUBLIC: '*'
         PRIVATE: '*'

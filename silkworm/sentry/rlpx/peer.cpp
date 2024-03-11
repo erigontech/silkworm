@@ -104,7 +104,11 @@ Task<void> Peer::handle() {
     bool is_handshake_completed = false;
     [[maybe_unused]] auto _ = gsl::finally([this, &is_handshake_completed] {
         if (!is_handshake_completed) {
-            this->handshake_promise_.set_value(false);
+            try {
+                this->handshake_promise_.set_value(false);
+            } catch (const std::exception& e) {
+                log::Debug("sentry") << "Peer::handle finally exception: " << e.what();
+            }
         }
         this->close();
     });

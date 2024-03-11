@@ -322,7 +322,6 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
-    state_.clear_journal_and_substate();
     rule_set_.finalize(state_, block);
     state_.finalize_transaction(rev);
 

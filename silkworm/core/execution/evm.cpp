@@ -445,7 +445,7 @@ bool EvmHost::selfdestruct(const evmc::address& address, const evmc::address& be
         evm_.state().subtract_from_balance(address, balance);
     } else {
         evm_.state().set_balance(address, 0);
-        recorded = evm_.state().record_suicide(address);
+        // recorded = evm_.state().record_suicide(address);
     }
     for (auto tracer : evm_.tracers()) {
         tracer.get().on_self_destruct(address, beneficiary);
@@ -541,12 +541,13 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
     evm_.state().add_log(log);
 }
 
-evmc::bytes32 EvmHost::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept {
-    return evm_.state().get_transient_storage(addr, key);
+evmc::bytes32 EvmHost::get_transient_storage(const evmc::address& /*addr*/, const evmc::bytes32& /*key*/) const noexcept {
+    // return evm_.state().get_transient_storage(addr, key);
+    return {};
 }
 
-void EvmHost::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) noexcept {
-    evm_.state().set_transient_storage(addr, key, value);
+void EvmHost::set_transient_storage(const evmc::address& /*addr*/, const evmc::bytes32& /*key*/, const evmc::bytes32& /*value*/) noexcept {
+    // evm_.state().set_transient_storage(addr, key, value);
 }
 
 }  // namespace silkworm

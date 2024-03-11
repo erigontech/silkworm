@@ -65,11 +65,7 @@ class IntraBlockState {
 
     void destruct(const evmc::address& address);
 
-    bool record_suicide(const evmc::address& address) noexcept;
-    void destruct_suicides();
     void destruct_touched_dead();
-
-    size_t number_of_self_destructs() const noexcept { return self_destructs_.size(); }
 
     intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept;
@@ -115,10 +111,6 @@ class IntraBlockState {
 
     const FlatHashSet<evmc::address>& created() const noexcept { return created_; }
 
-    evmc::bytes32 get_transient_storage(const evmc::address& address, const evmc::bytes32& key);
-
-    void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value);
-
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
@@ -149,15 +141,12 @@ class IntraBlockState {
     FlatHashMap<evmc::bytes32, std::vector<uint8_t>> new_code_;
 
     // substate
-    FlatHashSet<evmc::address> self_destructs_;
     std::vector<Log> logs_;
     FlatHashSet<evmc::address> touched_;
     FlatHashSet<evmc::address> created_;  // required for EIP-6780
     // EIP-2929 substate
     FlatHashSet<evmc::address> accessed_addresses_;
     FlatHashMap<evmc::address, FlatHashSet<evmc::bytes32>> accessed_storage_keys_;
-
-    FlatHashMap<evmc::address, FlatHashMap<evmc::bytes32, evmc::bytes32>> transient_storage_;
 };
 
 }  // namespace silkworm

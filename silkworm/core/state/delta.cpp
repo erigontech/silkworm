@@ -40,8 +40,6 @@ void UpdateBalanceDelta::revert(IntraBlockState& state) noexcept {
 
 SuicideDelta::SuicideDelta(const evmc::address& address) noexcept : address_{address} {}
 
-void SuicideDelta::revert(IntraBlockState& state) noexcept { state.self_destructs_.erase(address_); }
-
 TouchDelta::TouchDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void TouchDelta::revert(IntraBlockState& state) noexcept { state.touched_.erase(address_); }
@@ -67,9 +65,5 @@ void AccountAccessDelta::revert(IntraBlockState& state) noexcept { state.accesse
 TransientStorageChangeDelta::TransientStorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
                                                          const evmc::bytes32& previous) noexcept
     : address_{address}, key_{key}, previous_{previous} {}
-
-void TransientStorageChangeDelta::revert(IntraBlockState& state) noexcept {
-    state.transient_storage_[address_][key_] = previous_;
-}
 
 }  // namespace silkworm::state

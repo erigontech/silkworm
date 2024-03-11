@@ -16,9 +16,9 @@
 
 find_package(Catch2 REQUIRED)
 
-macro(list_filter VAR EXCLUDE_REGEX)
-  foreach(R IN LISTS ${EXCLUDE_REGEX})
-    list(FILTER ${VAR} EXCLUDE REGEX "${SILKWORM_SRC_DIR}/${R}")
+macro(list_filter_dirs VAR DIRS)
+  foreach(DIR IN LISTS ${DIRS})
+    list(FILTER ${VAR} EXCLUDE REGEX "^${DIR}/")
   endforeach()
 endmacro()
 
@@ -29,7 +29,7 @@ function(silkworm_library TARGET)
     "ARG"
     ""
     ""
-    "PUBLIC;PRIVATE;EXCLUDE_REGEX;TYPE;LIBS_TEST"
+    "PUBLIC;PRIVATE;TYPE;LIBS_TEST"
   )
 
   file(
@@ -41,9 +41,17 @@ function(silkworm_library TARGET)
     "*.c"
     "*.h"
   )
-  list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
+
+  # remove subdirectories with CMakeLists.txt
+  get_directory_property(SUB_LIBS SUBDIRECTORIES)
+  list_filter_dirs(SRC SUB_LIBS)
+
+  set(TEST_SRC ${SRC})
+  set(TEST_REGEX "(_test\\.cpp$|\/test_util\/)")
+  list(FILTER TEST_SRC INCLUDE REGEX "${TEST_REGEX}")
+
+  list(FILTER SRC EXCLUDE REGEX "${TEST_REGEX}")
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
-  list_filter(SRC ARG_EXCLUDE_REGEX)
   add_library(${TARGET} ${ARG_TYPE} ${SRC})
 
   target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
@@ -54,8 +62,6 @@ function(silkworm_library TARGET)
   )
 
   # unit tests
-  file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-  list_filter(TEST_SRC ARG_EXCLUDE_REGEX)
   if(TEST_SRC)
     # Temporarily skip unit test runner for silkworm_capi target in ASAN build (failures after PR #1879)
     if(${TARGET} STREQUAL "silkworm_capi" AND SILKWORM_SANITIZE)

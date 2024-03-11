@@ -51,5 +51,4 @@ silkworm_library(
   silkworm_db
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
-  EXCLUDE_REGEX "db/etl" "db/snapshots"
 )

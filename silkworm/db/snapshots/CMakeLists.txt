@@ -27,5 +27,4 @@ silkworm_library(
   silkworm_snapshots
   PUBLIC Microsoft.GSL::GSL silkworm_core silkworm_infra
   PRIVATE absl::strings Boost::headers magic_enum::magic_enum torrent-rasterbar silkworm_snapshots_seg
-  EXCLUDE_REGEX "snapshots/seg"
 )

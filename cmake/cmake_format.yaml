@@ -10,7 +10,6 @@ parse:
       kwargs:
         PUBLIC: '*'
         PRIVATE: '*'
-        EXCLUDE_REGEX: '*'
         TYPE: '*'
         LIBS_TEST: '*'
 

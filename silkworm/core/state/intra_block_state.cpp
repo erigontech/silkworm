@@ -122,29 +122,12 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
     }
 }
 
-bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
-    const bool inserted{self_destructs_.insert(address).second};
-    if (inserted) {
-    }
-    return inserted;
-}
-
-void IntraBlockState::destruct_suicides() {
-    for (const auto& address : self_destructs_) {
-        destruct(address);
-    }
-}
-
 void IntraBlockState::destruct_touched_dead() {
     for (const auto& address : touched_) {
         if (is_dead(address)) {
             destruct(address);
         }
     }
-}
-
-bool IntraBlockState::is_self_destructed(const evmc::address& address) const noexcept {
-    return self_destructs_.contains(address);
 }
 
 // Doesn't create a delta since it's called at the end of a transaction,
@@ -300,15 +283,6 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     storage_[address].committed[key].original = value;
 }
 
-evmc::bytes32 IntraBlockState::get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) {
-    return transient_storage_[addr][key];
-}
-
-void IntraBlockState::set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) {
-    auto& v = transient_storage_[addr][key];
-    v = value;
-}
-
 void IntraBlockState::write_to_db(uint64_t block_number) {
     db_.begin_block(block_number, objects_.size());
 
@@ -355,7 +329,6 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 }
 
 void IntraBlockState::finalize_transaction(evmc_revision rev) {
-    destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         destruct_touched_dead();
     }
@@ -363,15 +336,12 @@ void IntraBlockState::finalize_transaction(evmc_revision rev) {
 
 void IntraBlockState::clear_journal_and_substate() {
     // and the substate
-    self_destructs_.clear();
     logs_.clear();
     touched_.clear();
     created_.clear();
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();
-
-    transient_storage_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

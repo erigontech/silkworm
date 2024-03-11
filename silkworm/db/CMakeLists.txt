@@ -18,6 +18,7 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(etl)
 add_subdirectory(snapshots)
+add_subdirectory(test_util)
 
 find_package(absl REQUIRED)
 find_package(magic_enum REQUIRED)
@@ -52,3 +53,5 @@ silkworm_library(
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
+
+target_link_libraries(silkworm_db_test PRIVATE silkworm_db_test_util)

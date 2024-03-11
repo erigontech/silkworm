@@ -55,3 +55,5 @@ silkworm_library(
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
 )
+
+target_link_libraries(silkworm_node_test PRIVATE silkworm_db_test_util)

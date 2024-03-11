@@ -1,5 +1,5 @@
 #[[
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_infra_test_util)
+set(TARGET silkworm_db_test_util)
 
-find_package(Boost REQUIRED headers)
+find_package(nlohmann_json REQUIRED)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-
 add_library(${TARGET} ${SRC})
 
-target_link_libraries(${TARGET} PUBLIC silkworm_infra Boost::headers)
+target_link_libraries(
+  ${TARGET}
+  PUBLIC silkworm_core silkworm_infra silkworm_db
+  PRIVATE nlohmann_json::nlohmann_json
+)

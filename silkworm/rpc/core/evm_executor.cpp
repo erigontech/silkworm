@@ -168,11 +168,12 @@ uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& tx
     const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
                                                           : protocol::kMaxRefundQuotientFrontier};
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
-    const uint64_t refund = gas_refund < max_refund ? gas_refund : max_refund;  // min
+    const uint64_t refund = std::min(gas_refund, max_refund);
     gas_left += refund;
 
     const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
     SILK_DEBUG << "EVMExecutor::refund_gas txn.max_fee_per_gas: " << txn.max_fee_per_gas << " base_fee_per_gas: " << base_fee_per_gas;
+
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                     : txn.max_priority_fee_per_gas};
     SILK_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price;
@@ -218,8 +219,8 @@ ExecutionResult EVMExecutor::call(
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
-    SILK_DEBUG << "EVMExecutor::call: transaction: " << &txn;
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
+    SILK_DEBUG << "EVMExecutor::call: transaction: " << rpc::Transaction{txn};
 
     auto& svc = use_service<AnalysisCacheService>(workers_);
     EVM evm{block, ibs_state_, config_};

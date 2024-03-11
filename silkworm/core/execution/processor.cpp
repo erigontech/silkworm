@@ -107,7 +107,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     StateView sv{state_, evm_};
 
-    auto e1_receipt = evmone::state::transition(e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm());
+    thread_local evmone::state::StateDiff e1_state_diff;
+    auto e1_receipt = evmone::state::transition(e1_state_diff, e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm());
     const auto gas_used = static_cast<uint64_t>(e1_receipt.gas_used);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
@@ -206,7 +207,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     //     SILKWORM_ASSERT(e1l.data == exp.data);
     // }
 
-    const auto& e1_state_diff = e1_receipt.state_diff;
     // for (const auto& [a, c] : e1_state_diff.modified_storage) {
     //     if (e1_state_diff.deleted_accounts.contains(a))
     //         continue;

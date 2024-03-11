@@ -221,7 +221,6 @@ ExecutionResult EVMExecutor::call(
     bool gas_bailout) {
     SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
     SILK_DEBUG << "EVMExecutor::call: transaction: " << rpc::Transaction{txn};
-    ;
 
     auto& svc = use_service<AnalysisCacheService>(workers_);
     EVM evm{block, ibs_state_, config_};

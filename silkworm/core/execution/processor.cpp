@@ -43,8 +43,8 @@ class StateView : public evmone::state::StateView {
         return Account{.nonce = cur.nonce, .balance = cur.balance, .code_hash = cur.code_hash};
     }
 
-    evmone::bytes get_account_code(evmc::address addr) const noexcept override {
-        return evmone::bytes{state_.get_code(addr)};
+    evmone::bytes_view get_account_code(evmc::address addr) const noexcept override {
+        return state_.get_code(addr);
     }
 
     evmc::bytes32 get_storage(evmc::address addr, evmc::bytes32 key) const noexcept override {

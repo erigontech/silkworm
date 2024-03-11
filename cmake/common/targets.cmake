@@ -18,7 +18,7 @@ find_package(Catch2 REQUIRED)
 
 macro(list_filter VAR EXCLUDE_REGEX)
   foreach(R IN LISTS ${EXCLUDE_REGEX})
-    list(FILTER ${VAR} EXCLUDE REGEX "${R}")
+    list(FILTER ${VAR} EXCLUDE REGEX "${SILKWORM_SRC_DIR}/${R}")
   endforeach()
 endmacro()
 

@@ -100,14 +100,14 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         // blob_hashes
         .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
         .nonce = txn.nonce};
-    for (const auto& ae : txn.access_list)
+    for (const auto& ae : txn.access_list) [[unlikely]]
         e1_tx.access_list.emplace_back(ae.account, ae.storage_keys);
-    for (const auto& h : txn.blob_versioned_hashes)
+    for (const auto& h : txn.blob_versioned_hashes) [[unlikely]]
         e1_tx.blob_hashes.emplace_back(static_cast<const evmc::bytes32&>(h));
 
     StateView sv{state_, evm_};
 
-    const auto e1_receipt = evmone::state::transition(e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm());
+    auto e1_receipt = evmone::state::transition(e1_ctx, sv, e1_block_, e1_tx, evm_.revision(), evm_.vm());
     const auto gas_used = static_cast<uint64_t>(e1_receipt.gas_used);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
@@ -186,10 +186,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.type = txn.type;
     receipt.success = e1_receipt.status == EVMC_SUCCESS;
     receipt.cumulative_gas_used = cumulative_gas_used_;
-    receipt.logs.clear();  // can be dirty
-    receipt.logs.reserve(e1_receipt.logs.size());
-    for (auto& l : e1_receipt.logs)
-        receipt.logs.push_back(Log{l.addr, l.topics, l.data});
+    receipt.logs = std::move(e1_receipt.logs);
     receipt.bloom = logs_bloom(receipt.logs);
 
     // if (static_cast<uint64_t>(e1_receipt.gas_used) != gas_used) {

@@ -14,13 +14,11 @@
    limitations under the License.
 ]]
 
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+
 find_package(absl REQUIRED)
+find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
-
-file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
-
-add_library(silkworm_sync "${SILKWORM_SYNC_SRC}")
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
     silkworm_rpcdaemon
@@ -32,8 +30,6 @@ set(SILKWORM_SYNC_PUBLIC_LIBS
     absl::btree
 )
 
-target_include_directories(silkworm_sync PUBLIC "${SILKWORM_MAIN_DIR}")
-
 # cmake-format: off
 set(SILKWORM_SYNC_PRIVATE_LIBS
     cborcpp
@@ -42,8 +38,10 @@ set(SILKWORM_SYNC_PRIVATE_LIBS
 )
 # cmake-format: on
 
-target_link_libraries(
+silkworm_library(
   silkworm_sync
   PUBLIC ${SILKWORM_SYNC_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_SYNC_PRIVATE_LIBS}
 )
+
+target_link_libraries(silkworm_sync_test PRIVATE GTest::gmock silkworm_db_test_util)

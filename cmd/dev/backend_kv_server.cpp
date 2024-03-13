@@ -32,7 +32,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/head_info.hpp>
+#include <silkworm/db/chain_head.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -116,10 +116,10 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     db::ROAccess db_access) {
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client;
 
-    auto head_info_provider = [db_access = std::move(db_access)]() {
-        return db::read_head_info(db_access);
+    auto chain_head_provider = [db_access = std::move(db_access)]() {
+        return db::read_chain_head(db_access);
     };
-    silkworm::sentry::eth::StatusDataProvider eth_status_data_provider{std::move(head_info_provider), node_settings.chain_config.value()};
+    silkworm::sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
 
     if (node_settings.remote_sentry_addresses.empty()) {
         assert(false);

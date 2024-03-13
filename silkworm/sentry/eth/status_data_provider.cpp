@@ -24,9 +24,9 @@
 
 namespace silkworm::sentry::eth {
 
-static void log_head_info(const HeadInfo& info) {
+static void log_chain_head(const ChainHead& info) {
     log::Debug(
-        "StatusDataProvider::HeadInfo",
+        "StatusDataProvider::ChainHead",
         {
             "head hash",
             info.hash.to_hex(),
@@ -35,32 +35,32 @@ static void log_head_info(const HeadInfo& info) {
             intx::to_string(info.total_difficulty),
 
             "head block num",
-            std::to_string(info.block_num),
+            std::to_string(info.height),
         });
 }
 
 StatusDataProvider::StatusData StatusDataProvider::make_status_data(
-    HeadInfo head_info,
+    ChainHead chain_head,
     uint8_t eth_version,
     const ChainConfig& chain_config) {
     auto fork_numbers = chain_config.distinct_fork_numbers();
     auto fork_times = chain_config.distinct_fork_times();
-    auto best_block_hash = Bytes{ByteView{head_info.hash}};
+    auto best_block_hash = Bytes{ByteView{chain_head.hash}};
     auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
 
     silkworm::sentry::eth::StatusMessage status_message = {
         eth_version,
         chain_config.chain_id,
-        head_info.total_difficulty,
+        chain_head.total_difficulty,
         best_block_hash,
         Bytes{genesis_hash},
-        silkworm::sentry::eth::ForkId(genesis_hash, fork_numbers, fork_times, head_info.block_num),
+        silkworm::sentry::eth::ForkId(genesis_hash, fork_numbers, fork_times, chain_head.height),
     };
 
     silkworm::sentry::eth::StatusData status_data = {
         std::move(fork_numbers),
         std::move(fork_times),
-        head_info.block_num,
+        chain_head.height,
         std::move(status_message),
     };
 
@@ -72,10 +72,10 @@ StatusDataProvider::StatusData StatusDataProvider::get_status_data(uint8_t eth_v
         throw std::runtime_error("StatusDataProvider::get_status_data: unsupported eth version " + std::to_string(eth_version));
     }
 
-    auto head_info = head_info_provider_();
-    log_head_info(head_info);
+    auto chain_head = chain_head_provider_();
+    log_chain_head(chain_head);
 
-    return make_status_data(head_info, eth_version, chain_config_);
+    return make_status_data(chain_head, eth_version, chain_config_);
 }
 
 StatusDataProvider::StatusDataProviderFactory StatusDataProvider::to_factory_function() {

@@ -51,9 +51,9 @@ PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left o
     auto last_fcu = sync_wait(in(exec_engine_), exec_engine_.last_fork_choice());  // previously was get_canonical_head()
     auto block_progress = sync_wait(in(exec_engine_), exec_engine_.block_progress());
 
-    ensure_invariant(height(last_fcu) <= block_progress, "canonical head beyond block progress");
+    ensure_invariant(last_fcu.number <= block_progress, "canonical head beyond block progress");
 
-    if (block_progress == height(last_fcu)) {
+    if (block_progress == last_fcu.number) {
         // if fcu and header progress match than we have the actual canonical, we only need to do a forward sync...
         ensure_invariant(last_fcu == chain_fork_view_.head(), "last fcu misaligned with canonical head");
         chain_fork_view_.reset_head({last_fcu.number, last_fcu.hash,

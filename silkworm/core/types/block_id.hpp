@@ -16,12 +16,17 @@
 
 #pragma once
 
-#include <silkworm/core/types/head_info.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/types/hash.hpp>
 
-namespace silkworm::db {
+namespace silkworm {
 
-HeadInfo read_head_info(ROTxn& txn);
-HeadInfo read_head_info(db::ROAccess db_access);
+// TODO(canepat) rename BlockNumberAndHash
+struct BlockId {
+    BlockNum number{};
+    Hash hash;
 
-}  // namespace silkworm::db
+    friend bool operator==(const BlockId&, const BlockId&) = default;
+};
+
+}  // namespace silkworm

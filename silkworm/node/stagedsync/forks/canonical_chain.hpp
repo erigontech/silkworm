@@ -24,6 +24,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block_id.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "head_info.hpp"
+#include "chain_head.hpp"
 
 #include <gsl/util>
 
@@ -24,35 +24,35 @@
 
 namespace silkworm::db {
 
-HeadInfo read_head_info(ROTxn& txn) {
-    HeadInfo head_info;
+ChainHead read_chain_head(ROTxn& txn) {
+    ChainHead chain_head;
 
     BlockNum head_height = db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey);
-    head_info.block_num = head_height;
+    chain_head.height = head_height;
 
     auto head_hash = db::read_canonical_hash(txn, head_height);
     if (head_hash) {
-        head_info.hash = head_hash.value();
+        chain_head.hash = head_hash.value();
     } else {
-        log::Warning("db::HeadInfo") << "canonical hash at height " << std::to_string(head_height) << " not found in db";
-        return head_info;
+        log::Warning("db::ChainHead") << "canonical hash at height " << std::to_string(head_height) << " not found in db";
+        return chain_head;
     }
 
     auto head_total_difficulty = db::read_total_difficulty(txn, head_height, *head_hash);
     if (head_total_difficulty) {
-        head_info.total_difficulty = head_total_difficulty.value();
+        chain_head.total_difficulty = head_total_difficulty.value();
     } else {
-        log::Warning("db::HeadInfo") << "total difficulty of canonical hash at height " << std::to_string(head_height) << " not found in db";
+        log::Warning("db::ChainHead") << "total difficulty of canonical hash at height " << std::to_string(head_height) << " not found in db";
     }
 
-    return head_info;
+    return chain_head;
 }
 
-HeadInfo read_head_info(db::ROAccess db_access) {
+ChainHead read_chain_head(db::ROAccess db_access) {
     auto txn = db_access.start_ro_tx();
     [[maybe_unused]] auto _ = gsl::finally([&txn] { txn.abort(); });
 
-    return read_head_info(txn);
+    return read_chain_head(txn);
 }
 
 }  // namespace silkworm::db

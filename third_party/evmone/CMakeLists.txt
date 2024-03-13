@@ -57,11 +57,11 @@ if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc /w)
 else()
   target_compile_options(
-    evmone PRIVATE
-    -fno-exceptions
-    # evmone uses vendor specific attributes without macro guards.
-    # https://github.com/ethereum/evmone/blob/master/CMakeLists.txt#L62-L66
-    $<$<CXX_COMPILER_ID:GNU>:-Wno-attributes>
-    $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-attributes>
+    evmone
+    PRIVATE -fno-exceptions
+            # evmone uses vendor specific attributes without macro guards.
+            # https://github.com/ethereum/evmone/blob/master/CMakeLists.txt#L62-L66
+            $<$<CXX_COMPILER_ID:GNU>:-Wno-attributes>
+            $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-attributes>
   )
 endif()

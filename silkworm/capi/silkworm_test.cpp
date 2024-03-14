@@ -426,42 +426,42 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     SilkwormHeadersSnapshot valid_shs{
         .segment = SilkwormMemoryMappedFile{
             .file_path = header_snapshot_path_string.c_str(),
-            .memory_address = header_snapshot.memory_file_address(),
-            .memory_length = header_snapshot.memory_file_size(),
+            .memory_address = header_snapshot.memory_file_region().data(),
+            .memory_length = header_snapshot.memory_file_region().size(),
         },
         .header_hash_index = SilkwormMemoryMappedFile{
             .file_path = header_index_path_string.c_str(),
-            .memory_address = header_snapshot.idx_header_hash()->memory_file_address(),
-            .memory_length = header_snapshot.idx_header_hash()->memory_file_size(),
+            .memory_address = header_snapshot.idx_header_hash()->memory_file_region().data(),
+            .memory_length = header_snapshot.idx_header_hash()->memory_file_region().size(),
         },
     };
     SilkwormBodiesSnapshot valid_sbs{
         .segment = SilkwormMemoryMappedFile{
             .file_path = body_snapshot_path_string.c_str(),
-            .memory_address = body_snapshot.memory_file_address(),
-            .memory_length = body_snapshot.memory_file_size(),
+            .memory_address = body_snapshot.memory_file_region().data(),
+            .memory_length = body_snapshot.memory_file_region().size(),
         },
         .block_num_index = SilkwormMemoryMappedFile{
             .file_path = body_index_path_string.c_str(),
-            .memory_address = body_snapshot.idx_body_number()->memory_file_address(),
-            .memory_length = body_snapshot.idx_body_number()->memory_file_size(),
+            .memory_address = body_snapshot.idx_body_number()->memory_file_region().data(),
+            .memory_length = body_snapshot.idx_body_number()->memory_file_region().size(),
         },
     };
     SilkwormTransactionsSnapshot valid_sts{
         .segment = SilkwormMemoryMappedFile{
             .file_path = tx_snapshot_path_string.c_str(),
-            .memory_address = tx_snapshot.memory_file_address(),
-            .memory_length = tx_snapshot.memory_file_size(),
+            .memory_address = tx_snapshot.memory_file_region().data(),
+            .memory_length = tx_snapshot.memory_file_region().size(),
         },
         .tx_hash_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash_index_path_string.c_str(),
-            .memory_address = tx_snapshot.idx_txn_hash()->memory_file_address(),
-            .memory_length = tx_snapshot.idx_txn_hash()->memory_file_size(),
+            .memory_address = tx_snapshot.idx_txn_hash()->memory_file_region().data(),
+            .memory_length = tx_snapshot.idx_txn_hash()->memory_file_region().size(),
         },
         .tx_hash_2_block_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash2block_index_path_string.c_str(),
-            .memory_address = tx_snapshot.idx_txn_hash_2_block()->memory_file_address(),
-            .memory_length = tx_snapshot.idx_txn_hash_2_block()->memory_file_size(),
+            .memory_address = tx_snapshot.idx_txn_hash_2_block()->memory_file_region().data(),
+            .memory_length = tx_snapshot.idx_txn_hash_2_block()->memory_file_region().size(),
         },
     };
 

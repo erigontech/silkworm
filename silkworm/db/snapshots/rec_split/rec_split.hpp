@@ -299,7 +299,7 @@ class RecSplit {
         SILK_TRACE << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 
-        const auto address = encoded_file_->address();
+        const auto address = encoded_file_->region().data();
 
         encoded_file_->advise_sequential();
 
@@ -357,7 +357,7 @@ class RecSplit {
             offset += kEliasFano32CountLength;
             const uint64_t u = endian::load_big_u64(address + offset);
             offset += kEliasFano32ULength;
-            std::span<uint8_t> remaining_data{address + offset, encoded_file_->length() - offset};
+            auto remaining_data = encoded_file_->region().subspan(offset);
             ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
             offset += ef_offsets_->data().size() * sizeof(uint64_t);
 
@@ -383,7 +383,7 @@ class RecSplit {
         golomb_param_max_index_ = golomb_param_size - 1;
         offset += kGolombParamSizeLength;
 
-        MemoryMappedInputStream mmis{address + offset, encoded_file_->length() - offset};
+        MemoryMappedInputStream mmis{encoded_file_->region().subspan(offset)};
 
         // Read Golomb-Rice codes
         mmis >> golomb_rice_codes_;
@@ -393,7 +393,7 @@ class RecSplit {
         mmis >> double_ef_index_;
         offset += 5 * sizeof(uint64_t) + double_ef_index_.data().size() * sizeof(uint64_t);
 
-        SILKWORM_ASSERT(offset == encoded_file_->length());
+        SILKWORM_ASSERT(offset == encoded_file_->size());
 
         encoded_file_->advise_random();
 
@@ -645,10 +645,10 @@ class RecSplit {
         const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
 
-        const auto address = encoded_file_->address();
-        ensure(position + sizeof(uint64_t) < encoded_file_->length(),
+        const auto region = encoded_file_->region();
+        ensure(position + sizeof(uint64_t) < region.size(),
                [&]() { return "position: " + std::to_string(position) + " plus 8 exceeds file length"; });
-        const auto value = endian::load_big_u64(address + position) & record_mask_;
+        const auto value = endian::load_big_u64(region.data() + position) & record_mask_;
         if (less_false_positives_ && value < existence_filter_.size()) {
             return {value, existence_filter_.at(value) == static_cast<uint8_t>(hashed_key.first)};
         }
@@ -680,8 +680,7 @@ class RecSplit {
         return std::filesystem::last_write_time(index_path_);
     }
 
-    [[nodiscard]] uint8_t* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
-    [[nodiscard]] std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
+    [[nodiscard]] MemoryMappedRegion memory_file_region() const { return encoded_file_ ? encoded_file_->region() : MemoryMappedRegion{}; }
 
   private:
     static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
@@ -881,9 +880,9 @@ class RecSplit {
     [[nodiscard]] inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
     void check_minimum_length(std::size_t minimum_length) {
-        if (encoded_file_ && encoded_file_->length() < minimum_length) {
+        if (encoded_file_ && encoded_file_->size() < minimum_length) {
             throw std::runtime_error("index " + encoded_file_->path().filename().string() + " is too short: " +
-                                     std::to_string(encoded_file_->length()) + " < " + std::to_string(minimum_length));
+                                     std::to_string(encoded_file_->size()) + " < " + std::to_string(minimum_length));
         }
     }
 

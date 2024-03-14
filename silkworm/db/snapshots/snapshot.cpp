@@ -43,16 +43,10 @@ Snapshot::Snapshot(SnapshotPath path)
 Snapshot::Snapshot(SnapshotPath path, MemoryMappedRegion segment_region)
     : path_(std::move(path)), decoder_{path_.path(), segment_region} {}
 
-uint8_t* Snapshot::memory_file_address() const {
+MemoryMappedRegion Snapshot::memory_file_region() const {
     const auto memory_file{decoder_.memory_file()};
-    if (!memory_file) return nullptr;
-    return memory_file->address();
-}
-
-std::size_t Snapshot::memory_file_size() const {
-    const auto memory_file{decoder_.memory_file()};
-    if (!memory_file) return 0;
-    return memory_file->length();
+    if (!memory_file) return MemoryMappedRegion{};
+    return memory_file->region();
 }
 
 void Snapshot::reopen_segment() {

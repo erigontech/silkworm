@@ -309,11 +309,12 @@ Decompressor::~Decompressor() {
 
 void Decompressor::open() {
     compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, compressed_region_);
-    if (compressed_file_->length() < kMinimumFileSize) {
-        throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_->length()));
+    auto compressed_file_size = compressed_file_->size();
+    if (compressed_file_size < kMinimumFileSize) {
+        throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_size));
     }
 
-    const auto address = compressed_file_->address();
+    const auto address = compressed_file_->region().data();
 
     compressed_file_->advise_sequential();
 
@@ -338,10 +339,10 @@ void Decompressor::open() {
 
     // Store the start offset and length of the data words
     words_start_ = address + positions_dict_offset + position_dict_length;
-    words_length_ = compressed_file_->length() - (positions_dict_offset + position_dict_length);
-    SILKWORM_ASSERT(address + compressed_file_->length() == words_start_ + words_length_);
+    words_length_ = compressed_file_size - (positions_dict_offset + position_dict_length);
+    SILKWORM_ASSERT(address + compressed_file_size == words_start_ + words_length_);
     SILK_TRACE << "Decompressor words start offset: " << (words_start_ - address) << " words length: " << words_length_
-               << " total length: " << compressed_file_->length();
+               << " total size: " << compressed_file_size;
 
     compressed_file_->advise_random();
 }

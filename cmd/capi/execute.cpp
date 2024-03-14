@@ -158,12 +158,12 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
                         .file_path = make_path(segment_file),
-                        .memory_address = header_snapshot->memory_file_address(),
-                        .memory_length = header_snapshot->memory_file_size()},
+                        .memory_address = header_snapshot->memory_file_region().data(),
+                        .memory_length = header_snapshot->memory_file_region().size()},
                     .header_hash_index{
                         .file_path = make_path(segment_file.index_file()),
-                        .memory_address = idx_header_hash->memory_file_address(),
-                        .memory_length = idx_header_hash->memory_file_size()}};
+                        .memory_address = idx_header_hash->memory_file_region().data(),
+                        .memory_length = idx_header_hash->memory_file_region().size()}};
                 headers_snapshot_sequence.push_back(raw_headers_snapshot);
             } break;
             case SnapshotType::bodies: {
@@ -172,12 +172,12 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 SilkwormBodiesSnapshot raw_bodies_snapshot{
                     .segment{
                         .file_path = make_path(segment_file),
-                        .memory_address = body_snapshot->memory_file_address(),
-                        .memory_length = body_snapshot->memory_file_size()},
+                        .memory_address = body_snapshot->memory_file_region().data(),
+                        .memory_length = body_snapshot->memory_file_region().size()},
                     .block_num_index{
                         .file_path = make_path(segment_file.index_file()),
-                        .memory_address = idx_body_number->memory_file_address(),
-                        .memory_length = idx_body_number->memory_file_size()}};
+                        .memory_address = idx_body_number->memory_file_region().data(),
+                        .memory_length = idx_body_number->memory_file_region().size()}};
                 bodies_snapshot_sequence.push_back(raw_bodies_snapshot);
             } break;
             case SnapshotType::transactions: {
@@ -187,16 +187,16 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
                 SilkwormTransactionsSnapshot raw_transactions_snapshot{
                     .segment{
                         .file_path = make_path(segment_file),
-                        .memory_address = tx_snapshot->memory_file_address(),
-                        .memory_length = tx_snapshot->memory_file_size()},
+                        .memory_address = tx_snapshot->memory_file_region().data(),
+                        .memory_length = tx_snapshot->memory_file_region().size()},
                     .tx_hash_index{
                         .file_path = make_path(segment_file.index_file()),
-                        .memory_address = idx_txn_hash->memory_file_address(),
-                        .memory_length = idx_txn_hash->memory_file_size()},
+                        .memory_address = idx_txn_hash->memory_file_region().data(),
+                        .memory_length = idx_txn_hash->memory_file_region().size()},
                     .tx_hash_2_block_index{
                         .file_path = make_path(segment_file.index_file_for_type(SnapshotType::transactions_to_block)),
-                        .memory_address = idx_txn_hash_2_block->memory_file_address(),
-                        .memory_length = idx_txn_hash_2_block->memory_file_size()}};
+                        .memory_address = idx_txn_hash_2_block->memory_file_region().data(),
+                        .memory_length = idx_txn_hash_2_block->memory_file_region().size()}};
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
             } break;
             default:
@@ -351,10 +351,11 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
             throw std::runtime_error("Snapshot not found in the repository:" + snapshot_name);
         }
 
-        auto mmf = new SilkwormMemoryMappedFile();
-        mmf->file_path = make_path(snapshot->path());
-        mmf->memory_address = snapshot->memory_file_address();
-        mmf->memory_length = snapshot->memory_file_size();
+        auto mmf = new SilkwormMemoryMappedFile{
+            .file_path = make_path(snapshot->path()),
+            .memory_address = snapshot->memory_file_region().data(),
+            .memory_length = snapshot->memory_file_region().size(),
+        };
         snapshots.push_back(mmf);
     }
 

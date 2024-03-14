@@ -47,6 +47,7 @@
 #include <filesystem>
 #include <istream>
 #include <optional>
+#include <span>
 #include <streambuf>
 #include <tuple>
 
@@ -69,10 +70,7 @@ using FileDescriptor = HANDLE;
 using FileDescriptor = int;
 #endif
 
-struct MemoryMappedRegion {
-    uint8_t* address{nullptr};
-    std::size_t length{0};
-};
+using MemoryMappedRegion = std::span<uint8_t>;
 
 class MemoryMappedFile {
   public:
@@ -91,12 +89,12 @@ class MemoryMappedFile {
         return path_;
     }
 
-    [[nodiscard]] uint8_t* address() const {
-        return address_;
+    [[nodiscard]] MemoryMappedRegion region() const {
+        return region_;
     }
 
-    [[nodiscard]] std::size_t length() const {
-        return length_;
+    [[nodiscard]] size_t size() const {
+        return region_.size();
     }
 
     [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
@@ -110,17 +108,14 @@ class MemoryMappedFile {
   private:
     void map_existing(bool read_only);
 
-    void* mmap(FileDescriptor fd, bool read_only);
+    void* mmap(FileDescriptor fd, size_t size, bool read_only);
     void unmap();
 
     //! The path to the file
     std::filesystem::path path_;
 
     //! The address of the mapped area
-    uint8_t* address_{nullptr};
-
-    //! The file size
-    std::size_t length_{0};
+    MemoryMappedRegion region_;
 
     //! Flag indicating if memory-mapping is managed internally or not
     bool managed_;
@@ -136,17 +131,15 @@ class MemoryMappedFile {
 };
 
 struct MemoryMappedStreamBuf : std::streambuf {
-    MemoryMappedStreamBuf(char const* base, std::size_t size) {
-        char* p{const_cast<char*>(base)};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
-        this->setg(p, p, p + size);
+    MemoryMappedStreamBuf(MemoryMappedRegion region) {
+        auto p = reinterpret_cast<char*>(region.data());
+        this->setg(p, p, p + region.size());
     }
 };
 
 struct MemoryMappedInputStream : virtual MemoryMappedStreamBuf, std::istream {
-    MemoryMappedInputStream(char const* base, std::size_t size)
-        : MemoryMappedStreamBuf(base, size), std::istream(static_cast<std::streambuf*>(this)) {}
-    MemoryMappedInputStream(unsigned char const* base, std::size_t size)
-        : MemoryMappedInputStream(reinterpret_cast<char const*>(base), size) {}
+    MemoryMappedInputStream(MemoryMappedRegion region)
+        : MemoryMappedStreamBuf(region), std::istream(static_cast<std::streambuf*>(this)) {}
 };
 
 }  // namespace silkworm

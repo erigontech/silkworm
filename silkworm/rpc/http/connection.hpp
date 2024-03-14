@@ -86,9 +86,13 @@ class Connection : public StreamWriter {
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, bool compress=false);
 
     static std::string get_date_time();
+
+    static long compress_data(std::string clear_data, std::string compressed_data);
+
+    static long uncompress_data(std::string compressed_data, std::string clear_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

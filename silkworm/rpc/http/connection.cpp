@@ -16,11 +16,11 @@
 
 #include "connection.hpp"
 
+#include <zlib.h>
+
 #include <array>
 #include <exception>
 #include <string_view>
-
-#include <zlib.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/detached.hpp>
@@ -194,23 +194,9 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     method_ = req.method();
     auto encoding = req[boost::beast::http::field::accept_encoding];
 
-    if(!encoding.empty()) {
-        std::cout << "AcceptEncoding: " << encoding << "\n";
-        std::string clear_data;
-        clear_data.resize(10*1024*1024);
-        auto ret = uncompress_data(req.body(), clear_data);
-        if (ret >= 0) {
-            auto rsp_content = co_await request_handler_.handle(clear_data);
-            if (rsp_content) {
-                co_return co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, true /* compress_data */);
-            }
-        }
-    }
-
-
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, !encoding.empty());
     }
 }
 
@@ -283,19 +269,17 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
         if (compress) {
-            std::string coded = "gzip";
-            std::cout << "AcceptEncoding: " << coded << "\n";
-            res.set(boost::beast::http::field::content_encoding, coded);
-            std::string coded_data;
-            coded_data.resize(10*1024*1024);
-            auto ret = compress_data(content, coded_data);
-            if (ret >= 0) {
-                res.content_length(coded_data.size());
-                res.body() = std::move(coded_data);
-            } else {
-                SILK_ERROR << "Connection::do_write compress error: " << ret;
-                throw std::runtime_error("compress error");
+            const std::string compression_type = "gzip";
+            res.set(boost::beast::http::field::content_encoding, compression_type);
+            std::string compressed_data;
+            try {
+                compress_data(content, compressed_data);
+            } catch (const std::exception& e) {
+                SILK_ERROR << "Connection::compress_data exception: " << e.what();
+                throw;
             }
+            res.content_length(compressed_data.length());
+            res.body() = std::move(compressed_data);
         } else {
             res.content_length(content.size());
             res.body() = std::move(content);
@@ -317,74 +301,35 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
     co_return;
 }
 
-long Connection::compress_data(std::string clear_data, std::string compressed_data) {
+void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
     z_stream strm;
-    strm.zalloc=nullptr;
-    strm.zfree=nullptr;
-    strm.opaque=nullptr;
 
+    memset(&strm, 0, sizeof(strm));
+    int ret = Z_OK;
+    ret = deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
+    if (ret != Z_OK) {
+        throw std::runtime_error("deflateInit2 fail");
+    }
     strm.avail_in = static_cast<unsigned int>(clear_data.size());
-    strm.avail_out = static_cast<unsigned int>(compressed_data.size());
+    auto ptr_clear = const_cast<char*>(clear_data.c_str());
+    strm.next_in = reinterpret_cast<Bytef*>(ptr_clear);
 
-    auto ptr_clear =  const_cast<char *> (clear_data.c_str());
-    strm.next_in = reinterpret_cast<Bytef *> (ptr_clear);
+    do {
+        strm.next_out = reinterpret_cast<Bytef*>(temp_compressed_buffer_);
+        strm.avail_out = sizeof(temp_compressed_buffer_);
 
-    auto ptr_coded =  const_cast<char *> (compressed_data.c_str());
-    strm.next_out =  reinterpret_cast<Bytef *> (ptr_coded);
-
-    int err=Z_OK;
-    err = inflateInit2(&strm, MAX_WBITS+16);
-    if (err == Z_OK){
-        err = inflate(&strm, Z_FINISH);
-        if (err == Z_STREAM_END){
-            auto ret = strm.total_out;
-            inflateEnd(&strm);
-            return static_cast<long>(ret);
+        ret = deflate(&strm, Z_FINISH);
+        if (ret < 0) {
+            deflateEnd(&strm);
+            throw std::runtime_error("deflate fail");
         }
-        else{
-            inflateEnd(&strm);
-            return err;
+        if (compressed_data.size() < strm.total_out) {
+            // append the block to the output string
+            compressed_data.append(temp_compressed_buffer_, strm.total_out - compressed_data.size());
         }
-    }
-    else{
-        inflateEnd(&strm);
-        return err;
-    }
-}
+    } while (ret != Z_STREAM_END);
 
-long Connection::uncompress_data(std::string compressed_data, std::string clear_data){
-    z_stream strm;
-    strm.zalloc=nullptr;
-    strm.zfree=nullptr;
-    strm.opaque=nullptr;
-
-    strm.avail_in = static_cast<unsigned int>(compressed_data.size());
-    strm.avail_out = static_cast<unsigned int>(clear_data.size());
-
-    auto ptr_coded =  const_cast<char *> (compressed_data.c_str());
-    strm.next_in =  reinterpret_cast<Bytef *> (ptr_coded);
-
-    auto ptr_clear =  const_cast<char *> (clear_data.c_str());
-    strm.next_out = reinterpret_cast<Bytef *> (ptr_clear);
-
-    int err=Z_OK;
-    err = deflateInit(&strm, MAX_WBITS+16);
-    if (err == Z_OK){
-        err = deflate(&strm, Z_FINISH);
-        if (err == Z_STREAM_END){
-            auto ret = strm.total_out;
-            inflateEnd(&strm);
-            return static_cast<long>(ret);
-        }
-        else{
-            inflateEnd(&strm);
-            return err;
-        }
-    }
-    else{
-        inflateEnd(&strm);
-        return err;
-    }
+    deflateEnd(&strm);
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {

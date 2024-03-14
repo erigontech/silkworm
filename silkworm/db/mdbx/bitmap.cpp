@@ -19,11 +19,12 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/db/etl_mdbx_collector.hpp>
-#include <silkworm/db/util.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+
+#include "etl_mdbx_collector.hpp"
 
 namespace silkworm::db::bitmap {
 

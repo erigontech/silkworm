@@ -18,10 +18,10 @@
 
 #include <gsl/util>
 
-#include <silkworm/db/memory_mutation_cursor.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+
+#include "memory_mutation_cursor.hpp"
 
 namespace silkworm::db {
 
@@ -37,28 +37,23 @@ MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
         .max_size = 512_Mebi,
     };
     memory_env_ = db::open_env(memory_config);
-
-    // Create predefined tables for chaindata schema
-    RWTxnManaged txn{memory_env_};
-    table::check_or_create_chaindata_tables(txn);
-    txn.commit_and_stop();
 }
 
 MemoryDatabase::MemoryDatabase() : MemoryDatabase(TemporaryDirectory::get_unique_temporary_path()) {}
-
-MemoryDatabase::MemoryDatabase(MemoryDatabase&& other) noexcept : memory_env_(std::move(other.memory_env_)) {}
 
 ::mdbx::txn_managed MemoryDatabase::start_rw_txn() {
     return memory_env_.start_write();
 }
 
-MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir, silkworm::db::ROTxn* txn)
-    : memory_db_{tmp_dir}, txn_(txn) {}
-
-MemoryOverlay::MemoryOverlay(silkworm::db::ROTxn* txn) : memory_db_{}, txn_(txn) {}
-
-MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept
-    : memory_db_(std::move(other.memory_db_)), txn_(other.txn_) {}
+MemoryOverlay::MemoryOverlay(
+    const std::filesystem::path& tmp_dir,
+    silkworm::db::ROTxn* txn,
+    std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config,
+    std::string sequence_map_name)
+    : memory_db_(tmp_dir),
+      txn_(txn),
+      get_map_config_(std::move(get_map_config)),
+      sequence_map_name_(std::move(sequence_map_name)) {}
 
 void MemoryOverlay::update_txn(ROTxn* txn) {
     txn_ = txn;
@@ -68,11 +63,21 @@ void MemoryOverlay::update_txn(ROTxn* txn) {
     return memory_db_.start_rw_txn();
 }
 
+std::optional<MapConfig> MemoryOverlay::map_config(const std::string& map_name) {
+    return get_map_config_(map_name);
+}
+
+MapConfig MemoryOverlay::sequence_map_config() {
+    return *map_config(sequence_map_name_);
+}
+
 MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
-    : RWTxnManaged{overlay.start_rw_txn()}, overlay_(overlay) {
+    : RWTxnManaged(overlay.start_rw_txn()),
+      overlay_(overlay) {
     // Initialize sequences
-    db::PooledCursor cursor{*overlay_.external_txn(), db::table::kSequence};
-    db::PooledCursor memory_cursor{managed_txn_, db::table::kSequence};
+    const auto sequence_map_config = overlay.sequence_map_config();
+    db::PooledCursor cursor{*overlay_.external_txn(), sequence_map_config};
+    db::PooledCursor memory_cursor{managed_txn_, sequence_map_config};
     for (auto result = cursor.to_first(false); result; result = cursor.to_next(false)) {
         memory_cursor.put(result.key, &result.value, MDBX_put_flags_t::MDBX_UPSERT);
     }
@@ -149,7 +154,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
 
     // Obliterate entries that need to be deleted
     for (const auto& [table, keys] : this->deleted_entries_) {
-        const auto& table_config = db::table::get_map_config(table);
+        const auto table_config = overlay_.map_config(table);
         if (!table_config) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;
@@ -163,7 +168,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
     // Iterate over each touched bucket and apply changes accordingly
     const auto tables = db::list_maps(managed_txn_);
     for (const auto& table : tables) {
-        const auto& table_config = db::table::get_map_config(table);
+        const auto table_config = overlay_.map_config(table);
         if (!table_config) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;

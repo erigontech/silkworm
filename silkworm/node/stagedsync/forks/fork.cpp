@@ -27,9 +27,26 @@
 
 namespace silkworm::stagedsync {
 
+static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path, db::ROTxn& main_tx) {
+    db::MemoryOverlay memory_db{
+        TemporaryDirectory::get_unique_temporary_path(base_path),
+        &main_tx,
+        db::table::get_map_config,
+        db::table::kSequenceName,
+    };
+
+    // Create predefined tables for chaindata schema
+    auto txn = memory_db.start_rw_txn();
+    db::RWTxnUnmanaged txn_ref{txn};
+    db::table::check_or_create_chaindata_tables(txn_ref);
+    txn.commit();
+
+    return memory_db;
+}
+
 Fork::Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings& ns)
     : main_tx_{std::move(main_chain_tx)},
-      memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->forks().path()), &main_tx_},
+      memory_db_{create_memory_db(ns.data_directory->forks().path(), main_tx_)},
       memory_tx_{memory_db_},
       data_model_{memory_tx_},
       pipeline_{&ns},

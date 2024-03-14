@@ -32,7 +32,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/receipt.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::snapshots {

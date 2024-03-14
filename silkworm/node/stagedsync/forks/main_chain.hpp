@@ -26,7 +26,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/memory_mutation.hpp>
+#include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 

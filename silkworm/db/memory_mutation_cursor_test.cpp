@@ -14,10 +14,9 @@
    limitations under the License.
 */
 
-#include "memory_mutation_cursor.hpp"
-
 #include <catch2/catch.hpp>
 
+#include <silkworm/db/mdbx/memory_mutation_cursor.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
@@ -86,7 +85,7 @@ struct MemoryMutationCursorTest {
     };
     mdbx::env_managed main_env{create_main_env(main_db_config)};
     RWTxnManaged main_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path(), &main_txn};
+    MemoryOverlay overlay{tmp_dir.path(), &main_txn, table::get_map_config, table::kSequenceName};
     MemoryMutation mutation{overlay};
     silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };

@@ -20,7 +20,7 @@
 
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/db/memory_mutation.hpp>
+#include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 
 #include "fork.hpp"

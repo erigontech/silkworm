@@ -39,7 +39,6 @@ TEST_CASE("MemoryDatabase", "[silkworm][node][db][memory_mutation]") {
         MemoryDatabase overlay{tmp_dir.path()};
         ::mdbx::txn_managed rw_txn;
         CHECK_NOTHROW((rw_txn = overlay.start_rw_txn()));
-        CHECK(!rw_txn.env().is_empty());
     }
 
     SECTION("Cannot create more than one R/W transaction in a temporary database") {
@@ -61,7 +60,13 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     };
     auto main_env{db::open_env(main_db_config)};
     RWTxnManaged main_rw_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path(), &main_rw_txn};
+
+    MemoryOverlay overlay{
+        tmp_dir.path(),
+        &main_rw_txn,
+        [](const std::string& map_name) { return db::MapConfig{map_name.c_str()}; },
+        "Sequence",
+    };
 
     SECTION("Create one memory mutation") {
         CHECK_NOTHROW(MemoryMutation{overlay});

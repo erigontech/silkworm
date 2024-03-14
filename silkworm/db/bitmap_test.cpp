@@ -14,15 +14,14 @@
    limitations under the License.
 */
 
-#include "bitmap.hpp"
-
 #include <map>
 #include <vector>
 
 #include <absl/container/btree_map.h>
 #include <catch2/catch.hpp>
 
-#include <silkworm/db/etl_mdbx_collector.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::bitmap {

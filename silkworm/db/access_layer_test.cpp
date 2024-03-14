@@ -25,8 +25,8 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
-#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>

@@ -17,12 +17,11 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <string>
 
-#include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/db/access_layer.hpp>
+#include "mdbx.hpp"
 
 namespace silkworm::db {
 
@@ -30,7 +29,9 @@ class MemoryDatabase {
   public:
     explicit MemoryDatabase(const std::filesystem::path& tmp_dir);
     MemoryDatabase();
-    MemoryDatabase(MemoryDatabase&& other) noexcept;
+
+    MemoryDatabase(MemoryDatabase&& other) noexcept = default;
+    MemoryDatabase& operator=(MemoryDatabase&&) noexcept = default;
 
     ::mdbx::txn_managed start_rw_txn();
 
@@ -40,18 +41,28 @@ class MemoryDatabase {
 
 class MemoryOverlay {
   public:
-    MemoryOverlay(const std::filesystem::path& tmp_dir, ROTxn* txn);
-    explicit MemoryOverlay(ROTxn* txn);
-    MemoryOverlay(MemoryOverlay&& other) noexcept;
+    MemoryOverlay(
+        const std::filesystem::path& tmp_dir,
+        ROTxn* txn,
+        std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config,
+        std::string sequence_map_name);
+
+    MemoryOverlay(MemoryOverlay&& other) noexcept = default;
+    MemoryOverlay& operator=(MemoryOverlay&&) noexcept = default;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
     void update_txn(ROTxn* txn);
 
     ::mdbx::txn_managed start_rw_txn();
 
+    std::optional<MapConfig> map_config(const std::string& map_name);
+    MapConfig sequence_map_config();
+
   private:
     MemoryDatabase memory_db_;
     ROTxn* txn_;
+    std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config_;
+    std::string sequence_map_name_;
 };
 
 class MemoryMutationCursor;
@@ -59,7 +70,10 @@ class MemoryMutationCursor;
 class MemoryMutation : public RWTxnManaged {
   public:
     explicit MemoryMutation(MemoryOverlay& overlay);
+
     MemoryMutation(MemoryMutation&& other) noexcept = default;
+    MemoryMutation& operator=(MemoryMutation&&) noexcept = delete;
+
     ~MemoryMutation() override;
 
     [[nodiscard]] bool is_table_cleared(const std::string& table) const;

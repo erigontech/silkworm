@@ -17,6 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(etl)
+add_subdirectory(mdbx)
 add_subdirectory(snapshots)
 add_subdirectory(test_util)
 
@@ -24,16 +25,14 @@ find_package(absl REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(roaring REQUIRED)
 
 set(LIBS_PUBLIC
     absl::btree
     absl::flat_hash_map
     absl::flat_hash_set
     absl::strings
-    mdbx-static
-    roaring::roaring
     silkworm_core
+    silkworm_db_mdbx
 )
 
 # cmake-format: off

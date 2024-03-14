@@ -19,7 +19,7 @@
 #include <memory>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/infra/common/directories.hpp>
 

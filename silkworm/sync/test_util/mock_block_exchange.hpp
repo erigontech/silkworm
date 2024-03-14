@@ -25,7 +25,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/messages/message.hpp>
 #include <silkworm/sync/sentry_client.hpp>

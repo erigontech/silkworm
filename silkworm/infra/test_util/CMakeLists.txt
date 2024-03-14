@@ -14,9 +14,9 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers)
-
 set(TARGET silkworm_infra_test_util)
+
+find_package(Boost REQUIRED headers)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 

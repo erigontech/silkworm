@@ -14,17 +14,15 @@
    limitations under the License.
 ]]
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+set(TARGET silkworm_db_test_util)
 
-add_subdirectory(seg)
+find_package(nlohmann_json REQUIRED)
 
-find_package(absl REQUIRED strings)
-find_package(Boost REQUIRED headers) # for signals2
-find_package(magic_enum REQUIRED)
-find_package(Microsoft.GSL REQUIRED)
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+add_library(${TARGET} ${SRC})
 
-silkworm_library(
-  silkworm_snapshots
-  PUBLIC Microsoft.GSL::GSL silkworm_core silkworm_infra
-  PRIVATE absl::strings Boost::headers magic_enum::magic_enum torrent-rasterbar silkworm_snapshots_seg
+target_link_libraries(
+  ${TARGET}
+  PUBLIC silkworm_core silkworm_infra silkworm_db
+  PRIVATE nlohmann_json::nlohmann_json
 )

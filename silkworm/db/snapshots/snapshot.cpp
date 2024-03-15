@@ -57,22 +57,18 @@ void Snapshot::reopen_segment() {
 }
 
 bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
-    return decoder_.read_ahead([fn](seg::Decompressor::Iterator it) -> bool {
-        uint64_t word_count{0};
-        WordItem item{};
-        while (it.has_next()) {
-            const uint64_t next_offset = it.next(item.value);
-            item.position = word_count;
-            SILK_TRACE << "for_each_item item: offset=" << item.offset << " position=" << item.position
-                       << " value=" << to_hex(item.value);
-            const bool result = fn(item);
-            if (!result) return false;
-            ++word_count;
-            item.offset = next_offset;
-            item.value.clear();
-        }
-        return true;
-    });
+    WordItem item;
+    for (auto it = decoder_.begin(); it != decoder_.end(); ++it, ++item.position) {
+        item.value = std::move(*it);
+        item.offset = it.current_word_offset();
+        SILK_TRACE << "Snapshot::for_each_item item: offset=" << item.offset
+                   << " position=" << item.position
+                   << " value=" << to_hex(item.value);
+
+        const bool result = fn(item);
+        if (!result) return false;
+    }
+    return true;
 }
 
 std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView prefix) const {

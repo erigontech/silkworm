@@ -90,13 +90,13 @@ void MemoryMappedFile::map_existing(bool read_only) {
     fd = INVALID_HANDLE_VALUE;
 }
 
-void MemoryMappedFile::advise_normal() {
+void MemoryMappedFile::advise_normal() const {
 }
 
-void MemoryMappedFile::advise_random() {
+void MemoryMappedFile::advise_random() const {
 }
 
-void MemoryMappedFile::advise_sequential() {
+void MemoryMappedFile::advise_sequential() const {
 }
 
 void* MemoryMappedFile::mmap(FileDescriptor fd, size_t size, bool read_only) {
@@ -147,15 +147,15 @@ void MemoryMappedFile::map_existing(bool read_only) {
     region_ = {address, size};
 }
 
-void MemoryMappedFile::advise_normal() {
+void MemoryMappedFile::advise_normal() const {
     advise(MADV_NORMAL);
 }
 
-void MemoryMappedFile::advise_random() {
+void MemoryMappedFile::advise_random() const {
     advise(MADV_RANDOM);
 }
 
-void MemoryMappedFile::advise_sequential() {
+void MemoryMappedFile::advise_sequential() const {
     advise(MADV_SEQUENTIAL);
 }
 
@@ -179,7 +179,7 @@ void MemoryMappedFile::unmap() {
     }
 }
 
-void MemoryMappedFile::advise(int advice) {
+void MemoryMappedFile::advise(int advice) const {
     const int result = ::madvise(region_.data(), region_.size(), advice);
     if (result == -1) {
         // Ignore not implemented in kernel error because it still works (from Erigon)

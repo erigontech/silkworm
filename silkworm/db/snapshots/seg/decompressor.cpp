@@ -17,6 +17,7 @@
 #include "decompressor.hpp"
 
 #include <bitset>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -300,6 +301,39 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
     return out;
 }
 
+class Decompressor::ReadModeGuard {
+  public:
+    ReadModeGuard(
+        const MemoryMappedFile& file,
+        Decompressor::ReadMode new_mode,
+        Decompressor::ReadMode old_mode)
+        : file_(file),
+          old_mode_(old_mode) {
+        set_mode(new_mode);
+    }
+    virtual ~ReadModeGuard() {
+        set_mode(old_mode_);
+    }
+
+  private:
+    void set_mode(Decompressor::ReadMode mode) {
+        switch (mode) {
+            case ReadMode::kNormal:
+                file_.advise_normal();
+                break;
+            case ReadMode::kRandom:
+                file_.advise_random();
+                break;
+            case ReadMode::kSequential:
+                file_.advise_sequential();
+                break;
+        }
+    }
+
+    const MemoryMappedFile& file_;
+    Decompressor::ReadMode old_mode_;
+};
+
 Decompressor::Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region)
     : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region} {}
 
@@ -347,12 +381,15 @@ void Decompressor::open() {
     compressed_file_->advise_random();
 }
 
-bool Decompressor::read_ahead(ReadAheadFuncRef fn) {
+Decompressor::Iterator Decompressor::begin() {
     ensure(bool(compressed_file_), "decompressor closed, call open first");
-    compressed_file_->advise_sequential();
-    [[maybe_unused]] auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
-    Iterator it{this};
-    return fn(it);
+    auto read_mode_guard = std::make_shared<ReadModeGuard>(*compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
+    Iterator it{this, std::move(read_mode_guard)};
+    if (it.has_next()) {
+        ++it;
+        return it;
+    }
+    return end();
 }
 
 void Decompressor::close() {
@@ -462,7 +499,11 @@ void Decompressor::read_positions(ByteView dict) {
     SILK_TRACE << *position_dict_;
 }
 
-Decompressor::Iterator::Iterator(const Decompressor* decoder) : decoder_(decoder) {}
+Decompressor::Iterator::Iterator(
+    const Decompressor* decoder,
+    std::shared_ptr<ReadModeGuard> read_mode_guard)
+    : decoder_(decoder),
+      read_mode_guard_(std::move(read_mode_guard)) {}
 
 ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};
@@ -788,6 +829,32 @@ uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
     }
     code &= (1 << bit_length) - 1;
     return code;
+}
+
+Decompressor::Iterator& Decompressor::Iterator::operator++() {
+    if (has_next()) {
+        current_word_offset_ = word_offset_;
+        current_word_.clear();
+        next(current_word_);
+    } else {
+        *this = make_end(decoder_);
+    }
+    return *this;
+}
+
+bool operator==(const Decompressor::Iterator& lhs, const Decompressor::Iterator& rhs) {
+    return (lhs.decoder_ == rhs.decoder_) &&
+           (lhs.current_word_offset_ == rhs.current_word_offset_) &&
+           (lhs.word_offset_ == rhs.word_offset_) &&
+           (lhs.bit_position_ == rhs.bit_position_);
+}
+
+Decompressor::Iterator Decompressor::Iterator::make_end(const Decompressor* decoder) {
+    Iterator it{decoder, {}};
+    it.current_word_offset_ = std::numeric_limits<uint64_t>::max();
+    it.word_offset_ = std::numeric_limits<uint64_t>::max();
+    it.bit_position_ = std::numeric_limits<uint8_t>::max();
+    return it;
 }
 
 }  // namespace silkworm::snapshots::seg

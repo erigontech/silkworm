@@ -101,9 +101,9 @@ class MemoryMappedFile {
         return std::filesystem::last_write_time(path_);
     }
 
-    void advise_normal();
-    void advise_random();
-    void advise_sequential();
+    void advise_normal() const;
+    void advise_random() const;
+    void advise_sequential() const;
 
   private:
     void map_existing(bool read_only);
@@ -126,7 +126,7 @@ class MemoryMappedFile {
     HANDLE file_ = nullptr;
     HANDLE mapping_ = nullptr;
 #else
-    void advise(int advice);
+    void advise(int advice) const;
 #endif
 };
 

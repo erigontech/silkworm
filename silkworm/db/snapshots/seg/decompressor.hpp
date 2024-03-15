@@ -18,14 +18,13 @@
 
 #include <array>
 #include <filesystem>
-#include <functional>
+#include <iterator>
 #include <memory>
 #include <ostream>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
-
-#include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
@@ -177,10 +176,18 @@ class Decompressor {
     //! The max number of positions in decoding tables
     constexpr static std::size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
 
+    enum class ReadMode : uint8_t {
+        kNormal,
+        kRandom,
+        kSequential,
+    };
+
+    class ReadModeGuard;
+
     //! Read-only access to the file data stream
     class Iterator {
       public:
-        explicit Iterator(const Decompressor* decoder);
+        Iterator(const Decompressor* decoder, std::shared_ptr<ReadModeGuard> read_mode_guard);
 
         [[nodiscard]] std::size_t data_size() const { return decoder_->words_length_; }
 
@@ -211,6 +218,28 @@ class Decompressor {
         //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);
 
+        //! The current word position
+        uint64_t current_word_offset() const { return current_word_offset_; }
+
+        //! input_iterator concept boilerplate
+
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = void;
+        using value_type = Bytes;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        reference operator*() { return current_word_; }
+        pointer operator->() { return &current_word_; }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++();
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+
+        static Iterator make_end(const Decompressor* decoder);
+
       private:
         //! View on the whole data stream.
         [[nodiscard]] inline ByteView data() const;
@@ -228,13 +257,19 @@ class Decompressor {
         const Decompressor* decoder_;
 
         //! Position of current word in the data file
+        uint64_t current_word_offset_{0};
+
+        //! Position of the next word
         uint64_t word_offset_{0};
 
         //! Bit position [0..7] in current word of the data file
         uint8_t bit_position_{0};
-    };
 
-    using ReadAheadFuncRef = absl::FunctionRef<bool(Iterator)>;
+        //! Last extracted word
+        Bytes current_word_;
+
+        std::shared_ptr<ReadModeGuard> read_mode_guard_;
+    };
 
     explicit Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region = {});
     ~Decompressor();
@@ -257,11 +292,12 @@ class Decompressor {
 
     void open();
 
-    //! Read the data stream eagerly applying the specified function, expected read in sequential order
-    bool read_ahead(ReadAheadFuncRef fn);
-
     //! Get an iterator to the compressed data
-    [[nodiscard]] Iterator make_iterator() const { return Iterator{this}; }
+    [[nodiscard]] Iterator make_iterator() const { return Iterator{this, {}}; }
+
+    //! Begin reading the words, expected to read in sequential order
+    Iterator begin();
+    Iterator end() const { return Iterator::make_end(this); }
 
     void close();
 

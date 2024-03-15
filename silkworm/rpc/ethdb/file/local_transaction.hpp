@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/file/local_cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>

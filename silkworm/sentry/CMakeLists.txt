@@ -68,5 +68,4 @@ silkworm_library(
   silkworm_sentry
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
-  EXCLUDE_REGEX "sentry/common" "discovery/[a-z0-9_]+/"
 )

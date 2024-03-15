@@ -28,11 +28,11 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/etl/collector.hpp>
+#include <silkworm/db/etl/collector_settings.hpp>
+#include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/stage.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
-#include <silkworm/node/db/etl/collector_settings.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -21,7 +21,7 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/node/db/tables.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>

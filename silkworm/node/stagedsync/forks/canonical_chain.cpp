@@ -18,9 +18,9 @@
 
 #include <set>
 
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/db_utils.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 

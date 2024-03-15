@@ -29,11 +29,11 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/db/head_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/db/head_info.hpp>
 #include <silkworm/node/node.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/sentry_client_factory.hpp>
@@ -306,6 +306,7 @@ int main(int argc, char* argv[]) {
         // ChainSync: the chain synchronization process based on the consensus protocol
         chainsync::EngineRpcSettings rpc_settings{
             .engine_end_point = settings.rpcdaemon_settings.engine_end_point,
+            .engine_ifc_log_settings = settings.rpcdaemon_settings.engine_ifc_log_settings,
             .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
             .log_verbosity = settings.log_settings.log_verbosity,
             .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,

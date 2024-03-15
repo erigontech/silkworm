@@ -30,7 +30,7 @@ class InterfaceLogImpl;
 struct InterfaceLogSettings {
     bool enabled{false};
     std::string ifc_name;
-    std::string container_folder{"logs/"};
+    std::filesystem::path container_folder{"logs/"};
     std::size_t max_file_size_mb{1};
     std::size_t max_files{100};
     bool auto_flush{false};

@@ -23,12 +23,12 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
@@ -149,7 +149,7 @@ Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, u
 
     try {
         silkworm::ByteView data_view{data};
-        auto stored_body{silkworm::db::detail::decode_stored_block_body(data_view)};
+        auto stored_body{silkworm::unwrap_or_throw(silkworm::decode_stored_block_body(data_view))};
         // 1 system txn in the beginning of block, and 1 at the end
         SILK_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2;
         co_return stored_body.base_txn_id + stored_body.txn_count - 1;

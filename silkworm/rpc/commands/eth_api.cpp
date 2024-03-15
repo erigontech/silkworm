@@ -31,9 +31,9 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>

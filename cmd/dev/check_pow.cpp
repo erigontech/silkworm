@@ -24,12 +24,12 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;

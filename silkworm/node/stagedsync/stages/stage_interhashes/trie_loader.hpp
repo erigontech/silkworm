@@ -18,8 +18,8 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
-#include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/db/etl/collector.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 namespace silkworm::trie {

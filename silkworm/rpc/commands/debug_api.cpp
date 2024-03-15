@@ -32,10 +32,10 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
@@ -306,7 +306,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         }
 
         const auto& block = block_with_hash->block;
-        auto block_number = block.header.number - 1;
+        auto block_number = block.header.number;
         const auto& transactions = block.transactions;
 
         SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
@@ -324,7 +324,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
                     EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                    uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index + 1);
+                    uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
                     for (uint64_t idx{0}; idx < index; idx++) {
                         rpc::Transaction txn{transactions[idx]};
                         executor.call(block, txn);

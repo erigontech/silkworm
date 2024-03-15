@@ -30,8 +30,6 @@ else()
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
-  find_package(GTest REQUIRED)
-
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
     # macOS on 64-bit ARM does not support option -fsanitize=leak
@@ -64,11 +62,6 @@ if(NOT SILKWORM_CORE_ONLY)
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon CLI11::CLI11 -fsanitize=${FUZZER_DIAG_LINK_SANITIZE}
     )
   endif()
-
-  # Silkworm Sync Tests
-  file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
-  add_executable(sync_test unit_test.cpp ${SILKWORM_SYNC_TESTS})
-  target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2 GTest::gmock)
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)
   find_package(CLI11 REQUIRED)

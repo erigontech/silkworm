@@ -26,9 +26,10 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::rpc {
 
@@ -310,7 +311,7 @@ TEST_CASE("serialize block with hydrated transactions", "[rpc][to_json]") {
     const char* body_rlp_hex{"c68341b58302c0"};
     silkworm::Bytes body_rlp_bytes{*silkworm::from_hex(body_rlp_hex)};
     silkworm::ByteView body_view{body_rlp_bytes};
-    const auto body_for_storage{silkworm::db::detail::decode_stored_block_body(body_view)};
+    const auto body_for_storage{silkworm::unwrap_or_throw(silkworm::decode_stored_block_body(body_view))};
     REQUIRE(body_for_storage.txn_count == 2);
     REQUIRE(body_for_storage.base_txn_id == 0x41b583);
 

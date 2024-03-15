@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/node/db/stages.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 
 namespace silkworm::rpc::stages {

@@ -18,12 +18,13 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/db/etl/collector.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
-#include <silkworm/node/db/etl/collector.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 using namespace silkworm;
 
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
         while (bodies_data) {
             auto block_number(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data())));
             auto body_rlp{db::from_slice(bodies_data.value)};
-            auto body{db::detail::decode_stored_block_body(body_rlp)};
+            auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');

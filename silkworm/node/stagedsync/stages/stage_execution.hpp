@@ -21,8 +21,8 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

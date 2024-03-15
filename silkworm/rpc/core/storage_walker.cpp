@@ -21,11 +21,11 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/transaction_database.hpp>

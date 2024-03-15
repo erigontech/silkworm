@@ -16,11 +16,11 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(db)
+add_subdirectory(stagedsync/stages)
 
 find_package(absl REQUIRED strings)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED headers container)
+find_package(Boost REQUIRED headers)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
@@ -33,7 +33,6 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     silkworm_sentry
     silkworm_snapshots
     asio-grpc::asio-grpc
-    Boost::container
     Boost::headers
     gRPC::grpc++
     protobuf::libprotobuf
@@ -47,6 +46,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     Microsoft.GSL::GSL
     silkworm_db_etl
     silkworm_interfaces
+    silkworm_stages
 )
 # cmake-format: on
 
@@ -54,5 +54,6 @@ silkworm_library(
   silkworm_node
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
-  EXCLUDE_REGEX "db"
 )
+
+target_link_libraries(silkworm_node_test PRIVATE silkworm_db_test_util)

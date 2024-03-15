@@ -22,9 +22,9 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/node/db/etl_mdbx_collector.hpp>
-#include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 

@@ -22,9 +22,9 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {

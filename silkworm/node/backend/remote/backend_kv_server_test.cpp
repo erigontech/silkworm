@@ -33,6 +33,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
@@ -44,7 +45,6 @@
 #include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 
 using namespace std::chrono_literals;

@@ -22,8 +22,10 @@
 #include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stages/stage_finish.hpp>
 #include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
@@ -96,27 +98,24 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 /*
  * Stages from Erigon -> Silkworm
  *  1 StageHeaders ->  stagedsync::HeadersStage
- *  2 StageCumulativeIndex -> TBD
+ *  2 StageBodies -> stagedsync::BodiesStage
  *  3 StageBlockHashes -> stagedsync::BlockHashes
- *  4 StageBodies -> stagedsync::BodiesStage
- *  5 StageIssuance -> TBD
- *  6 StageSenders -> stagedsync::Senders
- *  7 StageExecuteBlocks -> stagedsync::Execution
- *  8 StageTranspile -> TBD
- *  9 StageHashState -> stagedsync::HashState
- * 10 StageTrie -> stagedsync::InterHashes
- * 11 StageHistory -> stagedsync::HistoryIndex
- * 12 StageLogIndex -> stagedsync::LogIndex
- * 13 StageCallTraces -> TBD
- * 14 StageTxLookup -> stagedsync::TxLookup
- * 15 StageFinish -> stagedsync::Finish
+ *  4 StageSenders -> stagedsync::Senders
+ *  5 StageExecution -> stagedsync::Execution
+ *  6 StageHashState -> stagedsync::HashState
+ *  7 StageInterHashes -> stagedsync::InterHashes
+ *  8 StageIndexes -> stagedsync::HistoryIndex
+ *  9 StageLogIndex -> stagedsync::LogIndex
+ * 10 StageCallTraces -> stagedsync::CallTraceIndex
+ * 11 StageTxLookup -> stagedsync::TxLookup
+ * 12 StageFinish -> stagedsync::Finish
  */
 
 void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
     stages_.emplace(db::stages::kBlockBodiesKey,
-                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config));
+                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config, [] { return PreverifiedHashes::current.height; }));
     stages_.emplace(db::stages::kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kSendersKey,
@@ -131,6 +130,8 @@ void ExecutionPipeline::load_stages() {
                     std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
     stages_.emplace(db::stages::kLogIndexKey,
                     std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
+    stages_.emplace(db::stages::kCallTracesKey,
+                    std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
     stages_.emplace(db::stages::kTxLookupKey,
                     std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
     stages_.emplace(db::stages::kFinishKey,
@@ -148,6 +149,7 @@ void ExecutionPipeline::load_stages() {
                                      db::stages::kIntermediateHashesKey,
                                      db::stages::kHistoryIndexKey,
                                      db::stages::kLogIndexKey,
+                                     db::stages::kCallTracesKey,
                                      db::stages::kTxLookupKey,
                                      db::stages::kFinishKey,
                                  });
@@ -156,6 +158,7 @@ void ExecutionPipeline::load_stages() {
                                 {
                                     db::stages::kFinishKey,
                                     db::stages::kTxLookupKey,
+                                    db::stages::kCallTracesKey,
                                     db::stages::kLogIndexKey,
                                     db::stages::kHistoryIndexKey,
                                     db::stages::kHashStateKey,
@@ -184,7 +187,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     auto log_timer = make_log_timer();
 
     sync_context_->target_height = target_height;
-    log::Info("ExecPipeline") << "Forward start --------------------------";
+    log::Info("ExecutionPipeline") << "Forward start";
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
@@ -257,7 +260,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                                    ", head_header_height= " + to_string(head_header_number_));
         }
 
-        log::Info("ExecPipeline") << "Forward done ---------------------------";
+        log::Info("ExecutionPipeline") << "Forward done";
 
         if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
 
@@ -274,7 +277,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
     using std::to_string;
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
-    log::Info("ExecPipeline") << "Unwind start ---------------------------";
+    log::Info("ExecutionPipeline") << "Unwind start";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -321,7 +324,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
-        log::Info("ExecPipeline") << "Unwind done ----------------------------";
+        log::Info("ExecutionPipeline") << "Unwind done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
@@ -334,6 +337,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
+    log::Info("ExecutionPipeline") << "Prune start";
 
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -367,6 +371,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
+        log::Info("ExecutionPipeline") << "Prune done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {

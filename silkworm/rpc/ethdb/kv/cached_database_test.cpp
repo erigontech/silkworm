@@ -27,7 +27,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/db/tables.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/test/dummy_transaction.hpp>

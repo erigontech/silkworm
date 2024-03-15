@@ -18,16 +18,16 @@
 
 #include <utility>
 
+#include <silkworm/db/snapshot_sync.hpp>
+#include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/common/resource_usage.hpp>
-#include <silkworm/node/snapshot_sync.hpp>
+#include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
-#include <silkworm/snapshots/bittorrent/client.hpp>
 
 namespace silkworm::node {
 
@@ -85,7 +85,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
       execution_server_{settings_, db::RWAccess{chaindata_db_}},
       execution_local_client_{execution_server_},
       sentry_client_{std::move(sentry_client)},
-      resource_usage_log_{settings_} {
+      resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.node_name);
     backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings.server_settings, *backend_);

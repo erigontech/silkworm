@@ -29,16 +29,16 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/snapshot_sync.hpp>
+#include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/common/block_body_for_storage.hpp>
-#include <silkworm/node/snapshot_sync.hpp>
-#include <silkworm/snapshots/bittorrent/client.hpp>
-#include <silkworm/snapshots/index.hpp>
-#include <silkworm/snapshots/repository.hpp>
-#include <silkworm/snapshots/seg/seg_zip.hpp>
-#include <silkworm/snapshots/snapshot.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"
@@ -214,7 +214,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
+        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const BlockBodyForStorage* b) -> bool {
             // If *system transactions* should not be counted, skip first and last tx in block body
             const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
             const auto txn_count{settings.skip_system_txs && b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};

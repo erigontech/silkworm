@@ -18,10 +18,10 @@
 
 #include <stdexcept>
 
-#include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/db/etl/collector_settings.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/db/etl/collector_settings.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/stage.hpp>
 
 namespace silkworm::stagedsync {
 

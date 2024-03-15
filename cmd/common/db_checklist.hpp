@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 
 namespace silkworm::cmd::common {
 

@@ -107,12 +107,17 @@ class AwaitablePromise {
 
     AwaitableFuture<T> get_future() { return AwaitableFuture<T>(channel_); }
 
+    class AlreadySatisfiedError : public std::runtime_error {
+      public:
+        AlreadySatisfiedError() : std::runtime_error("AwaitablePromise is already satisfied") {}
+    };
+
   private:
     bool set(std::exception_ptr ptr, std::optional<T> value) {
         const bool sent = channel_->try_send(ptr, std::move(value));
         // Any send failure when channel has already been closed must not trigger an error
         if (!sent && channel_->is_open()) {
-            throw std::runtime_error("AwaitablePromise::set: channel is full");
+            throw AlreadySatisfiedError();
         }
         return sent;
     }

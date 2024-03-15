@@ -21,7 +21,7 @@
 #include <gsl/narrow>
 #include <magic_enum.hpp>
 
-#include <silkworm/node/db/log_cbor.hpp>
+#include <silkworm/db/log_cbor.hpp>
 
 namespace silkworm::stagedsync {
 

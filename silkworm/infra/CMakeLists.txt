@@ -14,6 +14,10 @@
    limitations under the License.
 ]]
 
+add_subdirectory(test_util)
+
+set(TARGET silkworm_infra)
+
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers container thread)
@@ -22,10 +26,6 @@ find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(spdlog REQUIRED)
-
-add_subdirectory(test_util)
-
-set(TARGET silkworm_infra)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")

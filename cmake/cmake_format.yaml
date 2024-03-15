@@ -7,12 +7,12 @@ parse:
         BUILD: '*'
         PROFILE: '*'
     silkworm_library:
+      flags:
+        - NO_TEST
       kwargs:
         PUBLIC: '*'
         PRIVATE: '*'
-        EXCLUDE_REGEX: '*'
         TYPE: '*'
-        LIBS_TEST: '*'
 
 format:
   line_width: 120

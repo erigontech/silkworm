@@ -24,10 +24,11 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
+#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 
@@ -39,6 +40,7 @@ namespace silkworm::chainsync {
 
 struct EngineRpcSettings {
     std::string engine_end_point{kDefaultEngineEndPoint};
+    rpc::InterfaceLogSettings engine_ifc_log_settings{.ifc_name = "engine_rpc_api"};
     std::string private_api_addr{kDefaultPrivateApiAddr};
     log::Level log_verbosity{log::Level::kInfo};
     concurrency::WaitMode wait_mode{concurrency::WaitMode::blocking};

@@ -16,19 +16,24 @@
 
 #pragma once
 
+#include <functional>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/stage.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(SyncContext*, const ChainConfig&);
+    BodiesStage(
+        SyncContext* sync_context,
+        const ChainConfig& chain_config,
+        std::function<uint64_t()> preverified_hashes_height);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage() override = default;
@@ -40,6 +45,7 @@ class BodiesStage : public Stage {
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
     const ChainConfig& chain_config_;
+    std::function<uint64_t()> preverified_hashes_height_;
     std::atomic<BlockNum> current_height_{0};
 
   protected:

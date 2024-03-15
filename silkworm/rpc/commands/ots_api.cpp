@@ -24,11 +24,11 @@
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>

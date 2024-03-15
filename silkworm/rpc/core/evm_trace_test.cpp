@@ -26,9 +26,9 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
@@ -302,7 +302,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 50000, want 53072");
+        CHECK(result.pre_check_error.value() == "intrinsic gas too low: address 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7, have 50000, want 53072");
     }
 
     SECTION("Call: full output") {
@@ -1650,7 +1650,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "first run for txIndex 0 error: intrinsic gas too low: have 50000, want 53072");
+        CHECK(result.pre_check_error.value() == "first run for txIndex 0 error: intrinsic gas too low: address 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7, have 50000, want 53072");
     }
 
     SECTION("Call: full output") {

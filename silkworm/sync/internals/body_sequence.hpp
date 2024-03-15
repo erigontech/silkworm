@@ -18,7 +18,7 @@
 
 #include <list>
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/sync/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/sync/packets/block_bodies_packet.hpp>
 #include <silkworm/sync/packets/new_block_packet.hpp>

@@ -16,8 +16,8 @@
 
 #include "api_test_database.hpp"
 
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/tables.hpp>
 
 namespace silkworm::rpc::test {
 

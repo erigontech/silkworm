@@ -22,8 +22,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>

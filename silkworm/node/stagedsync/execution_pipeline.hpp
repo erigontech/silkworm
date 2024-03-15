@@ -21,8 +21,8 @@
 #include <vector>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/db/stage.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 
 namespace silkworm::stagedsync {
 

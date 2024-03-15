@@ -19,10 +19,10 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/db/tables.hpp>
 
 using namespace silkworm;
 

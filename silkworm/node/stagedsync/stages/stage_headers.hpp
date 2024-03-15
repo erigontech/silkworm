@@ -18,9 +18,9 @@
 #include <atomic>
 
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stage.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

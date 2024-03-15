@@ -33,12 +33,12 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/db/tables.hpp>
 
 #include "../common/shutdown_signal.hpp"
 

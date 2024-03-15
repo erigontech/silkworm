@@ -151,14 +151,14 @@ struct SilkwormLibrary {
                                    bool write_call_traces) {
         ExecutionResult result;
         result.execute_block_result =
-            silkworm_execute_blocks(handle_, txn,
+            silkworm_execute_blocks_ephemeral(handle_, txn,
                                     chain_id, start_block, max_block, batch_size,
                                     write_change_sets, write_receipts, write_call_traces,
                                     &result.last_executed_block, &result.mdbx_error_code);
         return result;
     }
 
-    ExecutionResult sync_blocks(MDBX_env* env,
+    ExecutionResult execute_blocks_perpetual(MDBX_env* env,
                                    uint64_t chain_id,
                                    uint64_t start_block,
                                    uint64_t max_block,
@@ -168,7 +168,7 @@ struct SilkwormLibrary {
                                    bool write_call_traces) {
         ExecutionResult result;
         result.execute_block_result =
-            silkworm_sync_blocks(handle_, env, 
+            silkworm_execute_blocks_perpetual(handle_, env, 
                                     chain_id, start_block, max_block, batch_size,
                                     write_change_sets, write_receipts, write_call_traces,
                                     &result.last_executed_block, &result.mdbx_error_code);
@@ -183,7 +183,7 @@ struct SilkwormLibrary {
     SilkwormHandle handle_{nullptr};
 };
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks: block not found", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -201,7 +201,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks: block not found", "[si
     CHECK(result0.mdbx_error_code == 0);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks: block not found", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -210,7 +210,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks: block not found", "[silkw
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
     const auto result0{
-        silkworm_lib.sync_blocks(db, chain_id, start_block, end_block, batch_size,
+        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
     CHECK(result0.execute_block_result == SILKWORM_BLOCK_NOT_FOUND);
     CHECK(result0.last_executed_block == 0);
@@ -240,7 +240,7 @@ static void insert_block(mdbx::env& env, Block& block) {
     rw_txn.commit_and_stop();
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -328,7 +328,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
     CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks single block: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -339,7 +339,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks single block: OK", "[silkw
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
-        return silkworm_lib.sync_blocks(db,
+        return silkworm_lib.execute_blocks_perpetual(db,
                                            chain_id,
                                            start_block,
                                            end_block,
@@ -411,7 +411,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks single block: OK", "[silkw
     CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -508,7 +508,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks multiple blocks: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -519,7 +519,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_sync_blocks multiple blocks: OK", "[si
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
-        return silkworm_lib.sync_blocks(db,
+        return silkworm_lib.execute_blocks_perpetual(db,
                                            chain_id,
                                            start_block,
                                            end_block,

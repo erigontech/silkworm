@@ -59,6 +59,7 @@ static log::Settings kLogSettingsLikeErigon{
 };
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kAnalysisCacheSize{5'000};
+static constexpr size_t kMaxPrefetchedBlocks{10'240};
 
 using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
@@ -567,10 +568,10 @@ inline bool signal_check(SteadyTimePoint& signal_check_time) {
 }
 
 SILKWORM_EXPORT
-int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id,
-                            uint64_t start_block, uint64_t max_block, uint64_t batch_size,
-                            bool write_change_sets, bool write_receipts, bool write_call_traces,
-                            uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id,
+                                      uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                                      bool write_change_sets, bool write_receipts, bool write_call_traces,
+                                      uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -592,10 +593,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         const size_t max_batch_size{batch_size};
         auto signal_check_time{std::chrono::steady_clock::now()};
 
-        Block block;
         BlockNum block_number{start_block};
         db::DataModel da_layer{txn};
         BlockExecutor block_executor{chain_id, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         if (!block_executor.has_known_chain_id()) {
             return SILKWORM_UNKNOWN_CHAIN_ID;
@@ -604,10 +605,19 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
         // for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
         while (block_number <= max_block) {
             while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
-                if (!da_layer.read_block(block_number, /*read_senders=*/true, block)) {
-                    return SILKWORM_BLOCK_NOT_FOUND;
+                if (prefetched_blocks.empty()) {
+                    const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+                    SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
+                    for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+                        prefetched_blocks.push_back();
+                        const bool success{da_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
+                        if (!success) {
+                            return SILKWORM_BLOCK_NOT_FOUND;
+                        }
+                    }
+                    SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
                 }
-                SILKWORM_ASSERT(block.header.number == block_number);
+                const Block& block{prefetched_blocks.front()};
 
                 const auto result{block_executor.execute_single(block, state_buffer)};
 
@@ -619,15 +629,18 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
                 }
 
                 ++block_number;
+                prefetched_blocks.pop_front();
             }
+
+            auto last_block_number = block_number - 1;
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_flush(state_buffer, max_batch_size, block.header.number)};
+                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
             state_buffer.write_state_to_db();
             // Always save the Execution stage progess when state batch is flushed
-            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block.header.number);
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
 
             if (last_executed_block) {
-                *last_executed_block = block.header.number;
+                *last_executed_block = last_block_number;
             }
         }
         return SILKWORM_OK;
@@ -648,10 +661,10 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t 
 }
 
 SILKWORM_EXPORT
-int silkworm_sync_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
-                         uint64_t start_block, uint64_t max_block, uint64_t batch_size,
-                         bool write_change_sets, bool write_receipts, bool write_call_traces,
-                         uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
+                                      uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                                      bool write_change_sets, bool write_receipts, bool write_call_traces,
+                                      uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }

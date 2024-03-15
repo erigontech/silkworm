@@ -209,7 +209,7 @@ SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEP
  * SILKWORM_BLOCK_NOT_FOUND is probably OK: it simply means that the execution reached the end of the chain
  * (blocks up to and incl. last_executed_block were still executed).
  */
-SILKWORM_EXPORT int silkworm_execute_blocks(
+SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
     SilkwormHandle handle, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
     uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
     uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
@@ -236,7 +236,7 @@ SILKWORM_EXPORT int silkworm_execute_blocks(
  * SILKWORM_BLOCK_NOT_FOUND is probably OK: it simply means that the execution reached the end of the chain
  * (blocks up to and incl. last_executed_block were still executed).
  */
-SILKWORM_EXPORT int silkworm_sync_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
+SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
                           uint64_t start_block, uint64_t max_block, uint64_t batch_size,
                           bool write_change_sets, bool write_receipts, bool write_call_traces,
                           uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;

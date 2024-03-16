@@ -117,7 +117,7 @@ class Connection : public StreamWriter {
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};
 
-    char temp_compressed_buffer_[10 * 1024 * 1024];
+    char temp_compressed_buffer_[10 * kMebi]{};
 };
 
 }  // namespace silkworm::rpc::http

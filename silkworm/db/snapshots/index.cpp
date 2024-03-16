@@ -95,13 +95,12 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
     return true;
 }
 
-static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id, const Hash& prev_hash) {
+static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
     Hash tx_hash;
 
     const bool is_system_tx{tx_buffer.empty()};
     if (is_system_tx) {
         // system-txs: hash:pad32(txnID)
-        tx_hash = prev_hash;
         endian::store_big_u64(tx_hash.bytes, tx_id);
         return tx_hash;
     }
@@ -208,7 +207,6 @@ void TransactionIndex::build() {
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
-    Hash tx_hash;
     bool collision_detected{false};
     do {
         iterations++;
@@ -259,8 +257,9 @@ void TransactionIndex::build() {
                     auto& tx_buffer = *tx_it;
                     auto offset = tx_it.current_word_offset();
 
+                    Hash tx_hash;
                     try {
-                        tx_hash = tx_buffer_hash(tx_buffer, first_tx_id + i, tx_hash);
+                        tx_hash = tx_buffer_hash(tx_buffer, first_tx_id + i);
                     } catch (const std::runtime_error& ex) {
                         std::stringstream error;
                         error << "TransactionIndex::build cannot build index for: " << segment_path_.path()

@@ -86,9 +86,11 @@ class Connection : public StreamWriter {
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, bool compress = false);
 
     static std::string get_date_time();
+
+    void compress_data(const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -114,6 +116,8 @@ class Connection : public StreamWriter {
     std::string vary_;
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};
+
+    char temp_compressed_buffer_[10 * 1024 * 1024];
 };
 
 }  // namespace silkworm::rpc::http

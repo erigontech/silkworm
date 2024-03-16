@@ -51,6 +51,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <numbers>
@@ -547,6 +548,26 @@ class RecSplit {
         std::filesystem::rename(tmp_index_path, index_path_);
 
         return false;
+    }
+
+    void build_without_collisions(std::function<void(RecSplit<LEAF_SIZE>&)> populate) {
+        for (uint64_t iteration = 0; iteration < 10; iteration++) {
+            populate(*this);
+
+            SILK_TRACE << "RecSplit::build..."
+                       << " iteration=" << iteration;
+            bool collision_detected = build();
+            SILK_TRACE << "RecSplit::build done"
+                       << " iteration=" << iteration;
+
+            if (collision_detected) {
+                SILK_DEBUG << "RecSplit::build collision";
+                reset_new_salt();
+            } else {
+                return;
+            }
+        }
+        throw std::runtime_error{"RecSplit::build_without_collisions: abort after max iterations"};
     }
 
     void reset_new_salt() {

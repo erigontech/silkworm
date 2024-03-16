@@ -51,14 +51,9 @@ void Index::build() {
         .base_data_id = base_data_id_,
         .less_false_positives = less_false_positives_,
     };
-    RecSplit8 rec_split{rec_split_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
+    RecSplit8 rec_split1{rec_split_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
 
-    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
-    uint64_t iterations{0};
-    bool collision_detected{false};
-    do {
-        iterations++;
-        SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
+    rec_split1.build_without_collisions([&](RecSplit8& rec_split) {
         uint64_t i{0};
         for (auto it = decoder.begin(); it != decoder.end(); ++it, ++i) {
             auto& word = *it;
@@ -67,13 +62,7 @@ void Index::build() {
                 throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
             }
         }
-
-        SILK_TRACE << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = rec_split.build();
-        SILK_DEBUG << "Build RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
-        if (collision_detected) rec_split.reset_new_salt();
-    } while (collision_detected);
-    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
+    });
 
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
@@ -178,8 +167,6 @@ uint64_t TransactionIndex::read_tx_count() {
 }
 
 void TransactionIndex::build() {
-    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
-
     const SnapshotPath bodies_segment_path = this->bodies_segment_path();
     SILK_TRACE << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
 
@@ -202,6 +189,8 @@ void TransactionIndex::build() {
     etl_buffer_size_ = db::etl::kOptimalBufferSize / 2;
     Index::build();
 
+    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
+
     seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
 
@@ -215,18 +204,12 @@ void TransactionIndex::build() {
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
+    RecSplit8 tx_hash_to_block_rs1{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
 
     seg::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
 
-    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
-    uint64_t iterations{0};
-    bool collision_detected{false};
-    do {
-        iterations++;
-        SILK_TRACE << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-
+    tx_hash_to_block_rs1.build_without_collisions([&](RecSplit8& tx_hash_to_block_rs) {
         {
             {
                 auto body_it = bodies_decoder.begin();
@@ -292,16 +275,7 @@ void TransactionIndex::build() {
                 }
             }
         }
-
-        SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_to_block_rs.build();
-        SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
-
-        if (collision_detected) {
-            tx_hash_to_block_rs.reset_new_salt();
-        }
-    } while (collision_detected);
-    SILK_TRACE << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
+    });
 
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }

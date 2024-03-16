@@ -36,7 +36,6 @@ namespace silkworm::snapshots {
 
 using RecSplitSettings = rec_split::RecSplitSettings;
 using RecSplit8 = rec_split::RecSplit8;
-using db::etl::kOptimalBufferSize;
 
 void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
@@ -49,8 +48,10 @@ void Index::build() {
         .keys_count = decoder.words_count(),
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
-        .base_data_id = index_file.block_from()};
-    RecSplit8 rec_split{rec_split_settings, rec_split::seq_build_strategy(kOptimalBufferSize)};
+        .base_data_id = base_data_id_,
+        .less_false_positives = less_false_positives_,
+    };
+    RecSplit8 rec_split{rec_split_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
 
     SILK_TRACE << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
@@ -155,42 +156,56 @@ static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
     return tx_hash;
 }
 
+SnapshotPath TransactionIndex::bodies_segment_path() const {
+    return SnapshotPath::from(
+        segment_path_.path().parent_path(),
+        segment_path_.version(),
+        segment_path_.block_from(),
+        segment_path_.block_to(),
+        SnapshotType::bodies);
+}
+
+std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount() {
+    BodySnapshot bodies_snapshot{bodies_segment_path()};
+    bodies_snapshot.reopen_segment();
+    return bodies_snapshot.compute_txs_amount();
+}
+
+uint64_t TransactionIndex::read_tx_count() {
+    seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
+    txs_decoder.open();
+    return txs_decoder.words_count();
+}
+
 void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
-    const SnapshotPath bodies_segment_path = SnapshotPath::from(segment_path_.path().parent_path(),
-                                                                segment_path_.version(),
-                                                                segment_path_.block_from(),
-                                                                segment_path_.block_to(),
-                                                                SnapshotType::bodies);
+    const SnapshotPath bodies_segment_path = this->bodies_segment_path();
     SILK_TRACE << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
 
-    BodySnapshot bodies_snapshot{bodies_segment_path};
-    bodies_snapshot.reopen_segment();
-    const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
+    const auto txs_amount = compute_txs_amount();
+    const uint64_t first_tx_id = txs_amount.first;
+    const uint64_t expected_tx_count = txs_amount.second;
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
+
+    const auto tx_count = read_tx_count();
+    if (expected_tx_count != tx_count) {
+        std::stringstream error;
+        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
+              << " tx count mismatch: expected=" << std::to_string(expected_tx_count)
+              << " got=" << std::to_string(tx_count);
+        throw std::runtime_error{error.str()};
+    }
+
+    base_data_id_ = first_tx_id;
+    less_false_positives_ = true;
+    etl_buffer_size_ = db::etl::kOptimalBufferSize / 2;
+    Index::build();
 
     seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
 
-    const auto tx_count = txs_decoder.words_count();
-    if (tx_count != expected_tx_count) {
-        throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
-                                 " got=" + std::to_string(tx_count)};
-    }
-
     const BlockNum first_block_num{segment_path_.block_from()};
-
-    const SnapshotPath tx_idx_file = segment_path_.index_file();
-    SILK_TRACE << "TransactionIndex::build tx_idx_file path: " << tx_idx_file.path().string();
-    RecSplitSettings tx_hash_rs_settings{
-        .keys_count = txs_decoder.words_count(),
-        .bucket_size = kBucketSize,
-        .index_path = tx_idx_file.path(),
-        .base_data_id = first_tx_id,
-        .double_enum_index = true,
-        .less_false_positives = true};
-    RecSplit8 tx_hash_rs{tx_hash_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
     SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
@@ -200,7 +215,7 @@ void TransactionIndex::build() {
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
 
     seg::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
@@ -234,7 +249,7 @@ void TransactionIndex::build() {
                 }
 
                 uint64_t i{0};
-                for (auto tx_it = txs_decoder.begin(); tx_it != txs_decoder.end(); ++tx_it, ++i) {
+                for (auto& tx_buffer : txs_decoder) {
                     while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
                         ++body_it;
                         if (body_it == bodies_decoder.end()) {
@@ -254,9 +269,6 @@ void TransactionIndex::build() {
                         ++block_number;
                     }
 
-                    auto& tx_buffer = *tx_it;
-                    auto offset = tx_it.current_word_offset();
-
                     Hash tx_hash;
                     try {
                         tx_hash = tx_buffer_hash(tx_buffer, first_tx_id + i);
@@ -267,8 +279,8 @@ void TransactionIndex::build() {
                         throw std::runtime_error{error.str()};
                     }
 
-                    tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
                     tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                    i++;
                 }
 
                 if (i != expected_tx_count) {
@@ -281,16 +293,11 @@ void TransactionIndex::build() {
             }
         }
 
-        SILK_TRACE << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_rs.build();
-        SILK_TRACE << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
-
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected |= tx_hash_to_block_rs.build();
+        collision_detected = tx_hash_to_block_rs.build();
         SILK_TRACE << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {
-            tx_hash_rs.reset_new_salt();
             tx_hash_to_block_rs.reset_new_salt();
         }
     } while (collision_detected);
@@ -299,7 +306,18 @@ void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
-bool TransactionIndex::walk(RecSplit8& /*rec_split*/, uint64_t /*i*/, uint64_t /*offset*/, ByteView /*word*/) {
+bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView tx_buffer) {
+    Hash tx_hash;
+    try {
+        tx_hash = tx_buffer_hash(tx_buffer, base_data_id_ + i);
+    } catch (const std::runtime_error& ex) {
+        std::stringstream error;
+        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
+              << ex.what();
+        throw std::runtime_error{error.str()};
+    }
+
+    rec_split.add_key(tx_hash.bytes, kHashLength, offset);
     return true;
 }
 

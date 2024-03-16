@@ -303,7 +303,7 @@ void Daemon::start() {
                                   InterfaceLogSettings ilog_settings) {
         return std::make_unique<http::Server>(
             end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
-            settings_.use_websocket, settings_.ws_compression, std::move(ilog_settings));
+            settings_.use_websocket, settings_.ws_compression, settings_.http_compression, std::move(ilog_settings));
     };
 
     // Put the interface logs into the data folder

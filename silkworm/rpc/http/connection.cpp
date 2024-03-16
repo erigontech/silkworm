@@ -45,6 +45,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        std::optional<std::string> jwt_secret,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
+                       bool http_compression,
                        InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
       api_{api},
@@ -53,7 +54,8 @@ Connection::Connection(boost::asio::io_context& io_context,
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
       ws_upgrade_enabled_{ws_upgrade_enabled},
-      ws_compression_{ws_compression} {
+      ws_compression_{ws_compression},
+      http_compression_{http_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
 }
 

@@ -74,14 +74,14 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteVi
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
     ensure(hash.bytes[0] == first_hash_byte,
            [&]() { return "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes); });
-    rec_split.add_key(hash.bytes, kHashLength, offset);
+    rec_split.add_key(ByteView{hash.bytes}, offset);
     return true;
 }
 
 bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
     Bytes uint64_buffer;
     seg::varint::encode(uint64_buffer, i);
-    rec_split.add_key(uint64_buffer.data(), uint64_buffer.size(), offset);
+    rec_split.add_key(uint64_buffer, offset);
     return true;
 }
 
@@ -262,7 +262,7 @@ void TransactionIndex::build() {
                         throw std::runtime_error{error.str()};
                     }
 
-                    tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                    tx_hash_to_block_rs.add_key(tx_hash, block_number);
                     i++;
                 }
 
@@ -291,7 +291,7 @@ bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, B
         throw std::runtime_error{error.str()};
     }
 
-    rec_split.add_key(tx_hash.bytes, kHashLength, offset);
+    rec_split.add_key(tx_hash, offset);
     return true;
 }
 

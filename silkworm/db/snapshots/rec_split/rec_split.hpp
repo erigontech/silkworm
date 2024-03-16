@@ -65,6 +65,8 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -418,17 +420,17 @@ class RecSplit {
         }
     }
 
-    void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+    void add_key(ByteView key, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
-        const auto key_hash = murmur_hash_3(key_data, key_length);
+        const auto key_hash = murmur_hash_3(key);
         add_key(key_hash, offset);
     }
 
     void add_key(const std::string& key, uint64_t offset) {
-        add_key(key.c_str(), key.size(), offset);
+        add_key(string_view_to_byte_view(key), offset);
     }
 
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
@@ -649,20 +651,20 @@ class RecSplit {
     }
 
     //! Return the value associated with the given key within the MPHF mapping
-    std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+    std::size_t operator()(ByteView key) const { return operator()(murmur_hash_3(key)); }
+
+    //! Return the value associated with the given key within the MPHF mapping
+    std::size_t operator()(const std::string& key) const { return operator()(string_view_to_byte_view(key)); }
 
     //! Search result: value position and flag indicating if found or not
     using LookupResult = std::pair<std::size_t, bool>;
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] LookupResult lookup(ByteView key) const { return lookup(key.data(), key.size()); }
+    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
-
-    //! Return the value associated with the given key within the index
-    LookupResult lookup(const void* key, const size_t length) const {
-        const hash128_t& hashed_key{murmur_hash_3(key, length)};
+    LookupResult lookup(ByteView key) const {
+        const hash128_t& hashed_key{murmur_hash_3(key)};
         const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
 
@@ -891,9 +893,9 @@ class RecSplit {
         }
     }
 
-    hash128_t inline murmur_hash_3(const void* data, const size_t length) const {
+    hash128_t inline murmur_hash_3(ByteView data) const {
         hash128_t h{};
-        hasher_->hash_x64_128(data, length, &h);
+        hasher_->hash_x64_128(data.data(), data.size(), &h);
         return h;
     }
 

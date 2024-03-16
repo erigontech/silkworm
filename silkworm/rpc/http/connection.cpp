@@ -57,7 +57,7 @@ Connection::Connection(boost::asio::io_context& io_context,
       ws_compression_{ws_compression},
       http_compression_{http_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
-    if (http_compression_) {  // temporary for remove wearing with clang
+    if (http_compression_) {  // temporary to avoid warning with clang
         SILK_TRACE << "Connection::Connection compression enabled";
     }
 }

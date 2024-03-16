@@ -95,6 +95,67 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
     return true;
 }
 
+static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id, const Hash& prev_hash) {
+    Hash tx_hash;
+
+    const bool is_system_tx{tx_buffer.empty()};
+    if (is_system_tx) {
+        // system-txs: hash:pad32(txnID)
+        tx_hash = prev_hash;
+        endian::store_big_u64(tx_hash.bytes, tx_id);
+        return tx_hash;
+    }
+
+    // Skip tx hash first byte plus address length for transaction decoding
+    constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+    if (tx_buffer.size() <= kTxFirstByteAndAddressLength) {
+        std::stringstream error;
+        error << " tx_buffer_hash cannot decode tx envelope: record " << to_hex(tx_buffer)
+              << " too short: " << tx_buffer.size()
+              << " tx_id: " << tx_id;
+        throw std::runtime_error{error.str()};
+    }
+    const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
+    ByteView tx_envelope_view{tx_envelope};
+
+    rlp::Header tx_header;
+    TransactionType tx_type{};
+    auto decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
+    if (!decode_result) {
+        std::stringstream error;
+        error << " tx_buffer_hash cannot decode tx envelope: " << to_hex(tx_envelope)
+              << " tx_id: " << tx_id
+              << " error: " << magic_enum::enum_name(decode_result.error());
+        throw std::runtime_error{error.str()};
+    }
+
+    const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+    if (tx_buffer.size() <= kTxFirstByteAndAddressLength + tx_payload_offset) {
+        std::stringstream error;
+        error << " tx_buffer_hash cannot decode tx payload: record " << to_hex(tx_buffer)
+              << " too short: " << tx_buffer.size()
+              << " tx_id: " << tx_id;
+        throw std::runtime_error{error.str()};
+    }
+    const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
+    const auto h256{keccak256(tx_payload)};
+    std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
+
+    if (tx_id % 100'000 == 0) {
+        SILK_DEBUG << "tx_buffer_hash:"
+                   << " header.list: " << tx_header.list
+                   << " header.payload_length: " << tx_header.payload_length
+                   << " tx_id: " << tx_id;
+    }
+    SILK_TRACE << "tx_buffer_hash:"
+               << " type: " << int(tx_type)
+               << " tx_id: " << tx_id
+               << " payload: " << to_hex(tx_payload)
+               << " h256: " << to_hex(h256.bytes, kHashLength);
+
+    return tx_hash;
+}
+
 void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
@@ -198,59 +259,17 @@ void TransactionIndex::build() {
                     auto& tx_buffer = *tx_it;
                     auto offset = tx_it.current_word_offset();
 
-                    const bool is_system_tx{tx_buffer.empty()};
-                    if (is_system_tx) {
-                        // system-txs: hash:pad32(txnID)
-                        endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
-
-                        tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
-                        tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
-                    } else {
-                        // Skip tx hash first byte plus address length for transaction decoding
-                        constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-                        if (tx_buffer.size() <= kTxFirstByteAndAddressLength) {
-                            std::stringstream error;
-                            error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                                  << " cannot decode tx envelope: record " << to_hex(tx_buffer)
-                                  << " too short: " << tx_buffer.size()
-                                  << " i: " << i;
-                            throw std::runtime_error{error.str()};
-                        }
-                        const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
-                        ByteView tx_envelope_view{tx_envelope};
-
-                        rlp::Header tx_header;
-                        TransactionType tx_type{};
-                        decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
-                        if (!decode_result) {
-                            std::stringstream error;
-                            error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                                  << " cannot decode tx envelope: " << to_hex(tx_envelope)
-                                  << " i: " << i
-                                  << " error: " << magic_enum::enum_name(decode_result.error());
-                            throw std::runtime_error{error.str()};
-                        }
-                        if (i % 100'000 == 0) {
-                            SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;
-                        }
-
-                        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
-                        if (tx_buffer.size() <= kTxFirstByteAndAddressLength + tx_payload_offset) {
-                            std::stringstream error;
-                            error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                                  << " cannot decode tx payload: record " << to_hex(tx_buffer)
-                                  << " too short: " << tx_buffer.size()
-                                  << " i: " << i;
-                            throw std::runtime_error{error.str()};
-                        }
-                        const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
-                        const auto h256{keccak256(tx_payload)};
-                        std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
-                        SILK_DEBUG << "type: " << int(tx_type) << " i: " << i << " payload: " << to_hex(tx_payload)
-                                   << " h256: " << to_hex(h256.bytes, kHashLength);
-                        tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
-                        tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                    try {
+                        tx_hash = tx_buffer_hash(tx_buffer, first_tx_id + i, tx_hash);
+                    } catch (const std::runtime_error& ex) {
+                        std::stringstream error;
+                        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
+                              << ex.what();
+                        throw std::runtime_error{error.str()};
                     }
+
+                    tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
+                    tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
                 }
 
                 if (i != expected_tx_count) {

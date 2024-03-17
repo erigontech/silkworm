@@ -44,6 +44,7 @@ struct DaemonSettings {
     bool erigon_json_rpc_compatibility{false};
     bool use_websocket{false};
     bool ws_compression{false};
+    bool http_compression{false};
 };
 
 }  // namespace silkworm::rpc

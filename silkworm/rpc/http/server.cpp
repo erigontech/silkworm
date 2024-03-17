@@ -49,6 +49,7 @@ Server::Server(const std::string& end_point,
                std::optional<std::string> jwt_secret,
                bool use_websocket,
                bool ws_compression,
+               bool http_compression,
                InterfaceLogSettings ifc_log_settings)
     : rpc_api_{io_context, workers},
       handler_table_{api_spec},
@@ -58,6 +59,7 @@ Server::Server(const std::string& end_point,
       jwt_secret_(std::move(jwt_secret)),
       use_websocket_{use_websocket},
       ws_compression_{ws_compression},
+      http_compression_{http_compression},
       ifc_log_settings_{std::move(ifc_log_settings)} {
     const auto [host, port] = parse_endpoint(end_point);
 
@@ -84,7 +86,7 @@ Task<void> Server::run() {
             SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
             auto new_connection = std::make_shared<Connection>(
-                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, ifc_log_settings_);
+                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, ifc_log_settings_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";

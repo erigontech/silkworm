@@ -51,6 +51,7 @@ class Connection : public StreamWriter {
                std::optional<std::string> jwt_secret,
                bool ws_upgrade_enabled,
                bool ws_compression,
+               bool http_compression,
                InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
 
@@ -112,6 +113,8 @@ class Connection : public StreamWriter {
     bool ws_upgrade_enabled_;
 
     bool ws_compression_;
+
+    bool http_compression_;
 
     std::string vary_;
     std::string origin_;

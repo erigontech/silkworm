@@ -19,10 +19,10 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/infra/common/os.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/infra/common/os.hpp>
 
 namespace silkworm::snapshots {
 

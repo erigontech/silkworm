@@ -64,7 +64,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
     explicit SequentialBuildingStrategy(std::size_t etl_optimal_size) : etl_optimal_size_{etl_optimal_size} {}
 
   protected:
-    void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t, bool double_enum_index) override {
+    void setup(const RecSplitSettings& settings, std::size_t bucket_count) override {
         offset_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
         bucket_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
 
@@ -72,9 +72,9 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         bucket_position_accumulator_.reserve(bucket_count + 1);
         bucket_size_accumulator_.resize(1);      // Start with 0 as bucket accumulated size
         bucket_position_accumulator_.resize(1);  // Start with 0 as bucket accumulated position
-        current_bucket_.reserve(bucket_size);
-        current_bucket_offsets_.reserve(bucket_size);
-        double_enum_index_ = double_enum_index;
+        current_bucket_.reserve(settings.bucket_size);
+        current_bucket_offsets_.reserve(settings.bucket_size);
+        double_enum_index_ = settings.double_enum_index;
     }
 
     void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) override {
@@ -85,13 +85,6 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         if (offset > max_offset_) {
             max_offset_ = offset;
         }
-
-        // if (keys_added_ > 0) {  // unused
-        //     const auto delta = offset - previous_offset_;
-        //     if (keys_added_ == 1 || delta < min_delta_) {
-        //         min_delta_ = delta;
-        //     }
-        // }
 
         Bytes collector_key(16, '\0');
         endian::store_big_u64(collector_key.data(), bucket_id);
@@ -110,7 +103,6 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         }
 
         keys_added_++;
-        // previous_offset_ = offset;
     }
 
     bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
@@ -283,15 +275,11 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
     //! Helper to build GR codes of splitting and bijection indices
     GolombRiceBuilder gr_builder_;
-
-    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    // uint64_t min_delta_{0};  // unused
-
-    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    // uint64_t previous_offset_{0};  // unused
 };
 
-inline auto seq_build_strategy(size_t etl_buffer_size = db::etl::kOptimalBufferSize) { return std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl_buffer_size); }
+inline auto seq_build_strategy(size_t etl_buffer_size = db::etl::kOptimalBufferSize) {
+    return std::make_unique<RecSplit8::SequentialBuildingStrategy>(etl_buffer_size);
+}
 
 /* Example usage:
     RecSplit8 recsplit{RecSplitSettings{}, seq_build_strategy(etl::kOptimalBufferSize)};

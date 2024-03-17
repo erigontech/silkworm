@@ -358,7 +358,8 @@ void Connection::compress_data(const std::string& clear_data, std::string& compr
     strm.next_in = reinterpret_cast<const Bytef*>(clear_data.c_str());
 
     do {
-        strm.next_out = reinterpret_cast<Bytef*>(temp_compressed_buffer_);
+        temp_compressed_buffer_.resize(10 * kMebi);
+        strm.next_out = reinterpret_cast<Bytef*>(const_cast<char*>(temp_compressed_buffer_.c_str()));
         strm.avail_out = sizeof(temp_compressed_buffer_);
 
         ret = deflate(&strm, Z_FINISH);
@@ -368,7 +369,7 @@ void Connection::compress_data(const std::string& clear_data, std::string& compr
         }
         if (compressed_data.size() < strm.total_out) {
             // append the block to the output string
-            compressed_data.append(temp_compressed_buffer_, strm.total_out - compressed_data.size());
+            compressed_data.append(temp_compressed_buffer_.c_str(), strm.total_out - compressed_data.size());
         }
     } while (ret != Z_STREAM_END);
 

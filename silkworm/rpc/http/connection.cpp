@@ -16,6 +16,9 @@
 
 #include "connection.hpp"
 
+#ifndef ZLIB_CONST
+#define ZLIB_CONST
+#endif
 #include <zlib.h>
 
 #include <array>
@@ -282,7 +285,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
             res.body() = std::move(compressed_data);
         } else {
             res.content_length(content.size());
-            res.body() = std::move(content);
+            res.body() = content;
         }
 
         set_cors<boost::beast::http::string_body>(res);
@@ -304,15 +307,14 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
     z_stream strm;
 
-    memset(&strm, 0, sizeof(strm));
+    std::memset(&strm, 0, sizeof(strm));
     int ret = Z_OK;
     ret = deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK) {
         throw std::runtime_error("deflateInit2 fail");
     }
     strm.avail_in = static_cast<unsigned int>(clear_data.size());
-    auto ptr_clear = const_cast<char*>(clear_data.c_str());
-    strm.next_in = reinterpret_cast<Bytef*>(ptr_clear);
+    strm.next_in = reinterpret_cast<const Bytef*>(clear_data.c_str());
 
     do {
         strm.next_out = reinterpret_cast<Bytef*>(temp_compressed_buffer_);

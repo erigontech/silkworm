@@ -135,7 +135,8 @@ void TransactionIndex::build() {
         .bucket_size = kBucketSize,
         .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
-        .double_enum_index = true};
+        .double_enum_index = true,
+        .less_false_positives = true};
     RecSplit8 tx_hash_rs{tx_hash_rs_settings, rec_split::seq_build_strategy(kOptimalBufferSize / 2)};
 
     const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);

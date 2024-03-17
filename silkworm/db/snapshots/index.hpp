@@ -19,6 +19,7 @@
 #include <memory>
 #include <utility>
 
+#include <silkworm/infra/common/os.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
@@ -27,7 +28,7 @@ namespace silkworm::snapshots {
 
 class Index {
   public:
-    static constexpr uint64_t kPageSize{4096};
+    static inline const auto kPageSize{os::page_size()};
     static constexpr std::size_t kBucketSize{2'000};
 
     explicit Index(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})

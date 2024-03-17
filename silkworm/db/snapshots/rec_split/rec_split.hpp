@@ -70,6 +70,7 @@
 #include <silkworm/db/snapshots/rec_split/common/murmur_hash3.hpp>
 #include <silkworm/db/snapshots/rec_split/encoding/elias_fano.hpp>
 #include <silkworm/db/snapshots/rec_split/encoding/golomb_rice.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
@@ -236,8 +237,9 @@ class RecSplit {
 
     //! The base class for RecSplit building strategies
     struct BuildingStrategy {
-        virtual void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count, bool double_enum_index) = 0;
         virtual ~BuildingStrategy() = default;
+
+        virtual void setup(const RecSplitSettings& settings, std::size_t bucket_count) = 0;
 
         virtual void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) = 0;
         virtual bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes,
@@ -247,6 +249,27 @@ class RecSplit {
 
         virtual uint64_t keys_added() = 0;
         virtual uint64_t max_offset() = 0;
+
+        void add_to_existence_filter(uint8_t key_fingerprint) {
+            existence_filter_stream_ << key_fingerprint;
+        }
+
+        void flush_existence_filter(Bytes& uint64_buffer, std::ofstream& index_output_stream) {
+            existence_filter_stream_.flush();
+            existence_filter_stream_.seekg(0, std::ios::beg);
+            endian::store_big_u64(uint64_buffer.data(), keys_added());
+            index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+            index_output_stream << existence_filter_stream_.rdbuf();
+        }
+
+      protected:
+        BuildingStrategy()
+            : existence_filter_stream_{TemporaryDirectory::get_unique_temporary_path(),
+                                       std::ios::out | std::ios::in | std::ios::app} {}
+
+      private:
+        //! Serialization for the existence filter (1-byte per key positional presence hint)
+        std::fstream existence_filter_stream_;
     };
 
     struct SequentialBuildingStrategy;
@@ -259,8 +282,9 @@ class RecSplit {
           base_data_id_(settings.base_data_id),
           index_path_(settings.index_path),
           double_enum_index_(settings.double_enum_index),
+          less_false_positives_(settings.less_false_positives),
           building_strategy_(std::move(bs)) {
-        building_strategy_->init(bucket_size_, bucket_count_, key_count_, double_enum_index_);
+        building_strategy_->setup(settings, bucket_count_);
 
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
@@ -386,6 +410,11 @@ class RecSplit {
         auto bucket_key = key_hash.second;
 
         building_strategy_->add_key(bucket_id, bucket_key, offset);
+
+        // Write first byte for each hashed key into the existence filter (if any)
+        if (less_false_positives_) {
+            building_strategy_->add_to_existence_filter(static_cast<uint8_t>(key_hash.first));
+        }
     }
 
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
@@ -434,20 +463,20 @@ class RecSplit {
 
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
 
-        // Calc Minimal Perfect Hashes using recsplit algorithm
-        // & write table: mph-output -> ordinal
-        bool collision = building_strategy_->build_mph_index(index_output_stream, golomb_rice_codes_, golomb_param_max_index_,
-                                                             double_ef_index_, bytes_per_record_);
+        // Compute Minimal Perfect Hash Function using RecSplit algorithm and write table: mph-output -> ordinal
+        const bool collision = building_strategy_->build_mph_index(index_output_stream,
+                                                                   golomb_rice_codes_,
+                                                                   golomb_param_max_index_,
+                                                                   double_ef_index_,
+                                                                   bytes_per_record_);
         if (collision) return true;
 
-        // Compute table: ordinal -> offset
+        // Compute optional additional table: ordinal -> offset
         if (double_enum_index_) {
             building_strategy_->build_enum_index(ef_offsets_);
         }
 
         built_ = true;
-
-        // SILK_INFO << "written bytes so far " << index_output_stream.tellp();
 
         // Write out bucket count, bucket size, leaf size
         endian::store_big_u64(uint64_buffer.data(), bucket_count_);
@@ -478,14 +507,26 @@ class RecSplit {
         }
         SILK_TRACE << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
 
-        // Write out index flag
-        const uint8_t enum_index_flag = double_enum_index_ ? 1 : 0;
-        index_output_stream.write(reinterpret_cast<const char*>(&enum_index_flag), sizeof(uint8_t));
+        // Write out the features flag
+        RecSplitFeatures features{RecSplitFeatures::kNone};
+        if (double_enum_index_) {
+            features = features | RecSplitFeatures::kEnums;
+            if (less_false_positives_) {
+                features = features | RecSplitFeatures::kLessFalsePositives;
+            }
+        }
+        const auto features_flag = static_cast<uint8_t>(features);
+        index_output_stream.write(reinterpret_cast<const char*>(&features_flag), sizeof(uint8_t));
 
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
             index_output_stream << *ef_offsets_;
             SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
+
+            // Write out existence filter (if any)
+            if (less_false_positives_) {
+                building_strategy_->flush_existence_filter(uint64_buffer, index_output_stream);
+            }
         }
 
         // Write out the number of Golomb-Rice codes used i.e. the max index used plus one
@@ -589,21 +630,29 @@ class RecSplit {
     //! Return the value associated with the given key within the MPHF mapping
     std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
 
-    //! Return the value associated with the given key within the index
-    [[nodiscard]] std::size_t lookup(ByteView key) const { return lookup(key.data(), key.size()); }
+    //! Search result: value position and flag indicating if found or not
+    using LookupResult = std::pair<std::size_t, bool>;
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] std::size_t lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
+    [[nodiscard]] LookupResult lookup(ByteView key) const { return lookup(key.data(), key.size()); }
 
     //! Return the value associated with the given key within the index
-    std::size_t lookup(const void* key, const size_t length) const {
-        const auto record = operator()(murmur_hash_3(key, length));
+    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
+
+    //! Return the value associated with the given key within the index
+    LookupResult lookup(const void* key, const size_t length) const {
+        const hash128_t& hashed_key{murmur_hash_3(key, length)};
+        const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
 
         const auto address = encoded_file_->address();
         ensure(position + sizeof(uint64_t) < encoded_file_->length(),
                [&]() { return "position: " + std::to_string(position) + " plus 8 exceeds file length"; });
-        return endian::load_big_u64(address + position) & record_mask_;
+        const auto value = endian::load_big_u64(address + position) & record_mask_;
+        if (less_false_positives_ && value < existence_filter_.size()) {
+            return {value, existence_filter_.at(value) == static_cast<uint8_t>(hashed_key.first)};
+        }
+        return {value, true};
     }
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
@@ -834,7 +883,7 @@ class RecSplit {
     void check_minimum_length(std::size_t minimum_length) {
         if (encoded_file_ && encoded_file_->length() < minimum_length) {
             throw std::runtime_error("index " + encoded_file_->path().filename().string() + " is too short: " +
-                                     std::to_string(encoded_file_->length()));
+                                     std::to_string(encoded_file_->length()) + " < " + std::to_string(minimum_length));
         }
     }
 

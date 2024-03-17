@@ -104,7 +104,6 @@ struct SnapshotHeader {
 
 struct SnapshotBody {
     Bytes data;
-    SnapshotHeader* header{nullptr};
 
     void encode(Bytes& output) const {
         output.append(data.cbegin(), data.cend());

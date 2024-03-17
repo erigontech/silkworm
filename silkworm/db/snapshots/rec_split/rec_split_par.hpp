@@ -124,16 +124,18 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         }
     };
 
-    void init(std::size_t bucket_size, std::size_t bucket_count, std::size_t key_count, bool double_enum_index) override {
-        double_enum_index_ = double_enum_index;
+    void setup(const RecSplitSettings& settings, std::size_t bucket_count) override {
+        double_enum_index_ = settings.double_enum_index;
         bucket_count_ = bucket_count;
 
         // Prepare buckets
         buckets_.reserve(bucket_count);
-        for (int i = 0; i < bucket_count; i++)
-            buckets_.emplace_back(i, bucket_size);
-        if (double_enum_index)
-            offsets_.reserve(key_count);
+        for (int i = 0; i < bucket_count; i++) {
+            buckets_.emplace_back(i, settings.bucket_size);
+        }
+        if (double_enum_index_) {
+            offsets_.reserve(settings.keys_count);
+        }
     }
 
     void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) override {
@@ -149,7 +151,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
         Bucket& bucket = buckets_[bucket_id];
 
-        if (this->double_enum_index_) {
+        if (double_enum_index_) {
             offsets_.push_back(offset);
 
             auto current_key_count = keys_added_;
@@ -186,7 +188,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         std::vector<int64_t> bucket_position_accumulator_(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
         bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
-        for (size_t i = 0; i < this->bucket_count_; i++) {
+        for (size_t i = 0; i < bucket_count_; i++) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
             // auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
@@ -305,7 +307,9 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     GolombRiceBuilder gr_builder_;
 };
 
-inline auto par_build_strategy(ThreadPool& tp) { return std::make_unique<RecSplit8::ParallelBuildingStrategy>(tp); }
+inline auto par_build_strategy(ThreadPool& tp) {
+    return std::make_unique<RecSplit8::ParallelBuildingStrategy>(tp);
+}
 
 /*
  Example usage:

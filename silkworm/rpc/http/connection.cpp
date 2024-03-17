@@ -34,6 +34,7 @@
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -42,6 +43,7 @@ namespace silkworm::rpc::http {
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
+static std::vector<std::string> SupportedCompressionList{"gzip"};  // specify the compression algo in priority level
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -174,6 +176,31 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
+    const auto accept_encoding = req[boost::beast::http::field::accept_encoding];
+    if (!http_compression_ && !accept_encoding.empty()) {
+        co_await do_write("unsupported compression\n", boost::beast::http::status::unsupported_media_type, "identity");
+        co_return;
+    }
+
+    std::string selected_compression = "";
+    if (http_compression_ && !accept_encoding.empty()) {
+        selected_compression = select_compression_algo(accept_encoding);
+        if (selected_compression.empty()) {
+            std::string complete_list;
+            bool first = true;
+            for (std::string curr_compression : SupportedCompressionList) {
+                if (first) {
+                    first = false;
+                } else {
+                    complete_list += ", ";
+                }
+                complete_list += curr_compression;
+            }
+            co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, complete_list);
+            co_return;
+        }
+    }
+
     if (!is_method_allowed(req.method())) {
         co_await do_write("method not allowed\n", boost::beast::http::status::method_not_allowed);
         co_return;
@@ -200,11 +227,10 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     vary_ = req[boost::beast::http::field::vary];
     origin_ = req[boost::beast::http::field::origin];
     method_ = req.method();
-    auto encoding = req[boost::beast::http::field::accept_encoding];
 
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, !encoding.empty());
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, selected_compression);
     }
 }
 
@@ -262,7 +288,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, bool compress) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const std::string& compression_algo) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
@@ -276,12 +302,12 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
-        if (compress) {
-            const std::string compression_type = "gzip";
-            res.set(boost::beast::http::field::content_encoding, compression_type);
+        if (http_status == boost::beast::http::status::ok && !compression_algo.empty()) {
+            // in case of compression
+            res.set(boost::beast::http::field::content_encoding, compression_algo);
             std::string compressed_data;
             try {
-                compress_data(content, compressed_data);
+                compress_data(content, compressed_data, compression_algo);
             } catch (const std::exception& e) {
                 SILK_ERROR << "Connection::compress_data exception: " << e.what();
                 throw;
@@ -289,6 +315,10 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
             res.content_length(compressed_data.length());
             res.body() = std::move(compressed_data);
         } else {
+            // in case of fail response or postive without compression
+            if (!compression_algo.empty()) {
+                res.set(boost::beast::http::field::accept_encoding, compression_algo);  // set response to indicates the supported algo
+            }
             res.content_length(content.size());
             res.body() = content;
         }
@@ -309,8 +339,14 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
     co_return;
 }
 
-void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
+void Connection::compress_data(const std::string& clear_data, std::string& compressed_data, const std::string& compression_algo) {
     z_stream strm;
+
+    assert(compression_algo == "gzip");
+
+    if (compression_algo != "gzip") {
+        throw std::runtime_error("unsupported compression algo");
+    }
 
     std::memset(&strm, 0, sizeof(strm));
     int ret = Z_OK;
@@ -405,6 +441,15 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
     } else {
         res.set(boost::beast::http::field::access_control_allow_origin, origin_);
     }
+}
+
+std::string Connection::select_compression_algo(const std::string& requested_compression) {
+    for (std::string curr_compression : SupportedCompressionList) {
+        if (requested_compression.find(curr_compression) != std::string::npos) {
+            return curr_compression;
+        }
+    }
+    return "";
 }
 
 bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin) {

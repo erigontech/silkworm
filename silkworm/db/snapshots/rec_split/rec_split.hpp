@@ -260,8 +260,16 @@ class RecSplit {
             existence_filter_stream_.seekg(0, std::ios::beg);
             endian::store_big_u64(uint64_buffer.data(), keys_added());
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-            SILK_TRACE << "flush_existence_filter keys_added: " << std::dec << keys_added();
-            SILK_TRACE << "flush_existence_filter data: " << std::hex << existence_filter_stream_.rdbuf();
+            if (log::test_verbosity(log::Level::kTrace)) {
+                existence_filter_stream_.seekp(0, std::ios::end);
+                std::cout << "flush_existence_filter tmp file size: " << existence_filter_stream_.tellp() << "\n";
+                existence_filter_stream_.seekg(0, std::ios::beg);
+                std::cout << "flush_existence_filter keys_added: " << std::dec << keys_added() << "\n";
+                std::stringstream ss;
+                ss << existence_filter_stream_.rdbuf();
+                auto str = ss.str();
+                std::cout << "flush_existence_filter data: " << to_hex(ByteView{reinterpret_cast<uint8_t*>(str.data()), str.size()}) << "\n";
+            }
             existence_filter_stream_.seekg(0, std::ios::beg);
             index_output_stream << existence_filter_stream_.rdbuf();
         }
@@ -379,8 +387,10 @@ class RecSplit {
                 existence_filter_.resize(filter_size);
                 std::copy(filter_data.begin(), filter_data.end(), existence_filter_.data());
                 SILK_TRACE << "RecSplit data: ";
-                for (auto b : existence_filter_) {
-                    std::cout << std::hex << int(b);
+                if (log::test_verbosity(log::Level::kTrace)) {
+                    for (auto b : existence_filter_) {
+                        std::cout << std::hex << int(b);
+                    }
                 }
                 std::cout << "\n";
                 offset += filter_size;

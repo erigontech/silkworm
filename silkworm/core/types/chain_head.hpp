@@ -20,14 +20,29 @@
 
 #include <silkworm/core/common/base.hpp>
 
+#include "block_id.hpp"
 #include "hash.hpp"
 
 namespace silkworm {
 
-struct HeadInfo {
-    BlockNum block_num{0};
+struct ChainHead {
+    BlockNum height{0};
     Hash hash;
     intx::uint256 total_difficulty;
+
+    friend bool operator==(const ChainHead&, const ChainHead&) = default;
 };
+
+inline bool operator==(const ChainHead& a, const BlockId& b) {
+    return a.height == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const BlockId& a, const ChainHead& b) {
+    return a.number == b.height && a.hash == b.hash;
+}
+
+inline BlockId to_BlockId(const ChainHead& head) {
+    return {.number = head.height, .hash = head.hash};
+}
 
 }  // namespace silkworm

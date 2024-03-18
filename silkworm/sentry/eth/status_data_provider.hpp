@@ -21,7 +21,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/types/head_info.hpp>
+#include <silkworm/core/types/chain_head.hpp>
 
 #include "status_data.hpp"
 
@@ -30,9 +30,9 @@ namespace silkworm::sentry::eth {
 class StatusDataProvider {
   public:
     StatusDataProvider(
-        std::function<HeadInfo()> head_info_provider,
+        std::function<ChainHead()> chain_head_provider,
         const ChainConfig& chain_config)
-        : head_info_provider_(std::move(head_info_provider)),
+        : chain_head_provider_(std::move(chain_head_provider)),
           chain_config_(chain_config) {}
 
     using StatusData = silkworm::sentry::eth::StatusData;
@@ -43,11 +43,11 @@ class StatusDataProvider {
 
   private:
     static StatusData make_status_data(
-        HeadInfo head_info,
+        ChainHead chain_head,
         uint8_t eth_version,
         const ChainConfig& chain_config);
 
-    std::function<HeadInfo()> head_info_provider_;
+    std::function<ChainHead()> chain_head_provider_;
     const ChainConfig& chain_config_;
 };
 

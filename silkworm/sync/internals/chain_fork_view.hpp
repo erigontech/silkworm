@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/chain_head.hpp>
 #include <silkworm/sync/internals/types.hpp>
 
 namespace silkworm::chainsync {

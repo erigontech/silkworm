@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block_id.hpp>
 #include <silkworm/node/stagedsync/types.hpp>
 
 namespace silkworm::execution {

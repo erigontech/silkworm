@@ -36,19 +36,6 @@ namespace silkworm {
 
 using TotalDifficulty = intx::uint256;
 
-struct BlockId {  // TODO(canepat) rename BlockNumberAndHash
-    BlockNum number{};
-    Hash hash;
-};
-
-BlockNum height(const BlockId& b);
-
-struct ChainHead {
-    BlockNum height{};
-    Hash hash;
-    TotalDifficulty total_difficulty{};
-};
-
 struct BlockHeader {
     using NonceType = std::array<uint8_t, 8>;
 
@@ -123,26 +110,5 @@ namespace rlp {
     DecodingResult decode(ByteView& from, BlockHeader& to, Leftover mode = Leftover::kProhibit) noexcept;
     DecodingResult decode(ByteView& from, Block& to, Leftover mode = Leftover::kProhibit) noexcept;
 }  // namespace rlp
-
-// Comparison operator ==
-inline bool operator==(const BlockId& a, const BlockId& b) {
-    return a.number == b.number && a.hash == b.hash;
-}
-
-inline bool operator==(const ChainHead& a, const BlockId& b) {
-    return a.height == b.number && a.hash == b.hash;
-}
-
-inline bool operator==(const BlockId& a, const ChainHead& b) {
-    return a.number == b.height && a.hash == b.hash;
-}
-
-inline bool operator==(const ChainHead& a, const ChainHead& b) {
-    return a.height == b.height && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
-}
-
-inline BlockId to_BlockId(const ChainHead& head) {
-    return {.number = head.height, .hash = head.hash};
-}
 
 }  // namespace silkworm

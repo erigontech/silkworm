@@ -29,7 +29,7 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/db/head_info.hpp>
+#include <silkworm/db/chain_head.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
@@ -278,10 +278,10 @@ int main(int argc, char* argv[]) {
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
 
-        auto head_info_provider = [db_access = db::ROAccess{chaindata_db}] {
-            return db::read_head_info(db_access);
+        auto chain_head_provider = [db_access = db::ROAccess{chaindata_db}] {
+            return db::read_chain_head(db_access);
         };
-        sentry::eth::StatusDataProvider eth_status_data_provider{std::move(head_info_provider), node_settings.chain_config.value()};
+        sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
 
         auto [sentry_client, sentry_server] = sentry::SentryClientFactory::make_sentry(
             std::move(settings.sentry_settings),

@@ -92,7 +92,7 @@ TEST_CASE("Headers receiving and saving") {
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     auto head = exec_engine.last_fork_choice();
-    REQUIRE(height(head) == 0);
+    REQUIRE(head.number == 0);
 
     std::vector<BlockHeader> last_headers = exec_engine.get_last_headers(1);
     REQUIRE(last_headers.size() == 1);

@@ -187,7 +187,6 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     // CHECK(!body_snapshot.body_by_number(1'500'014)); // TODO(canepat) assert in EF, should return std::nullopt instead
 }
 
-#ifndef _WIN32
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
@@ -454,7 +453,6 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
     body_snapshot.reopen_index();
     CHECK_FALSE(std::filesystem::exists(body_snapshot.path().index_file().path()));
 }
-#endif  // _WIN32
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};

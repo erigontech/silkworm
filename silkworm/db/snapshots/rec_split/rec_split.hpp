@@ -256,11 +256,13 @@ class RecSplit {
 
         void flush_existence_filter(Bytes& uint64_buffer, std::ofstream& index_output_stream) {
             existence_filter_stream_.flush();
-            existence_filter_stream_.clear();
             existence_filter_stream_.seekg(0, std::ios::beg);
             endian::store_big_u64(uint64_buffer.data(), keys_added());
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-            index_output_stream << existence_filter_stream_.rdbuf();
+            char b{0};
+            while (existence_filter_stream_.get(b)) {
+                index_output_stream.put(b);
+            }
         }
 
       protected:

@@ -252,7 +252,6 @@ class RecSplit {
 
         void add_to_existence_filter(uint8_t key_fingerprint) {
             existence_filter_stream_ << key_fingerprint;
-            SILK_TRACE << "add_to_existence_filter key_fingerprint: " << std::hex << key_fingerprint;
         }
 
         void flush_existence_filter(Bytes& uint64_buffer, std::ofstream& index_output_stream) {
@@ -260,17 +259,6 @@ class RecSplit {
             existence_filter_stream_.seekg(0, std::ios::beg);
             endian::store_big_u64(uint64_buffer.data(), keys_added());
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-            if (log::test_verbosity(log::Level::kTrace)) {
-                existence_filter_stream_.seekp(0, std::ios::end);
-                std::cout << "flush_existence_filter tmp file size: " << existence_filter_stream_.tellp() << "\n";
-                existence_filter_stream_.seekg(0, std::ios::beg);
-                std::cout << "flush_existence_filter keys_added: " << std::dec << keys_added() << "\n";
-                std::stringstream ss;
-                ss << existence_filter_stream_.rdbuf();
-                auto str = ss.str();
-                std::cout << "flush_existence_filter data: " << to_hex(ByteView{reinterpret_cast<uint8_t*>(str.data()), str.size()}) << "\n";
-            }
-            existence_filter_stream_.seekg(0, std::ios::beg);
             index_output_stream << existence_filter_stream_.rdbuf();
         }
 
@@ -382,16 +370,9 @@ class RecSplit {
                         "Incompatible index format: existence filter length " + std::to_string(filter_size) +
                         " != key count " + std::to_string(key_count_)};
                 }
-                std::cout << "RecSplit filter_size: " << std::dec << filter_size << "\n";
                 std::span<uint8_t> filter_data{address + offset, filter_size};
                 existence_filter_.resize(filter_size);
                 std::copy(filter_data.begin(), filter_data.end(), existence_filter_.data());
-                std::stringstream ss;
-                for (auto b : existence_filter_) {
-                    ss << b;
-                }
-                auto str = ss.str();
-                std::cout << "RecSplit existence filter: " << to_hex(ByteView{reinterpret_cast<uint8_t*>(str.data()), str.size()}) << "\n";
                 offset += filter_size;
             }
         }

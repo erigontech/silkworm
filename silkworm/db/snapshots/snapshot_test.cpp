@@ -459,15 +459,11 @@ TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][sn
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
     test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
     TransactionIndex tx_index{tx_snapshot_path};
-    log::set_verbosity(log::Level::kTrace);
     REQUIRE_NOTHROW(tx_index.build());
-    log::set_verbosity(log::Level::kNone);
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
-    log::set_verbosity(log::Level::kTrace);
     tx_snapshot.reopen_index();
-    log::set_verbosity(log::Level::kNone);
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));
 
     // Move 1 hour to the future the last write time for sample tx snapshot

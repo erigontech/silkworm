@@ -226,9 +226,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex txn_index{txn_snapshot_path};
-    log::set_verbosity(log::Level::kTrace);
     REQUIRE_NOTHROW(txn_index.build());
-    log::set_verbosity(log::Level::kNone);
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 

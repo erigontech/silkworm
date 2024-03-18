@@ -156,8 +156,12 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
     }
 
     // First, get the header ordinal position in snapshot by using block hash as MPHF index
-    const auto block_header_position = idx_header_hash_->lookup(block_hash);
-    SILK_TRACE << "HeaderSnapshot::header_by_hash block_hash: " << block_hash.to_hex() << " block_header_position: " << block_header_position;
+    const auto [block_header_position, found] = idx_header_hash_->lookup(block_hash);
+    SILK_TRACE << "HeaderSnapshot::header_by_hash block_hash: " << block_hash.to_hex() << " block_header_position: "
+               << block_header_position << " found: " << found;
+    if (!found) {
+        return {};
+    }
     // Then, get the header offset in snapshot by using ordinal lookup
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
     SILK_TRACE << "HeaderSnapshot::header_by_hash block_header_offset: " << block_header_offset;
@@ -354,7 +358,10 @@ std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash
     }
 
     // First, get the transaction ordinal position in snapshot by using block hash as MPHF index
-    const auto txn_position = idx_txn_hash_->lookup(txn_hash);
+    const auto [txn_position, found] = idx_txn_hash_->lookup(txn_hash);
+    if (!found) {
+        return {};
+    }
     // Then, get the transaction offset in snapshot by using ordinal lookup
     const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
     // Finally, read the next transaction at specified offset
@@ -384,14 +391,19 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
         return {};
     }
 
-    // First, lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
+    // Lookup the block number using dedicated MPHF index
+    const auto [block_number, found] = idx_txn_hash_2_block_->lookup(txn_hash);
+    if (!found) {
+        return {};
+    }
+
+    // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
     const auto transaction{txn_by_hash(txn_hash)};
     if (!transaction) {
         return {};
     }
 
-    // Finally, get the block number using dedicated MPHF index
-    return idx_txn_hash_2_block_->lookup(txn_hash);
+    return block_number;
 }
 
 std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const {

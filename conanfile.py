@@ -25,6 +25,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('ms-gsl/4.0.0')
         self.requires('nlohmann_json/3.11.3')
         self.requires('tl-expected/1.1.0')
+        self.requires('zlib/1.2.13')
         if self.settings.arch == 'wasm':
             return
 

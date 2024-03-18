@@ -16,6 +16,11 @@
 
 #include "connection.hpp"
 
+#ifndef ZLIB_CONST
+#define ZLIB_CONST
+#endif
+#include <zlib.h>
+
 #include <array>
 #include <exception>
 #include <string_view>
@@ -45,6 +50,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        std::optional<std::string> jwt_secret,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
+                       bool http_compression,
                        InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
       api_{api},
@@ -53,8 +59,12 @@ Connection::Connection(boost::asio::io_context& io_context,
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
       ws_upgrade_enabled_{ws_upgrade_enabled},
-      ws_compression_{ws_compression} {
+      ws_compression_{ws_compression},
+      http_compression_{http_compression} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
+    if (http_compression_) {  // temporary to avoid warning with clang
+        SILK_TRACE << "Connection::Connection compression enabled";
+    }
 }
 
 Connection::~Connection() {
@@ -190,10 +200,11 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     vary_ = req[boost::beast::http::field::vary];
     origin_ = req[boost::beast::http::field::origin];
     method_ = req.method();
+    auto encoding = req[boost::beast::http::field::accept_encoding];
 
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, !encoding.empty());
     }
 }
 
@@ -251,7 +262,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, bool compress) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
@@ -265,8 +276,22 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
-        res.content_length(content.size());
-        res.body() = content;
+        if (compress) {
+            const std::string compression_type = "gzip";
+            res.set(boost::beast::http::field::content_encoding, compression_type);
+            std::string compressed_data;
+            try {
+                compress_data(content, compressed_data);
+            } catch (const std::exception& e) {
+                SILK_ERROR << "Connection::compress_data exception: " << e.what();
+                throw;
+            }
+            res.content_length(compressed_data.length());
+            res.body() = std::move(compressed_data);
+        } else {
+            res.content_length(content.size());
+            res.body() = content;
+        }
 
         set_cors<boost::beast::http::string_body>(res);
 
@@ -282,6 +307,36 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         throw;
     }
     co_return;
+}
+
+void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
+    z_stream strm;
+
+    std::memset(&strm, 0, sizeof(strm));
+    int ret = Z_OK;
+    ret = deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
+    if (ret != Z_OK) {
+        throw std::runtime_error("deflateInit2 fail");
+    }
+    strm.avail_in = static_cast<unsigned int>(clear_data.size());
+    strm.next_in = reinterpret_cast<const Bytef*>(clear_data.c_str());
+
+    do {
+        strm.next_out = reinterpret_cast<Bytef*>(temp_compressed_buffer_);
+        strm.avail_out = sizeof(temp_compressed_buffer_);
+
+        ret = deflate(&strm, Z_FINISH);
+        if (ret < 0) {
+            deflateEnd(&strm);
+            throw std::runtime_error("deflate fail");
+        }
+        if (compressed_data.size() < strm.total_out) {
+            // append the block to the output string
+            compressed_data.append(temp_compressed_buffer_, strm.total_out - compressed_data.size());
+        }
+    } while (ret != Z_STREAM_END);
+
+    deflateEnd(&strm);
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {

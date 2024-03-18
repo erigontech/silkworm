@@ -48,6 +48,7 @@ class Server {
            std::optional<std::string> jwt_secret,
            bool use_websocket,
            bool ws_compression,
+           bool http_compression,
            InterfaceLogSettings ifc_log_settings = {});
 
     void start();
@@ -82,6 +83,9 @@ class Server {
 
     //! Flag indicating if WebSocket protocol compression will be used
     bool ws_compression_;
+
+    //! Flag indicating if Http protocol compression will be used
+    bool http_compression_;
 
     //! The interface logging configuration
     InterfaceLogSettings ifc_log_settings_;

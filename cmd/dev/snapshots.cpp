@@ -66,6 +66,8 @@ struct DownloadSettings : public bittorrent::BitTorrentSettings {
     std::string magnet_uri;
 };
 
+static const auto kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath};
+
 //! The available subcommands in snapshots utility
 //! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11
 enum class SnapshotTool {  // NOLINT(performance-enum-size)
@@ -120,7 +122,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     auto& snapshot_settings = settings.snapshot_settings;
     auto& bittorrent_settings = settings.download_settings;
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir / ".torrent";
+    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
     bittorrent_settings.magnets_file_path = ".magnet_links";
 
     add_logging_options(app, log_settings);
@@ -131,38 +133,58 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     }
     app.require_subcommand(1);
 
-    app.add_option("--repetitions", settings.repetitions, "The test repetitions")
+    app.add_option("--snapshot_dir", snapshot_settings.repository_dir, "Path to snapshot repository")
+        ->capture_default_str();
+    app.add_option("--repetitions", settings.repetitions, "How many times to repeat the execution")
         ->capture_default_str()
         ->check(CLI::Range(1, 100));
-    app.add_option("--snapshot_file", snapshot_settings.snapshot_file_name, "The path to snapshot file")
-        ->capture_default_str();
-    app.add_option("--page", snapshot_settings.page_size, "The page size in kB")
+    app.add_option("--page", snapshot_settings.page_size, "Page size in kB")
         ->capture_default_str()
         ->check(CLI::Range(1, 1024));
-    app.add_option("--torrent_dir", bittorrent_settings.repository_path, "The path to torrent file repository")
+    app.add_flag("--print", snapshot_settings.print, "Flag indicating if console dump is enabled or not")
         ->capture_default_str();
-    app.add_option("--magnet", bittorrent_settings.magnet_uri, "The magnet link to download")
-        ->capture_default_str();
-    app.add_option("--magnet_file", bittorrent_settings.magnets_file_path, "The file containing magnet links to download")
-        ->capture_default_str();
-    app.add_option("--download_rate_limit", bittorrent_settings.download_rate_limit, "The download rate limit in bytes per second")
-        ->capture_default_str()
-        ->check(CLI::Range(4 * 1024 * 1024, 128 * 1024 * 1024));
-    app.add_option("--upload_rate_limit", bittorrent_settings.upload_rate_limit, "The upload rate limit in bytes per second")
-        ->capture_default_str()
-        ->check(CLI::Range(1 * 1024 * 1024, 32 * 1024 * 1024));
-    app.add_option("--active_downloads", bittorrent_settings.active_downloads, "The max number of downloads active simultaneously")
-        ->capture_default_str()
-        ->check(CLI::Range(3, 20));
-    app.add_flag("--seeding", bittorrent_settings.seeding, "Flag indicating if torrents should be seeded when download is finished")
-        ->capture_default_str();
-    app.add_option("--hash", snapshot_settings.lookup_hash, "The hash to lookup in snapshot files")
-        ->capture_default_str()
-        ->check(HashValidator{});
-    app.add_option("--number", snapshot_settings.lookup_number, "The block number to lookup in snapshot files")
-        ->capture_default_str()
-        ->check(BlockNumberValidator{});
 
+    for (auto& cmd : {commands[SnapshotTool::lookup_header],
+                      commands[SnapshotTool::lookup_body],
+                      commands[SnapshotTool::lookup_txn],
+                      commands[SnapshotTool::open_index]}) {
+        cmd->add_option("--number", snapshot_settings.lookup_number, "Block number to lookup in snapshot files")
+            ->capture_default_str()
+            ->check(BlockNumberValidator{});
+    }
+    for (auto& cmd : {commands[SnapshotTool::lookup_header],
+                      commands[SnapshotTool::lookup_body],
+                      commands[SnapshotTool::lookup_txn]}) {
+        cmd->add_option("--hash", snapshot_settings.lookup_hash, "Hash to lookup in snapshot files")
+            ->capture_default_str()
+            ->check(HashValidator{});
+    }
+    for (auto& cmd : {commands[SnapshotTool::download]}) {
+        cmd->add_option("--torrent_dir", bittorrent_settings.repository_path, "Path to torrent file repository")
+            ->capture_default_str();
+        cmd->add_option("--magnet", bittorrent_settings.magnet_uri, "Magnet link to download")
+            ->capture_default_str();
+        cmd->add_option("--magnet_file", bittorrent_settings.magnets_file_path, "File containing magnet links to download")
+            ->capture_default_str();
+        cmd->add_option("--download_rate_limit", bittorrent_settings.download_rate_limit, "Download rate limit in bytes per second")
+            ->capture_default_str()
+            ->check(CLI::Range(4 * 1024 * 1024, 128 * 1024 * 1024));
+        cmd->add_option("--upload_rate_limit", bittorrent_settings.upload_rate_limit, "Upload rate limit in bytes per second")
+            ->capture_default_str()
+            ->check(CLI::Range(1 * 1024 * 1024, 32 * 1024 * 1024));
+        cmd->add_option("--active_downloads", bittorrent_settings.active_downloads, "Max number of downloads active simultaneously")
+            ->capture_default_str()
+            ->check(CLI::Range(3, 20));
+        cmd->add_flag("--seeding", bittorrent_settings.seeding, "Flag indicating if torrents should be seeded when download is finished")
+            ->capture_default_str();
+    }
+    for (auto& cmd : {commands[SnapshotTool::create_index],
+                      commands[SnapshotTool::open_index],
+                      commands[SnapshotTool::decode_segment]}) {
+        cmd->add_option("snapshot_file", snapshot_settings.snapshot_file_name, "Path to snapshot file")
+            ->required()
+            ->capture_default_str();
+    }
     commands[SnapshotTool::seg_zip]
         ->add_option("file", snapshot_settings.input_file_path, "Raw words file to compress")
         ->required()
@@ -173,6 +195,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         ->check(CLI::ExistingFile);
 
     app.parse(argc, argv);
+
+    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one
@@ -587,7 +611,7 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
         return transaction.has_value();
     });
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
     if (matching_snapshot) {
         SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << matching_snapshot->path().filename();
     } else {

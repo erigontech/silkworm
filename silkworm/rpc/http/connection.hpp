@@ -51,6 +51,7 @@ class Connection : public StreamWriter {
                std::optional<std::string> jwt_secret,
                bool ws_upgrade_enabled,
                bool ws_compression,
+               bool http_compression,
                InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
 
@@ -86,9 +87,11 @@ class Connection : public StreamWriter {
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, bool compress = false);
 
     static std::string get_date_time();
+
+    void compress_data(const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -111,9 +114,13 @@ class Connection : public StreamWriter {
 
     bool ws_compression_;
 
+    bool http_compression_;
+
     std::string vary_;
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};
+
+    char temp_compressed_buffer_[10 * kMebi]{};
 };
 
 }  // namespace silkworm::rpc::http

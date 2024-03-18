@@ -221,25 +221,6 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     return snapshot_sequence;
 }
 
-std::tuple<int, BlockNum, int> execute(SilkwormHandle handle, ExecuteBlocksSettings settings, ::mdbx::env env, MDBX_txn* txn, ChainId chain_id, BlockNum start_block) {
-    const auto max_block{settings.max_block};
-    const auto batch_size{settings.batch_size};
-    const auto write_change_sets{settings.write_change_sets};
-    const auto write_receipts{settings.write_receipts};
-    const auto write_call_traces{settings.write_call_traces};
-    BlockNum last_executed_block{0};
-    int mdbx_error_code{0};
-    const uint64_t count{max_block - start_block + 1};
-    SILK_DEBUG << "Execute blocks start_block=" << start_block << " end_block=" << max_block << " count=" << count << " batch_size=" << batch_size << " start";
-    const int status_code = silkworm_execute_blocks(
-        handle, env, txn, chain_id,
-        start_block, max_block, batch_size,
-        write_change_sets, write_receipts, write_call_traces,
-        &last_executed_block, &mdbx_error_code);
-    SILK_DEBUG << "Execute blocks start_block=" << start_block << " end_block=" << max_block << " count=" << count << " batch_size=" << batch_size << " done";
-    return {status_code, last_executed_block, mdbx_error_code};
-}
-
 int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, ::mdbx::env& env) {
     db::ROTxnManaged ro_txn{env};
     const auto chain_config{db::read_chain_config(ro_txn)};
@@ -247,8 +228,17 @@ int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     const auto chain_id{chain_config->chain_id};
     ro_txn.abort();
 
-    const auto start_block{settings.start_block};
-    const auto [status_code, last_executed_block, mdbx_error_code] = execute(handle, settings, env, nullptr, chain_id, start_block);
+    BlockNum last_executed_block{0};
+    int mdbx_error_code{0};
+    const uint64_t count{settings.max_block - settings.start_block + 1};
+    SILK_DEBUG << "Execute blocks start_block=" << settings.start_block << " end_block=" << settings.max_block << " count=" << count << " batch_size=" << settings.batch_size << " start";
+    const int status_code = silkworm_execute_blocks_perpetual(
+        handle, env, chain_id,
+        settings.start_block, settings.max_block, settings.batch_size,
+        settings.write_change_sets, settings.write_receipts, settings.write_call_traces,
+        &last_executed_block, &mdbx_error_code);
+    SILK_DEBUG << "Execute blocks start_block=" << settings.start_block << " end_block=" << settings.max_block << " count=" << count << " batch_size=" << settings.batch_size << " done";
+
     if (status_code != SILKWORM_OK) {
         SILK_ERROR << "execute_with_internal_txn failed [code=" << std::to_string(status_code)
                    << (status_code == SILKWORM_MDBX_ERROR ? " mdbx_error_code=" + std::to_string(mdbx_error_code) : "")
@@ -270,7 +260,14 @@ int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     auto start_block{settings.start_block};
     const auto max_block{settings.max_block};
     while (start_block <= max_block) {
-        const auto [status_code, last_executed_block, mdbx_error_code] = execute(handle, settings, env, *rw_txn, chain_id, start_block);
+        BlockNum last_executed_block{0};
+        int mdbx_error_code{0};
+        const int status_code = silkworm_execute_blocks_ephemeral(
+            handle, *rw_txn, chain_id,
+            settings.start_block, settings.max_block, settings.batch_size,
+            settings.write_change_sets, settings.write_receipts, settings.write_call_traces,
+            &last_executed_block, &mdbx_error_code);
+
         if (status_code != SILKWORM_OK) {
             SILK_ERROR << "execute_with_external_txn failed [code=" << std::to_string(status_code)
                        << (status_code == SILKWORM_MDBX_ERROR ? " mdbx_error_code=" + std::to_string(mdbx_error_code) : "")

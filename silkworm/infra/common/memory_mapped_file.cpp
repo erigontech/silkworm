@@ -118,8 +118,8 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, size_t size, bool read_only) {
 }
 
 void MemoryMappedFile::unmap() {
-    if (address_ != nullptr) {
-        ::UnmapViewOfFile(address_);
+    if (region_.data() != nullptr) {
+        ::UnmapViewOfFile(region_.data());
     }
 }
 

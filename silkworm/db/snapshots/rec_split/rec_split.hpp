@@ -252,6 +252,7 @@ class RecSplit {
 
         void add_to_existence_filter(uint8_t key_fingerprint) {
             existence_filter_stream_ << key_fingerprint;
+            SILK_TRACE << "add_to_existence_filter key_fingerprint: " << std::hex << key_fingerprint;
         }
 
         void flush_existence_filter(Bytes& uint64_buffer, std::ofstream& index_output_stream) {
@@ -259,10 +260,10 @@ class RecSplit {
             existence_filter_stream_.seekg(0, std::ios::beg);
             endian::store_big_u64(uint64_buffer.data(), keys_added());
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-            char b{0};
-            while (existence_filter_stream_.get(b)) {
-                index_output_stream.put(b);
-            }
+            SILK_TRACE << "flush_existence_filter keys_added: " << std::dec << keys_added();
+            SILK_TRACE << "flush_existence_filter data: " << std::hex << existence_filter_stream_.rdbuf();
+            existence_filter_stream_.seekg(0, std::ios::beg);
+            index_output_stream << existence_filter_stream_.rdbuf();
         }
 
       protected:
@@ -373,9 +374,15 @@ class RecSplit {
                         "Incompatible index format: existence filter length " + std::to_string(filter_size) +
                         " != key count " + std::to_string(key_count_)};
                 }
+                SILK_TRACE << "RecSplit filter_size: " << std::dec << filter_size;
                 std::span<uint8_t> filter_data{address + offset, filter_size};
                 existence_filter_.resize(filter_size);
                 std::copy(filter_data.begin(), filter_data.end(), existence_filter_.data());
+                SILK_TRACE << "RecSplit data: ";
+                for (auto b : existence_filter_) {
+                    std::cout << std::hex << int(b);
+                }
+                std::cout << "\n";
                 offset += filter_size;
             }
         }

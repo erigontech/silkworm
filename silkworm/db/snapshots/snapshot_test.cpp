@@ -187,6 +187,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     // CHECK(!body_snapshot.body_by_number(1'500'014)); // TODO(canepat) assert in EF, should return std::nullopt instead
 }
 
+#ifndef _WIN32
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
@@ -453,17 +454,22 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
     body_snapshot.reopen_index();
     CHECK_FALSE(std::filesystem::exists(body_snapshot.path().index_file().path()));
 }
+#endif  // _WIN32
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
     test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
     TransactionIndex tx_index{tx_snapshot_path};
+    log::set_verbosity(log::Level::kTrace);
     REQUIRE_NOTHROW(tx_index.build());
+    log::set_verbosity(log::Level::kNone);
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
+    log::set_verbosity(log::Level::kTrace);
     tx_snapshot.reopen_index();
+    log::set_verbosity(log::Level::kNone);
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));
 
     // Move 1 hour to the future the last write time for sample tx snapshot

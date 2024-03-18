@@ -43,10 +43,9 @@ MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, std::optional<Mem
     ensure(std::filesystem::is_regular_file(path_), [&]() { return "MemoryMappedFile: " + path_.string() + " is not regular file"; });
 
     if (region) {
-        ensure(region->address != nullptr, "MemoryMappedFile: address is null");
-        ensure(region->length > 0, "MemoryMappedFile: length is zero");
-        address_ = region->address;
-        length_ = region->length;
+        ensure(region->data() != nullptr, "MemoryMappedFile: address is null");
+        ensure(!region->empty(), "MemoryMappedFile: length is zero");
+        region_ = *region;
     } else {
         map_existing(read_only);
     }
@@ -84,22 +83,23 @@ void MemoryMappedFile::map_existing(bool read_only) {
 
     [[maybe_unused]] auto _ = gsl::finally([fd]() { if (INVALID_HANDLE_VALUE != fd) ::CloseHandle(fd); });
 
-    length_ = std::filesystem::file_size(path_);
+    auto size = std::filesystem::file_size(path_);
+    auto address = static_cast<uint8_t*>(mmap(fd, size, read_only));
+    region_ = {address, size};
 
-    address_ = static_cast<uint8_t*>(mmap(fd, read_only));
     fd = INVALID_HANDLE_VALUE;
 }
 
-void MemoryMappedFile::advise_normal() {
+void MemoryMappedFile::advise_normal() const {
 }
 
-void MemoryMappedFile::advise_random() {
+void MemoryMappedFile::advise_random() const {
 }
 
-void MemoryMappedFile::advise_sequential() {
+void MemoryMappedFile::advise_sequential() const {
 }
 
-void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
+void* MemoryMappedFile::mmap(FileDescriptor fd, size_t size, bool read_only) {
     DWORD protection = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
 
     mapping_ = ::CreateFileMapping(fd, nullptr, protection, 0, 0, nullptr);  // note: no size specified to avoid MapViewOfFile failure
@@ -108,7 +108,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
     }
 
     DWORD desired_access = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
-    void* memory = (LPTSTR)::MapViewOfFile(mapping_, desired_access, 0, static_cast<DWORD>(0), length_);
+    void* memory = (LPTSTR)::MapViewOfFile(mapping_, desired_access, 0, static_cast<DWORD>(0), size);
 
     if (memory == nullptr) {
         throw std::runtime_error{"MapViewOfFile failed for: " + path_.string() + " error: " + std::to_string(GetLastError())};
@@ -142,27 +142,27 @@ void MemoryMappedFile::map_existing(bool read_only) {
     }
     [[maybe_unused]] auto _ = gsl::finally([fd]() { ::close(fd); });
 
-    length_ = std::filesystem::file_size(path_);
-
-    address_ = static_cast<uint8_t*>(mmap(fd, read_only));
+    auto size = std::filesystem::file_size(path_);
+    auto address = static_cast<uint8_t*>(mmap(fd, size, read_only));
+    region_ = {address, size};
 }
 
-void MemoryMappedFile::advise_normal() {
+void MemoryMappedFile::advise_normal() const {
     advise(MADV_NORMAL);
 }
 
-void MemoryMappedFile::advise_random() {
+void MemoryMappedFile::advise_random() const {
     advise(MADV_RANDOM);
 }
 
-void MemoryMappedFile::advise_sequential() {
+void MemoryMappedFile::advise_sequential() const {
     advise(MADV_SEQUENTIAL);
 }
 
-void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
+void* MemoryMappedFile::mmap(FileDescriptor fd, size_t size, bool read_only) {
     int flags = MAP_SHARED;
 
-    const auto address = ::mmap(nullptr, length_, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
+    const auto address = ::mmap(nullptr, size, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
     if (address == MAP_FAILED) {
         throw std::runtime_error{"mmap failed for: " + path_.string() + " error: " + safe_strerror(errno)};
     }
@@ -171,16 +171,16 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
 }
 
 void MemoryMappedFile::unmap() {
-    if (address_ != nullptr) {
-        const int result = ::munmap(address_, length_);
+    if (region_.data() != nullptr) {
+        const int result = ::munmap(region_.data(), region_.size());
         if (result == -1) {
             throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + safe_strerror(errno)};
         }
     }
 }
 
-void MemoryMappedFile::advise(int advice) {
-    const int result = ::madvise(address_, length_, advice);
+void MemoryMappedFile::advise(int advice) const {
+    const int result = ::madvise(region_.data(), region_.size(), advice);
     if (result == -1) {
         // Ignore not implemented in kernel error because it still works (from Erigon)
         if (errno != ENOSYS) {

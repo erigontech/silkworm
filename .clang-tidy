@@ -11,6 +11,7 @@ Checks: >
   -bugprone-unchecked-optional-access,
   -bugprone-unused-raii,
   cert-*,
+  -cert-dcl21-cpp,
   -cert-err58-cpp,
   -clang-analyzer-*,
   clang-diagnostic-*,

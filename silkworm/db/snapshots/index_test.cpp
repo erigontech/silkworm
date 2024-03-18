@@ -150,7 +150,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         };
         test::SampleTransactionSnapshotPath txs_snapshot_path{invalid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+        CHECK_THROWS_AS(tx_index.build(), std::logic_error);
     }
 }
 

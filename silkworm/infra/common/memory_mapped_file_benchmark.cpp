@@ -69,9 +69,7 @@ static void benchmark_checksum_memory_mapped_file(benchmark::State& state) {
         silkworm::MemoryMappedFile mapped_file{tmp_file_path};
         mapped_file.advise_sequential();
         int checksum{0};
-        std::size_t count{0};
-        for (auto it{mapped_file.address()}; count < mapped_file.length(); ++it, ++count) {
-            const auto byte{*it};
+        for (auto byte : mapped_file.region()) {
             checksum += byte;
         }
         benchmark::DoNotOptimize(checksum);

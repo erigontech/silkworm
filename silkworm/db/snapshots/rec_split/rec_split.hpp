@@ -51,6 +51,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <numbers>
@@ -64,6 +65,8 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -299,7 +302,7 @@ class RecSplit {
         SILK_TRACE << "RecSplit encoded file path: " << encoded_file_->path();
         check_minimum_length(kFirstMetadataHeaderLength);
 
-        const auto address = encoded_file_->address();
+        const auto address = encoded_file_->region().data();
 
         encoded_file_->advise_sequential();
 
@@ -357,7 +360,7 @@ class RecSplit {
             offset += kEliasFano32CountLength;
             const uint64_t u = endian::load_big_u64(address + offset);
             offset += kEliasFano32ULength;
-            std::span<uint8_t> remaining_data{address + offset, encoded_file_->length() - offset};
+            auto remaining_data = encoded_file_->region().subspan(offset);
             ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
             offset += ef_offsets_->data().size() * sizeof(uint64_t);
 
@@ -383,7 +386,7 @@ class RecSplit {
         golomb_param_max_index_ = golomb_param_size - 1;
         offset += kGolombParamSizeLength;
 
-        MemoryMappedInputStream mmis{address + offset, encoded_file_->length() - offset};
+        MemoryMappedInputStream mmis{encoded_file_->region().subspan(offset)};
 
         // Read Golomb-Rice codes
         mmis >> golomb_rice_codes_;
@@ -393,7 +396,7 @@ class RecSplit {
         mmis >> double_ef_index_;
         offset += 5 * sizeof(uint64_t) + double_ef_index_.data().size() * sizeof(uint64_t);
 
-        SILKWORM_ASSERT(offset == encoded_file_->length());
+        SILKWORM_ASSERT(offset == encoded_file_->size());
 
         encoded_file_->advise_random();
 
@@ -417,17 +420,17 @@ class RecSplit {
         }
     }
 
-    void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+    void add_key(ByteView key, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
-        const auto key_hash = murmur_hash_3(key_data, key_length);
+        const auto key_hash = murmur_hash_3(key);
         add_key(key_hash, offset);
     }
 
     void add_key(const std::string& key, uint64_t offset) {
-        add_key(key.c_str(), key.size(), offset);
+        add_key(string_view_to_byte_view(key), offset);
     }
 
     //! Build the MPHF using the RecSplit algorithm and save the resulting index file
@@ -549,6 +552,26 @@ class RecSplit {
         return false;
     }
 
+    void build_without_collisions(std::function<void(RecSplit<LEAF_SIZE>&)> populate) {
+        for (uint64_t iteration = 0; iteration < 10; iteration++) {
+            populate(*this);
+
+            SILK_TRACE << "RecSplit::build..."
+                       << " iteration=" << iteration;
+            bool collision_detected = build();
+            SILK_TRACE << "RecSplit::build done"
+                       << " iteration=" << iteration;
+
+            if (collision_detected) {
+                SILK_DEBUG << "RecSplit::build collision";
+                reset_new_salt();
+            } else {
+                return;
+            }
+        }
+        throw std::runtime_error{"RecSplit::build_without_collisions: abort after max iterations"};
+    }
+
     void reset_new_salt() {
         built_ = false;
         building_strategy_->clear();
@@ -628,27 +651,27 @@ class RecSplit {
     }
 
     //! Return the value associated with the given key within the MPHF mapping
-    std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+    std::size_t operator()(ByteView key) const { return operator()(murmur_hash_3(key)); }
+
+    //! Return the value associated with the given key within the MPHF mapping
+    std::size_t operator()(const std::string& key) const { return operator()(string_view_to_byte_view(key)); }
 
     //! Search result: value position and flag indicating if found or not
     using LookupResult = std::pair<std::size_t, bool>;
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] LookupResult lookup(ByteView key) const { return lookup(key.data(), key.size()); }
+    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
-
-    //! Return the value associated with the given key within the index
-    LookupResult lookup(const void* key, const size_t length) const {
-        const hash128_t& hashed_key{murmur_hash_3(key, length)};
+    LookupResult lookup(ByteView key) const {
+        const hash128_t& hashed_key{murmur_hash_3(key)};
         const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
 
-        const auto address = encoded_file_->address();
-        ensure(position + sizeof(uint64_t) < encoded_file_->length(),
+        const auto region = encoded_file_->region();
+        ensure(position + sizeof(uint64_t) < region.size(),
                [&]() { return "position: " + std::to_string(position) + " plus 8 exceeds file length"; });
-        const auto value = endian::load_big_u64(address + position) & record_mask_;
+        const auto value = endian::load_big_u64(region.data() + position) & record_mask_;
         if (less_false_positives_ && value < existence_filter_.size()) {
             return {value, existence_filter_.at(value) == static_cast<uint8_t>(hashed_key.first)};
         }
@@ -680,8 +703,7 @@ class RecSplit {
         return std::filesystem::last_write_time(index_path_);
     }
 
-    [[nodiscard]] uint8_t* memory_file_address() const { return encoded_file_ ? encoded_file_->address() : nullptr; }
-    [[nodiscard]] std::size_t memory_file_size() const { return encoded_file_ ? encoded_file_->length() : 0; }
+    [[nodiscard]] MemoryMappedRegion memory_file_region() const { return encoded_file_ ? encoded_file_->region() : MemoryMappedRegion{}; }
 
   private:
     static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
@@ -871,9 +893,9 @@ class RecSplit {
         }
     }
 
-    hash128_t inline murmur_hash_3(const void* data, const size_t length) const {
+    hash128_t inline murmur_hash_3(ByteView data) const {
         hash128_t h{};
-        hasher_->hash_x64_128(data, length, &h);
+        hasher_->hash_x64_128(data.data(), data.size(), &h);
         return h;
     }
 
@@ -881,9 +903,9 @@ class RecSplit {
     [[nodiscard]] inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
     void check_minimum_length(std::size_t minimum_length) {
-        if (encoded_file_ && encoded_file_->length() < minimum_length) {
+        if (encoded_file_ && encoded_file_->size() < minimum_length) {
             throw std::runtime_error("index " + encoded_file_->path().filename().string() + " is too short: " +
-                                     std::to_string(encoded_file_->length()) + " < " + std::to_string(minimum_length));
+                                     std::to_string(encoded_file_->size()) + " < " + std::to_string(minimum_length));
         }
     }
 

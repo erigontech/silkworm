@@ -229,7 +229,7 @@ TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decom
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     MemoryMappedFile mmf{tmp_snapshot.path()};
-    Decompressor decoder_from_memory{tmp_snapshot.path(), MemoryMappedRegion{mmf.address(), mmf.length()}};
+    Decompressor decoder_from_memory{tmp_snapshot.path(), mmf.region()};
     CHECK(!decoder_from_memory.is_open());
     CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.path());
     CHECK(decoder_from_memory.words_count() == 0);
@@ -329,21 +329,15 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
     }
 }
 
-TEST_CASE("Decompressor::read_ahead", "[silkworm][node][seg][decompressor]") {
+TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 
-    for (const bool b : std::vector<bool>{true, false}) {
-        SECTION("check returned value: " + std::to_string(b)) {
-            CHECK_NOTHROW(decoder.read_ahead([=](auto) -> bool { return b; }) == b);
-        }
-    }
-
     SECTION("failure after close") {
         decoder.close();
-        CHECK_THROWS_AS(decoder.read_ahead([](auto) -> bool { return false; }), std::logic_error);
+        CHECK_THROWS_AS(decoder.begin(), std::logic_error);
     }
 }
 
@@ -372,48 +366,24 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]"
     CHECK_NOTHROW(decoder.open());
 
     SECTION("data_size") {
-        const auto read_function = [](const auto it) -> bool {
-            CHECK(it.data_size() == 0);
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        CHECK(decoder.make_iterator().data_size() == 0);
     }
     SECTION("has_next") {
-        const auto read_function = [](const auto it) -> bool {
-            CHECK_FALSE(it.has_next());
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        CHECK_FALSE(decoder.make_iterator().has_next());
     }
     SECTION("next") {
-        const auto read_function = [](auto it) -> bool {
-            silkworm::Bytes buffer{};
-            CHECK_THROWS_AS(it.next(buffer), std::runtime_error);
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        silkworm::Bytes buffer;
+        CHECK_THROWS_AS(decoder.make_iterator().next(buffer), std::runtime_error);
     }
     SECTION("next_uncompressed") {
-        const auto read_function = [](auto it) -> bool {
-            silkworm::Bytes buffer{};
-            CHECK_THROWS_AS(it.next_uncompressed(buffer), std::runtime_error);
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        silkworm::Bytes buffer;
+        CHECK_THROWS_AS(decoder.make_iterator().next_uncompressed(buffer), std::runtime_error);
     }
     SECTION("skip") {
-        const auto read_function = [](auto it) -> bool {
-            CHECK_THROWS_AS(it.skip(), std::runtime_error);
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        CHECK_THROWS_AS(decoder.make_iterator().skip(), std::runtime_error);
     }
     SECTION("skip_uncompressed") {
-        const auto read_function = [](auto it) -> bool {
-            CHECK_THROWS_AS(it.skip_uncompressed(), std::runtime_error);
-            return true;
-        };
-        CHECK_NOTHROW(decoder.read_ahead(read_function));
+        CHECK_THROWS_AS(decoder.make_iterator().skip_uncompressed(), std::runtime_error);
     }
 }
 
@@ -456,8 +426,9 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
 
-    auto test_function = [&](auto it) {
+    {
         std::size_t i{0};
+        auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
                 it.skip_uncompressed();
@@ -472,14 +443,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
         }
         CHECK_FALSE(it.has_next());
         CHECK(i == kLoremIpsumWords.size());
-        return true;
-    };
-    // Apply function using Decompressor::read_ahead
-    decoder.read_ahead(test_function);
-
-    // Obtain an iterator and manually apply function
-    auto it = decoder.make_iterator();
-    CHECK(test_function(it));
+    }
 }
 
 TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]") {
@@ -489,8 +453,9 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
 
-    auto test_function = [&](auto it) {
+    {
         std::size_t i{0};
+        auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
                 it.skip();
@@ -505,14 +470,7 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
         }
         CHECK_FALSE(it.has_next());
         CHECK(i == kLoremIpsumWords.size());
-        return true;
-    };
-    // Apply function using Decompressor::read_ahead
-    decoder.read_ahead(test_function);
-
-    // Obtain an iterator and manually apply function
-    auto it = decoder.make_iterator();
-    CHECK(test_function(it));
+    }
 }
 
 TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompressor]") {
@@ -522,8 +480,9 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
 
-    auto test_function = [&](auto it) {
+    {
         std::size_t i{0};
+        auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
             const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
@@ -537,14 +496,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
             ++i;
         }
         CHECK(i == kLoremIpsumWords.size());
-        return true;
-    };
-    // Apply function using Decompressor::read_ahead
-    decoder.read_ahead(test_function);
-
-    // Obtain an iterator and manually apply function
-    auto it = decoder.make_iterator();
-    CHECK(test_function(it));
+    }
 }
 
 }  // namespace silkworm::snapshots

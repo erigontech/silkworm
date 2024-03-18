@@ -389,7 +389,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
-#ifndef _WIN32
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{};
     snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
@@ -536,6 +535,5 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         CHECK(result == SILKWORM_OK);
     }
 }
-#endif  // _WIN32
 
 }  // namespace silkworm

@@ -152,26 +152,26 @@ struct SilkwormLibrary {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_ephemeral(handle_, txn,
-                                    chain_id, start_block, max_block, batch_size,
-                                    write_change_sets, write_receipts, write_call_traces,
-                                    &result.last_executed_block, &result.mdbx_error_code);
+                                              chain_id, start_block, max_block, batch_size,
+                                              write_change_sets, write_receipts, write_call_traces,
+                                              &result.last_executed_block, &result.mdbx_error_code);
         return result;
     }
 
     ExecutionResult execute_blocks_perpetual(MDBX_env* env,
-                                   uint64_t chain_id,
-                                   uint64_t start_block,
-                                   uint64_t max_block,
-                                   uint64_t batch_size,
-                                   bool write_change_sets,
-                                   bool write_receipts,
-                                   bool write_call_traces) {
+                                             uint64_t chain_id,
+                                             uint64_t start_block,
+                                             uint64_t max_block,
+                                             uint64_t batch_size,
+                                             bool write_change_sets,
+                                             bool write_receipts,
+                                             bool write_call_traces) {
         ExecutionResult result;
         result.execute_block_result =
-            silkworm_execute_blocks_perpetual(handle_, env, 
-                                    chain_id, start_block, max_block, batch_size,
-                                    write_change_sets, write_receipts, write_call_traces,
-                                    &result.last_executed_block, &result.mdbx_error_code);
+            silkworm_execute_blocks_perpetual(handle_, env,
+                                              chain_id, start_block, max_block, batch_size,
+                                              write_change_sets, write_receipts, write_call_traces,
+                                              &result.last_executed_block, &result.mdbx_error_code);
         return result;
     }
 
@@ -211,7 +211,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not fo
     BlockNum end_block{100};
     const auto result0{
         silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
-                                    true, true, true)};
+                                              true, true, true)};
     CHECK(result0.execute_block_result == SILKWORM_BLOCK_NOT_FOUND);
     CHECK(result0.last_executed_block == 0);
     CHECK(result0.mdbx_error_code == 0);
@@ -340,13 +340,13 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
         return silkworm_lib.execute_blocks_perpetual(db,
-                                           chain_id,
-                                           start_block,
-                                           end_block,
-                                           batch_size,
-                                           write_change_sets,
-                                           write_receipts,
-                                           write_call_traces);
+                                                     chain_id,
+                                                     start_block,
+                                                     end_block,
+                                                     batch_size,
+                                                     write_change_sets,
+                                                     write_receipts,
+                                                     write_call_traces);
     };
 
     /* TestDatabaseContext db contains a test chain made up of 9 blocks */
@@ -520,13 +520,13 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
         return silkworm_lib.execute_blocks_perpetual(db,
-                                           chain_id,
-                                           start_block,
-                                           end_block,
-                                           batch_size,
-                                           write_change_sets,
-                                           write_receipts,
-                                           write_call_traces);
+                                                     chain_id,
+                                                     start_block,
+                                                     end_block,
+                                                     batch_size,
+                                                     write_change_sets,
+                                                     write_receipts,
+                                                     write_call_traces);
     };
 
     /* TestDatabaseContext db contains a test chain made up of 9 blocks */

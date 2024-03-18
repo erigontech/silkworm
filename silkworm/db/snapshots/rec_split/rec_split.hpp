@@ -265,7 +265,7 @@ class RecSplit {
       protected:
         BuildingStrategy()
             : existence_filter_stream_{TemporaryDirectory::get_unique_temporary_path(),
-                                       std::ios::out | std::ios::in | std::ios::app} {}
+                                       std::ios::binary | std::ios::out | std::ios::in | std::ios::app} {}
 
       private:
         //! Serialization for the existence filter (1-byte per key positional presence hint)

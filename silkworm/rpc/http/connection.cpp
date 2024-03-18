@@ -19,7 +19,6 @@
 #ifndef ZLIB_CONST
 #define ZLIB_CONST
 #endif
-#include <zlib.h>
 
 #include <array>
 #include <exception>
@@ -31,10 +30,12 @@
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/chunk_encode.hpp>
 #include <boost/beast/http/write.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
-#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -307,7 +308,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
             res.set(boost::beast::http::field::content_encoding, compression_algo);
             std::string compressed_data;
             try {
-                compress_data(content, compressed_data, compression_algo);
+                compress_data(content, compressed_data);
             } catch (const std::exception& e) {
                 SILK_ERROR << "Connection::compress_data exception: " << e.what();
                 throw;
@@ -339,41 +340,11 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
     co_return;
 }
 
-void Connection::compress_data(const std::string& clear_data, std::string& compressed_data, const std::string& compression_algo) {
-    z_stream strm;
-
-    assert(compression_algo == "gzip");
-
-    if (compression_algo != "gzip") {
-        throw std::runtime_error("unsupported compression algo");
-    }
-
-    std::memset(&strm, 0, sizeof(strm));
-    int ret = Z_OK;
-    ret = deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
-    if (ret != Z_OK) {
-        throw std::runtime_error("deflateInit2 fail");
-    }
-    strm.avail_in = static_cast<unsigned int>(clear_data.size());
-    strm.next_in = reinterpret_cast<const Bytef*>(clear_data.c_str());
-
-    do {
-        temp_compressed_buffer_.resize(10 * kMebi);
-        strm.next_out = reinterpret_cast<Bytef*>(const_cast<char*>(temp_compressed_buffer_.c_str()));
-        strm.avail_out = sizeof(temp_compressed_buffer_);
-
-        ret = deflate(&strm, Z_FINISH);
-        if (ret < 0) {
-            deflateEnd(&strm);
-            throw std::runtime_error("deflate fail");
-        }
-        if (compressed_data.size() < strm.total_out) {
-            // append the block to the output string
-            compressed_data.append(temp_compressed_buffer_.c_str(), strm.total_out - compressed_data.size());
-        }
-    } while (ret != Z_STREAM_END);
-
-    deflateEnd(&strm);
+void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
+    boost::iostreams::filtering_ostream out;
+    out.push(boost::iostreams::gzip_compressor());
+    out.push(boost::iostreams::back_inserter(compressed_data));
+    boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {

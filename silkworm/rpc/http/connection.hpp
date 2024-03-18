@@ -93,7 +93,7 @@ class Connection : public StreamWriter {
 
     std::string select_compression_algo(const std::string& request_compression);
 
-    void compress_data(const std::string& clear_data, std::string& compressed_data, const std::string& compression_algo);
+    void compress_data(const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -121,8 +121,6 @@ class Connection : public StreamWriter {
     std::string vary_;
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};
-
-    std::string temp_compressed_buffer_;
 };
 
 }  // namespace silkworm::rpc::http

@@ -382,17 +382,16 @@ class RecSplit {
                         "Incompatible index format: existence filter length " + std::to_string(filter_size) +
                         " != key count " + std::to_string(key_count_)};
                 }
-                SILK_TRACE << "RecSplit filter_size: " << std::dec << filter_size;
+                std::cout << "RecSplit filter_size: " << std::dec << filter_size << "\n";
                 std::span<uint8_t> filter_data{address + offset, filter_size};
                 existence_filter_.resize(filter_size);
                 std::copy(filter_data.begin(), filter_data.end(), existence_filter_.data());
-                SILK_TRACE << "RecSplit data: ";
-                if (log::test_verbosity(log::Level::kTrace)) {
-                    for (auto b : existence_filter_) {
-                        std::cout << std::hex << int(b);
-                    }
+                std::stringstream ss;
+                for (auto b : existence_filter_) {
+                    ss << b;
                 }
-                std::cout << "\n";
+                auto str = ss.str();
+                std::cout << "RecSplit existence filter: " << to_hex(ByteView{reinterpret_cast<uint8_t*>(str.data()), str.size()}) << "\n";
                 offset += filter_size;
             }
         }

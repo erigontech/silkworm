@@ -408,7 +408,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     body_snapshot.reopen_segment();
     body_snapshot.reopen_index();
     snapshots::TransactionIndex tx_index{tx_snapshot_path};
+    log::set_verbosity(log::Level::kTrace);
     REQUIRE_NOTHROW(tx_index.build());
+    log::set_verbosity(log::Level::kNone);
     snapshots::TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();

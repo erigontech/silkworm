@@ -44,7 +44,7 @@ namespace silkworm::rpc::http {
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
-static std::vector<std::string> SupportedCompressionList{"gzip"};  // specify the compression algo in priority level
+static std::vector<std::string> kSupportedCompressionList{"gzip"};  // specify the compression algo in priority level
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -189,7 +189,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         if (selected_compression.empty()) {
             std::string complete_list;
             bool first = true;
-            for (std::string curr_compression : SupportedCompressionList) {
+            for (std::string curr_compression : kSupportedCompressionList) {
                 if (first) {
                     first = false;
                 } else {
@@ -289,7 +289,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const std::string& compression_algo) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const std::string& content_encoding) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
@@ -303,22 +303,22 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
         res.keep_alive(request_keep_alive_);
-        if (http_status == boost::beast::http::status::ok && !compression_algo.empty()) {
-            // in case of compression
-            res.set(boost::beast::http::field::content_encoding, compression_algo);
+        if (http_status == boost::beast::http::status::ok && !content_encoding.empty()) {
+            // Positive response w/ compression required
+            res.set(boost::beast::http::field::content_encoding, content_encoding);
             std::string compressed_data;
             try {
                 compress_data(content, compressed_data);
             } catch (const std::exception& e) {
-                SILK_ERROR << "Connection::compress_data exception: " << e.what();
+                SILK_ERROR << "Connection::do_write cannot compress exception: " << e.what();
                 throw;
             }
             res.content_length(compressed_data.length());
             res.body() = std::move(compressed_data);
         } else {
-            // in case of fail response or postive without compression
-            if (!compression_algo.empty()) {
-                res.set(boost::beast::http::field::accept_encoding, compression_algo);  // set response to indicates the supported algo
+            // Any negative response or positive response w/o compression
+            if (!content_encoding.empty()) {
+                res.set(boost::beast::http::field::accept_encoding, content_encoding);  // Indicate the supported encoding
             }
             res.content_length(content.size());
             res.body() = content;
@@ -416,7 +416,7 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
 }
 
 std::string Connection::select_compression_algo(const std::string& requested_compression) {
-    for (std::string curr_compression : SupportedCompressionList) {
+    for (std::string curr_compression : kSupportedCompressionList) {
         if (requested_compression.find(curr_compression) != std::string::npos) {
             return curr_compression;
         }

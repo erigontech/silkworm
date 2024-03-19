@@ -103,7 +103,7 @@ jobs:
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
       - name: Upload test results
-        if: always()
+        if: steps.test_step.outputs.TEST_RESULT != 'success'
         uses: actions/upload-artifact@v4
         with:
           name: test-results

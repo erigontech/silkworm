@@ -58,31 +58,27 @@ void Index::build() {
         for (auto it = decoder.begin(); it != decoder.end(); ++it, ++i) {
             auto& word = *it;
             auto offset = it.current_word_offset();
-            if (!walk(rec_split, i, offset, word)) {
-                throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
-            }
+            rec_split.add_key(make_key(word, i), offset);
         }
     });
 
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
 
-bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) {
+Bytes HeaderIndex::make_key(ByteView word, uint64_t i) {
     ensure(!word.empty(), [&]() { return "HeaderIndex: word empty i=" + std::to_string(i); });
     const uint8_t first_hash_byte{word[0]};
     const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
     ensure(hash.bytes[0] == first_hash_byte,
            [&]() { return "HeaderIndex: invalid prefix=" + to_hex(first_hash_byte) + " hash=" + to_hex(hash.bytes); });
-    rec_split.add_key(ByteView{hash.bytes}, offset);
-    return true;
+    return Bytes{ByteView{hash.bytes}};
 }
 
-bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
+Bytes BodyIndex::make_key(ByteView /*word*/, uint64_t i) {
     Bytes uint64_buffer;
     seg::varint::encode(uint64_buffer, i);
-    rec_split.add_key(uint64_buffer, offset);
-    return true;
+    return uint64_buffer;
 }
 
 static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
@@ -252,17 +248,7 @@ void TransactionIndex::build() {
                         ++block_number;
                     }
 
-                    Hash tx_hash;
-                    try {
-                        tx_hash = tx_buffer_hash(tx_buffer, first_tx_id + i);
-                    } catch (const std::runtime_error& ex) {
-                        std::stringstream error;
-                        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                              << ex.what();
-                        throw std::runtime_error{error.str()};
-                    }
-
-                    tx_hash_to_block_rs.add_key(tx_hash, block_number);
+                    tx_hash_to_block_rs.add_key(make_key(tx_buffer, i), block_number);
                     i++;
                 }
 
@@ -280,8 +266,8 @@ void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
-bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) {
-    Hash tx_hash;
+Bytes TransactionIndex::make_key(ByteView word, uint64_t i) {
+    Bytes tx_hash;
     try {
         tx_hash = tx_buffer_hash(word, base_data_id_ + i);
     } catch (const std::runtime_error& ex) {
@@ -290,9 +276,7 @@ bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, B
               << ex.what();
         throw std::runtime_error{error.str()};
     }
-
-    rec_split.add_key(tx_hash, offset);
-    return true;
+    return tx_hash;
 }
 
 }  // namespace silkworm::snapshots

@@ -48,7 +48,7 @@ class Index {
     virtual void build();
 
   protected:
-    virtual bool walk(rec_split::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
+    virtual Bytes make_key(ByteView word, uint64_t i) = 0;
 
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;
@@ -63,7 +63,7 @@ class HeaderIndex : public Index {
         : Index(std::move(segment_path), segment_region) {}
 
   protected:
-    bool walk(rec_split::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    Bytes make_key(ByteView word, uint64_t i) override;
 };
 
 class BodyIndex : public Index {
@@ -72,7 +72,7 @@ class BodyIndex : public Index {
         : Index(std::move(segment_path), segment_region) {}
 
   protected:
-    bool walk(rec_split::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    Bytes make_key(ByteView word, uint64_t i) override;
 };
 
 class TransactionIndex : public Index {
@@ -83,7 +83,7 @@ class TransactionIndex : public Index {
     void build() override;
 
   protected:
-    bool walk(rec_split::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    Bytes make_key(ByteView word, uint64_t i) override;
 
   private:
     SnapshotPath bodies_segment_path() const;

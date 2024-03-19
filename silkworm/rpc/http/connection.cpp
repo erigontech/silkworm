@@ -40,6 +40,7 @@ namespace silkworm::rpc::http {
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
+static constexpr auto kGzipEncoding{"gzip"};
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -178,8 +179,9 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
-    if (http_compression_ && !accept_encoding.empty() && accept_encoding != "gzip") {
-        co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, "gzip");
+    const bool gzip_encoding_requested{accept_encoding.contains(kGzipEncoding)};
+    if (http_compression_ && !accept_encoding.empty() && !gzip_encoding_requested) {
+        co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, kGzipEncoding);
         co_return;
     }
 
@@ -212,7 +214,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
 
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, accept_encoding);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, gzip_encoding_requested ? kGzipEncoding : "");
     }
 }
 

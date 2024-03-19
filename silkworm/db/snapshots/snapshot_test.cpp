@@ -190,10 +190,12 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile body_snapshot;
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex tx_index{tx_snapshot_path};
-    REQUIRE_NOTHROW(tx_index.build());
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    CHECK_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
@@ -210,10 +212,14 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile body_snapshot;
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex tx_index{tx_snapshot_path};
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
+    TransactionToBlockIndex tx_index_hash_to_block{body_snapshot_path, tx_snapshot_path};
+    REQUIRE_NOTHROW(tx_index_hash_to_block.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
@@ -242,9 +248,11 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile body_snapshot;
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex tx_index{tx_snapshot_path};
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
@@ -276,9 +284,11 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile body_snapshot;
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex tx_index{tx_snapshot_path};
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
@@ -456,9 +466,11 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile body_snapshot;
+    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
     test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
-    TransactionIndex tx_index{tx_snapshot_path};
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};

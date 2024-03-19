@@ -209,21 +209,29 @@ std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const 
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
                     index = std::make_shared<Index>(HeaderIndex::make(seg_file));
+                    missing_index_list.push_back(index);
                     break;
                 }
                 case SnapshotType::bodies: {
                     index = std::make_shared<Index>(BodyIndex::make(seg_file));
+                    missing_index_list.push_back(index);
                     break;
                 }
                 case SnapshotType::transactions: {
-                    index = std::make_shared<TransactionIndex>(seg_file);
+                    auto bodies_segment_path = TransactionIndex1::bodies_segment_path(seg_file);
+                    if (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end()) {
+                        index = std::make_shared<Index>(TransactionIndex1::make(bodies_segment_path, seg_file));
+                        missing_index_list.push_back(index);
+
+                        index = std::make_shared<TransactionToBlockIndex>(bodies_segment_path, seg_file);
+                        missing_index_list.push_back(index);
+                    }
                     break;
                 }
                 default: {
                     SILKWORM_ASSERT(false);
                 }
             }
-            missing_index_list.push_back(index);
         }
     }
     return missing_index_list;

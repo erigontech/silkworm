@@ -177,8 +177,8 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex txn_index{txn_snapshot_path};
-    REQUIRE_NOTHROW(txn_index.build());
+    REQUIRE_NOTHROW(TransactionIndex1::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex(body_snapshot_path, txn_snapshot_path).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
@@ -225,8 +225,8 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex txn_index{txn_snapshot_path};
-    REQUIRE_NOTHROW(txn_index.build());
+    REQUIRE_NOTHROW(TransactionIndex1::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex(body_snapshot_path, txn_snapshot_path).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 

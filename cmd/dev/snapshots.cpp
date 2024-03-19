@@ -293,8 +293,12 @@ void create_index(const SnapSettings& settings, int repetitions) {
                     break;
                 }
                 case SnapshotType::transactions: {
-                    TransactionIndex index{*snap_file};
+                    auto bodies_segment_path = TransactionIndex1::bodies_segment_path(*snap_file);
+                    auto index = TransactionIndex1::make(bodies_segment_path, *snap_file);
                     index.build();
+
+                    TransactionToBlockIndex index_hash_to_block(bodies_segment_path, *snap_file);
+                    index_hash_to_block.build();
                     break;
                 }
                 default: {

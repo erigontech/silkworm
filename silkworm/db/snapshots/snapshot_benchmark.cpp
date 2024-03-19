@@ -119,8 +119,10 @@ static void build_tx_index(benchmark::State& state) {
         body_index.build();
 
         test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-        snapshots::TransactionIndex txn_index{txn_snapshot_path};
-        txn_index.build();
+        auto tx_index = TransactionIndex1::make(body_snapshot_path, txn_snapshot_path);
+        tx_index.build();
+        TransactionToBlockIndex tx_index_hash_to_block{body_snapshot_path, txn_snapshot_path};
+        tx_index_hash_to_block.build();
     }
 }
 BENCHMARK(build_tx_index);
@@ -147,8 +149,10 @@ static void reopen_folder(benchmark::State& state) {
     body_index.build();
 
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-    snapshots::TransactionIndex txn_index{txn_snapshot_path};
-    txn_index.build();
+    auto tx_index = TransactionIndex1::make(body_snapshot_path, txn_snapshot_path);
+    tx_index.build();
+    TransactionToBlockIndex tx_index_hash_to_block{body_snapshot_path, txn_snapshot_path};
+    tx_index_hash_to_block.build();
 
     for ([[maybe_unused]] auto _ : state) {
         repository.reopen_folder();

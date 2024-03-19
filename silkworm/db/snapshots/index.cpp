@@ -49,6 +49,7 @@ void Index::build() {
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
         .base_data_id = descriptor_.base_data_id,
+        .double_enum_index = true,
         .less_false_positives = descriptor_.less_false_positives,
     };
     RecSplit8 rec_split1{rec_split_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
@@ -141,34 +142,34 @@ static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
     return tx_hash;
 }
 
-SnapshotPath TransactionIndex::bodies_segment_path() const {
+SnapshotPath TransactionIndex1::bodies_segment_path(const SnapshotPath& segment_path) {
     return SnapshotPath::from(
-        segment_path_.path().parent_path(),
-        segment_path_.version(),
-        segment_path_.block_from(),
-        segment_path_.block_to(),
+        segment_path.path().parent_path(),
+        segment_path.version(),
+        segment_path.block_from(),
+        segment_path.block_to(),
         SnapshotType::bodies);
 }
 
-std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount() {
-    BodySnapshot bodies_snapshot{bodies_segment_path()};
+std::pair<uint64_t, uint64_t> TransactionIndex1::compute_txs_amount(const SnapshotPath& bodies_segment_path) {
+    BodySnapshot bodies_snapshot{bodies_segment_path};
     bodies_snapshot.reopen_segment();
     return bodies_snapshot.compute_txs_amount();
 }
 
-uint64_t TransactionIndex::read_tx_count() {
+uint64_t TransactionToBlockIndex::read_tx_count() {
     seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
     return txs_decoder.words_count();
 }
 
-void TransactionIndex::build() {
-    const SnapshotPath bodies_segment_path = this->bodies_segment_path();
+void TransactionToBlockIndex::build() {
+    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
+    const SnapshotPath bodies_segment_path = bodies_segment_path_;
     SILK_TRACE << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
 
-    const auto txs_amount = compute_txs_amount();
-    const uint64_t first_tx_id = txs_amount.first;
-    const uint64_t expected_tx_count = txs_amount.second;
+    const uint64_t first_tx_id = first_tx_id_;
+    const uint64_t expected_tx_count = expected_tx_count_;
     SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
     const auto tx_count = read_tx_count();
@@ -179,16 +180,6 @@ void TransactionIndex::build() {
               << " got=" << std::to_string(tx_count);
         throw std::runtime_error{error.str()};
     }
-
-    auto tx_index = TransactionIndex1::make(first_tx_id, segment_path_, segment_region_);
-    tx_index.build();
-
-    descriptor_ = {
-        .base_data_id = first_tx_id,
-        .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
-    };
-
-    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
     seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
     txs_decoder.open();
@@ -201,8 +192,10 @@ void TransactionIndex::build() {
         .keys_count = txs_decoder.words_count(),
         .bucket_size = kBucketSize,
         .index_path = tx2block_idx_file.path(),
-        .base_data_id = first_block_num,
-        .double_enum_index = false};
+        .base_data_id = descriptor_.base_data_id,
+        .double_enum_index = false,
+        .less_false_positives = descriptor_.less_false_positives,
+    };
     RecSplit8 tx_hash_to_block_rs1{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
 
     seg::Decompressor bodies_decoder{bodies_segment_path.path()};
@@ -251,7 +244,7 @@ void TransactionIndex::build() {
                         ++block_number;
                     }
 
-                    tx_hash_to_block_rs.add_key(make_key(tx_buffer, i), block_number);
+                    tx_hash_to_block_rs.add_key(descriptor_.make_key(tx_buffer, i), block_number);
                     i++;
                 }
 
@@ -269,12 +262,8 @@ void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
-Bytes TransactionIndex::make_key(ByteView word, uint64_t i) {
-    return TransactionIndex1::make_key(word, i, descriptor_.base_data_id);
-}
-
-Bytes TransactionIndex1::make_key(ByteView word, uint64_t i, uint64_t base_data_id) {
-    return Bytes{tx_buffer_hash(word, base_data_id + i)};
+Bytes TransactionIndex1::make_key(ByteView word, uint64_t i, uint64_t first_tx_id) {
+    return Bytes{tx_buffer_hash(word, first_tx_id + i)};
 }
 
 }  // namespace silkworm::snapshots

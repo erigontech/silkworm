@@ -249,21 +249,33 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         switch (snapshot_path->type()) {
             case snapshots::SnapshotType::headers: {
                 index = std::make_shared<snapshots::Index>(snapshots::HeaderIndex::make(*snapshot_path, snapshot_region));
+                needed_indexes.push_back(index);
                 break;
             }
             case snapshots::SnapshotType::bodies: {
                 index = std::make_shared<snapshots::Index>(snapshots::BodyIndex::make(*snapshot_path, snapshot_region));
+                needed_indexes.push_back(index);
                 break;
             }
             case snapshots::SnapshotType::transactions: {
-                index = std::make_shared<snapshots::TransactionIndex>(*snapshot_path, snapshot_region);
+                auto bodies_segment_path = snapshots::TransactionIndex1::bodies_segment_path(*snapshot_path);
+                auto bodies_file = std::find_if(snapshots, snapshots + len, [&](SilkwormMemoryMappedFile* file) -> bool {
+                    return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
+                });
+
+                if (bodies_file < snapshots + len) {
+                    index = std::make_shared<snapshots::Index>(snapshots::TransactionIndex1::make(bodies_segment_path, *snapshot_path));
+                    needed_indexes.push_back(index);
+
+                    index = std::make_shared<snapshots::TransactionToBlockIndex>(bodies_segment_path, *snapshot_path);
+                    needed_indexes.push_back(index);
+                }
                 break;
             }
             default: {
                 SILKWORM_ASSERT(false);
             }
         }
-        needed_indexes.push_back(index);
     }
 
     if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {

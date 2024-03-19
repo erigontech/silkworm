@@ -60,7 +60,7 @@ class Index {
 
 class HeaderIndex {
   public:
-    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
+    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
         return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
     }
 
@@ -77,7 +77,7 @@ class HeaderIndex {
 
 class BodyIndex {
   public:
-    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
+    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
         return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
     }
 
@@ -96,35 +96,51 @@ class BodyIndex {
 
 class TransactionIndex1 {
   public:
-    static Index make(uint64_t first_tx_id, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
-        return Index{make_descriptor(first_tx_id), std::move(segment_path), segment_region};
+    static Index make(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
+        auto txs_amount = compute_txs_amount(bodies_segment_path);
+        return Index{make_descriptor(txs_amount.first, txs_amount.first, true), std::move(segment_path), segment_region};
     }
 
-    static Bytes make_key(ByteView word, uint64_t i, uint64_t base_data_id);
+    static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
 
   private:
-    static IndexDescriptor make_descriptor(uint64_t first_tx_id) {
+    static Bytes make_key(ByteView word, uint64_t i, uint64_t first_tx_id);
+    static std::pair<uint64_t, uint64_t> compute_txs_amount(const SnapshotPath& bodies_segment_path);
+
+    static IndexDescriptor make_descriptor(uint64_t first_tx_id, uint64_t base_data_id, bool less_false_positives) {
         return {
             .make_key = [=](ByteView word, uint64_t i) { return make_key(word, i, first_tx_id); },
-            .base_data_id = first_tx_id,
-            .less_false_positives = true,
+            .base_data_id = base_data_id,
+            .less_false_positives = less_false_positives,
             .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
         };
     }
+
+    friend class TransactionToBlockIndex;
 };
 
-class TransactionIndex : public Index {
+class TransactionToBlockIndex : public Index {
   public:
-    explicit TransactionIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(IndexDescriptor{}, std::move(segment_path), segment_region) {}
+    TransactionToBlockIndex(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt)
+        : Index(IndexDescriptor{}, std::move(segment_path), segment_region),
+          bodies_segment_path_(bodies_segment_path) {
+        auto txs_amount = TransactionIndex1::compute_txs_amount(bodies_segment_path);
+        const uint64_t first_tx_id = txs_amount.first;
+        const uint64_t expected_tx_count = txs_amount.second;
+
+        descriptor_ = TransactionIndex1::make_descriptor(first_tx_id, segment_path_.block_from(), false);
+        first_tx_id_ = first_tx_id;
+        expected_tx_count_ = expected_tx_count;
+    }
 
     void build() override;
 
   private:
-    Bytes make_key(ByteView word, uint64_t i);
-    SnapshotPath bodies_segment_path() const;
-    std::pair<uint64_t, uint64_t> compute_txs_amount();
     uint64_t read_tx_count();
+
+    SnapshotPath bodies_segment_path_;
+    uint64_t first_tx_id_{};
+    uint64_t expected_tx_count_{};
 };
 
 }  // namespace silkworm::snapshots

@@ -26,6 +26,7 @@ namespace silkworm::snapshots {
 
 namespace test = test_util;
 using silkworm::test_util::SetLogVerbosityGuard;
+using namespace Catch::Matchers;
 
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
@@ -51,8 +52,12 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
     SECTION("KO: empty body snapshot", "[.]") {
         test::TemporarySnapshotFile bodies_snapshot_file{kBodiesSnapshotFileName};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
-        TransactionIndex tx_index{*SnapshotPath::parse(txs_snapshot_file.path().string())};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+
+        auto txs_snapshot_path = *SnapshotPath::parse(txs_snapshot_file.path());
+        auto bodies_snapshot_path = *SnapshotPath::parse(bodies_snapshot_file.path());
+
+        CHECK_THROWS_WITH(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("empty body snapshot"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("empty body snapshot"));
     }
 }
 
@@ -71,8 +76,12 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             test::SnapshotBody{
                 *from_hex("0000000000000000")}};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
-        TransactionIndex tx_index{*SnapshotPath::parse(txs_snapshot_file.path().string())};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+
+        auto txs_snapshot_path = *SnapshotPath::parse(txs_snapshot_file.path());
+        auto bodies_snapshot_path = *SnapshotPath::parse(bodies_snapshot_file.path());
+
+        CHECK_THROWS_WITH(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("invalid zero word length"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("invalid zero word length"));
     }
 
     SECTION("KO: invalid position depth") {
@@ -83,10 +92,12 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
+        test::SampleBodySnapshotPath bodies_snapshot_path{invalid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile valid_txs_snapshot{};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
-        TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+
+        CHECK_THROWS_WITH(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position depth"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position depth"));
     }
 
     SECTION("KO: invalid position value") {
@@ -97,10 +108,12 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
+        test::SampleBodySnapshotPath bodies_snapshot_path{invalid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile valid_txs_snapshot{};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
-        TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+
+        CHECK_THROWS_WITH(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position read"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position read"));
     }
 
     SECTION("KO: invalid positions count") {
@@ -111,10 +124,12 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
+        test::SampleBodySnapshotPath bodies_snapshot_path{invalid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile valid_txs_snapshot{};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
-        TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+
+        CHECK_THROWS_WITH(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position read"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), Contains("invalid: position read"));
     }
 
     SECTION("KO: invalid RLP") {
@@ -125,14 +140,17 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0} <- c7 instead of c6
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
+        test::SampleBodySnapshotPath bodies_snapshot_path{invalid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile valid_txs_snapshot{};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
-        TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), DecodingException);
+
+        CHECK_THROWS_AS(TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path).build(), DecodingException);
+        CHECK_THROWS_AS(TransactionToBlockIndex(bodies_snapshot_path, txs_snapshot_path).build(), DecodingException);
     }
 
     SECTION("KO: unexpected tx amount") {
         test::SampleBodySnapshotFile valid_bodies_snapshot{};
+        test::SampleBodySnapshotPath bodies_snapshot_path{valid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile invalid_txs_snapshot{
             TemporaryDirectory::get_os_temporary_path(),
             "000000000000000C"                              // WC = 12
@@ -149,18 +167,25 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             // 11 txs missing here...
         };
         test::SampleTransactionSnapshotPath txs_snapshot_path{invalid_txs_snapshot.path()};  // necessary to tweak the block numbers
-        TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), std::logic_error);
+
+        auto tx_index = TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path);
+        CHECK_THROWS_WITH(tx_index.build(), StartsWith("keys expected"));
+        TransactionToBlockIndex tx_index_hash_to_block{bodies_snapshot_path, txs_snapshot_path};
+        CHECK_THROWS_WITH(tx_index_hash_to_block.build(), Contains("tx count mismatch"));
     }
 }
 
 TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_bodies_snapshot{};
+    test::SampleBodySnapshotPath bodies_snapshot_path{valid_bodies_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_txs_snapshot{};
     test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
-    TransactionIndex tx_index{txs_snapshot_path};
-    CHECK_NOTHROW(tx_index.build());
+
+    auto tx_index = TransactionIndex1::make(bodies_snapshot_path, txs_snapshot_path);
+    tx_index.build();
+    TransactionToBlockIndex tx_index_hash_to_block{bodies_snapshot_path, txs_snapshot_path};
+    tx_index_hash_to_block.build();
 }
 
 }  // namespace silkworm::snapshots

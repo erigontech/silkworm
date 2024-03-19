@@ -57,8 +57,8 @@ target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 add_executable(embed_toml embed_toml.cpp)
 target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus)
 
-add_executable(genesistool genesistool.cpp)
-target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
+add_executable(embed_json embed_json.cpp)
+target_link_libraries(embed_json PRIVATE CLI11::CLI11 Boost::headers)
 
 add_executable(grpc_toolbox grpc_toolbox.cpp)
 target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})

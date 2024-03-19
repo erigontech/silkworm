@@ -1,4 +1,4 @@
-/* Generated from genesis_goerli.json using silkworm's genesistool*/
+/* Generated from genesis_goerli.json using silkworm embed_json tool */
 #include "genesis_goerli.hpp"
 constexpr char genesis_goerli_data_internal[] = {
 0x7b, 0x22, 0x61, 0x6c, 0x6c, 0x6f, 0x63, 0x22, 0x3a, 0x7b, 0x22, 0x30, 0x30, 0x30, 0x30, 0x30,

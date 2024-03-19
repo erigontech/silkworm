@@ -18,6 +18,6 @@
 
 #include <string_view>
 
-namespace silkworm {
-constinit extern const std::string_view json_rpc_specification;
+namespace silkworm::rpc::json_rpc {
+constinit extern const std::string_view specification_json;
 }

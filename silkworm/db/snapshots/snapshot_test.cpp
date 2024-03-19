@@ -131,7 +131,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile valid_header_snapshot{};                             // contains headers for [1'500'012, 1'500'013]
     test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};  // necessary to tweak the block numbers
-    HeaderIndex header_index{header_snapshot_path};
+    auto header_index = HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
 
     HeaderSnapshot header_snapshot{header_snapshot_path};
@@ -169,7 +169,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_body_snapshot{};                           // contains bodies for [1'500'012, 1'500'013]
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
-    BodyIndex body_index{body_snapshot_path};
+    auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
 
     BodySnapshot body_snapshot{body_snapshot_path};
@@ -414,7 +414,7 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile sample_header_snapshot{};
     test::SampleHeaderSnapshotPath header_snapshot_path{sample_header_snapshot.path()};
-    HeaderIndex header_index{header_snapshot_path};
+    auto header_index = HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
 
     HeaderSnapshot header_snapshot{header_snapshot_path};
@@ -436,7 +436,7 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile sample_body_snapshot{};
     test::SampleBodySnapshotPath body_snapshot_path{sample_body_snapshot.path()};
-    BodyIndex body_index{body_snapshot_path};
+    auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
 
     BodySnapshot body_snapshot{body_snapshot_path};

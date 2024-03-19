@@ -30,7 +30,7 @@ using silkworm::test_util::SetLogVerbosityGuard;
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
-    HeaderIndex header_index{*SnapshotPath::parse(tmp_snapshot_file.path().string())};
+    auto header_index = HeaderIndex::make(*SnapshotPath::parse(tmp_snapshot_file.path().string()));
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
@@ -39,7 +39,7 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_body_snapshot{};
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
-    BodyIndex body_index{body_snapshot_path};
+    auto body_index = BodyIndex::make(body_snapshot_path);
     CHECK_NOTHROW(body_index.build());
 }
 

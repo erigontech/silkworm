@@ -248,11 +248,11 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         std::shared_ptr<snapshots::Index> index;
         switch (snapshot_path->type()) {
             case snapshots::SnapshotType::headers: {
-                index = std::make_shared<snapshots::HeaderIndex>(*snapshot_path, snapshot_region);
+                index = std::make_shared<snapshots::Index>(snapshots::HeaderIndex::make(*snapshot_path, snapshot_region));
                 break;
             }
             case snapshots::SnapshotType::bodies: {
-                index = std::make_shared<snapshots::BodyIndex>(*snapshot_path, snapshot_region);
+                index = std::make_shared<snapshots::Index>(snapshots::BodyIndex::make(*snapshot_path, snapshot_region));
                 break;
             }
             case snapshots::SnapshotType::transactions: {

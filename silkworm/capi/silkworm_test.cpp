@@ -642,12 +642,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{};
     snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
 
-    snapshots::HeaderIndex header_index{header_snapshot_path};
+    auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
     snapshots::HeaderSnapshot header_snapshot{header_snapshot_path};
     header_snapshot.reopen_segment();
     header_snapshot.reopen_index();
-    snapshots::BodyIndex body_index{body_snapshot_path};
+    auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     snapshots::BodySnapshot body_snapshot{body_snapshot_path};
     body_snapshot.reopen_segment();

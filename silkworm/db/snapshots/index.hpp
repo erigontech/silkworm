@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <memory>
+#include <functional>
 #include <utility>
 
 #include <silkworm/db/etl/collector.hpp>
@@ -27,20 +27,25 @@
 
 namespace silkworm::snapshots {
 
+struct IndexDescriptor {
+    std::function<Bytes(ByteView word, uint64_t i)> make_key;
+    uint64_t base_data_id{};
+    bool less_false_positives{};
+    size_t etl_buffer_size{db::etl::kOptimalBufferSize};
+};
+
 class Index {
   public:
     static inline const auto kPageSize{os::page_size()};
     static constexpr std::size_t kBucketSize{2'000};
 
     explicit Index(
+        IndexDescriptor descriptor,
         SnapshotPath segment_path,
-        std::optional<MemoryMappedRegion> segment_region = std::nullopt,
-        size_t etl_buffer_size = db::etl::kOptimalBufferSize)
-        : segment_path_(std::move(segment_path)),
-          segment_region_(segment_region),
-          base_data_id_(path().block_from()),
-          less_false_positives_(false),
-          etl_buffer_size_(etl_buffer_size) {}
+        std::optional<MemoryMappedRegion> segment_region = std::nullopt)
+        : descriptor_(std::move(descriptor)),
+          segment_path_(std::move(segment_path)),
+          segment_region_(segment_region) {}
     virtual ~Index() = default;
 
     [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
@@ -48,44 +53,75 @@ class Index {
     virtual void build();
 
   protected:
-    virtual Bytes make_key(ByteView word, uint64_t i) = 0;
-
+    IndexDescriptor descriptor_;
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;
-    uint64_t base_data_id_;
-    bool less_false_positives_;
-    size_t etl_buffer_size_;
 };
 
-class HeaderIndex : public Index {
+class HeaderIndex {
   public:
-    explicit HeaderIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), segment_region) {}
+    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
+        return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
+    }
 
-  protected:
-    Bytes make_key(ByteView word, uint64_t i) override;
+  private:
+    static Bytes make_key(ByteView word, uint64_t i);
+
+    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
+        return {
+            .make_key = HeaderIndex::make_key,
+            .base_data_id = segment_path.block_from(),
+        };
+    }
 };
 
-class BodyIndex : public Index {
+class BodyIndex {
   public:
-    explicit BodyIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), segment_region) {}
+    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
+        return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
+    }
 
-  protected:
-    Bytes make_key(ByteView word, uint64_t i) override;
+  private:
+    static Bytes make_key(ByteView word, uint64_t i);
+
+    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
+        return {
+            .make_key = BodyIndex::make_key,
+            .base_data_id = segment_path.block_from(),
+        };
+    }
+
+    Index index_;
+};
+
+class TransactionIndex1 {
+  public:
+    static Index make(uint64_t first_tx_id, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {}) {
+        return Index{make_descriptor(first_tx_id), std::move(segment_path), segment_region};
+    }
+
+    static Bytes make_key(ByteView word, uint64_t i, uint64_t base_data_id);
+
+  private:
+    static IndexDescriptor make_descriptor(uint64_t first_tx_id) {
+        return {
+            .make_key = [=](ByteView word, uint64_t i) { return make_key(word, i, first_tx_id); },
+            .base_data_id = first_tx_id,
+            .less_false_positives = true,
+            .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
+        };
+    }
 };
 
 class TransactionIndex : public Index {
   public:
     explicit TransactionIndex(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = {})
-        : Index(std::move(segment_path), segment_region) {}
+        : Index(IndexDescriptor{}, std::move(segment_path), segment_region) {}
 
     void build() override;
 
-  protected:
-    Bytes make_key(ByteView word, uint64_t i) override;
-
   private:
+    Bytes make_key(ByteView word, uint64_t i);
     SnapshotPath bodies_segment_path() const;
     std::pair<uint64_t, uint64_t> compute_txs_amount();
     uint64_t read_tx_count();

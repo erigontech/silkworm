@@ -78,7 +78,7 @@ static void build_header_index(benchmark::State& state) {
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-        snapshots::HeaderIndex header_index{header_snapshot_path};
+        auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
         header_index.build();
     }
 }
@@ -96,7 +96,7 @@ static void build_body_index(benchmark::State& state) {
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
-        snapshots::BodyIndex body_index{body_snapshot_path};
+        auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
         body_index.build();
     }
 }
@@ -115,7 +115,7 @@ static void build_tx_index(benchmark::State& state) {
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
-        snapshots::BodyIndex body_index{body_snapshot_path};
+        auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
         body_index.build();
 
         test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
@@ -139,11 +139,11 @@ static void reopen_folder(benchmark::State& state) {
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-    snapshots::HeaderIndex header_index{header_snapshot_path};
+    auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
     header_index.build();
 
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
-    snapshots::BodyIndex body_index{body_snapshot_path};
+    auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
     body_index.build();
 
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers

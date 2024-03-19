@@ -171,10 +171,10 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     }
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-    HeaderIndex header_index{header_snapshot_path};
+    auto header_index = HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
-    BodyIndex body_index{body_snapshot_path};
+    auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex txn_index{txn_snapshot_path};
@@ -219,10 +219,10 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-    HeaderIndex header_index{header_snapshot_path};
+    auto header_index = HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
-    BodyIndex body_index{body_snapshot_path};
+    auto body_index = BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex txn_index{txn_snapshot_path};

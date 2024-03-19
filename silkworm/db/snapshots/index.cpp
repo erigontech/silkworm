@@ -48,17 +48,17 @@ void Index::build() {
         .keys_count = decoder.words_count(),
         .bucket_size = kBucketSize,
         .index_path = index_file.path(),
-        .base_data_id = base_data_id_,
-        .less_false_positives = less_false_positives_,
+        .base_data_id = descriptor_.base_data_id,
+        .less_false_positives = descriptor_.less_false_positives,
     };
-    RecSplit8 rec_split1{rec_split_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
+    RecSplit8 rec_split1{rec_split_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
 
     rec_split1.build_without_collisions([&](RecSplit8& rec_split) {
         uint64_t i{0};
         for (auto it = decoder.begin(); it != decoder.end(); ++it, ++i) {
             auto& word = *it;
             auto offset = it.current_word_offset();
-            rec_split.add_key(make_key(word, i), offset);
+            rec_split.add_key(descriptor_.make_key(word, i), offset);
         }
     });
 
@@ -180,10 +180,13 @@ void TransactionIndex::build() {
         throw std::runtime_error{error.str()};
     }
 
-    base_data_id_ = first_tx_id;
-    less_false_positives_ = true;
-    etl_buffer_size_ = db::etl::kOptimalBufferSize / 2;
-    Index::build();
+    auto tx_index = TransactionIndex1::make(first_tx_id, segment_path_, segment_region_);
+    tx_index.build();
+
+    descriptor_ = {
+        .base_data_id = first_tx_id,
+        .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
+    };
 
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
@@ -200,7 +203,7 @@ void TransactionIndex::build() {
         .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false};
-    RecSplit8 tx_hash_to_block_rs1{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(etl_buffer_size_)};
+    RecSplit8 tx_hash_to_block_rs1{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
 
     seg::Decompressor bodies_decoder{bodies_segment_path.path()};
     bodies_decoder.open();
@@ -267,16 +270,11 @@ void TransactionIndex::build() {
 }
 
 Bytes TransactionIndex::make_key(ByteView word, uint64_t i) {
-    Bytes tx_hash;
-    try {
-        tx_hash = tx_buffer_hash(word, base_data_id_ + i);
-    } catch (const std::runtime_error& ex) {
-        std::stringstream error;
-        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-              << ex.what();
-        throw std::runtime_error{error.str()};
-    }
-    return tx_hash;
+    return TransactionIndex1::make_key(word, i, descriptor_.base_data_id);
+}
+
+Bytes TransactionIndex1::make_key(ByteView word, uint64_t i, uint64_t base_data_id) {
+    return Bytes{tx_buffer_hash(word, base_data_id + i)};
 }
 
 }  // namespace silkworm::snapshots

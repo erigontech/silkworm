@@ -283,12 +283,12 @@ void create_index(const SnapSettings& settings, int repetitions) {
         for (int i{0}; i < repetitions; ++i) {
             switch (snap_file->type()) {
                 case SnapshotType::headers: {
-                    HeaderIndex index{*snap_file};
+                    auto index = HeaderIndex::make(*snap_file);
                     index.build();
                     break;
                 }
                 case SnapshotType::bodies: {
-                    BodyIndex index{*snap_file};
+                    auto index = BodyIndex::make(*snap_file);
                     index.build();
                     break;
                 }

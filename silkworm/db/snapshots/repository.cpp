@@ -208,11 +208,11 @@ std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const 
             std::shared_ptr<Index> index;
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
-                    index = std::make_shared<HeaderIndex>(seg_file);
+                    index = std::make_shared<Index>(HeaderIndex::make(seg_file));
                     break;
                 }
                 case SnapshotType::bodies: {
-                    index = std::make_shared<BodyIndex>(seg_file);
+                    index = std::make_shared<Index>(BodyIndex::make(seg_file));
                     break;
                 }
                 case SnapshotType::transactions: {

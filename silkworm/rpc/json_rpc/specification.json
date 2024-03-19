@@ -1252,31 +1252,39 @@
 					"name": "Payload attributes",
 					"required": false,
 					"schema": {
-						"title": "Payload attributes object V1",
-						"type": "object",
-						"required": [
-							"timestamp",
-							"prevRandao",
-							"suggestedFeeRecipient"
-						],
-						"properties": {
-							"timestamp": {
-								"title": "Timestamp",
-								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-							},
-							"prevRandao": {
-								"title": "Previous randao value",
-								"type": "string",
-								"pattern": "^0x[0-9a-f]{64}$"
-							},
-							"suggestedFeeRecipient": {
-								"title": "Suggested fee recipient",
-								"type": "string",
-								"pattern": "^0x[0-9,a-f,A-F]{40}$"
-							}
-						}
-					}
+                        "oneOf": [
+                            {
+                              "title": "No payload attributes (null)",
+                              "type": "null"
+                            },
+                            {
+                              "title": "Payload attributes object V1",
+                              "type": "object",
+                              "required": [
+                                "timestamp",
+                                "prevRandao",
+                                "suggestedFeeRecipient"
+                              ],
+                              "properties": {
+                                "timestamp": {
+                                  "title": "Timestamp",
+                                  "type": "string",
+                                  "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                },
+                                "prevRandao": {
+                                  "title": "Previous randao value",
+                                  "type": "string",
+                                  "pattern": "^0x[0-9a-f]{64}$"
+                                },
+                                "suggestedFeeRecipient": {
+                                  "title": "Suggested fee recipient",
+                                  "type": "string",
+                                  "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                }
+                              }
+                            }
+                        ]
+                    }
 				}
 			],
 			"result": {
@@ -1411,68 +1419,76 @@
 					"name": "Payload attributes",
 					"required": false,
 					"schema": {
-						"title": "Payload attributes object V2",
-						"type": "object",
-						"required": [
-							"timestamp",
-							"prevRandao",
-							"suggestedFeeRecipient",
-							"withdrawals"
-						],
-						"properties": {
-							"timestamp": {
-								"title": "Timestamp",
-								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-							},
-							"prevRandao": {
-								"title": "Previous randao value",
-								"type": "string",
-								"pattern": "^0x[0-9a-f]{64}$"
-							},
-							"suggestedFeeRecipient": {
-								"title": "Suggested fee recipient",
-								"type": "string",
-								"pattern": "^0x[0-9,a-f,A-F]{40}$"
-							},
-							"withdrawals": {
-								"title": "Withdrawals",
-								"type": "array",
-								"items": {
-									"title": "Withdrawal object V1",
-									"type": "object",
-									"required": [
-										"index",
-										"validatorIndex",
-										"address",
-										"amount"
-									],
-									"properties": {
-										"index": {
-											"title": "Withdrawal index",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										},
-										"validatorIndex": {
-											"title": "Validator index",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										},
-										"address": {
-											"title": "Withdrawal address",
-											"type": "string",
-											"pattern": "^0x[0-9,a-f,A-F]{40}$"
-										},
-										"amount": {
-											"title": "Withdrawal amount",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										}
-									}
-								}
-							}
-						}
-					}
+                        "oneOf" : [
+                            {
+                                "title": "No payload attributes (null)",
+                                "type": "null"
+                            },
+                            {
+                                "title": "Payload attributes object V2",
+                                "type": "object",
+                                "required": [
+                                    "timestamp",
+                                    "prevRandao",
+                                    "suggestedFeeRecipient",
+                                    "withdrawals"
+                                ],
+                                "properties": {
+                                    "timestamp": {
+                                        "title": "Timestamp",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                    },
+                                    "prevRandao": {
+                                        "title": "Previous randao value",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9a-f]{64}$"
+                                    },
+                                    "suggestedFeeRecipient": {
+                                        "title": "Suggested fee recipient",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "withdrawals": {
+                                        "title": "Withdrawals",
+                                        "type": "array",
+                                        "items": {
+                                            "title": "Withdrawal object V1",
+                                            "type": "object",
+                                            "required": [
+                                                "index",
+                                                "validatorIndex",
+                                                "address",
+                                                "amount"
+                                            ],
+                                            "properties": {
+                                                "index": {
+                                                    "title": "Withdrawal index",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                },
+                                                "validatorIndex": {
+                                                    "title": "Validator index",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                },
+                                                "address": {
+                                                    "title": "Withdrawal address",
+                                                    "type": "string",
+                                                    "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                                },
+                                                "amount": {
+                                                    "title": "Withdrawal amount",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
 				}
 			],
 			"result": {
@@ -1621,74 +1637,82 @@
 					"name": "Payload attributes",
 					"required": false,
 					"schema": {
-						"title": "Payload attributes object V3",
-						"type": "object",
-						"required": [
-							"timestamp",
-							"prevRandao",
-							"suggestedFeeRecipient",
-							"withdrawals",
-							"parentBeaconBlockRoot"
-						],
-						"properties": {
-							"timestamp": {
-								"title": "Timestamp",
-								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-							},
-							"prevRandao": {
-								"title": "Previous randao value",
-								"type": "string",
-								"pattern": "^0x[0-9a-f]{64}$"
-							},
-							"suggestedFeeRecipient": {
-								"title": "Suggested fee recipient",
-								"type": "string",
-								"pattern": "^0x[0-9,a-f,A-F]{40}$"
-							},
-							"withdrawals": {
-								"title": "Withdrawals",
-								"type": "array",
-								"items": {
-									"title": "Withdrawal object V1",
-									"type": "object",
-									"required": [
-										"index",
-										"validatorIndex",
-										"address",
-										"amount"
-									],
-									"properties": {
-										"index": {
-											"title": "Withdrawal index",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										},
-										"validatorIndex": {
-											"title": "Validator index",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										},
-										"address": {
-											"title": "Withdrawal address",
-											"type": "string",
-											"pattern": "^0x[0-9,a-f,A-F]{40}$"
-										},
-										"amount": {
-											"title": "Withdrawal amount",
-											"type": "string",
-											"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
-										}
-									}
-								}
-							},
-							"parentBeaconBlockRoot": {
-								"title": "Parent beacon block root",
-								"type": "string",
-								"pattern": "^0x[0-9a-f]{64}$"
-							}
-						}
-					}
+                        "oneOf": [
+                            {
+                                "title": "No payload attributes (null)",
+                                "type": "null"
+                            },
+                            {
+                                "title": "Payload attributes object V3",
+                                "type": "object",
+                                "required": [
+                                    "timestamp",
+                                    "prevRandao",
+                                    "suggestedFeeRecipient",
+                                    "withdrawals",
+                                    "parentBeaconBlockRoot"
+                                ],
+                                "properties": {
+                                    "timestamp": {
+                                        "title": "Timestamp",
+                                        "type": "string",
+                                        "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                    },
+                                    "prevRandao": {
+                                        "title": "Previous randao value",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9a-f]{64}$"
+                                    },
+                                    "suggestedFeeRecipient": {
+                                        "title": "Suggested fee recipient",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                    },
+                                    "withdrawals": {
+                                        "title": "Withdrawals",
+                                        "type": "array",
+                                        "items": {
+                                            "title": "Withdrawal object V1",
+                                            "type": "object",
+                                            "required": [
+                                                "index",
+                                                "validatorIndex",
+                                                "address",
+                                                "amount"
+                                            ],
+                                            "properties": {
+                                                "index": {
+                                                    "title": "Withdrawal index",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                },
+                                                "validatorIndex": {
+                                                    "title": "Validator index",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                },
+                                                "address": {
+                                                    "title": "Withdrawal address",
+                                                    "type": "string",
+                                                    "pattern": "^0x[0-9,a-f,A-F]{40}$"
+                                                },
+                                                "amount": {
+                                                    "title": "Withdrawal amount",
+                                                    "type": "string",
+                                                    "pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "parentBeaconBlockRoot": {
+                                        "title": "Parent beacon block root",
+                                        "type": "string",
+                                        "pattern": "^0x[0-9a-f]{64}$"
+                                    }
+                                }
+                            }
+                        ]
+                    }
 				}
 			],
 			"result": {
@@ -2757,12 +2781,12 @@
 								"blobGasUsed": {
 									"title": "Blob gas used",
 									"type": "string",
-									"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+									"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
 								},
 								"excessBlobGas": {
 									"title": "Excess blob gas",
 									"type": "string",
-									"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+									"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
 								}
 							}
 						},
@@ -3519,7 +3543,7 @@
 							"gasUsed": {
 								"title": "Gas used",
 								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+								"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
 							},
 							"timestamp": {
 								"title": "Timestamp",
@@ -3589,12 +3613,12 @@
 							"blobGasUsed": {
 								"title": "Blob gas used",
 								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+								"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
 							},
 							"excessBlobGas": {
 								"title": "Excess blob gas",
 								"type": "string",
-								"pattern": "^0x([1-9a-f]+[0-9a-f]{0,15})|0$"
+								"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
 							}
 						}
 					}

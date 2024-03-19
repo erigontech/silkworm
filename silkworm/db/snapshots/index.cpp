@@ -104,7 +104,7 @@ static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
               << " tx_id: " << tx_id;
         throw std::runtime_error{error.str()};
     }
-    const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
+    const ByteView tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
     ByteView tx_envelope_view{tx_envelope};
 
     rlp::Header tx_header;
@@ -126,7 +126,7 @@ static Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
               << " tx_id: " << tx_id;
         throw std::runtime_error{error.str()};
     }
-    const Bytes tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
+    const ByteView tx_payload{tx_buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
     const auto h256{keccak256(tx_payload)};
     std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
 

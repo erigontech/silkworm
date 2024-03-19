@@ -16,10 +16,6 @@
 
 #include "connection.hpp"
 
-#ifndef ZLIB_CONST
-#define ZLIB_CONST
-#endif
-
 #include <array>
 #include <exception>
 #include <string_view>

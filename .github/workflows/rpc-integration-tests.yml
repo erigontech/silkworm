@@ -109,6 +109,13 @@ jobs:
           name: test-results
           path: ${{runner.workspace}}/rpc-tests/integration/mainnet/results/
 
+      - name: Save test results
+        if: steps.test_step.outputs.TEST_RESULT != 'success'
+        working-directory: ${{runner.workspace}}/silkworm
+        env:
+          TEST_RESULT: ${{ steps.test_step.outputs.TEST_RESULT }}
+        run: python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-integration-tests --outcome $TEST_RESULT #--result_file ${{runner.workspace}}/rpc-tests/integration/mainnet/result.json
+
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'
         run: echo "::notice::Tests completed successfully"

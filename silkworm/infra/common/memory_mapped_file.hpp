@@ -114,7 +114,7 @@ class MemoryMappedFile {
     //! The path to the file
     std::filesystem::path path_;
 
-    //! The address of the mapped area
+    //! The area mapped in memory
     MemoryMappedRegion region_;
 
     //! Flag indicating if memory-mapping is managed internally or not

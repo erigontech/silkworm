@@ -280,10 +280,10 @@ void TransactionIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
-bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView tx_buffer) {
+bool TransactionIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) {
     Hash tx_hash;
     try {
-        tx_hash = tx_buffer_hash(tx_buffer, base_data_id_ + i);
+        tx_hash = tx_buffer_hash(word, base_data_id_ + i);
     } catch (const std::runtime_error& ex) {
         std::stringstream error;
         error << "TransactionIndex::build cannot build index for: " << segment_path_.path()

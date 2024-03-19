@@ -62,7 +62,6 @@ list(FILTER SRC EXCLUDE REGEX [[silkworm/core/crypto/kzg\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/infra/concurrency/thread_pool\.hpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/interfaces/]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/node/common/preverified_hashes_[a-z]+\.cpp$]])
-list(FILTER SRC EXCLUDE REGEX [[silkworm/rpc/json_rpc/specification\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/db/snapshots/config/[a-z_]+\.hpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/rpc/json_rpc/specification\.cpp$]])
 

@@ -91,9 +91,7 @@ class Connection : public StreamWriter {
 
     static std::string get_date_time();
 
-    std::string select_compression_algo(const std::string& request_compression);
-
-    void compress_data(const std::string& clear_data, std::string& compressed_data);
+    void compress(const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

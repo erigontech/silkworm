@@ -44,7 +44,6 @@ namespace silkworm::rpc::http {
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
-static std::vector<std::string> kSupportedCompressionList{"gzip"};  // specify the compression algo in priority level
 
 Connection::Connection(boost::asio::io_context& io_context,
                        commands::RpcApi& api,
@@ -183,23 +182,9 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
-    std::string selected_compression = "";
-    if (http_compression_ && !accept_encoding.empty()) {
-        selected_compression = select_compression_algo(accept_encoding);
-        if (selected_compression.empty()) {
-            std::string complete_list;
-            bool first = true;
-            for (std::string curr_compression : kSupportedCompressionList) {
-                if (first) {
-                    first = false;
-                } else {
-                    complete_list += ", ";
-                }
-                complete_list += curr_compression;
-            }
-            co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, complete_list);
-            co_return;
-        }
+    if (http_compression_ && !accept_encoding.empty() && accept_encoding != "gzip") {
+        co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, "gzip");
+        co_return;
     }
 
     if (!is_method_allowed(req.method())) {
@@ -231,7 +216,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
 
     auto rsp_content = co_await request_handler_.handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, selected_compression);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, accept_encoding);
     }
 }
 
@@ -306,15 +291,15 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         if (http_status == boost::beast::http::status::ok && !content_encoding.empty()) {
             // Positive response w/ compression required
             res.set(boost::beast::http::field::content_encoding, content_encoding);
-            std::string compressed_data;
+            std::string compressed_content;
             try {
-                compress_data(content, compressed_data);
+                compress(content, compressed_content);
             } catch (const std::exception& e) {
                 SILK_ERROR << "Connection::do_write cannot compress exception: " << e.what();
                 throw;
             }
-            res.content_length(compressed_data.length());
-            res.body() = std::move(compressed_data);
+            res.content_length(compressed_content.length());
+            res.body() = std::move(compressed_content);
         } else {
             // Any negative response or positive response w/o compression
             if (!content_encoding.empty()) {
@@ -340,7 +325,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
     co_return;
 }
 
-void Connection::compress_data(const std::string& clear_data, std::string& compressed_data) {
+void Connection::compress(const std::string& clear_data, std::string& compressed_data) {
     boost::iostreams::filtering_ostream out;
     out.push(boost::iostreams::gzip_compressor());
     out.push(boost::iostreams::back_inserter(compressed_data));
@@ -413,15 +398,6 @@ void Connection::set_cors(boost::beast::http::response<Body>& res) {
     } else {
         res.set(boost::beast::http::field::access_control_allow_origin, origin_);
     }
-}
-
-std::string Connection::select_compression_algo(const std::string& requested_compression) {
-    for (std::string curr_compression : kSupportedCompressionList) {
-        if (requested_compression.find(curr_compression) != std::string::npos) {
-            return curr_compression;
-        }
-    }
-    return "";
 }
 
 bool Connection::is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin) {

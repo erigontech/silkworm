@@ -15,6 +15,7 @@ jobs:
     env:
       ERIGON_DATA_DIR: /opt/erigon/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
 
     steps:
       - name: Checkout Silkworm Repository
@@ -54,6 +55,10 @@ jobs:
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
           echo "Silkworm RpcDaemon started"
 
+      - name: Pause the Erigon instance dedicated to db maintenance
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+
       - name: Run RPC Integration Tests
         id: test_step
         run: |
@@ -77,7 +82,7 @@ jobs:
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
             
             # Save failed results to a directory with timestamp and commit hash
-            mv ${{runner.workspace}}/rpc-tests/integration/mainnet/results $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)_http
+            cp -r ${{runner.workspace}}/rpc-tests/integration/mainnet/results/ $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)_http/
           fi
 
       - name: Stop Silkworm RpcDaemon
@@ -91,6 +96,17 @@ jobs:
           else
             echo "Silkworm RpcDaemon has already terminated"
           fi
+
+      - name: Resume the Erigon instance dedicated to db maintenance
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{runner.workspace}}/rpc-tests/integration/mainnet/results/
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

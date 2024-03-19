@@ -72,7 +72,8 @@ jobs:
           # Capture test runner script exit status
           perf_exit_status=$?
           
-          # Save test results to a directory with timestamp and commit hash
+          # Save test results to a directory with timestamp and commit hash 
+          cd ${{runner.workspace}}/silkworm  # to get git commit hash
           cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git rev-parse --short HEAD)        
           
           # Check test runner script exit status

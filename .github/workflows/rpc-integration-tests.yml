@@ -83,8 +83,7 @@ jobs:
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
             
             # Save failed results to a directory with timestamp and commit hash
-            cd ${{runner.workspace}}/silkworm  # to get git commit hash
-            cp -r ${{runner.workspace}}/rpc-tests/integration/mainnet/results/ $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git rev-parse --short HEAD)_http/
+            cp -r ${{runner.workspace}}/rpc-tests/integration/mainnet/results/ $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/
           fi
 
       - name: Stop Silkworm RpcDaemon

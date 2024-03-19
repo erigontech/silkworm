@@ -54,7 +54,7 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           echo "Silkworm RpcDaemon starting..."
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
+          #./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
           echo "Silkworm RpcDaemon started"

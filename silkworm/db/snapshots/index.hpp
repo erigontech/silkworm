@@ -23,7 +23,10 @@
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/infra/common/os.hpp>
+
+#include "txs_and_bodies_query.hpp"
 
 namespace silkworm::snapshots {
 
@@ -142,26 +145,32 @@ class TransactionIndex1 {
 
 class TransactionToBlockIndex : public Index {
   public:
-    TransactionToBlockIndex(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt)
-        : Index(IndexDescriptor{}, std::move(segment_path), segment_region),
-          bodies_segment_path_(bodies_segment_path) {
+    TransactionToBlockIndex(
+        const SnapshotPath& bodies_segment_path,
+        SnapshotPath segment_path,
+        std::optional<MemoryMappedRegion> segment_region = std::nullopt)
+        : Index(IndexDescriptor{}, segment_path, segment_region) {
         auto txs_amount = TransactionIndex1::compute_txs_amount(bodies_segment_path);
         const uint64_t first_tx_id = txs_amount.first;
         const uint64_t expected_tx_count = txs_amount.second;
 
         descriptor_ = TransactionIndex1::make_descriptor(first_tx_id, segment_path_.block_from(), false);
-        first_tx_id_ = first_tx_id;
         expected_tx_count_ = expected_tx_count;
+        query_ = TxsAndBodiesQuery{
+            std::move(segment_path),
+            segment_region,
+            bodies_segment_path,
+            std::nullopt,
+            first_tx_id,
+            expected_tx_count,
+        };
     }
 
     void build() override;
 
   private:
-    uint64_t read_tx_count();
-
-    SnapshotPath bodies_segment_path_;
-    uint64_t first_tx_id_{};
-    uint64_t expected_tx_count_{};
+    uint64_t expected_tx_count_;
+    std::optional<TxsAndBodiesQuery> query_;
 };
 
 }  // namespace silkworm::snapshots

@@ -157,105 +157,25 @@ std::pair<uint64_t, uint64_t> TransactionIndex1::compute_txs_amount(const Snapsh
     return bodies_snapshot.compute_txs_amount();
 }
 
-uint64_t TransactionToBlockIndex::read_tx_count() {
-    seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
-    txs_decoder.open();
-    return txs_decoder.words_count();
-}
-
 void TransactionToBlockIndex::build() {
-    SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
-    const SnapshotPath bodies_segment_path = bodies_segment_path_;
-    SILK_TRACE << "TransactionIndex::build bodies_segment path: " << bodies_segment_path.path().string();
+    const SnapshotPath index_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
+    SILK_TRACE << "TransactionIndex::build path: " << index_file.path().string() << " start";
 
-    const uint64_t first_tx_id = first_tx_id_;
-    const uint64_t expected_tx_count = expected_tx_count_;
-    SILK_TRACE << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
-
-    const auto tx_count = read_tx_count();
-    if (expected_tx_count != tx_count) {
-        std::stringstream error;
-        error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-              << " tx count mismatch: expected=" << std::to_string(expected_tx_count)
-              << " got=" << std::to_string(tx_count);
-        throw std::runtime_error{error.str()};
-    }
-
-    seg::Decompressor txs_decoder{segment_path_.path(), segment_region_};
-    txs_decoder.open();
-
-    const BlockNum first_block_num{segment_path_.block_from()};
-
-    const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions_to_block);
-    SILK_TRACE << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
-    RecSplitSettings tx_hash_to_block_rs_settings{
-        .keys_count = txs_decoder.words_count(),
+    RecSplitSettings rec_split_settings{
+        .keys_count = expected_tx_count_,
         .bucket_size = kBucketSize,
-        .index_path = tx2block_idx_file.path(),
+        .index_path = index_file.path(),
         .base_data_id = descriptor_.base_data_id,
         .double_enum_index = false,
         .less_false_positives = descriptor_.less_false_positives,
     };
-    RecSplit8 tx_hash_to_block_rs1{tx_hash_to_block_rs_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
+    RecSplit8 rec_split1{rec_split_settings, rec_split::seq_build_strategy(descriptor_.etl_buffer_size)};
 
-    seg::Decompressor bodies_decoder{bodies_segment_path.path()};
-    bodies_decoder.open();
-
-    tx_hash_to_block_rs1.build_without_collisions([&](RecSplit8& tx_hash_to_block_rs) {
-        {
-            {
-                auto body_it = bodies_decoder.begin();
-                if (body_it == bodies_decoder.end()) {
-                    throw std::runtime_error{"TransactionIndex::build no bodies to build transactions index for: " + segment_path_.path().string()};
-                }
-
-                BlockNum block_number = first_block_num;
-                BlockBodyForStorage body;
-                ByteView body_rlp = *body_it;
-                SILK_TRACE << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
-                auto decode_result = decode_stored_block_body(body_rlp, body);
-                if (!decode_result) {
-                    std::stringstream error;
-                    error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                          << " cannot decode block " << block_number
-                          << " body: " << to_hex(body_rlp)
-                          << " error: " << magic_enum::enum_name(decode_result.error());
-                    throw std::runtime_error{error.str()};
-                }
-
-                uint64_t i{0};
-                for (auto& tx_buffer : txs_decoder) {
-                    while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
-                        ++body_it;
-                        if (body_it == bodies_decoder.end()) {
-                            throw std::runtime_error{"TransactionIndex::build not enough bodies to build transactions index for: " + segment_path_.path().string()};
-                        }
-                        body_rlp = *body_it;
-                        decode_result = decode_stored_block_body(body_rlp, body);
-                        if (!decode_result) {
-                            std::stringstream error;
-                            error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                                  << " cannot decode block " << block_number
-                                  << " body: " << to_hex(body_rlp)
-                                  << " i: " << i
-                                  << " error: " << magic_enum::enum_name(decode_result.error());
-                            throw std::runtime_error{error.str()};
-                        }
-                        ++block_number;
-                    }
-
-                    tx_hash_to_block_rs.add_key(descriptor_.key_factory->make(tx_buffer, i), block_number);
-                    i++;
-                }
-
-                if (i != expected_tx_count) {
-                    std::stringstream error;
-                    error << "TransactionIndex::build cannot build index for: " << segment_path_.path()
-                          << " tx count mismatch: expected=" + std::to_string(expected_tx_count)
-                          << " got=" << std::to_string(i);
-                    throw std::runtime_error{error.str()};
-                }
-            }
+    rec_split1.build_without_collisions([&](RecSplit8& rec_split) {
+        uint64_t i{0};
+        for (auto& value : *query_) {
+            rec_split.add_key(descriptor_.key_factory->make(value.tx_buffer, i), value.block_number);
+            i++;
         }
     });
 

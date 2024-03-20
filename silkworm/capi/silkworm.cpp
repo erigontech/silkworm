@@ -58,6 +58,8 @@ static log::Settings kLogSettingsLikeErigon{
     .log_trim = true,       // compact rendering (i.e. no whitespaces)
 };
 static constexpr size_t kMaxBlockBufferSize{100};
+static constexpr size_t kAnalysisCacheSize{5'000};
+static constexpr size_t kMaxPrefetchedBlocks{10'240};
 
 using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
@@ -68,7 +70,7 @@ struct ExecutionProgress {
     size_t processed_blocks{0};
     size_t processed_transactions{0};
     size_t processed_gas{0};
-    float gas_state_perc{0.0};
+    float batch_progress_perc{0.0};
 };
 
 //! Kind of match to perform between Erigon and Silkworm libmdbx versions
@@ -162,6 +164,8 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
     progress.processed_blocks = 0;
     progress.processed_transactions = 0;
     progress.processed_gas = 0;
+    std::stringstream batch_progress_perc;
+    batch_progress_perc << std::fixed << std::setprecision(2) << progress.batch_progress_perc * 100 << "%";
     return {
         "number",
         std::to_string(current_block),
@@ -171,8 +175,8 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
         float_to_string(speed_transactions),
         "Mgas/s",
         float_to_string(speed_mgas),
-        "gasState",
-        float_to_string(progress.gas_state_perc)};
+        "batchProgress",
+        batch_progress_perc.str()};
 }
 
 //! A signal handler guard using RAII pattern to acquire/release signal handling
@@ -473,11 +477,184 @@ class BlockProvider {
     BlockNum max_block_;
 };
 
+class BlockExecutor {
+  public:
+    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size)
+        : chain_config_{chain_config},
+          protocol_rule_set_{protocol::rule_set_factory(*chain_config_)},
+          write_receipts_{write_receipts},
+          write_call_traces_{write_call_traces},
+          write_change_sets_{write_change_sets},
+          analysis_cache_{kAnalysisCacheSize},
+          state_pool_{},
+          progress_{.start_time = std::chrono::steady_clock::now()},
+          log_time_{progress_.start_time + 20s},
+          max_batch_size_{max_batch_size} {}
+
+    silkworm::ValidationResult execute_single(const silkworm::Block& block, silkworm::db::Buffer& state_buffer) {
+        ExecutionProcessor processor{block, *protocol_rule_set_, state_buffer, *chain_config_};
+        processor.evm().analysis_cache = &analysis_cache_;
+        processor.evm().state_pool = &state_pool_;
+
+        CallTraces traces;
+        CallTracer tracer{traces};
+        if (write_call_traces_) {
+            processor.evm().add_tracer(tracer);
+        }
+
+        std::vector<Receipt> receipts;
+        const auto result{processor.execute_and_write_block(receipts)};
+
+        if (result != ValidationResult::kOk) {
+            return result;
+        }
+
+        if (write_receipts_) {
+            state_buffer.insert_receipts(block.header.number, receipts);
+        }
+        if (write_call_traces_) {
+            state_buffer.insert_call_traces(block.header.number, traces);
+        }
+
+        state_buffer.write_history_to_db(write_change_sets_);
+
+        progress_.processed_blocks++;
+        progress_.processed_transactions += block.transactions.size();
+        progress_.processed_gas += block.header.gas_used;
+
+        const auto now{std::chrono::steady_clock::now()};
+        if (log_time_ <= now) {
+            progress_.batch_progress_perc = float(state_buffer.current_batch_state_size()) / float(max_batch_size_);
+            progress_.end_time = now;
+            log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_progress(progress_, block.header.number)};
+            log_time_ = now + 20s;
+        }
+
+        return result;
+    }
+
+  private:
+    const ChainConfig* chain_config_;
+    silkworm::protocol::RuleSetPtr protocol_rule_set_;
+    bool write_receipts_;
+    bool write_call_traces_;
+    bool write_change_sets_;
+    AnalysisCache analysis_cache_;
+    ObjectPool<evmone::ExecutionState> state_pool_;
+    ExecutionProgress progress_;
+    SteadyTimePoint log_time_;
+    const size_t max_batch_size_;
+};
+
+inline bool signal_check(SteadyTimePoint& signal_check_time) {
+    const auto now{std::chrono::steady_clock::now()};
+    if (signal_check_time <= now) {
+        if (SignalHandler::signalled()) {
+            return true;
+        }
+        signal_check_time += 5s;
+    }
+
+    return false;
+}
+
 SILKWORM_EXPORT
-int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn* mdbx_txn, uint64_t chain_id,
-                            uint64_t start_block, uint64_t max_block, uint64_t batch_size,
-                            bool write_change_sets, bool write_receipts, bool write_call_traces,
-                            uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn, uint64_t chain_id,
+                                      uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                                      bool write_change_sets, bool write_receipts, bool write_call_traces,
+                                      uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!mdbx_txn) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
+    if (start_block > max_block) {
+        return SILKWORM_INVALID_BLOCK_RANGE;
+    }
+    const auto chain_info = kKnownChainConfigs.find(chain_id);
+    if (!chain_info) {
+        return SILKWORM_UNKNOWN_CHAIN_ID;
+    }
+    SignalHandlerGuard signal_guard;
+
+    try {
+        auto txn = db::RWTxnUnmanaged{mdbx_txn};
+        const auto db_path{txn.db().get_path()};
+
+        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
+
+        const size_t max_batch_size{batch_size};
+        auto signal_check_time{std::chrono::steady_clock::now()};
+
+        BlockNum block_number{start_block};
+        db::DataModel da_layer{txn};
+        BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
+
+        while (block_number <= max_block) {
+            while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
+                if (prefetched_blocks.empty()) {
+                    const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+                    SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
+                    for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+                        prefetched_blocks.push_back();
+                        const bool success{da_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
+                        if (!success) {
+                            return SILKWORM_BLOCK_NOT_FOUND;
+                        }
+                    }
+                    SILK_TRACE << "Prefetching " << num_blocks << " blocks done";
+                }
+                const Block& block{prefetched_blocks.front()};
+
+                const auto result{block_executor.execute_single(block, state_buffer)};
+
+                if (result != ValidationResult::kOk) {
+                    return SILKWORM_INVALID_BLOCK;
+                }
+                if (signal_check(signal_check_time)) {
+                    return SILKWORM_TERMINATION_SIGNAL;
+                }
+
+                ++block_number;
+                prefetched_blocks.pop_front();
+            }
+
+            auto last_block_number = block_number - 1;
+            log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
+            state_buffer.write_state_to_db();
+            // Always save the Execution stage progress when state batch is flushed
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
+
+            if (last_executed_block) {
+                *last_executed_block = last_block_number;
+            }
+        }
+        return SILKWORM_OK;
+    } catch (const mdbx::exception& e) {
+        if (mdbx_error_code) {
+            *mdbx_error_code = e.error().code();
+        }
+        return SILKWORM_MDBX_ERROR;
+    } catch (const DecodingError&) {
+        return SILKWORM_DECODING_ERROR;
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what();
+        return SILKWORM_INTERNAL_ERROR;
+    } catch (...) {
+        SILK_ERROR << "unknown exception";
+        return SILKWORM_UNKNOWN_ERROR;
+    }
+}
+
+SILKWORM_EXPORT
+int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
+                                      uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                                      bool write_change_sets, bool write_receipts, bool write_call_traces,
+                                      uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -491,153 +668,66 @@ int silkworm_execute_blocks(SilkwormHandle handle, MDBX_env* mdbx_env, MDBX_txn*
     if (!chain_info) {
         return SILKWORM_UNKNOWN_CHAIN_ID;
     }
-    const ChainConfig* chain_config{*chain_info};
-    const bool use_external_txn{mdbx_txn != nullptr};
-
-    // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
-    db::EnvUnmanaged unmanaged_env{mdbx_env};
-    SILK_TRACE << "[Silkworm Exec] env=" << unmanaged_env.get_path().string() << " external_txn=" << std::boolalpha << use_external_txn;
-
     SignalHandlerGuard signal_guard;
+
     try {
-        std::unique_ptr<db::RWTxn> txn;
-        if (use_external_txn) {
-            // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither committed nor aborted
-            txn = std::make_unique<db::RWTxnUnmanaged>(mdbx_txn);
-        } else {
-            // Create a *managed* MDBX txn, i.e. MDBX txn is used and then either committed or aborted
-            txn = std::make_unique<db::RWTxnManaged>(unmanaged_env);
-        }
+        // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
+        db::EnvUnmanaged unmanaged_env{mdbx_env};
+        auto txn = db::RWTxnManaged{unmanaged_env};
+        const auto db_path{unmanaged_env.get_path()};
 
-        const auto db_path{txn->db().get_path()};
-
-        db::Buffer state_buffer{*txn, /*prune_history_threshold=*/0};
+        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
-        BlockProvider block_provider{&block_buffer, txn->db(), start_block, max_block};
+        BlockProvider block_provider{&block_buffer, unmanaged_env, start_block, max_block};
         boost::strict_scoped_thread<boost::interrupt_and_join_if_joinable> block_provider_thread(block_provider);
 
-        static constexpr size_t kCacheSize{5'000};
-        AnalysisCache analysis_cache{kCacheSize};
-        ObjectPool<evmone::ExecutionState> state_pool;
-
         const size_t max_batch_size{batch_size};
-
-        // Transform batch size limit into gas units (Ggas = Giga gas)
-        const size_t gas_max_batch_size{batch_size * 2_Kibi};  // 256MB -> 512Ggas roughly
-
-        ExecutionProgress progress{.start_time = std::chrono::steady_clock::now()};
-        auto signal_check_time{progress.start_time};
-        auto log_time{progress.start_time};
-
-        size_t gas_batch_size{0};
-
-        const auto protocol_rule_set{protocol::rule_set_factory(*chain_config)};
-        if (!protocol_rule_set) {
-            return SILKWORM_UNKNOWN_CHAIN_ID;
-        }
+        auto signal_check_time{std::chrono::steady_clock::now()};
 
         std::optional<Block> block;
-        db::DataModel da_layer{*txn};
-        Block b;
-        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
-            if (use_external_txn) {
-                if (const bool ok{da_layer.read_block(block_number, /*read_senders=*/true, b)}; ok) {
-                    block = std::move(b);
-                }
-            } else {
+        BlockNum block_number{start_block};
+        BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+
+        while (block_number <= max_block) {
+            while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
                 block_buffer.pop_back(&block);
-            }
-            if (!block || !block.has_value()) {
-                block_buffer.terminate_and_release_all();
-                return SILKWORM_BLOCK_NOT_FOUND;
-            }
-            SILKWORM_ASSERT(block->header.number == block_number);
+                if (!block) {
+                    block_buffer.terminate_and_release_all();
+                    return SILKWORM_BLOCK_NOT_FOUND;
+                }
+                SILKWORM_ASSERT(block->header.number == block_number);
 
-            ExecutionProcessor processor{*block, *protocol_rule_set, state_buffer, *chain_config};
-            processor.evm().analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
-            CallTraces traces;
-            CallTracer tracer{traces};
-            if (write_call_traces) {
-                processor.evm().add_tracer(tracer);
-            }
+                const auto result{block_executor.execute_single(*block, state_buffer)};
 
-            std::vector<Receipt> receipts;
-            const auto result{processor.execute_and_write_block(receipts)};
-            if (result != ValidationResult::kOk) {
-                block_buffer.terminate_and_release_all();
-                return SILKWORM_INVALID_BLOCK;
+                if (result != ValidationResult::kOk) {
+                    block_buffer.terminate_and_release_all();
+                    return SILKWORM_INVALID_BLOCK;
+                }
+                if (signal_check(signal_check_time)) {
+                    block_buffer.terminate_and_release_all();
+                    return SILKWORM_TERMINATION_SIGNAL;
+                }
+
+                ++block_number;
             }
 
-            if (write_receipts) {
-                state_buffer.insert_receipts(block->header.number, receipts);
-            }
-            if (write_call_traces) {
-                state_buffer.insert_call_traces(block->header.number, traces);
-            }
+            StopWatch sw{/*auto_start=*/true};
+            log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
+            state_buffer.write_state_to_db();
+            // Always save the Execution stage progress when state batch is flushed
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block->header.number);
+            // Commit and renew only in case of internally managed transaction
+            txn.commit_and_renew();
+            const auto [elapsed, _]{sw.stop()};
+            log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
+                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
 
             if (last_executed_block) {
                 *last_executed_block = block->header.number;
             }
-
-            ++progress.processed_blocks;
-            progress.processed_transactions += block->transactions.size();
-            progress.processed_gas += block->header.gas_used;
-            gas_batch_size += block->header.gas_used;
-
-            // Always flush history for single processed block (no batching)
-            state_buffer.write_history_to_db(write_change_sets);
-
-            // Flush state buffer if we've reached the target batch size
-            if (state_buffer.current_batch_state_size() >= max_batch_size) {
-                log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
-                state_buffer.write_state_to_db();
-                // Always save the Execution stage progess when state batch is flushed
-                db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block->header.number);
-                gas_batch_size = 0;
-                // Commit and renew only in case of internally managed transaction
-                if (!use_external_txn) {
-                    StopWatch sw{/*auto_start=*/true};
-                    txn->commit_and_renew();
-                    const auto [elapsed, _]{sw.stop()};
-                    log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                              log_args_for_exec_commit(sw.since_start(elapsed), db_path));
-                }
-            }
-
-            const auto now{std::chrono::steady_clock::now()};
-            if (signal_check_time <= now) {
-                if (SignalHandler::signalled()) {
-                    block_buffer.terminate_and_release_all();
-                    return SILKWORM_TERMINATION_SIGNAL;
-                }
-                signal_check_time = now + 5s;
-            }
-            if (log_time <= now) {
-                progress.gas_state_perc = float(gas_batch_size) / float(gas_max_batch_size);
-                progress.end_time = now;
-                log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
-                          log_args_for_exec_progress(progress, block->header.number)};
-                log_time = now + 20s;
-            }
-        }
-
-        log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                  log_args_for_exec_flush(state_buffer, max_batch_size, max_block)};
-        state_buffer.write_state_to_db();
-        // Always save the Execution stage progess when last state batch is flushed
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, max_block);
-        // Commit only in case of internally managed transaction
-        if (!use_external_txn) {
-            StopWatch sw{/*auto_start=*/true};
-            txn->commit_and_stop();
-            const auto [elapsed, _]{sw.stop()};
-            log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
         }
         return SILKWORM_OK;
-
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {
             *mdbx_error_code = e.error().code();

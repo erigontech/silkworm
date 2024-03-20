@@ -59,6 +59,7 @@ extern "C" {
 #define SILKWORM_TERMINATION_SIGNAL 15
 #define SILKWORM_SERVICE_ALREADY_STARTED 16
 #define SILKWORM_INCOMPATIBLE_LIBMDBX 17
+#define SILKWORM_INVALID_MDBX_TXN 18
 
 typedef struct MDBX_env MDBX_env;
 typedef struct MDBX_txn MDBX_txn;
@@ -187,9 +188,8 @@ SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct Si
 SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 
 /**
- * \brief Execute a batch of blocks and write resulting changes into the database.
+ * \brief Execute a batch of blocks and push changes to the given database transaction. No data is commited.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] env An valid MDBX environment. Must not be zero.
  * \param[in] txn A valid external read-write MDBX transaction or zero if an internal one must be used.
  * This function does not commit nor abort the transaction.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
@@ -209,10 +209,38 @@ SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEP
  * SILKWORM_BLOCK_NOT_FOUND is probably OK: it simply means that the execution reached the end of the chain
  * (blocks up to and incl. last_executed_block were still executed).
  */
-SILKWORM_EXPORT int silkworm_execute_blocks(
-    SilkwormHandle handle, MDBX_env* env, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
+SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
+    SilkwormHandle handle, MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
     uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
     uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
+
+
+/**
+ * \brief Execute a batch of blocks and write resulting changes into the database.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] mdbx_env An valid MDBX environment. Must not be zero.
+ * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
+ * \param[in] start_block The block height to start the execution from.
+ * \param[in] max_block Do not execute after this block.
+ * max_block may be executed, or the execution may stop earlier if the batch is full.
+ * \param[in] batch_size The size of DB changes to accumulate before returning from this method.
+ * Pass 0 if you want to execute just 1 block.
+ * \param[in] write_change_sets Whether to write state changes into the DB.
+ * \param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
+ * \param[in] write_call_traces Whether to write call traces into the DB.
+ * \param[out] last_executed_block The height of the last successfully executed block.
+ * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
+ * \param[out] mdbx_error_code If an MDBX error occurs (this function returns kSilkwormMdbxError)
+ * and mdbx_error_code isn't NULL, it's populated with the relevant MDBX error code.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ * SILKWORM_BLOCK_NOT_FOUND is probably OK: it simply means that the execution reached the end of the chain
+ * (blocks up to and incl. last_executed_block were still executed).
+ */
+SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
+                          uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                          bool write_change_sets, bool write_receipts, bool write_call_traces,
+                          uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
+
 
 /**
  * \brief Finalize the Silkworm C API library.

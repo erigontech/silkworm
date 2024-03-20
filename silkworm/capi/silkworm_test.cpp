@@ -141,8 +141,7 @@ struct SilkwormLibrary {
         int mdbx_error_code{0};
     };
 
-    ExecutionResult execute_blocks(MDBX_env* env,
-                                   MDBX_txn* txn,
+    ExecutionResult execute_blocks(MDBX_txn* txn,
                                    uint64_t chain_id,
                                    uint64_t start_block,
                                    uint64_t max_block,
@@ -152,10 +151,27 @@ struct SilkwormLibrary {
                                    bool write_call_traces) {
         ExecutionResult result;
         result.execute_block_result =
-            silkworm_execute_blocks(handle_, env, txn,
-                                    chain_id, start_block, max_block, batch_size,
-                                    write_change_sets, write_receipts, write_call_traces,
-                                    &result.last_executed_block, &result.mdbx_error_code);
+            silkworm_execute_blocks_ephemeral(handle_, txn,
+                                              chain_id, start_block, max_block, batch_size,
+                                              write_change_sets, write_receipts, write_call_traces,
+                                              &result.last_executed_block, &result.mdbx_error_code);
+        return result;
+    }
+
+    ExecutionResult execute_blocks_perpetual(MDBX_env* env,
+                                             uint64_t chain_id,
+                                             uint64_t start_block,
+                                             uint64_t max_block,
+                                             uint64_t batch_size,
+                                             bool write_change_sets,
+                                             bool write_receipts,
+                                             bool write_call_traces) {
+        ExecutionResult result;
+        result.execute_block_result =
+            silkworm_execute_blocks_perpetual(handle_, env,
+                                              chain_id, start_block, max_block, batch_size,
+                                              write_change_sets, write_receipts, write_call_traces,
+                                              &result.last_executed_block, &result.mdbx_error_code);
         return result;
     }
 
@@ -167,7 +183,25 @@ struct SilkwormLibrary {
     SilkwormHandle handle_{nullptr};
 };
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks: block not found", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not found", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const int chain_id{1};
+    const uint64_t batch_size{256 * kMebi};
+    BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
+    BlockNum end_block{100};
+    db::RWTxnManaged external_txn{db};
+    const auto result0{
+        silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
+                                    true, true, true)};
+    CHECK_NOTHROW(external_txn.commit_and_stop());
+    CHECK(result0.execute_block_result == SILKWORM_BLOCK_NOT_FOUND);
+    CHECK(result0.last_executed_block == 0);
+    CHECK(result0.mdbx_error_code == 0);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -176,9 +210,43 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks: block not found", "[si
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
     const auto result0{
-        silkworm_lib.execute_blocks(db, nullptr, chain_id, start_block, end_block, batch_size,
-                                    true, true, true)};
+        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
+                                              true, true, true)};
     CHECK(result0.execute_block_result == SILKWORM_BLOCK_NOT_FOUND);
+    CHECK(result0.last_executed_block == 0);
+    CHECK(result0.mdbx_error_code == 0);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not found", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const uint64_t chain_id{1000000};
+    const uint64_t batch_size{256 * kMebi};
+    BlockNum start_block{1};
+    BlockNum end_block{2};
+    db::RWTxnManaged external_txn{db};
+    const auto result0{
+        silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
+                                    true, true, true)};
+    CHECK_NOTHROW(external_txn.commit_and_stop());
+    CHECK(result0.execute_block_result == SILKWORM_UNKNOWN_CHAIN_ID);
+    CHECK(result0.last_executed_block == 0);
+    CHECK(result0.mdbx_error_code == 0);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not found", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const uint64_t chain_id{1000000};
+    const uint64_t batch_size{256 * kMebi};
+    BlockNum start_block{1};
+    BlockNum end_block{2};
+    const auto result0{
+        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
+                                              true, true, true)};
+    CHECK(result0.execute_block_result == SILKWORM_UNKNOWN_CHAIN_ID);
     CHECK(result0.last_executed_block == 0);
     CHECK(result0.mdbx_error_code == 0);
 }
@@ -206,7 +274,7 @@ static void insert_block(mdbx::env& env, Block& block) {
     rw_txn.commit_and_stop();
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -217,8 +285,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto tx, auto start_block, auto end_block) {
-        return silkworm_lib.execute_blocks(db,
-                                           tx,
+        return silkworm_lib.execute_blocks(tx,
                                            chain_id,
                                            start_block,
                                            end_block,
@@ -258,9 +325,11 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
 
     insert_block(db, block);
 
-    // Execute block 10 using an *internal* txn
+    // Execute block 11 using an *external* txn, then commit
+    db::RWTxnManaged external_txn0{db};
     BlockNum start_block{10}, end_block{10};
-    const auto result0{execute_blocks(nullptr, start_block, end_block)};
+    const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
+    CHECK_NOTHROW(external_txn0.commit_and_stop());
     CHECK(result0.execute_block_result == SILKWORM_OK);
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
@@ -279,11 +348,11 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
     insert_block(db, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn{db};
+    db::RWTxnManaged external_txn1{db};
 
     start_block = 11, end_block = 11;
-    const auto result1{execute_blocks(*external_txn, start_block, end_block)};
-    CHECK_NOTHROW(external_txn.commit_and_stop());
+    const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
+    CHECK_NOTHROW(external_txn1.commit_and_stop());
     CHECK(result1.execute_block_result == SILKWORM_OK);
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
@@ -293,7 +362,90 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks single block: OK", "[si
     CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block: OK", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const int chain_id{1};
+    const uint64_t batch_size{256 * kMebi};
+    const bool write_change_sets{false};  // We CANNOT write changesets here, TestDatabaseContext db already has them
+    const bool write_receipts{false};     // We CANNOT write receipts here, TestDatabaseContext db already has them
+    const bool write_call_traces{false};  // For coherence but don't care
+
+    auto execute_blocks = [&](auto start_block, auto end_block) {
+        return silkworm_lib.execute_blocks_perpetual(db,
+                                                     chain_id,
+                                                     start_block,
+                                                     end_block,
+                                                     batch_size,
+                                                     write_change_sets,
+                                                     write_receipts,
+                                                     write_call_traces);
+    };
+
+    /* TestDatabaseContext db contains a test chain made up of 9 blocks */
+
+    // Prepare and insert block 10 (just 1 tx w/ value transfer)
+    evmc::address from{0x658bdf435d810c91414ec09147daa6db62406379_address};  // funded in genesis
+    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};    // untouched address
+    intx::uint256 value{1 * kEther};
+
+    Block block{};
+    block.header.number = 10;
+    block.header.gas_limit = 5'000'000;
+    block.header.gas_used = 21'000;
+
+    static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
+    std::vector<Receipt> receipts{
+        {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+    block.transactions.resize(1);
+    block.transactions[0].to = to;
+    block.transactions[0].gas_limit = block.header.gas_limit;
+    block.transactions[0].type = TransactionType::kLegacy;
+    block.transactions[0].max_priority_fee_per_gas = 0;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].value = value;
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
+    block.transactions[0].set_sender(from);
+
+    insert_block(db, block);
+
+    // Execute block 10 using an *internal* txn
+    BlockNum start_block{10}, end_block{10};
+    const auto result0{execute_blocks(start_block, end_block)};
+    CHECK(result0.execute_block_result == SILKWORM_OK);
+    CHECK(result0.last_executed_block == end_block);
+    CHECK(result0.mdbx_error_code == 0);
+
+    db::ROTxnManaged ro_txn{db};
+    REQUIRE(db::read_account(ro_txn, to));
+    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ro_txn.abort();
+
+    // Prepare and insert block 11 (same as block 10)
+    block.transactions.erase(block.transactions.cbegin());
+    block.transactions.pop_back();
+    block.header.number = 11;
+    block.transactions[0].nonce++;
+
+    insert_block(db, block);
+
+    // Execute block 11 using an *internal* txn
+    start_block = 11, end_block = 11;
+    const auto result1{execute_blocks(start_block, end_block)};
+    CHECK(result1.execute_block_result == SILKWORM_OK);
+    CHECK(result1.last_executed_block == end_block);
+    CHECK(result1.mdbx_error_code == 0);
+
+    ro_txn = db::ROTxnManaged{db};
+    REQUIRE(db::read_account(ro_txn, to));
+    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
 
@@ -304,8 +456,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto tx, auto start_block, auto end_block) {
-        return silkworm_lib.execute_blocks(db,
-                                           tx,
+        return silkworm_lib.execute_blocks(tx,
                                            chain_id,
                                            start_block,
                                            end_block,
@@ -353,9 +504,11 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
         block.transactions[0].nonce++;
     }
 
-    // Execute N blocks using an *internal* txn
+    // Execute N blocks using an *external* txn, then commit
+    db::RWTxnManaged external_txn0{db};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
-    const auto result0{execute_blocks(nullptr, start_block, end_block)};
+    const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
+    CHECK_NOTHROW(external_txn0.commit_and_stop());
     CHECK(result0.execute_block_result == SILKWORM_OK);
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
@@ -375,11 +528,103 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks multiple blocks: OK", "
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn{db};
+    db::RWTxnManaged external_txn1{db};
 
     start_block = 10 + kBlocks, end_block = 10 + 2 * kBlocks - 1;
-    const auto result1{execute_blocks(*external_txn, start_block, end_block)};
-    CHECK_NOTHROW(external_txn.commit_and_stop());
+    const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
+    CHECK_NOTHROW(external_txn1.commit_and_stop());
+    CHECK(result1.execute_block_result == SILKWORM_OK);
+    CHECK(result1.last_executed_block == end_block);
+    CHECK(result1.mdbx_error_code == 0);
+
+    ro_txn = db::ROTxnManaged{db};
+    REQUIRE(db::read_account(ro_txn, to));
+    CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const int chain_id{1};
+    const uint64_t batch_size{256 * kMebi};
+    const bool write_change_sets{false};  // We CANNOT write changesets here, TestDatabaseContext db already has them
+    const bool write_receipts{false};     // We CANNOT write receipts here, TestDatabaseContext db already has them
+    const bool write_call_traces{false};  // For coherence but don't care
+
+    auto execute_blocks = [&](auto start_block, auto end_block) {
+        return silkworm_lib.execute_blocks_perpetual(db,
+                                                     chain_id,
+                                                     start_block,
+                                                     end_block,
+                                                     batch_size,
+                                                     write_change_sets,
+                                                     write_receipts,
+                                                     write_call_traces);
+    };
+
+    /* TestDatabaseContext db contains a test chain made up of 9 blocks */
+
+    // Prepare block template (just 1 tx w/ value transfer)
+    evmc::address from{0x658bdf435d810c91414ec09147daa6db62406379_address};  // funded in genesis
+    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};    // untouched address
+    intx::uint256 value{1};
+
+    Block block{};
+    block.header.gas_limit = 5'000'000;
+    block.header.gas_used = 21'000;
+
+    static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
+    std::vector<Receipt> receipts{
+        {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+    block.transactions.resize(1);
+    block.transactions[0].to = to;
+    block.transactions[0].gas_limit = block.header.gas_limit;
+    block.transactions[0].type = TransactionType::kLegacy;
+    block.transactions[0].max_priority_fee_per_gas = 0;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].value = value;
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
+    block.transactions[0].set_sender(from);
+
+    constexpr size_t kBlocks{130};
+
+    // Insert N blocks
+    for (size_t i{10}; i < 10 + kBlocks; ++i) {
+        block.header.number = i;
+        insert_block(db, block);
+        block.transactions.erase(block.transactions.cbegin());
+        block.transactions.pop_back();
+        block.transactions[0].nonce++;
+    }
+
+    // Execute N blocks using an *internal* txn
+    BlockNum start_block{10}, end_block{10 + kBlocks - 1};
+    const auto result0{execute_blocks(start_block, end_block)};
+    CHECK(result0.execute_block_result == SILKWORM_OK);
+    CHECK(result0.last_executed_block == end_block);
+    CHECK(result0.mdbx_error_code == 0);
+
+    db::ROTxnManaged ro_txn{db};
+    REQUIRE(db::read_account(ro_txn, to));
+    CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
+    ro_txn.abort();
+
+    // Insert N blocks again
+    for (size_t i{10 + kBlocks}; i < (10 + 2 * kBlocks); ++i) {
+        block.header.number = i;
+        insert_block(db, block);
+        block.transactions.erase(block.transactions.cbegin());
+        block.transactions.pop_back();
+        block.transactions[0].nonce++;
+    }
+
+    // Execute N blocks using an *internal* txn, then commit
+    start_block = 10 + kBlocks, end_block = 10 + 2 * kBlocks - 1;
+    const auto result1{execute_blocks(start_block, end_block)};
     CHECK(result1.execute_block_result == SILKWORM_OK);
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);

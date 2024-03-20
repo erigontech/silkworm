@@ -21,7 +21,11 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -197,7 +201,7 @@ std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) con
     return {};
 }
 
-std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
     std::vector<std::shared_ptr<Index>> missing_index_list;
     missing_index_list.reserve(segment_files.size());
@@ -208,22 +212,22 @@ std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const 
             std::shared_ptr<Index> index;
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
-                    index = std::make_shared<Index>(HeaderIndex::make(seg_file));
+                    index = std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file));
                     missing_index_list.push_back(index);
                     break;
                 }
                 case SnapshotType::bodies: {
-                    index = std::make_shared<Index>(BodyIndex::make(seg_file));
+                    index = std::make_shared<IndexBuilder>(BodyIndex::make(seg_file));
                     missing_index_list.push_back(index);
                     break;
                 }
                 case SnapshotType::transactions: {
                     auto bodies_segment_path = TransactionIndex1::bodies_segment_path(seg_file);
                     if (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end()) {
-                        index = std::make_shared<Index>(TransactionIndex1::make(bodies_segment_path, seg_file));
+                        index = std::make_shared<IndexBuilder>(TransactionIndex1::make(bodies_segment_path, seg_file));
                         missing_index_list.push_back(index);
 
-                        index = std::make_shared<TransactionToBlockIndex>(bodies_segment_path, seg_file);
+                        index = std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file));
                         missing_index_list.push_back(index);
                     }
                     break;

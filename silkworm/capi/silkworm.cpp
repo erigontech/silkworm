@@ -33,7 +33,11 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -267,7 +271,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                     index = std::make_shared<snapshots::Index>(snapshots::TransactionIndex1::make(bodies_segment_path, *snapshot_path));
                     needed_indexes.push_back(index);
 
-                    index = std::make_shared<snapshots::TransactionToBlockIndex>(bodies_segment_path, *snapshot_path);
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionToBlockIndex::make(bodies_segment_path, *snapshot_path));
                     needed_indexes.push_back(index);
                 }
                 break;

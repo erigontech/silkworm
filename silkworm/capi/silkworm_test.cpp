@@ -23,9 +23,13 @@
 
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
@@ -656,7 +660,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
 
     auto tx_index = snapshots::TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
     tx_index.build();
-    snapshots::TransactionToBlockIndex tx_index_hash_to_block{body_snapshot_path, tx_snapshot_path};
+    auto tx_index_hash_to_block = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
     tx_index_hash_to_block.build();
     snapshots::TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();

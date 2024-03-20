@@ -33,10 +33,14 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -297,7 +301,7 @@ void create_index(const SnapSettings& settings, int repetitions) {
                     auto index = TransactionIndex1::make(bodies_segment_path, *snap_file);
                     index.build();
 
-                    TransactionToBlockIndex index_hash_to_block(bodies_segment_path, *snap_file);
+                    auto index_hash_to_block = TransactionToBlockIndex::make(bodies_segment_path, *snap_file);
                     index_hash_to_block.build();
                     break;
                 }

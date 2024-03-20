@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -98,6 +99,8 @@ class TxsAndBodiesQuery {
 
     Iterator begin();
     Iterator end();
+
+    uint64_t expected_tx_count() { return expected_tx_count_; }
 
   private:
     SnapshotPath txs_segment_path_;

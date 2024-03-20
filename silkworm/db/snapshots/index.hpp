@@ -16,161 +16,121 @@
 
 #pragma once
 
+#include <cstdint>
+#include <iterator>
 #include <memory>
+#include <optional>
 #include <utility>
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/etl/collector.hpp>
 #include <silkworm/db/snapshots/path.hpp>
-#include <silkworm/db/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
-#include <silkworm/infra/common/os.hpp>
-
-#include "txs_and_bodies_query.hpp"
 
 namespace silkworm::snapshots {
 
 struct IndexKeyFactory {
     virtual ~IndexKeyFactory() = default;
-    virtual Bytes make(ByteView word, uint64_t i) = 0;
+    virtual Bytes make(ByteView key_data, uint64_t i) = 0;
 };
 
 struct IndexDescriptor {
+    SnapshotPath index_file;
     std::unique_ptr<IndexKeyFactory> key_factory;
     uint64_t base_data_id{};
+    bool double_enum_index{true};
     bool less_false_positives{};
     size_t etl_buffer_size{db::etl::kOptimalBufferSize};
 };
 
-class Index {
-  public:
-    static inline const auto kPageSize{os::page_size()};
-    static constexpr std::size_t kBucketSize{2'000};
+struct IndexInputDataQuery {
+    class Iterator {
+      public:
+        struct value_type {
+            ByteView key_data;
+            uint64_t value{};
+        };
 
-    explicit Index(
-        IndexDescriptor descriptor,
+        Iterator(IndexInputDataQuery* query, std::shared_ptr<void> impl, value_type entry)
+            : query_(query), impl_(std::move(impl)), entry_(entry) {}
+
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = void;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        reference operator*() { return entry_; }
+        pointer operator->() { return &entry_; }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++();
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+
+      private:
+        IndexInputDataQuery* query_;
+        std::shared_ptr<void> impl_;
+        value_type entry_;
+    };
+
+    virtual ~IndexInputDataQuery() = default;
+
+    virtual Iterator begin() = 0;
+    virtual Iterator end() = 0;
+    virtual std::size_t keys_count() = 0;
+    virtual std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) = 0;
+    virtual bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const = 0;
+};
+
+class DecompressorIndexInputDataQuery : public IndexInputDataQuery {
+  public:
+    DecompressorIndexInputDataQuery(
         SnapshotPath segment_path,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt)
-        : descriptor_(std::move(descriptor)),
-          segment_path_(std::move(segment_path)),
+        : segment_path_(std::move(segment_path)),
           segment_region_(segment_region) {}
-    virtual ~Index() = default;
 
-    Index(Index&&) = default;
-    Index& operator=(Index&&) = default;
+    Iterator begin() override;
+    Iterator end() override;
+    std::size_t keys_count() override;
+    std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) override;
+    bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const override;
 
-    [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
+  private:
+    struct IteratorImpl {
+        std::shared_ptr<seg::Decompressor> decoder;
+        seg::Decompressor::Iterator it;
+    };
 
-    virtual void build();
-
-  protected:
-    IndexDescriptor descriptor_;
     SnapshotPath segment_path_;
     std::optional<MemoryMappedRegion> segment_region_;
 };
 
-class HeaderIndex {
-  public:
-    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
-        return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
-    }
+struct IndexBuilder {
+    IndexBuilder(
+        IndexDescriptor descriptor,
+        std::unique_ptr<IndexInputDataQuery> query)
+        : descriptor_(std::move(descriptor)),
+          query_(std::move(query)) {}
+    virtual ~IndexBuilder() = default;
 
-    struct KeyFactory : IndexKeyFactory {
-        ~KeyFactory() override = default;
-        Bytes make(ByteView word, uint64_t i) override;
-    };
+    IndexBuilder(IndexBuilder&&) = default;
+    IndexBuilder& operator=(IndexBuilder&&) = default;
 
-  private:
-    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
-        return {
-            .key_factory = std::make_unique<KeyFactory>(),
-            .base_data_id = segment_path.block_from(),
-        };
-    }
-};
+    void build();
 
-class BodyIndex {
-  public:
-    static Index make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
-        return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
-    }
-
-    struct KeyFactory : IndexKeyFactory {
-        ~KeyFactory() override = default;
-        Bytes make(ByteView word, uint64_t i) override;
-    };
+    const SnapshotPath& path() const { return descriptor_.index_file; }
 
   private:
-    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
-        return {
-            .key_factory = std::make_unique<KeyFactory>(),
-            .base_data_id = segment_path.block_from(),
-        };
-    }
+    static constexpr std::size_t kBucketSize{2'000};
+
+    IndexDescriptor descriptor_;
+    std::unique_ptr<IndexInputDataQuery> query_;
 };
 
-struct TransactionKeyFactory : IndexKeyFactory {
-    TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
-    ~TransactionKeyFactory() override = default;
-
-    Bytes make(ByteView word, uint64_t i) override;
-
-  private:
-    uint64_t first_tx_id_;
-};
-
-class TransactionIndex1 {
-  public:
-    static Index make(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
-        auto txs_amount = compute_txs_amount(bodies_segment_path);
-        return Index{make_descriptor(txs_amount.first, txs_amount.first, true), std::move(segment_path), segment_region};
-    }
-
-    static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
-
-  private:
-    static std::pair<uint64_t, uint64_t> compute_txs_amount(const SnapshotPath& bodies_segment_path);
-
-    static IndexDescriptor make_descriptor(uint64_t first_tx_id, uint64_t base_data_id, bool less_false_positives) {
-        return {
-            .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
-            .base_data_id = base_data_id,
-            .less_false_positives = less_false_positives,
-            .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
-        };
-    }
-
-    friend class TransactionToBlockIndex;
-};
-
-class TransactionToBlockIndex : public Index {
-  public:
-    TransactionToBlockIndex(
-        const SnapshotPath& bodies_segment_path,
-        SnapshotPath segment_path,
-        std::optional<MemoryMappedRegion> segment_region = std::nullopt)
-        : Index(IndexDescriptor{}, segment_path, segment_region) {
-        auto txs_amount = TransactionIndex1::compute_txs_amount(bodies_segment_path);
-        const uint64_t first_tx_id = txs_amount.first;
-        const uint64_t expected_tx_count = txs_amount.second;
-
-        descriptor_ = TransactionIndex1::make_descriptor(first_tx_id, segment_path_.block_from(), false);
-        expected_tx_count_ = expected_tx_count;
-        query_ = TxsAndBodiesQuery{
-            std::move(segment_path),
-            segment_region,
-            bodies_segment_path,
-            std::nullopt,
-            first_tx_id,
-            expected_tx_count,
-        };
-    }
-
-    void build() override;
-
-  private:
-    uint64_t expected_tx_count_;
-    std::optional<TxsAndBodiesQuery> query_;
-};
+// TODO: remove
+using Index = IndexBuilder;
 
 }  // namespace silkworm::snapshots

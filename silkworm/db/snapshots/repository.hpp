@@ -31,7 +31,7 @@
 
 namespace silkworm::snapshots {
 
-class Index;
+struct IndexBuilder;
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -113,7 +113,7 @@ class SnapshotRepository {
     [[nodiscard]] const BodySnapshot* find_body_segment(BlockNum number) const;
     [[nodiscard]] const TransactionSnapshot* find_tx_segment(BlockNum number) const;
 
-    [[nodiscard]] std::vector<std::shared_ptr<Index>> missing_indexes() const;
+    [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
 
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
     [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }

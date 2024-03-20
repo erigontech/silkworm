@@ -18,8 +18,12 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -178,7 +182,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     REQUIRE_NOTHROW(TransactionIndex1::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
@@ -226,7 +230,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     REQUIRE_NOTHROW(TransactionIndex1::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 

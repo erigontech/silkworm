@@ -52,7 +52,7 @@ jobs:
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
-      - name: Run RPC Integration Tests
+      - name: Run RPC Performance Tests
         id: test_step
         run: |
           set +e # Disable exit on error

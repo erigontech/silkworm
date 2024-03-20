@@ -81,6 +81,43 @@ If you need to update the list of builtin snapshots in Silkworm, the following p
 ```
 
 
+## Adding Network Genesis Definitions
+
+We use configuration files in JSON format to specify the formal genesis definition for any supported networks. You can find
+all the currently supported configurations looking at `genesis_<network>.json` files in `silkworm/core/chain` folder.
+
+If you need to expand or modify the network configurations used by Silkworm, the following procedure must be applied:
+
+1. add new or edit existing JSON genesis files in `silkworm/core/chain` following the naming convention `genesis_<network>.json`
+2. generate the C++ code bindings for JSON genesis files by executing from project home folder:
+```
+<build_folder>/cmd/dev/embed_json -i silkworm/core/chain -o silkworm/core/chain -w
+```
+
+
+## Updating Ethereum JSON-RPC Specification
+
+We use the specification in [Ethereum JSON RPC Execution API][ethereum-execution-api] in order to formally validate the
+incoming requests in our RPC daemon.
+
+### Update Specification from Official Source
+If you need to update the official specification imported by Silkworm, the following procedure must be applied:
+
+1. update `execution-apis` submodule to the new commit
+2. generate the all-in-one JSON specification file following the build instructions in [Ethereum JSON RPC Execution API][ethereum-execution-api]
+3. copy and rename the generated JSON specification file into `silkworm/rpc/json_rpc/specification.json`, resolving the conflicts that may arise 
+4. generate the C++ code bindings for JSON specification by executing from project home folder:
+```
+<build_folder>/cmd/dev/embed_json -i silkworm/rpc/json_rpc -o silkworm/rpc/json_rpc -p specification -n silkworm::rpc::json_rpc -w
+```
+
+### Patch Local Specification
+If you need to patch the local copy of the specification used by Silkworm, the following procedure must be applied:
+
+1. edit the generated JSON specification file in `silkworm/rpc/json_rpc/specification.json`
+2. generate the C++ code bindings for JSON specification as specified at step 4. in previous section above
+
+
 ## C API for Erigon
 
 One of the main goals of Silkworm is providing fast C++ libraries directly usable within [Erigon][erigon]. In order to

@@ -59,14 +59,14 @@ void Index::build() {
         for (auto it = decoder.begin(); it != decoder.end(); ++it, ++i) {
             auto& word = *it;
             auto offset = it.current_word_offset();
-            rec_split.add_key(descriptor_.make_key(word, i), offset);
+            rec_split.add_key(descriptor_.key_factory->make(word, i), offset);
         }
     });
 
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
 
-Bytes HeaderIndex::make_key(ByteView word, uint64_t i) {
+Bytes HeaderIndex::KeyFactory::make(ByteView word, uint64_t i) {
     ensure(!word.empty(), [&]() { return "HeaderIndex: word empty i=" + std::to_string(i); });
     const uint8_t first_hash_byte{word[0]};
     const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
@@ -76,7 +76,7 @@ Bytes HeaderIndex::make_key(ByteView word, uint64_t i) {
     return Bytes{ByteView{hash.bytes}};
 }
 
-Bytes BodyIndex::make_key(ByteView /*word*/, uint64_t i) {
+Bytes BodyIndex::KeyFactory::make(ByteView /*word*/, uint64_t i) {
     Bytes uint64_buffer;
     seg::varint::encode(uint64_buffer, i);
     return uint64_buffer;
@@ -244,7 +244,7 @@ void TransactionToBlockIndex::build() {
                         ++block_number;
                     }
 
-                    tx_hash_to_block_rs.add_key(descriptor_.make_key(tx_buffer, i), block_number);
+                    tx_hash_to_block_rs.add_key(descriptor_.key_factory->make(tx_buffer, i), block_number);
                     i++;
                 }
 
@@ -262,8 +262,8 @@ void TransactionToBlockIndex::build() {
     SILK_TRACE << "TransactionIndex::build path: " << segment_path_.path().string() << " end";
 }
 
-Bytes TransactionIndex1::make_key(ByteView word, uint64_t i, uint64_t first_tx_id) {
-    return Bytes{tx_buffer_hash(word, first_tx_id + i)};
+Bytes TransactionKeyFactory::make(ByteView word, uint64_t i) {
+    return Bytes{tx_buffer_hash(word, first_tx_id_ + i)};
 }
 
 }  // namespace silkworm::snapshots

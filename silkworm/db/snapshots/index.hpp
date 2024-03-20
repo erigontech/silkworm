@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <functional>
+#include <memory>
 #include <utility>
 
 #include <silkworm/db/etl/collector.hpp>
@@ -27,8 +27,13 @@
 
 namespace silkworm::snapshots {
 
+struct IndexKeyFactory {
+    virtual ~IndexKeyFactory() = default;
+    virtual Bytes make(ByteView word, uint64_t i) = 0;
+};
+
 struct IndexDescriptor {
-    std::function<Bytes(ByteView word, uint64_t i)> make_key;
+    std::unique_ptr<IndexKeyFactory> key_factory;
     uint64_t base_data_id{};
     bool less_false_positives{};
     size_t etl_buffer_size{db::etl::kOptimalBufferSize};
@@ -48,6 +53,9 @@ class Index {
           segment_region_(segment_region) {}
     virtual ~Index() = default;
 
+    Index(Index&&) = default;
+    Index& operator=(Index&&) = default;
+
     [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
 
     virtual void build();
@@ -64,12 +72,15 @@ class HeaderIndex {
         return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
     }
 
-  private:
-    static Bytes make_key(ByteView word, uint64_t i);
+    struct KeyFactory : IndexKeyFactory {
+        ~KeyFactory() override = default;
+        Bytes make(ByteView word, uint64_t i) override;
+    };
 
+  private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
         return {
-            .make_key = HeaderIndex::make_key,
+            .key_factory = std::make_unique<KeyFactory>(),
             .base_data_id = segment_path.block_from(),
         };
     }
@@ -81,17 +92,28 @@ class BodyIndex {
         return Index{make_descriptor(segment_path), std::move(segment_path), segment_region};
     }
 
-  private:
-    static Bytes make_key(ByteView word, uint64_t i);
+    struct KeyFactory : IndexKeyFactory {
+        ~KeyFactory() override = default;
+        Bytes make(ByteView word, uint64_t i) override;
+    };
 
+  private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
         return {
-            .make_key = BodyIndex::make_key,
+            .key_factory = std::make_unique<KeyFactory>(),
             .base_data_id = segment_path.block_from(),
         };
     }
+};
 
-    Index index_;
+struct TransactionKeyFactory : IndexKeyFactory {
+    TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
+    ~TransactionKeyFactory() override = default;
+
+    Bytes make(ByteView word, uint64_t i) override;
+
+  private:
+    uint64_t first_tx_id_;
 };
 
 class TransactionIndex1 {
@@ -104,12 +126,11 @@ class TransactionIndex1 {
     static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
 
   private:
-    static Bytes make_key(ByteView word, uint64_t i, uint64_t first_tx_id);
     static std::pair<uint64_t, uint64_t> compute_txs_amount(const SnapshotPath& bodies_segment_path);
 
     static IndexDescriptor make_descriptor(uint64_t first_tx_id, uint64_t base_data_id, bool less_false_positives) {
         return {
-            .make_key = [=](ByteView word, uint64_t i) { return make_key(word, i, first_tx_id); },
+            .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = base_data_id,
             .less_false_positives = less_false_positives,
             .etl_buffer_size = db::etl::kOptimalBufferSize / 2,

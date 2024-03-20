@@ -217,6 +217,40 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not fo
     CHECK(result0.mdbx_error_code == 0);
 }
 
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not found", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const uint64_t chain_id{1000000};
+    const uint64_t batch_size{256 * kMebi};
+    BlockNum start_block{1};
+    BlockNum end_block{2};
+    db::RWTxnManaged external_txn{db};
+    const auto result0{
+        silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
+                                    true, true, true)};
+    CHECK_NOTHROW(external_txn.commit_and_stop());
+    CHECK(result0.execute_block_result == SILKWORM_UNKNOWN_CHAIN_ID);
+    CHECK(result0.last_executed_block == 0);
+    CHECK(result0.mdbx_error_code == 0);
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not found", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    const uint64_t chain_id{1000000};
+    const uint64_t batch_size{256 * kMebi};
+    BlockNum start_block{1};
+    BlockNum end_block{2};
+    const auto result0{
+        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
+                                              true, true, true)};
+    CHECK(result0.execute_block_result == SILKWORM_UNKNOWN_CHAIN_ID);
+    CHECK(result0.last_executed_block == 0);
+    CHECK(result0.mdbx_error_code == 0);
+}
+
 static void insert_block(mdbx::env& env, Block& block) {
     auto block_hash = block.header.hash();
     auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);

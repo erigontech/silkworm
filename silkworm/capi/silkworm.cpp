@@ -479,25 +479,17 @@ class BlockProvider {
 
 class BlockExecutor {
   public:
-    BlockExecutor(uint64_t chain_id, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size)
-        : write_receipts_{write_receipts},
+    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size)
+        : chain_config_{chain_config},
+          protocol_rule_set_{protocol::rule_set_factory(*chain_config_)},
+          write_receipts_{write_receipts},
           write_call_traces_{write_call_traces},
           write_change_sets_{write_change_sets},
           analysis_cache_{kAnalysisCacheSize},
           state_pool_{},
           progress_{.start_time = std::chrono::steady_clock::now()},
           log_time_{progress_.start_time + 20s},
-          max_batch_size_{max_batch_size} {
-        const auto chain_info = kKnownChainConfigs.find(chain_id);
-        chain_config_ = *chain_info;
-        if (chain_config_) {
-            protocol_rule_set_ = protocol::rule_set_factory(*chain_config_);
-        }
-    }
-
-    bool has_known_chain_id() const {
-        return chain_config_ != nullptr && protocol_rule_set_ != nullptr;
-    }
+          max_batch_size_{max_batch_size} {}
 
     silkworm::ValidationResult execute_single(const silkworm::Block& block, silkworm::db::Buffer& state_buffer) {
         ExecutionProcessor processor{block, *protocol_rule_set_, state_buffer, *chain_config_};
@@ -581,7 +573,10 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
     }
-
+    const auto chain_info = kKnownChainConfigs.find(chain_id);
+    if (!chain_info) {
+        return SILKWORM_UNKNOWN_CHAIN_ID;
+    }
     SignalHandlerGuard signal_guard;
 
     try {
@@ -595,14 +590,9 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
         BlockNum block_number{start_block};
         db::DataModel da_layer{txn};
-        BlockExecutor block_executor{chain_id, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
-        if (!block_executor.has_known_chain_id()) {
-            return SILKWORM_UNKNOWN_CHAIN_ID;
-        }
-
-        // for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
         while (block_number <= max_block) {
             while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
                 if (prefetched_blocks.empty()) {
@@ -636,7 +626,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
             state_buffer.write_state_to_db();
-            // Always save the Execution stage progess when state batch is flushed
+            // Always save the Execution stage progress when state batch is flushed
             db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
 
             if (last_executed_block) {
@@ -674,6 +664,10 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     if (start_block > max_block) {
         return SILKWORM_INVALID_BLOCK_RANGE;
     }
+    const auto chain_info = kKnownChainConfigs.find(chain_id);
+    if (!chain_info) {
+        return SILKWORM_UNKNOWN_CHAIN_ID;
+    }
     SignalHandlerGuard signal_guard;
 
     try {
@@ -692,16 +686,12 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         std::optional<Block> block;
         BlockNum block_number{start_block};
-        BlockExecutor block_executor{chain_id, write_receipts, write_call_traces, write_change_sets, max_batch_size};
-
-        if (!block_executor.has_known_chain_id()) {
-            return SILKWORM_UNKNOWN_CHAIN_ID;
-        }
+        BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
 
         while (block_number <= max_block) {
             while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
                 block_buffer.pop_back(&block);
-                if (!block || !block.has_value()) {
+                if (!block) {
                     block_buffer.terminate_and_release_all();
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
@@ -725,7 +715,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
             state_buffer.write_state_to_db();
-            // Always save the Execution stage progess when state batch is flushed
+            // Always save the Execution stage progress when state batch is flushed
             db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block->header.number);
             // Commit and renew only in case of internally managed transaction
             txn.commit_and_renew();

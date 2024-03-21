@@ -1,0 +1,78 @@
+#   Copyright 2023 The Silkworm Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+name: Windows
+
+on:
+  push:
+    branches:
+      - master
+      - 'ci/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    # Disable on external PRs
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+
+    strategy:
+      matrix:
+        config:
+          - {build_type: "Release"}
+      fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: "0"
+
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.60.2
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory C:\build
+
+    - name: Configure CMake
+      working-directory: C:\build
+      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+
+    - name: Build unit tests
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target all_unit_tests -j 1
+
+    - name: Build Ethereum EL tests
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target ethereum -j 2
+
+    - name: Smoke tests
+      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_smoke_tests.cmake
+
+    - name: Unit tests
+      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_unit_tests.cmake
+
+    - name: Ethereum EL tests
+      working-directory: C:\build
+      run: |
+        cmd/test/${{ matrix.config.build_type }}/ethereum --threads 4

@@ -1,0 +1,476 @@
+#   Copyright 2020 The Silkworm Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+version: 2.1
+orbs:
+  codecov: codecov/codecov@3.3.0
+
+commands:
+  checkout_with_submodules:
+    parameters:
+      ethereum_tests:
+        description: Include a heavy Ethereum tests submodule if needed.
+        type: boolean
+        default: true
+    steps:
+      - checkout
+      - run:
+          name: "Update submodules"
+          command: |
+            if [[ <<parameters.ethereum_tests>> == false ]]
+            then
+              git config submodule.ethereum-tests.update none
+            fi
+
+            git submodule sync
+            git -c submodule.LegacyTests.update=none submodule update --init --recursive
+
+  build:
+    parameters:
+      build_type:
+        type: string
+        default: Release
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
+      conan_profile:
+        type: string
+        default: none
+      target:
+        type: string
+        default: all
+    steps:
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
+      - run:
+          name: "Cmake"
+          working_directory: ~/build
+          command: |
+            if [[ "<<parameters.conan_profile>>" != "none" ]]
+            then
+                CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
+            fi
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
+            fi
+
+            cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
+      - run:
+          name: "Build"
+          command:  |
+            if [[ "<<parameters.target>>" == "all" ]]
+            then
+                cmake --build ~/build -j16
+            else
+                cmake --build ~/build -j16 --target <<parameters.target>>
+            fi
+
+  build_using_conan:
+    parameters:
+      build_type:
+        type: string
+        default: Release
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
+      target:
+        type: string
+        default: all
+    steps:
+      - run:
+          name: "Install Conan"
+          command: sudo pip3 install conan==1.60.2 chardet
+      - run:
+          name: "Select Conan profile"
+          command: |
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                conan_profile=linux_x64_clang_13_release
+            else
+                conan_profile=linux_x64_gcc_11_release
+            fi
+            echo "export CONAN_PROFILE='$conan_profile'" >> "$BASH_ENV"
+            cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
+      - restore_cache:
+          name: "Restore Conan cache"
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}
+      - build:
+          build_type: <<parameters.build_type>>
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
+          conan_profile: $CONAN_PROFILE
+          target: <<parameters.target>>
+      - save_cache:
+          name: "Save Conan cache"
+          key: *conan-cache-key
+          paths:
+            - ~/.conan
+
+  build_fuzzer:
+    steps:
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - run:
+          name: "Ensure pip"
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3-pip
+            sudo pip install conan==1.60.2 chardet
+            sudo apt-get update
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh clang 15
+      - run:
+          name: "CMake Fuzzer"
+          working_directory: ~/build
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+      - run:
+          name: "Build Fuzzer"
+          command: |
+            cmake --build ~/build -j4 --target rpcdaemon_fuzzer_test
+            cmake --build ~/build -j4 --target rpcdaemon_fuzzer_diagnostics
+
+  test:
+    parameters:
+      ethereum_tests:
+        type: boolean
+        default: true
+    steps:
+      - run:
+          name: "Smoke tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" run_smoke_tests
+      - run:
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" run_unit_tests
+      - when:
+          condition: <<parameters.ethereum_tests>>
+          steps:
+            - run:
+                name: "Ethereum EL tests"
+                working_directory: ~/build
+                no_output_timeout: 30m
+                command: cmd/test/ethereum
+      - run:
+          name: "Execution spec tests"
+          working_directory: ~/build
+          command: cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
+
+  fuzz-test:
+    steps:
+      - run:
+          name: "RPCDaemon Fuzz test"
+          working_directory: ~/build
+          command: |
+            mkdir -p ~/corpus
+            mkdir -p ~/crashes
+            mkdir -p ~/artifacts
+            for file in ../project/third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" ~/artifacts; done
+            for file in ~/artifacts/*; do sed -i '2,$d' "$file"; done
+            for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
+            ./cmd/test/rpcdaemon_fuzzer_test ~/corpus ~/crashes ~/artifacts -max_total_time=86400 -detect_leaks=0
+
+jobs:
+  lint:
+    machine:
+      image: ubuntu-2204:2023.04.2    
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "4b:13:8d:15:b9:98:1a:dc:96:c2:b9:ab:fa:c1:d4:e6"
+      - checkout
+      - run:
+          name: "Format"
+          working_directory: ~/project
+          command: |
+            sudo pip install cmake-format==0.6.13
+            make fmt
+            if ! git diff --exit-code
+            then
+                commit_message="make fmt"
+                head_commit_message="$(git log -1 --pretty=%B)"
+
+                if [[ "$head_commit_message" == "$commit_message" ]]
+                then
+                    echo "The formatting style is not compliant, although it was formatted. Try to run 'make fmt' locally and push the changes."
+                    exit 1
+                else
+                    git config user.name GitHub
+                    git config user.email noreply@github.com
+                    git commit --all --message="$commit_message"
+                    git config push.autoSetupRemote true
+                    git push
+
+                    echo "The formatting style was not compliant, but it is fixed now. A new workflow will start soon, wait for it..."
+                    exit 2
+                fi
+            fi
+      - run:
+          name: "Copyright"
+          working_directory: ~/project
+          command: cmake -P cmake/copyright.cmake
+
+  linux-gcc-thread-sanitizer:
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - checkout_with_submodules
+      - build_using_conan:
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          build_type: Debug
+      - test
+
+  linux-release:
+    parameters:
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
+      ethereum_tests:
+        type: boolean
+        default: true
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - checkout_with_submodules:
+          ethereum_tests: <<parameters.ethereum_tests>>
+      - build_using_conan:
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
+      - test:
+          ethereum_tests: <<parameters.ethereum_tests>>
+
+  linux-clang-address-sanitizer:
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
+      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
+      UBSAN_OPTIONS: print_stacktrace=1
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - checkout_with_submodules
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - test
+
+  linux-clang-coverage:
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - checkout_with_submodules
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - run:
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=ON run_unit_tests
+      - run:
+          name: "Ethereum EL tests"
+          no_output_timeout: 30m
+          command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
+      - run:
+          name: "Execution spec tests"
+          command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/third_party/execution-spec-tests
+      - run:
+          name: "Coverage"
+          command: |
+            llvm-profdata merge *.profraw -o profdata
+            llvm-cov export -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
+            llvm-cov report -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+      - codecov/upload:
+          file: /tmp/silkworm.lcov
+      - store_artifacts:
+          path: /tmp/silkworm.lcov
+      - store_artifacts:
+          path: /tmp/report.txt
+
+  linux-clang-tidy:
+    environment:
+      # see: https://clang.llvm.org/extra/clang-tidy/
+      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_TIDY=ON
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: 2xlarge
+    steps:
+      - run:
+          name: "Install clang-tidy"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y clang-tidy
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - run:
+          name: "Generate report"
+          command: |
+            sudo pip install clang-html
+            sudo cp ~/project/third_party/clang-tidy-html/clang_visualizer.py /usr/local/lib/python3.10/dist-packages/clang_html/clang_visualizer.py
+            curl --output build.log "https://circleci.com/api/v1.1/project/github/torquem-ch/silkworm/$CIRCLE_BUILD_NUM/output/109/0?file=true"
+            clang-tidy-html build.log -o /tmp/report.html
+      - store_artifacts:
+          path: /tmp/report.html
+
+  linux-clang-fuzzer:
+    parameters:
+      run_tests:
+        description: Run fuzzy tests if required.
+        type: boolean
+        default: false
+    environment:
+      BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
+      UBSAN_OPTIONS: print_stacktrace=1
+    docker:
+      - image: cimg/python:3.12
+    resource_class: 2xlarge
+    steps:
+      - build_fuzzer
+      - when:
+          condition: <<parameters.run_tests>>
+          steps:
+            - fuzz-test
+
+  linux-wasm-build:
+    environment:
+      WASI_SDK_VERSION: 20
+    machine:
+      image: ubuntu-2204:2023.04.2
+    steps:
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - run:
+          name: "Install WASI SDK"
+          working_directory: ~/tmp1
+          command: |
+            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            tar xvf wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            sudo mv wasi-sdk-$WASI_SDK_VERSION.0 /opt/wasi-sdk
+      - run:
+          name: "Install dependencies"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y texinfo libtinfo5
+      - run:
+          name: "Install Conan"
+          command: sudo pip3 install conan==1.60.2 chardet
+      - run:
+          name: "Install Wasmer"
+          working_directory: ~/tmp2
+          command: $HOME/project/third_party/wasmer/install.sh v3.2.1
+      - run:
+          name: "Build GMP"
+          working_directory: ~/tmp3
+          command: |
+            git clone https://github.com/torquem-ch/gmp-wasm
+            cd gmp-wasm
+            git checkout 87e9087
+            ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none AR=llvm-ar RANLIB=llvm-ranlib --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
+            make -j
+            make install
+      - run:
+          name: "Cmake"
+          working_directory: ~/build
+          command: |
+            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_CORE_USE_ABSEIL=OFF -DSILKWORM_WASM_API=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Release
+      - run:
+          name: "Build"
+          command: cmake --build ~/build -j
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: wasmer cmd/test/core_test --stack-size 16777216
+
+parameters:
+  clang_version_min:
+    type: integer
+    default: 15
+  clang_version_latest:
+    type: integer
+    default: 15
+  gcc_version_min:
+    type: integer
+    default: 11
+  gcc_version_latest:
+    type: integer
+    default: 12
+
+workflows:
+  light:
+    when:
+      not:
+        equal: [ master, <<pipeline.git.branch>> ]
+    jobs:
+      - lint
+      - linux-release:
+          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          ethereum_tests: false
+          requires:
+            - lint
+      - linux-release:
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_min>>
+          ethereum_tests: false
+          requires:
+            - lint
+
+  integration:
+    when:
+      or:
+        - equal: [ master, <<pipeline.git.branch>> ]
+        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+    jobs:
+      - linux-release:
+          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_min>>
+      - linux-gcc-thread-sanitizer
+      - linux-clang-coverage
+      - linux-clang-address-sanitizer
+      - linux-clang-fuzzer:
+          name: linux-clang-fuzzer
+      - linux-clang-tidy
+      - linux-wasm-build
+  
+  fuzzer:
+    triggers:
+      - schedule:
+          cron: "0 0 * * 6"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - linux-clang-fuzzer:
+          name: linux-clang-run-fuzzer
+          run_tests: true

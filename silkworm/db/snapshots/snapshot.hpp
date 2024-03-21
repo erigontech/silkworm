@@ -60,8 +60,7 @@ class Snapshot {
   public:
     static inline const auto kPageSize{os::page_size()};
 
-    explicit Snapshot(SnapshotPath path);
-    Snapshot(SnapshotPath path, MemoryMappedRegion segment_region);
+    explicit Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region = std::nullopt);
     virtual ~Snapshot() = default;
 
     [[nodiscard]] SnapshotPath path() const { return path_; }
@@ -137,7 +136,7 @@ using StoredBlockBody = BlockBodyForStorage;
 
 class BodySnapshot : public Snapshot {
   public:
-    explicit BodySnapshot(SnapshotPath path);
+    explicit BodySnapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region = std::nullopt);
     BodySnapshot(SnapshotPath path, MappedBodiesSnapshot mapped);
     ~BodySnapshot() override;
 

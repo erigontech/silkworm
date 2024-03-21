@@ -57,10 +57,11 @@ bool TransactionToBlockIndexInputDataQuery::equal_iterators(
 }
 
 IndexBuilder TransactionToBlockIndex::make(
-    const SnapshotPath& bodies_segment_path,
+    SnapshotPath bodies_segment_path,
+    std::optional<MemoryMappedRegion> bodies_segment_region,
     SnapshotPath segment_path,
     std::optional<MemoryMappedRegion> segment_region) {
-    auto txs_amount = TransactionIndex::compute_txs_amount(bodies_segment_path);
+    auto txs_amount = TransactionIndex::compute_txs_amount(bodies_segment_path, bodies_segment_region);
     const uint64_t first_tx_id = txs_amount.first;
     const uint64_t expected_tx_count = txs_amount.second;
 
@@ -69,8 +70,8 @@ IndexBuilder TransactionToBlockIndex::make(
     TxsAndBodiesQuery data_query{
         std::move(segment_path),
         segment_region,
-        bodies_segment_path,
-        std::nullopt,
+        std::move(bodies_segment_path),
+        bodies_segment_region,
         first_tx_id,
         expected_tx_count,
     };

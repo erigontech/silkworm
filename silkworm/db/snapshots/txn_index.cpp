@@ -34,8 +34,10 @@ SnapshotPath TransactionIndex::bodies_segment_path(const SnapshotPath& segment_p
         SnapshotType::bodies);
 }
 
-std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(const SnapshotPath& bodies_segment_path) {
-    BodySnapshot bodies_snapshot{bodies_segment_path};
+std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(
+    SnapshotPath bodies_segment_path,
+    std::optional<MemoryMappedRegion> bodies_segment_region) {
+    BodySnapshot bodies_snapshot{std::move(bodies_segment_path), bodies_segment_region};
     bodies_snapshot.reopen_segment();
     return bodies_snapshot.compute_txs_amount();
 }

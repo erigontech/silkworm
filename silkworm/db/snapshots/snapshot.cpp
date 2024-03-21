@@ -37,10 +37,7 @@ inline std::string to_string(DecodingResult result) {
     return s;
 }
 
-Snapshot::Snapshot(SnapshotPath path)
-    : path_(std::move(path)), decoder_{path_.path()} {}
-
-Snapshot::Snapshot(SnapshotPath path, MemoryMappedRegion segment_region)
+Snapshot::Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)), decoder_{path_.path(), segment_region} {}
 
 MemoryMappedRegion Snapshot::memory_file_region() const {
@@ -215,7 +212,8 @@ void HeaderSnapshot::close_index() {
     idx_header_hash_.reset();
 }
 
-BodySnapshot::BodySnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
+BodySnapshot::BodySnapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region)
+    : Snapshot(std::move(path), segment_region) {}
 
 BodySnapshot::BodySnapshot(SnapshotPath path, MappedBodiesSnapshot mapped)
     : Snapshot(std::move(path), mapped.segment), idx_body_number_region_{mapped.block_num_index} {}

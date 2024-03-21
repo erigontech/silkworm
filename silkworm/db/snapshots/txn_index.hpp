@@ -41,15 +41,29 @@ struct TransactionKeyFactory : IndexKeyFactory {
 
 class TransactionIndex {
   public:
-    static IndexBuilder make(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
-        auto txs_amount = compute_txs_amount(bodies_segment_path);
+    static IndexBuilder make(
+        SnapshotPath bodies_segment_path,
+        SnapshotPath segment_path) {
+        return make(
+            std::move(bodies_segment_path), std::nullopt,
+            std::move(segment_path), std::nullopt);
+    }
+
+    static IndexBuilder make(
+        SnapshotPath bodies_segment_path,
+        std::optional<MemoryMappedRegion> bodies_segment_region,
+        SnapshotPath segment_path,
+        std::optional<MemoryMappedRegion> segment_region) {
+        auto txs_amount = compute_txs_amount(std::move(bodies_segment_path), bodies_segment_region);
         auto descriptor = make_descriptor(segment_path, txs_amount.first);
         auto query = std::make_unique<DecompressorIndexInputDataQuery>(std::move(segment_path), segment_region);
         return IndexBuilder{std::move(descriptor), std::move(query)};
     }
 
     static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
-    static std::pair<uint64_t, uint64_t> compute_txs_amount(const SnapshotPath& bodies_segment_path);
+    static std::pair<uint64_t, uint64_t> compute_txs_amount(
+        SnapshotPath bodies_segment_path,
+        std::optional<MemoryMappedRegion> bodies_segment_region);
 
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {

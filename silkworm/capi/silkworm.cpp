@@ -19,6 +19,7 @@
 #include <charconv>
 #include <chrono>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -268,10 +269,14 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                 });
 
                 if (bodies_file < snapshots + len) {
-                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(bodies_segment_path, *snapshot_path));
+                    auto bodies_segment_region = make_region(**bodies_file);
+
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, snapshot_region));
                     needed_indexes.push_back(index);
 
-                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionToBlockIndex::make(bodies_segment_path, *snapshot_path));
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionToBlockIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, snapshot_region));
                     needed_indexes.push_back(index);
                 }
                 break;

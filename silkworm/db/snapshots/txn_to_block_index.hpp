@@ -48,9 +48,18 @@ class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
 class TransactionToBlockIndex {
   public:
     static IndexBuilder make(
-        const SnapshotPath& bodies_segment_path,
+        SnapshotPath bodies_segment_path,
+        SnapshotPath segment_path) {
+        return make(
+            std::move(bodies_segment_path), std::nullopt,
+            std::move(segment_path), std::nullopt);
+    }
+
+    static IndexBuilder make(
+        SnapshotPath bodies_segment_path,
+        std::optional<MemoryMappedRegion> bodies_segment_region,
         SnapshotPath segment_path,
-        std::optional<MemoryMappedRegion> segment_region = std::nullopt);
+        std::optional<MemoryMappedRegion> segment_region);
 
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {

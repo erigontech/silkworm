@@ -69,16 +69,15 @@ static void open_snapshot(benchmark::State& state) {
 BENCHMARK(open_snapshot);
 
 static void build_header_index(benchmark::State& state) {
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    snapshots::SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    snapshots::SnapshotSettings settings{tmp_dir.path()};
     snapshots::SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
@@ -89,14 +88,13 @@ static void build_header_index(benchmark::State& state) {
 BENCHMARK(build_header_index);
 
 static void build_body_index(benchmark::State& state) {
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    snapshots::SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    snapshots::SnapshotSettings settings{tmp_dir.path()};
     snapshots::SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
@@ -107,15 +105,14 @@ static void build_body_index(benchmark::State& state) {
 BENCHMARK(build_body_index);
 
 static void build_tx_index(benchmark::State& state) {
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    snapshots::SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    snapshots::SnapshotSettings settings{tmp_dir.path()};
     snapshots::SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
@@ -133,16 +130,15 @@ BENCHMARK(build_tx_index);
 
 static void reopen_folder(benchmark::State& state) {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    snapshots::SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    snapshots::SnapshotSettings settings{tmp_dir.path()};
     snapshots::SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);

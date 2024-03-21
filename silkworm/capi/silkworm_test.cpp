@@ -30,6 +30,7 @@
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
@@ -38,6 +39,8 @@ namespace silkworm {
 namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
+    TemporaryDirectory tmp_dir;
+
   private:
     // TODO(canepat) remove test_util::StreamSwap objects when C API settings include log level
     std::stringstream string_cout, string_cerr;
@@ -639,11 +642,11 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
-    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{};
+    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};
     snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
-    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{};
+    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};
     snapshot_test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};
-    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{};
+    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{tmp_dir.path()};
     snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
 
     auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);

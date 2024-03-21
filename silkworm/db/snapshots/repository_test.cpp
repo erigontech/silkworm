@@ -40,12 +40,11 @@ TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]"
 
 TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryDirectory tmp_dir;
 
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
     SnapshotRepository repository{settings};
     CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
@@ -57,9 +56,9 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][node][snapshot]") {
 
 TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+
+    SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
     auto failing_walk = [](const auto&) { return false; };
     auto successful_walk = [](const auto&) { return true; };
@@ -81,9 +80,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     }
 
     SECTION("empty snapshots") {
-        test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
-        test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
-        test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+        test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
+        test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
+        test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
         CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
 
         using ViewResult = SnapshotRepository::ViewResult;
@@ -100,9 +99,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     }
 
     SECTION("non-empty snapshots") {
-        test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+        test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
+        test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
+        test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
         repository.reopen_folder();
 
         using ViewResult = SnapshotRepository::ViewResult;
@@ -128,14 +127,13 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
 TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
 
-    test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
-    test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
-    test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+    test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
+    test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
+    test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     repository.reopen_folder();
     CHECK(repository.missing_block_ranges() == std::vector<BlockNumRange>{
                                                    BlockNumRange{0, 11'500'000},
@@ -144,16 +142,15 @@ TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][node][snapshot
 
 TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     SECTION("header w/o index") {
         CHECK(repository.find_header_segment(1'500'011) == nullptr);
@@ -211,16 +208,15 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
 
 TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
-    std::filesystem::create_directories(tmp_dir);
-    SnapshotSettings settings{tmp_dir};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir};
+    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = HeaderIndex::make(header_snapshot_path);

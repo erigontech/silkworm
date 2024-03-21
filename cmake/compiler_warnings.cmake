@@ -50,6 +50,9 @@ else()
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
       add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
       add_compile_options(-Wthread-safety)
+
+      # https://stackoverflow.com/questions/77164140/
+      add_link_options(-Wl,-no_warn_duplicate_libraries)
     endif()
   endif()
 endif()

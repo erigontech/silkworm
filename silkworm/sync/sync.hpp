@@ -59,10 +59,6 @@ class Sync {
     Sync(const Sync&) = delete;
     Sync& operator=(const Sync&) = delete;
 
-    //! Force PoW sync independently from chain config
-    // TODO(canepat) remove when PoS sync works
-    void force_pow(execution::Client& execution);
-
     Task<void> async_run();
 
   private:

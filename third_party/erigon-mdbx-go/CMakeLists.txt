@@ -17,3 +17,10 @@
 set(MDBX_ENABLE_TESTS OFF)
 add_subdirectory(mdbx-go/mdbxdist)
 target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)
+
+# https://stackoverflow.com/questions/77164140/
+if(MDBX_BUILD_TOOLS)
+  foreach(TOOL mdbx_chk mdbx_copy mdbx_stat mdbx_dump mdbx_load mdbx_drop)
+    target_link_options(${TOOL} PRIVATE -Wl,-no_warn_duplicate_libraries)
+  endforeach()
+endif()

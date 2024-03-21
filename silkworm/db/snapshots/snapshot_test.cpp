@@ -23,7 +23,7 @@
 
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
@@ -198,7 +198,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     CHECK_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
@@ -220,7 +220,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
     auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index_hash_to_block.build());
@@ -256,7 +256,7 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
@@ -292,7 +292,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
@@ -474,7 +474,7 @@ TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][sn
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};
     test::SampleTransactionSnapshotFile sample_tx_snapshot{};
     test::SampleTransactionSnapshotPath tx_snapshot_path{sample_tx_snapshot.path()};
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
 
     TransactionSnapshot tx_snapshot{tx_snapshot_path};

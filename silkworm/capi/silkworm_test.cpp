@@ -25,7 +25,7 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
@@ -658,7 +658,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     body_snapshot.reopen_segment();
     body_snapshot.reopen_index();
 
-    auto tx_index = snapshots::TransactionIndex1::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     tx_index.build();
     auto tx_index_hash_to_block = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
     tx_index_hash_to_block.build();

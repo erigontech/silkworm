@@ -25,7 +25,7 @@ Bytes TransactionKeyFactory::make(ByteView key_data, uint64_t i) {
     return Bytes{tx_buffer_hash(key_data, first_tx_id_ + i)};
 }
 
-SnapshotPath TransactionIndex1::bodies_segment_path(const SnapshotPath& segment_path) {
+SnapshotPath TransactionIndex::bodies_segment_path(const SnapshotPath& segment_path) {
     return SnapshotPath::from(
         segment_path.path().parent_path(),
         segment_path.version(),
@@ -34,7 +34,7 @@ SnapshotPath TransactionIndex1::bodies_segment_path(const SnapshotPath& segment_
         SnapshotType::bodies);
 }
 
-std::pair<uint64_t, uint64_t> TransactionIndex1::compute_txs_amount(const SnapshotPath& bodies_segment_path) {
+std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(const SnapshotPath& bodies_segment_path) {
     BodySnapshot bodies_snapshot{bodies_segment_path};
     bodies_snapshot.reopen_segment();
     return bodies_snapshot.compute_txs_amount();

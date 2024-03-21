@@ -60,7 +60,7 @@ IndexBuilder TransactionToBlockIndex::make(
     const SnapshotPath& bodies_segment_path,
     SnapshotPath segment_path,
     std::optional<MemoryMappedRegion> segment_region) {
-    auto txs_amount = TransactionIndex1::compute_txs_amount(bodies_segment_path);
+    auto txs_amount = TransactionIndex::compute_txs_amount(bodies_segment_path);
     const uint64_t first_tx_id = txs_amount.first;
     const uint64_t expected_tx_count = txs_amount.second;
 

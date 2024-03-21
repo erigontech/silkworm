@@ -35,7 +35,7 @@
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
@@ -297,8 +297,8 @@ void create_index(const SnapSettings& settings, int repetitions) {
                     break;
                 }
                 case SnapshotType::transactions: {
-                    auto bodies_segment_path = TransactionIndex1::bodies_segment_path(*snap_file);
-                    auto index = TransactionIndex1::make(bodies_segment_path, *snap_file);
+                    auto bodies_segment_path = TransactionIndex::bodies_segment_path(*snap_file);
+                    auto index = TransactionIndex::make(bodies_segment_path, *snap_file);
                     index.build();
 
                     auto index_hash_to_block = TransactionToBlockIndex::make(bodies_segment_path, *snap_file);

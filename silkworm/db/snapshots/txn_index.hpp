@@ -24,7 +24,7 @@
 #include <silkworm/db/etl/collector.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "index.hpp"
+#include "index_builder.hpp"
 #include "path.hpp"
 
 namespace silkworm::snapshots {
@@ -39,7 +39,7 @@ struct TransactionKeyFactory : IndexKeyFactory {
     uint64_t first_tx_id_;
 };
 
-class TransactionIndex1 {
+class TransactionIndex {
   public:
     static IndexBuilder make(const SnapshotPath& bodies_segment_path, SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
         auto txs_amount = compute_txs_amount(bodies_segment_path);

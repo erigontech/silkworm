@@ -19,7 +19,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
@@ -123,7 +123,7 @@ static void build_tx_index(benchmark::State& state) {
         body_index.build();
 
         test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-        auto tx_index = TransactionIndex1::make(body_snapshot_path, txn_snapshot_path);
+        auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
         tx_index.build();
         auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path);
         tx_index_hash_to_block.build();
@@ -153,7 +153,7 @@ static void reopen_folder(benchmark::State& state) {
     body_index.build();
 
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
-    auto tx_index = TransactionIndex1::make(body_snapshot_path, txn_snapshot_path);
+    auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
     tx_index.build();
     auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path);
     tx_index_hash_to_block.build();

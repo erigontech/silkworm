@@ -130,7 +130,4 @@ struct IndexBuilder {
     std::unique_ptr<IndexInputDataQuery> query_;
 };
 
-// TODO: remove
-using Index = IndexBuilder;
-
 }  // namespace silkworm::snapshots

@@ -23,7 +23,7 @@
 #include <silkworm/db/etl/collector.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "index.hpp"
+#include "index_builder.hpp"
 #include "path.hpp"
 #include "txn_index.hpp"
 #include "txs_and_bodies_query.hpp"

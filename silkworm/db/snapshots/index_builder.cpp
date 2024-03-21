@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "index.hpp"
+#include "index_builder.hpp"
 
 #include <silkworm/db/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/snapshots/rec_split/rec_split_seq.hpp>

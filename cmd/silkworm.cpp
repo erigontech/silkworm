@@ -107,9 +107,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     // Sentry settings
     add_sentry_options(cli, settings.sentry_settings);
 
-    // TODO(canepat) remove when PoS sync works
-    cli.add_flag("--sync.force_pow", settings.force_pow, "Force usage of proof-of-work bypassing chain config");
-
     // Prune options
     std::string prune_mode;
     auto& prune_opts = *cli.add_option_group("Prune", "Prune options to delete ancient data from DB");
@@ -289,7 +286,7 @@ int main(int argc, char* argv[]) {
             context_pool.as_executor_pool(),
             context_pool,
             eth_status_data_provider.to_factory_function());
-        auto embedded_sentry_run_if_needed = [server = sentry_server]() -> Task<void> {
+        auto embedded_sentry_run_if_needed = [](auto server) -> Task<void> {
             if (server) {
                 co_await server->run();
             }
@@ -319,14 +316,10 @@ int main(int argc, char* argv[]) {
             sentry_client,
             *node_settings.chain_config,
             rpc_settings};
-        // TODO(canepat) remove when PoS sync works
-        if (settings.force_pow) {
-            chain_sync_process.force_pow(execution_client);
-        }
 
         auto tasks =
             execution_node.run() &&
-            embedded_sentry_run_if_needed() &&
+            embedded_sentry_run_if_needed(sentry_server) &&
             chain_sync_process.async_run();
 
         // Trap OS signals

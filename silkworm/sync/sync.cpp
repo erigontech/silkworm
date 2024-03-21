@@ -33,7 +33,7 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
     : sync_sentry_client_{executor, sentry_client},
       block_exchange_{sync_sentry_client_, db::ROAccess{chaindata_env}, config} {
     // If terminal total difficulty is present in chain config, the network will use Proof-of-Stake sooner or later
-    if (config.terminal_total_difficulty) {
+    if (config.terminal_total_difficulty.has_value()) {
         // Configure and activate the Execution Layer Engine API RPC server
         rpc::DaemonSettings engine_rpc_settings{
             .log_settings = {
@@ -63,11 +63,6 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
         // Create the synchronization algorithm based on GHOST, i.e. PoW
         chain_sync_ = std::make_unique<PoWSync>(block_exchange_, execution);
     }
-}
-
-void Sync::force_pow(execution::Client& execution) {
-    chain_sync_ = std::make_unique<PoWSync>(block_exchange_, execution);
-    engine_rpc_server_.reset();
 }
 
 Task<void> Sync::async_run() {

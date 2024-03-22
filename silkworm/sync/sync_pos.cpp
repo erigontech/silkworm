@@ -475,8 +475,8 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum 
 }
 
 tl::expected<void, std::string> PoSSync::validate_blob_hashes(const Block& block,
-                                                              const std::vector<evmc::bytes32>& expected_blob_versioned_hashes) {
-    std::vector<evmc::bytes32> blob_versioned_hashes;
+                                                              const std::vector<Hash>& expected_blob_versioned_hashes) {
+    std::vector<Hash> blob_versioned_hashes;
     for (const auto& tx : block.transactions) {
         if (tx.type == TransactionType::kBlob) {
             blob_versioned_hashes.insert(blob_versioned_hashes.end(),

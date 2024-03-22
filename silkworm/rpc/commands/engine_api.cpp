@@ -351,7 +351,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
         co_return;
     }
     auto payload = params[0].get<ExecutionPayload>();
-    auto expected_blob_versioned_hashes = params[1].get<std::vector<evmc::bytes32>>();
+    auto expected_blob_versioned_hashes = params[1].get<std::vector<Hash>>();
     auto parent_beacon_block_root = params[2].get<evmc::bytes32>();
     auto tx = co_await database_->begin();
 

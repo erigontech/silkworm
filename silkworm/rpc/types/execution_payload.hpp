@@ -26,6 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/withdrawal.hpp>
 
 namespace silkworm::rpc {
@@ -94,7 +95,7 @@ struct PayloadAttributes {
 
 struct NewPayloadRequest {
     rpc::ExecutionPayload execution_payload;
-    std::optional<std::vector<evmc::bytes32>> expected_blob_versioned_hashes;
+    std::optional<std::vector<Hash>> expected_blob_versioned_hashes;
     std::optional<evmc::bytes32> parent_beacon_block_root;
 };
 

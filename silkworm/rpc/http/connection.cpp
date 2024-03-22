@@ -190,8 +190,8 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
         co_return;
     }
 
-    const bool gzip_encoding_requested{accept_encoding.contains(kGzipEncoding)};
-    if (http_compression_ && !accept_encoding.empty() && !gzip_encoding_requested) {
+    gzip_encoding_requested_ = accept_encoding.contains(kGzipEncoding);
+    if (http_compression_ && !accept_encoding.empty() && !gzip_encoding_requested_) {
         co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, kGzipEncoding);
         co_return;
     }
@@ -222,7 +222,7 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
 
     auto rsp_content = co_await handler_->handle(req.body());
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, gzip_encoding_requested ? kGzipEncoding : "");
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, gzip_encoding_requested_ ? kGzipEncoding : "");
     }
 }
 
@@ -233,6 +233,10 @@ Task<void> Connection::open_stream() {
         rsp.set(boost::beast::http::field::content_type, "application/json");
         rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
+
+        if (gzip_encoding_requested_) {
+            rsp.set(boost::beast::http::field::content_encoding, kGzipEncoding);
+        }
 
         set_cors(rsp);
 
@@ -266,8 +270,15 @@ Task<void> Connection::close_stream() {
 Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
     unsigned long bytes_transferred{0};
     try {
-        boost::asio::const_buffer buffer{content.data(), content.size()};
-        bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
+        if (gzip_encoding_requested_) {
+            std::string compressed_content;
+            compress(content.data(), compressed_content);
+            boost::asio::const_buffer buffer{compressed_content.data(), compressed_content.size()};
+            bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
+        } else {
+            boost::asio::const_buffer buffer{content.data(), content.size()};
+            bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
+        }
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "Connection::write system_error: " << se.what();
         throw;

@@ -68,6 +68,7 @@ jobs:
           rm -rf ./reports/mainnet
           
           # Launch the RPC performance test runner
+          python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 1:1 -r 5 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           #python3 ./run_perf_tests.py -b mainnet -y eth_call -p pattern/mainnet/stress_test_eth_call_001_14M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           #python3 ./run_perf_tests.py -b mainnet -y eth_getLogs -p pattern/mainnet/stress_test_eth_getLogs_15M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u
           #python3 ./run_perf_tests.py -b mainnet -y eth_getBalance -p pattern/mainnet/stress_test_eth_getBalance_15M.tar -t 1:1,100:30,1000:20,10000:20,20000:20 -r 20 -s ${{runner.workspace}}/silkworm -g $ERIGON_DATA_DIR -m 2 -u

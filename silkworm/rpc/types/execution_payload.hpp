@@ -37,10 +37,13 @@ using Capabilities = std::vector<std::string>;
 //! ExecutionPayloadV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#executionpayloadv1
 //! or
 //! ExecutionPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#executionpayloadv2
+//! or
+//! ExecutionPayloadV3 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#executionpayloadv3
 struct ExecutionPayload {
-    enum Version : uint32_t {
+    enum Version : uint8_t {
         V1 = 1,
-        V2 = 2
+        V2 = 2,
+        V3 = 3
     } version{V1};
 
     BlockNum number{0};
@@ -57,7 +60,9 @@ struct ExecutionPayload {
     Bloom logs_bloom{};
     Bytes extra_data;
     std::vector<Bytes> transactions;
-    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2
+    std::optional<std::vector<Withdrawal>> withdrawals;  // present iff version == V2
+    std::optional<uint64_t> blob_gas_used;               // present iff version == V3
+    std::optional<uint64_t> excess_blob_gas;             // present iff version == V3
 };
 
 //! ForkChoiceStateV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
@@ -71,16 +76,26 @@ struct ForkChoiceState {
 //! PayloadAttributesV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadattributesv1
 //! or
 //! PayloadAttributesV2 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#payloadattributesv2
+//! or
+//! PayloadAttributesV3 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#payloadattributesv3
 struct PayloadAttributes {
-    enum Version : uint32_t {
+    enum Version : uint8_t {
         V1 = 1,
-        V2 = 2
+        V2 = 2,
+        V3 = 3
     } version{V1};
 
     uint64_t timestamp{0};
     evmc::bytes32 prev_randao;
     evmc::address suggested_fee_recipient;
-    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2
+    std::optional<std::vector<Withdrawal>> withdrawals;     // present iff version == V2
+    std::optional<evmc::bytes32> parent_beacon_block_root;  // present iff version == V3
+};
+
+struct NewPayloadRequest {
+    rpc::ExecutionPayload execution_payload;
+    std::optional<std::vector<evmc::bytes32>> expected_blob_versioned_hashes;
+    std::optional<evmc::bytes32> parent_beacon_block_root;
 };
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
@@ -102,6 +117,10 @@ struct PayloadStatus {
 inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
 inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
 inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
+
+inline bool operator==(const PayloadStatus& lhs, const PayloadStatus& rhs) {
+    return lhs.status == rhs.status;
+}
 
 struct ForkChoiceUpdatedRequest {
     ForkChoiceState fork_choice_state;
@@ -128,10 +147,21 @@ struct ExecutionPayloadAndValue {
 
 //! ExecutionPayloadBodyV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#executionpayloadbodyv1
 struct ExecutionPayloadBody {
-    std::optional<std::vector<Bytes>> transactions{std::nullopt};      // not present iff requested block is missing
-    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff after Shanghai
+    std::optional<std::vector<Bytes>> transactions;      // not present iff requested block is missing
+    std::optional<std::vector<Withdrawal>> withdrawals;  // present iff after Shanghai
 };
 using ExecutionPayloadBodies = std::vector<ExecutionPayloadBody>;
+
+//! BlobsBundleV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#blobsbundlev1
+struct BlobsBundle {
+    using KZGCommitment = std::array<uint8_t, 48>;
+    using KZGProof = std::array<uint8_t, 48>;
+    using Blob = std::array<uint8_t, 131072>;
+
+    std::vector<KZGCommitment> commitments;
+    std::vector<KZGProof> proofs;
+    std::vector<Blob> blobs;
+};
 
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload);
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status);

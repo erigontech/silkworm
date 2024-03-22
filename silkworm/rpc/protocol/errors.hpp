@@ -36,6 +36,7 @@ enum ErrorCode : int64_t {
     kInvalidForkChoiceState = -38002,    // Forkchoice state is invalid / inconsistent
     kInvalidPayloadAttributes = -38003,  // Payload attributes are invalid / inconsistent
     kTooLargeRequest = -38004,           // Number of requested entities is too large
+    kUnsupportedFork = -38005,           // Invalid API version for the current fork
 };
 
 // To raise a boost::system::system_error exception:

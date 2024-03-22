@@ -35,7 +35,7 @@
 
 namespace silkworm::chainsync {
 
-using namespace boost::asio;
+namespace asio = boost::asio;
 using namespace concurrency::awaitable_wait_for_one;
 
 class PayloadValidationError : public std::logic_error {
@@ -157,6 +157,10 @@ std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload
     // as per EIP-4399
     header.prev_randao = payload.prev_randao;
 
+    // as per EIP-4844
+    header.blob_gas_used = payload.blob_gas_used;
+    header.excess_blob_gas = payload.excess_blob_gas;
+
     return block;
 }
 
@@ -178,16 +182,29 @@ std::tuple<bool, Hash> PoSSync::has_valid_ancestor(const Hash&) {
     return {true, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
-Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& payload, std::chrono::milliseconds timeout) {
+Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& request, std::chrono::milliseconds timeout) {
     // Implementation of engine_new_payloadVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
-    auto no_latest_valid_hash = std::nullopt;
+    const auto no_latest_valid_hash = std::nullopt;
 
+    const auto& payload{request.execution_payload};
     try {
-        // get to execution block & do some checks
+        // Make the execution full block from the block payload
         auto block = make_execution_block(payload);  // as per the EngineAPI spec
+
+        // Handle version-specific fields
+        if (request.parent_beacon_block_root) {
+            block->header.parent_beacon_block_root = request.parent_beacon_block_root;
+        }
+
+        // Validations
+        if (request.expected_blob_versioned_hashes) {
+            if (const auto res{validate_blob_hashes(*block, *request.expected_blob_versioned_hashes)}; !res) {
+                co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, res.error()};
+            }
+        }
 
         Hash block_hash = block->header.hash();
         if (payload.block_hash != block_hash) {
@@ -195,10 +212,16 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         }
         log::Trace() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
 
+        if (active_chain_validations_ > 0) {
+            log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number
+                        << " <- reply SYNCING";
+            co_return rpc::PayloadStatus::Syncing;
+        }
+
         auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};
 
-        // find attaching point using chain_fork_view_ first to avoid remote access to execution
+        // Find attaching point using chain fork view first to avoid remote access to execution
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
         if (!parent_td) {
             // if not found, try to get it from the execution engine
@@ -232,7 +255,9 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
         log::Trace() << "PoSSync: new_payload block_number=" << *inserted << " inserted";
 
         // NOTE: from here the method execution can be cancelled
+        ++active_chain_validations_;
         auto verification = co_await (exec_engine_.validate_chain(block_hash) || concurrency::timeout(timeout));
+        --active_chain_validations_;
 
         if (std::holds_alternative<ValidChain>(verification)) {
             // VALID
@@ -271,14 +296,15 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::ExecutionPayload& paylo
     }
 }
 
-Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
-                                                              const std::optional<rpc::PayloadAttributes>& attributes,
-                                                              std::chrono::milliseconds timeout) {
+Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) {
     // Implementation of engine_forkchoiceUpdatedVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;
+
+    const auto& state{request.fork_choice_state};
+    const auto& attributes{request.payload_attributes};
     try {
         if (!state.head_block_hash) {
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "invalid head block hash"}};
@@ -315,7 +341,9 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
         do_sanity_checks(*head_header, /**parent,*/ *parent_td);
 
         // NOTE: from here the method execution can be cancelled
+        ++active_chain_validations_;
         auto verification = co_await (exec_engine_.validate_chain(head_header_hash) || concurrency::timeout(timeout));  // does nothing if previously validated
+        --active_chain_validations_;
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
@@ -444,6 +472,21 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum 
         }
     }
     co_return payload_bodies;
+}
+
+tl::expected<void, std::string> PoSSync::validate_blob_hashes(const Block& block,
+                                                              const std::vector<evmc::bytes32>& expected_blob_versioned_hashes) {
+    std::vector<evmc::bytes32> blob_versioned_hashes;
+    for (const auto& tx : block.transactions) {
+        if (tx.type == TransactionType::kBlob) {
+            blob_versioned_hashes.insert(blob_versioned_hashes.end(),
+                                         tx.blob_versioned_hashes.cbegin(), tx.blob_versioned_hashes.cend());
+        }
+    }
+    if (blob_versioned_hashes != expected_blob_versioned_hashes) {
+        return tl::make_unexpected("computed blob versioned hashes list does not match expected one");
+    }
+    return {};
 }
 
 }  // namespace silkworm::chainsync

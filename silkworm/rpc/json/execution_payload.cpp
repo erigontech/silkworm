@@ -66,14 +66,23 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
                                     "ExecutionPayload: invalid hex transaction: " + hex_transaction.dump()};
         }
     }
-    // Optionally parse withdrawals
+    // Optionally parse V2 fields
     std::optional<std::vector<Withdrawal>> withdrawals;
     if (json.contains("withdrawals")) {
         withdrawals = json.at("withdrawals").get<std::vector<Withdrawal>>();
     }
 
+    // Optional parse V3 fields
+    std::optional<uint64_t> blob_gas_used;
+    if (json.contains("blobGasUsed")) {
+        blob_gas_used = from_quantity(json.at("blobGasUsed").get<std::string>());
+    }
+    std::optional<uint64_t> excess_blob_gas;
+    if (json.contains("excessBlobGas")) {
+        excess_blob_gas = from_quantity(json.at("excessBlobGas").get<std::string>());
+    }
+
     execution_payload = ExecutionPayload{
-        .version = withdrawals ? ExecutionPayload::V2 : ExecutionPayload::V1,
         .number = from_quantity(json.at("blockNumber").get<std::string>()),
         .timestamp = from_quantity(json.at("timestamp").get<std::string>()),
         .gas_limit = from_quantity(json.at("gasLimit").get<std::string>()),
@@ -88,7 +97,20 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
         .logs_bloom = logs_bloom,
         .extra_data = *silkworm::from_hex(json.at("extraData").get<std::string>()),
         .transactions = transactions,
-        .withdrawals = withdrawals};
+        .withdrawals = std::move(withdrawals),
+        .blob_gas_used = blob_gas_used,
+        .excess_blob_gas = excess_blob_gas,
+    };
+
+    // Set the ExecutionPayload version (default is V1)
+    SILKWORM_ASSERT(execution_payload.version == ExecutionPayload::V1);
+    if (execution_payload.withdrawals) {
+        if (execution_payload.blob_gas_used && execution_payload.excess_blob_gas) {
+            execution_payload.version = ExecutionPayload::V3;
+        } else {
+            execution_payload.version = ExecutionPayload::V2;
+        }
+    }
 }
 
 void to_json(nlohmann::json& json, const ExecutionPayloadAndValue& reply) {

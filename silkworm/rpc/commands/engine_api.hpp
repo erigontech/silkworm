@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
+#include <tl/expected.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
@@ -50,15 +51,33 @@ class EngineRpcApi {
     Task<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_new_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_forkchoice_updated_v3(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
+    // TODO(canepat) remove this method and pass ChainConfig as constructor parameter
+    Task<std::optional<silkworm::ChainConfig>> read_chain_config();
+
+    using ApiError = std::pair<int, std::string>;
+    using ValidationError = tl::expected<void, ApiError>;
+
+    ValidationError validate_fork_choice_state_v1(const ForkChoiceState& state);
+
+    ValidationError validate_payload_attributes_v2(const std::optional<PayloadAttributes>& attributes,
+                                                   const ForkChoiceUpdatedReply& reply,
+                                                   const std::optional<silkworm::ChainConfig>& config);
+    ValidationError validate_payload_attributes_v3(const std::optional<PayloadAttributes>& attributes,
+                                                   const ForkChoiceUpdatedReply& reply,
+                                                   const std::optional<silkworm::ChainConfig>& config);
+
     ethdb::Database* database_;
     ethbackend::BackEnd* backend_;
 

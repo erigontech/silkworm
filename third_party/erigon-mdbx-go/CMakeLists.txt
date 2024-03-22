@@ -28,8 +28,9 @@ if(MDBX_BUILD_TOOLS)
     mdbx_load
     mdbx_drop
   )
-    # https://stackoverflow.com/questions/77164140/
-    if(("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$") AND (CMAKE_SYSTEM_NAME MATCHES "Darwin"))
+
+    if((CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15))
+      # https://stackoverflow.com/questions/77164140/
       target_link_options(${TOOL} PRIVATE -Wl,-no_warn_duplicate_libraries)
     endif()
   endforeach()

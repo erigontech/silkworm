@@ -1,6 +1,13 @@
 name: QA - RPC Performance Tests
 
 on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
@@ -22,7 +29,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.1.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          git -c advice.detachedHead=false clone --depth 1 --branch v0.6.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 

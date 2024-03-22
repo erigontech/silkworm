@@ -88,12 +88,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
   endif()
 
 else()
-
-  message(
-    WARNING
-      "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues"
-  )
-
+  message(WARNING "${CMAKE_CXX_COMPILER_ID} is not a supported compiler. Use at your own risk.")
 endif()
 
 if(SILKWORM_SANITIZE)

@@ -273,6 +273,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
         if (gzip_encoding_requested_) {
             std::string compressed_content;
             compress(content.data(), compressed_content);
+            std::cout << "Clear Data: " << content.size() << " " << compressed_content.size() << "\n";
             boost::asio::const_buffer buffer{compressed_content.data(), compressed_content.size()};
             bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
         } else {

@@ -88,9 +88,10 @@ Task<bool> Connection::do_read() {
     SILK_TRACE << "Connection::do_read going to read...";
 
     boost::beast::http::request_parser<boost::beast::http::string_body> parser;
-    auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
+    parser.body_limit(kMaxPayloadSize);
 
-    SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " [" << parser.get() << "]";
+    const auto bytes_transferred = co_await boost::beast::http::async_read(socket_, data_, parser, boost::asio::use_awaitable);
+    SILK_TRACE << "Connection::do_read bytes_read: " << bytes_transferred << " message: " << parser.get();
 
     if (!parser.is_done()) {
         co_return true;
@@ -185,12 +186,9 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
         co_return;
     }
 
+    // Check HTTP method and content type [max body size is limited using beast::http::request_parser::body_limit in do_read]
     if (!is_method_allowed(req.method())) {
         co_await do_write("method not allowed\n", boost::beast::http::status::method_not_allowed);
-        co_return;
-    }
-    if (req.has_content_length() && req.body().length() > kMaxPayloadSize) {
-        co_await do_write("content length too large\n", boost::beast::http::status::payload_too_large);
         co_return;
     }
     if (req.method() != boost::beast::http::verb::options && req.method() != boost::beast::http::verb::get) {

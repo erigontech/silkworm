@@ -577,7 +577,7 @@ TEST_CASE("rpc::http::JsonRpcValidator engine_newPayloadV3: patch gasUsed regex"
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: patch Payload attributes schema", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: null payloadAttributes param", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     // Payload attributes at commit 5849052 does NOT allow for null value
@@ -592,6 +592,25 @@ TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: patch Payload
                 "finalizedBlockHash":"0x636bfa7b1c7d804c97de4a4cc33239899cf0406ac7a128b3277342af9a2e00a4"
             },
             null
+        ]
+    })"_json;
+    JsonRpcValidationResult result = validator.validate(request);
+    CHECK(result);
+}
+
+TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: missing payloadAttributes param", "[rpc][http][json_rpc_validator]") {
+    JsonRpcValidator validator{create_validator_for_test()};
+
+    auto request = R"({
+        "jsonrpc":"2.0",
+        "id":37,
+        "method":"engine_forkchoiceUpdatedV3",
+        "params":[
+            {
+                "headBlockHash":"0xb0433cd89f470c3b72275a28198a4bb5b31cb7095f81a230a20c1774d5b93557",
+                "safeBlockHash":"0x636bfa7b1c7d804c97de4a4cc33239899cf0406ac7a128b3277342af9a2e00a4",
+                "finalizedBlockHash":"0x636bfa7b1c7d804c97de4a4cc33239899cf0406ac7a128b3277342af9a2e00a4"
+            }
         ]
     })"_json;
     JsonRpcValidationResult result = validator.validate(request);

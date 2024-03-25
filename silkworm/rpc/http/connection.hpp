@@ -91,7 +91,7 @@ class Connection : public StreamWriter {
 
     static std::string get_date_time();
 
-    void compress(const std::string& clear_data, std::string& compressed_data);
+    Task<void> compress(boost::asio::thread_pool& workers, const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -115,6 +115,8 @@ class Connection : public StreamWriter {
     bool ws_compression_;
 
     bool http_compression_;
+
+    boost::asio::thread_pool worker_pool_;
 
     std::string vary_;
     std::string origin_;

@@ -97,13 +97,13 @@ JsonRpcValidationResult JsonRpcValidator::validate_params(const nlohmann::json& 
         if (accept_unknown_methods_) {
             return {};
         } else {
-            return tl::make_unexpected("Method not found in spec");
+            return tl::make_unexpected("Method not found in spec: " + method);
         }
     }
     const auto& method_spec = method_spec_field->second;
 
     if (params.size() > method_spec.size() + 1) {  // allow one extra parameter for optimize_gas
-        return tl::make_unexpected("Invalid number of parameters");
+        return tl::make_unexpected("Invalid number of parameters: " + std::to_string(params.size()));
     }
 
     unsigned long idx = 0;
@@ -119,7 +119,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_params(const nlohmann::json& 
         }
 
         if (auto result{validate_schema(params[idx], spec_schema)}; !result) {
-            return tl::make_unexpected("Invalid parameter: " + spec_name);
+            return tl::make_unexpected(result.error() + " in spec: " + spec_name);
         }
 
         ++idx;
@@ -168,13 +168,13 @@ JsonRpcValidationResult JsonRpcValidator::validate_type(const nlohmann::json& va
     } else if (schema_type == "null") {
         return validate_null(value);
     } else {
-        return tl::make_unexpected("Invalid schema type");
+        return tl::make_unexpected("Invalid schema type: " + schema_type);
     }
 }
 
 JsonRpcValidationResult JsonRpcValidator::validate_string(const nlohmann::json& string, const nlohmann::json& schema) {
     if (!string.is_string()) {
-        return tl::make_unexpected("Invalid string");
+        return tl::make_unexpected("Invalid string: " + string.dump());
     }
 
     const auto& schema_pattern_field = schema.find("pattern");
@@ -191,7 +191,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_string(const nlohmann::json& 
         }
 
         if (!boost::regex_match(string.get<std::string>(), pattern)) {
-            return tl::make_unexpected("Invalid string pattern");
+            return tl::make_unexpected("Invalid string pattern: " + string.get<std::string>());
         }
     }
 
@@ -206,7 +206,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_string(const nlohmann::json& 
         }
 
         if (!is_valid) {
-            return tl::make_unexpected("Invalid string enum");
+            return tl::make_unexpected("Invalid string enum: " + string.dump());
         }
     }
 
@@ -215,7 +215,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_string(const nlohmann::json& 
 
 JsonRpcValidationResult JsonRpcValidator::validate_array(const nlohmann::json& array, const nlohmann::json& schema) {
     if (!array.is_array() && !array.is_null() && array.empty()) {
-        return tl::make_unexpected("Invalid array");
+        return tl::make_unexpected("Invalid array: " + array.dump());
     }
 
     JsonRpcValidationResult result;
@@ -232,7 +232,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_array(const nlohmann::json& a
 
 JsonRpcValidationResult JsonRpcValidator::validate_object(const nlohmann::json& object, const nlohmann::json& schema) {
     if (!object.is_object()) {
-        return tl::make_unexpected("Invalid object");
+        return tl::make_unexpected("Invalid object: " + object.dump());
     }
 
     if (schema.contains("required")) {
@@ -247,11 +247,11 @@ JsonRpcValidationResult JsonRpcValidator::validate_object(const nlohmann::json& 
         for (const auto& item : object.items()) {
             if (schema["properties"].contains(item.key())) {
                 if (auto valid_result{validate_schema(item.value(), schema["properties"][item.key()])}; !valid_result) {
-                    return valid_result;
+                    return tl::make_unexpected(valid_result.error() + " for field: " + item.key());
                 }
             } else if (item.key() == "data") {  // backward compatibility: optional `data` field is hex data
                 if (auto valid_result{validate_string(item.value(), R"({"pattern": "^0x[0-9a-f]*$"})"_json)}; !valid_result) {
-                    return valid_result;
+                    return tl::make_unexpected(valid_result.error() + " for field: " + item.key());
                 }
             } else {
                 return tl::make_unexpected("Invalid field: " + item.key());
@@ -264,14 +264,14 @@ JsonRpcValidationResult JsonRpcValidator::validate_object(const nlohmann::json& 
 
 JsonRpcValidationResult JsonRpcValidator::validate_boolean(const nlohmann::json& boolean) {
     if (!boolean.is_boolean()) {
-        return tl::make_unexpected("Invalid boolean");
+        return tl::make_unexpected("Invalid boolean: " + boolean.dump());
     }
     return {};
 }
 
 JsonRpcValidationResult JsonRpcValidator::validate_number(const nlohmann::json& number) {
     if (!number.is_number()) {
-        return tl::make_unexpected("Invalid number");
+        return tl::make_unexpected("Invalid number: " + number.dump());
     }
     return {};
 }
@@ -280,7 +280,7 @@ JsonRpcValidationResult JsonRpcValidator::validate_null(const nlohmann::json& va
     if (value.is_null() || value.get<std::string>().empty() || value.get<std::string>() == "null") {
         return {};
     }
-    return tl::make_unexpected("Invalid null");
+    return tl::make_unexpected("Invalid null: " + value.dump());
 }
 
 }  // namespace silkworm::rpc::json_rpc

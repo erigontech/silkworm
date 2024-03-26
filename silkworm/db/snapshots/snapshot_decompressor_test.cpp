@@ -206,7 +206,7 @@ static test::TemporarySnapshotFile create_snapshot_file(std::vector<test::Snapsh
         .empty_words_count = 0,
         .patterns = std::move(patterns),
         .positions = std::move(positions)};
-    return test::TemporarySnapshotFile{tmp_file_path.parent_path(), tmp_file_path.filename(), header};
+    return test::TemporarySnapshotFile{tmp_file_path.parent_path(), tmp_file_path.filename().string(), header};
 }
 
 static test::TemporarySnapshotFile create_empty_snapshot_file() {

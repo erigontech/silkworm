@@ -80,7 +80,7 @@ inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
 inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
 
-// Used in Bor & Clique
+// Used in Bor
 inline constexpr size_t kExtraSealSize{65};
 
 }  // namespace silkworm::protocol

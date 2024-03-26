@@ -43,13 +43,8 @@ namespace protocol {
         bool operator==(const NoPreMergeConfig&) const = default;
     };
 
-    //! \see CliqueRuleSet
-    struct CliqueConfig {
-        bool operator==(const CliqueConfig&) const = default;
-    };
-
-    //! \see RuleSet
-    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, bor::Config>;
+    //! \see IRuleSet
+    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, bor::Config>;
 
 }  // namespace protocol
 

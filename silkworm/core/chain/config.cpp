@@ -52,7 +52,6 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         Overloaded{
             [&](const protocol::NoPreMergeConfig&) {},
             [&](const protocol::EthashConfig& x) { ret.emplace("ethash", x.to_json()); },
-            [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
             [&](const protocol::bor::Config& x) { ret.emplace("bor", x.to_json()); },
         },
         rule_set_config);
@@ -116,8 +115,6 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
             return std::nullopt;
         }
         config.rule_set_config = *ethash_config;
-    } else if (json.contains("clique")) {
-        config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
         std::optional<protocol::bor::Config> bor_config{protocol::bor::Config::from_json(json["bor"])};
         if (!bor_config) {

@@ -86,20 +86,6 @@ TEST_CASE("mainnet_genesis") {
     // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
 }
 
-// https://goerli.etherscan.io/block/0
-TEST_CASE("Goerli genesis") {
-    test_genesis_config(kGoerliConfig);
-    nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
-
-    auto expected_state_root{0x5d6cded585e73c4e322c30c2f782a336316f17dd85a4863b9d838d2d4b8b3008_bytes32};
-    auto actual_state_root{state_root(genesis_json)};
-    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
-
-    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
-    auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kGoerliGenesisHash));
-}
-
 TEST_CASE("Holesky genesis") {
     test_genesis_config(kHoleskyConfig);
     nlohmann::json genesis_json = sanity_checked_json(kHoleskyConfig.chain_id);

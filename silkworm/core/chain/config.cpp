@@ -281,23 +281,6 @@ SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
-    .chain_id = 5,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 1'561'651,
-    .berlin_block = 4'460'644,
-    .london_block = 5'062'605,
-    .terminal_total_difficulty = 10790000,
-    .shanghai_time = 1678832736,
-    .cancun_time = 1705473120,
-    .rule_set_config = protocol::CliqueConfig{},
-};
-
 SILKWORM_CONSTINIT const ChainConfig kHoleskyConfig{
     .chain_id = 17000,
     .homestead_block = 0,

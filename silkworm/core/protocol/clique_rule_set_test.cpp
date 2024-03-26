@@ -23,12 +23,6 @@
 
 namespace silkworm::protocol {
 
-TEST_CASE("Clique activation") {
-    BlockHeader fake_header{};
-    auto rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
-    CHECK(rule_set);
-}
-
 TEST_CASE("get_beneficiary() && extra_data with seal") {
     BlockHeader header{};
     header.parent_hash = 0x3df0148d8efc77d4dbc56ceccf0ac7cd2bb8d52527654dc533fb59de3461bec2_bytes32;

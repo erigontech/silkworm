@@ -23,7 +23,6 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/small_map.hpp>
 #include <silkworm/db/snapshots/config/bor_mainnet.hpp>
-#include <silkworm/db/snapshots/config/goerli.hpp>
 #include <silkworm/db/snapshots/config/mainnet.hpp>
 #include <silkworm/db/snapshots/config/mumbai.hpp>
 #include <silkworm/db/snapshots/config/sepolia.hpp>
@@ -51,7 +50,6 @@ class Config {
 
 inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownSnapshotConfigs{
     {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("goerli"sv), {kGoerliSnapshots.data(), kGoerliSnapshots.size()}},
     {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
     {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
     {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},

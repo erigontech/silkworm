@@ -22,20 +22,38 @@
 
 namespace silkworm {
 
-//! \brief Handler with static storage for signals sig
+//! \brief Handler for system signals using static storage
 class SignalHandler {
   public:
-    static void init(std::function<void(int)> custom_handler = {}, bool silent = false);  // Enable the hooks
-    static void handle(int sig_code);                                                     // Handles incoming signal
-    [[nodiscard]] static bool signalled() { return signalled_; }                          // Whether a signal has been intercepted
-    static void reset();                                                                  // Reset to un-signalled (see tests coverage)
-    static void throw_if_signalled();                                                     // Throws std::runtime_error if signalled() == true
+    //! Register its own signal handling hook (previous handlers are saved)
+    static void init(std::function<void(int)> custom_handler = {}, bool silent = false);
+
+    //! Handle incoming signal
+    static void handle(int sig_code);
+
+    //! Whether any signal has been intercepted or not
+    [[nodiscard]] static bool signalled() { return signalled_; }
+
+    //! Reset to un-signalled state (restore previous signal handlers)
+    static void reset();
+
+    //! Throw std::runtime_error if in signalled state
+    static void throw_if_signalled();
 
   private:
-    static std::atomic_int sig_code_;                 // Last sig_code which raised the signalled_ state
-    static std::atomic_uint32_t sig_count_;           // Number of signals intercepted
-    static std::atomic_bool signalled_;               // Whether a signal has been intercepted
-    static std::function<void(int)> custom_handler_;  // Custom handling
+    //! Last signal code which raised the signalled state
+    static std::atomic_int sig_code_;
+
+    //! Number of signals intercepted
+    static std::atomic_uint32_t sig_count_;
+
+    //! Whether a signal has been intercepted
+    static std::atomic_bool signalled_;
+
+    //! Custom handling
+    static std::function<void(int)> custom_handler_;
+
+    //! Flag indicating if signal handler can write on standard streams or not
     static bool silent_;
 };
 

@@ -106,6 +106,7 @@ std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 std::function<void(int)> SignalHandler::custom_handler_;
 bool SignalHandler::silent_{false};
+
 using SignalHandlerFunc = void (*)(int);
 std::map<int, SignalHandlerFunc> previous_signal_handlers;
 
@@ -171,6 +172,7 @@ void SignalHandler::handle(int sig_code) {
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;
+
     // Restore any previous signal handlers
     for (const int sig_code : kHandleableCodes) {
         if (previous_signal_handlers.contains(sig_code)) {

@@ -15,6 +15,7 @@
 */
 
 #include <csignal>
+#include <vector>
 
 #include <catch2/catch.hpp>
 
@@ -23,7 +24,7 @@
 namespace silkworm {
 
 #if !defined(__APPLE__) || defined(NDEBUG)
-constexpr std::array kSignalNumbers{SIGINT, SIGTERM};
+static const std::vector<int> kSignalNumbers{SIGINT, SIGTERM};
 
 TEST_CASE("SignalHandler") {
     for (const auto sig_number : kSignalNumbers) {

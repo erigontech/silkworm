@@ -115,10 +115,11 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     using testing::_;
     using testing::InvokeWithoutArgs;
 
-    const std::array requests{make_fixed_payload_request(rpc::ExecutionPayload::V1),
-                              make_fixed_payload_request(rpc::ExecutionPayload::V2),
-                              make_fixed_payload_request(rpc::ExecutionPayload::V3),
-                              make_payload_request_v3(),
+    const std::array requests{
+        make_fixed_payload_request(rpc::ExecutionPayload::V1),
+        make_fixed_payload_request(rpc::ExecutionPayload::V2),
+        make_fixed_payload_request(rpc::ExecutionPayload::V3),
+        make_payload_request_v3(),
     };
     for (size_t i{0}; i < requests.size(); ++i) {
         const auto& request{requests[i]};

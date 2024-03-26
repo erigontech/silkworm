@@ -113,11 +113,11 @@ static SignalHandlerFunc register_signal_action(const int signal_number, SignalH
 #ifdef _WIN32
     return signal(signal_number, handler_func);
 #else
-    struct sigaction sa{};
+    struct sigaction sa {};
     sa.sa_handler = handler_func;
     sa.sa_flags = SA_ONSTACK;
     sigfillset(&sa.sa_mask);
-    struct sigaction previous_sa{};
+    struct sigaction previous_sa {};
     const int result = ::sigaction(signal_number, &sa, &previous_sa);
     if (result == -1) {
         return SIG_ERR;

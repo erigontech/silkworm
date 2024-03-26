@@ -52,6 +52,7 @@ class Connection : public StreamWriter {
                bool ws_upgrade_enabled,
                bool ws_compression,
                bool http_compression,
+               boost::asio::thread_pool& workers,
                InterfaceLogSettings ifc_log_settings);
     ~Connection() override;
 
@@ -91,7 +92,7 @@ class Connection : public StreamWriter {
 
     static std::string get_date_time();
 
-    Task<void> compress(boost::asio::thread_pool& workers, const std::string& clear_data, std::string& compressed_data);
+    Task<bool> compress(boost::asio::thread_pool& workers, const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -116,7 +117,7 @@ class Connection : public StreamWriter {
 
     bool http_compression_;
 
-    boost::asio::thread_pool worker_pool_;
+    boost::asio::thread_pool& workers_;
 
     std::string vary_;
     std::string origin_;

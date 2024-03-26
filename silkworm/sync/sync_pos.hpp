@@ -52,7 +52,7 @@ class PoSSync : public ChainSync {
   private:
     static std::shared_ptr<Block> make_execution_block(const rpc::ExecutionPayload& payload);
     static tl::expected<void, std::string> validate_blob_hashes(const Block& block,
-                                                                const std::vector<Hash>& expected_blob_versioned_hashes);
+                                                                const std::optional<std::vector<Hash>>& expected_blob_versioned_hashes);
     void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
     std::tuple<bool, Hash> has_valid_ancestor(const Hash& block_hash);
 

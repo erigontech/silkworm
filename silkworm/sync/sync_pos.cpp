@@ -200,10 +200,8 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         }
 
         // Validations
-        if (request.expected_blob_versioned_hashes) {
-            if (const auto res{validate_blob_hashes(*block, *request.expected_blob_versioned_hashes)}; !res) {
-                co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, res.error()};
-            }
+        if (const auto res{validate_blob_hashes(*block, request.expected_blob_versioned_hashes)}; !res) {
+            co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, res.error()};
         }
 
         Hash block_hash = block->header.hash();
@@ -475,7 +473,7 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum 
 }
 
 tl::expected<void, std::string> PoSSync::validate_blob_hashes(const Block& block,
-                                                              const std::vector<Hash>& expected_blob_versioned_hashes) {
+                                                              const std::optional<std::vector<Hash>>& expected_blob_versioned_hashes) {
     std::vector<Hash> blob_versioned_hashes;
     for (const auto& tx : block.transactions) {
         if (tx.type == TransactionType::kBlob) {
@@ -483,8 +481,11 @@ tl::expected<void, std::string> PoSSync::validate_blob_hashes(const Block& block
                                          tx.blob_versioned_hashes.cbegin(), tx.blob_versioned_hashes.cend());
         }
     }
-    if (blob_versioned_hashes != expected_blob_versioned_hashes) {
+    if (expected_blob_versioned_hashes && blob_versioned_hashes != *expected_blob_versioned_hashes) {
         return tl::make_unexpected("computed blob versioned hashes list does not match expected one");
+    }
+    if (!expected_blob_versioned_hashes && !blob_versioned_hashes.empty()) {
+        return tl::make_unexpected("computed blob versioned hashes list is not empty");
     }
     return {};
 }

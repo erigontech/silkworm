@@ -200,12 +200,13 @@ TEST_CASE("PositionTable::operator<<", "[silkworm][node][seg][decompressor]") {
 
 static test::TemporarySnapshotFile create_snapshot_file(std::vector<test::SnapshotPattern>&& patterns,
                                                         std::vector<test::SnapshotPosition>&& positions) {
+    const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     test::SnapshotHeader header{
         .words_count = 0,
         .empty_words_count = 0,
         .patterns = std::move(patterns),
         .positions = std::move(positions)};
-    return test::TemporarySnapshotFile{header};
+    return test::TemporarySnapshotFile{tmp_file_path.parent_path(), tmp_file_path.filename(), header};
 }
 
 static test::TemporarySnapshotFile create_empty_snapshot_file() {
@@ -290,6 +291,7 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompresso
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryDirectory tmp_dir;
 
     std::map<std::string, test::SnapshotHeader> header_tests{
         {"zero patterns and zero positions",
@@ -321,7 +323,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
 
     for (auto& [test_name, header] : header_tests) {
         SECTION(test_name) {
-            test::TemporarySnapshotFile tmp_snapshot{header};
+            test::TemporarySnapshotFile tmp_snapshot{tmp_dir.path(), test_name, header};
             Decompressor decoder{tmp_snapshot.path()};
             CHECK_NOTHROW(decoder.open());
             CHECK(decoder.is_open());

@@ -19,6 +19,7 @@
 #include <charconv>
 #include <chrono>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -33,7 +34,11 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -232,7 +237,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         return SILKWORM_INVALID_HANDLE;
     }
 
-    std::vector<std::shared_ptr<snapshots::Index>> needed_indexes;
+    std::vector<std::shared_ptr<snapshots::IndexBuilder>> needed_indexes;
     for (size_t i = 0; i < len; i++) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
@@ -245,25 +250,41 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
             return SILKWORM_INVALID_PATH;
         }
 
-        std::shared_ptr<snapshots::Index> index;
+        std::shared_ptr<snapshots::IndexBuilder> index;
         switch (snapshot_path->type()) {
             case snapshots::SnapshotType::headers: {
-                index = std::make_shared<snapshots::HeaderIndex>(*snapshot_path, snapshot_region);
+                index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, snapshot_region));
+                needed_indexes.push_back(index);
                 break;
             }
             case snapshots::SnapshotType::bodies: {
-                index = std::make_shared<snapshots::BodyIndex>(*snapshot_path, snapshot_region);
+                index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, snapshot_region));
+                needed_indexes.push_back(index);
                 break;
             }
             case snapshots::SnapshotType::transactions: {
-                index = std::make_shared<snapshots::TransactionIndex>(*snapshot_path, snapshot_region);
+                auto bodies_segment_path = snapshots::TransactionIndex::bodies_segment_path(*snapshot_path);
+                auto bodies_file = std::find_if(snapshots, snapshots + len, [&](SilkwormMemoryMappedFile* file) -> bool {
+                    return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
+                });
+
+                if (bodies_file < snapshots + len) {
+                    auto bodies_segment_region = make_region(**bodies_file);
+
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, snapshot_region));
+                    needed_indexes.push_back(index);
+
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionToBlockIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, snapshot_region));
+                    needed_indexes.push_back(index);
+                }
                 break;
             }
             default: {
                 SILKWORM_ASSERT(false);
             }
         }
-        needed_indexes.push_back(index);
     }
 
     if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {

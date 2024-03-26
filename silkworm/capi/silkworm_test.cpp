@@ -23,9 +23,14 @@
 
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
@@ -34,6 +39,8 @@ namespace silkworm {
 namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
+    TemporaryDirectory tmp_dir;
+
   private:
     // TODO(canepat) remove test_util::StreamSwap objects when C API settings include log level
     std::stringstream string_cout, string_cerr;
@@ -635,25 +642,29 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
-    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{};
+    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};
     snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
-    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{};
+    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};
     snapshot_test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};
-    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{};
+    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{tmp_dir.path()};
     snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
 
-    snapshots::HeaderIndex header_index{header_snapshot_path};
+    auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
     REQUIRE_NOTHROW(header_index.build());
     snapshots::HeaderSnapshot header_snapshot{header_snapshot_path};
     header_snapshot.reopen_segment();
     header_snapshot.reopen_index();
-    snapshots::BodyIndex body_index{body_snapshot_path};
+
+    auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
     REQUIRE_NOTHROW(body_index.build());
     snapshots::BodySnapshot body_snapshot{body_snapshot_path};
     body_snapshot.reopen_segment();
     body_snapshot.reopen_index();
-    snapshots::TransactionIndex tx_index{tx_snapshot_path};
-    REQUIRE_NOTHROW(tx_index.build());
+
+    auto tx_index = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    tx_index.build();
+    auto tx_index_hash_to_block = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
+    tx_index_hash_to_block.build();
     snapshots::TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();

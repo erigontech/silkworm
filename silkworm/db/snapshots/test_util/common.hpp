@@ -113,15 +113,9 @@ struct SnapshotBody {
 //! Temporary snapshot file
 class TemporarySnapshotFile {
   public:
-    explicit TemporarySnapshotFile(const SnapshotHeader& header, const SnapshotBody& body = {}) {
-        Bytes data{};
-        header.encode(data);
-        body.encode(data);
-        file_.write(data);
-    }
     TemporarySnapshotFile(const std::filesystem::path& tmp_dir,
                           const std::string& filename,
-                          const SnapshotHeader& header,
+                          const SnapshotHeader& header = {},
                           const SnapshotBody& body = {})
         : file_(tmp_dir, filename) {
         Bytes data{};
@@ -129,18 +123,11 @@ class TemporarySnapshotFile {
         body.encode(data);
         file_.write(data);
     }
-    TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
-        : TemporarySnapshotFile(tmp_dir, filename, {}, {}) {}
-    TemporarySnapshotFile(const std::string& filename, ByteView data)
-        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, data) {}
+
     TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename, ByteView data)
         : file_(tmp_dir, filename) {
         file_.write(data);
     }
-    TemporarySnapshotFile(const std::string& filename, const SnapshotHeader& header, const SnapshotBody& body = {})
-        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, header, body) {}
-    explicit TemporarySnapshotFile(const std::string& filename)
-        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, {}, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
 
@@ -151,9 +138,6 @@ class TemporarySnapshotFile {
 //! HelloWorld snapshot file: it contains just one word: "hello, world" w/o any patterns
 class HelloWorldSnapshotFile : public TemporarySnapshotFile {
   public:
-    explicit HelloWorldSnapshotFile() : TemporarySnapshotFile{kHeader, kBody} {}
-    explicit HelloWorldSnapshotFile(const std::string& filename)
-        : TemporarySnapshotFile{filename, kHeader, kBody} {}
     explicit HelloWorldSnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
         : TemporarySnapshotFile{tmp_dir, filename, kHeader, kBody} {}
 
@@ -187,10 +171,6 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
 class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
   public:
     inline static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001500-headers.seg"};
-
-    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
-    explicit SampleHeaderSnapshotFile(std::string_view hex)
-        : TemporarySnapshotFile{kHeadersSnapshotFileName, *from_hex(hex)} {}
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -227,20 +207,12 @@ class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
               "1FAD3D458F3E8316E36D8347E7C4825208845733A90798D78301040084476574"
               "6887676F312E352E31856C696E7578A0799895E28A837BBDF28B8ECF5FC0E625"
               "1398ECB0FFC7FF5BBB457C21B14CE982888698762012B46FEF") {}
-
-    //! This empty ctor captures the correct sample snapshot content once for all
-    explicit SampleHeaderSnapshotFile()
-        : SampleHeaderSnapshotFile{TemporaryDirectory::get_os_temporary_path()} {}
 };
 
 //! Sample Bodies snapshot file: it contains the mainnet block bodies in range [1'500'012, 1'500'013]
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
     inline static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
-
-    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
-    explicit SampleBodySnapshotFile(std::string_view hex)
-        : TemporarySnapshotFile{kBodiesSnapshotFileName, *from_hex(hex)} {}
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleBodySnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -276,20 +248,12 @@ class SampleBodySnapshotFile : public TemporarySnapshotFile {
               "98D783010400844765746887676F312E352E31856C696E7578A028FB78C93A8C"
               "6BF6B9A353BD3566DE6861EAAC19C0ED1B663CBAAEE0CFE6E70A88C7E9D99815"
               "48460F") {}
-
-    //! This empty ctor captures the correct sample snapshot content once for all
-    explicit SampleBodySnapshotFile()
-        : SampleBodySnapshotFile{TemporaryDirectory::get_os_temporary_path()} {}
 };
 
 //! Sample Transactions snapshot file: it contains the mainnet block transactions in range [1'500'012, 1'500'013]
 class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
   public:
     inline static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
-
-    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
-    explicit SampleTransactionSnapshotFile(std::string_view hex)
-        : TemporarySnapshotFile{kTransactionsSnapshotFileName, *from_hex(hex)} {}
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -372,10 +336,6 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
               "0679FA90B5A028A6D676D77923B19506C7AAAE5F1DC2F2244855AABB6672401C"
               "1B55B0D844FF"  // Txn position 0 block 1'500'013 END
               "03") {}
-
-    //! This empty ctor captures the correct sample snapshot content once for all
-    explicit SampleTransactionSnapshotFile()
-        : SampleTransactionSnapshotFile{TemporaryDirectory::get_os_temporary_path()} {}
 };
 
 class SampleSnapshotPath : public SnapshotPath {

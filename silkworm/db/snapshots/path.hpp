@@ -110,6 +110,7 @@ class SnapshotPath {
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
+    friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 
   protected:
     static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);

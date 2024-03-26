@@ -33,10 +33,14 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
+#include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -283,18 +287,22 @@ void create_index(const SnapSettings& settings, int repetitions) {
         for (int i{0}; i < repetitions; ++i) {
             switch (snap_file->type()) {
                 case SnapshotType::headers: {
-                    HeaderIndex index{*snap_file};
+                    auto index = HeaderIndex::make(*snap_file);
                     index.build();
                     break;
                 }
                 case SnapshotType::bodies: {
-                    BodyIndex index{*snap_file};
+                    auto index = BodyIndex::make(*snap_file);
                     index.build();
                     break;
                 }
                 case SnapshotType::transactions: {
-                    TransactionIndex index{*snap_file};
+                    auto bodies_segment_path = TransactionIndex::bodies_segment_path(*snap_file);
+                    auto index = TransactionIndex::make(bodies_segment_path, *snap_file);
                     index.build();
+
+                    auto index_hash_to_block = TransactionToBlockIndex::make(bodies_segment_path, *snap_file);
+                    index_hash_to_block.build();
                     break;
                 }
                 default: {

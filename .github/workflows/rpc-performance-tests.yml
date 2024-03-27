@@ -1,13 +1,6 @@
 name: QA - RPC Performance Tests
 
 on:
-  pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - ready_for_review
-      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
@@ -91,22 +84,13 @@ jobs:
           rm -rf ./reports/mainnet
           
           # Launch the RPC performance test runner
-          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,1:2,1:5
-          #run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
-          #run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
-          #run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
-          #run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20          
-          
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_call --pattern-file pattern/mainnet/stress_test_eth_call_001_14M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getLogs --pattern-file pattern/mainnet/stress_test_eth_getLogs_15M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBalance --pattern-file pattern/mainnet/stress_test_eth_getBalance_15M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBlockByHash --pattern-file pattern/mainnet/stress_test_eth_getBlockByHash_14M.tar --test-sequence 1:1,100:30,1000:20,10000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBlockByNumber --pattern-file pattern/mainnet/stress_test_eth_getBlockByNumber_13M.tar --test-sequence 1:1,100:30,1000:20,5000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getTransactionByHash --pattern-file pattern/mainnet/stress_test_eth_getTransactionByHash_13M.tar --test-sequence 1:1,100:30,1000:20,10000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          #python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getTransactionReceipt --pattern-file pattern/mainnet/stress_test_eth_getTransactionReceipt_14M.tar --test-sequence 1:1,100:30,1000:20,5000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
+          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20          
           
           # Capture test runner script exit status
           perf_exit_status=$?

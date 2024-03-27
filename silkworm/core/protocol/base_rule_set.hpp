@@ -22,6 +22,10 @@ namespace silkworm::protocol {
 
 class BaseRuleSet : public IRuleSet {
   public:
+    // Not copyable nor movable
+    BaseRuleSet(const BaseRuleSet&) = delete;
+    BaseRuleSet& operator=(const BaseRuleSet&) = delete;
+
     //! \brief Performs validation of block body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity" and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.

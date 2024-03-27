@@ -48,7 +48,7 @@ namespace protocol {
         bool operator==(const CliqueConfig&) const = default;
     };
 
-    //! \see IRuleSet
+    //! \see RuleSet
     using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, bor::Config>;
 
 }  // namespace protocol

@@ -28,11 +28,11 @@ namespace silkworm::protocol {
 ValidationResult EthashRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) {
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     if (header.difficulty != difficulty(header.number, header.timestamp, parent.difficulty,
-                                        parent.timestamp, parent_has_uncles, chain_config_)) {
+                                        parent.timestamp, parent_has_uncles, *chain_config_)) {
         return ValidationResult::kWrongDifficulty;
     }
 
-    if (!std::get<EthashConfig>(chain_config_.rule_set_config).validate_seal) {
+    if (!std::get<EthashConfig>(chain_config_->rule_set_config).validate_seal) {
         return ValidationResult::kOk;
     }
 
@@ -54,8 +54,8 @@ ValidationResult EthashRuleSet::validate_difficulty_and_seal(const BlockHeader& 
 
 ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) const {
     // EIP-779: Hardfork Meta: DAO Fork
-    if (chain_config_.dao_block.has_value() && chain_config_.dao_block <= header.number &&
-        header.number <= chain_config_.dao_block.value() + 9) {
+    if (chain_config_->dao_block && chain_config_->dao_block <= header.number &&
+        header.number <= *(chain_config_->dao_block) + 9) {
         static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
         if (header.extra_data != kDaoExtraData) {
             return ValidationResult::kWrongDaoExtraData;
@@ -90,7 +90,7 @@ static intx::uint256 block_reward_base(const evmc_revision rev) {
 
 BlockReward EthashRuleSet::compute_reward(const Block& block) {
     const BlockNum block_number{block.header.number};
-    const evmc_revision rev{chain_config_.revision(block_number, block.header.timestamp)};
+    const evmc_revision rev{chain_config_->revision(block_number, block.header.timestamp)};
     const intx::uint256 base{block_reward_base(rev)};
 
     intx::uint256 miner_reward{base};

@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/core/protocol/base_rule_set.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 
 namespace silkworm::protocol {
 

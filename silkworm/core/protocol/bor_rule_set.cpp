@@ -175,7 +175,7 @@ void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint25
 }
 
 const bor::Config& BorRuleSet::config() const {
-    return std::get<bor::Config>(chain_config_.rule_set_config);
+    return std::get<bor::Config>(chain_config_->rule_set_config);
 }
 
 }  // namespace silkworm::protocol

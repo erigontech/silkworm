@@ -129,10 +129,10 @@ Task<ExecutionPayloadAndValue> RemoteBackEnd::engine_get_payload(uint64_t payloa
     co_return ExecutionPayloadAndValue{payload, value};
 }
 
-Task<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayload& payload) {
+Task<PayloadStatus> RemoteBackEnd::engine_new_payload(const rpc::NewPayloadRequest& request) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayload> npc_rpc{*stub_, grpc_context_};
-    auto req{encode_execution_payload(payload)};
+    auto req{encode_execution_payload(request.execution_payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
     SILK_TRACE << "RemoteBackEnd::engine_new_payload data=" << payload_status << " t=" << clock_time::since(start_time);

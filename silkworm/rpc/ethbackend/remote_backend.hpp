@@ -50,7 +50,7 @@ class RemoteBackEnd final : public BackEnd {
     Task<std::string> client_version() override;
     Task<uint64_t> net_peer_count() override;
     Task<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
-    Task<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
+    Task<PayloadStatus> engine_new_payload(const rpc::NewPayloadRequest& request) override;
     Task<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
     Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
     Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;

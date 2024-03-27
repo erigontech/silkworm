@@ -129,6 +129,42 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& requ
     }
 }
 
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_getpayloadv3
+Task<void> EngineRpcApi::handle_engine_get_payload_v3(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getPayloadV3 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto payload_quantity = params[0].get<std::string>();
+        // TODO(canepat) we need a way to specify V3 i.e. blobs should be returned (hint: use versioned struct PayloadIdentifier)
+        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        reply = make_json_content(request, payload_and_value);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
+        reply = make_json_error(request, kUnknownPayload, se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
+        reply = make_json_error(request, kUnknownPayload, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
+        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
+    }
+}
+
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1
 Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
@@ -224,8 +260,9 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto payload = params[0].get<ExecutionPayload>();
-        auto new_payload = co_await backend_->engine_new_payload(payload);
+        auto payload = params[0].get<ExecutionPayload>();
+        NewPayloadRequest new_payload_v1_request{.execution_payload = std::move(payload)};
+        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v1_request);
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
@@ -250,7 +287,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto payload = params[0].get<ExecutionPayload>();
+    auto payload = params[0].get<ExecutionPayload>();
     auto tx = co_await database_->begin();
 
 #ifndef BUILD_COVERAGE
@@ -277,8 +314,72 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
             co_await tx->close();
             co_return;
         }
+        if (config->cancun_time && payload.timestamp >= config->cancun_time) {
+            const auto error_msg = "consensus layer must use ExecutionPayloadV3 if timestamp greater or equal to Cancun";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, kUnsupportedFork, error_msg);
+            co_await tx->close();
+            co_return;
+        }
 
-        const auto new_payload = co_await backend_->engine_new_payload(payload);
+        NewPayloadRequest new_payload_v2_request{.execution_payload = std::move(payload)};
+        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v2_request);
+
+        reply = make_json_content(request, new_payload);
+#ifndef BUILD_COVERAGE
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request, se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+#endif
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_newpayloadv3
+Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 3) {
+        auto error_msg = "invalid engine_newPayloadV3 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    auto payload = params[0].get<ExecutionPayload>();
+    auto expected_blob_versioned_hashes = params[1].get<std::vector<Hash>>();
+    auto parent_beacon_block_root = params[2].get<evmc::bytes32>();
+    auto tx = co_await database_->begin();
+
+#ifndef BUILD_COVERAGE
+    try {
+#endif
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto config{co_await storage->read_chain_config()};
+        ensure(config.has_value(), "execution layer has invalid configuration");
+        ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
+        ensure(config->cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
+
+        // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
+        if (payload.timestamp >= config->cancun_time && payload.version != ExecutionPayload::V3) {
+            const auto error_msg = "consensus layer must use ExecutionPayloadV3 if timestamp greater or equal to Cancun";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, kUnsupportedFork, error_msg);
+            co_await tx->close();
+            co_return;
+        }
+
+        NewPayloadRequest new_payload_v3_request{
+            .execution_payload = std::move(payload),
+            .expected_blob_versioned_hashes = std::move(expected_blob_versioned_hashes),
+            .parent_beacon_block_root = parent_beacon_block_root,
+        };
+        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v3_request);
 
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
@@ -310,17 +411,12 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
     try {
 #endif
         const auto fork_choice_state = params[0].get<ForkChoiceState>();
-        // We MUST check that ForkChoiceState is valid and consistent [Specification 9.]
-        if (fork_choice_state.safe_block_hash == kZeroHash) {
-            const auto error_msg = "safe block hash is empty";
+
+        // We MUST check that ForkChoiceState is valid and consistent [Paris Specification 8.]
+        if (const auto res{validate_fork_choice_state_v1(fork_choice_state)}; !res) {
+            const auto [error_code, error_msg] = res.error();
             SILK_ERROR << error_msg;
-            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
-            co_return;
-        }
-        if (fork_choice_state.finalized_block_hash == kZeroHash) {
-            const auto error_msg = "finalized block hash is empty";
-            SILK_ERROR << error_msg;
-            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, error_code, error_msg);
             co_return;
         }
 
@@ -330,6 +426,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
         const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+
         reply = make_json_content(request, fcu_reply);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
@@ -357,49 +454,80 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
 
     try {
         const auto fork_choice_state = params[0].get<ForkChoiceState>();
-        // We MUST check that ForkChoiceState is valid and consistent [Specification 9.]
-        if (fork_choice_state.safe_block_hash == kZeroHash) {
-            const auto error_msg = "safe block hash is empty";
+
+        // We MUST check that ForkChoiceState is valid and consistent [Paris Specification 8.]
+        if (const auto res{validate_fork_choice_state_v1(fork_choice_state)}; !res) {
+            const auto [error_code, error_msg] = res.error();
             SILK_ERROR << error_msg;
-            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
-            co_return;
-        }
-        if (fork_choice_state.finalized_block_hash == kZeroHash) {
-            const auto error_msg = "finalized block hash is empty";
-            SILK_ERROR << error_msg;
-            reply = make_json_error(request, kInvalidForkChoiceState, error_msg);
+            reply = make_json_error(request, error_code, error_msg);
             co_return;
         }
 
         std::optional<PayloadAttributes> payload_attributes;
         if (params.size() == 2 && !params[1].is_null()) {
-            const auto attributes = params[1].get<PayloadAttributes>();
-
-            auto tx = co_await database_->begin();
-            ethdb::TransactionDatabase tx_database{*tx};
-            const auto storage{tx->create_storage(tx_database, backend_)};
-            const auto config{co_await storage->read_chain_config()};
-            co_await tx->close();
-            ensure(config.has_value(), "execution layer has invalid configuration");
-            ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
-
-            // We MUST check that CL has sent the expected PayloadAttributes version [Specification for params]
-            if (attributes.timestamp < config->shanghai_time && attributes.version != PayloadAttributes::V1) {
-                const auto error_msg = "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai";
-                SILK_ERROR << error_msg;
-                reply = make_json_error(request, kInvalidParams, error_msg);
-                co_return;
-            }
-            if (attributes.timestamp >= config->shanghai_time && attributes.version != PayloadAttributes::V2) {
-                const auto error_msg = "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai";
-                SILK_ERROR << error_msg;
-                reply = make_json_error(request, kInvalidParams, error_msg);
-                co_return;
-            }
-            payload_attributes = attributes;
+            payload_attributes = params[1].get<PayloadAttributes>();
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
         const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+
+        // We MUST check that CL has sent consistent PayloadAttributes [Shanghai Specification 2.]
+        const auto chain_config{co_await read_chain_config()};
+        if (const auto res{validate_payload_attributes_v2(payload_attributes, fcu_reply, chain_config)}; !res) {
+            const auto [error_code, error_msg] = res.error();
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, error_code, error_msg);
+            co_return;
+        }
+
+        reply = make_json_content(request, fcu_reply);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request, se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_forkchoiceupdatedv3
+Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v3(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1 && params.size() != 2) {
+        auto error_msg = "invalid engine_forkchoiceUpdatedV3 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto fork_choice_state = params[0].get<ForkChoiceState>();
+
+        // We MUST check that ForkChoiceState is valid and consistent [Paris Specification 8.]
+        if (const auto res{validate_fork_choice_state_v1(fork_choice_state)}; !res) {
+            const auto [error_code, error_msg] = res.error();
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, error_code, error_msg);
+            co_return;
+        }
+
+        std::optional<PayloadAttributes> payload_attributes;
+        if (params.size() == 2 && !params[1].is_null()) {
+            payload_attributes = params[1].get<PayloadAttributes>();
+        }
+        const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
+        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+
+        // We MUST check that CL has sent consistent PayloadAttributes [Cancun Specification 2.]
+        const auto chain_config{co_await read_chain_config()};
+        if (auto res{validate_payload_attributes_v3(payload_attributes, fcu_reply, chain_config)}; !res) {
+            const auto [error_code, error_msg] = res.error();
+            reply = make_json_error(request, error_code, error_msg);
+            co_return;
+        }
+
         reply = make_json_content(request, fcu_reply);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -469,6 +597,77 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
     }
 #endif
     co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
+EngineRpcApi::ValidationError EngineRpcApi::validate_fork_choice_state_v1(const ForkChoiceState& state) {
+    // safeBlockHash and finalizedBlockHash are not allowed to be zero because transition block is finalized
+    if (state.safe_block_hash == kZeroHash) {
+        return tl::make_unexpected<ApiError>({kInvalidForkChoiceState, "safe block hash is empty"});
+    }
+    if (state.finalized_block_hash == kZeroHash) {
+        return tl::make_unexpected<ApiError>({kInvalidForkChoiceState, "finalized block hash is empty"});
+    }
+    return {};
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_forkchoiceupdatedv2
+EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v2(const std::optional<PayloadAttributes>& attributes,
+                                                                           const ForkChoiceUpdatedReply& reply,
+                                                                           const std::optional<silkworm::ChainConfig>& config) {
+    // Payload attributes must be validated only if non-null and FCU is valid
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+        return {};
+    }
+
+    ensure(config.has_value(), "execution layer has invalid configuration");
+    ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
+
+    if (attributes->timestamp < config->shanghai_time && attributes->version != PayloadAttributes::V1) {
+        return tl::make_unexpected<ApiError>(
+            {kInvalidParams, "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai"});
+    }
+    if (attributes->timestamp >= config->shanghai_time && attributes->version != PayloadAttributes::V2) {
+        return tl::make_unexpected<ApiError>(
+            {kInvalidParams, "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai"});
+    }
+    if (attributes->timestamp >= config->cancun_time) {
+        return tl::make_unexpected<ApiError>(
+            {kUnsupportedFork, "consensus layer must use PayloadAttributesV3 if timestamp greater or equal to Cancun"});
+    }
+    return {};
+}
+
+EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const std::optional<PayloadAttributes>& attributes,
+                                                                           const ForkChoiceUpdatedReply& reply,
+                                                                           const std::optional<silkworm::ChainConfig>& config) {
+    // Payload attributes must be validated only if non-null and FCU is valid
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+        return {};
+    }
+
+    ensure(config.has_value(), "execution layer has invalid configuration");
+    ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
+    ensure(config->cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
+
+    if (attributes->timestamp < config->cancun_time) {
+        return tl::make_unexpected<ApiError>(
+            {kUnsupportedFork, "consensus layer must not use PayloadAttributesV3 if timestamp lower than Cancun"});
+    }
+    if (attributes->timestamp >= config->cancun_time && attributes->version != PayloadAttributes::V3) {
+        return tl::make_unexpected<ApiError>(
+            {kInvalidPayloadAttributes, "consensus layer must use PayloadAttributesV3 if timestamp greater or equal to Cancun"});
+    }
+    return {};
+}
+
+Task<std::optional<silkworm::ChainConfig>> EngineRpcApi::read_chain_config() {
+    auto tx = co_await database_->begin();
+    ethdb::TransactionDatabase tx_database{*tx};
+    const auto storage{tx->create_storage(tx_database, backend_)};
+    auto config{co_await storage->read_chain_config()};
+    co_await tx->close();
+    co_return config;
 }
 
 }  // namespace silkworm::rpc::commands

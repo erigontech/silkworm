@@ -25,6 +25,7 @@
 #include <silkworm/rpc/commands/eth_api.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/common/writer.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::json_rpc {
 
@@ -48,7 +49,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
         const auto request_json = prevalidate_and_parse(request);
         if (request_json.is_object()) {
             if (const auto valid_result{is_valid_jsonrpc(request_json)}; !valid_result) {
-                response = make_json_error(request_json, -32600, valid_result.error()).dump() + "\n";
+                response = make_json_error(request_json, kInvalidRequest, valid_result.error()).dump() + "\n";
             } else {
                 return_reply = co_await handle_request_and_create_reply(request_json, response);
             }
@@ -63,7 +64,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
                 }
 
                 if (const auto valid_result{is_valid_jsonrpc(single_request_json)}; !valid_result) {
-                    batch_reply_content << make_json_error(request_json, -32600, valid_result.error()).dump();
+                    batch_reply_content << make_json_error(request_json, kInvalidRequest, valid_result.error()).dump();
                 } else {
                     std::string single_reply;
                     return_reply = co_await handle_request_and_create_reply(single_request_json, single_reply);
@@ -75,11 +76,11 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
         }
     } catch (const nlohmann::json::exception& e) {
         SILK_ERROR << "RequestHandler::handle nlohmann::json::exception: " << e.what();
-        response = make_json_error(0, -32600, "invalid request").dump() + "\n";
+        response = make_json_error(0, kInvalidRequest, "invalid request").dump() + "\n";
         return_reply = true;
     } catch (const std::runtime_error& re) {
         SILK_ERROR << "RequestHandler::handle runtime error: " << re.what();
-        response = make_json_error(0, -32601, "invalid request").dump() + "\n";
+        response = make_json_error(0, kMethodNotFound, "invalid request").dump() + "\n";
         return_reply = true;
     }
 
@@ -124,13 +125,13 @@ JsonRpcValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& r
 
 Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
     if (!request_json.contains("method")) {
-        response = make_json_error(request_json, -32600, "invalid request").dump();
+        response = make_json_error(request_json, kInvalidRequest, "invalid request").dump();
         co_return true;
     }
 
     const auto method = request_json["method"].get<std::string>();
     if (method.empty()) {
-        response = make_json_error(request_json, -32600, "invalid request").dump();
+        response = make_json_error(request_json, kInvalidRequest, "invalid request").dump();
         co_return true;
     }
 
@@ -157,7 +158,7 @@ Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
         co_return false;
     }
 
-    response = make_json_error(request_json, -32601, "the method " + method + " does not exist/is not available").dump();
+    response = make_json_error(request_json, kMethodNotFound, "the method " + method + " does not exist/is not available").dump();
 
     co_return true;
 }
@@ -175,8 +176,6 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethodGla
         SILK_ERROR << "unexpected exception";
         response = make_json_error(request_json, 100, "unexpected exception").dump();
     }
-
-    co_return;
 }
 
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, std::string& response) {
@@ -193,8 +192,6 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
         SILK_ERROR << "unexpected exception";
         response = make_json_error(request_json, 100, "unexpected exception").dump();
     }
-
-    co_return;
 }
 
 Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
@@ -215,12 +212,11 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream ha
             const auto error = make_json_error(request_json, 100, "unexpected exception");
             stream.write_json(error);
         }
+
         co_await stream.close();
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     }
-
-    co_return;
 }
 
 }  // namespace silkworm::rpc::json_rpc

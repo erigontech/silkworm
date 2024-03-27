@@ -33,9 +33,9 @@ class EngineApiBackend : public rpc::ethbackend::BackEnd {
     EngineApiBackend(const EngineApiBackend&) = delete;
     EngineApiBackend& operator=(const EngineApiBackend&) = delete;
 
-    Task<rpc::PayloadStatus> engine_new_payload(const rpc::ExecutionPayload& payload) override;
+    Task<rpc::PayloadStatus> engine_new_payload(const rpc::NewPayloadRequest& request) override;
     Task<rpc::ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
-    Task<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) override;
+    Task<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& request) override;
     Task<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
     Task<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
     Task<evmc::address> etherbase() override;

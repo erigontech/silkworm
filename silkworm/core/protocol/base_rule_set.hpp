@@ -69,12 +69,14 @@ class RuleSet : public IRuleSet {
     //! \note Used by validate_block_header
     virtual ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) = 0;
 
+    const ChainConfig& chain_config_;
+
+  private:
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
 
-    const ChainConfig& chain_config_;
     bool prohibit_ommers_{false};
 };
 

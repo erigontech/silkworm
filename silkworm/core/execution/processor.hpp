@@ -33,7 +33,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config);
 
     /**
      * Execute a transaction, but do not write to the DB yet.
@@ -69,7 +69,7 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
-    protocol::IRuleSet& rule_set_;
+    protocol::RuleSet& rule_set_;
     EVM evm_;
 };
 

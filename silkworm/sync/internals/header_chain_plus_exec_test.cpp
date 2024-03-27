@@ -50,24 +50,26 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::main_chain_;
 };
 
-class DummyRuleSet : public protocol::IRuleSet {
+class DummyRuleSet : public protocol::RuleSet {
   public:
+    DummyRuleSet() : RuleSet{kMainnetConfig, false} {}
+
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
     ValidationResult validate_ommers(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
-    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override { return ValidationResult::kOk; }
+    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override {
+        return ValidationResult::kOk;
+    }
 
     void initialize(EVM&) override {}
 
     void finalize(IntraBlockState&, const Block&) override {}
 
-    protocol::BlockReward compute_reward(const Block&) override { return {0, {}}; }
-
-    evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
-
-    void add_fee_transfer_log(IntraBlockState&, const intx::uint256&, const evmc::address&, const intx::uint256&,
-                              const evmc::address&, const intx::uint256&) override {}
+  protected:
+    ValidationResult validate_difficulty_and_seal(const BlockHeader&, const BlockHeader&) override {
+        return ValidationResult::kOk;
+    }
 };
 
 TEST_CASE("Headers receiving and saving") {

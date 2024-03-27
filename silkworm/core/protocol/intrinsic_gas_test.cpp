@@ -18,6 +18,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/chain/config.hpp>
+
 #include "param.hpp"
 
 namespace silkworm::protocol {
@@ -34,7 +36,7 @@ TEST_CASE("EIP-2930 intrinsic gas") {
 
     UnsignedTransaction txn{
         .type = TransactionType::kAccessList,
-        .chain_id = 5,
+        .chain_id = kSepoliaConfig.chain_id,
         .nonce = 7,
         .max_priority_fee_per_gas = 30000000000,
         .max_fee_per_gas = 30000000000,

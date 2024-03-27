@@ -23,6 +23,9 @@
 
 namespace silkworm::sentry::rlpx::crypto {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
     assert(key.size() == 32);
 
@@ -30,8 +33,9 @@ Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
     [[maybe_unused]] auto _ = gsl::finally([ctx] { HMAC_CTX_free(ctx); });
 
     int ok = HMAC_Init_ex(ctx, key.data(), static_cast<int>(key.size()), EVP_sha256(), nullptr);
-    if (!ok)
+    if (!ok) {
         throw std::runtime_error("rlpx::crypto::hmac: Failed to init HMAC");
+    }
 
     HMAC_Update(ctx, data1.data(), data1.size());
     HMAC_Update(ctx, data2.data(), data2.size());
@@ -42,5 +46,7 @@ Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
 
     return hash;
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace silkworm::sentry::rlpx::crypto

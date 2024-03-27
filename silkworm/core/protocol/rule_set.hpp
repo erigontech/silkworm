@@ -35,7 +35,8 @@ struct BlockReward {
     std::vector<intx::uint256> ommers;
 };
 
-// Abstract class representing a set of protocol rules (e.g. Bor)
+// Abstract class representing a set of protocol rules.
+// For example, its subclass BorRuleSet corresponds to the protocol rule set of Polygon PoS.
 class RuleSet {
   public:
     // Only movable

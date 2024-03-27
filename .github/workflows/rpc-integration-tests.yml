@@ -110,7 +110,6 @@ jobs:
           path: ${{runner.workspace}}/rpc-tests/integration/mainnet/results/
 
       - name: Save test results
-        if: steps.test_step.outputs.TEST_RESULT != 'success'
         working-directory: ${{runner.workspace}}/silkworm
         env:
           TEST_RESULT: ${{ steps.test_step.outputs.TEST_RESULT }}

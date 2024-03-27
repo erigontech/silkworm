@@ -43,7 +43,7 @@ namespace protocol {
         bool operator==(const NoPreMergeConfig&) const = default;
     };
 
-    //! \see IRuleSet
+    //! \see RuleSet
     using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, bor::Config>;
 
 }  // namespace protocol

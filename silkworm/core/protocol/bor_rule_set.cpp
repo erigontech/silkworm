@@ -37,7 +37,7 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kInvalidMixDigest;
     }
 
-    ValidationResult res{BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check)};
+    ValidationResult res{RuleSet::validate_block_header(header, state, with_future_timestamp_check)};
     if (res != ValidationResult::kOk) {
         return res;
     }
@@ -175,7 +175,7 @@ void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint25
 }
 
 const bor::Config& BorRuleSet::config() const {
-    return std::get<bor::Config>(chain_config_.rule_set_config);
+    return std::get<bor::Config>(chain_config_->rule_set_config);
 }
 
 }  // namespace silkworm::protocol

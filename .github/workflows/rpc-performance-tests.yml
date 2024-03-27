@@ -77,14 +77,14 @@ jobs:
             method=$2
             pattern=$3
             sequence=$4
-            python3 ./run_perf_tests.py --blockchain $network \
-                                        --test-type $method \
-                                        --pattern-file pattern/$network/$pattern.tar \
-                                        --test-sequence $sequence \
-                                        --repetitions 20 \
+            python3 ./run_perf_tests.py --blockchain "$network" \
+                                        --test-type "$method" \
+                                        --pattern-file pattern/"$network"/"$pattern".tar \
+                                        --test-sequence "$sequence" \
+                                        --repetitions 10 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
-                                        --test-mode 2 \
+                                        --test-mode 3 \
                                         --test-report
           }
           

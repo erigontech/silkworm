@@ -37,7 +37,7 @@ ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kInvalidMixDigest;
     }
 
-    ValidationResult res{BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check)};
+    ValidationResult res{RuleSet::validate_block_header(header, state, with_future_timestamp_check)};
     if (res != ValidationResult::kOk) {
         return res;
     }

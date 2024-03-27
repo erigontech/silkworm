@@ -20,11 +20,11 @@
 
 namespace silkworm::protocol {
 
-class BaseRuleSet : public IRuleSet {
+class RuleSet : public IRuleSet {
   public:
     // Not copyable nor movable
-    BaseRuleSet(const BaseRuleSet&) = delete;
-    BaseRuleSet& operator=(const BaseRuleSet&) = delete;
+    RuleSet(const RuleSet&) = delete;
+    RuleSet& operator=(const RuleSet&) = delete;
 
     //! \brief Performs validation of block body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity" and 11.1 "Ommer Validation".
@@ -60,7 +60,7 @@ class BaseRuleSet : public IRuleSet {
                               const evmc::address&, const intx::uint256&) override {}
 
   protected:
-    explicit BaseRuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
+    explicit RuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
 
     virtual ValidationResult validate_extra_data(const BlockHeader& header) const;

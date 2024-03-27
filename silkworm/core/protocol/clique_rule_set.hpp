@@ -22,9 +22,9 @@ namespace silkworm::protocol {
 
 // Warning: most Clique (EIP-225) logic is not implemented yet.
 // This rule set is just a dummy!
-class CliqueRuleSet : public BaseRuleSet {
+class CliqueRuleSet : public RuleSet {
   public:
-    explicit CliqueRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, false) {}
+    explicit CliqueRuleSet(const ChainConfig& chain_config) : RuleSet(chain_config, false) {}
 
     void initialize(EVM&) final {}
 

@@ -24,7 +24,7 @@
 
 namespace silkworm::protocol {
 
-ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const BlockState& state) {
+ValidationResult RuleSet::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
@@ -80,7 +80,7 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
     return validate_ommers(block, state);
 }
 
-ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockState& state) {
+ValidationResult RuleSet::validate_ommers(const Block& block, const BlockState& state) {
     if (prohibit_ommers_) {
         if (block.ommers.empty()) {
             return ValidationResult::kOk;
@@ -118,8 +118,8 @@ ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockSta
     return ValidationResult::kOk;
 }
 
-ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
-                                                    bool with_future_timestamp_check) {
+ValidationResult RuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
         if (header.timestamp > static_cast<uint64_t>(now)) {
@@ -204,23 +204,23 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
     return validate_difficulty_and_seal(header, *parent);
 }
 
-ValidationResult BaseRuleSet::validate_extra_data(const BlockHeader& header) const {
+ValidationResult RuleSet::validate_extra_data(const BlockHeader& header) const {
     if (header.extra_data.length() > kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }
     return ValidationResult::kOk;
 }
 
-std::optional<BlockHeader> BaseRuleSet::get_parent_header(const BlockState& state, const BlockHeader& header) {
+std::optional<BlockHeader> RuleSet::get_parent_header(const BlockState& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;
     }
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
-bool BaseRuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                         const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
-                         std::vector<BlockHeader>& old_ommers) {
+bool RuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                     const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
+                     std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
     }
@@ -245,9 +245,9 @@ bool BaseRuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& ma
     return is_kin(branch_header, mainline_parent.value(), mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-evmc::address BaseRuleSet::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+evmc::address RuleSet::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-BlockReward BaseRuleSet::compute_reward(const Block&) {
+BlockReward RuleSet::compute_reward(const Block&) {
     return {0, {}};
 }
 

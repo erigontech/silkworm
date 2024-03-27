@@ -26,7 +26,7 @@
 namespace silkworm::protocol {
 
 MergeRuleSet::MergeRuleSet(RuleSetPtr pre_merge_rule_set, const ChainConfig& chain_config)
-    : BaseRuleSet{chain_config, /*prohibit_ommers=*/true},
+    : RuleSet{chain_config, /*prohibit_ommers=*/true},
       terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
       pre_merge_rule_set_{std::move(pre_merge_rule_set)} {}
 
@@ -34,14 +34,14 @@ ValidationResult MergeRuleSet::pre_validate_block_body(const Block& block, const
     if (block.header.difficulty != 0) {
         return pre_merge_rule_set_->pre_validate_block_body(block, state);
     }
-    return BaseRuleSet::pre_validate_block_body(block, state);
+    return RuleSet::pre_validate_block_body(block, state);
 }
 
 ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                      bool with_future_timestamp_check) {
     // TODO(yperbasis) how will all this work with backwards sync?
 
-    const std::optional<BlockHeader> parent{BaseRuleSet::get_parent_header(state, header)};
+    const std::optional<BlockHeader> parent{RuleSet::get_parent_header(state, header)};
     if (!parent) {
         return ValidationResult::kUnknownParent;
     }
@@ -64,7 +64,7 @@ ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, 
     if (!ttd_reached) {
         return ValidationResult::kPoSBlockBeforeMerge;
     }
-    return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
+    return RuleSet::validate_block_header(header, state, with_future_timestamp_check);
 }
 
 ValidationResult MergeRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {
@@ -114,21 +114,21 @@ evmc::address MergeRuleSet::get_beneficiary(const BlockHeader& header) {
     if (header.difficulty != 0) {
         return pre_merge_rule_set_->get_beneficiary(header);
     }
-    return BaseRuleSet::get_beneficiary(header);
+    return RuleSet::get_beneficiary(header);
 }
 
 ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
         return pre_merge_rule_set_->validate_ommers(block, state);
     }
-    return BaseRuleSet::validate_ommers(block, state);
+    return RuleSet::validate_ommers(block, state);
 }
 
 BlockReward MergeRuleSet::compute_reward(const Block& block) {
     if (block.header.difficulty != 0) {
         return pre_merge_rule_set_->compute_reward(block);
     }
-    return BaseRuleSet::compute_reward(block);
+    return RuleSet::compute_reward(block);
 }
 
 }  // namespace silkworm::protocol

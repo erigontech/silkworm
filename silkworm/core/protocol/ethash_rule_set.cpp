@@ -62,7 +62,7 @@ ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) c
         }
     }
 
-    return BaseRuleSet::validate_extra_data(header);
+    return RuleSet::validate_extra_data(header);
 }
 
 void EthashRuleSet::initialize(EVM& evm) {

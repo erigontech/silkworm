@@ -24,7 +24,7 @@ namespace silkworm::protocol {
 
 // Mainnet protocol rule set that can handle blocks before, during, and after the Merge.
 // See EIP-3675: Upgrade consensus to Proof-of-Stake.
-class MergeRuleSet : public BaseRuleSet {
+class MergeRuleSet : public RuleSet {
   public:
     explicit MergeRuleSet(RuleSetPtr pre_merge_rule_set, const ChainConfig& chain_config);
 

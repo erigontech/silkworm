@@ -25,9 +25,9 @@
 namespace silkworm::protocol {
 
 // Proof of Work implementation
-class EthashRuleSet : public BaseRuleSet {
+class EthashRuleSet : public RuleSet {
   public:
-    explicit EthashRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/false) {}
+    explicit EthashRuleSet(const ChainConfig& chain_config) : RuleSet(chain_config, /*prohibit_ommers=*/false) {}
 
     void initialize(EVM& evm) override;
 

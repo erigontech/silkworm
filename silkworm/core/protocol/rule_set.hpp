@@ -35,6 +35,7 @@ struct BlockReward {
     std::vector<intx::uint256> ommers;
 };
 
+// Abstract class representing a set of protocol rules (e.g. Bor)
 class RuleSet {
   public:
     // Only movable
@@ -87,9 +88,6 @@ class RuleSet {
                                       const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                                       const intx::uint256& recipient_initial_balance);
 
-    //! \brief Returns parent header (if any) of provided header
-    static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
-
   protected:
     explicit RuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{&chain_config}, prohibit_ommers_{prohibit_ommers} {}
@@ -99,6 +97,9 @@ class RuleSet {
     //! \brief Validates the difficulty and the seal of the header
     //! \note Used by validate_block_header
     virtual ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) = 0;
+
+    //! \brief Returns parent header (if any) of provided header
+    static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
     gsl::not_null<const ChainConfig*> chain_config_;
 

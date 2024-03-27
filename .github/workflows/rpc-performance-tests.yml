@@ -8,6 +8,7 @@ jobs:
   performance-test-suite:
     runs-on: self-hosted
     env:
+      ERIGON_DIR: /opt/erigon-versions/reference-version
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
@@ -48,26 +49,48 @@ jobs:
       - name: Run Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --http-compression &
-          RPC_DAEMON_PID=$!
-          echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
+          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --http-compression --eth.addr 127.0.0.1:51515 &
+          SILKWORM_RPC_DAEMON_PID=$!
+          echo "SILKWORM_RPC_DAEMON_PID=$SILKWORM_RPC_DAEMON_PID" >> $GITHUB_ENV
+
+      - name: Run Erigon RpcDaemon
+        run: |
+          $ERIGON_DIR/rpcdaemon --datadir $ERIGON_DATA_DIR --http.api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --verbosity 1 &
+          ERIGON_RPC_DAEMON_PID=$!
+          echo "ERIGON_RPC_DAEMON_PID=$ERIGON_RPC_DAEMON_PID" >> $GITHUB_ENV
 
       - name: Run RPC Performance Tests
         id: test_step
         run: |
           set +e # Disable exit on error
           
+          run_perf () {
+            network=$1
+            method=$2
+            pattern=$3
+            sequence=$4
+            python3 ./run_perf_tests.py --blockchain "$network" \
+                                        --test-type "$method" \
+                                        --pattern-file pattern/"$network"/"$pattern".tar \
+                                        --test-sequence "$sequence" \
+                                        --repetitions 10 \
+                                        --silk-dir ${{runner.workspace}}/silkworm \
+                                        --erigon-dir $ERIGON_DATA_DIR \
+                                        --test-mode 3 \
+                                        --test-report
+          }
+          
           cd ${{runner.workspace}}/rpc-tests/perf
           rm -rf ./reports/mainnet
           
           # Launch the RPC performance test runner
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_call --pattern-file pattern/mainnet/stress_test_eth_call_001_14M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getLogs --pattern-file pattern/mainnet/stress_test_eth_getLogs_15M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBalance --pattern-file pattern/mainnet/stress_test_eth_getBalance_15M.tar --test-sequence 1:1,100:30,1000:20,10000:20,20000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBlockByHash --pattern-file pattern/mainnet/stress_test_eth_getBlockByHash_14M.tar --test-sequence 1:1,100:30,1000:20,10000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getBlockByNumber --pattern-file pattern/mainnet/stress_test_eth_getBlockByNumber_13M.tar --test-sequence 1:1,100:30,1000:20,5000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getTransactionByHash --pattern-file pattern/mainnet/stress_test_eth_getTransactionByHash_13M.tar --test-sequence 1:1,100:30,1000:20,10000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
-          python3 ./run_perf_tests.py --blockchain mainnet --test-type eth_getTransactionReceipt --pattern-file pattern/mainnet/stress_test_eth_getTransactionReceipt_14M.tar --test-sequence 1:1,100:30,1000:20,5000:20 --repetitions 20 --silk-dir ${{runner.workspace}}/silkworm --erigon-dir $ERIGON_DATA_DIR --test-mode 2 --test-report
+          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20          
           
           # Capture test runner script exit status
           perf_exit_status=$?
@@ -87,12 +110,22 @@ jobs:
       - name: Stop Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          # Clean up rpcdaemon process if it's still running
-          if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
-            echo "Terminating rpc-daemon"
-            kill $RPC_DAEMON_PID
+          # Clean up process if it's still running
+          if kill -0 $SILKWORM_RPC_DAEMON_PID 2> /dev/null; then
+            echo "Terminating Silkworm RpcDaemon"
+            kill $SILKWORM_RPC_DAEMON_PID
           else
-            echo "rpc-daemon has already terminated"
+            echo "Silkworm RpcDaemon has already terminated"
+          fi
+
+      - name: Stop Erigon RpcDaemon
+        run: |
+          # Clean up process if it's still running
+          if kill -0 $ERIGON_RPC_DAEMON_PID 2> /dev/null; then
+            echo "Terminating Erigon RpcDaemon"
+            kill $ERIGON_RPC_DAEMON_PID
+          else
+            echo "Erigon RpcDaemon has already terminated"
           fi
 
       - name: Resume the Erigon instance dedicated to db maintenance

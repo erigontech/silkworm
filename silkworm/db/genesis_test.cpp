@@ -34,12 +34,6 @@ TEST_CASE("Database genesis initialization") {
         REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kMainnetConfig);
     }
-    SECTION("Initialize with Goerli") {
-        auto source_data{read_genesis_data(kGoerliConfig.chain_id)};
-        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-        REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
-        CHECK(read_chain_config(txn) == kGoerliConfig);
-    }
     SECTION("Initialize with Sepolia") {
         auto source_data{read_genesis_data(kSepoliaConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);

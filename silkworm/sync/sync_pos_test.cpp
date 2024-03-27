@@ -37,7 +37,7 @@ struct PoSSyncTest : public rpc::test::ContextTestBase {
     SentryClient sentry_client_{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     mdbx::env_managed chaindata_env_{};
     db::ROAccess db_access_{chaindata_env_};
-    test_util::MockBlockExchange block_exchange_{sentry_client_, db_access_, kGoerliConfig};
+    test_util::MockBlockExchange block_exchange_{sentry_client_, db_access_, kSepoliaConfig};
     test_util::MockClient execution_client_;
     PoSSync sync_{block_exchange_, execution_client_};
 };
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
         }));
     EXPECT_CALL(execution_client_, get_header_td(Hash{payload.parent_hash}, std::make_optional(payload.number - 1)))
         .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
-            co_return kGoerliConfig.terminal_total_difficulty;
+            co_return kSepoliaConfig.terminal_total_difficulty;
         }));
     EXPECT_CALL(execution_client_, insert_blocks(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<void> { co_return; }));

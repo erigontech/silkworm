@@ -22,7 +22,6 @@
 #include <silkworm/core/common/overloaded.hpp>
 
 #include "bor_rule_set.hpp"
-#include "clique_rule_set.hpp"
 #include "ethash_rule_set.hpp"
 #include "merge_rule_set.hpp"
 #include "param.hpp"
@@ -266,7 +265,6 @@ static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
         Overloaded{
             [&](const NoPreMergeConfig&) { return nullptr; },
             [&](const EthashConfig&) { return std::make_unique<EthashRuleSet>(chain_config); },
-            [&](const CliqueConfig&) { return std::make_unique<CliqueRuleSet>(chain_config); },
             [&](const bor::Config&) { return std::make_unique<BorRuleSet>(chain_config); },
         },
         chain_config.rule_set_config);

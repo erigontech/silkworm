@@ -62,7 +62,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("failed if gas_limit < intrinsic_gas") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};
@@ -92,7 +92,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("failed if base_fee_per_gas > max_fee_per_gas ") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};
@@ -123,7 +123,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("failed if  max_priority_fee_per_gas > max_fee_per_gas ") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};
@@ -155,7 +155,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("failed if transaction cost greater user amount") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};
@@ -187,7 +187,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};
@@ -228,7 +228,7 @@ TEST_CASE("EVMExecutor") {
 
     SECTION("call returns SUCCESS") {
         StubDatabase tx_database;
-        const uint64_t chain_id = 5;
+        const uint64_t chain_id = kSepoliaConfig.chain_id;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
         ClientContextPool my_pool{1};

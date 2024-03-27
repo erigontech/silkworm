@@ -369,7 +369,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
     SECTION("TransactionType: kAccessList") {
         Transaction txn{};
         txn.type = TransactionType::kAccessList;
-        txn.chain_id = 5;
+        txn.chain_id = kSepoliaConfig.chain_id;
         txn.nonce = 7;
         txn.max_priority_fee_per_gas = 30000000000;
         txn.max_fee_per_gas = 30000000000;
@@ -390,7 +390,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
     SECTION("TransactionType: kDynamicFee") {
         Transaction txn{};
         txn.type = TransactionType::kDynamicFee;
-        txn.chain_id = 5;
+        txn.chain_id = kSepoliaConfig.chain_id;
         txn.nonce = 7;
         txn.max_priority_fee_per_gas = 10000000000;
         txn.max_fee_per_gas = 30000000000;
@@ -411,7 +411,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
     SECTION("TransactionType: kBlob") {
         Transaction txn{};
         txn.type = TransactionType::kBlob;
-        txn.chain_id = 5;
+        txn.chain_id = kSepoliaConfig.chain_id;
         txn.nonce = 7;
         txn.max_priority_fee_per_gas = 10000000000;
         txn.max_fee_per_gas = 30000000000;

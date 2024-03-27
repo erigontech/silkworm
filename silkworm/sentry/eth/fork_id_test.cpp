@@ -93,29 +93,6 @@ TEST_CASE("ForkId.forks.mainnet") {
     }
 }
 
-TEST_CASE("ForkId.forks.goerli") {
-    std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0xa3f5ab08, 1561651}},              // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople and first Petersburg block
-        {1561650, ForkId{0xa3f5ab08, 1561651}},        // Last Petersburg block
-        {1561651, ForkId{0xc25efa5c, 4460644}},        // First Istanbul block
-        {4460643, ForkId{0xc25efa5c, 4460644}},        // Last Istanbul block
-        {4460644, ForkId{0x757a1c47, 5062605}},        // First Berlin block
-        {5000000, ForkId{0x757a1c47, 5062605}},        // Last Berlin block
-        {5062605, ForkId{0xB8C6299D, 1678832736}},     // First London block
-        {6000000, ForkId{0xB8C6299D, 1678832736}},     // Last London block
-        {1678832736, ForkId{0xf9843abf, 1705473120}},  // First Shanghai block
-        {1705473108, ForkId{0xf9843abf, 1705473120}},  // Last Shanghai block
-        {1705473120, ForkId{0x70cc14e2, 0}},           // First Cancun block
-        {1800000000, ForkId{0x70cc14e2, 0}},           // Future Cancun block
-    };
-
-    auto chain_config{kGoerliConfig};
-    chain_config.genesis_hash.emplace(kGoerliGenesisHash);
-    for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num_or_time, chain_config) == example.fork_id);
-    }
-}
-
 TEST_CASE("ForkId.forks.sepolia") {
     std::vector<ForksExampleSpec> examples = {
         {0, ForkId{0xfe3366e7, 1735371}},              // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople, Petersburg, Istanbul, Berlin and first London block

@@ -46,7 +46,7 @@ static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
 
 static Bytes kConfigKey{kZeroHeader};
-static Bytes kConfigValue{kSepoliaConfig.to_json()};
+static Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};
 
 struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     test::MockBlockCache cache;

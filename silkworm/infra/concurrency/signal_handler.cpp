@@ -106,12 +106,31 @@ std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 std::function<void(int)> SignalHandler::custom_handler_;
 bool SignalHandler::silent_{false};
-std::map<int, void (*)(int)> previous_signal_handlers;
+
+using SignalHandlerFunc = void (*)(int);
+std::map<int, SignalHandlerFunc> previous_signal_handlers;
+
+static SignalHandlerFunc register_signal_action(const int sig_code, SignalHandlerFunc handler_func) {
+#ifdef _WIN32
+    return signal(sig_code, handler_func);
+#else
+    struct sigaction sa {};
+    sa.sa_handler = handler_func;
+    sa.sa_flags = SA_ONSTACK;
+    sigfillset(&sa.sa_mask);
+    struct sigaction previous_sa {};
+    const int result = ::sigaction(sig_code, &sa, &previous_sa);
+    if (result == -1) {
+        return SIG_ERR;
+    }
+    return previous_sa.sa_handler;
+#endif  // _WIN32
+}
 
 void SignalHandler::init(std::function<void(int)> custom_handler, bool silent) {
     for (const int sig_code : kHandleableCodes) {
         // Register our signal handler and remember the existing ones
-        auto previous_handler{signal(sig_code, &SignalHandler::handle)};
+        auto previous_handler{register_signal_action(sig_code, &SignalHandler::handle)};
         if (previous_handler != SIG_ERR) {
             previous_signal_handlers[sig_code] = previous_handler;
         }
@@ -145,7 +164,7 @@ void SignalHandler::handle(int sig_code) {
     if (custom_handler_) {
         custom_handler_(sig_code);
     }
-    if (signal(sig_code, &SignalHandler::handle) == SIG_ERR) {  // Re-enable the hook
+    if (register_signal_action(sig_code, &SignalHandler::handle) == SIG_ERR) {  // Re-enable the hook
         (void)std::fputs("Failed to re-enable signal hook :(", stderr);
     }
 }
@@ -153,10 +172,11 @@ void SignalHandler::handle(int sig_code) {
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;
+
     // Restore any previous signal handlers
     for (const int sig_code : kHandleableCodes) {
         if (previous_signal_handlers.contains(sig_code)) {
-            if (signal(sig_code, previous_signal_handlers[sig_code]) == SIG_ERR) {
+            if (register_signal_action(sig_code, previous_signal_handlers[sig_code]) == SIG_ERR) {
                 (void)std::fputs("Failed to restore previous signal handlers :(", stderr);
             }
         }

@@ -69,6 +69,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
 
     if (equal) {
+        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
         return;
     }
     auto it{accounts_.find(address)};
@@ -158,7 +159,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
             }
         }
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Account Changes", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -192,7 +193,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
             }
         }
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Storage Changes", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -210,7 +211,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         }
         receipts_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Receipts", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -227,7 +228,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         }
         logs_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Logs", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -249,7 +250,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         }
         call_traces_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Append Call Traces", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -257,7 +258,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
 
     batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
-    if (should_trace) {
+    if (should_trace) [[unlikely]] {
         log::Trace("Flushed history",
                    {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
     }
@@ -287,7 +288,7 @@ void Buffer::write_state_to_db() {
         }
         incarnations_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Incarnations updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -302,7 +303,7 @@ void Buffer::write_state_to_db() {
         }
         hash_to_code_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Code updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -317,7 +318,7 @@ void Buffer::write_state_to_db() {
         }
         storage_prefix_to_code_hash_.clear();
         total_written_size += written_size;
-        if (should_trace) {
+        if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
             log::Trace("Code Hashes updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
         }
@@ -333,7 +334,7 @@ void Buffer::write_state_to_db() {
         addresses.insert(x.first);
     }
 
-    if (should_trace) {
+    if (should_trace) [[unlikely]] {
         auto [_, duration]{sw.lap()};
         log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
     }
@@ -371,7 +372,7 @@ void Buffer::write_state_to_db() {
         }
     }
     total_written_size += written_size;
-    if (should_trace) {
+    if (should_trace) [[unlikely]] {
         auto [_, duration]{sw.lap()};
         log::Trace("Updated accounts and storage",
                    {"size", human_size(written_size), "in", StopWatch::format(duration)});

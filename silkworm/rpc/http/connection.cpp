@@ -21,7 +21,9 @@
 #include <string_view>
 
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/compose.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/chunk_encode.hpp>
@@ -50,6 +52,7 @@ Connection::Connection(boost::asio::io_context& io_context,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
                        bool http_compression,
+                       boost::asio::thread_pool& workers,
                        InterfaceLogSettings ifc_log_settings)
     : socket_{io_context},
       api_{api},
@@ -59,7 +62,8 @@ Connection::Connection(boost::asio::io_context& io_context,
       jwt_secret_{std ::move(jwt_secret)},
       ws_upgrade_enabled_{ws_upgrade_enabled},
       ws_compression_{ws_compression},
-      http_compression_{http_compression} {
+      http_compression_{http_compression},
+      workers_{workers} {
     SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
     if (http_compression_) {  // temporary to avoid warning with clang
         SILK_TRACE << "Connection::Connection compression enabled";
@@ -288,12 +292,9 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
             // Positive response w/ compression required
             res.set(boost::beast::http::field::content_encoding, content_encoding);
             std::string compressed_content;
-            try {
-                compress(content, compressed_content);
-            } catch (const std::exception& e) {
-                SILK_ERROR << "Connection::do_write cannot compress exception: " << e.what();
-                throw;
-            }
+
+            co_await compress(content, compressed_content);
+
             res.content_length(compressed_content.length());
             res.body() = std::move(compressed_content);
         } else {
@@ -319,13 +320,6 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
         throw;
     }
     co_return;
-}
-
-void Connection::compress(const std::string& clear_data, std::string& compressed_data) {
-    boost::iostreams::filtering_ostream out;
-    out.push(boost::iostreams::gzip_compressor());
-    out.push(boost::iostreams::back_inserter(compressed_data));
-    boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {
@@ -424,6 +418,31 @@ std::string Connection::get_date_time() {
     std::stringstream ss;
     ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, tz) << tz.name();
     return ss.str();
+}
+
+Task<void> Connection::compress(
+    const std::string& clear_data,
+    std::string& compressed_data) {
+    auto this_executor = co_await boost::asio::this_coro::executor;
+    boost::iostreams::filtering_ostream out;
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr)>(
+        [&](auto& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                std::exception_ptr eptr;
+                try {
+                    out.push(boost::iostreams::gzip_compressor());
+                    out.push(boost::iostreams::back_inserter(compressed_data));
+                    boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
+                } catch (const std::exception& e) {
+                    SILK_ERROR << "Connection::compress cannot compress exception: " << e.what();
+                    eptr = std::current_exception();
+                }
+                boost::asio::post(this_executor, [eptr, self = std::move(self)]() mutable {
+                    self.complete(eptr);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
 }
 
 }  // namespace silkworm::rpc::http

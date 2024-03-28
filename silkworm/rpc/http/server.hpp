@@ -89,6 +89,9 @@ class Server {
 
     //! The interface logging configuration
     InterfaceLogSettings ifc_log_settings_;
+
+    //! The configured workers
+    boost::asio::thread_pool& workers_;
 };
 
 }  // namespace silkworm::rpc::http

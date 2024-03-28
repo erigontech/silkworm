@@ -60,7 +60,8 @@ Server::Server(const std::string& end_point,
       use_websocket_{use_websocket},
       ws_compression_{ws_compression},
       http_compression_{http_compression},
-      ifc_log_settings_{std::move(ifc_log_settings)} {
+      ifc_log_settings_{std::move(ifc_log_settings)},
+      workers_{workers} {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -86,7 +87,7 @@ Task<void> Server::run() {
             SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
             auto new_connection = std::make_shared<Connection>(
-                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, ifc_log_settings_);
+                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, workers_, ifc_log_settings_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";

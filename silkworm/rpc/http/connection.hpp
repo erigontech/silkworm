@@ -116,6 +116,8 @@ class Connection : public StreamWriter {
 
     bool http_compression_;
 
+    bool gzip_encoding_requested_;
+
     std::string vary_;
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};

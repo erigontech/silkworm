@@ -27,6 +27,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -92,7 +93,7 @@ class Connection : public StreamWriter {
 
     static std::string get_date_time();
 
-    Task<bool> compress(boost::asio::thread_pool& workers, const std::string& clear_data, std::string& compressed_data);
+    Task<void> compress(const std::string& clear_data, std::string& compressed_data);
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

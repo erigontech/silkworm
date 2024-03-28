@@ -295,10 +295,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
             res.set(boost::beast::http::field::content_encoding, content_encoding);
             std::string compressed_content;
 
-            auto success = co_await compress(workers_, content, compressed_content);
-            if (!success) {
-                throw std::runtime_error("gzip compression failed");
-            }
+            co_await compress(content, compressed_content);
 
             res.content_length(compressed_content.length());
             res.body() = std::move(compressed_content);
@@ -425,31 +422,29 @@ std::string Connection::get_date_time() {
     return ss.str();
 }
 
-Task<bool> Connection::compress(
-    boost::asio::thread_pool& workers,
+Task<void> Connection::compress(
     const std::string& clear_data,
     std::string& compressed_data) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     boost::iostreams::filtering_ostream out;
-    const auto ret_success = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
+    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr)>(
         [&](auto& self) {
-            boost::asio::post(workers, [&, self = std::move(self)]() mutable {
-                bool success = true;
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                std::exception_ptr eptr;
                 try {
                     out.push(boost::iostreams::gzip_compressor());
                     out.push(boost::iostreams::back_inserter(compressed_data));
                     boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
                 } catch (const std::exception& e) {
                     SILK_ERROR << "Connection::compress cannot compress exception: " << e.what();
-                    success = false;
+                    eptr = std::current_exception();
                 }
-                boost::asio::post(this_executor, [success, self = std::move(self)]() mutable {
-                    self.complete(success);
+                boost::asio::post(this_executor, [eptr, self = std::move(self)]() mutable {
+                    self.complete(eptr);
                 });
             });
         },
         boost::asio::use_awaitable);
-    co_return ret_success;
 }
 
 }  // namespace silkworm::rpc::http

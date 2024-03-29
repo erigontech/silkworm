@@ -220,9 +220,10 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_ERROR << "debug_storage_range_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request, -32000, error_msg);
+            SILK_WARN << "debug_storage_range_at: block not found, hash: " << evmc::hex(block_hash);
+            nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
+            reply = make_json_content(request, result);
+
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }

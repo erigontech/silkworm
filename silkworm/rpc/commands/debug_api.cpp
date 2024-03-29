@@ -222,8 +222,8 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         if (!block_with_hash) {
             SILK_WARN << "debug_storage_range_at: block not found, hash: " << evmc::hex(block_hash);
             nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
-
             reply = make_json_content(request, result);
+
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }

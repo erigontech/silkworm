@@ -16,23 +16,17 @@
 
 #include "kzg.hpp"
 
-#include <blst.h>
-
 #include <silkworm/core/crypto/sha256.h>
 #include <silkworm/core/protocol/param.hpp>
+
+#include "blst12-381.hpp"
 
 // Based on https://github.com/ethereum/c-kzg-4844/blob/main/src/c_kzg_4844.c
 // and modified for Silkworm.
 
 namespace silkworm {
 
-///////////////////////////////////////////////////////////////////////////////
-// Types
-///////////////////////////////////////////////////////////////////////////////
-
-using G1 = blst_p1;
-using G2 = blst_p2;
-using Fr = blst_fr;
+using namespace blst;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -63,60 +57,6 @@ Hash kzg_to_versioned_hash(ByteView kzg) {
     silkworm_sha256(hash.bytes, kzg.data(), kzg.length(), /*use_cpu_extensions=*/true);
     hash.bytes[0] = protocol::kBlobCommitmentVersionKzg;
     return hash;
-}
-
-/**
- * Multiply a G1 group element by a field element.
- *
- * @param[out] out @p a * @p b
- * @param[in]  a   The G1 group element
- * @param[in]  b   The multiplier
- */
-static void g1_mul(G1* out, const G1* a, const Fr* b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    /* The last argument is the number of bits in the scalar */
-    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
-}
-
-/**
- * Multiply a G2 group element by a field element.
- *
- * @param[out] out @p a * @p b
- * @param[in]  a   The G2 group element
- * @param[in]  b   The multiplier
- */
-static void g2_mul(G2* out, const G2* a, const Fr* b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    /* The last argument is the number of bits in the scalar */
-    blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
-}
-
-/**
- * Subtraction of G1 group elements.
- *
- * @param[out] out @p a - @p b
- * @param[in]  a   A G1 group element
- * @param[in]  b   The G1 group element to be subtracted
- */
-static void g1_sub(G1* out, const G1* a, const G1* b) {
-    G1 bneg = *b;
-    blst_p1_cneg(&bneg, true);
-    blst_p1_add_or_double(out, a, &bneg);
-}
-
-/**
- * Subtraction of G2 group elements.
- *
- * @param[out] out @p a - @p b
- * @param[in]  a   A G2 group element
- * @param[in]  b   The G2 group element to be subtracted
- */
-static void g2_sub(G2* out, const G2* a, const G2* b) {
-    G2 bneg = *b;
-    blst_p2_cneg(&bneg, true);
-    blst_p2_add_or_double(out, a, &bneg);
 }
 
 /**

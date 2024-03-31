@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <boost/asio/thread_pool.hpp>
+
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>
@@ -26,6 +28,6 @@
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts(boost::asio::thread_pool& workers, const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
 
 }  // namespace silkworm::rpc::core

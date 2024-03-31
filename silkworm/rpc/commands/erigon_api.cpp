@@ -215,7 +215,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+        auto receipts{co_await core::get_receipts(workers_, tx_database, *block_with_hash)};
         SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
@@ -427,7 +427,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+        const auto receipts{co_await core::get_receipts(workers_, tx_database, *block_with_hash)};
         SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
@@ -536,7 +536,7 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
             issuance.total_burnt = "0x" + intx::hex(total_burnt);
             intx::uint256 tips = 0;
             if (block_with_hash->block.header.base_fee_per_gas) {
-                const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+                const auto receipts{co_await core::get_receipts(workers_, tx_database, *block_with_hash)};
                 const auto block{block_with_hash->block};
                 for (size_t i{0}; i < block.transactions.size(); i++) {
                     auto tip = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));

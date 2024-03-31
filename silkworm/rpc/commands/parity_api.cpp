@@ -56,7 +56,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
         const auto block_number = co_await core::get_block_number(bnoh, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number.first);
         if (block_with_hash) {
-            auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+            auto receipts{co_await core::get_receipts(workers_, tx_database, *block_with_hash)};
             SILK_TRACE << "#receipts: " << receipts.size();
 
             const auto block{block_with_hash->block};

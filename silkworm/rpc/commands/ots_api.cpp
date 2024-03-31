@@ -118,7 +118,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const auto block_size = extended_block.get_block_size();
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(workers_, tx_database, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
@@ -169,7 +169,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const auto block_size = extended_block.get_block_size();
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(workers_, tx_database, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
@@ -222,7 +222,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, false};
-            auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            auto receipts = co_await core::get_receipts(workers_, tx_database, *block_with_hash);
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
@@ -870,7 +870,7 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
     const auto block_hash = block_with_hash->hash;
     const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
     ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
-    const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+    const auto receipts = co_await core::get_receipts(workers_, tx_database, *block_with_hash);
     const Block extended_block{block_with_hash, *total_difficulty, false};
     const auto block_size = extended_block.get_block_size();
 

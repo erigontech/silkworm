@@ -260,15 +260,17 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("null receipts") {
         const uint64_t block_number{0};
+        boost::asio::thread_pool workers{1};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(workers, db_reader, block_number), boost::asio::use_future);
         CHECK(!result.get().has_value());
     }
 
     SECTION("zero receipts") {
         const uint64_t block_number{0};
+        boost::asio::thread_pool workers{1};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(workers, db_reader, block_number), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {
@@ -307,7 +309,8 @@ TEST_CASE("read_raw_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        boost::asio::thread_pool workers{1};
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(workers, db_reader, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
     }
@@ -357,7 +360,8 @@ TEST_CASE("read_raw_receipts") {
             w(key2, value2);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        boost::asio::thread_pool workers{1};
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(workers, db_reader, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
@@ -393,7 +397,8 @@ TEST_CASE("read_raw_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        boost::asio::thread_pool workers{1};
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(workers, db_reader, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
         const Receipts receipts = result.get().value();
         CHECK(receipts.size() == 1);
@@ -408,16 +413,18 @@ TEST_CASE("read_receipts") {
 
     SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};
+        boost::asio::thread_pool workers{1};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(workers, db_reader, block_with_hash), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(!receipts.has_value());
     }
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
+        boost::asio::thread_pool workers{1};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(workers, db_reader, block_with_hash), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {

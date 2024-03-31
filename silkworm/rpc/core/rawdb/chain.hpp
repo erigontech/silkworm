@@ -20,6 +20,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/thread_pool.hpp>
+
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
@@ -52,9 +54,9 @@ Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
 
 Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number);
+Task<std::optional<Receipts>> read_raw_receipts(boost::asio::thread_pool& workers, const DatabaseReader& reader, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
+Task<std::optional<Receipts>> read_receipts(boost::asio::thread_pool& workers, const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
 
 Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, BlockNum block_number);
 

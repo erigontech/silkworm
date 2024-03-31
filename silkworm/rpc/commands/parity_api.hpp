@@ -19,6 +19,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
@@ -36,10 +37,11 @@ namespace silkworm::rpc::commands {
 
 class ParityRpcApi {
   public:
-    explicit ParityRpcApi(boost::asio::io_context& io_context)
+    explicit ParityRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
         : block_cache_{must_use_shared_service<BlockCache>(io_context)},
           database_{must_use_private_service<ethdb::Database>(io_context)},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)} {}
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)},
+          workers_{workers} {}
     virtual ~ParityRpcApi() = default;
 
     ParityRpcApi(const ParityRpcApi&) = delete;
@@ -54,6 +56,7 @@ class ParityRpcApi {
     ethdb::Database* database_;
     ethbackend::BackEnd* backend_;
 
+    boost::asio::thread_pool& workers_;
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 

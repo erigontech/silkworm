@@ -18,7 +18,10 @@
 
 #include <vector>
 
+#include <boost/asio/thread_pool.hpp>
+
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/rpc/types/log.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
@@ -26,6 +29,6 @@ namespace silkworm::rpc {
 
 [[nodiscard]] bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs);
 
-[[nodiscard]] bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts);
+[[nodiscard]] Task<bool> cbor_decode(boost::asio::thread_pool& workers, const silkworm::Bytes& bytes, std::vector<Receipt>& receipts);
 
 }  // namespace silkworm::rpc

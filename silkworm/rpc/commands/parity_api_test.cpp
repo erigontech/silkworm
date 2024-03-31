@@ -24,7 +24,8 @@ namespace silkworm::rpc::commands {
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ParityRpcApi::ParityRpcApi", "[rpc][erigon_api]") {
     boost::asio::io_context ioc;
-    CHECK_THROWS_AS(ParityRpcApi(ioc), std::logic_error);
+    boost::asio::thread_pool workers{1};
+    CHECK_THROWS_AS(ParityRpcApi(ioc, workers), std::logic_error);
 }
 #endif  // SILKWORM_SANITIZE
 

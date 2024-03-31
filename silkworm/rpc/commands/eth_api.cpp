@@ -863,7 +863,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+        auto receipts = co_await core::get_receipts(workers_, tx_database, *block_with_hash);
         const auto& transactions = block_with_hash->block.transactions;
         if (receipts.size() != transactions.size()) {
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
@@ -2140,8 +2140,8 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
-        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx_database](const BlockWithHash& block_with_hash) {
-            return core::get_receipts(tx_database, block_with_hash);
+        rpc::fee_history::ReceiptsProvider receipts_provider = [this, &tx_database](const BlockWithHash& block_with_hash) {
+            return core::get_receipts(workers_, tx_database, block_with_hash);
         };
 
         rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx_database]() {

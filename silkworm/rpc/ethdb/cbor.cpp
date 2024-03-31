@@ -193,7 +193,7 @@ Task<bool> cbor_decode(boost::asio::thread_pool& workers, const silkworm::Bytes&
         co_return false;
     }
     auto this_executor = co_await boost::asio::this_coro::executor;
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
+    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
         [&](auto& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
                 bool operation_result = true;

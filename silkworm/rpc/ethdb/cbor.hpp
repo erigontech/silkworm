@@ -18,10 +18,11 @@
 
 #include <vector>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/rpc/types/log.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 

@@ -23,7 +23,6 @@
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
-
 #include <cbor/cbor.h>
 #include <cbor/listener.h>
 #include <nlohmann/json.hpp>
@@ -197,7 +196,6 @@ Task<bool> cbor_decode(boost::asio::thread_pool& workers, const silkworm::Bytes&
     co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
         [&](auto& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
-
                 bool operation_result = true;
                 auto json = nlohmann::json::from_cbor(bytes);
                 SILK_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump();

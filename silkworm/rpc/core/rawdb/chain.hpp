@@ -21,7 +21,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/thread_pool.hpp>
-
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>

@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <boost/asio/thread_pool.hpp>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/thread_pool.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>

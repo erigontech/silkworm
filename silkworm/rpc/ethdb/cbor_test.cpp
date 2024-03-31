@@ -18,6 +18,9 @@
 
 #include <vector>
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
@@ -124,21 +127,30 @@ TEST_CASE("decode logs from incorrect bytes", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from empty bytes", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
-    CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(""), receipts));
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, *silkworm::from_hex(""), receipts), boost::asio::use_future);
+    CHECK_NOTHROW(result.get());
     CHECK(receipts.empty());
 }
 
 TEST_CASE("decode receipts from empty array", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
-    CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("80"), receipts));
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, *silkworm::from_hex("80"), receipts), boost::asio::use_future);
+    CHECK_NOTHROW(result.get());
     CHECK(receipts.empty());
 }
 
 TEST_CASE("decode receipts from CBOR 1", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
-    CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("818400f60101"), receipts));
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, *silkworm::from_hex("818400f60101"), receipts), boost::asio::use_future);
+    CHECK_NOTHROW(result.get());
     CHECK(receipts.size() == 1);
     CHECK(receipts[0].type == 0);
     CHECK(receipts[0].success == 1);
@@ -148,11 +160,14 @@ TEST_CASE("decode receipts from CBOR 1", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from CBOR 2", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
-    CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(
-                                  "82"
-                                  "8400f60101"
-                                  "8400f60101"),
-                              receipts));
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
+    auto bytes = *silkworm::from_hex(
+        "82"
+        "8400f60101"
+        "8400f60101");
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, bytes, receipts), boost::asio::use_future);
+    CHECK_NOTHROW(result.get());
     CHECK(receipts.size() == 2);
     CHECK(receipts[0].type == 0);
     CHECK(receipts[0].success == 1);
@@ -165,8 +180,11 @@ TEST_CASE("decode receipts from CBOR 2", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from CBOR 3", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
     auto bytes = *silkworm::from_hex("838400f601196d398400f6011a00371b0b8400f6011a003947f4");
-    CHECK_NOTHROW(cbor_decode(bytes, receipts));
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, bytes, receipts), boost::asio::use_future);
+    CHECK_NOTHROW(result.get());
     CHECK(receipts.size() == 3);
     CHECK(receipts[0].success == true);
     CHECK(receipts[0].cumulative_gas_used == 0x6d39);
@@ -179,10 +197,14 @@ TEST_CASE("decode receipts from CBOR 3", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
+    boost::asio::thread_pool pool{1};
+    boost::asio::thread_pool workers{1};
     const auto b1 = *silkworm::from_hex("81");
-    CHECK_THROWS(cbor_decode(b1, receipts));
+    auto result = boost::asio::co_spawn(pool, cbor_decode(workers, b1, receipts), boost::asio::use_future);
+    CHECK_THROWS(result.get());
     const auto b2 = *silkworm::from_hex("83808040");
-    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
+    result = boost::asio::co_spawn(pool, cbor_decode(workers, b2, receipts), boost::asio::use_future);
+    CHECK_THROWS_MATCHES(result.get(), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
 }
 
 }  // namespace silkworm::rpc

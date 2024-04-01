@@ -24,8 +24,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -36,6 +34,7 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
@@ -47,7 +46,6 @@
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/ethdb/transaction_database.hpp>
-#include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
@@ -254,10 +252,10 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         co_await storage_walker.storage_range_at(block_number, address, start_key, max_result, collector);
 
         nlohmann::json result = {{"storage", storage}};
-        if (next_key.length() > 0) {
-            result["nextKey"] = "0x" + silkworm::to_hex(next_key);
-        } else {
+        if (next_key.empty()) {
             result["nextKey"] = nlohmann::json();
+        } else {
+            result["nextKey"] = "0x" + silkworm::to_hex(next_key);
         }
 
         reply = make_json_content(request, result);
@@ -314,46 +312,39 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         auto chain_config_ptr = co_await chain_storage->read_chain_config();
         ensure(chain_config_ptr.has_value(), "cannot read chain config");
+
         auto this_executor = co_await boost::asio::this_coro::executor;
+        auto result = co_await async_task(workers_.executor(), [&]() -> nlohmann::json {
+            auto state = tx->create_state(this_executor, tx_database, *chain_storage, block_number - 1);
+            auto account_opt = state->read_account(address);
+            account_opt.value_or(silkworm::Account{});
 
-        auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
-            [&](auto& self) {
-                boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                    auto state = tx->create_state(this_executor, tx_database, *chain_storage, block_number - 1);
-                    auto account_opt = state->read_account(address);
-                    account_opt.value_or(silkworm::Account{});
+            EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                    EVMExecutor executor{*chain_config_ptr, workers_, state};
+            uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
+            for (uint64_t idx{0}; idx < index; idx++) {
+                rpc::Transaction txn{transactions[idx]};
+                executor.call(block, txn);
+            }
 
-                    uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
-                    for (uint64_t idx{0}; idx < index; idx++) {
-                        rpc::Transaction txn{transactions[idx]};
-                        executor.call(block, txn);
-                    }
+            const auto& ibs = executor.get_ibs_state();
 
-                    const auto& ibs = executor.get_ibs_state();
-
-                    nlohmann::json json_result;
-                    if (ibs.exists(address)) {
-                        std::ostringstream oss;
-                        oss << std::hex << ibs.get_nonce(address);
-                        json_result["nonce"] = "0x" + oss.str();
-                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
-                        json_result["codeHash"] = ibs.get_code_hash(address);
-                        json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
-                    } else {
-                        json_result["balance"] = "0x0";
-                        json_result["code"] = "0x";
-                        json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
-                        json_result["nonce"] = "0x0";
-                    }
-
-                    boost::asio::post(this_executor, [json_result, self = std::move(self)]() mutable {
-                        self.complete(json_result);
-                    });
-                });
-            },
-            boost::asio::use_awaitable);
+            nlohmann::json json_result;
+            if (ibs.exists(address)) {
+                std::ostringstream oss;
+                oss << std::hex << ibs.get_nonce(address);
+                json_result["nonce"] = "0x" + oss.str();
+                json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
+                json_result["codeHash"] = ibs.get_code_hash(address);
+                json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
+            } else {
+                json_result["balance"] = "0x0";
+                json_result["code"] = "0x";
+                json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                json_result["nonce"] = "0x0";
+            }
+            return json_result;
+        });
 
         reply = make_json_content(request, result);
     } catch (const std::invalid_argument& e) {

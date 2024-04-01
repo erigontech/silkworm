@@ -20,9 +20,6 @@
 #include <string>
 #include <utility>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
@@ -31,8 +28,8 @@
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/local_state.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -192,9 +189,8 @@ std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < base_fee_per_gas) {
                 const std::string from = address_to_hex(*txn.sender());
-                const std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
-                                          intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
-                return error;
+                return "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
+                       intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
@@ -245,7 +241,7 @@ ExecutionResult EVMExecutor::call(
     const auto error = pre_check(evm, txn, base_fee_per_gas, g0);
     if (error) {
         Bytes data{};
-        return {std::nullopt, txn.gas_limit, data, *error};
+        return {std::nullopt, txn.gas_limit, data, error};
     }
 
     intx::uint256 want;
@@ -330,18 +326,11 @@ Task<ExecutionResult> EVMExecutor::call(
     bool refund,
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
-    const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers, [&, self = std::move(self)]() mutable {
-                auto state = state_factory(this_executor, block.header.number, chain_storage);
-                EVMExecutor executor{config, workers, state};
-                auto exec_result = executor.call(block, txn, tracers, refund, gas_bailout);
-                boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
-                    self.complete(exec_result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+    const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
+        auto state = state_factory(this_executor, block.header.number, chain_storage);
+        EVMExecutor executor{config, workers, state};
+        return executor.call(block, txn, tracers, refund, gas_bailout);
+    });
     co_return execution_result;
 }
 

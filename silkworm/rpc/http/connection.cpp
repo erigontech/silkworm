@@ -21,9 +21,7 @@
 #include <string_view>
 
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/compose.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/http/chunk_encode.hpp>
@@ -35,6 +33,7 @@
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::http {
@@ -420,29 +419,13 @@ std::string Connection::get_date_time() {
     return ss.str();
 }
 
-Task<void> Connection::compress(
-    const std::string& clear_data,
-    std::string& compressed_data) {
-    auto this_executor = co_await boost::asio::this_coro::executor;
+Task<void> Connection::compress(const std::string& clear_data, std::string& compressed_data) {
     boost::iostreams::filtering_ostream out;
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                std::exception_ptr eptr;
-                try {
-                    out.push(boost::iostreams::gzip_compressor());
-                    out.push(boost::iostreams::back_inserter(compressed_data));
-                    boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
-                } catch (const std::exception& e) {
-                    SILK_ERROR << "Connection::compress cannot compress exception: " << e.what();
-                    eptr = std::current_exception();
-                }
-                boost::asio::post(this_executor, [eptr, self = std::move(self)]() mutable {
-                    self.complete(eptr);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+    co_await async_task(workers_.executor(), [&]() -> void {
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(boost::iostreams::back_inserter(compressed_data));
+        boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
+    });
 }
 
 }  // namespace silkworm::rpc::http

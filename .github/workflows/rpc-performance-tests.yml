@@ -81,8 +81,10 @@ jobs:
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
                                         --test-report \
-                                        --json-report ./reports/mainnet/${servers[i-1]}-result.json \
+                                        --json-report ./reports/mainnet/result.json \
                                         --testing-daemon ${servers[i-1]}
+
+               # add json into DB and vegeta binary report on specific are
 
            done
           }

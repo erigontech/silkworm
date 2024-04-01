@@ -1483,7 +1483,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto result = co_await async_task(workers_.executor(), [&]() -> std::string {
+    const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
         auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
 
@@ -1503,7 +1503,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         return result;
     });
 
-    co_return result;
+    co_return trace_error;
 }
 
 Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {

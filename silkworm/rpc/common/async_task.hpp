@@ -29,21 +29,42 @@
 
 namespace silkworm::rpc {
 
+//! Helper trait for any completion handler signature
+template <typename R, typename F, typename... Args>
+struct CompletionHandler {
+    using type = void(std::exception_ptr, R);
+};
+
+//! Partial specialization for \code void return type
+template <typename F, typename... Args>
+struct CompletionHandler<void, F, Args...> {
+    using type = void(std::exception_ptr);
+};
+
+//! Alias helper trait for the completion handler signature of any task
+template <typename F, typename... Args>
+using TaskCompletionHandler = typename CompletionHandler<std::invoke_result_t<F, Args...>, F, Args...>::type;
+
+//! Asynchronous \code co_await-able task executing function \code fn with arguments \code args in \code runner executor
 template <typename Executor, typename F, typename... Args>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) because of https://github.com/llvm/llvm-project/issues/68105
 Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&&... args) {
     auto this_executor = co_await ThisTask::executor;
-    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, std::invoke_result_t<F, Args...>)>(
+    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), TaskCompletionHandler<F, Args...>>(
         [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) {
             boost::asio::post(runner, [&, self = std::move(self)]() mutable {
                 try {
-                    auto result = std::invoke(fn, args...);
-                    boost::asio::post(this_executor, [result = std::move(result), self = std::move(self)]() mutable {
-                        if constexpr (std::is_void_v<std::invoke_result_t<F, Args...>>)
+                    if constexpr (std::is_void_v<std::invoke_result_t<F, Args...>>) {
+                        std::invoke(fn, args...);
+                        boost::asio::post(this_executor, [self = std::move(self)]() mutable {
                             self.complete({});
-                        else
+                        });
+                    } else {
+                        auto result = std::invoke(fn, args...);
+                        boost::asio::post(this_executor, [result = std::move(result), self = std::move(self)]() mutable {
                             self.complete({}, result);
-                    });
+                        });
+                    }
                 } catch (...) {
                     std::exception_ptr eptr = std::current_exception();
                     boost::asio::post(this_executor, [eptr, self = std::move(self)]() mutable {
@@ -51,30 +72,6 @@ Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&
                             self.complete(eptr);
                         else
                             self.complete(eptr, {});
-                    });
-                }
-            });
-        },
-        boost::asio::use_awaitable);
-}
-
-template <typename Executor, typename F, typename... Args>
-    requires std::is_void_v<std::invoke_result_t<F, Args...>>
-// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) because of https://github.com/llvm/llvm-project/issues/68105
-Task<void> async_task(Executor runner, F&& fn, Args&&... args) {
-    auto this_executor = co_await ThisTask::executor;
-    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr)>(
-        [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) {
-            boost::asio::post(runner, [&, self = std::move(self)]() mutable {
-                try {
-                    std::invoke(fn, args...);
-                    boost::asio::post(this_executor, [self = std::move(self)]() mutable {
-                        self.complete({});
-                    });
-                } catch (...) {
-                    std::exception_ptr eptr = std::current_exception();
-                    boost::asio::post(this_executor, [eptr, self = std::move(self)]() mutable {
-                        self.complete(eptr);
                     });
                 }
             });

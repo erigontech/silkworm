@@ -70,6 +70,10 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
 uint64_t point_evaluation_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> point_evaluation_run(ByteView input) noexcept;
 
+// EIP-2537: Precompile for BLS12-381 curve operations
+uint64_t bls12_g1add_gas(ByteView input, evmc_revision) noexcept;
+std::optional<Bytes> bls12_g1add_run(ByteView input) noexcept;
+
 struct SupportedContract {
     Contract contract;
     evmc_revision added_in;
@@ -87,6 +91,7 @@ inline constexpr std::optional<SupportedContract> kContracts[]{
     SupportedContract{{snarkv_gas, snarkv_run}, EVMC_BYZANTIUM},                   // 0x08
     SupportedContract{{blake2_f_gas, blake2_f_run}, EVMC_ISTANBUL},                // 0x09
     SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x0a
+    SupportedContract{{bls12_g1add_gas, bls12_g1add_run}, EVMC_PRAGUE},            // 0x0b
 };
 
 [[nodiscard]] bool is_precompile(const evmc::address&, evmc_revision) noexcept;

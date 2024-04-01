@@ -16,7 +16,40 @@
 
 #include "blst12-381.hpp"
 
+#include <algorithm>
+
 namespace silkworm::blst {
+
+template <std::size_t Extent>
+static bool all_zeros(std::span<const uint8_t, Extent> span) {
+    return std::ranges::all_of(span, [](uint8_t x) { return x == 0; });
+}
+
+std::optional<std::span<const uint8_t, 48>> decode_field_element(std::span<const uint8_t, 64> input) {
+    if (!all_zeros(input.subspan<0, 16>())) {
+        return std::nullopt;
+    }
+    return input.subspan<16, 48>();
+}
+
+std::optional<G1> decode_g1_point(std::span<const uint8_t, 128> input) {
+    const std::optional<std::span<const uint8_t, 48>> x{decode_field_element(input.subspan<0, 64>())};
+    if (!x) {
+        return std::nullopt;
+    }
+    const std::optional<std::span<const uint8_t, 48>> y{decode_field_element(input.subspan<64, 64>())};
+    if (!y) {
+        return std::nullopt;
+    }
+    if (all_zeros(*x) && all_zeros(*y)) {
+        // See "Point of infinity encoding" in
+        // https://eips.ethereum.org/EIPS/eip-2537#fine-points-and-encoding-of-base-elements
+        return G1{};
+    }
+    // blst_fp_from_bendian ???
+    // TODO(yperbasis): implement
+    return std::nullopt;
+}
 
 void g1_mul(G1* out, const G1* a, const Fr* b) {
     blst_scalar s;

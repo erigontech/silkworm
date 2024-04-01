@@ -523,6 +523,19 @@ std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
 }
 
+uint64_t bls12_g1add_gas(ByteView, evmc_revision) noexcept {
+    return 500;
+}
+
+std::optional<Bytes> bls12_g1add_run(ByteView input) noexcept {
+    if (input.length() != 256) {
+        return std::nullopt;
+    }
+
+    // TODO(yperbasis): implement
+    return std::nullopt;
+}
+
 bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
     using namespace evmc::literals;
 

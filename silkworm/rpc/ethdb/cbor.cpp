@@ -193,23 +193,33 @@ Task<bool> cbor_decode(boost::asio::thread_pool& workers, const silkworm::Bytes&
         co_return false;
     }
     auto this_executor = co_await boost::asio::this_coro::executor;
-    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
+    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, bool)>(
         [&](auto& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
+                std::exception_ptr eptr{};
                 bool operation_result = true;
-                auto json = nlohmann::json::from_cbor(bytes);
-                SILK_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump();
-                if (json.is_array()) {
-                    receipts = json.get<std::vector<Receipt>>();
-                    operation_result = true;
-                } else if (json.is_null()) {
-                    operation_result = true;
-                } else {
-                    SILK_ERROR << "cbor_decode<std::vector<Receipt>> unexpected json: " << json.dump();
-                    operation_result = false;
+                try {
+                    auto json = nlohmann::json::from_cbor(bytes);
+                    SILK_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump();
+                    if (json.is_array()) {
+                        receipts = json.get<std::vector<Receipt>>();
+                        operation_result = true;
+                    } else if (json.is_null()) {
+                        operation_result = true;
+                    } else {
+                        SILK_ERROR << "cbor_decode<std::vector<Receipt>> unexpected json: " << json.dump();
+                        operation_result = false;
+                    }
+                } catch (const std::exception& e) {
+                    eptr = std::current_exception();
                 }
-                boost::asio::post(this_executor, [operation_result, self = std::move(self)]() mutable {
-                    self.complete(operation_result);
+
+                boost::asio::post(this_executor, [operation_result, eptr, self = std::move(self)]() mutable {
+                    if (eptr) {
+                        self.complete(eptr, {});
+                    } else {
+                        self.complete({}, operation_result);
+                    }
                 });
             });
         },

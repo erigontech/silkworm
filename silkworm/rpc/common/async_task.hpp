@@ -34,7 +34,7 @@ template <typename Executor, typename F, typename... Args>
 Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&&... args) {
     auto this_executor = co_await ThisTask::executor;
     co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, std::invoke_result_t<F, Args...>)>(
-        [&this_executor, &runner, fn = std::forward<F>(fn), ...args = std::forward<Args>(args)](auto& self) {
+        [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) {
             boost::asio::post(runner, [&, self = std::move(self)]() mutable {
                 try {
                     auto result = std::invoke(fn, args...);
@@ -59,12 +59,12 @@ Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&
 }
 
 template <typename Executor, typename F, typename... Args>
-requires std::is_void_v<std::invoke_result_t<F, Args...>>
+    requires std::is_void_v<std::invoke_result_t<F, Args...>>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) because of https://github.com/llvm/llvm-project/issues/68105
 Task<void> async_task(Executor runner, F&& fn, Args&&... args) {
     auto this_executor = co_await ThisTask::executor;
     co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr)>(
-        [&this_executor, &runner, fn = std::forward<F>(fn), ...args = std::forward<Args>(args)](auto& self) {
+        [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) {
             boost::asio::post(runner, [&, self = std::move(self)]() mutable {
                 try {
                     std::invoke(fn, args...);

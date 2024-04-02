@@ -50,7 +50,6 @@ TEST_CASE_METHOD(AsyncTaskTest, "async_task: factorial", "[rpc][common][async_ta
     for (std::size_t i{0}; i < kTestData.size(); ++i) {
         const auto [n, r] = kTestData[i];
         SECTION("factorial " + std::to_string(n)) {
-            std::cout << n << "! = " << spawn_and_wait(async_factorial(workers.get_executor(), n)) << "\n";
             CHECK(spawn_and_wait(async_factorial(workers.get_executor(), n)) == r);
             CHECK(spawn_and_wait(async_task(workers.get_executor(), recursive_factorial, n)) == r);
         }

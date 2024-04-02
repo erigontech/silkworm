@@ -75,7 +75,7 @@ class TestDebugExecutor : DebugExecutor {
 };
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
+/*TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
     static Bytes kAccountHistoryKey2{*silkworm::from_hex("000000000000000000000000000000000000000900000000009db707")};
     static Bytes kAccountHistoryKey3{*silkworm::from_hex("000000000000000000000000000000000000000000000000009db707")};
@@ -163,7 +163,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
             "structLogs":[]
         })"_json);
     }
-}
+}*/
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     static Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};

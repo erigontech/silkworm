@@ -97,6 +97,7 @@ jobs:
                cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
                # Check test runner script exit status
                if [ $perf_exit_status -eq 0 ]; then
+                  echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
                   echo "Tests completed successfully"
 
                   #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
@@ -104,6 +105,7 @@ jobs:
                   #cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/bin  ...
                else
                   echo "Error detected during tests"
+                  echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
                   #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-$method --outcome failure
 
                fi

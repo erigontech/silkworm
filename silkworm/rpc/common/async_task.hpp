@@ -51,8 +51,8 @@ template <typename Executor, typename F, typename... Args>
 Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&&... args) {
     auto this_executor = co_await ThisTask::executor;
     co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), TaskCompletionHandler<F, Args...>>(
-        [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) {
-            boost::asio::post(runner, [&, self = std::move(self)]() mutable {
+        [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) mutable {
+            boost::asio::post(runner, [&, fn = std::forward<decltype(fn)>(fn), ... args = std::forward<Args>(args), self = std::move(self)]() mutable {
                 try {
                     if constexpr (std::is_void_v<std::invoke_result_t<F, Args...>>) {
                         std::invoke(fn, args...);

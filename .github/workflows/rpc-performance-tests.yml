@@ -79,11 +79,16 @@ jobs:
                method=$2
                pattern=$3
                sequence=$4
+
+               // clean temporary area
+               cd ${{runner.workspace}}/rpc-tests/perf
+               rm -rf ./reports/
+
                python3 ./run_perf_tests.py --blockchain "$network" \
                                         --test-type "$method" \
                                         --pattern-file pattern/"$network"/"$pattern".tar \
                                         --test-sequence "$sequence" \
-                                        --repetitions 10 \
+                                        --repetitions 3 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
@@ -93,31 +98,29 @@ jobs:
 
                # Capture test runner script exit status
                perf_exit_status=$?
+
                # Save test results to a directory with timestamp and commit hash
                cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
                # Check test runner script exit status
                if [ $perf_exit_status -eq 0 ]; then
                   echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
-                  echo "Tests completed successfully"
+
+                  # save all vegeta binary report on specific area 
+                  cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/current_test
 
                   #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
-                  # save vegeta binary report on specific are in S3
-                  #cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/bin  ...
+                  echo "Tests completed successfully"
                else
-                  echo "Error detected during tests"
                   echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
                   #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-$method --outcome failure
 
+                  echo "Error detected during tests"
                fi
             done
 
           }
           
-          cd ${{runner.workspace}}/rpc-tests/perf
-          rm -rf ./reports/mainnet
-          
           # Launch the RPC performance test runner
-          #PROVA----------------------
           run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,2:1
           #run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
           #run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
@@ -126,7 +129,7 @@ jobs:
           #run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
           #run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
           #run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20
-          #run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,5000:20,10000:30
           
 
       - name: Stop Silkworm RpcDaemon

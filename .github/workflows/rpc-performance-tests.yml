@@ -1,13 +1,6 @@
 name: QA - RPC Performance Tests
 
 on:
-  pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - ready_for_review
-      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
@@ -30,7 +23,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.8.1 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          git -c advice.detachedHead=false clone --depth 1 --branch v0.8.2 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 
@@ -88,7 +81,7 @@ jobs:
                                         --test-type "$method" \
                                         --pattern-file pattern/"$network"/"$pattern".tar \
                                         --test-sequence "$sequence" \
-                                        --repetitions 10 \
+                                        --repetitions 1 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
@@ -107,10 +100,11 @@ jobs:
 
                   # temporary: removes previous binary test
                   rm -rf ${{runner.workspace}}/last_execution_test/*
-                  # save all vegeta binary report on specific area 
+                  # save all vegeta binary report on specific area (last_execution_test) reference are saved on (reference_test_result) 
                   echo "Save current vegeta binary files"
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/last_execution_test/
                   echo "Save reference vegeta binary files"
+                  rm -rf ${{runner.workspace}}/reference_test_result/*
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/reference_test_result/
 
                   echo "Save test result on DB"

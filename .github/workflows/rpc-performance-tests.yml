@@ -1,13 +1,6 @@
 name: QA - RPC Performance Tests
 
 on:
-  pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - ready_for_review
-      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
@@ -88,7 +81,7 @@ jobs:
                                         --test-type "$method" \
                                         --pattern-file pattern/"$network"/"$pattern".tar \
                                         --test-sequence "$sequence" \
-                                        --repetitions 1 \
+                                        --repetitions 5 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
@@ -115,7 +108,7 @@ jobs:
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/reference_test_result/
 
                   echo "Save test result on DB"
-                  #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
+                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
                   echo "Tests completed successfully"
                else
                   echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"

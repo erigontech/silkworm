@@ -1,6 +1,13 @@
 name: QA - RPC Performance Tests
 
 on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 

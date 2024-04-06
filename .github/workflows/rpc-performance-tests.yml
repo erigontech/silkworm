@@ -30,7 +30,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.7.1 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          git -c advice.detachedHead=false clone --depth 1 --branch v0.8.2 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 
@@ -88,7 +88,6 @@ jobs:
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
                                         --test-report \
-                                        --json-report ./reports/mainnet/${servers[i-1]}-result.json \
                                         --testing-daemon ${servers[i-1]}
 
            done

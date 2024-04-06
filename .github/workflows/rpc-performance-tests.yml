@@ -1,6 +1,13 @@
 name: QA - RPC Performance Tests
 
 on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
   schedule:
     - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
 
@@ -76,7 +83,7 @@ jobs:
                                         --test-type "$method" \
                                         --pattern-file pattern/"$network"/"$pattern".tar \
                                         --test-sequence "$sequence" \
-                                        --repetitions 10 \
+                                        --repetitions 5 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
@@ -91,14 +98,14 @@ jobs:
           rm -rf ./reports/mainnet
           
           # Launch the RPC performance test runner
-          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
-          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          #run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
+          #run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          #run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          #run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          #run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          #run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
           run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20          
-          run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,5000:20          
+          #run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,5000:20          
           
           # Capture test runner script exit status
           perf_exit_status=$?

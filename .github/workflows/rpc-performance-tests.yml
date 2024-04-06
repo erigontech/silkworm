@@ -88,7 +88,7 @@ jobs:
                                         --test-type "$method" \
                                         --pattern-file pattern/"$network"/"$pattern".tar \
                                         --test-sequence "$sequence" \
-                                        --repetitions 3 \
+                                        --repetitions 10 \
                                         --silk-dir ${{runner.workspace}}/silkworm \
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
@@ -108,8 +108,10 @@ jobs:
                   # temporary: removes previous binary test
                   rm -rf ${{runner.workspace}}/last_execution_test/*
                   # save all vegeta binary report on specific area 
-                  echo "Save vegeta binary files"
+                  echo "Save current vegeta binary files"
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/last_execution_test/
+                  echo "Save reference vegeta binary files"
+                  cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/reference_test_result/
 
                   echo "Save test result on DB"
                   #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
@@ -125,15 +127,14 @@ jobs:
           }
           
           # Launch the RPC performance test runner
-          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,2:1
-          #run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
-          #run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
-          #run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
-          #run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
-          #run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20
-          #run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
           
 
       - name: Stop Silkworm RpcDaemon

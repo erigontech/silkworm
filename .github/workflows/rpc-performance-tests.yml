@@ -106,13 +106,13 @@ jobs:
                   echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
 
                   # temporary: removes previous binary test
-                  rm -rf ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/last_execution_test/*
+                  rm -rf ${{runner.workspace}}/last_execution_test/*
                   # save all vegeta binary report on specific area 
                   echo "Save vegeta binary files"
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/last_execution_test/
 
                   echo "Save test result on DB"
-                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
+                  #python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
                   echo "Tests completed successfully"
                else
                   echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"

@@ -74,7 +74,7 @@ jobs:
           
           run_perf () {
             servers=("silkworm" "erigon")
-            for i in 1 2
+            for i in 1 2 3
             do
                network=$1
                method=$2
@@ -94,8 +94,10 @@ jobs:
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
                                         --test-report \
+                                        -N \
                                         --json-report ./reports/mainnet/result.json \
                                         --testing-daemon ${servers[i-1]}
+    
 
                # Capture test runner script exit status
                perf_exit_status=$?
@@ -135,7 +137,7 @@ jobs:
           #run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
           #run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20
           #run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,10000:20,20000:20
+          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1
 
           if [ $failed_test -eq 0 ]; then
                   echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"

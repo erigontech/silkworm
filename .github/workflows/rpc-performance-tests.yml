@@ -94,7 +94,6 @@ jobs:
                                         --erigon-dir $ERIGON_DATA_DIR \
                                         --test-mode $i \
                                         --test-report \
-                                        -N \
                                         --json-report ./reports/mainnet/result.json \
                                         --testing-daemon ${servers[i-1]}
     

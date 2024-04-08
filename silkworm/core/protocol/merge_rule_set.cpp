@@ -35,7 +35,7 @@ ValidationResult MergeRuleSet::pre_validate_block_body(const Block& block, const
         if (pre_merge_rule_set_) {
             return pre_merge_rule_set_->pre_validate_block_body(block, state);
         } else {
-            return ValidationResult::kUnknownProtocolRuleSet;
+            return ValidationResult::kOk;
         }
     }
     return RuleSet::pre_validate_block_body(block, state);
@@ -64,7 +64,7 @@ ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, 
         if (pre_merge_rule_set_) {
             return pre_merge_rule_set_->validate_block_header(header, state, with_future_timestamp_check);
         } else {
-            return ValidationResult::kUnknownProtocolRuleSet;
+            return ValidationResult::kOk;
         }
     }
 
@@ -138,7 +138,7 @@ ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockSt
         if (pre_merge_rule_set_) {
             return pre_merge_rule_set_->validate_ommers(block, state);
         } else {
-            return ValidationResult::kUnknownProtocolRuleSet;
+            return ValidationResult::kOk;
         }
     }
     return RuleSet::validate_ommers(block, state);

@@ -20,12 +20,12 @@
 #include <optional>
 #include <string>
 
-#include <boost/asio/thread_pool.hpp>
-
-#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/thread_pool.hpp>
+
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::core::rawdb {

@@ -34,6 +34,7 @@ struct InterfaceLogSettings {
     std::size_t max_file_size_mb{1};
     std::size_t max_files{100};
     bool auto_flush{false};
+    bool dump_response{false};
 };
 
 class InterfaceLog final {

@@ -189,6 +189,45 @@ Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, Bl
 
     auto log_key = silkworm::db::log_key(block_number, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
+    Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+        if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
+            return false;
+        }
+        auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
+        const bool decode_ok{cbor_decode(v, receipts[tx_id].logs)};
+        if (!decode_ok) {
+            SILK_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_number;
+            return false;
+        }
+        receipts[tx_id].bloom = bloom_from_logs(receipts[tx_id].logs);
+        SILK_DEBUG << "#receipts[" << tx_id << "].logs: " << receipts[tx_id].logs.size();
+        return true;
+    };
+    co_await reader.walk(db::table::kLogsName, log_key, 8 * CHAR_BIT, walker);
+
+    co_return receipts;
+}
+
+Task<std::optional<Receipts>> read_raw_receipts2(const DatabaseReader& reader, BlockNum block_number) {
+    const auto block_key = silkworm::db::block_key(block_number);
+    const auto data = co_await reader.get_one(db::table::kBlockReceiptsName, block_key);
+    SILK_TRACE << "read_raw_receipts2 data: " << silkworm::to_hex(data);
+    if (data.empty()) {
+        co_return std::nullopt;
+    }
+
+    Receipts receipts{};
+    const bool decoding_ok{cbor_decode(data, receipts)};
+    if (!decoding_ok) {
+        throw std::runtime_error("cannot decode raw receipts in block: " + std::to_string(block_number));
+    }
+    SILK_TRACE << "#receipts: " << receipts.size();
+    if (receipts.empty()) {
+        co_return receipts;
+    }
+
+    auto log_key = silkworm::db::log_key(block_number, 0);
+    SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
     WorkUnit work = [&](silkworm::Bytes k, silkworm::Bytes v, WorkerChannel& result_channel) {
         if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
             result_channel.try_send(false);

@@ -53,6 +53,7 @@ Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
 Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, BlockNum block_number);
 
 Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number);
+Task<std::optional<Receipts>> read_raw_receipts2(const DatabaseReader& reader, BlockNum block_number);
 
 Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
 

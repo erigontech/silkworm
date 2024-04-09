@@ -18,12 +18,9 @@
 
 #include <string>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 
 namespace silkworm::rpc {
@@ -83,48 +80,42 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
-                EVMExecutor executor{config_, workers_, state};
+    auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
+        auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
+        EVMExecutor executor{config_, workers_, state};
 
-                ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-                silkworm::Transaction transaction{call.to_transaction()};
-                while (lo + 1 < hi) {
-                    auto mid = (hi + lo) / 2;
-                    transaction.gas_limit = mid;
+        ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
+        silkworm::Transaction transaction{call.to_transaction()};
+        while (lo + 1 < hi) {
+            auto mid = (hi + lo) / 2;
+            transaction.gas_limit = mid;
 
-                    result = try_execution(executor, block, transaction);
-                    if (result.success()) {
-                        hi = mid;
-                    } else {
-                        lo = mid;
-                        if (result.pre_check_error == std::nullopt) {
-                            break;
-                        }
-                    }
+            result = try_execution(executor, block, transaction);
+            if (result.success()) {
+                hi = mid;
+            } else {
+                lo = mid;
+                if (result.pre_check_error == std::nullopt) {
+                    break;
                 }
+            }
+        }
 
-                if (hi == cap) {
-                    transaction.gas_limit = hi;
-                    result = try_execution(executor, block, transaction);
-                    SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
-                } else if (result.error_code == std::nullopt) {
-                    result.pre_check_error = std::nullopt;
-                    result.error_code = evmc_status_code::EVMC_SUCCESS;
-                }
+        if (hi == cap) {
+            transaction.gas_limit = hi;
+            result = try_execution(executor, block, transaction);
+            SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
+        } else if (result.error_code == std::nullopt) {
+            result.pre_check_error = std::nullopt;
+            result.error_code = evmc_status_code::EVMC_SUCCESS;
+        }
 
-                SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
+        SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
 
-                boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+        return result;
+    });
 
-    if (exec_result.success() == false) {
+    if (!exec_result.success()) {
         throw_exception(exec_result, cap);
     }
     co_return hi;

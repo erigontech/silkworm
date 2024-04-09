@@ -19,12 +19,8 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
-#include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -32,11 +28,10 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::debug {
@@ -395,47 +390,39 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     const auto chain_config_ptr = co_await storage.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
+    co_await async_task(workers_.executor(), [&]() -> void {
+        auto state = tx_.create_state(current_executor, database_reader_, storage, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, storage, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, state};
+        for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
+            rpc::Transaction txn{block.transactions[idx]};
+            SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
-                for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
-                    rpc::Transaction txn{block.transactions[idx]};
-                    SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
+            auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
-                    auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+            stream.open_object();
+            stream.write_field("result");
+            stream.open_object();
+            stream.write_field("structLogs");
+            stream.open_array();
 
-                    stream.open_object();
-                    stream.write_field("result");
-                    stream.open_object();
-                    stream.write_field("structLogs");
-                    stream.open_array();
+            Tracers tracers{debug_tracer};
+            const auto execution_result = executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
-                    Tracers tracers{debug_tracer};
-                    const auto execution_result = executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+            debug_tracer->flush_logs();
+            stream.close_array();
 
-                    debug_tracer->flush_logs();
-                    stream.close_array();
+            stream.write_json_field("failed", !execution_result.success());
+            if (!execution_result.pre_check_error) {
+                stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
+                stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            }
 
-                    stream.write_json_field("failed", !execution_result.success());
-                    if (!execution_result.pre_check_error) {
-                        stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
-                        stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
-                    }
-
-                    stream.close_object();
-                    stream.write_field("txHash", txn.hash());
-                    stream.close_object();
-                }
-                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-                    self.complete();
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+            stream.close_object();
+            stream.write_field("txHash", txn.hash());
+            stream.close_object();
+        }
+    });
 
     co_return;
 }
@@ -462,43 +449,35 @@ Task<void> DebugExecutor::execute(
     const auto chain_config_ptr = co_await storage.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
+    co_await async_task(workers_.executor(), [&]() {
+        auto state = tx_.create_state(current_executor, database_reader_, storage, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, storage, block_number);
-                EVMExecutor executor{*chain_config_ptr, workers_, state};
+        for (auto idx{0}; idx < index; idx++) {
+            silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
+            executor.call(block, txn);
+        }
+        executor.reset();
 
-                for (auto idx{0}; idx < index; idx++) {
-                    silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
-                    executor.call(block, txn);
-                }
-                executor.reset();
+        auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
-                auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+        stream.write_field("structLogs");
+        stream.open_array();
 
-                stream.write_field("structLogs");
-                stream.open_array();
+        Tracers tracers{debug_tracer};
+        const auto execution_result = executor.call(block, transaction, tracers);
 
-                Tracers tracers{debug_tracer};
-                const auto execution_result = executor.call(block, transaction, tracers);
+        debug_tracer->flush_logs();
+        stream.close_array();
 
-                debug_tracer->flush_logs();
-                stream.close_array();
+        SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-                SILK_DEBUG << "debug return: " << execution_result.error_message();
-
-                stream.write_json_field("failed", !execution_result.success());
-                if (!execution_result.pre_check_error) {
-                    stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-                    stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
-                }
-                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-                    self.complete();
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+        stream.write_json_field("failed", !execution_result.success());
+        if (!execution_result.pre_check_error) {
+            stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
+            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+        }
+    });
 
     co_return;
 }
@@ -523,76 +502,69 @@ Task<void> DebugExecutor::execute(
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(void)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, storage, block.header.number);
-                EVMExecutor executor{*chain_config_ptr, workers_, state};
+    co_await async_task(workers_.executor(), [&]() {
+        auto state = tx_.create_state(current_executor, database_reader_, storage, block.header.number);
+        EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                for (auto idx{0}; idx < transaction_index; idx++) {
-                    silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
-                    executor.call(block, txn);
+        for (auto idx{0}; idx < transaction_index; idx++) {
+            silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+            executor.call(block, txn);
+        }
+        executor.reset();
+
+        for (const auto& bundle : bundles) {
+            const auto& block_override = bundle.block_override;
+
+            rpc::Block blockContext{{block_with_hash}};
+            if (block_override.block_number) {
+                blockContext.block_with_hash->block.header.number = block_override.block_number.value();
+            }
+            if (block_override.coin_base) {
+                blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
+            }
+            if (block_override.timestamp) {
+                blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
+            }
+            if (block_override.difficulty) {
+                blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
+            }
+            if (block_override.gas_limit) {
+                blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
+            }
+            if (block_override.base_fee) {
+                blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
+            }
+
+            stream.open_array();
+
+            for (const auto& call : bundle.transactions) {
+                silkworm::Transaction txn{call.to_transaction()};
+
+                stream.open_object();
+                stream.write_field("structLogs");
+                stream.open_array();
+
+                auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+                Tracers tracers{debug_tracer};
+
+                const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+
+                debug_tracer->flush_logs();
+                stream.close_array();
+
+                SILK_DEBUG << "debug return: " << execution_result.error_message();
+
+                stream.write_json_field("failed", !execution_result.success());
+                if (!execution_result.pre_check_error) {
+                    stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
+                    stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
                 }
-                executor.reset();
+                stream.close_object();
+            }
 
-                for (const auto& bundle : bundles) {
-                    const auto& block_override = bundle.block_override;
-
-                    rpc::Block blockContext{{block_with_hash}};
-                    if (block_override.block_number) {
-                        blockContext.block_with_hash->block.header.number = block_override.block_number.value();
-                    }
-                    if (block_override.coin_base) {
-                        blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
-                    }
-                    if (block_override.timestamp) {
-                        blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
-                    }
-                    if (block_override.difficulty) {
-                        blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
-                    }
-                    if (block_override.gas_limit) {
-                        blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
-                    }
-                    if (block_override.base_fee) {
-                        blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
-                    }
-
-                    stream.open_array();
-
-                    for (const auto& call : bundle.transactions) {
-                        silkworm::Transaction txn{call.to_transaction()};
-
-                        stream.open_object();
-                        stream.write_field("structLogs");
-                        stream.open_array();
-
-                        auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
-                        Tracers tracers{debug_tracer};
-
-                        const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
-
-                        debug_tracer->flush_logs();
-                        stream.close_array();
-
-                        SILK_DEBUG << "debug return: " << execution_result.error_message();
-
-                        stream.write_json_field("failed", !execution_result.success());
-                        if (!execution_result.pre_check_error) {
-                            stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
-                            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
-                        }
-                        stream.close_object();
-                    }
-
-                    stream.close_array();
-                }
-                boost::asio::post(current_executor, [self = std::move(self)]() mutable {
-                    self.complete();
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+            stream.close_array();
+        }
+    });
 
     co_return;
 }

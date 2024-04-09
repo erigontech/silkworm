@@ -69,7 +69,7 @@ class TestDebugExecutor : DebugExecutor {
     TestDebugExecutor(const TestDebugExecutor&) = delete;
     TestDebugExecutor& operator=(const TestDebugExecutor&) = delete;
 
-    Task<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
+    Task<void> exec(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
         return DebugExecutor::execute(stream, storage, block, call);
     }
 };
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -305,7 +305,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -368,7 +368,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -479,7 +479,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -581,7 +581,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -688,7 +688,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -796,7 +796,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -891,7 +891,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -1102,7 +1102,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         const RemoteChainStorage storage{db_reader, backend.get()};
 
         stream.open_object();
-        spawn_and_wait(executor.execute(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -1263,7 +1263,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     const RemoteChainStorage storage{db_reader, backend.get()};
 
     stream.open_object();
-    spawn_and_wait(executor.execute(stream, storage, block, call));
+    spawn_and_wait(executor.exec(stream, storage, block, call));
     stream.close_object();
     spawn_and_wait(stream.close());
 

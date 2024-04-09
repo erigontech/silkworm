@@ -22,13 +22,10 @@
 #include <stack>
 #include <string>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
-#include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -39,9 +36,9 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -1130,7 +1127,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
             }
         }
     }
-};
+}
 
 void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept {
     SILK_DEBUG
@@ -1241,7 +1238,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
 
         for (auto& ommer_reward : block_rewards.ommers) {
             RewardAction action;
-            action.author = block_with_hash.block.header.beneficiary; /* to be fix */
+            action.author = block_with_hash.block.header.beneficiary; /* to be fixed */
             action.reward_type = "block";
             action.value = ommer_reward;
 
@@ -1276,60 +1273,53 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        IntraBlockState initial_ibs{*state};
 
-    const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::vector<TraceCallResult>)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                IntraBlockState initial_ibs{*state};
+        StateAddresses state_addresses(initial_ibs);
+        std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-                StateAddresses state_addresses(initial_ibs);
-                std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        std::vector<TraceCallResult> trace_call_result(transactions.size());
+        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+            const silkworm::Transaction& transaction{block.transactions[index]};
 
-                std::vector<TraceCallResult> trace_call_result(transactions.size());
-                for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    const silkworm::Transaction& transaction{block.transactions[index]};
+            auto& result = trace_call_result.at(index);
+            TraceCallTraces& traces = result.traces;
+            traces.transaction_hash = transaction.hash();
 
-                    auto& result = trace_call_result.at(index);
-                    TraceCallTraces& traces = result.traces;
-                    traces.transaction_hash = transaction.hash();
+            Tracers tracers;
+            if (config.vm_trace) {
+                traces.vm_trace.emplace();
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
+                tracers.push_back(tracer);
+            }
+            if (config.trace) {
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
+                tracers.push_back(tracer);
+            }
+            if (config.state_diff) {
+                traces.state_diff.emplace();
 
-                    Tracers tracers;
-                    if (config.vm_trace) {
-                        traces.vm_trace.emplace();
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
-                        tracers.push_back(tracer);
-                    }
-                    if (config.trace) {
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
-                        tracers.push_back(tracer);
-                    }
-                    if (config.state_diff) {
-                        traces.state_diff.emplace();
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
+                tracers.push_back(tracer);
+            }
 
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
-                        tracers.push_back(tracer);
-                    }
+            tracers.push_back(ibs_tracer);
 
-                    tracers.push_back(ibs_tracer);
-
-                    auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-                    if (execution_result.pre_check_error) {
-                        result.pre_check_error = execution_result.pre_check_error.value();
-                    } else {
-                        traces.output = "0x" + silkworm::to_hex(execution_result.data);
-                    }
-                    executor.reset();
-                }
-                boost::asio::post(current_executor, [trace_call_result, self = std::move(self)]() mutable {
-                    self.complete(trace_call_result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            if (execution_result.pre_check_error) {
+                result.pre_check_error = execution_result.pre_check_error.value();
+            } else {
+                traces.output = "0x" + silkworm::to_hex(execution_result.data);
+            }
+            executor.reset();
+        }
+        return trace_call_result;
+    });
 
     co_return call_result;
 }
@@ -1350,63 +1340,57 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
-                silkworm::IntraBlockState initial_ibs{*state};
-                StateAddresses state_addresses(initial_ibs);
+    const auto trace_calls_result = co_await async_task(workers_.executor(), [&]() -> TraceManyCallResult {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
+        silkworm::IntraBlockState initial_ibs{*state};
+        StateAddresses state_addresses(initial_ibs);
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
-                EVMExecutor executor{*chain_config_ptr, workers_, state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+        std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-                TraceManyCallResult result;
-                for (std::size_t index{0}; index < calls.size(); index++) {
-                    const auto& config = calls[index].trace_config;
+        TraceManyCallResult result;
+        for (std::size_t index{0}; index < calls.size(); index++) {
+            const auto& config = calls[index].trace_config;
 
-                    silkworm::Transaction transaction{calls[index].call.to_transaction()};
+            silkworm::Transaction transaction{calls[index].call.to_transaction()};
 
-                    Tracers tracers;
-                    TraceCallTraces traces;
-                    if (config.vm_trace) {
-                        traces.vm_trace.emplace();
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
-                        tracers.push_back(tracer);
-                    }
-                    if (config.trace) {
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
-                        tracers.push_back(tracer);
-                    }
-                    if (config.state_diff) {
-                        traces.state_diff.emplace();
+            Tracers tracers;
+            TraceCallTraces traces;
+            if (config.vm_trace) {
+                traces.vm_trace.emplace();
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
+                tracers.push_back(tracer);
+            }
+            if (config.trace) {
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
+                tracers.push_back(tracer);
+            }
+            if (config.state_diff) {
+                traces.state_diff.emplace();
 
-                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
-                        tracers.push_back(tracer);
-                    }
-                    tracers.push_back(ibs_tracer);
+                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
+                tracers.push_back(tracer);
+            }
+            tracers.push_back(ibs_tracer);
 
-                    auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
-                    if (execution_result.pre_check_error) {
-                        result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
-                        result.traces.clear();
-                        break;
-                    }
-                    traces.output = "0x" + silkworm::to_hex(execution_result.data);
-                    result.traces.push_back(traces);
+            if (execution_result.pre_check_error) {
+                result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
+                result.traces.clear();
+                break;
+            }
+            traces.output = "0x" + silkworm::to_hex(execution_result.data);
+            result.traces.push_back(traces);
 
-                    executor.reset();
-                }
-                boost::asio::post(current_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+            executor.reset();
+        }
+        return result;
+    });
 
-    co_return ret_result;
+    co_return trace_calls_result;
 }
 
 Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
@@ -1419,38 +1403,29 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto deploy_result = co_await async_task(workers_.executor(), [&]() -> TraceDeployResult {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        silkworm::IntraBlockState initial_ibs{*state};
 
-    const auto deploy_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceDeployResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                silkworm::IntraBlockState initial_ibs{*state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        TraceDeployResult result;
 
-                TraceDeployResult result;
-
-                auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
-
-                Tracers tracers{create_tracer};
-
-                for (std::uint64_t index = 0; index < transactions.size(); index++) {
-                    const silkworm::Transaction& transaction{block.transactions[index]};
-                    executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-                    executor.reset();
-                    if (create_tracer->found()) {
-                        result.transaction_hash = transaction.hash();
-                        result.contract_creator = transaction.sender();
-                        break;
-                    }
-                }
-                boost::asio::post(current_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+        auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
+        Tracers tracers{create_tracer};
+        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+            const silkworm::Transaction& transaction{block.transactions[index]};
+            executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            executor.reset();
+            if (create_tracer->found()) {
+                result.transaction_hash = transaction.hash();
+                result.contract_creator = transaction.sender();
+                break;
+            }
+        }
+        return result;
+    });
 
     co_return deploy_result;
 }
@@ -1485,30 +1460,20 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        silkworm::IntraBlockState initial_ibs{*state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-    const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::EntryTracer>)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                silkworm::IntraBlockState initial_ibs{*state};
+        auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
+        Tracers tracers{entry_tracer};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        return entry_tracer->result();
+    });
 
-                auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
-
-                Tracers tracers{entry_tracer};
-
-                executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-
-                boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
-                    self.complete(entry_tracer);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
-
-    co_return ret_entry_tracer->result();
+    co_return trace_result;
 }
 
 Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
@@ -1518,31 +1483,27 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        silkworm::IntraBlockState initial_ibs{*state};
 
-    const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::string)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                silkworm::IntraBlockState initial_ibs{*state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        Tracers tracers{};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
-                Tracers tracers{};
+        const auto execution_result = executor.call(transaction_with_block.block_with_hash->block,
+                                                    transaction_with_block.transaction,
+                                                    tracers,
+                                                    /*refund=*/true, /*gas_bailout=*/true);
 
-                auto execution_result = executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        std::string result = "0x";
+        if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+            result = "0x" + silkworm::to_hex(execution_result.data);
+        }
+        return result;
+    });
 
-                std::string result = "0x";
-                if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-                    result = "0x" + silkworm::to_hex(execution_result.data);
-                }
-                boost::asio::post(current_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
-
-    co_return ret_result;
+    co_return trace_error;
 }
 
 Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
@@ -1552,30 +1513,21 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        silkworm::IntraBlockState initial_ibs{*state};
 
-    const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::OperationTracer>)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                silkworm::IntraBlockState initial_ibs{*state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+        Tracers tracers{entry_tracer};
 
-                auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+        executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        return entry_tracer->result();
+    });
 
-                Tracers tracers{entry_tracer};
-
-                executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-
-                boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
-                    self.complete(entry_tracer);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
-
-    co_return ret_entry_tracer->result();
+    co_return trace_op_result;
 }
 
 Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
@@ -1585,29 +1537,21 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        silkworm::IntraBlockState initial_ibs{*state};
 
-    const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::TouchTracer>)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                silkworm::IntraBlockState initial_ibs{*state};
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
+        Tracers tracers{tracer};
 
-                auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
-                Tracers tracers{tracer};
+        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        return tracer->found();
+    });
 
-                executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
-
-                boost::asio::post(current_executor, [tracer, self = std::move(self)]() mutable {
-                    self.complete(tracer);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
-
-    co_return ret_entry_tracer->found();
+    co_return result;
 }
 
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
@@ -1685,60 +1629,54 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
     auto current_executor = co_await boost::asio::this_coro::executor;
+    const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
+        auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
+        silkworm::IntraBlockState initial_ibs{*state};
 
-    const auto trace_call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceCallResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                auto state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
-                silkworm::IntraBlockState initial_ibs{*state};
+        Tracers tracers;
+        StateAddresses state_addresses(initial_ibs);
+        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+        tracers.push_back(tracer);
 
-                Tracers tracers;
-                StateAddresses state_addresses(initial_ibs);
-                std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
-                tracers.push_back(tracer);
+        auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
+            silkworm::Transaction txn{block.transactions[idx]};
+            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            if (execution_result.pre_check_error) {
+                SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
+            }
+            executor.reset();
+        }
 
-                auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number);
-                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
-                for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
-                    silkworm::Transaction txn{block.transactions[idx]};
-                    const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
-                    if (execution_result.pre_check_error) {
-                        SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
-                    }
-                    executor.reset();
-                }
+        tracers.clear();
 
-                tracers.clear();
-                TraceCallResult result;
-                TraceCallTraces& traces = result.traces;
-                if (config.vm_trace) {
-                    traces.vm_trace.emplace();
-                    tracers.push_back(std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index));
-                }
-                if (config.trace) {
-                    tracers.push_back(std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs));
-                }
-                if (config.state_diff) {
-                    traces.state_diff.emplace();
+        TraceCallResult result;
+        TraceCallTraces& traces = result.traces;
+        if (config.vm_trace) {
+            traces.vm_trace.emplace();
+            tracers.push_back(std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index));
+        }
+        if (config.trace) {
+            tracers.push_back(std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs));
+        }
+        if (config.state_diff) {
+            traces.state_diff.emplace();
 
-                    tracers.push_back(std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses));
-                }
-                if (index != -1) {
-                    traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
-                }
-                const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            tracers.push_back(std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses));
+        }
+        if (index != -1) {
+            traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
+        }
+        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
-                if (execution_result.pre_check_error) {
-                    result.pre_check_error = execution_result.pre_check_error.value();
-                } else {
-                    traces.output = "0x" + silkworm::to_hex(execution_result.data);
-                }
-                boost::asio::post(current_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+        if (execution_result.pre_check_error) {
+            result.pre_check_error = execution_result.pre_check_error.value();
+        } else {
+            traces.output = "0x" + silkworm::to_hex(execution_result.data);
+        }
+        return result;
+    });
 
     co_return trace_call_result;
 }

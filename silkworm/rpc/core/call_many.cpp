@@ -20,13 +20,11 @@
 #include <sstream>
 #include <string>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/instructions.h>
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -143,7 +141,7 @@ Task<CallManyResult> CallExecutor::execute(
     const Bundles& bundles,
     const SimulationContext& context,
     const AccountsOverrides& accounts_overrides,
-    std::optional<std::uint64_t> opt_timeout) {
+    std::optional<std::uint64_t> timeout) {
     ethdb::TransactionDatabase tx_database{transaction_};
     const auto chain_storage{transaction_.create_storage(tx_database, backend_)};
 
@@ -174,16 +172,17 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
-        [&](auto& self) {
-            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-                result = executes_all_bundles(*chain_config_ptr, *chain_storage, block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
-                boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
-                    self.complete(result);
-                });
-            });
-        },
-        boost::asio::use_awaitable);
+    result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {
+        return executes_all_bundles(*chain_config_ptr,
+                                    *chain_storage,
+                                    block_with_hash,
+                                    tx_database,
+                                    bundles,
+                                    timeout,
+                                    accounts_overrides,
+                                    transaction_index,
+                                    this_executor);
+    });
 
     co_return result;
 }

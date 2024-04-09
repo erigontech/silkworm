@@ -189,21 +189,24 @@ Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, Bl
 
     auto log_key = silkworm::db::log_key(block_number, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
-    Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+    WorkUnit work = [&](silkworm::Bytes k, silkworm::Bytes v, WorkerChannel& result_channel) {
         if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
-            return false;
+            result_channel.try_send(false);
+            return;
         }
         auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
         const bool decode_ok{cbor_decode(v, receipts[tx_id].logs)};
         if (!decode_ok) {
             SILK_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_number;
-            return false;
+            result_channel.try_send(false);
+            return;
         }
         receipts[tx_id].bloom = bloom_from_logs(receipts[tx_id].logs);
         SILK_DEBUG << "#receipts[" << tx_id << "].logs: " << receipts[tx_id].logs.size();
-        return true;
+        result_channel.try_send(true);
     };
-    co_await reader.walk(db::table::kLogsName, log_key, 8 * CHAR_BIT, walker);
+    boost::asio::thread_pool worker_pool;
+    co_await reader.walk_worker(db::table::kLogsName, log_key, 8 * CHAR_BIT, Worker{work, worker_pool});
 
     co_return receipts;
 }

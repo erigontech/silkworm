@@ -38,6 +38,8 @@ class MockDatabaseReader : public core::rawdb::DatabaseReader {
                 (const std::string&, silkworm::ByteView, silkworm::ByteView), (const));
     MOCK_METHOD((Task<void>), walk, (const std::string&, silkworm::ByteView, uint32_t, core::rawdb::Walker),
                 (const));
+    MOCK_METHOD((Task<void>), walk_worker, (const std::string&, silkworm::ByteView, uint32_t, core::rawdb::Worker),
+                (const));
     MOCK_METHOD((Task<void>), for_prefix, (const std::string&, silkworm::ByteView, core::rawdb::Walker),
                 (const));
 };

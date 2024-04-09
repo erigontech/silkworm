@@ -68,6 +68,14 @@ Task<void> CachedDatabase::walk(
     co_await txn_database_.walk(table, start_key, fixed_bits, w);
 }
 
+Task<void> CachedDatabase::walk_worker(
+    const std::string& table,
+    silkworm::ByteView start_key,
+    uint32_t fixed_bits,
+    core::rawdb::Worker w) const {
+    co_await txn_database_.walk_worker(table, start_key, fixed_bits, w);
+}
+
 Task<void> CachedDatabase::for_prefix(
     const std::string& table,
     silkworm::ByteView prefix,

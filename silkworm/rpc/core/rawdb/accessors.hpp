@@ -20,6 +20,9 @@
 #include <optional>
 #include <string>
 
+#include <boost/asio/thread_pool.hpp>
+
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -28,6 +31,9 @@
 namespace silkworm::rpc::core::rawdb {
 
 using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
+using WorkerChannel = silkworm::concurrency::Channel<bool>;
+using WorkUnit = std::function<void(silkworm::Bytes, silkworm::Bytes, WorkerChannel&)>;
+using Worker = std::pair<WorkUnit, boost::asio::thread_pool&>;
 
 class DatabaseReader {
   public:
@@ -40,6 +46,7 @@ class DatabaseReader {
     [[nodiscard]] virtual Task<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const = 0;
 
     [[nodiscard]] virtual Task<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Walker w) const = 0;
+    [[nodiscard]] virtual Task<void> walk_worker(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Worker w) const = 0;
 
     [[nodiscard]] virtual Task<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
 };

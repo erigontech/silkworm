@@ -41,6 +41,7 @@ class TransactionDatabase : public core::rawdb::DatabaseReader {
     [[nodiscard]] Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) const override;
 
     [[nodiscard]] Task<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override;
+    [[nodiscard]] Task<void> walk_worker(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Worker w) const override;
 
     [[nodiscard]] Task<void> for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const override;
 

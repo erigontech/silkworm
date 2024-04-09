@@ -49,6 +49,11 @@ class CachedDatabase : public core::rawdb::DatabaseReader {
         silkworm::ByteView start_key,
         uint32_t fixed_bits,
         core::rawdb::Walker w) const override;
+    Task<void> walk_worker(
+        const std::string& table,
+        silkworm::ByteView start_key,
+        uint32_t fixed_bits,
+        core::rawdb::Worker w) const override;
 
     Task<void> for_prefix(
         const std::string& table,

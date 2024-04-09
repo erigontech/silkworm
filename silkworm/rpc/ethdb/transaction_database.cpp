@@ -19,6 +19,8 @@
 #include <climits>
 #include <exception>
 
+#include <boost/asio/post.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -77,6 +79,44 @@ Task<void> TransactionDatabase::walk(const std::string& table, ByteView start_ke
         kv_pair = co_await cursor->next();
         k = kv_pair.key;
         v = kv_pair.value;
+    }
+
+    co_return;
+}
+
+Task<void> TransactionDatabase::walk_worker(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Worker w) const {
+    const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
+    SILK_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
+    const auto shift_bits = fixed_bits & 7;
+    uint8_t mask{0xff};
+    if (shift_bits != 0) {
+        mask = static_cast<uint8_t>(0xff << (CHAR_BIT - shift_bits));
+    }
+    SILK_TRACE << "mask: " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(mask) << std::dec;
+
+    const auto cursor = co_await tx_.cursor(table);
+    SILK_TRACE << "TransactionDatabase::walk cursor_id: " << cursor->cursor_id();
+    auto kv_pair = co_await cursor->seek(start_key);
+    auto k = kv_pair.key;
+    auto v = kv_pair.value;
+    SILK_TRACE << "k: " << k << " v: " << v;
+    core::rawdb::WorkerChannel result_channel{co_await ThisTask::executor, 50};
+    std::size_t worker_count{0};
+    while (
+        !k.empty() &&
+        k.size() >= fixed_bytes &&
+        (fixed_bits == 0 || (k.compare(0, fixed_bytes - 1, start_key, 0, fixed_bytes - 1) == 0 && (k[fixed_bytes - 1] & mask) == (start_key[fixed_bytes - 1] & mask)))) {
+        boost::asio::post(w.second, [&]() { w.first(k, v, result_channel); });
+        kv_pair = co_await cursor->next();
+        k = kv_pair.key;
+        v = kv_pair.value;
+        ++worker_count;
+    }
+
+    while (worker_count) {
+        const bool ok{co_await result_channel.receive()};
+        SILK_TRACE << "TransactionDatabase::walk worker result: " << ok;
+        --worker_count;
     }
 
     co_return;

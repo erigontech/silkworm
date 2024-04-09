@@ -24,14 +24,14 @@ import "fmt"
 import "os"
 
 func main() {
-    dataDirPath := os.Getenv("HOME")
-    libMdbxVersion := C.GoString(C.silkworm_libmdbx_version())
+	dataDirPath := os.Getenv("HOME")
+	libMdbxVersion := C.GoString(C.silkworm_libmdbx_version())
 
 	var handle C.SilkwormHandle
 	settings := &C.struct_SilkwormSettings{}
 	if !C.go_string_copy(dataDirPath, &settings.data_dir_path[0], C.SILKWORM_PATH_SIZE) {
-	    fmt.Fprintln(os.Stderr, "silkworm.New failed to copy dataDirPath")
-	    os.Exit(1)
+		fmt.Fprintln(os.Stderr, "silkworm.New failed to copy dataDirPath")
+		os.Exit(1)
 	}
 	if !C.go_string_copy(libMdbxVersion, &settings.libmdbx_version[0], C.SILKWORM_GIT_VERSION_SIZE) {
 		fmt.Fprintln(os.Stderr, "silkworm.New failed to copy libMdbxVersion")

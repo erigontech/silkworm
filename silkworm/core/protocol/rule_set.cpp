@@ -273,7 +273,7 @@ static RuleSetPtr pre_merge_rule_set(const ChainConfig& chain_config) {
 }
 
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {
-    SILKWORM_ASSERT(ChainConfig::check_pre_merge_config(chain_config));
+    SILKWORM_ASSERT(chain_config.check_pre_merge_config());
 
     RuleSetPtr rule_set{pre_merge_rule_set(chain_config)};
     if (chain_config.terminal_total_difficulty) {

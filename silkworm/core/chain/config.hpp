@@ -130,7 +130,7 @@ struct ChainConfig {
 
     friend bool operator==(const ChainConfig&, const ChainConfig&) = default;
 
-    static bool check_pre_merge_config(const ChainConfig& config);
+    [[nodiscard]] bool check_pre_merge_config() const noexcept;
 };
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);

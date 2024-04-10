@@ -129,6 +129,8 @@ struct ChainConfig {
     static std::optional<ChainConfig> from_json(const nlohmann::json& json) noexcept;
 
     friend bool operator==(const ChainConfig&, const ChainConfig&) = default;
+
+    static bool check_pre_merge_config(const ChainConfig& config);
 };
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);

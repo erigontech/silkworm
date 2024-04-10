@@ -29,7 +29,6 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 
 namespace silkworm::rpc::http {

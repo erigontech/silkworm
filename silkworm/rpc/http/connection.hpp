@@ -32,7 +32,6 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 #include <silkworm/rpc/ws/connection.hpp>

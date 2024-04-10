@@ -30,7 +30,6 @@
 #include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 

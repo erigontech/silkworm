@@ -30,6 +30,10 @@ class InterfaceLogImpl final {
         flush();
     }
 
+    [[nodiscard]] bool dump_response() const {
+        return dump_response_;
+    }
+
     [[nodiscard]] std::filesystem::path path() const {
         return file_path_;
     }
@@ -53,6 +57,7 @@ class InterfaceLogImpl final {
   private:
     std::string name_;
     bool auto_flush_;
+    bool dump_response_;
     std::filesystem::path file_path_;
     std::size_t max_file_size_;
     std::size_t max_files_;
@@ -63,6 +68,7 @@ class InterfaceLogImpl final {
 InterfaceLogImpl::InterfaceLogImpl(InterfaceLogSettings settings)
     : name_{std::move(settings.ifc_name)},
       auto_flush_{settings.auto_flush},
+      dump_response_{settings.dump_response},
       file_path_{settings.container_folder / std::filesystem::path{name_ + ".log"}},
       max_file_size_{settings.max_file_size_mb * kMebi},
       max_files_{settings.max_files},
@@ -96,7 +102,9 @@ void InterfaceLog::log_req(std::string_view msg) {
 }
 
 void InterfaceLog::log_rsp(std::string_view msg) {
-    p_impl_->log("RSP <- {}", msg);
+    if (p_impl_->dump_response()) {
+        p_impl_->log("RSP <- {}", msg);
+    }
 }
 
 void InterfaceLog::flush() {

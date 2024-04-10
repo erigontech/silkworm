@@ -86,6 +86,10 @@ static void add_options_interface_log(CLI::App& cli, const std::string& option_p
         ->description("Maximum size in megabytes of each interface log file for " + end_point_descr)
         ->check(CLI::Range(1, 1024))
         ->capture_default_str();
+
+    cli.add_flag("--" + option_prefix + ".log.dump_response", settings.dump_response)
+        ->description("Enable response dump in interface log for " + end_point_descr)
+        ->capture_default_str();
 }
 
 void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& settings) {

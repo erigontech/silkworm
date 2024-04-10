@@ -96,6 +96,10 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     return ret;
 }
 
+bool ChainConfig::check_pre_merge_config(const ChainConfig& config) {
+    return (!std::holds_alternative<protocol::NoPreMergeConfig>(config.rule_set_config) || !config.terminal_total_difficulty);
+}
+
 std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) noexcept {
     if (json.is_discarded() || !json.contains("chainId") || !json["chainId"].is_number()) {
         return std::nullopt;
@@ -169,7 +173,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
 
-    if (std::holds_alternative<protocol::NoPreMergeConfig>(config.rule_set_config) && config.terminal_total_difficulty != 0) {
+    if (!check_pre_merge_config(config)) {
         return std::nullopt;
     }
     return config;

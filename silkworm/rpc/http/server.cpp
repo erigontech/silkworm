@@ -42,25 +42,21 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
 }
 
 Server::Server(const std::string& end_point,
-               const std::string& api_spec,
+               RequestHandlerFactory&& handler_factory,
                boost::asio::io_context& io_context,
                boost::asio::thread_pool& workers,
                std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret,
                bool use_websocket,
                bool ws_compression,
-               bool http_compression,
-               InterfaceLogSettings ifc_log_settings)
-    : rpc_api_{io_context, workers},
-      handler_table_{api_spec},
-      io_context_(io_context),
+               bool http_compression)
+    : handler_factory_{std::move(handler_factory)},
       acceptor_{io_context},
       allowed_origins_{std::move(allowed_origins)},
       jwt_secret_(std::move(jwt_secret)),
       use_websocket_{use_websocket},
       ws_compression_{ws_compression},
       http_compression_{http_compression},
-      ifc_log_settings_{std::move(ifc_log_settings)},
       workers_{workers} {
     const auto [host, port] = parse_endpoint(end_point);
 
@@ -82,24 +78,25 @@ void Server::start() {
 Task<void> Server::run() {
     acceptor_.listen();
 
+    auto this_executor = co_await ThisTask::executor;
     try {
         while (acceptor_.is_open()) {
-            SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
+            SILK_DEBUG << "Server::run accepting using io_context " << &this_executor << "...";
 
-            auto new_connection = std::make_shared<Connection>(
-                io_context_, rpc_api_, handler_table_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, workers_, ifc_log_settings_);
-            co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
+            boost::asio::ip::tcp::socket socket{co_await ThisTask::executor};
+            co_await acceptor_.async_accept(socket, boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";
                 co_return;
             }
 
-            new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
+            socket.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
-            SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
-            auto connection_loop = [](auto connection) -> Task<void> { co_await connection->read_loop(); };
+            SILK_TRACE << "Server::run starting connection for socket: " << &socket;
 
-            boost::asio::co_spawn(io_context_, connection_loop(new_connection), boost::asio::detached);
+            auto new_connection = std::make_shared<Connection>(
+                std::move(socket), handler_factory_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, workers_);
+            boost::asio::co_spawn(this_executor, new_connection->read_loop(), boost::asio::detached);
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::error::operation_aborted) {

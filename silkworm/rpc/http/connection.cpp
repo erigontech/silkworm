@@ -43,20 +43,17 @@ static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
 static constexpr auto kGzipEncoding{"gzip"};
 
-Connection::Connection(boost::asio::io_context& io_context,
-                       commands::RpcApi& api,
-                       commands::RpcApiTable& handler_table,
+Connection::Connection(boost::asio::ip::tcp::socket socket,
+                       RequestHandlerFactory& handler_factory,
                        const std::vector<std::string>& allowed_origins,
                        std::optional<std::string> jwt_secret,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
                        bool http_compression,
-                       boost::asio::thread_pool& workers,
-                       InterfaceLogSettings ifc_log_settings)
-    : socket_{io_context},
-      api_{api},
-      handler_table_{handler_table},
-      request_handler_{this, api, handler_table, std::move(ifc_log_settings)},
+                       boost::asio::thread_pool& workers)
+    : socket_{std::move(socket)},
+      handler_factory_{handler_factory},
+      handler_{handler_factory_(this)},
       allowed_origins_{allowed_origins},
       jwt_secret_{std ::move(jwt_secret)},
       ws_upgrade_enabled_{ws_upgrade_enabled},
@@ -126,7 +123,7 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
     // Now that talking to the socket is successful, we tie the socket object to a WebSocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
-    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), api_, std::move(handler_table_), ws_compression_);
+    auto ws_connection = std::make_shared<ws::Connection>(std::move(stream), handler_factory_, ws_compression_);
     co_await ws_connection->accept(req);
 
     auto connection_loop = [](auto websocket_connection) -> Task<void> { co_await websocket_connection->read_loop(); };
@@ -213,7 +210,7 @@ Task<void> Connection::handle_actual_request(const boost::beast::http::request<b
     origin_ = req[boost::beast::http::field::origin];
     method_ = req.method();
 
-    auto rsp_content = co_await request_handler_.handle(req.body());
+    auto rsp_content = co_await handler_->handle(req.body());
     if (rsp_content) {
         co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, gzip_encoding_requested ? kGzipEncoding : "");
     }

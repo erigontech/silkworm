@@ -46,6 +46,7 @@ class EngineRpcApi {
 
     EngineRpcApi(const EngineRpcApi&) = delete;
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
+    EngineRpcApi(EngineRpcApi&&) = default;
 
   protected:
     Task<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);

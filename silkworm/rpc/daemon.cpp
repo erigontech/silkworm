@@ -301,9 +301,17 @@ void Daemon::start() {
                                   boost::asio::io_context& ioc,
                                   std::optional<std::string> jwt_secret,
                                   InterfaceLogSettings ilog_settings) {
+        commands::RpcApi rpc_api{ioc, worker_pool_};
+        commands::RpcApiTable handler_table{api_spec};
+        auto make_jsonrpc_handler = [rpc_api = std::move(rpc_api),
+                                     handler_table = std::move(handler_table),
+                                     ilog_settings = std::move(ilog_settings)](StreamWriter* stream_writer) mutable {
+            return std::make_unique<json_rpc::RequestHandler>(stream_writer, rpc_api, handler_table, ilog_settings);
+        };
+
         return std::make_unique<http::Server>(
-            end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
-            settings_.use_websocket, settings_.ws_compression, settings_.http_compression, std::move(ilog_settings));
+            end_point, std::move(make_jsonrpc_handler), ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
+            settings_.use_websocket, settings_.ws_compression, settings_.http_compression);
     };
 
     // Put the interface logs into the data folder

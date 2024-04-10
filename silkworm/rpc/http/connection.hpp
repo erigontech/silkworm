@@ -32,8 +32,9 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
+#include <silkworm/rpc/transport/request_handler.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
 
 namespace silkworm::rpc::http {
@@ -45,16 +46,14 @@ class Connection : public StreamWriter {
     Connection& operator=(const Connection&) = delete;
 
     //! Construct a connection running within the given execution context.
-    Connection(boost::asio::io_context& io_context,
-               commands::RpcApi& api,
-               commands::RpcApiTable& handler_table,
+    Connection(boost::asio::ip::tcp::socket socket,
+               RequestHandlerFactory& handler_factory,
                const std::vector<std::string>& allowed_origins,
                std::optional<std::string> jwt_secret,
                bool ws_upgrade_enabled,
                bool ws_compression,
                bool http_compression,
-               boost::asio::thread_pool& workers,
-               InterfaceLogSettings ifc_log_settings);
+               boost::asio::thread_pool& workers);
     ~Connection() override;
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
@@ -98,11 +97,10 @@ class Connection : public StreamWriter {
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
-    commands::RpcApi& api_;
-    const commands::RpcApiTable& handler_table_;
+    RequestHandlerFactory& handler_factory_;
 
     //! The handler used to process the incoming request.
-    json_rpc::RequestHandler request_handler_;
+    RequestHandlerPtr handler_;
 
     const std::vector<std::string>& allowed_origins_;
     const std::optional<std::string> jwt_secret_;

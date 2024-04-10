@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "writer.hpp"
+#include "stream_writer.hpp"
 
 #include <iostream>
 

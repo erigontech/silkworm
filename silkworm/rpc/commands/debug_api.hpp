@@ -51,6 +51,7 @@ class DebugRpcApi {
 
     DebugRpcApi(const DebugRpcApi&) = delete;
     DebugRpcApi& operator=(const DebugRpcApi&) = delete;
+    DebugRpcApi(DebugRpcApi&&) = default;
 
   protected:
     Task<void> handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply);

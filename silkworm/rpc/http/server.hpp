@@ -30,6 +30,7 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
+#include <silkworm/rpc/transport/request_handler.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -41,15 +42,14 @@ class Server {
 
     // Construct the server to listen on the specified local TCP end-point
     Server(const std::string& end_point,
-           const std::string& api_spec,
+           RequestHandlerFactory&& handler_factory,
            boost::asio::io_context& io_context,
            boost::asio::thread_pool& workers,
            std::vector<std::string> allowed_origins,
            std::optional<std::string> jwt_secret,
            bool use_websocket,
            bool ws_compression,
-           bool http_compression,
-           InterfaceLogSettings ifc_log_settings = {});
+           bool http_compression);
 
     void start();
 
@@ -60,14 +60,8 @@ class Server {
 
     Task<void> run();
 
-    //! The JSON RPC API implementation
-    commands::RpcApi rpc_api_;
-
-    //! The repository of API request handlers
-    commands::RpcApiTable handler_table_;
-
-    //! The context used to perform asynchronous operations
-    boost::asio::io_context& io_context_;
+    //! The factory of RPC request handlers
+    RequestHandlerFactory handler_factory_;
 
     //! The acceptor used to listen for incoming TCP connections
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -84,11 +78,8 @@ class Server {
     //! Flag indicating if WebSocket protocol compression will be used
     bool ws_compression_;
 
-    //! Flag indicating if Http protocol compression will be used
+    //! Flag indicating if HTTP protocol compression will be used
     bool http_compression_;
-
-    //! The interface logging configuration
-    InterfaceLogSettings ifc_log_settings_;
 
     //! The configured workers
     boost::asio::thread_pool& workers_;

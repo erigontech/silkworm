@@ -42,6 +42,7 @@ class Web3RpcApi {
 
     Web3RpcApi(const Web3RpcApi&) = delete;
     Web3RpcApi& operator=(const Web3RpcApi&) = delete;
+    Web3RpcApi(Web3RpcApi&&) = default;
 
   protected:
     Task<void> handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply);

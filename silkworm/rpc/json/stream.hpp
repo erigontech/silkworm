@@ -32,7 +32,7 @@
 #include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/common/writer.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::json {
 

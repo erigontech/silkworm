@@ -30,10 +30,13 @@
 #include <boost/beast/websocket.hpp>
 
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
-#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
+#include <silkworm/rpc/transport/request_handler.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::ws {
+
+using TcpStream = boost::beast::websocket::stream<boost::beast::tcp_stream>;
 
 //! Represents a single connection from a client via websocket.
 class Connection : public StreamWriter {
@@ -42,9 +45,8 @@ class Connection : public StreamWriter {
     Connection& operator=(const Connection&) = delete;
 
     //! Construct a connection running within the given execution context.
-    Connection(boost::beast::websocket::stream<boost::beast::tcp_stream>&& stream,
-               commands::RpcApi& api,
-               const commands::RpcApiTable& handler_table,
+    Connection(TcpStream&& stream,
+               RequestHandlerFactory& handler_factory,
                bool compression = false);
 
     ~Connection() override;
@@ -64,11 +66,11 @@ class Connection : public StreamWriter {
     //! Perform an asynchronous write operation.
     Task<std::size_t> do_write(const std::string& content);
 
-    // websocket stream
-    boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
+    //! The WebSocket TCP stream
+    TcpStream stream_;
 
     //! The handler used to process the incoming request.
-    json_rpc::RequestHandler request_handler_;
+    RequestHandlerPtr handler_;
 
     //! enable compress flag
     bool compression_{false};

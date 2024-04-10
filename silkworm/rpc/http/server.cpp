@@ -83,7 +83,7 @@ Task<void> Server::run() {
         while (acceptor_.is_open()) {
             SILK_DEBUG << "Server::run accepting using io_context " << &this_executor << "...";
 
-            boost::asio::ip::tcp::socket socket{co_await ThisTask::executor};
+            boost::asio::ip::tcp::socket socket{this_executor};
             co_await acceptor_.async_accept(socket, boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILK_TRACE << "Server::run returning...";

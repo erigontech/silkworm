@@ -146,7 +146,7 @@ static silkworm::Bytes kChainConfigNoTerminalTotalDifficulty{*silkworm::from_hex
 static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
     "7b22436861696e4e616d65223a22676f65726c69222c"
     "22636861696e4964223a352c"
-    "22636f6e73656e737573223a22636c69717565222c" /* consensus=clique */
+    "22636f6e73656e737573223a22636c69717565222c"   /* consensus=clique */
     "22636c69717565223a7b22706572696f64223a31352c" /* clique = {period=15, */
     "2265706f6368223a33303030307d2c"
     "22686f6d657374656164426c6f636b223a302c"

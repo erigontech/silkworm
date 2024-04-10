@@ -169,6 +169,9 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
 
+    if (std::holds_alternative<protocol::NoPreMergeConfig>(config.rule_set_config) && config.terminal_total_difficulty != 0) {
+        return std::nullopt;
+    }
     return config;
 }
 

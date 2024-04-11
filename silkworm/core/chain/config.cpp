@@ -97,7 +97,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
 }
 
 [[nodiscard]] bool ChainConfig::check_pre_merge_config() const noexcept {
-    return (!std::holds_alternative<protocol::NoPreMergeConfig>(rule_set_config) || !terminal_total_difficulty);
+    return (!std::holds_alternative<protocol::NoPreMergeConfig>(rule_set_config) || !terminal_total_difficulty || to_string(*terminal_total_difficulty) == "0");
 }
 
 std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) noexcept {

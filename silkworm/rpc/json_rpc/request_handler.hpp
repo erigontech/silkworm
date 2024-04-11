@@ -43,7 +43,7 @@ class RequestHandler : public rpc::RequestHandler {
                    commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table,
                    InterfaceLogSettings ifc_log_settings = {});
-    virtual ~RequestHandler() = default;
+    ~RequestHandler() override = default;
 
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;

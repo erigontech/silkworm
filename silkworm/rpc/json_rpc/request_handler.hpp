@@ -31,12 +31,13 @@
 #include <silkworm/rpc/commands/rpc_api.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
-#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
+#include <silkworm/rpc/transport/request_handler.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::json_rpc {
 
-class RequestHandler {
+class RequestHandler : public rpc::RequestHandler {
   public:
     RequestHandler(StreamWriter* stream_writer,
                    commands::RpcApi& rpc_api,
@@ -47,7 +48,7 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<std::optional<std::string>> handle(const std::string& request);
+    Task<std::optional<std::string>> handle(const std::string& request) override;
 
   protected:
     Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response);

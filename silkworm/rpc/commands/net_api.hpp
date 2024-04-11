@@ -41,6 +41,7 @@ class NetRpcApi {
 
     NetRpcApi(const NetRpcApi&) = delete;
     NetRpcApi& operator=(const NetRpcApi&) = delete;
+    NetRpcApi(NetRpcApi&&) = default;
 
   protected:
     Task<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);

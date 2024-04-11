@@ -46,6 +46,7 @@ class ErigonRpcApi {
 
     ErigonRpcApi(const ErigonRpcApi&) = delete;
     ErigonRpcApi& operator=(const ErigonRpcApi&) = delete;
+    ErigonRpcApi(ErigonRpcApi&&) = default;
 
   protected:
     Task<void> handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply);

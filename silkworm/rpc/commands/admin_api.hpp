@@ -41,6 +41,7 @@ class AdminRpcApi {
 
     AdminRpcApi(const AdminRpcApi&) = delete;
     AdminRpcApi& operator=(const AdminRpcApi&) = delete;
+    AdminRpcApi(AdminRpcApi&&) = default;
 
   protected:
     Task<void> handle_admin_node_info(const nlohmann::json& request, nlohmann::json& reply);

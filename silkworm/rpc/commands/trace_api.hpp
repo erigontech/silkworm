@@ -52,6 +52,7 @@ class TraceRpcApi {
 
     TraceRpcApi(const TraceRpcApi&) = delete;
     TraceRpcApi& operator=(const TraceRpcApi&) = delete;
+    TraceRpcApi(TraceRpcApi&&) = default;
 
   protected:
     Task<void> handle_trace_call(const nlohmann::json& request, nlohmann::json& reply);

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <string>
 
 #include <silkworm/infra/concurrency/task.hpp>
@@ -41,6 +42,10 @@ namespace silkworm::rpc::http {
 //! Represents a single connection from a client.
 class Connection : public StreamWriter {
   public:
+    //! Run the asynchronous read loop for the specified connection.
+    //! \note This is co_spawn-friendly because the connection lifetime is tied to the coroutine frame
+    static Task<void> run_read_loop(std::shared_ptr<Connection> connection);
+
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
@@ -55,17 +60,15 @@ class Connection : public StreamWriter {
                boost::asio::thread_pool& workers);
     ~Connection() override;
 
-    boost::asio::ip::tcp::socket& socket() { return socket_; }
-
-    //! Start the asynchronous read loop for the connection.
-    Task<void> read_loop();
-
     /* StreamWriter Interface */
     Task<void> open_stream() override;
     Task<void> close_stream() override;
     Task<std::size_t> write(std::string_view content, bool last) override;
 
   private:
+    //! Start the asynchronous read loop for the connection
+    Task<void> read_loop();
+
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
     AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);

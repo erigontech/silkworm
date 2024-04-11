@@ -81,7 +81,7 @@ Task<void> Server::run() {
     auto this_executor = co_await ThisTask::executor;
     try {
         while (acceptor_.is_open()) {
-            SILK_DEBUG << "Server::run accepting using io_context " << &this_executor << "...";
+            SILK_TRACE << "Server::run accepting using executor " << &this_executor << "...";
 
             boost::asio::ip::tcp::socket socket{this_executor};
             co_await acceptor_.async_accept(socket, boost::asio::use_awaitable);
@@ -90,13 +90,11 @@ Task<void> Server::run() {
                 co_return;
             }
 
-            socket.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
-
-            SILK_TRACE << "Server::run starting connection for socket: " << &socket;
+            SILK_TRACE << "Server::run accepted connection from " << socket.remote_endpoint();
 
             auto new_connection = std::make_shared<Connection>(
                 std::move(socket), handler_factory_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, workers_);
-            boost::asio::co_spawn(this_executor, new_connection->read_loop(), boost::asio::detached);
+            boost::asio::co_spawn(this_executor, Connection::run_read_loop(new_connection), boost::asio::detached);
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::error::operation_aborted) {

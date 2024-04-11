@@ -43,6 +43,10 @@ static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
 static constexpr auto kGzipEncoding{"gzip"};
 
+Task<void> Connection::run_read_loop(std::shared_ptr<Connection> connection) {
+    co_await connection->read_loop();
+}
+
 Connection::Connection(boost::asio::ip::tcp::socket socket,
                        RequestHandlerFactory& handler_factory,
                        const std::vector<std::string>& allowed_origins,
@@ -60,10 +64,8 @@ Connection::Connection(boost::asio::ip::tcp::socket socket,
       ws_compression_{ws_compression},
       http_compression_{http_compression},
       workers_{workers} {
-    SILK_TRACE << "Connection::Connection socket " << &socket_ << " created";
-    if (http_compression_) {  // temporary to avoid warning with clang
-        SILK_TRACE << "Connection::Connection compression enabled";
-    }
+    socket_.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
+    SILK_TRACE << "Connection::Connection created for " << socket_.remote_endpoint();
 }
 
 Connection::~Connection() {
@@ -78,7 +80,11 @@ Task<void> Connection::read_loop() {
             continue_processing = co_await do_read();
         }
     } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "Connection::read_loop system-error: " << se.code();
+        if (se.code() == boost::beast::http::error::end_of_stream) {
+            SILK_TRACE << "Connection::read_loop received graceful close from " << socket_.remote_endpoint();
+        } else {
+            SILK_TRACE << "Connection::read_loop system_error: " << se.code();
+        }
     } catch (const std::exception& e) {
         SILK_ERROR << "Connection::read_loop exception: " << e.what();
     }

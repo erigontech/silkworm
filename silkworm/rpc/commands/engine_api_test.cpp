@@ -103,6 +103,9 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
 
 using testing::InvokeWithoutArgs;
 
+using EngineRpcApiTest = test::JsonApiTestBase<EngineRpcApi_ForTest>;
+
+#ifndef SILKWORM_SANITIZE
 static const silkworm::Bytes kBlockHash(32, '\0');
 static const silkworm::ChainConfig kChainConfig{
     .chain_id = 5,
@@ -131,9 +134,6 @@ static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
     .london_block = 5062605,
     .rule_set_config = protocol::CliqueConfig{}};
 
-using EngineRpcApiTest = test::JsonApiTestBase<EngineRpcApi_ForTest>;
-
-#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
 

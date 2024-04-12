@@ -106,6 +106,9 @@ struct ChainConfig {
     [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
     [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
 
+    //! \brief Check invariant on pre-Merge config validity
+    [[nodiscard]] bool valid_pre_merge_config() const noexcept;
+
     //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;
 
@@ -129,8 +132,6 @@ struct ChainConfig {
     static std::optional<ChainConfig> from_json(const nlohmann::json& json) noexcept;
 
     friend bool operator==(const ChainConfig&, const ChainConfig&) = default;
-
-    [[nodiscard]] bool check_pre_merge_config() const noexcept;
 };
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);

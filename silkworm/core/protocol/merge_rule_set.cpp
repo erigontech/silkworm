@@ -32,6 +32,9 @@ MergeRuleSet::MergeRuleSet(RuleSetPtr pre_merge_rule_set, const ChainConfig& cha
 
 ValidationResult MergeRuleSet::pre_validate_block_body(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
+        if (!pre_merge_rule_set_) {
+            return ValidationResult::kUnknownProtocolRuleSet;
+        }
         return pre_merge_rule_set_->pre_validate_block_body(block, state);
     }
     return RuleSet::pre_validate_block_body(block, state);
@@ -57,6 +60,9 @@ ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, 
         if (ttd_reached) {
             return ValidationResult::kPoWBlockAfterMerge;
         }
+        if (!pre_merge_rule_set_) {
+            return ValidationResult::kUnknownProtocolRuleSet;
+        }
         return pre_merge_rule_set_->validate_block_header(header, state, with_future_timestamp_check);
     }
 
@@ -75,7 +81,9 @@ ValidationResult MergeRuleSet::validate_difficulty_and_seal(const BlockHeader& h
 void MergeRuleSet::initialize(EVM& evm) {
     const BlockHeader& header{evm.block().header};
     if (header.difficulty != 0) {
-        pre_merge_rule_set_->initialize(evm);
+        if (pre_merge_rule_set_) {
+            pre_merge_rule_set_->initialize(evm);
+        }
         return;
     }
 
@@ -95,7 +103,9 @@ void MergeRuleSet::initialize(EVM& evm) {
 
 void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {
     if (block.header.difficulty != 0) {
-        pre_merge_rule_set_->finalize(state, block);
+        if (pre_merge_rule_set_) {
+            pre_merge_rule_set_->finalize(state, block);
+        }
         return;
     }
 
@@ -111,7 +121,7 @@ void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {
 }
 
 evmc::address MergeRuleSet::get_beneficiary(const BlockHeader& header) {
-    if (header.difficulty != 0) {
+    if (header.difficulty != 0 && pre_merge_rule_set_) {
         return pre_merge_rule_set_->get_beneficiary(header);
     }
     return RuleSet::get_beneficiary(header);
@@ -119,13 +129,16 @@ evmc::address MergeRuleSet::get_beneficiary(const BlockHeader& header) {
 
 ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
+        if (!pre_merge_rule_set_) {
+            return ValidationResult::kUnknownProtocolRuleSet;
+        }
         return pre_merge_rule_set_->validate_ommers(block, state);
     }
     return RuleSet::validate_ommers(block, state);
 }
 
 BlockReward MergeRuleSet::compute_reward(const Block& block) {
-    if (block.header.difficulty != 0) {
+    if (block.header.difficulty != 0 && pre_merge_rule_set_) {
         return pre_merge_rule_set_->compute_reward(block);
     }
     return RuleSet::compute_reward(block);

@@ -103,8 +103,8 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
 
 using testing::InvokeWithoutArgs;
 
-static silkworm::Bytes kBlockHash(32, '\0');
-const silkworm::ChainConfig kChainConfig{
+static const silkworm::Bytes kBlockHash(32, '\0');
+static const silkworm::ChainConfig kChainConfig{
     .chain_id = 5,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -118,7 +118,7 @@ const silkworm::ChainConfig kChainConfig{
     .terminal_total_difficulty = 10790000,
     .rule_set_config = protocol::CliqueConfig{}};
 
-const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
+static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
     .chain_id = 5,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

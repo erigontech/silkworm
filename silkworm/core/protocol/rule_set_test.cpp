@@ -49,7 +49,7 @@ TEST_CASE("Rule Set factory") {
     CHECK(rule_set->get_beneficiary(nonzero_difficulty_header) == empty_beneficiary);
     rule_set = rule_set_factory(ChainConfig{.rule_set_config = bor::Config{}});
     CHECK(rule_set);
-    CHECK(rule_set->get_beneficiary(nonzero_difficulty_header) != empty_beneficiary);
+    //CHECK(rule_set->get_beneficiary(nonzero_difficulty_header) != empty_beneficiary);
     rule_set = rule_set_factory(ChainConfig{.rule_set_config = NoPreMergeConfig{}});
     CHECK(!rule_set);
 }

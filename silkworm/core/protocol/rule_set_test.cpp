@@ -25,7 +25,7 @@ namespace silkworm::protocol {
 
 TEST_CASE("Rule Set factory") {
     RuleSetPtr rule_set;
-    BlockHeader nonzero_difficulty_header {
+    BlockHeader nonzero_difficulty_header{
         .difficulty = intx::from_string<intx::uint256>("1"),
         // We need at least kExtraSealSize bytes in extra_data for beneficiary computation in Bor
         .extra_data = Bytes(kExtraSealSize, 0x0),

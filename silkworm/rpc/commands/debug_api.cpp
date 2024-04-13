@@ -298,7 +298,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
             const std::string error_msg = "block not found ";
-            SILK_ERROR << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
+            SILK_TRACE << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
             reply = make_json_error(request, -32000, error_msg);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
@@ -308,7 +308,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         auto block_number = block.header.number;
         const auto& transactions = block.transactions;
 
-        SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
+        SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
 
         auto chain_config_ptr = co_await chain_storage->read_chain_config();
         ensure(chain_config_ptr.has_value(), "cannot read chain config");

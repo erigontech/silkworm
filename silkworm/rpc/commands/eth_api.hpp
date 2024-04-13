@@ -64,6 +64,7 @@ class EthereumRpcApi {
 
     EthereumRpcApi(const EthereumRpcApi&) = delete;
     EthereumRpcApi& operator=(const EthereumRpcApi&) = delete;
+    EthereumRpcApi(EthereumRpcApi&&) = default;
 
   protected:
     Task<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);

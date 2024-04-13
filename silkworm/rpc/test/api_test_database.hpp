@@ -39,11 +39,11 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
 #include <silkworm/rpc/test/context_test_base.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::test {
 

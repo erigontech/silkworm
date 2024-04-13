@@ -24,8 +24,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/commands/eth_api.hpp>
 #include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/common/writer.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
+#include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::json_rpc {
 

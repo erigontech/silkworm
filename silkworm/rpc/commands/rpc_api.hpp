@@ -70,6 +70,7 @@ class RpcApi : protected EthereumRpcApi,
 
     RpcApi(const RpcApi&) = delete;
     RpcApi& operator=(const RpcApi&) = delete;
+    RpcApi(RpcApi&&) = default;
 
     friend class RpcApiTable;
     friend class silkworm::rpc::json_rpc::RequestHandler;

@@ -852,8 +852,11 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             trace.error = "bad instruction";
+            trace.trace_result.reset();
+            break;
+        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
+            trace.error = "invalid opcode: INVALID";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
@@ -861,7 +864,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            trace.error = "bad jump destination";
+            trace.error = "invalid jump destination";
             trace.trace_result.reset();
             break;
         default:
@@ -928,8 +931,11 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             trace.error = "bad instruction";
+            trace.trace_result.reset();
+            break;
+        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
+            trace.error = "invalid opcode: INVALID";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
@@ -937,7 +943,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            trace.error = "bad jump destination";
+            trace.error = "invalid jump destination";
             trace.trace_result.reset();
             break;
         default:

@@ -39,6 +39,7 @@ class RpcApiTable {
 
     RpcApiTable(const RpcApiTable&) = delete;
     RpcApiTable& operator=(const RpcApiTable&) = delete;
+    RpcApiTable(RpcApiTable&&) = default;
 
     [[nodiscard]] std::optional<HandleMethod> find_json_handler(const std::string& method) const;
     [[nodiscard]] std::optional<HandleMethodGlaze> find_json_glaze_handler(const std::string& method) const;

@@ -1242,10 +1242,11 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
             }
         }
 
+        std::size_t index{0};
         for (auto& ommer_reward : block_rewards.ommers) {
             RewardAction action;
-            action.author = block_with_hash.block.header.beneficiary; /* to be fixed */
-            action.reward_type = "block";
+            action.author = block_with_hash.block.ommers[index].beneficiary;
+            action.reward_type = "uncle";
             action.value = ommer_reward;
 
             Trace trace;

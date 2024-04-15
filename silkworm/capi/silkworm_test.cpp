@@ -31,7 +31,6 @@
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm {
@@ -40,14 +39,7 @@ namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
-
-  private:
-    // TODO(canepat) remove test_util::StreamSwap objects when C API settings include log level
-    std::stringstream string_cout, string_cerr;
-    test_util::StreamSwap cout_swap{std::cout, string_cout};
-    test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
-
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::NONE};
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array
@@ -72,14 +64,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_libmdbx_version: OK", "[silkworm][capi
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty settings", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INVALID_PATH);
     CHECK(!handle);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, "");
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -88,7 +78,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "");
     SilkwormHandle handle{nullptr};
@@ -97,7 +86,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm]
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "v0.1.0");
     SilkwormHandle handle{nullptr};
@@ -106,7 +94,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[si
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -121,7 +108,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: not initialized", "[silkworm][ca
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -133,7 +119,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
 //! \note This is useful for tests that do *not* specifically play with silkworm_init/silkworm_fini or invalid handles
 struct SilkwormLibrary {
     explicit SilkwormLibrary(const std::filesystem::path& db_path) {
-        SilkwormSettings settings{};
+        SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::NONE};
         copy_path(settings.data_dir_path, db_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);

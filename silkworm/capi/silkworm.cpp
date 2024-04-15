@@ -44,24 +44,59 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
+#include "common.hpp"
 #include "instance.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
 
+//! Create Silkworm log level from its C representation
+static log::Level make_log_level(const SilkwormLogLevel c_log_level) {
+    log::Level verbosity{};
+    switch (c_log_level) {
+        case SilkwormLogLevel::NONE:
+            verbosity = log::Level::kNone;
+            break;
+        case SilkwormLogLevel::CRITICAL:
+            verbosity = log::Level::kCritical;
+            break;
+        case SilkwormLogLevel::ERROR:
+            verbosity = log::Level::kError;
+            break;
+        case SilkwormLogLevel::WARNING:
+            verbosity = log::Level::kWarning;
+            break;
+        case SilkwormLogLevel::INFO:
+            verbosity = log::Level::kInfo;
+            break;
+        case SilkwormLogLevel::DEBUG:
+            verbosity = log::Level::kDebug;
+            break;
+        case SilkwormLogLevel::TRACE:
+            verbosity = log::Level::kTrace;
+            break;
+    }
+    return verbosity;
+}
+
+//! Build log configuration matching Erigon log format w/ custom verbosity level
+static log::Settings make_log_settings(const SilkwormLogLevel c_log_level) {
+    return {
+        .log_utc = false,       // display local time
+        .log_timezone = false,  // no timezone ID
+        .log_trim = true,       // compact rendering (i.e. no whitespaces)
+        .log_verbosity = make_log_level(c_log_level),
+    };
+}
+
 static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
 }
 
-//! Log configuration matching Erigon log format
-static log::Settings kLogSettingsLikeErigon{
-    .log_utc = false,       // display local time
-    .log_timezone = false,  // no timezone ID
-    .log_trim = true,       // compact rendering (i.e. no whitespaces)
-};
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kAnalysisCacheSize{5'000};
 static constexpr size_t kMaxPrefetchedBlocks{10'240};
@@ -140,13 +175,6 @@ static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std
         std::to_string(Directory{db_path}.size())};
 }
 
-static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
-    // treat as char8_t so that filesystem::path assumes UTF-8 encoding of the input path
-    auto begin = reinterpret_cast<const char8_t*>(data_dir_path);
-    size_t len = strnlen(data_dir_path, SILKWORM_PATH_SIZE);
-    return std::filesystem::path{begin, begin + len};
-}
-
 //! Generate log arguments for execution progress at specified block
 static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_t current_block) {
     static auto float_to_string = [](float f) -> std::string {
@@ -212,7 +240,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     is_initialized = true;
 
-    log::init(kLogSettingsLikeErigon);
+    log::Settings log_settings{make_log_settings(settings->log_verbosity)};
+    log::init(log_settings);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>();
@@ -220,12 +249,15 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
-        {},  // context_pool_settings
-        make_path(settings->data_dir_path),
-        std::move(snapshot_repository),
-        {},  // rpcdaemon unique_ptr
-        {},  // sentry_thread unique_ptr
-        {},  // sentry_stop_signal
+        .log_settings = std::move(log_settings),
+        .context_pool_settings = {
+            .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : concurrency::kDefaultNumContexts,
+        },
+        .data_dir_path = make_path(settings->data_dir_path),
+        .snapshot_repository = std::move(snapshot_repository),
+        .rpcdaemon = {},
+        .sentry_thread = {},
+        .sentry_stop_signal = {},
     };
     return SILKWORM_OK;
 }
@@ -388,62 +420,6 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
 
 SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
     return ::mdbx::get_version().git.describe;
-}
-
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* env) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (handle->rpcdaemon) {
-        return SILKWORM_SERVICE_ALREADY_STARTED;
-    }
-
-    db::EnvUnmanaged unmanaged_env{env};
-
-    // TODO(canepat) add RPC options in API and convert them
-    rpc::DaemonSettings settings{
-        .engine_end_point = "",  // disable end-point for Engine RPC API
-        .skip_protocol_check = true,
-        .erigon_json_rpc_compatibility = true,
-    };
-
-    // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
-
-    // Check protocol version compatibility with Core Services
-    if (!settings.skip_protocol_check) {
-        SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
-
-        const auto checklist = handle->rpcdaemon->run_checklist();
-        for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILK_INFO << protocol_check.result;
-        }
-        checklist.success_or_throw();
-    } else {
-        SILK_TRACE << "[Silkworm RPC] Skip protocol version compatibility check with core services";
-    }
-
-    SILK_INFO << "[Silkworm RPC] Starting ETH API at " << settings.eth_end_point;
-    handle->rpcdaemon->start();
-
-    return SILKWORM_OK;
-}
-
-SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (!handle->rpcdaemon) {
-        return SILKWORM_OK;
-    }
-
-    handle->rpcdaemon->stop();
-    SILK_INFO << "[Silkworm RPC] Exiting...";
-    handle->rpcdaemon->join();
-    SILK_INFO << "[Silkworm RPC] Stopped";
-    handle->rpcdaemon.reset();
-
-    return SILKWORM_OK;
 }
 
 class BlockProvider {

@@ -41,11 +41,19 @@
 
 namespace silkworm::rpc {
 
+enum PreCheckErrorCode {
+    EC_INTRINSIC_GAS_TOO_LOW,
+    EC_INSUFFICIENT_FUNDS,
+    EC_FEE_CAP_LESS_THAN_BLOCK_FEE_PER_GAS,
+    EC_TIP_HIGHER_THAN_FEE_CAP
+};
+
 struct ExecutionResult {
     std::optional<int64_t> error_code;
     uint64_t gas_left{0};
     Bytes data;
-    std::optional<std::string> pre_check_error;
+    std::optional<std::string> pre_check_error{std::nullopt};
+    std::optional<PreCheckErrorCode> pre_check_error_code{std::nullopt};
 
     bool success() const {
         return ((error_code == std::nullopt || *error_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
@@ -119,8 +127,12 @@ class EVMExecutor {
     const IntraBlockState& get_ibs_state() { return ibs_state_; }
 
   private:
-    static std::optional<std::string> pre_check(const EVM& evm, const silkworm::Transaction& txn,
-                                                const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
+    struct PreCheckResult {
+        std::string pre_check_error;
+        PreCheckErrorCode pre_check_error_code;
+    };
+    static std::optional<PreCheckResult> pre_check(const EVM& evm, const silkworm::Transaction& txn,
+                                                   const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
     uint64_t refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
 
     const silkworm::ChainConfig& config_;

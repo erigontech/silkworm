@@ -82,11 +82,11 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     auto this_executor = co_await boost::asio::this_coro::executor;
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
         auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
-        EVMExecutor executor{config_, workers_, state};
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
+            EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
 
@@ -102,6 +102,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         }
 
         if (hi == cap) {
+            EVMExecutor executor{config_, workers_, state};
             transaction.gas_limit = hi;
             result = try_execution(executor, block, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");

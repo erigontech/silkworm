@@ -23,8 +23,8 @@
 #include <boost/asio/cancellation_signal.hpp>
 
 #include <silkworm/db/snapshots/repository.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 struct SilkwormInstance {

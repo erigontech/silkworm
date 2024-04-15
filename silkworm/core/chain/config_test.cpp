@@ -170,14 +170,14 @@ TEST_CASE("JSON serialization") {
             "istanbulBlock":0,
             "berlinBlock":0,
             "londonBlock":0,
-            "terminalTotalDifficulty":"39387012740608862000000",
-            "mergeNetsplitBlock":10000
+            "mergeNetsplitBlock":10000,
+            "terminalTotalDifficulty":"0"
         })");
 
     const std::optional<ChainConfig> config{ChainConfig::from_json(merge_test_json)};
 
     REQUIRE(config);
-    CHECK(config->terminal_total_difficulty == intx::from_string<intx::uint256>("39387012740608862000000"));
+    CHECK(config->terminal_total_difficulty == intx::from_string<intx::uint256>("0"));
     CHECK(config->merge_netsplit_block == 10000);
 
     CHECK(config->to_json() == merge_test_json);

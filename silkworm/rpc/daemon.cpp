@@ -130,6 +130,13 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());
+
+            // At startup check that chain configuration is valid
+            db::ROTxnManaged ro_txn{*chaindata_env};
+            db::DataModel data_access{ro_txn};
+            if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
+                throw std::runtime_error{"invalid chain configuration"};
+            }
         }
 
         // Create the one-and-only Silkrpc daemon

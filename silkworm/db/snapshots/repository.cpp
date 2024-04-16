@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/header_snapshot.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
@@ -120,13 +121,15 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     return missing_ranges;
 }
 
-bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
+bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
     for (const auto& [_, header_snapshot] : header_segments_) {
         SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot->fs_path().string();
-        const auto keep_going = header_snapshot->for_each_header([fn](const auto* header) {
-            return fn(header);
-        });
-        if (!keep_going) return false;
+
+        HeaderSnapshotReader reader{*header_snapshot};
+        for (auto& header : reader) {
+            const bool keep_going = fn(&header);
+            if (!keep_going) return false;
+        }
     }
     return true;
 }

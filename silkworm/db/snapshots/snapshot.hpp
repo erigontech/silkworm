@@ -57,8 +57,6 @@ class HeaderSnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
 
-    using Walker = std::function<bool(const BlockHeader* header)>;
-    bool for_each_header(const Walker& walker);
     [[nodiscard]] std::optional<BlockHeader> next_header(uint64_t offset, std::optional<Hash> hash = {}) const;
 
     [[nodiscard]] std::optional<BlockHeader> header_by_hash(const Hash& block_hash) const;

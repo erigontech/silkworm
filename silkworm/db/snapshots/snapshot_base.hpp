@@ -116,4 +116,55 @@ class Snapshot {
     seg::Decompressor decoder_;
 };
 
+template <class TWordSerializer>
+class SnapshotReader {
+  public:
+    class Iterator {
+      public:
+        using value_type = decltype(TWordSerializer::value);
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = void;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        explicit Iterator(Snapshot::Iterator it)
+            : it_(std::move(it)) {}
+
+        reference operator*() { return value(); }
+        pointer operator->() { return &value(); }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++() {
+            ++it_;
+            return *this;
+        }
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
+
+      private:
+        value_type& value() {
+            SnapshotWordSerializer& base_serializer = **it_;
+            // dynamic_cast is safe because TWordSerializer was used when creating the Iterator
+            auto& s = dynamic_cast<TWordSerializer&>(base_serializer);
+            return s.value;
+        }
+
+        Snapshot::Iterator it_;
+    };
+
+    SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
+
+    Iterator begin() const {
+        return Iterator{snapshot_.begin(std::make_shared<TWordSerializer>())};
+    }
+
+    Iterator end() const {
+        return Iterator{snapshot_.end()};
+    }
+
+  private:
+    const Snapshot& snapshot_;
+};
+
 }  // namespace silkworm::snapshots

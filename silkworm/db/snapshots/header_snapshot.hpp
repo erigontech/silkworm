@@ -19,6 +19,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
 
+#include "snapshot_base.hpp"
 #include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
@@ -39,5 +40,7 @@ struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
         check_sanity_of_header_with_metadata(value, block_from, block_to);
     }
 };
+
+struct HeaderSnapshotReader : public SnapshotReader<HeaderSnapshotWordSerializer> {};
 
 }  // namespace silkworm::snapshots

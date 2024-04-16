@@ -81,7 +81,8 @@ class SnapshotRepository {
     void reopen_folder();
     void close();
 
-    bool for_each_header(const HeaderSnapshot::Walker& fn);
+    using HeaderWalker = std::function<bool(const BlockHeader* header)>;
+    bool for_each_header(const HeaderWalker& fn);
     bool for_each_body(const BodySnapshot::Walker& fn);
 
     [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }

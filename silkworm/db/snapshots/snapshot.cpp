@@ -39,15 +39,6 @@ HeaderSnapshot::~HeaderSnapshot() {
     close();
 }
 
-bool HeaderSnapshot::for_each_header(const Walker& walker) {
-    for (auto it = begin(std::make_shared<HeaderSnapshotWordSerializer>()); it != end(); ++it) {
-        auto s = dynamic_cast<HeaderSnapshotWordSerializer&>(**it);
-        const bool go_on = walker(&s.value);
-        if (!go_on) return false;
-    }
-    return true;
-}
-
 std::optional<BlockHeader> HeaderSnapshot::next_header(uint64_t offset, std::optional<Hash> hash) const {
     HeaderSnapshotWordSerializer serializer;
 

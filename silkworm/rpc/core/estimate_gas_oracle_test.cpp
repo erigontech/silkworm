@@ -365,7 +365,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with too high value, exception") {
-        ExecutionResult expect_result_fail{.pre_check_error = "intrinsic gas", .pre_check_error_code = EC_INTRINSIC_GAS_TOO_LOW};
+        ExecutionResult expect_result_fail{.pre_check_error = "intrinsic gas", .pre_check_error_code = kIntrinsicGasTooLow};
         call.value = intx::uint256{2'000'000'000};
 
         try {
@@ -383,7 +383,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call fail, try exception") {
-        ExecutionResult expect_result_fail_pre_check{.error_code = 4, .pre_check_error = "intrinsic gas", .pre_check_error_code = EC_INTRINSIC_GAS_TOO_LOW};
+        ExecutionResult expect_result_fail_pre_check{.error_code = 4, .pre_check_error = "intrinsic gas", .pre_check_error_code = kIntrinsicGasTooLow};
         ExecutionResult expect_result_fail{.error_code = 4};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
@@ -407,7 +407,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call fail, try exception with data") {
-        ExecutionResult expect_result_fail_pre_check{.error_code = 4, .pre_check_error = "intrinsic gas", .pre_check_error_code = EC_INTRINSIC_GAS_TOO_LOW};
+        ExecutionResult expect_result_fail_pre_check{.error_code = 4, .pre_check_error = "intrinsic gas", .pre_check_error_code = kIntrinsicGasTooLow};
         auto data = *silkworm::from_hex("2ac3c1d3e24b45c6c310534bc2dd84b5ed576335");
         ExecutionResult expect_result_fail{.error_code = 4, .data = data};
         call.gas = kTxGas * 2;

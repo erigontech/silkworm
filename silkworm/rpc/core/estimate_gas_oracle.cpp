@@ -94,7 +94,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
                 hi = mid;
             } else {
                 lo = mid;
-                if (result.pre_check_error_code != std::nullopt && *(result.pre_check_error_code) != PreCheckErrorCode::EC_INTRINSIC_GAS_TOO_LOW) {
+                if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
                     break;
                 }
             }
@@ -105,7 +105,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             transaction.gas_limit = hi;
             result = try_execution(executor, block, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
-        } else if (result.pre_check_error_code == std::nullopt || *(result.pre_check_error_code) == PreCheckErrorCode::EC_INTRINSIC_GAS_TOO_LOW) {
+        } else if (!result.pre_check_error_code || result.pre_check_error_code == PreCheckErrorCode::kIntrinsicGasTooLow) {
             result.pre_check_error = std::nullopt;
             result.error_code = evmc_status_code::EVMC_SUCCESS;
         }

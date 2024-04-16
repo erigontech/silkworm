@@ -192,7 +192,7 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
                 const std::string from = address_to_hex(*txn.sender());
                 std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
-                EVMExecutor::PreCheckResult res{error, PreCheckErrorCode::EC_FEE_CAP_LESS_THAN_BLOCK_FEE_PER_GAS};
+                EVMExecutor::PreCheckResult res{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
                 return res;
             }
 
@@ -200,7 +200,7 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
                 std::string from = address_to_hex(*txn.sender());
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
-                EVMExecutor::PreCheckResult res{error, PreCheckErrorCode::EC_TIP_HIGHER_THAN_FEE_CAP};
+                EVMExecutor::PreCheckResult res{error, PreCheckErrorCode::kTipHigherThanFeeCap};
                 return res;
             }
         }
@@ -210,8 +210,7 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
         std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         EVMExecutor::PreCheckResult res{
             error,
-            PreCheckErrorCode::EC_INTRINSIC_GAS_TOO_LOW,
-        };
+            PreCheckErrorCode::kIntrinsicGasTooLow};
         return res;
     }
     return std::nullopt;
@@ -266,7 +265,7 @@ ExecutionResult EVMExecutor::call(
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());
             std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
-            return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::EC_INSUFFICIENT_FUNDS};
+            return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
         }
     } else {
         ibs_state_.subtract_from_balance(*txn.sender(), want);

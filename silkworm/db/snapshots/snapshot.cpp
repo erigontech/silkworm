@@ -26,6 +26,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "header_snapshot.hpp"
+
 namespace silkworm::snapshots {
 
 //! Convert the specified decoding result into its string representation
@@ -112,29 +114,31 @@ HeaderSnapshot::~HeaderSnapshot() {
 }
 
 bool HeaderSnapshot::for_each_header(const Walker& walker) {
-    return for_each_item([this, walker](const WordItem& item) -> bool {
-        BlockHeader header;
-        const auto decode_ok = decode_header(item, header);
-        if (!decode_ok) {
-            return false;
-        }
-        return walker(&header);
+    HeaderSnapshotWordSerializer serializer;
+
+    return for_each_item([this, walker, &serializer](const WordItem& item) -> bool {
+        serializer.decode_word(item.value);
+        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+        return walker(&serializer.header);
     });
 }
 
 std::optional<BlockHeader> HeaderSnapshot::next_header(uint64_t offset, std::optional<Hash> hash) const {
+    HeaderSnapshotWordSerializer serializer;
+
     // Get the next data item at specified offset, optionally checking if it starts with block hash first byte
     const auto item = hash ? next_item(offset, {hash->bytes, 1}) : next_item(offset);
-    std::optional<BlockHeader> header;
     if (!item) {
-        return header;
+        return std::nullopt;
     }
-    header = BlockHeader{};
-    const auto decode_ok = decode_header(*item, *header);
-    if (!decode_ok) {
-        return {};
+
+    try {
+        serializer.decode_word(item->value);
+    } catch (...) {
+        return std::nullopt;
     }
-    return header;
+    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return serializer.header;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash) const {
@@ -172,23 +176,6 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
     // Finally, read the next header at specified offset
     return next_header(block_header_offset);
-}
-
-bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& header) const {
-    // First byte in data is first byte of header hash.
-    ensure(!item.value.empty(), [&]() { return "HeaderSnapshot: hash first byte missing at offset=" + std::to_string(item.offset); });
-
-    // Skip hash first byte to obtain encoded header RLP data
-    ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
-    const auto decode_result = rlp::decode(encoded_header, header);
-    if (!decode_result) {
-        SILK_TRACE << "decode_header offset: " << item.offset << " error: " << magic_enum::enum_name(decode_result.error());
-        return false;
-    }
-
-    ensure(header.number >= path_.block_from(),
-           [&]() { return "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(path_.block_from()); });
-    return true;
 }
 
 void HeaderSnapshot::reopen_index() {

@@ -120,8 +120,6 @@ class HeaderSnapshot : public Snapshot {
     void reopen_index() override;
 
   protected:
-    bool decode_header(const Snapshot::WordItem& item, BlockHeader& header) const;
-
     void close_index() override;
 
   private:

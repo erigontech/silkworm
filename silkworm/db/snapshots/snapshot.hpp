@@ -183,7 +183,6 @@ class TransactionSnapshot : public Snapshot {
 
   protected:
     static std::pair<ByteView, ByteView> slice_tx_data(const WordItem& item);
-    static ByteView slice_tx_payload(ByteView tx_rlp);
     static DecodingResult decode_txn(const WordItem& item, Transaction& tx);
 
     using Walker = std::function<bool(uint64_t i, ByteView senders_data, ByteView txn_rlp)>;

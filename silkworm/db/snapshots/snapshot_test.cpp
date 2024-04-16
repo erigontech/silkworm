@@ -31,6 +31,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
+#include "txn_hash.hpp"
+
 namespace silkworm::snapshots {
 
 using namespace std::chrono_literals;
@@ -65,7 +67,6 @@ class TransactionSnapshot_ForTest : public TransactionSnapshot {
   public:
     using TransactionSnapshot::decode_txn;
     using TransactionSnapshot::slice_tx_data;
-    using TransactionSnapshot::slice_tx_payload;
 };
 
 template <class Rep, class Period>
@@ -333,7 +334,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     }
 }
 
-TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]") {
+TEST_CASE("slice_tx_payload", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     const std::vector<AccessListEntry> access_list{
         {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
@@ -363,7 +364,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
         Bytes encoded{};
         rlp::encode(encoded, txn);
         Bytes decoded{};
-        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK_NOTHROW(decoded = slice_tx_payload(encoded));
         CHECK(decoded == encoded);  // no envelope for legacy tx
     }
     SECTION("TransactionType: kAccessList") {
@@ -384,7 +385,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
         Bytes encoded{};
         rlp::encode(encoded, txn);
         Bytes decoded{};
-        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK_NOTHROW(decoded = slice_tx_payload(encoded));
         CHECK(decoded == encoded.substr(2));  // 2-byte envelope for this access-list tx
     }
     SECTION("TransactionType: kDynamicFee") {
@@ -405,7 +406,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
         Bytes encoded{};
         rlp::encode(encoded, txn);
         Bytes decoded{};
-        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK_NOTHROW(decoded = slice_tx_payload(encoded));
         CHECK(decoded == encoded.substr(2));  // 2-byte envelope for this dynamic-fee tx
     }
     SECTION("TransactionType: kBlob") {
@@ -430,7 +431,7 @@ TEST_CASE("TransactionSnapshot::slice_tx_payload", "[silkworm][node][snapshot]")
         Bytes encoded{};
         rlp::encode(encoded, txn);
         Bytes decoded{};
-        CHECK_NOTHROW(decoded = TransactionSnapshot_ForTest::slice_tx_payload(encoded));
+        CHECK_NOTHROW(decoded = slice_tx_payload(encoded));
         CHECK(decoded == encoded.substr(3));  // 3-byte envelope for this blob tx
     }
 }

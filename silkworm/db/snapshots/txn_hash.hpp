@@ -23,6 +23,8 @@
 
 namespace silkworm::snapshots {
 
+ByteView slice_tx_payload(ByteView tx_rlp);
+
 Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
 
 }  // namespace silkworm::snapshots

@@ -28,6 +28,7 @@
 
 #include "body_snapshot.hpp"
 #include "header_snapshot.hpp"
+#include "txn_hash.hpp"
 
 namespace silkworm::snapshots {
 
@@ -432,21 +433,6 @@ std::pair<ByteView, ByteView> TransactionSnapshot::slice_tx_data(const WordItem&
                << " senders_data: " << to_hex(senders_data) << " tx_rlp: " << to_hex(tx_rlp);
 
     return {senders_data, tx_rlp};
-}
-
-ByteView TransactionSnapshot::slice_tx_payload(ByteView tx_rlp) {
-    ByteView tx_envelope{tx_rlp};
-
-    rlp::Header tx_header;
-    TransactionType tx_type{};
-    const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope, tx_header, tx_type);
-    ensure(envelope_result.has_value(),
-           [&]() { return "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " error: " + to_string(envelope_result); });
-
-    const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_rlp.length() - tx_header.payload_length);
-    ByteView tx_payload{tx_rlp.substr(tx_payload_offset)};
-
-    return tx_payload;
 }
 
 //! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes

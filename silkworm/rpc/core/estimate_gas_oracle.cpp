@@ -89,25 +89,25 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
-            std::cout << "try: " << mid << "\n";
+            SILK_LOG << "try: " << mid;
             result = try_execution(executor, block, transaction);
             if (result.success()) {
                 hi = mid;
-                std::cout << "OK: " << "\n";
+                SILK_LOG << "OK!";
             } else {
                 lo = mid;
                 if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
-                    std::cout << "break\n";
+                    SILK_LOG << "break";
                     break;
                 }
-                std::cout << "fail: " << result.error_message() << "\n";
+                SILK_LOG << "Fail!: " << result.error_message() << "\n";
             }
         }
 
         if (hi == cap) {
             EVMExecutor executor{config_, workers_, state};
             transaction.gas_limit = hi;
-            std::cout << "try2: " << hi << "\n";
+            SILK_LOG << "try2: " << hi;
             result = try_execution(executor, block, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
         } else if (result.pre_check_error_code == std::nullopt || (*result.pre_check_error_code) == PreCheckErrorCode::kIntrinsicGasTooLow) {
@@ -123,7 +123,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     if (!exec_result.success()) {
         throw_exception(exec_result, cap);
     }
-    std::cout << "return hi: " << hi << "\n";
+    SILK_LOG << "return: " << hi;
     co_return hi;
 }
 

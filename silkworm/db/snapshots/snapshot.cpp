@@ -42,7 +42,7 @@ HeaderSnapshot::~HeaderSnapshot() {
 bool HeaderSnapshot::for_each_header(const Walker& walker) {
     for (auto it = begin(std::make_shared<HeaderSnapshotWordSerializer>()); it != end(); ++it) {
         auto s = dynamic_cast<HeaderSnapshotWordSerializer&>(**it);
-        const bool go_on = walker(&s.header);
+        const bool go_on = walker(&s.value);
         if (!go_on) return false;
     }
     return true;
@@ -63,7 +63,7 @@ std::optional<BlockHeader> HeaderSnapshot::next_header(uint64_t offset, std::opt
         return std::nullopt;
     }
     serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return serializer.header;
+    return serializer.value;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash) const {
@@ -141,7 +141,7 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
         serializer.decode_word(item.value);
         serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
         const BlockNum number = path_.block_from() + item.position;
-        return walker(number, &serializer.body);
+        return walker(number, &serializer.value);
     });
 }
 
@@ -181,9 +181,9 @@ std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
     }
     serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
 
-    ensure(serializer.body.base_txn_id >= idx_body_number_->base_data_id(),
-           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(serializer.body.base_txn_id); });
-    return serializer.body;
+    ensure(serializer.value.base_txn_id >= idx_body_number_->base_data_id(),
+           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(serializer.value.base_txn_id); });
+    return serializer.value;
 }
 
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
@@ -246,7 +246,7 @@ TransactionSnapshot::~TransactionSnapshot() {
         return std::nullopt;
     }
     serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return serializer.transaction;
+    return serializer.value;
 }
 
 std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash) const {
@@ -312,7 +312,7 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
     for_each_txn(base_txn_id, txn_count, [&transactions, &serializer, this](ByteView word) -> bool {
         serializer.decode_word(word);
         serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        transactions.push_back(std::move(serializer.transaction));
+        transactions.push_back(std::move(serializer.value));
         return true;
     });
 
@@ -328,7 +328,7 @@ std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t base_txn_id, uint
     for_each_txn(base_txn_id, txn_count, [&rlp_txs, &serializer, this](ByteView word) -> bool {
         serializer.decode_word(word);
         serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        rlp_txs.emplace_back(serializer.tx_payload);
+        rlp_txs.emplace_back(serializer.value);
         return true;
     });
 

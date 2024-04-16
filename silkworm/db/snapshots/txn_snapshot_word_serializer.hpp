@@ -42,29 +42,23 @@ Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
 void decode_word_into_tx(ByteView word, Transaction& tx);
 
 struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
-    Transaction transaction;
+    Transaction value;
 
     ~TransactionSnapshotWordSerializer() override = default;
 
     void decode_word(ByteView word) override {
-        decode_word_into_tx(word, transaction);
-    }
-
-    void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) override {
+        decode_word_into_tx(word, value);
     }
 };
 
 struct TransactionSnapshotWordPayloadRlpSerializer : public SnapshotWordSerializer {
-    ByteView tx_payload;
+    ByteView value;
 
     ~TransactionSnapshotWordPayloadRlpSerializer() override = default;
 
     void decode_word(ByteView word) override {
         auto data = slice_tx_data(word);
-        tx_payload = slice_tx_payload(data.tx_rlp);
-    }
-
-    void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) override {
+        value = slice_tx_payload(data.tx_rlp);
     }
 };
 

@@ -27,16 +27,16 @@ void decode_word_into_header(ByteView word, BlockHeader& header);
 void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNum block_from, BlockNum block_to);
 
 struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
-    BlockHeader header;
+    BlockHeader value;
 
     ~HeaderSnapshotWordSerializer() override = default;
 
     void decode_word(ByteView word) override {
-        decode_word_into_header(word, header);
+        decode_word_into_header(word, value);
     }
 
     void check_sanity_with_metadata(BlockNum block_from, BlockNum block_to) override {
-        check_sanity_of_header_with_metadata(header, block_from, block_to);
+        check_sanity_of_header_with_metadata(value, block_from, block_to);
     }
 };
 

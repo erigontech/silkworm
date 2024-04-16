@@ -27,15 +27,12 @@ namespace silkworm::snapshots {
 void decode_word_into_body(ByteView word, BlockBodyForStorage& body);
 
 struct BodySnapshotWordSerializer : public SnapshotWordSerializer {
-    BlockBodyForStorage body;
+    BlockBodyForStorage value;
 
     ~BodySnapshotWordSerializer() override = default;
 
     void decode_word(ByteView word) override {
-        decode_word_into_body(word, body);
-    }
-
-    void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) override {
+        decode_word_into_body(word, value);
     }
 };
 

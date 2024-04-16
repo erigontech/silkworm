@@ -99,8 +99,6 @@ class Snapshot {
             value.reserve(kPageSize);
         }
     };
-    using WordItemFunc = std::function<bool(WordItem&)>;
-    bool for_each_item(const WordItemFunc& fn);
 
     [[nodiscard]] std::optional<WordItem> next_item(uint64_t offset, ByteView prefix = {}) const;
 

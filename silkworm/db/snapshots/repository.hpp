@@ -83,7 +83,9 @@ class SnapshotRepository {
 
     using HeaderWalker = std::function<bool(const BlockHeader* header)>;
     bool for_each_header(const HeaderWalker& fn);
-    bool for_each_body(const BodySnapshot::Walker& fn);
+
+    using BodyWalker = std::function<bool(BlockNum number, const StoredBlockBody* body)>;
+    bool for_each_body(const BodyWalker& fn);
 
     [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }
     [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }

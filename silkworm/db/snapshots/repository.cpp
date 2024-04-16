@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/body_snapshot.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/header_snapshot.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
@@ -134,13 +135,17 @@ bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
     return true;
 }
 
-bool SnapshotRepository::for_each_body(const BodySnapshot::Walker& fn) {
+bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
     for (const auto& [_, body_snapshot] : body_segments_) {
         SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot->fs_path().string();
-        const auto keep_going = body_snapshot->for_each_body([fn](BlockNum number, const auto* body) {
-            return fn(number, body);
-        });
-        if (!keep_going) return false;
+
+        BlockNum number = body_snapshot->path().block_from();
+        BodySnapshotReader reader{*body_snapshot};
+        for (auto& body : reader) {
+            const bool keep_going = fn(number, &body);
+            if (!keep_going) return false;
+            number++;
+        }
     }
     return true;
 }

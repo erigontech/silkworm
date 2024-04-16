@@ -85,8 +85,6 @@ class BodySnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
-    using Walker = std::function<bool(BlockNum number, const StoredBlockBody* body)>;
-    bool for_each_body(const Walker& walker);
     [[nodiscard]] std::optional<StoredBlockBody> next_body(uint64_t offset) const;
 
     std::pair<uint64_t, uint64_t> compute_txs_amount();

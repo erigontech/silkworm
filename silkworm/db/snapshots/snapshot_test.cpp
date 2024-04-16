@@ -107,17 +107,18 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
-    seg::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
     tmp_snapshot.reopen_segment();
     CHECK(!tmp_snapshot.empty());
     CHECK(tmp_snapshot.item_count() == 1);
-    tmp_snapshot.for_each_item([&](const auto& word_item) {
-        CHECK(std::string{word_item.value.cbegin(), word_item.value.cend()} == "hello, world");
-        CHECK(word_item.position == 0);
-        CHECK(word_item.offset == 0);
-        return true;
-    });
+
+    seg::Decompressor decoder{hello_world_snapshot_file.path()};
+    decoder.open();
+    auto it = decoder.begin();
+    auto& word = *it;
+    CHECK(std::string{word.cbegin(), word.cend()} == "hello, world");
+    CHECK(it.current_word_offset() == 0);
+    CHECK(++it == decoder.end());
 }
 
 TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {

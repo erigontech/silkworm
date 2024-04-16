@@ -125,31 +125,21 @@ BodySnapshot::~BodySnapshot() {
     close();
 }
 
-bool BodySnapshot::for_each_body(const Walker& walker) {
-    BodySnapshotWordSerializer serializer;
-
-    return for_each_item([&](const WordItem& item) -> bool {
-        serializer.decode_word(item.value);
-        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        const BlockNum number = path_.block_from() + item.position;
-        return walker(number, &serializer.value);
-    });
-}
-
 std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
     uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
+    BlockNum number = path_.block_from();
 
-    const bool read_ok = for_each_body([&](BlockNum number, const StoredBlockBody* body) {
+    BodySnapshotReader reader{*this};
+    for (auto& body : reader) {
         if (number == path_.block_from()) {
-            first_tx_id = body->base_txn_id;
+            first_tx_id = body.base_txn_id;
         }
         if (number == path_.block_to() - 1) {
-            last_tx_id = body->base_txn_id;
-            last_txs_amount = body->txn_count;
+            last_tx_id = body.base_txn_id;
+            last_txs_amount = body.txn_count;
         }
-        return true;
-    });
-    if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.path().string()};
+        number++;
+    }
     if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.path().string()};
 
     SILK_TRACE << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;

@@ -71,21 +71,6 @@ Snapshot::Iterator Snapshot::end() const {
     return Snapshot::Iterator{decoder_.end(), {}, path()};
 }
 
-bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
-    WordItem item;
-    for (auto it = decoder_.begin(); it != decoder_.end(); ++it, ++item.position) {
-        item.value = std::move(*it);
-        item.offset = it.current_word_offset();
-        SILK_TRACE << "Snapshot::for_each_item item: offset=" << item.offset
-                   << " position=" << item.position
-                   << " value=" << to_hex(item.value);
-
-        const bool result = fn(item);
-        if (!result) return false;
-    }
-    return true;
-}
-
 std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView prefix) const {
     SILK_TRACE << "Snapshot::next_item offset: " << offset;
     auto data_iterator = decoder_.make_iterator();

@@ -20,6 +20,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 
+#include "snapshot_reader.hpp"
 #include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
@@ -35,5 +36,7 @@ struct BodySnapshotWordSerializer : public SnapshotWordSerializer {
         decode_word_into_body(word, value);
     }
 };
+
+struct BodySnapshotReader : public SnapshotReader<BodySnapshotWordSerializer> {};
 
 }  // namespace silkworm::snapshots

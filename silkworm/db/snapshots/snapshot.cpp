@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "body_snapshot.hpp"
 #include "header_snapshot.hpp"
 
 namespace silkworm::snapshots {
@@ -210,11 +211,13 @@ BodySnapshot::~BodySnapshot() {
 }
 
 bool BodySnapshot::for_each_body(const Walker& walker) {
+    BodySnapshotWordSerializer serializer;
+
     return for_each_item([&](const WordItem& item) -> bool {
-        BlockBodyForStorage body;
-        success_or_throw(decode_body(item, body));
+        serializer.decode_word(item.value);
+        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
         const BlockNum number = path_.block_from() + item.position;
-        return walker(number, &body);
+        return walker(number, &serializer.body);
     });
 }
 
@@ -240,19 +243,23 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
 }
 
 std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
+    BodySnapshotWordSerializer serializer;
+
     const auto item = next_item(offset);
-    std::optional<StoredBlockBody> stored_body;
     if (!item) {
-        return stored_body;
+        return std::nullopt;
     }
-    stored_body = StoredBlockBody{};
-    const auto decode_ok = decode_body(*item, *stored_body);
-    if (!decode_ok) {
-        return {};
+
+    try {
+        serializer.decode_word(item->value);
+    } catch (...) {
+        return std::nullopt;
     }
-    ensure(stored_body->base_txn_id >= idx_body_number_->base_data_id(),
-           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(stored_body->base_txn_id); });
-    return stored_body;
+    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+
+    ensure(serializer.body.base_txn_id >= idx_body_number_->base_data_id(),
+           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(serializer.body.base_txn_id); });
+    return serializer.body;
 }
 
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
@@ -266,14 +273,6 @@ std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_heigh
     const auto block_body_offset = idx_body_number_->ordinal_lookup(block_body_position);
     // Finally, read the next body at specified offset
     return next_body(block_body_offset);
-}
-
-DecodingResult BodySnapshot::decode_body(const Snapshot::WordItem& item, StoredBlockBody& body) {
-    ByteView body_rlp{item.value.data(), item.value.length()};
-    SILK_TRACE << "decode_body offset: " << item.offset << " body_rlp: " << to_hex(body_rlp);
-    const auto result = decode_stored_block_body(body_rlp, body);
-    SILK_TRACE << "decode_body offset: " << item.offset << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
-    return result;
 }
 
 void BodySnapshot::reopen_index() {

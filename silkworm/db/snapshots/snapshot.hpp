@@ -151,8 +151,6 @@ class BodySnapshot : public Snapshot {
     void reopen_index() override;
 
   protected:
-    static DecodingResult decode_body(const Snapshot::WordItem& item, StoredBlockBody& body);
-
     void close_index() override;
 
   private:

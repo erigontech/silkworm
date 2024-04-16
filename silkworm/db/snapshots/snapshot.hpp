@@ -33,6 +33,8 @@
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/infra/common/os.hpp>
 
+#include "snapshot_word_serializer.hpp"
+
 namespace silkworm::snapshots {
 
 struct MappedHeadersSnapshot {
@@ -58,6 +60,35 @@ struct MappedTransactionsSnapshot {
 //! because we must avoid to memory-map it again.
 class Snapshot {
   public:
+    class Iterator {
+      public:
+        using value_type = std::shared_ptr<SnapshotWordSerializer>;
+        using iterator_category = std::input_iterator_tag;
+        using difference_type = void;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        Iterator(
+            seg::Decompressor::Iterator it,
+            std::shared_ptr<SnapshotWordSerializer> serializer,
+            SnapshotPath path)
+            : it_(std::move(it)), serializer_(std::move(serializer)), path_(std::move(path)) {}
+
+        reference operator*() { return serializer_; }
+        pointer operator->() { return &serializer_; }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++();
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+
+      private:
+        seg::Decompressor::Iterator it_;
+        std::shared_ptr<SnapshotWordSerializer> serializer_;
+        SnapshotPath path_;
+    };
+
     static inline const auto kPageSize{os::page_size()};
 
     explicit Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region = std::nullopt);
@@ -77,6 +108,9 @@ class Snapshot {
     void reopen_segment();
     virtual void reopen_index() = 0;
 
+    Iterator begin(std::shared_ptr<SnapshotWordSerializer> serializer) const;
+    Iterator end() const;
+
     struct WordItem {
         uint64_t position{0};
         uint64_t offset{0};
@@ -88,6 +122,7 @@ class Snapshot {
     };
     using WordItemFunc = std::function<bool(WordItem&)>;
     bool for_each_item(const WordItemFunc& fn);
+
     [[nodiscard]] std::optional<WordItem> next_item(uint64_t offset, ByteView prefix = {}) const;
 
     void close();

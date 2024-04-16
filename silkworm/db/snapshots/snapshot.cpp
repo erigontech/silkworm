@@ -46,6 +46,38 @@ void Snapshot::reopen_segment() {
     decoder_.open();
 }
 
+Snapshot::Iterator& Snapshot::Iterator::operator++() {
+    bool has_next = it_.has_next();
+    ++it_;
+
+    if (has_next) {
+        serializer_->decode_word(*it_);
+        serializer_->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    } else {
+        serializer_.reset();
+    }
+    return *this;
+}
+
+bool operator==(const Snapshot::Iterator& lhs, const Snapshot::Iterator& rhs) {
+    return (lhs.serializer_ == rhs.serializer_) &&
+           (!lhs.serializer_ || (lhs.it_ == rhs.it_));
+}
+
+Snapshot::Iterator Snapshot::begin(std::shared_ptr<SnapshotWordSerializer> serializer) const {
+    auto it = decoder_.begin();
+    if (it == decoder_.end()) {
+        return end();
+    }
+    serializer->decode_word(*it);
+    serializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return Snapshot::Iterator{std::move(it), std::move(serializer), path()};
+}
+
+Snapshot::Iterator Snapshot::end() const {
+    return Snapshot::Iterator{decoder_.end(), {}, path()};
+}
+
 bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
     WordItem item;
     for (auto it = decoder_.begin(); it != decoder_.end(); ++it, ++item.position) {
@@ -105,13 +137,12 @@ HeaderSnapshot::~HeaderSnapshot() {
 }
 
 bool HeaderSnapshot::for_each_header(const Walker& walker) {
-    HeaderSnapshotWordSerializer serializer;
-
-    return for_each_item([this, walker, &serializer](const WordItem& item) -> bool {
-        serializer.decode_word(item.value);
-        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        return walker(&serializer.header);
-    });
+    for (auto it = begin(std::make_shared<HeaderSnapshotWordSerializer>()); it != end(); ++it) {
+        auto s = dynamic_cast<HeaderSnapshotWordSerializer&>(**it);
+        const bool go_on = walker(&s.header);
+        if (!go_on) return false;
+    }
+    return true;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::next_header(uint64_t offset, std::optional<Hash> hash) const {

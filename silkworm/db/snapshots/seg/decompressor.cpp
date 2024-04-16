@@ -381,7 +381,7 @@ void Decompressor::open() {
     compressed_file_->advise_random();
 }
 
-Decompressor::Iterator Decompressor::begin() {
+Decompressor::Iterator Decompressor::begin() const {
     ensure(bool(compressed_file_), "decompressor closed, call open first");
     auto read_mode_guard = std::make_shared<ReadModeGuard>(*compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
     Iterator it{this, std::move(read_mode_guard)};

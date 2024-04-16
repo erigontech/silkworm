@@ -296,7 +296,7 @@ class Decompressor {
     [[nodiscard]] Iterator make_iterator() const { return Iterator{this, {}}; }
 
     //! Begin reading the words, expected to read in sequential order
-    Iterator begin();
+    Iterator begin() const;
     Iterator end() const { return Iterator::make_end(this); }
 
     void close();

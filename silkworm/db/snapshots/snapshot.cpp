@@ -28,7 +28,7 @@
 
 #include "body_snapshot.hpp"
 #include "header_snapshot.hpp"
-#include "txn_hash.hpp"
+#include "txn_snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
 

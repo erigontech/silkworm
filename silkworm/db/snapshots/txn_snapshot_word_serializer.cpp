@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "txn_hash.hpp"
+#include "txn_snapshot_word_serializer.hpp"
 
 #include <algorithm>
 #include <sstream>

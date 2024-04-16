@@ -42,7 +42,6 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -53,45 +52,6 @@
 
 using namespace std::chrono_literals;
 using namespace silkworm;
-
-//! Create Silkworm log level from its C representation
-static log::Level make_log_level(const SilkwormLogLevel c_log_level) {
-    log::Level verbosity{};
-    switch (c_log_level) {
-        case SilkwormLogLevel::NONE:
-            verbosity = log::Level::kNone;
-            break;
-        case SilkwormLogLevel::CRITICAL:
-            verbosity = log::Level::kCritical;
-            break;
-        case SilkwormLogLevel::ERROR:
-            verbosity = log::Level::kError;
-            break;
-        case SilkwormLogLevel::WARNING:
-            verbosity = log::Level::kWarning;
-            break;
-        case SilkwormLogLevel::INFO:
-            verbosity = log::Level::kInfo;
-            break;
-        case SilkwormLogLevel::DEBUG:
-            verbosity = log::Level::kDebug;
-            break;
-        case SilkwormLogLevel::TRACE:
-            verbosity = log::Level::kTrace;
-            break;
-    }
-    return verbosity;
-}
-
-//! Build log configuration matching Erigon log format w/ custom verbosity level
-static log::Settings make_log_settings(const SilkwormLogLevel c_log_level) {
-    return {
-        .log_utc = false,       // display local time
-        .log_timezone = false,  // no timezone ID
-        .log_trim = true,       // compact rendering (i.e. no whitespaces)
-        .log_verbosity = make_log_level(c_log_level),
-    };
-}
 
 static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
@@ -253,7 +213,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         .context_pool_settings = {
             .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : concurrency::kDefaultNumContexts,
         },
-        .data_dir_path = make_path(settings->data_dir_path),
+        .data_dir_path = parse_path(settings->data_dir_path),
         .snapshot_repository = std::move(snapshot_repository),
         .rpcdaemon = {},
         .sentry_thread = {},

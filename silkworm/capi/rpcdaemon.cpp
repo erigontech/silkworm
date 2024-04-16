@@ -30,7 +30,7 @@ static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcIn
     InterfaceLogSettings eth_ifc_log_settings{.ifc_name = "eth_rpc_api"};
     if (settings) {
         eth_ifc_log_settings.enabled = settings->enabled;
-        eth_ifc_log_settings.container_folder = make_path(settings->container_folder);
+        eth_ifc_log_settings.container_folder = parse_path(settings->container_folder);
         eth_ifc_log_settings.max_file_size_mb = settings->max_file_size_mb;
         eth_ifc_log_settings.max_files = settings->max_files;
         eth_ifc_log_settings.dump_response = settings->dump_response;
@@ -70,7 +70,7 @@ static std::vector<std::string> parse_cors_domains(
 
 //! Build whole RPC daemon settings from their C representation
 static DaemonSettings make_daemon_settings(SilkwormHandle handle, const struct SilkwormRpcSettings& settings) {
-    const auto jwt_path{make_path(settings.jwt_file_path)};
+    const auto jwt_path{parse_path(settings.jwt_file_path)};
     return {
         .log_settings = handle->log_settings,
         .eth_ifc_log_settings = make_eth_ifc_log_settings(settings.eth_if_log_settings),

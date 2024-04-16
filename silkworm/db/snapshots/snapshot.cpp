@@ -16,8 +16,6 @@
 
 #include "snapshot.hpp"
 
-#include <magic_enum.hpp>
-
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/transaction.hpp>
@@ -31,15 +29,6 @@
 #include "txn_snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
-
-//! Convert the specified decoding result into its string representation
-inline std::string to_string(DecodingResult result) {
-    std::string s;
-    if (!result.has_value()) {
-        s.append(magic_enum::enum_name(result.error()));
-    }
-    return s;
-}
 
 Snapshot::Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)), decoder_{path_.path(), segment_region} {}
@@ -308,23 +297,22 @@ TransactionSnapshot::~TransactionSnapshot() {
     close();
 }
 
-// Skip first byte of tx hash plus sender address length for transaction decoding
-constexpr int kTxRlpDataOffset{1 + kAddressLength};
-
 [[nodiscard]] std::optional<Transaction> TransactionSnapshot::next_txn(uint64_t offset, std::optional<Hash> hash) const {
+    TransactionSnapshotWordSerializer serializer;
+
     // Get the next data item at specified offset, optionally checking if it starts with txn hash first byte
     const auto item = hash ? next_item(offset, {hash->bytes, 1}) : next_item(offset);
-    std::optional<Transaction> transaction;
     if (!item) {
-        return transaction;
+        return std::nullopt;
     }
-    // Decode transaction from the extracted data item
-    transaction = Transaction{};
-    const auto decode_ok = decode_txn(*item, *transaction);
-    if (!decode_ok) {
-        return {};
+
+    try {
+        serializer.decode_word(item->value);
+    } catch (...) {
+        return std::nullopt;
     }
-    return transaction;
+    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return serializer.transaction;
 }
 
 std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash) const {
@@ -381,24 +369,16 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
     return block_number;
 }
 
-std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const {
+std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool /*read_senders*/) const {
+    TransactionSnapshotWordSerializer serializer;
+
     std::vector<Transaction> transactions;
     transactions.reserve(txn_count);
 
-    for_each_txn(base_txn_id, txn_count, [&transactions, read_senders](uint64_t i, ByteView senders_data, ByteView tx_rlp) -> bool {
-        ByteView tx_payload = slice_tx_payload(tx_rlp);
-
-        Transaction transaction;
-        const auto payload_result = rlp::decode_transaction(tx_payload, transaction, rlp::Eip2718Wrapping::kBoth);
-        ensure(payload_result.has_value(),
-               [&]() { return "TransactionSnapshot: cannot decode tx payload: " + to_hex(tx_payload) + " i: " + std::to_string(i) +
-                              " error: " + to_string(payload_result); });
-
-        if (read_senders) {
-            transaction.set_sender(bytes_to_address(senders_data));
-        }
-
-        transactions.push_back(std::move(transaction));
+    for_each_txn(base_txn_id, txn_count, [&transactions, &serializer, this](ByteView word) -> bool {
+        serializer.decode_word(word);
+        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+        transactions.push_back(std::move(serializer.transaction));
         return true;
     });
 
@@ -406,41 +386,19 @@ std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, ui
 }
 
 std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const {
+    TransactionSnapshotWordPayloadRlpSerializer serializer;
+
     std::vector<Bytes> rlp_txs;
     rlp_txs.reserve(txn_count);
 
-    for_each_txn(base_txn_id, txn_count, [&rlp_txs](uint64_t /*i*/, ByteView /*senders_data*/, ByteView tx_rlp) -> bool {
-        ByteView tx_payload = slice_tx_payload(tx_rlp);
-        rlp_txs.emplace_back(tx_payload);
+    for_each_txn(base_txn_id, txn_count, [&rlp_txs, &serializer, this](ByteView word) -> bool {
+        serializer.decode_word(word);
+        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
+        rlp_txs.emplace_back(serializer.tx_payload);
         return true;
     });
 
     return rlp_txs;
-}
-
-std::pair<ByteView, ByteView> TransactionSnapshot::slice_tx_data(const WordItem& item) {
-    const auto& buffer{item.value};
-    const auto buffer_size{buffer.size()};
-    SILK_TRACE << "slice_tx_data offset: " << item.offset << " buffer: " << to_hex(buffer);
-
-    ensure(buffer_size >= kTxRlpDataOffset, [&]() { return "TransactionSnapshot: too short record: " + std::to_string(buffer_size); });
-
-    // Skip first byte in data as it is first byte of transaction hash
-    ByteView senders_data{buffer.data() + 1, kAddressLength};
-    ByteView tx_rlp{buffer.data() + kTxRlpDataOffset, buffer_size - kTxRlpDataOffset};
-
-    SILK_TRACE << "slice_tx_data offset: " << item.offset << " tx_hash_first_byte: " << to_hex(buffer[0])
-               << " senders_data: " << to_hex(senders_data) << " tx_rlp: " << to_hex(tx_rlp);
-
-    return {senders_data, tx_rlp};
-}
-
-//! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
-DecodingResult TransactionSnapshot::decode_txn(const WordItem& item, Transaction& tx) {
-    auto [senders_data, tx_rlp] = slice_tx_data(item);
-    const auto result = rlp::decode(tx_rlp, tx);
-    tx.set_sender(bytes_to_address(senders_data));  // Must happen after rlp::decode because it resets sender
-    return result;
 }
 
 void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const {
@@ -462,9 +420,7 @@ void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count,
         const auto item = next_item(offset);
         ensure(item.has_value(), [&]() { return "TransactionSnapshot: record not found at offset=" + std::to_string(offset); });
 
-        auto [senders_data, tx_rlp] = slice_tx_data(*item);
-
-        const bool go_on{walker(i, senders_data, tx_rlp)};
+        const bool go_on = walker(item->value);
         if (!go_on) return;
 
         offset = item->offset;

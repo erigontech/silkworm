@@ -22,12 +22,35 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/types/transaction.hpp>
+#include <silkworm/core/types/address.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshots {
+
+TransactionSnapshotWord slice_tx_data(ByteView buffer) {
+    // Skip first byte of tx hash plus sender address length for transaction decoding
+    constexpr int kTxRlpDataOffset{1 + kAddressLength};
+
+    if (buffer.size() < kTxRlpDataOffset) {
+        std::stringstream error;
+        error << "slice_tx_data too short record: " << std::to_string(buffer.size());
+        throw std::runtime_error{error.str()};
+    }
+
+    uint8_t first_hash_byte = buffer[0];
+    ByteView senders_data = buffer.substr(1, kAddressLength);
+    ByteView tx_rlp = buffer.substr(kTxRlpDataOffset);
+
+    return TransactionSnapshotWord{
+        first_hash_byte,
+        senders_data,
+        tx_rlp,
+    };
+}
 
 ByteView slice_tx_payload(ByteView tx_rlp) {
     ByteView tx_envelope = tx_rlp;
@@ -56,6 +79,14 @@ ByteView slice_tx_payload(ByteView tx_rlp) {
     return tx_rlp.substr(tx_payload_offset);
 }
 
+void decode_word_into_tx(ByteView word, Transaction& tx) {
+    auto [_, senders_data, tx_rlp] = slice_tx_data(word);
+    const auto result = rlp::decode(tx_rlp, tx);
+    success_or_throw(result, "decode_word_into_tx: rlp::decode error");
+    // Must happen after rlp::decode because it resets sender
+    tx.set_sender(bytes_to_address(senders_data));
+}
+
 Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
     Hash tx_hash;
 
@@ -66,17 +97,7 @@ Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id) {
         return tx_hash;
     }
 
-    // Skip tx hash first byte plus address length for transaction decoding
-    constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-    if (tx_buffer.size() <= kTxFirstByteAndAddressLength) {
-        std::stringstream error;
-        error << " tx_buffer_hash cannot decode tx envelope: record " << to_hex(tx_buffer)
-              << " too short: " << tx_buffer.size()
-              << " tx_id: " << tx_id;
-        throw std::runtime_error{error.str()};
-    }
-    const ByteView tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
-
+    auto [_1, _2, tx_envelope] = slice_tx_data(tx_buffer);
     const ByteView tx_payload = slice_tx_payload(tx_envelope);
 
     const auto h256{keccak256(tx_payload)};

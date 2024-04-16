@@ -182,10 +182,7 @@ class TransactionSnapshot : public Snapshot {
     void reopen_index() override;
 
   protected:
-    static std::pair<ByteView, ByteView> slice_tx_data(const WordItem& item);
-    static DecodingResult decode_txn(const WordItem& item, Transaction& tx);
-
-    using Walker = std::function<bool(uint64_t i, ByteView senders_data, ByteView txn_rlp)>;
+    using Walker = std::function<bool(ByteView word)>;
     void for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const;
 
     void close_index() override;

@@ -20,11 +20,52 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/core/types/transaction.hpp>
+
+#include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
+
+struct TransactionSnapshotWord {
+    uint8_t first_hash_byte{};
+    ByteView senders_data;
+    ByteView tx_rlp;
+};
+
+TransactionSnapshotWord slice_tx_data(ByteView buffer);
 
 ByteView slice_tx_payload(ByteView tx_rlp);
 
 Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
+
+//! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
+void decode_word_into_tx(ByteView word, Transaction& tx);
+
+struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
+    Transaction transaction;
+
+    ~TransactionSnapshotWordSerializer() override = default;
+
+    void decode_word(ByteView word) override {
+        decode_word_into_tx(word, transaction);
+    }
+
+    void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) override {
+    }
+};
+
+struct TransactionSnapshotWordPayloadRlpSerializer : public SnapshotWordSerializer {
+    ByteView tx_payload;
+
+    ~TransactionSnapshotWordPayloadRlpSerializer() override = default;
+
+    void decode_word(ByteView word) override {
+        auto data = slice_tx_data(word);
+        tx_payload = slice_tx_payload(data.tx_rlp);
+    }
+
+    void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) override {
+    }
+};
 
 }  // namespace silkworm::snapshots

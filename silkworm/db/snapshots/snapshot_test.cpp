@@ -63,12 +63,6 @@ class Snapshot_ForTest : public Snapshot {
     void close_index() override {}
 };
 
-class TransactionSnapshot_ForTest : public TransactionSnapshot {
-  public:
-    using TransactionSnapshot::decode_txn;
-    using TransactionSnapshot::slice_tx_data;
-};
-
 template <class Rep, class Period>
 static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
     const auto ftime = std::filesystem::last_write_time(p);

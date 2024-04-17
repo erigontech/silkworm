@@ -40,7 +40,7 @@ template <ConcreteSnapshot T>
 using SnapshotsByPath = std::map<std::filesystem::path, std::unique_ptr<T>>;
 
 template <ConcreteSnapshot T>
-using SnapshotWalker = std::function<bool(const T* snapshot)>;
+using SnapshotWalker = std::function<bool(const T& snapshot)>;
 using HeaderSnapshotWalker = SnapshotWalker<HeaderSnapshot>;
 using BodySnapshotWalker = SnapshotWalker<BodySnapshot>;
 using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
@@ -81,10 +81,10 @@ class SnapshotRepository {
     void reopen_folder();
     void close();
 
-    using HeaderWalker = std::function<bool(const BlockHeader* header)>;
+    using HeaderWalker = std::function<bool(const BlockHeader& header)>;
     bool for_each_header(const HeaderWalker& fn);
 
-    using BodyWalker = std::function<bool(BlockNum number, const StoredBlockBody* body)>;
+    using BodyWalker = std::function<bool(BlockNum number, const StoredBlockBody& body)>;
     bool for_each_body(const BodyWalker& fn);
 
     [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }

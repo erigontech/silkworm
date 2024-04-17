@@ -257,15 +257,15 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     db::etl_mdbx::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
-    repository_->for_each_header([&](const BlockHeader* header) -> bool {
-        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << Hash{header->hash()}.to_hex();
-        const auto block_number = header->number;
+    repository_->for_each_header([&](const BlockHeader& header) -> bool {
+        SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
+        const auto block_number = header.number;
         if (block_number > max_block_available) return true;
 
-        const auto block_hash = header->hash();
+        const auto block_hash = header.hash();
 
         // Write block header into kDifficulty table
-        total_difficulty += header->difficulty;
+        total_difficulty += header.difficulty;
         db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
         // Write block header into kCanonicalHashes table

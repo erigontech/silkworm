@@ -50,7 +50,7 @@ SnapshotRepository::ViewResult view(const SnapshotsByPath<T>& segments, BlockNum
         const auto& snapshot = it->second;
         // We're looking for the segment containing the target block number in its block range
         if (snapshot->block_from() <= number && number < snapshot->block_to()) {
-            const bool walk_done = walker(snapshot.get());
+            const bool walk_done = walker(*snapshot);
             return walk_done ? SnapshotRepository::kWalkSuccess : SnapshotRepository::kWalkFailed;
         }
     }
@@ -64,7 +64,7 @@ std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& wa
     bool walk_done{false};
     for (auto it = segments.rbegin(); it != segments.rend() && !walk_done; ++it) {
         const auto& snapshot = it->second;
-        walk_done = walker(snapshot.get());
+        walk_done = walker(*snapshot);
         ++visited_views;
     }
     return visited_views;
@@ -128,7 +128,7 @@ bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
 
         HeaderSnapshotReader reader{*header_snapshot};
         for (auto& header : reader) {
-            const bool keep_going = fn(&header);
+            const bool keep_going = fn(header);
             if (!keep_going) return false;
         }
     }
@@ -142,7 +142,7 @@ bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
         BlockNum number = body_snapshot->path().block_from();
         BodySnapshotReader reader{*body_snapshot};
         for (auto& body : reader) {
-            const bool keep_going = fn(number, &body);
+            const bool keep_going = fn(number, body);
             if (!keep_going) return false;
             number++;
         }

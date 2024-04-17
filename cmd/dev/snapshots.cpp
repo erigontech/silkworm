@@ -242,12 +242,12 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const BlockBodyForStorage* b) -> bool {
+        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const BlockBodyForStorage& b) -> bool {
             // If *system transactions* should not be counted, skip first and last tx in block body
-            const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
-            const auto txn_count{settings.skip_system_txs && b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
+            const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
+            const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
             SILK_DEBUG << "Body number: " << number << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
-                       << " #ommers: " << b->ommers.size();
+                       << " #ommers: " << b.ommers.size();
             num_bodies++;
             num_txns += txn_count;
             return true;
@@ -265,10 +265,10 @@ void count_headers(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
-        const bool success = snapshot_repo.for_each_header([&count](const BlockHeader* h) -> bool {
+        const bool success = snapshot_repo.for_each_header([&count](const BlockHeader& h) -> bool {
             ++count;
-            if (h->number % 50'000 == 0) {
-                SILK_INFO << "Header number: " << h->number << " hash: " << to_hex(h->hash());
+            if (h.number % 50'000 == 0) {
+                SILK_INFO << "Header number: " << h.number << " hash: " << to_hex(h.hash());
             }
             return true;
         });
@@ -415,11 +415,11 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     std::optional<BlockHeader> matching_header;
     SnapshotRepository snapshot_repository{settings};
     snapshot_repository.reopen_folder();
-    snapshot_repository.view_header_segments([&](const HeaderSnapshot* snapshot) -> bool {
-        const auto header{snapshot->header_by_hash(*hash)};
+    snapshot_repository.view_header_segments([&](const HeaderSnapshot& snapshot) -> bool {
+        const auto header{snapshot.header_by_hash(*hash)};
         if (header) {
             matching_header = header;
-            matching_snapshot = snapshot;
+            matching_snapshot = &snapshot;
         }
         return header.has_value();
     });
@@ -608,12 +608,12 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
 
     const TransactionSnapshot* matching_snapshot{nullptr};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_tx_segments([&](const TransactionSnapshot* snapshot) -> bool {
-        const auto transaction{snapshot->txn_by_hash(hash)};
+    snapshot_repository.view_tx_segments([&](const TransactionSnapshot& snapshot) -> bool {
+        const auto transaction{snapshot.txn_by_hash(hash)};
         if (transaction) {
-            matching_snapshot = snapshot;
+            matching_snapshot = &snapshot;
             if (settings.print) {
-                print_txn(*transaction, snapshot->path().filename());
+                print_txn(*transaction, snapshot.path().filename());
             }
         }
         return transaction.has_value();
@@ -668,12 +668,12 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
 
     const TransactionSnapshot* matching_snapshot{nullptr};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_tx_segments([&](const TransactionSnapshot* snapshot) -> bool {
-        const auto transaction{snapshot->txn_by_id(txn_id)};
+    snapshot_repository.view_tx_segments([&](const TransactionSnapshot& snapshot) -> bool {
+        const auto transaction{snapshot.txn_by_id(txn_id)};
         if (transaction) {
-            matching_snapshot = snapshot;
+            matching_snapshot = &snapshot;
             if (settings.print) {
-                print_txn(*transaction, snapshot->path().filename());
+                print_txn(*transaction, snapshot.path().filename());
             }
         }
         return transaction.has_value();

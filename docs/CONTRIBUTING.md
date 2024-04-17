@@ -70,6 +70,43 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
   <br /> This module allows the `core` the run on WebAssembly. This module depends on both the `core` and `node` modules.
 
 
+## Dependency Management
+
+Silkworm uses [Conan 1.x][conan] as package manager, but also relies on Git submodules for some libraries.
+
+### Conan
+
+If you need to add/remove/update any library managed in Conan, just edit the Silkworm [Conan recipe][silkworm-conan].
+
+### Submodules
+
+Silkworm uses also some 3rd-party libraries kept as Git submodules in [third-party][silkworm-third_party] folder.
+
+#### Add
+
+If you need to add library `lib` to Silkworm submodules, the following procedure must be applied:
+
+1. mkdir third_party/<lib>
+2. git submodule add <github_repo_http_url> third_party/<lib>/<lib>
+3. add third_party/<lib>/CMakeLists.txt with library-specific build instructions (e.g. build options)
+4. update third_party/CMakeLists.txt
+
+#### Remove
+
+If you need to permanently remove library `lib` from Silkworm submodules, the following procedure must be applied:
+
+1. git submodule deinit -f third_party/<lib>/<lib>
+2. git rm -rf third_party/<lib>
+3. update third_party/CMakeLists.txt
+4. rm -rf .git/modules/third_party/<lib>
+
+#### Update
+
+If you need to update library `lib` in Silkworm submodules to `commit_hash`, the following procedure must be applied:
+
+1. cd third_party/<lib>/<lib>
+2. git checkout <commit_hash>
+
 ## Updating Snapshots
 
 If you need to update the list of builtin snapshots in Silkworm, the following procedure must be applied:
@@ -163,12 +200,15 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [silkworm-rpc]: https://github.com/erigontech/silkworm/tree/master/silkworm/rpc
 [silkworm-sync]: https://github.com/erigontech/silkworm/tree/master/silkworm/sync
 [silkworm-wasm]: https://github.com/erigontech/silkworm/tree/master/silkworm/wasm
+[silkworm-conan]: https://github.com/erigontech/silkworm/tree/master/conanfile.py
+[silkworm-third_party]: https://github.com/erigontech/silkworm/tree/master/third_party
 [silkworm-capi-header]: https://github.com/erigontech/silkworm/tree/master/silkworm/capi/silkworm.h
 [silkworm-go]: https://github.com/erigontech/silkworm-go
 [cpp-standard-iso]: https://isocpp.org
 [cpp-core-guidelines]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
 [cpp-google-style-guide]: https://google.github.io/styleguide/cppguide.html
 [ethereum-yellow-paper]: https://ethereum.github.io/yellowpaper/paper.pdf
+[conan]: https://conan.io
 [grpc]: https://grpc.io
 [erigon]: https://github.com/ledgerwatch/erigon
 [erigon-interfaces]: https://github.com/ledgerwatch/interfaces

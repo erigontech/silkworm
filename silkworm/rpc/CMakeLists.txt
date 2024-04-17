@@ -41,7 +41,6 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     Boost::headers
     protobuf::libprotobuf
     intx::intx
-    pico_http_parser
 )
 
 # cmake-format: off

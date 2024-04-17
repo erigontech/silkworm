@@ -271,24 +271,24 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     SECTION("1'500'012 OK") {
-        CHECK(tx_snapshot.txn_range(7'341'263, 0, /*read_senders=*/true).empty());
-        CHECK(tx_snapshot.txn_range(7'341'263, 7, /*read_senders=*/true).size() == 7);
+        CHECK(tx_snapshot.txn_range(7'341'263, 0).empty());
+        CHECK(tx_snapshot.txn_range(7'341'263, 7).size() == 7);
     }
     SECTION("1'500'012 KO") {
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'262, 7, /*read_senders=*/true));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'264, 7, /*read_senders=*/true));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'263, 8, /*read_senders=*/true));  // invalid txn_count
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'262, 7));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'264, 7));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'263, 8));  // invalid txn_count
     }
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
     SECTION("1'500'013 OK") {
-        CHECK(tx_snapshot.txn_range(7'341'272, 0, /*read_senders=*/true).empty());
-        CHECK(tx_snapshot.txn_range(7'341'272, 1, /*read_senders=*/true).size() == 1);
+        CHECK(tx_snapshot.txn_range(7'341'272, 0).empty());
+        CHECK(tx_snapshot.txn_range(7'341'272, 1).size() == 1);
     }
     SECTION("1'500'013 KO") {
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'271, 1, /*read_senders=*/true));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'273, 1, /*read_senders=*/true));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'272, 2, /*read_senders=*/true));  // invalid txn_count
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'271, 1));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'273, 1));  // invalid base_txn_id
+        CHECK_THROWS(tx_snapshot.txn_range(7'341'272, 2));  // invalid txn_count
     }
 }
 

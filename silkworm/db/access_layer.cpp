@@ -1281,7 +1281,7 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
 }
 
 bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
-                                                bool read_senders, std::vector<Transaction>& txs) {
+                                                bool /*read_senders*/, std::vector<Transaction>& txs) {
     txs.reserve(txn_count);
     if (txn_count == 0) {
         return true;
@@ -1290,7 +1290,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
     const auto tx_snapshot = repository_->find_tx_segment(height);
     if (!tx_snapshot) return false;
 
-    txs = tx_snapshot->txn_range(base_txn_id, txn_count, read_senders);
+    txs = tx_snapshot->txn_range(base_txn_id, txn_count);
 
     return true;
 }

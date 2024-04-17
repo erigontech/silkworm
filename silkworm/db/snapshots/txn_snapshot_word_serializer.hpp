@@ -51,8 +51,9 @@ struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
     }
 };
 
+template <class TBytes = ByteView>
 struct TransactionSnapshotWordPayloadRlpSerializer : public SnapshotWordSerializer {
-    ByteView value;
+    TBytes value;
 
     ~TransactionSnapshotWordPayloadRlpSerializer() override = default;
 

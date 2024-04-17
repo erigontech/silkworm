@@ -71,30 +71,6 @@ Snapshot::Iterator Snapshot::end() const {
     return Snapshot::Iterator{decoder_.end(), {}, path()};
 }
 
-std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView prefix) const {
-    SILK_TRACE << "Snapshot::next_item offset: " << offset;
-    auto data_iterator = decoder_.make_iterator();
-    data_iterator.reset(offset);
-
-    std::optional<WordItem> item;
-    if (!data_iterator.has_next()) {
-        return item;
-    }
-    if (!prefix.empty() && !data_iterator.has_prefix(prefix)) {
-        return item;
-    }
-
-    item = WordItem{};
-    try {
-        item->offset = data_iterator.next(item->value);
-    } catch (const std::runtime_error& re) {
-        SILK_WARN << "Snapshot::next_item invalid offset: " << offset << " what: " << re.what();
-        return {};
-    }
-
-    return item;
-}
-
 seg::Decompressor::Iterator Snapshot::seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const {
     return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
 }

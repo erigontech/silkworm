@@ -16,11 +16,14 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
-#include <functional>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <vector>
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
@@ -44,9 +47,9 @@ class Snapshot {
       public:
         using value_type = std::shared_ptr<SnapshotWordSerializer>;
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
-        using pointer = value_type*;
-        using reference = value_type&;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const value_type*;
+        using reference = const value_type&;
 
         Iterator(
             seg::Decompressor::Iterator it,
@@ -54,8 +57,8 @@ class Snapshot {
             SnapshotPath path)
             : it_(std::move(it)), serializer_(std::move(serializer)), path_(std::move(path)) {}
 
-        reference operator*() { return serializer_; }
-        pointer operator->() { return &serializer_; }
+        reference operator*() const { return serializer_; }
+        pointer operator->() const { return &serializer_; }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++();
@@ -68,6 +71,8 @@ class Snapshot {
         std::shared_ptr<SnapshotWordSerializer> serializer_;
         SnapshotPath path_;
     };
+
+    static_assert(std::input_iterator<Iterator>);
 
     static inline const auto kPageSize{os::page_size()};
 
@@ -91,18 +96,6 @@ class Snapshot {
     Iterator begin(std::shared_ptr<SnapshotWordSerializer> serializer) const;
     Iterator end() const;
 
-    struct WordItem {
-        uint64_t position{0};
-        uint64_t offset{0};
-        Bytes value;
-
-        WordItem() {
-            value.reserve(kPageSize);
-        }
-    };
-
-    [[nodiscard]] std::optional<WordItem> next_item(uint64_t offset, ByteView prefix = {}) const;
-
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const;
 
     void close();
@@ -125,15 +118,15 @@ class SnapshotReader {
       public:
         using value_type = decltype(TWordSerializer::value);
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
-        using pointer = value_type*;
-        using reference = value_type&;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const value_type*;
+        using reference = const value_type&;
 
         explicit Iterator(Snapshot::Iterator it)
             : it_(std::move(it)) {}
 
-        reference operator*() { return value(); }
-        pointer operator->() { return &value(); }
+        reference operator*() const { return value(); }
+        pointer operator->() const { return &value(); }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
@@ -145,7 +138,7 @@ class SnapshotReader {
         friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
 
       private:
-        value_type& value() {
+        value_type& value() const {
             SnapshotWordSerializer& base_serializer = **it_;
             // dynamic_cast is safe because TWordSerializer was used when creating the Iterator
             auto& s = dynamic_cast<TWordSerializer&>(base_serializer);
@@ -154,6 +147,8 @@ class SnapshotReader {
 
         Snapshot::Iterator it_;
     };
+
+    static_assert(std::input_iterator<Iterator>);
 
     SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
 
@@ -174,8 +169,29 @@ class SnapshotReader {
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
+    std::vector<typename Iterator::value_type> read_into_vector(uint64_t offset, size_t count) const {
+        auto it = seek(offset);
+        if (it == end()) {
+            throw std::runtime_error("SnapshotReader::read_into_vector: bad offset " + std::to_string(offset));
+        }
+        return iterator_read_into_vector(std::move(it), count);
+    }
+
   private:
     const Snapshot& snapshot_;
 };
+
+template <std::input_iterator It>
+void iterator_read_into(It it, size_t count, std::vector<typename It::value_type>& out) {
+    std::copy_n(std::make_move_iterator(std::move(it)), count, std::back_inserter(out));
+}
+
+template <std::input_iterator It>
+std::vector<typename It::value_type> iterator_read_into_vector(It it, size_t count) {
+    std::vector<typename It::value_type> out;
+    out.reserve(count);
+    iterator_read_into(std::move(it), count, out);
+    return out;
+}
 
 }  // namespace silkworm::snapshots

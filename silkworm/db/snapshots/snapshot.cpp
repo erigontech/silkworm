@@ -211,56 +211,38 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
     return block_number;
 }
 
-std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool /*read_senders*/) const {
-    TransactionSnapshotWordSerializer serializer;
+template <class TSnapshotReader>
+struct RangeFromDataIdQuery {
+    RangeFromDataIdQuery(
+        const Snapshot& snapshot,
+        const rec_split::RecSplitIndex& index)
+        : snapshot_(snapshot),
+          index_(index) {}
 
-    std::vector<Transaction> transactions;
-    transactions.reserve(txn_count);
-
-    for_each_txn(base_txn_id, txn_count, [&transactions, &serializer, this](ByteView word) -> bool {
-        serializer.decode_word(word);
-        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        transactions.push_back(std::move(serializer.value));
-        return true;
-    });
-
-    return transactions;
-}
-
-std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const {
-    TransactionSnapshotWordPayloadRlpSerializer serializer;
-
-    std::vector<Bytes> rlp_txs;
-    rlp_txs.reserve(txn_count);
-
-    for_each_txn(base_txn_id, txn_count, [&rlp_txs, &serializer, this](ByteView word) -> bool {
-        serializer.decode_word(word);
-        serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-        rlp_txs.emplace_back(serializer.value);
-        return true;
-    });
-
-    return rlp_txs;
-}
-
-void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const {
-    if (!idx_txn_hash_ || txn_count == 0) {
-        return;
+    std::vector<typename TSnapshotReader::Iterator::value_type> exec_into_vector(uint64_t first_data_id, uint64_t count) {
+        size_t offset = index_.ordinal_lookup_by_data_id(first_data_id);
+        return TSnapshotReader{snapshot_}.read_into_vector(offset, count);
     }
 
-    // Then, get the first transaction offset in snapshot by using ordinal lookup
-    size_t first_txn_offset = idx_txn_hash_->ordinal_lookup_by_data_id(base_txn_id);
+  private:
+    const Snapshot& snapshot_;
+    const rec_split::RecSplitIndex& index_;
+};
 
-    // Finally, iterate over each encoded transaction item
-    for (uint64_t i{0}, offset{first_txn_offset}; i < txn_count; ++i) {
-        const auto item = next_item(offset);
-        ensure(item.has_value(), [&]() { return "TransactionSnapshot: record not found at offset=" + std::to_string(offset); });
-
-        const bool go_on = walker(item->value);
-        if (!go_on) return;
-
-        offset = item->offset;
+std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t first_txn_id, uint64_t count) const {
+    if (!idx_txn_hash_) {
+        return {};
     }
+    RangeFromDataIdQuery<TransactionSnapshotReader> query{*this, *idx_txn_hash_};
+    return query.exec_into_vector(first_txn_id, count);
+}
+
+std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t first_txn_id, uint64_t count) const {
+    if (!idx_txn_hash_) {
+        return {};
+    }
+    RangeFromDataIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>> query{*this, *idx_txn_hash_};
+    return query.exec_into_vector(first_txn_id, count);
 }
 
 void TransactionSnapshot::reopen_index() {

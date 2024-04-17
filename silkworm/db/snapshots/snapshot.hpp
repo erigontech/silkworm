@@ -111,17 +111,14 @@ class TransactionSnapshot : public Snapshot {
 
     [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
-    [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
-    [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const;
+    [[nodiscard]] std::vector<Transaction> txn_range(uint64_t first_txn_id, uint64_t count) const;
+    [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t first_txn_id, uint64_t count) const;
 
     [[nodiscard]] std::optional<BlockNum> block_num_by_txn_hash(const Hash& txn_hash) const;
 
     void reopen_index() override;
 
   protected:
-    using Walker = std::function<bool(ByteView word)>;
-    void for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const;
-
     void close_index() override;
 
   private:

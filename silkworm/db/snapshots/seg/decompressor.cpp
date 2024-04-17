@@ -392,6 +392,27 @@ Decompressor::Iterator Decompressor::begin() const {
     return end();
 }
 
+Decompressor::Iterator Decompressor::seek(uint64_t offset, ByteView prefix) const {
+    SILK_TRACE << "Decompressor::seek offset: " << offset;
+    Iterator it = make_iterator();
+    it.reset(offset);
+    if (!it.has_next()) {
+        return end();
+    }
+
+    if (!prefix.empty() && !it.has_prefix(prefix)) {
+        return end();
+    }
+
+    try {
+        ++it;
+        return it;
+    } catch (const std::runtime_error& re) {
+        SILK_WARN << "Decompressor::seek invalid offset: " << offset << " what: " << re.what();
+        return end();
+    }
+}
+
 void Decompressor::close() {
     compressed_file_.reset();
 }

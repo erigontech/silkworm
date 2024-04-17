@@ -299,6 +299,13 @@ class Decompressor {
     Iterator begin() const;
     Iterator end() const { return Iterator::make_end(this); }
 
+    /**
+     * Returns an iterator at a given offset.
+     * If the offset is invalid it returns end().
+     * Seek makes sure that the result starts with a given prefix, otherwise returns end().
+     */
+    Iterator seek(uint64_t offset, ByteView prefix = {}) const;
+
     void close();
 
   private:

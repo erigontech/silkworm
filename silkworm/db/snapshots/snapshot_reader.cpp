@@ -95,6 +95,24 @@ std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset, ByteView 
     return item;
 }
 
+seg::Decompressor::Iterator Snapshot::seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const {
+    return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
+}
+
+Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const {
+    auto it = seek_decoder(offset, hash_prefix);
+    if (it == decoder_.end()) {
+        return end();
+    }
+    try {
+        serializer->decode_word(*it);
+    } catch (...) {
+        return end();
+    }
+    serializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return Snapshot::Iterator{std::move(it), std::move(serializer), path()};
+}
+
 void Snapshot::close() {
     close_segment();
     close_index();

@@ -26,6 +26,7 @@
 
 #include "body_snapshot.hpp"
 #include "header_snapshot.hpp"
+#include "txn_snapshot.hpp"
 #include "txn_snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
@@ -37,24 +38,6 @@ HeaderSnapshot::HeaderSnapshot(SnapshotPath path, MappedHeadersSnapshot mapped)
 
 HeaderSnapshot::~HeaderSnapshot() {
     close();
-}
-
-std::optional<BlockHeader> HeaderSnapshot::next_header(uint64_t offset, std::optional<Hash> hash) const {
-    HeaderSnapshotWordSerializer serializer;
-
-    // Get the next data item at specified offset, optionally checking if it starts with block hash first byte
-    const auto item = hash ? next_item(offset, {hash->bytes, 1}) : next_item(offset);
-    if (!item) {
-        return std::nullopt;
-    }
-
-    try {
-        serializer.decode_word(item->value);
-    } catch (...) {
-        return std::nullopt;
-    }
-    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return serializer.value;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash) const {
@@ -73,7 +56,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
     SILK_TRACE << "HeaderSnapshot::header_by_hash block_header_offset: " << block_header_offset;
     // Finally, read the next header at specified offset
-    auto header = next_header(block_header_offset, block_hash);
+    auto header = HeaderSnapshotReader{*this}.seek_one(block_header_offset, block_hash);
     // We *must* ensure that the retrieved header hash matches because there is no way to know if key exists in MPHF
     if (header && header->hash() != block_hash) {
         header.reset();
@@ -91,7 +74,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
     // Then, get the header offset in snapshot by using ordinal lookup
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
     // Finally, read the next header at specified offset
-    return next_header(block_header_offset);
+    return HeaderSnapshotReader{*this}.seek_one(block_header_offset);
 }
 
 void HeaderSnapshot::reopen_index() {
@@ -147,26 +130,6 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
     return {first_tx_id, last_tx_id + last_txs_amount - first_tx_id};
 }
 
-std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
-    BodySnapshotWordSerializer serializer;
-
-    const auto item = next_item(offset);
-    if (!item) {
-        return std::nullopt;
-    }
-
-    try {
-        serializer.decode_word(item->value);
-    } catch (...) {
-        return std::nullopt;
-    }
-    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-
-    ensure(serializer.value.base_txn_id >= idx_body_number_->base_data_id(),
-           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(serializer.value.base_txn_id); });
-    return serializer.value;
-}
-
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
     if (!idx_body_number_ || block_height < idx_body_number_->base_data_id()) {
         return {};
@@ -177,7 +140,7 @@ std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_heigh
     // Then, get the body offset in snapshot by using ordinal lookup
     const auto block_body_offset = idx_body_number_->ordinal_lookup(block_body_position);
     // Finally, read the next body at specified offset
-    return next_body(block_body_offset);
+    return BodySnapshotReader{*this}.seek_one(block_body_offset);
 }
 
 void BodySnapshot::reopen_index() {
@@ -212,24 +175,6 @@ TransactionSnapshot::~TransactionSnapshot() {
     close();
 }
 
-[[nodiscard]] std::optional<Transaction> TransactionSnapshot::next_txn(uint64_t offset, std::optional<Hash> hash) const {
-    TransactionSnapshotWordSerializer serializer;
-
-    // Get the next data item at specified offset, optionally checking if it starts with txn hash first byte
-    const auto item = hash ? next_item(offset, {hash->bytes, 1}) : next_item(offset);
-    if (!item) {
-        return std::nullopt;
-    }
-
-    try {
-        serializer.decode_word(item->value);
-    } catch (...) {
-        return std::nullopt;
-    }
-    serializer.check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return serializer.value;
-}
-
 std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash) const {
     if (!idx_txn_hash_) {
         return {};
@@ -243,7 +188,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash
     // Then, get the transaction offset in snapshot by using ordinal lookup
     const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
     // Finally, read the next transaction at specified offset
-    auto txn = next_txn(txn_offset, txn_hash);
+    auto txn = TransactionSnapshotReader{*this}.seek_one(txn_offset, txn_hash);
     // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
     if (txn && txn->hash() != txn_hash) {
         return {};
@@ -261,7 +206,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const
     // Then, get the transaction offset in snapshot by using ordinal lookup
     const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
     // Finally, read the next transaction at specified offset
-    return next_txn(txn_offset);
+    return TransactionSnapshotReader{*this}.seek_one(txn_offset);
 }
 
 std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& txn_hash) const {

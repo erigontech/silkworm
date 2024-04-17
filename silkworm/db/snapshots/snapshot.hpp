@@ -57,8 +57,6 @@ class HeaderSnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
 
-    [[nodiscard]] std::optional<BlockHeader> next_header(uint64_t offset, std::optional<Hash> hash = {}) const;
-
     [[nodiscard]] std::optional<BlockHeader> header_by_hash(const Hash& block_hash) const;
     [[nodiscard]] std::optional<BlockHeader> header_by_number(BlockNum block_height) const;
 
@@ -85,8 +83,6 @@ class BodySnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
-    [[nodiscard]] std::optional<StoredBlockBody> next_body(uint64_t offset) const;
-
     std::pair<uint64_t, uint64_t> compute_txs_amount();
 
     [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
@@ -112,8 +108,6 @@ class TransactionSnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
     [[nodiscard]] const rec_split::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
-
-    [[nodiscard]] std::optional<Transaction> next_txn(uint64_t offset, std::optional<Hash> hash = {}) const;
 
     [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;

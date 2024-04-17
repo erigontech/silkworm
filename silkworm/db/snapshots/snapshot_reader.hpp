@@ -23,6 +23,7 @@
 #include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
@@ -102,11 +103,14 @@ class Snapshot {
 
     [[nodiscard]] std::optional<WordItem> next_item(uint64_t offset, ByteView prefix = {}) const;
 
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const;
+
     void close();
 
   protected:
     void close_segment();
     virtual void close_index() = 0;
+    seg::Decompressor::Iterator seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const;
 
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
@@ -159,6 +163,15 @@ class SnapshotReader {
 
     Iterator end() const {
         return Iterator{snapshot_.end()};
+    }
+
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        return Iterator{snapshot_.seek(offset, hash_prefix, std::make_shared<TWordSerializer>())};
+    }
+
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        auto it = seek(offset, hash_prefix);
+        return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
   private:

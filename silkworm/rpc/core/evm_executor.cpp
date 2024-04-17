@@ -192,21 +192,21 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
                 const std::string from = address_to_hex(*txn.sender());
                 std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
-                return std::make_optional<PreCheckResult>(error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas);
+                return PreCheckResult{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
                 std::string from = address_to_hex(*txn.sender());
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
-                return std::make_optional<PreCheckResult>(error, PreCheckErrorCode::kTipHigherThanFeeCap);
+                return PreCheckResult{error, PreCheckErrorCode::kTipHigherThanFeeCap};
             }
         }
     }
     if (txn.gas_limit < g0) {
         std::string from = address_to_hex(*txn.sender());
         std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
-        return std::make_optional<PreCheckResult>(error, PreCheckErrorCode::kIntrinsicGasTooLow);
+        return PreCheckResult{error, PreCheckErrorCode::kIntrinsicGasTooLow};
     }
     return std::nullopt;
 }

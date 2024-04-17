@@ -26,15 +26,13 @@ using namespace silkworm::rpc;
 using silkworm::concurrency::ContextPoolSettings;
 
 //! Build interface log settings for ETH JSON-RPC from their C representation
-static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcInterfaceLogSettings* settings) {
+static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcInterfaceLogSettings settings) {
     InterfaceLogSettings eth_ifc_log_settings{.ifc_name = "eth_rpc_api"};
-    if (settings) {
-        eth_ifc_log_settings.enabled = settings->enabled;
-        eth_ifc_log_settings.container_folder = parse_path(settings->container_folder);
-        eth_ifc_log_settings.max_file_size_mb = settings->max_file_size_mb;
-        eth_ifc_log_settings.max_files = settings->max_files;
-        eth_ifc_log_settings.dump_response = settings->dump_response;
-    }
+    eth_ifc_log_settings.enabled = settings.enabled;
+    eth_ifc_log_settings.container_folder = parse_path(settings.container_folder);
+    eth_ifc_log_settings.max_file_size_mb = settings.max_file_size_mb;
+    eth_ifc_log_settings.max_files = settings.max_files;
+    eth_ifc_log_settings.dump_response = settings.dump_response;
     return eth_ifc_log_settings;
 }
 

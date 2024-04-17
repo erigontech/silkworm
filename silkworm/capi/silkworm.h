@@ -99,7 +99,8 @@ struct SilkwormChainSnapshot {
 #define SILKWORM_GIT_VERSION_SIZE 32
 
 //! Silkworm library logging level
-enum SilkwormLogLevel : uint8_t {
+//! \note using anonymous enum seems the only way to obtain enum type in Cgo generated code
+typedef enum : uint8_t {
     NONE,
     CRITICAL,
     ERROR,
@@ -107,12 +108,12 @@ enum SilkwormLogLevel : uint8_t {
     INFO,
     DEBUG,
     TRACE
-};
+} SilkwormLogLevel;
 
 //! Silkworm library general configuration options
 struct SilkwormSettings {
     //! Log verbosity level
-    enum SilkwormLogLevel log_verbosity;
+    SilkwormLogLevel log_verbosity;
     //! Number of I/O contexts to use in concurrency mode
     uint32_t num_contexts;
     //! Data directory path in UTF-8.
@@ -171,7 +172,7 @@ struct SilkwormRpcInterfaceLogSettings {
 //! Silkworm RPC configuration options
 struct SilkwormRpcSettings {
     //! Configuration options for interface log of ETH JSON-RPC end-point
-    struct SilkwormRpcInterfaceLogSettings* eth_if_log_settings;
+    struct SilkwormRpcInterfaceLogSettings eth_if_log_settings;
     //! Host address for ETH JSON-RPC end-point
     char eth_api_host[SILKWORM_RPC_SETTINGS_HOST_SIZE];
     //! Listening port number for ETH JSON-RPC end-point

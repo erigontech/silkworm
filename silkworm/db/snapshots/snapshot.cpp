@@ -45,15 +45,11 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
         return {};
     }
 
-    // First, get the header ordinal position in snapshot by using block hash as MPHF index
-    const auto [block_header_position, found] = idx_header_hash_->lookup(block_hash);
-    SILK_TRACE << "HeaderSnapshot::header_by_hash block_hash: " << block_hash.to_hex() << " block_header_position: "
-               << block_header_position << " found: " << found;
-    if (!found) {
-        return {};
+    auto block_header_offset_opt = idx_header_hash_->ordinal_lookup_by_key(block_hash);
+    if (!block_header_offset_opt) {
+        return std::nullopt;
     }
-    // Then, get the header offset in snapshot by using ordinal lookup
-    const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
+    size_t block_header_offset = *block_header_offset_opt;
     SILK_TRACE << "HeaderSnapshot::header_by_hash block_header_offset: " << block_header_offset;
     // Finally, read the next header at specified offset
     auto header = HeaderSnapshotReader{*this}.seek_one(block_header_offset, block_hash);
@@ -69,11 +65,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
         return {};
     }
 
-    // First, calculate the header ordinal position relative to the first block height within snapshot
-    const auto block_header_position = block_height - idx_header_hash_->base_data_id();
-    // Then, get the header offset in snapshot by using ordinal lookup
-    const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
-    // Finally, read the next header at specified offset
+    size_t block_header_offset = idx_header_hash_->ordinal_lookup_by_data_id(block_height);
     return HeaderSnapshotReader{*this}.seek_one(block_header_offset);
 }
 
@@ -135,11 +127,7 @@ std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_heigh
         return {};
     }
 
-    // First, calculate the body ordinal position relative to the first block height within snapshot
-    const auto block_body_position = block_height - idx_body_number_->base_data_id();
-    // Then, get the body offset in snapshot by using ordinal lookup
-    const auto block_body_offset = idx_body_number_->ordinal_lookup(block_body_position);
-    // Finally, read the next body at specified offset
+    size_t block_body_offset = idx_body_number_->ordinal_lookup_by_data_id(block_height);
     return BodySnapshotReader{*this}.seek_one(block_body_offset);
 }
 
@@ -180,13 +168,11 @@ std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash
         return {};
     }
 
-    // First, get the transaction ordinal position in snapshot by using block hash as MPHF index
-    const auto [txn_position, found] = idx_txn_hash_->lookup(txn_hash);
-    if (!found) {
-        return {};
+    auto txn_offset_opt = idx_txn_hash_->ordinal_lookup_by_key(txn_hash);
+    if (!txn_offset_opt) {
+        return std::nullopt;
     }
-    // Then, get the transaction offset in snapshot by using ordinal lookup
-    const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
+    size_t txn_offset = *txn_offset_opt;
     // Finally, read the next transaction at specified offset
     auto txn = TransactionSnapshotReader{*this}.seek_one(txn_offset, txn_hash);
     // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
@@ -201,11 +187,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const
         return {};
     }
 
-    // First, calculate the transaction ordinal position relative to the first transaction ID within snapshot
-    const auto txn_position = txn_id - idx_txn_hash_->base_data_id();
-    // Then, get the transaction offset in snapshot by using ordinal lookup
-    const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
-    // Finally, read the next transaction at specified offset
+    size_t txn_offset = idx_txn_hash_->ordinal_lookup_by_data_id(txn_id);
     return TransactionSnapshotReader{*this}.seek_one(txn_offset);
 }
 
@@ -266,14 +248,8 @@ void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count,
         return;
     }
 
-    ensure(base_txn_id >= idx_txn_hash_->base_data_id(),
-           [&]() { return path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(base_txn_id); });
-
-    // First, calculate the first transaction ordinal position relative to the base transaction within snapshot
-    const auto first_txn_position = base_txn_id - idx_txn_hash_->base_data_id();
-
     // Then, get the first transaction offset in snapshot by using ordinal lookup
-    const auto first_txn_offset = idx_txn_hash_->ordinal_lookup(first_txn_position);
+    size_t first_txn_offset = idx_txn_hash_->ordinal_lookup_by_data_id(base_txn_id);
 
     // Finally, iterate over each encoded transaction item
     for (uint64_t i{0}, offset{first_txn_offset}; i < txn_count; ++i) {

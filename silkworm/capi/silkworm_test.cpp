@@ -141,7 +141,7 @@ struct SilkwormLibrary {
                                    uint64_t batch_size,
                                    bool write_change_sets,
                                    bool write_receipts,
-                                   bool write_call_traces) {
+                                   bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_ephemeral(handle_, txn,
@@ -158,7 +158,7 @@ struct SilkwormLibrary {
                                              uint64_t batch_size,
                                              bool write_change_sets,
                                              bool write_receipts,
-                                             bool write_call_traces) {
+                                             bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_perpetual(handle_, env,
@@ -168,8 +168,16 @@ struct SilkwormLibrary {
         return result;
     }
 
-    int add_snapshot(SilkwormChainSnapshot* snapshot) {
+    int add_snapshot(SilkwormChainSnapshot* snapshot) const {
         return silkworm_add_snapshot(handle_, snapshot);
+    }
+
+    int start_rpcdaemon(MDBX_env* env, const SilkwormRpcSettings* settings) const {
+        return silkworm_start_rpcdaemon(handle_, env, settings);
+    }
+
+    int stop_rpcdaemon() const {
+        return silkworm_stop_rpcdaemon(handle_);
     }
 
   private:
@@ -775,6 +783,50 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
         const int result{silkworm_lib.add_snapshot(&snapshot)};
         CHECK(result == SILKWORM_OK);
+    }
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        SilkwormRpcSettings settings{};
+        CHECK(silkworm_start_rpcdaemon(handle, db, &settings) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("invalid settings") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, nullptr) == SILKWORM_INVALID_SETTINGS);
+    }
+
+    SECTION("default settings") {
+        // We must skip internal protocol check here (would block because gRPC server not present)
+        SilkwormRpcSettings settings{.skip_internal_protocol_check = true};
+        CHECK(silkworm_lib.start_rpcdaemon(db, &settings) == SILKWORM_OK);
+    }
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        CHECK(silkworm_stop_rpcdaemon(handle) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("not yet started") {
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
+    }
+
+    SECTION("already started") {
+        // We must skip internal protocol check here (would block because gRPC server not present)
+        SilkwormRpcSettings settings{.skip_internal_protocol_check = true};
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &settings) == SILKWORM_OK);
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
 

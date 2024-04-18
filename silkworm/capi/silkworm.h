@@ -193,6 +193,8 @@ struct SilkwormRpcSettings {
     bool ws_compression;
     //! Flag indicating if compression of HTTP messages is supported
     bool http_compression;
+    //! Flag indicating if version check on internal gRPC protocols should be skipped
+    bool skip_internal_protocol_check;
 };
 
 /**

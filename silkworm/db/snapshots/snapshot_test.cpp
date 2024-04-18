@@ -22,10 +22,13 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/body_queries.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/header_queries.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -144,9 +147,12 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     header_snapshot.reopen_segment();
     header_snapshot.reopen_index();
 
-    CHECK(!header_snapshot.header_by_number(1'500'011));
-    CHECK(header_snapshot.header_by_number(1'500'012));
-    const auto header = header_snapshot.header_by_number(1'500'013);
+    Index idx_header_hash{*header_snapshot.idx_header_hash()};
+    HeaderFindByBlockNumQuery header_by_number{header_snapshot, idx_header_hash};
+
+    CHECK(!header_by_number.exec(1'500'011));
+    CHECK(header_by_number.exec(1'500'012));
+    const auto header = header_by_number.exec(1'500'013);
     CHECK(header.has_value());
     if (header) {
         CHECK(header->hash() == 0xbef48d7de01f2d7ea1a7e4d1ed401f73d6d0257a364f6770b25ba51a123ac35f_bytes32);
@@ -167,7 +173,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
         CHECK(header->prev_randao == 0x799895e28a837bbdf28b8ecf5fc0e6251398ecb0ffc7ff5bbb457c21b14ce982_bytes32);
         CHECK(header->nonce == std::array<uint8_t, 8>{0x86, 0x98, 0x76, 0x20, 0x12, 0xb4, 0x6f, 0xef});
     }
-    CHECK(!header_snapshot.header_by_number(1'500'014));
+    CHECK(!header_by_number.exec(1'500'014));
 }
 
 // https://etherscan.io/block/1500013
@@ -183,9 +189,12 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     body_snapshot.reopen_segment();
     body_snapshot.reopen_index();
 
-    CHECK(!body_snapshot.body_by_number(1'500'011));
-    CHECK(body_snapshot.body_by_number(1'500'012));
-    const auto body_for_storage = body_snapshot.body_by_number(1'500'013);
+    Index idx_body_number{*body_snapshot.idx_body_number()};
+    BodyFindByBlockNumQuery body_by_number{body_snapshot, idx_body_number};
+
+    CHECK(!body_by_number.exec(1'500'011));
+    CHECK(body_by_number.exec(1'500'012));
+    const auto body_for_storage = body_by_number.exec(1'500'013);
     CHECK(body_for_storage.has_value());
     if (body_for_storage) {
         CHECK(body_for_storage->base_txn_id == 7'341'271);
@@ -208,7 +217,11 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     TransactionSnapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
-    const auto transaction = tx_snapshot.txn_by_id(7'341'272);
+
+    Index idx_txn_hash{*tx_snapshot.idx_txn_hash()};
+    TransactionFindByIdQuery txn_by_id{tx_snapshot, idx_txn_hash};
+
+    const auto transaction = txn_by_id.exec(7'341'272);
     CHECK(transaction.has_value());
     if (transaction) {
         CHECK(transaction->type == TransactionType::kLegacy);
@@ -234,23 +247,29 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
 
+    Index idx_txn_hash{*tx_snapshot.idx_txn_hash()};
+    TransactionFindByIdQuery txn_by_id{tx_snapshot, idx_txn_hash};
+
+    Index idx_txn_hash_2_block{*tx_snapshot.idx_txn_hash_2_block()};
+    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{tx_snapshot, idx_txn_hash}};
+
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
-    auto transaction = tx_snapshot.txn_by_id(7'341'269);  // known txn id in block 1'500'012
+    auto transaction = txn_by_id.exec(7'341'269);  // known txn id in block 1'500'012
     CHECK(transaction.has_value());
-    auto block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
+    auto block_number = block_num_by_txn_hash.exec(transaction->hash());
 
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'012);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
-    transaction = tx_snapshot.txn_by_id(7'341'272);  // known txn id in block 1'500'013
+    transaction = txn_by_id.exec(7'341'272);  // known txn id in block 1'500'013
     CHECK(transaction.has_value());
-    block_number = tx_snapshot.block_num_by_txn_hash(transaction->hash());
+    block_number = block_num_by_txn_hash.exec(transaction->hash());
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'013);
 
     // transaction hash not present in snapshot (first txn hash in block 1'500'014)
-    block_number = tx_snapshot.block_num_by_txn_hash(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
+    block_number = block_num_by_txn_hash.exec(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
     CHECK_FALSE(block_number.has_value());
 }
 
@@ -269,26 +288,29 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
 
+    Index idx_txn_hash{*tx_snapshot.idx_txn_hash()};
+    TransactionRangeFromIdQuery txn_range{tx_snapshot, idx_txn_hash};
+
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     SECTION("1'500'012 OK") {
-        CHECK(tx_snapshot.txn_range(7'341'263, 0).empty());
-        CHECK(tx_snapshot.txn_range(7'341'263, 7).size() == 7);
+        CHECK(txn_range.exec_into_vector(7'341'263, 0).empty());
+        CHECK(txn_range.exec_into_vector(7'341'263, 7).size() == 7);
     }
     SECTION("1'500'012 KO") {
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'262, 7));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'264, 7));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'263, 8));  // invalid txn_count
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'262, 7));  // invalid base_txn_id
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'264, 7));  // invalid base_txn_id
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'263, 8));  // invalid txn_count
     }
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
     SECTION("1'500'013 OK") {
-        CHECK(tx_snapshot.txn_range(7'341'272, 0).empty());
-        CHECK(tx_snapshot.txn_range(7'341'272, 1).size() == 1);
+        CHECK(txn_range.exec_into_vector(7'341'272, 0).empty());
+        CHECK(txn_range.exec_into_vector(7'341'272, 1).size() == 1);
     }
     SECTION("1'500'013 KO") {
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'271, 1));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'273, 1));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_range(7'341'272, 2));  // invalid txn_count
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'271, 1));  // invalid base_txn_id
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'273, 1));  // invalid base_txn_id
+        CHECK_THROWS(txn_range.exec_into_vector(7'341'272, 2));  // invalid txn_count
     }
 }
 
@@ -306,26 +328,29 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     tx_snapshot.reopen_segment();
     tx_snapshot.reopen_index();
 
+    Index idx_txn_hash{*tx_snapshot.idx_txn_hash()};
+    TransactionPayloadRlpRangeFromIdQuery txn_rlp_range{tx_snapshot, idx_txn_hash};
+
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     SECTION("1'500'012 OK") {
-        CHECK(tx_snapshot.txn_rlp_range(7'341'263, 0).empty());
-        CHECK(tx_snapshot.txn_rlp_range(7'341'263, 7).size() == 7);
+        CHECK(txn_rlp_range.exec_into_vector(7'341'263, 0).empty());
+        CHECK(txn_rlp_range.exec_into_vector(7'341'263, 7).size() == 7);
     }
     SECTION("1'500'012 KO") {
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'262, 7));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'264, 7));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'263, 8));  // invalid txn_count
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'262, 7));  // invalid base_txn_id
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'264, 7));  // invalid base_txn_id
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'263, 8));  // invalid txn_count
     }
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
     SECTION("1'500'013 OK") {
-        CHECK(tx_snapshot.txn_rlp_range(7'341'272, 0).empty());
-        CHECK(tx_snapshot.txn_rlp_range(7'341'272, 1).size() == 1);
+        CHECK(txn_rlp_range.exec_into_vector(7'341'272, 0).empty());
+        CHECK(txn_rlp_range.exec_into_vector(7'341'272, 1).size() == 1);
     }
     SECTION("1'500'013 KO") {
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'271, 1));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'273, 1));  // invalid base_txn_id
-        CHECK_THROWS(tx_snapshot.txn_rlp_range(7'341'272, 2));  // invalid txn_count
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'271, 1));  // invalid base_txn_id
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'273, 1));  // invalid base_txn_id
+        CHECK_THROWS(txn_rlp_range.exec_into_vector(7'341'272, 2));  // invalid txn_count
     }
 }
 

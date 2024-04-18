@@ -27,6 +27,7 @@
 #include <silkworm/db/snapshots/header_snapshot.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -201,7 +202,10 @@ const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
     for (const auto& it : std::ranges::reverse_view(tx_segments_)) {
         const auto& snapshot = it.second;
-        auto block = snapshot->block_num_by_txn_hash(txn_hash);
+
+        Index idx_txn_hash{*snapshot->idx_txn_hash()};
+        Index idx_txn_hash_2_block{*snapshot->idx_txn_hash_2_block()};
+        auto block = TransactionBlockNumByTxnHashQuery{idx_txn_hash_2_block, TransactionFindByHashQuery{*snapshot, idx_txn_hash}}.exec(txn_hash);
         if (block) {
             return block;
         }

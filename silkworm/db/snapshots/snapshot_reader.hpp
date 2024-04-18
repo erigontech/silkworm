@@ -177,6 +177,9 @@ class SnapshotReader {
         return iterator_read_into_vector(std::move(it), count);
     }
 
+    [[nodiscard]] BlockNum block_from() const { return snapshot_.block_from(); }
+    [[nodiscard]] BlockNum block_to() const { return snapshot_.block_to(); }
+
   private:
     const Snapshot& snapshot_;
 };

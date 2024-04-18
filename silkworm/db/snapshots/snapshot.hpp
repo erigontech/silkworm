@@ -57,9 +57,6 @@ class HeaderSnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
 
-    [[nodiscard]] std::optional<BlockHeader> header_by_hash(const Hash& block_hash) const;
-    [[nodiscard]] std::optional<BlockHeader> header_by_number(BlockNum block_height) const;
-
     void reopen_index() override;
 
   protected:
@@ -83,8 +80,6 @@ class BodySnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
-    [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
-
     void reopen_index() override;
 
   protected:
@@ -106,13 +101,6 @@ class TransactionSnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
     [[nodiscard]] const rec_split::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
-
-    [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
-    [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
-    [[nodiscard]] std::vector<Transaction> txn_range(uint64_t first_txn_id, uint64_t count) const;
-    [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t first_txn_id, uint64_t count) const;
-
-    [[nodiscard]] std::optional<BlockNum> block_num_by_txn_hash(const Hash& txn_hash) const;
 
     void reopen_index() override;
 

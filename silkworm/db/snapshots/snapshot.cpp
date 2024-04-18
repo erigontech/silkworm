@@ -24,14 +24,6 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "body_queries.hpp"
-#include "body_snapshot.hpp"
-#include "header_queries.hpp"
-#include "header_snapshot.hpp"
-#include "txn_queries.hpp"
-#include "txn_snapshot.hpp"
-#include "txn_snapshot_word_serializer.hpp"
-
 namespace silkworm::snapshots {
 
 HeaderSnapshot::HeaderSnapshot(SnapshotPath path) : Snapshot(std::move(path)) {}
@@ -41,23 +33,6 @@ HeaderSnapshot::HeaderSnapshot(SnapshotPath path, MappedHeadersSnapshot mapped)
 
 HeaderSnapshot::~HeaderSnapshot() {
     close();
-}
-
-std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash) const {
-    if (!idx_header_hash_) {
-        return {};
-    }
-
-    return HeaderFindByHashQuery{*this, Index{*idx_header_hash_}}.exec(block_hash);
-}
-
-std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
-    // TODO: move block_height checks inside ordinal_lookup_by_data_id or FindByIdQuery
-    if (!idx_header_hash_ || block_height < path_.block_from() || block_height >= path_.block_to()) {
-        return {};
-    }
-
-    return HeaderFindByBlockNumQuery{*this, Index{*idx_header_hash_}}.exec(block_height);
 }
 
 void HeaderSnapshot::reopen_index() {
@@ -91,15 +66,6 @@ BodySnapshot::~BodySnapshot() {
     close();
 }
 
-std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
-    // TODO: move block_height check inside ordinal_lookup_by_data_id
-    if (!idx_body_number_ || block_height < idx_body_number_->base_data_id()) {
-        return {};
-    }
-
-    return BodyFindByBlockNumQuery{*this, Index{*idx_body_number_}}.exec(block_height);
-}
-
 void BodySnapshot::reopen_index() {
     ensure(decoder_.is_open(), "BodySnapshot: segment not open, call reopen_segment");
 
@@ -130,46 +96,6 @@ TransactionSnapshot::TransactionSnapshot(SnapshotPath path, MappedTransactionsSn
 
 TransactionSnapshot::~TransactionSnapshot() {
     close();
-}
-
-std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash) const {
-    if (!idx_txn_hash_) {
-        return {};
-    }
-
-    return TransactionFindByHashQuery{*this, Index{*idx_txn_hash_}}.exec(txn_hash);
-}
-
-std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const {
-    if (!idx_txn_hash_) {
-        return {};
-    }
-
-    return TransactionFindByIdQuery{*this, Index{*idx_txn_hash_}}.exec(txn_id);
-}
-
-std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& txn_hash) const {
-    if (!idx_txn_hash_2_block_) {
-        return {};
-    }
-
-    Index idx_txn_hash{*idx_txn_hash_};
-    TransactionFindByHashQuery txn_by_hash_query{*this, idx_txn_hash};
-    return TransactionBlockNumByTxnHashQuery{Index{*idx_txn_hash_2_block_}, txn_by_hash_query}.exec(txn_hash);
-}
-
-std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t first_txn_id, uint64_t count) const {
-    if (!idx_txn_hash_) {
-        return {};
-    }
-    return TransactionRangeFromIdQuery{*this, Index{*idx_txn_hash_}}.exec_into_vector(first_txn_id, count);
-}
-
-std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t first_txn_id, uint64_t count) const {
-    if (!idx_txn_hash_) {
-        return {};
-    }
-    return TransactionPayloadRlpRangeFromIdQuery{*this, Index{*idx_txn_hash_}}.exec_into_vector(first_txn_id, count);
 }
 
 void TransactionSnapshot::reopen_index() {

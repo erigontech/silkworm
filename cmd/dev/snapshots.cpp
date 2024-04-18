@@ -34,12 +34,15 @@
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
+#include <silkworm/db/snapshots/body_queries.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/header_queries.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -416,7 +419,8 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     SnapshotRepository snapshot_repository{settings};
     snapshot_repository.reopen_folder();
     snapshot_repository.view_header_segments([&](const HeaderSnapshot& snapshot) -> bool {
-        const auto header{snapshot.header_by_hash(*hash)};
+        Index idx_header_hash{*snapshot.idx_header_hash()};
+        const auto header = HeaderFindByHashQuery{snapshot, idx_header_hash}.exec(*hash);
         if (header) {
             matching_header = header;
             matching_snapshot = &snapshot;
@@ -445,7 +449,8 @@ void lookup_header_by_number(const SnapSettings& settings) {
     snapshot_repository.reopen_folder();
     const auto header_snapshot{snapshot_repository.find_header_segment(block_number)};
     if (header_snapshot) {
-        const auto header{header_snapshot->header_by_number(block_number)};
+        Index idx_header_hash{*header_snapshot->idx_header_hash()};
+        const auto header = HeaderFindByBlockNumQuery{*header_snapshot, idx_header_hash}.exec(block_number);
         ensure(header.has_value(),
                [&]() { return "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename(); });
         SILK_INFO << "Lookup header number: " << block_number << " found in: " << header_snapshot->path().filename();
@@ -485,7 +490,9 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto body_snapshot{snapshot_repository.get_body_segment(*snapshot_path)};
     ensure(body_snapshot, [&]() { return "lookup_body: body segment not found for snapshot file: " + snapshot_path->path().string(); });
-    const auto body{body_snapshot->body_by_number(block_number)};
+
+    Index idx_body_number{*body_snapshot->idx_body_number()};
+    const auto body = BodyFindByBlockNumQuery{*body_snapshot, idx_body_number}.exec(block_number);
     if (body) {
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
         if (settings.print) {
@@ -505,7 +512,8 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto body_snapshot{snapshot_repository.find_body_segment(block_number)};
     if (body_snapshot) {
-        const auto body{body_snapshot->body_by_number(block_number)};
+        Index idx_body_number{*body_snapshot->idx_body_number()};
+        const auto body = BodyFindByBlockNumQuery{*body_snapshot, idx_body_number}.exec(block_number);
         ensure(body.has_value(),
                [&]() { return "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename(); });
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
@@ -588,7 +596,8 @@ void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, c
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto tx_snapshot{snapshot_repository.get_tx_segment(*snapshot_path)};
     if (tx_snapshot) {
-        const auto transaction{tx_snapshot->txn_by_hash(hash)};
+        Index idx_txn_hash{*tx_snapshot->idx_txn_hash()};
+        const auto transaction = TransactionFindByHashQuery{*tx_snapshot, idx_txn_hash}.exec(hash);
         if (transaction) {
             SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << tx_snapshot->path().filename();
             if (settings.print) {
@@ -609,7 +618,8 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
     const TransactionSnapshot* matching_snapshot{nullptr};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     snapshot_repository.view_tx_segments([&](const TransactionSnapshot& snapshot) -> bool {
-        const auto transaction{snapshot.txn_by_hash(hash)};
+        Index idx_txn_hash{*snapshot.idx_txn_hash()};
+        const auto transaction = TransactionFindByHashQuery{snapshot, idx_txn_hash}.exec(hash);
         if (transaction) {
             matching_snapshot = &snapshot;
             if (settings.print) {
@@ -648,7 +658,8 @@ void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, cons
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto tx_snapshot{snapshot_repository.get_tx_segment(*snapshot_path)};
     if (tx_snapshot) {
-        const auto transaction{tx_snapshot->txn_by_id(txn_id)};
+        Index idx_txn_hash{*tx_snapshot->idx_txn_hash()};
+        const auto transaction = TransactionFindByIdQuery{*tx_snapshot, idx_txn_hash}.exec(txn_id);
         if (transaction) {
             SILK_INFO << "Lookup txn ID: " << txn_id << " found in: " << tx_snapshot->path().filename();
             if (settings.print) {
@@ -669,7 +680,8 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
     const TransactionSnapshot* matching_snapshot{nullptr};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     snapshot_repository.view_tx_segments([&](const TransactionSnapshot& snapshot) -> bool {
-        const auto transaction{snapshot.txn_by_id(txn_id)};
+        Index idx_txn_hash{*snapshot.idx_txn_hash()};
+        const auto transaction = TransactionFindByIdQuery{snapshot, idx_txn_hash}.exec(txn_id);
         if (transaction) {
             matching_snapshot = &snapshot;
             if (settings.print) {

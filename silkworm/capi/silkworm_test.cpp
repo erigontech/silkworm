@@ -786,12 +786,41 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     }
 }
 
+static SilkwormRpcSettings make_rpc_settings() {
+    SilkwormRpcSettings settings{
+        .eth_if_log_settings = {
+            .enabled = false,
+            .max_file_size_mb = 1,
+            .max_files = 1,
+            .dump_response = false,
+        },
+        .eth_api_port = 51515,
+        .num_workers = 0,
+        .erigon_json_rpc_compatibility = false,
+        .ws_enabled = false,
+        .ws_compression = false,
+        .http_compression = false,
+        // We must skip internal protocol check here (would block because gRPC server not present)
+        .skip_internal_protocol_check = true,
+    };
+    (void)std::snprintf(settings.eth_if_log_settings.container_folder, SILKWORM_PATH_SIZE, "logs");
+    (void)std::snprintf(settings.eth_api_host, SILKWORM_RPC_SETTINGS_HOST_SIZE, "localhost");
+    (void)std::snprintf(settings.eth_api_spec, SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE, "eth,ots");
+    for (auto& domain : settings.cors_domains) {
+        (void)std::snprintf(domain, SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "");
+    }
+    (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
+    (void)std::snprintf(settings.jwt_file_path, SILKWORM_PATH_SIZE, "jwt.hex");
+    return settings;
+}
+
+static const SilkwormRpcSettings kRpcSettings_ForTest{make_rpc_settings()};
+
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") {
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        SilkwormRpcSettings rpc_settings{};
-        CHECK(silkworm_start_rpcdaemon(handle, db, &rpc_settings) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_start_rpcdaemon(handle, db, &kRpcSettings_ForTest) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
@@ -802,9 +831,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
     }
 
     SECTION("default settings") {
-        // We must skip internal protocol check here (would block because gRPC server not present)
-        SilkwormRpcSettings rpc_settings{.skip_internal_protocol_check = true};
-        CHECK(silkworm_lib.start_rpcdaemon(db, &rpc_settings) == SILKWORM_OK);
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kRpcSettings_ForTest) == SILKWORM_OK);
     }
 }
 
@@ -823,9 +850,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
     }
 
     SECTION("already started") {
-        // We must skip internal protocol check here (would block because gRPC server not present)
-        SilkwormRpcSettings rpc_settings{.skip_internal_protocol_check = true};
-        REQUIRE(silkworm_lib.start_rpcdaemon(db, &rpc_settings) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kRpcSettings_ForTest) == SILKWORM_OK);
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }

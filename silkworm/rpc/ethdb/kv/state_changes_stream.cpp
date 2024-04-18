@@ -72,16 +72,17 @@ Task<void> StateChangesStream::run() {
                 SILK_DEBUG << "Retry timer cancelled";
 
                 state_changes_rpc->cancel();
-                SILK_WARN << "State changes stream cancelled";
+                SILK_DEBUG << "State changes stream cancelled";
             });
         }
 
         SILK_INFO << "Registration for state changes started";
         const auto [req_ec] = co_await state_changes_rpc->request_on(scheduler_.get_executor(), request_, use_nothrow_awaitable);
         if (req_ec) {
-            if (std::error_code(req_ec).value() == grpc::StatusCode::CANCELLED) {
+            std::error_code request_ec{req_ec};
+            if (request_ec.value() == grpc::StatusCode::CANCELLED || request_ec.value() == grpc::StatusCode::ABORTED) {
                 cancelled = true;
-                SILK_DEBUG << "State changes stream cancelled immediately after request cancelled";
+                SILK_DEBUG << "State changes stream cancelled or closed by server while opening";
             } else {
                 SILK_WARN << "State changes stream request error [" << req_ec.message() << "], schedule reopen";
                 retry_timer_.expires_after(registration_interval_);
@@ -103,9 +104,9 @@ Task<void> StateChangesStream::run() {
                 SILK_TRACE << "State changes batch received: " << reply << "";
                 cache_->on_new_block(reply);
             } else {
-                if (read_ec.value() == grpc::StatusCode::CANCELLED) {
+                if (read_ec.value() == grpc::StatusCode::CANCELLED || read_ec.value() == grpc::StatusCode::ABORTED) {
                     cancelled = true;
-                    SILK_DEBUG << "State changes stream cancelled immediately after read cancelled";
+                    SILK_DEBUG << "State changes stream cancelled or closed by server while reading";
                 } else {
                     SILK_WARN << "State changes stream read error [" << read_ec.message() << "], schedule reopen";
                     retry_timer_.expires_after(registration_interval_);

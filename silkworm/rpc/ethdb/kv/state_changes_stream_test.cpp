@@ -188,14 +188,14 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         // 2. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
-        // Execute the precondition: the stream must be running
+        // Execute the pre-condition: the stream must be running
         std::future<void> run_result;
         CHECK_NOTHROW(run_result = spawn(stream_.run()));
 
         // Execute the test: closing the stream should succeed
         CHECK_NOTHROW(stream_.close());
 
-        // Execute the postcondition: the running stream finishes
+        // Execute the post-condition: the running stream finishes
         CHECK_NOTHROW(run_result.get());
     }
     SECTION("while reading w/ error every 10ms") {
@@ -220,7 +220,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         EXPECT_CALL(*statechanges_reader_, Finish)
             .WillRepeatedly(test::finish_streaming_cancelled(grpc_context_));
 
-        // Execute the precondition: the stream must be running at least for 30ms
+        // Execute the pre-condition: the stream must be running at least for 30ms
         std::future<void> run_result;
         CHECK_NOTHROW(run_result = spawn(stream_.run()));
         sleep_for(30ms);
@@ -228,7 +228,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         // Execute the test: closing the stream should succeed
         CHECK_NOTHROW(stream_.close());
 
-        // Execute the postcondition: the running stream finishes
+        // Execute the post-condition: the running stream finishes
         CHECK_NOTHROW(run_result.get());
     }
 }

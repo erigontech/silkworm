@@ -91,28 +91,6 @@ BodySnapshot::~BodySnapshot() {
     close();
 }
 
-std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
-    uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
-    BlockNum number = path_.block_from();
-
-    BodySnapshotReader reader{*this};
-    for (auto& body : reader) {
-        if (number == path_.block_from()) {
-            first_tx_id = body.base_txn_id;
-        }
-        if (number == path_.block_to() - 1) {
-            last_tx_id = body.base_txn_id;
-            last_txs_amount = body.txn_count;
-        }
-        number++;
-    }
-    if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.path().string()};
-
-    SILK_TRACE << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;
-
-    return {first_tx_id, last_tx_id + last_txs_amount - first_tx_id};
-}
-
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
     // TODO: move block_height check inside ordinal_lookup_by_data_id
     if (!idx_body_number_ || block_height < idx_body_number_->base_data_id()) {

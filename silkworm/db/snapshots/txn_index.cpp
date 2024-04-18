@@ -16,6 +16,7 @@
 
 #include "txn_index.hpp"
 
+#include "body_txs_amount_query.hpp"
 #include "snapshot.hpp"
 #include "txn_snapshot_word_serializer.hpp"
 
@@ -39,7 +40,8 @@ std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(
     std::optional<MemoryMappedRegion> bodies_segment_region) {
     BodySnapshot bodies_snapshot{std::move(bodies_segment_path), bodies_segment_region};
     bodies_snapshot.reopen_segment();
-    return bodies_snapshot.compute_txs_amount();
+    auto result = BodyTxsAmountQuery{bodies_snapshot}.exec();
+    return {result.first_tx_id, result.count};
 }
 
 }  // namespace silkworm::snapshots

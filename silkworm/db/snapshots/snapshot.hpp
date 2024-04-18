@@ -83,8 +83,6 @@ class BodySnapshot : public Snapshot {
 
     [[nodiscard]] const rec_split::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
-    std::pair<uint64_t, uint64_t> compute_txs_amount();
-
     [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
 
     void reopen_index() override;

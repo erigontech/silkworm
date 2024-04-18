@@ -368,12 +368,10 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     transactions_snapshot->reopen_index();
 
     snapshots::SnapshotBundle bundle{
-        .headers_snapshot_path = *headers_segment_path,
         .headers_snapshot = std::move(headers_snapshot),
-        .bodies_snapshot_path = *bodies_segment_path,
         .bodies_snapshot = std::move(bodies_snapshot),
-        .tx_snapshot_path = *transactions_segment_path,
-        .tx_snapshot = std::move(transactions_snapshot)};
+        .tx_snapshot = std::move(transactions_snapshot),
+    };
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }

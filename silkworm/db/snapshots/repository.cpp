@@ -78,13 +78,23 @@ SnapshotRepository::~SnapshotRepository() {
     close();
 }
 
-void SnapshotRepository::add_snapshot_bundle(SnapshotBundle&& bundle) {
-    header_segments_[bundle.headers_snapshot_path.path()] = std::move(bundle.headers_snapshot);
-    body_segments_[bundle.bodies_snapshot_path.path()] = std::move(bundle.bodies_snapshot);
-    tx_segments_[bundle.tx_snapshot_path.path()] = std::move(bundle.tx_snapshot);
-    if (bundle.tx_snapshot_path.block_to() > segment_max_block_) {
-        segment_max_block_ = bundle.tx_snapshot_path.block_to() - 1;
+void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
+    if (bundle.headers_snapshot && bundle.bodies_snapshot && bundle.tx_snapshot) {
+        // assume that all snapshot types end with the same block, and use one of them
+        BlockNum last_block = bundle.tx_snapshot->block_to() - 1;
+        segment_max_block_ = std::max(segment_max_block_, last_block);
     }
+
+    if (bundle.headers_snapshot) {
+        header_segments_[bundle.headers_snapshot->fs_path()] = std::move(bundle.headers_snapshot);
+    }
+    if (bundle.bodies_snapshot) {
+        body_segments_[bundle.bodies_snapshot->fs_path()] = std::move(bundle.bodies_snapshot);
+    }
+    if (bundle.tx_snapshot) {
+        tx_segments_[bundle.tx_snapshot->fs_path()] = std::move(bundle.tx_snapshot);
+    }
+
     idx_max_block_ = max_idx_available();
 }
 
@@ -297,9 +307,8 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
             }
             ensure(snapshot_valid, [&]() { return "invalid empty snapshot " + seg_file.filename(); });
 
-            if (seg_file.block_to() > segment_max_block) {
-                segment_max_block = seg_file.block_to() - 1;
-            }
+            BlockNum last_block = seg_file.block_to() - 1;
+            segment_max_block = std::max(segment_max_block, last_block);
         } catch (const std::exception& exc) {
             SILK_WARN << "Reopen failed for: " << seg_file.path() << " [" << exc.what() << "]";
             if (!optimistic) throw;

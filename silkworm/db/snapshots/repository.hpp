@@ -46,11 +46,8 @@ using BodySnapshotWalker = SnapshotWalker<BodySnapshot>;
 using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
 
 struct SnapshotBundle {
-    SnapshotPath headers_snapshot_path;
     std::unique_ptr<HeaderSnapshot> headers_snapshot;
-    SnapshotPath bodies_snapshot_path;
     std::unique_ptr<BodySnapshot> bodies_snapshot;
-    SnapshotPath tx_snapshot_path;
     std::unique_ptr<TransactionSnapshot> tx_snapshot;
 };
 
@@ -74,7 +71,7 @@ class SnapshotRepository {
         return get_files(kSegmentExtension);
     }
 
-    void add_snapshot_bundle(SnapshotBundle&& bundle);
+    void add_snapshot_bundle(SnapshotBundle bundle);
 
     void reopen_list(const SnapshotPathList& segment_files, bool optimistic = false);
     void reopen_file(const SnapshotPath& segment_path, bool optimistic = false);

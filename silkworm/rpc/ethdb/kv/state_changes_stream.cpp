@@ -61,8 +61,8 @@ Task<void> StateChangesStream::run() {
 
     auto cancellation_slot = cancellation_signal_.slot();
 
-    bool cancelled{false};
-    while (!cancelled) {
+    bool closed{false};
+    while (!closed) {
         auto state_changes_rpc{std::make_shared<StateChangesRpc>(*stub_, grpc_context_)};
 
         {
@@ -81,14 +81,14 @@ Task<void> StateChangesStream::run() {
         if (req_ec) {
             std::error_code request_ec{req_ec};
             if (request_ec.value() == grpc::StatusCode::CANCELLED || request_ec.value() == grpc::StatusCode::ABORTED) {
-                cancelled = true;
+                closed = true;
                 SILK_DEBUG << "State changes stream cancelled or closed by server while opening";
             } else {
                 SILK_WARN << "State changes stream request error [" << req_ec.message() << "], schedule reopen";
                 retry_timer_.expires_after(registration_interval_);
                 const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                 if (ec == boost::asio::error::operation_aborted) {
-                    cancelled = true;
+                    closed = true;
                     SILK_DEBUG << "State changes wait before retry cancelled";
                 }
             }
@@ -105,14 +105,14 @@ Task<void> StateChangesStream::run() {
                 cache_->on_new_block(reply);
             } else {
                 if (read_ec.value() == grpc::StatusCode::CANCELLED || read_ec.value() == grpc::StatusCode::ABORTED) {
-                    cancelled = true;
+                    closed = true;
                     SILK_DEBUG << "State changes stream cancelled or closed by server while reading";
                 } else {
                     SILK_WARN << "State changes stream read error [" << read_ec.message() << "], schedule reopen";
                     retry_timer_.expires_after(registration_interval_);
                     const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                     if (ec == boost::asio::error::operation_aborted) {
-                        cancelled = true;
+                        closed = true;
                         SILK_DEBUG << "State changes wait before retry cancelled";
                     }
                 }

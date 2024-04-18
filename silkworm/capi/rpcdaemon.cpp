@@ -121,7 +121,12 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
     }
 
     SILK_INFO << "[Silkworm RPC] Starting ETH API at " << daemon_settings.eth_end_point;
-    handle->rpcdaemon->start();
+    try {
+        handle->rpcdaemon->start();
+    } catch (const std::exception& ex) {
+        SILK_ERROR << "[Silkworm RPC] Cannot start RPC daemon due to: " << ex.what();
+        return SILKWORM_INTERNAL_ERROR;
+    }
 
     return SILKWORM_OK;
 }
@@ -134,11 +139,16 @@ SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEX
         return SILKWORM_OK;
     }
 
-    handle->rpcdaemon->stop();
-    SILK_INFO << "[Silkworm RPC] Exiting...";
-    handle->rpcdaemon->join();
-    SILK_INFO << "[Silkworm RPC] Stopped";
-    handle->rpcdaemon.reset();
+    try {
+        handle->rpcdaemon->stop();
+        SILK_INFO << "[Silkworm RPC] Exiting...";
+        handle->rpcdaemon->join();
+        SILK_INFO << "[Silkworm RPC] Stopped";
+        handle->rpcdaemon.reset();
+    } catch (const std::exception& ex) {
+        SILK_ERROR << "[Silkworm RPC] Cannot stop RPC daemon due to: " << ex.what();
+        return SILKWORM_INTERNAL_ERROR;
+    }
 
     return SILKWORM_OK;
 }

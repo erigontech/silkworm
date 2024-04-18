@@ -786,7 +786,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     }
 }
 
-static SilkwormRpcSettings make_rpc_settings() {
+static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_port) {
     SilkwormRpcSettings settings{
         .eth_if_log_settings = {
             .enabled = false,
@@ -794,7 +794,7 @@ static SilkwormRpcSettings make_rpc_settings() {
             .max_files = 1,
             .dump_response = false,
         },
-        .eth_api_port = 51515,
+        .eth_api_port = api_listening_port,
         .num_workers = 0,
         .erigon_json_rpc_compatibility = false,
         .ws_enabled = false,
@@ -814,13 +814,14 @@ static SilkwormRpcSettings make_rpc_settings() {
     return settings;
 }
 
-static const SilkwormRpcSettings kRpcSettings_ForTest{make_rpc_settings()};
+static const SilkwormRpcSettings kInvalidRpcSettings{make_rpc_settings_for_test(10)};
+static const SilkwormRpcSettings kValidRpcSettings{make_rpc_settings_for_test(8545)};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") {
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        CHECK(silkworm_start_rpcdaemon(handle, db, &kRpcSettings_ForTest) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_start_rpcdaemon(handle, db, &kValidRpcSettings) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
@@ -830,8 +831,13 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
         CHECK(silkworm_lib.start_rpcdaemon(db, nullptr) == SILKWORM_INVALID_SETTINGS);
     }
 
-    SECTION("default settings") {
-        CHECK(silkworm_lib.start_rpcdaemon(db, &kRpcSettings_ForTest) == SILKWORM_OK);
+    SECTION("test settings: invalid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kInvalidRpcSettings) == SILKWORM_INTERNAL_ERROR);
+    }
+
+    SECTION("test settings: valid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
 
@@ -850,7 +856,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
     }
 
     SECTION("already started") {
-        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kRpcSettings_ForTest) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }

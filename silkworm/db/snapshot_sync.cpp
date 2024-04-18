@@ -311,8 +311,8 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
 
     // Reset sequence for kBlockTransactions table
     const auto tx_snapshot = repository_->find_tx_segment(max_block_available);
-    ensure(tx_snapshot, "SnapshotSync: snapshots max block not found in any snapshot");
-    const auto last_tx_id = tx_snapshot->idx_txn_hash()->base_data_id() + tx_snapshot->item_count();
+    ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
+    const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
     SILK_INFO << "SnapshotSync: database table BlockTransactions sequence reset";
 

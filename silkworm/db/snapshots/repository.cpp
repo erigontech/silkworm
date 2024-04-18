@@ -17,8 +17,8 @@
 #include "repository.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <ranges>
-#include <utility>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
@@ -36,37 +36,28 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-template <ConcreteSnapshot T>
-const T* get_segment(const SnapshotsByPath<T>& segments, const SnapshotPath& path) {
-    if (!segments.contains(path.path())) {
-        return nullptr;
-    }
-    return segments.find(path.path())->second.get();
-}
-
-template <ConcreteSnapshot T>
-SnapshotRepository::ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker) {
+SnapshotRepository::ViewResult SnapshotRepository::view_segment(SnapshotType type, BlockNum number, const SnapshotWalker& walker) {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
-        const auto& snapshot = it->second;
+    for (auto& entry : std::ranges::reverse_view(bundles_)) {
+        const auto& bundle = entry.second;
         // We're looking for the segment containing the target block number in its block range
-        if (snapshot->block_from() <= number && number < snapshot->block_to()) {
-            const bool walk_done = walker(*snapshot);
+        if ((bundle.block_from() <= number) && (number < bundle.block_to())) {
+            const bool walk_done = walker({bundle.snapshot(type), bundle.index(type)});
             return walk_done ? SnapshotRepository::kWalkSuccess : SnapshotRepository::kWalkFailed;
         }
     }
     return SnapshotRepository::kSnapshotNotFound;
 }
 
-template <ConcreteSnapshot T>
-std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& walker) {
+std::size_t SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     std::size_t visited_views{0};
     bool walk_done{false};
-    for (auto it = segments.rbegin(); it != segments.rend() && !walk_done; ++it) {
-        const auto& snapshot = it->second;
-        walk_done = walker(*snapshot);
+    for (auto& entry : std::ranges::reverse_view(bundles_)) {
+        const auto& bundle = entry.second;
+        walk_done = walker(bundle);
         ++visited_views;
+        if (walk_done) break;
     }
     return visited_views;
 }
@@ -79,22 +70,12 @@ SnapshotRepository::~SnapshotRepository() {
 }
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
-    if (bundle.headers_snapshot && bundle.bodies_snapshot && bundle.tx_snapshot) {
-        // assume that all snapshot types end with the same block, and use one of them
-        BlockNum last_block = bundle.tx_snapshot->block_to() - 1;
-        segment_max_block_ = std::max(segment_max_block_, last_block);
-    }
+    BlockNum block_from = bundle.block_from();
+    BlockNum block_to = bundle.block_to();
 
-    if (bundle.headers_snapshot) {
-        header_segments_[bundle.headers_snapshot->fs_path()] = std::move(bundle.headers_snapshot);
-    }
-    if (bundle.bodies_snapshot) {
-        body_segments_[bundle.bodies_snapshot->fs_path()] = std::move(bundle.bodies_snapshot);
-    }
-    if (bundle.tx_snapshot) {
-        tx_segments_[bundle.tx_snapshot->fs_path()] = std::move(bundle.tx_snapshot);
-    }
+    bundles_.emplace(block_from, std::move(bundle));
 
+    segment_max_block_ = std::max(segment_max_block_, block_to - 1);
     idx_max_block_ = max_idx_available();
 }
 
@@ -107,14 +88,14 @@ void SnapshotRepository::reopen_folder() {
 
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
-    for (const auto& [_, header_seg] : this->header_segments_) {
-        header_seg->close();
-    }
-    for (const auto& [_, body_seg] : this->body_segments_) {
-        body_seg->close();
-    }
-    for (const auto& [_, tx_seg] : this->tx_segments_) {
-        tx_seg->close();
+    for (auto& entry : bundles_) {
+        auto& bundle = entry.second;
+        for (auto& index_ref : bundle.indexes()) {
+            index_ref.get().close_index();
+        }
+        for (auto& snapshot_ref : bundle.snapshots()) {
+            snapshot_ref.get().close();
+        }
     }
 }
 
@@ -124,6 +105,7 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     std::vector<BlockNumRange> missing_ranges;
     BlockNum previous_to{0};
     for (const auto& segment : ordered_segments) {
+        // skips different types of snapshots having the same block range
         if (segment.block_to() <= previous_to) continue;
         if (segment.block_from() != previous_to) {
             missing_ranges.emplace_back(previous_to, segment.block_from());
@@ -134,10 +116,12 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
 }
 
 bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
-    for (const auto& [_, header_snapshot] : header_segments_) {
-        SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot->fs_path().string();
+    for (auto& entry : bundles_) {
+        auto& bundle = entry.second;
+        const Snapshot& header_snapshot = bundle.header_snapshot;
+        SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot.fs_path().string();
 
-        HeaderSnapshotReader reader{*header_snapshot};
+        HeaderSnapshotReader reader{header_snapshot};
         for (auto& header : reader) {
             const bool keep_going = fn(header);
             if (!keep_going) return false;
@@ -147,11 +131,13 @@ bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
 }
 
 bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
-    for (const auto& [_, body_snapshot] : body_segments_) {
-        SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot->fs_path().string();
+    for (auto& entry : bundles_) {
+        auto& bundle = entry.second;
+        const Snapshot& body_snapshot = bundle.body_snapshot;
+        SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot.fs_path().string();
 
-        BlockNum number = body_snapshot->path().block_from();
-        BodySnapshotReader reader{*body_snapshot};
+        BlockNum number = body_snapshot.block_from();
+        BodySnapshotReader reader{body_snapshot};
         for (auto& body : reader) {
             const bool keep_going = fn(number, body);
             if (!keep_going) return false;
@@ -161,61 +147,64 @@ bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
     return true;
 }
 
-SnapshotRepository::ViewResult SnapshotRepository::view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker) {
-    return view(header_segments_, number, walker);
+SnapshotRepository::ViewResult SnapshotRepository::view_header_segment(BlockNum number, const SnapshotWalker& walker) {
+    return view_segment(SnapshotType::headers, number, walker);
 }
 
-SnapshotRepository::ViewResult SnapshotRepository::view_body_segment(BlockNum number, const BodySnapshotWalker& walker) {
-    return view(body_segments_, number, walker);
+SnapshotRepository::ViewResult SnapshotRepository::view_body_segment(BlockNum number, const SnapshotWalker& walker) {
+    return view_segment(SnapshotType::bodies, number, walker);
 }
 
-SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker) {
-    return view(tx_segments_, number, walker);
+SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum number, const SnapshotWalker& walker) {
+    return view_segment(SnapshotType::transactions, number, walker);
 }
 
-std::size_t SnapshotRepository::view_header_segments(const HeaderSnapshotWalker& walker) {
-    return view(header_segments_, walker);
+std::size_t SnapshotRepository::view_segments(SnapshotType type, const SnapshotWalker& walker) {
+    return view_bundles([&](const SnapshotBundle& bundle) {
+        return walker({bundle.snapshot(type), bundle.index(type)});
+    });
 }
 
-std::size_t SnapshotRepository::view_body_segments(const BodySnapshotWalker& walker) {
-    return view(body_segments_, walker);
+std::size_t SnapshotRepository::view_header_segments(const SnapshotWalker& walker) {
+    return view_segments(SnapshotType::headers, walker);
 }
 
-std::size_t SnapshotRepository::view_tx_segments(const TransactionSnapshotWalker& walker) {
-    return view(tx_segments_, walker);
+std::size_t SnapshotRepository::view_body_segments(const SnapshotWalker& walker) {
+    return view_segments(SnapshotType::bodies, walker);
 }
 
-const HeaderSnapshot* SnapshotRepository::get_header_segment(const SnapshotPath& path) const {
-    return get_segment(header_segments_, path);
+std::size_t SnapshotRepository::view_tx_segments(const SnapshotWalker& walker) {
+    return view_segments(SnapshotType::transactions, walker);
 }
 
-const BodySnapshot* SnapshotRepository::get_body_segment(const SnapshotPath& path) const {
-    return get_segment(body_segments_, path);
+std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
+    auto bundle = find_bundle(number);
+    if (bundle) {
+        return SnapshotAndIndex{bundle->snapshot(type), bundle->index(type)};
+    }
+    return std::nullopt;
 }
 
-const TransactionSnapshot* SnapshotRepository::get_tx_segment(const SnapshotPath& path) const {
-    return get_segment(tx_segments_, path);
+std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_header_segment(BlockNum number) const {
+    return find_segment(SnapshotType::headers, number);
 }
 
-const HeaderSnapshot* SnapshotRepository::find_header_segment(BlockNum number) const {
-    return find_segment(header_segments_, number);
+std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_body_segment(BlockNum number) const {
+    return find_segment(SnapshotType::bodies, number);
 }
 
-const BodySnapshot* SnapshotRepository::find_body_segment(BlockNum number) const {
-    return find_segment(body_segments_, number);
-}
-
-const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) const {
-    return find_segment(tx_segments_, number);
+std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_tx_segment(BlockNum number) const {
+    return find_segment(SnapshotType::transactions, number);
 }
 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (const auto& it : std::ranges::reverse_view(tx_segments_)) {
-        const auto& snapshot = it.second;
+    for (const auto& entry : std::ranges::reverse_view(bundles_)) {
+        const auto& bundle = entry.second;
+        const auto& snapshot = bundle.txn_snapshot;
 
-        Index idx_txn_hash{*snapshot->idx_txn_hash()};
-        Index idx_txn_hash_2_block{*snapshot->idx_txn_hash_2_block()};
-        auto block = TransactionBlockNumByTxnHashQuery{idx_txn_hash_2_block, TransactionFindByHashQuery{*snapshot, idx_txn_hash}}.exec(txn_hash);
+        const Index& idx_txn_hash = bundle.idx_txn_hash;
+        const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
+        auto block = TransactionBlockNumByTxnHashQuery{idx_txn_hash_2_block, TransactionFindByHashQuery{snapshot, idx_txn_hash}}.exec(txn_hash);
         if (block) {
             return block;
         }
@@ -263,102 +252,91 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     return missing_index_list;
 }
 
-void SnapshotRepository::reopen_file(const SnapshotPath& segment_path, bool optimistic) {
-    reopen_list(SnapshotPathList{segment_path}, optimistic);
-}
+void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files) {
+    std::map<BlockNum, SnapshotPath> header_snapshot_paths;
+    std::map<BlockNum, SnapshotPath> body_snapshot_paths;
+    std::map<BlockNum, SnapshotPath> txn_snapshot_paths;
 
-void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool optimistic) {
-    BlockNum segment_max_block{0};
-    for (const auto& seg_file : segment_files) {
-        try {
-            SILK_TRACE << "Reopen segment file: " << seg_file.path().filename().string();
-            bool snapshot_valid{true};
-            switch (seg_file.type()) {
-                case SnapshotType::headers: {
-                    const auto header_it = header_segments_.find(seg_file.path());
-                    if (header_it != header_segments_.end()) {
-                        header_it->second->reopen_index();
-                    } else {
-                        snapshot_valid = reopen_header(seg_file);
-                    }
-                    break;
-                }
-                case SnapshotType::bodies: {
-                    const auto body_it = body_segments_.find(seg_file.path());
-                    if (body_it != body_segments_.end()) {
-                        body_it->second->reopen_index();
-                    } else {
-                        snapshot_valid = reopen_body(seg_file);
-                    }
-                    break;
-                }
-                case SnapshotType::transactions: {
-                    const auto tx_it = tx_segments_.find(seg_file.path());
-                    if (tx_it != tx_segments_.end()) {
-                        tx_it->second->reopen_index();
-                    } else {
-                        snapshot_valid = reopen_transaction(seg_file);
-                    }
-                    break;
-                }
-                default: {
-                    SILKWORM_ASSERT(false);
-                }
-            }
-            ensure(snapshot_valid, [&]() { return "invalid empty snapshot " + seg_file.filename(); });
-
-            BlockNum last_block = seg_file.block_to() - 1;
-            segment_max_block = std::max(segment_max_block, last_block);
-        } catch (const std::exception& exc) {
-            SILK_WARN << "Reopen failed for: " << seg_file.path() << " [" << exc.what() << "]";
-            if (!optimistic) throw;
+    for (const SnapshotPath& path : segment_files) {
+        switch (path.type()) {
+            case SnapshotType::headers:
+                header_snapshot_paths.emplace(path.block_from(), path);
+                break;
+            case SnapshotType::bodies:
+                body_snapshot_paths.emplace(path.block_from(), path);
+                break;
+            case SnapshotType::transactions:
+                txn_snapshot_paths.emplace(path.block_from(), path);
+                break;
+            case SnapshotType::transactions_to_block:
+                assert(false);
+                break;
         }
     }
-    segment_max_block_ = segment_max_block;
+
+    BlockNum num = 0;
+    if (!header_snapshot_paths.empty()) {
+        num = header_snapshot_paths.begin()->first;
+    }
+
+    while (
+        header_snapshot_paths.contains(num) &&
+        body_snapshot_paths.contains(num) &&
+        txn_snapshot_paths.contains(num)) {
+        if (!bundles_.contains(num)) {
+            SnapshotBundle bundle{
+                .header_snapshot = Snapshot(header_snapshot_paths.at(num)),
+                .idx_header_hash = Index(header_snapshot_paths.at(num).index_file()),
+
+                .body_snapshot = Snapshot(body_snapshot_paths.at(num)),
+                .idx_body_number = Index(body_snapshot_paths.at(num).index_file()),
+
+                .txn_snapshot = Snapshot(txn_snapshot_paths.at(num)),
+                .idx_txn_hash = Index(txn_snapshot_paths.at(num).index_file_for_type(SnapshotType::transactions)),
+                .idx_txn_hash_2_block = Index(txn_snapshot_paths.at(num).index_file_for_type(SnapshotType::transactions_to_block)),
+            };
+
+            for (auto& snapshot_ref : bundle.snapshots()) {
+                snapshot_ref.get().reopen_segment();
+                ensure(!snapshot_ref.get().empty(), [&]() {
+                    return "invalid empty snapshot " + snapshot_ref.get().fs_path().string();
+                });
+            }
+
+            bundles_.emplace(num, std::move(bundle));
+        }
+
+        auto& bundle = bundles_.at(num);
+        for (auto& index_ref : bundle.indexes()) {
+            index_ref.get().reopen_index();
+        }
+
+        segment_max_block_ = std::max(segment_max_block_, bundle.block_to() - 1);
+
+        if (num < bundle.block_to()) {
+            num = bundle.block_to();
+        } else {
+            break;
+        }
+    }
+
     idx_max_block_ = max_idx_available();
 }
 
-bool SnapshotRepository::reopen_header(const SnapshotPath& seg_file) {
-    return reopen(header_segments_, seg_file);
-}
-
-bool SnapshotRepository::reopen_body(const SnapshotPath& seg_file) {
-    return reopen(body_segments_, seg_file);
-}
-
-bool SnapshotRepository::reopen_transaction(const SnapshotPath& seg_file) {
-    return reopen(tx_segments_, seg_file);
-}
-
-template <ConcreteSnapshot T>
-const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const {
+const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
     if (number > max_block_available()) {
         return nullptr;
     }
 
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
-        const auto& snapshot = it->second;
+    for (const auto& entry : std::ranges::reverse_view(bundles_)) {
+        const auto& bundle = entry.second;
         // We're looking for the segment containing the target block number in its block range
-        if (snapshot->block_from() <= number && number < snapshot->block_to()) {
-            return snapshot.get();
+        if ((bundle.block_from() <= number) && (number < bundle.block_to())) {
+            return &bundle;
         }
     }
     return nullptr;
-}
-
-template <ConcreteSnapshot T>
-bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file) {
-    if (segments.find(seg_file.path()) == segments.end()) {
-        auto segment = std::make_unique<T>(seg_file);
-        segment->reopen_segment();
-        if (segment->empty()) return false;
-        segments[seg_file.path()] = std::move(segment);
-    }
-    SILKWORM_ASSERT(segments.find(seg_file.path()) != segments.end());
-    const auto& segment = segments[seg_file.path()];
-    segment->reopen_index();
-    return true;
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
@@ -388,24 +366,18 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     return snapshot_files;
 }
 
-BlockNum SnapshotRepository::max_idx_available() const {
-    BlockNum max_block_headers{0};
-    for (auto& [_, header_seg] : header_segments_) {
-        if (!header_seg->idx_header_hash()) break;
-        max_block_headers = header_seg->block_to() - 1;
+BlockNum SnapshotRepository::max_idx_available() {
+    BlockNum result = 0;
+    for (auto& entry : bundles_) {
+        auto& bundle = entry.second;
+        for (auto& index_ref : bundle.indexes()) {
+            if (!index_ref.get().is_open()) {
+                return result;
+            }
+        }
+        result = bundle.block_to() - 1;
     }
-    BlockNum max_block_bodies{0};
-    for (auto& [_, body_seg] : body_segments_) {
-        if (!body_seg->idx_body_number()) break;
-        max_block_bodies = body_seg->block_to() - 1;
-    }
-    BlockNum max_block_txs{0};
-    for (auto& [_, tx_seg] : tx_segments_) {
-        if (!tx_seg->idx_txn_hash() || !tx_seg->idx_txn_hash_2_block()) break;
-        max_block_txs = tx_seg->block_to() - 1;
-    }
-
-    return std::min(max_block_headers, std::min(max_block_bodies, max_block_txs));
+    return result;
 }
 
 }  // namespace silkworm::snapshots

@@ -23,8 +23,15 @@
 
 namespace silkworm::snapshots {
 
-Snapshot::Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region)
-    : path_(std::move(path)), decoder_{path_.path(), segment_region} {}
+Snapshot::Snapshot(
+    SnapshotPath path,
+    std::optional<MemoryMappedRegion> segment_region)
+    : path_(std::move(path)),
+      decoder_{path_.path(), segment_region} {}
+
+Snapshot::~Snapshot() {
+    close();
+}
 
 MemoryMappedRegion Snapshot::memory_file_region() const {
     const auto memory_file{decoder_.memory_file()};
@@ -33,7 +40,7 @@ MemoryMappedRegion Snapshot::memory_file_region() const {
 }
 
 void Snapshot::reopen_segment() {
-    close_segment();
+    close();
 
     // Open decompressor that opens the mapped file in turns
     decoder_.open();
@@ -90,11 +97,6 @@ Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_pref
 }
 
 void Snapshot::close() {
-    close_segment();
-    close_index();
-}
-
-void Snapshot::close_segment() {
     // Close decompressor that closes the mapped file in turns
     decoder_.close();
 }

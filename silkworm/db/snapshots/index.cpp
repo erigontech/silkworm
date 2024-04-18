@@ -18,4 +18,25 @@
 
 namespace silkworm::snapshots {
 
+void Index::reopen_index() {
+    close_index();
+
+    if (path_.exists()) {
+        index_ = std::make_unique<rec_split::RecSplitIndex>(path_.path(), region_);
+
+        // TODO: move this code or pass in snapshot_last_write_time as an argument
+        // snapshot_last_write_time: ensure(decoder_.is_open(), "segment not open, call reopen_segment");
+        // if (index_->last_write_time() < snapshot_last_write_time) {
+        //     // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+        //     const bool removed = std::filesystem::remove(path_.path());
+        //     ensure(removed, "Index: cannot remove index file");
+        //     close_index();
+        // }
+    }
+}
+
+void Index::close_index() {
+    index_.reset();
+}
+
 }  // namespace silkworm::snapshots

@@ -76,8 +76,13 @@ class Snapshot {
 
     static inline const auto kPageSize{os::page_size()};
 
-    explicit Snapshot(SnapshotPath path, std::optional<MemoryMappedRegion> segment_region = std::nullopt);
-    virtual ~Snapshot() = default;
+    explicit Snapshot(
+        SnapshotPath path,
+        std::optional<MemoryMappedRegion> segment_region = std::nullopt);
+    ~Snapshot();
+
+    Snapshot(Snapshot&&) = default;
+    Snapshot& operator=(Snapshot&&) = default;
 
     [[nodiscard]] SnapshotPath path() const { return path_; }
     [[nodiscard]] std::filesystem::path fs_path() const { return path_.path(); }
@@ -91,18 +96,14 @@ class Snapshot {
     [[nodiscard]] MemoryMappedRegion memory_file_region() const;
 
     void reopen_segment();
-    virtual void reopen_index() = 0;
+    void close();
 
     Iterator begin(std::shared_ptr<SnapshotWordSerializer> serializer) const;
     Iterator end() const;
 
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const;
 
-    void close();
-
-  protected:
-    void close_segment();
-    virtual void close_index() = 0;
+  private:
     seg::Decompressor::Iterator seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const;
 
     //! The path of the segment file for this snapshot

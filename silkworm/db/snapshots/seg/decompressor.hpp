@@ -274,6 +274,9 @@ class Decompressor {
     explicit Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region = {});
     ~Decompressor();
 
+    Decompressor(Decompressor&&) = default;
+    Decompressor& operator=(Decompressor&&) = default;
+
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
 
     [[nodiscard]] std::string compressed_filename() const { return compressed_path_.filename().string(); }

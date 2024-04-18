@@ -28,7 +28,7 @@
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/rec_split/rec_split_par.hpp>
 
-#include "snapshot_base.hpp"
+#include "snapshot_reader.hpp"
 #include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {

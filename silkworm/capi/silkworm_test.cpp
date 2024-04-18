@@ -790,8 +790,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        SilkwormRpcSettings settings{};
-        CHECK(silkworm_start_rpcdaemon(handle, db, &settings) == SILKWORM_INVALID_HANDLE);
+        SilkwormRpcSettings rpc_settings{};
+        CHECK(silkworm_start_rpcdaemon(handle, db, &rpc_settings) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
@@ -803,8 +803,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
 
     SECTION("default settings") {
         // We must skip internal protocol check here (would block because gRPC server not present)
-        SilkwormRpcSettings settings{.skip_internal_protocol_check = true};
-        CHECK(silkworm_lib.start_rpcdaemon(db, &settings) == SILKWORM_OK);
+        SilkwormRpcSettings rpc_settings{.skip_internal_protocol_check = true};
+        CHECK(silkworm_lib.start_rpcdaemon(db, &rpc_settings) == SILKWORM_OK);
     }
 }
 
@@ -824,8 +824,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
 
     SECTION("already started") {
         // We must skip internal protocol check here (would block because gRPC server not present)
-        SilkwormRpcSettings settings{.skip_internal_protocol_check = true};
-        REQUIRE(silkworm_lib.start_rpcdaemon(db, &settings) == SILKWORM_OK);
+        SilkwormRpcSettings rpc_settings{.skip_internal_protocol_check = true};
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &rpc_settings) == SILKWORM_OK);
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }

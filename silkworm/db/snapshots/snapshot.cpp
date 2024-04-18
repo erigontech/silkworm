@@ -153,19 +153,9 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
         return {};
     }
 
-    // Lookup the block number using dedicated MPHF index
-    const auto [block_number, found] = idx_txn_hash_2_block_->lookup(txn_hash);
-    if (!found) {
-        return {};
-    }
-
-    // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
-    const auto transaction{txn_by_hash(txn_hash)};
-    if (!transaction) {
-        return {};
-    }
-
-    return block_number;
+    Index idx_txn_hash{*idx_txn_hash_};
+    TransactionFindByHashQuery txn_by_hash_query{*this, idx_txn_hash};
+    return TransactionBlockNumByTxnHashQuery{Index{*idx_txn_hash_2_block_}, txn_by_hash_query}.exec(txn_hash);
 }
 
 std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t first_txn_id, uint64_t count) const {

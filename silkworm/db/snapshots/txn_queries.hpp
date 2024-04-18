@@ -39,4 +39,24 @@ struct TransactionPayloadRlpRangeFromIdQuery : public RangeFromIdQuery<Transacti
     using RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>>::RangeFromIdQuery;
 };
 
+class TransactionBlockNumByTxnHashQuery {
+  public:
+    TransactionBlockNumByTxnHashQuery(
+        const Index& index,
+        TransactionFindByHashQuery cross_check_query)
+        : index_(index),
+          cross_check_query_(cross_check_query) {}
+
+    std::optional<BlockNum> exec(const Hash& hash) {
+        // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
+        const auto transaction = cross_check_query_.exec(hash);
+        auto result = transaction ? index_.lookup_by_hash(hash) : std::nullopt;
+        return result;
+    }
+
+  private:
+    const Index& index_;
+    TransactionFindByHashQuery cross_check_query_;
+};
+
 }  // namespace silkworm::snapshots

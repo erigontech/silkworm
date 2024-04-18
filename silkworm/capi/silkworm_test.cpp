@@ -807,7 +807,7 @@ static SilkwormRpcSettings make_rpc_settings() {
     (void)std::snprintf(settings.eth_api_host, SILKWORM_RPC_SETTINGS_HOST_SIZE, "localhost");
     (void)std::snprintf(settings.eth_api_spec, SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE, "eth,ots");
     for (auto& domain : settings.cors_domains) {
-        (void)std::snprintf(domain, SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "");
+        domain[0] = 0;
     }
     (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
     (void)std::snprintf(settings.jwt_file_path, SILKWORM_PATH_SIZE, "jwt.hex");

@@ -31,11 +31,11 @@ jobs:
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-15 CXX=clang++-15 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSILKWORM_FUZZER=ON
+        run: CC=clang-15 CXX=clang++-15 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 
       - name: Build Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-15 CXX=clang++-15 cmake --build . --config Release --target rpcdaemon_fuzzer_test -j 8
+        run: CC=clang-15 CXX=clang++-15 cmake --build . --target rpcdaemon_fuzzer_test -j 8
 
       - name: Prepare Corpus Directories
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test

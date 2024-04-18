@@ -31,7 +31,7 @@ jobs:
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-15 CXX=clang++-15 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+        run: CC=clang-15 CXX=clang++-15 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 
       - name: Build Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build

@@ -23,8 +23,8 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
 
-      - name: Install Compiler (Clang 15)
-        run: sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
+      # - name: Install Compiler (Clang 15)
+      #   run: sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
 
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build

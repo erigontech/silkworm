@@ -37,6 +37,7 @@
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
+#include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
 
 namespace silkworm::rpc {
@@ -129,6 +130,13 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());
+
+            // At startup check that chain configuration is valid
+            db::ROTxnManaged ro_txn{*chaindata_env};
+            db::DataModel data_access{ro_txn};
+            if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
+                throw std::runtime_error{"invalid chain configuration"};
+            }
         }
 
         // Create the one-and-only Silkrpc daemon
@@ -301,9 +309,17 @@ void Daemon::start() {
                                   boost::asio::io_context& ioc,
                                   std::optional<std::string> jwt_secret,
                                   InterfaceLogSettings ilog_settings) {
+        commands::RpcApi rpc_api{ioc, worker_pool_};
+        commands::RpcApiTable handler_table{api_spec};
+        auto make_jsonrpc_handler = [rpc_api = std::move(rpc_api),
+                                     handler_table = std::move(handler_table),
+                                     ilog_settings = std::move(ilog_settings)](StreamWriter* stream_writer) mutable {
+            return std::make_unique<json_rpc::RequestHandler>(stream_writer, rpc_api, handler_table, ilog_settings);
+        };
+
         return std::make_unique<http::Server>(
-            end_point, api_spec, ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
-            settings_.use_websocket, settings_.ws_compression, settings_.http_compression, std::move(ilog_settings));
+            end_point, std::move(make_jsonrpc_handler), ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
+            settings_.use_websocket, settings_.ws_compression, settings_.http_compression);
     };
 
     // Put the interface logs into the data folder

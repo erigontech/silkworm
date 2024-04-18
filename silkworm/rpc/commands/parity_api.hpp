@@ -44,6 +44,7 @@ class ParityRpcApi {
 
     ParityRpcApi(const ParityRpcApi&) = delete;
     ParityRpcApi& operator=(const ParityRpcApi&) = delete;
+    ParityRpcApi(ParityRpcApi&&) = default;
 
   protected:
     Task<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);

@@ -193,6 +193,7 @@ class OtsRpcApi {
 
     OtsRpcApi(const OtsRpcApi&) = delete;
     OtsRpcApi& operator=(const OtsRpcApi&) = delete;
+    OtsRpcApi(OtsRpcApi&&) = default;
 
   protected:
     Task<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);

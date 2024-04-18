@@ -16,14 +16,11 @@
 
 #pragma once
 
-#include <deque>
-#include <memory>
+#include <cstddef>
 #include <string>
+#include <string_view>
 
 #include <silkworm/infra/concurrency/task.hpp>
-
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/write.hpp>
 
 namespace silkworm::rpc {
 

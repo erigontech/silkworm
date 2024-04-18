@@ -41,6 +41,7 @@ class TxPoolRpcApi {
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;
     TxPoolRpcApi& operator=(const TxPoolRpcApi&) = delete;
+    TxPoolRpcApi(TxPoolRpcApi&&) = default;
 
   protected:
     Task<void> handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply);

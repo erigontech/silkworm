@@ -23,6 +23,9 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
 
+      - name: Install Compiler (Clang 15)
+        run: sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
+
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build
 
@@ -31,11 +34,11 @@ jobs:
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-15 CXX=clang++-15 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+        run: CC=/lib/llvm-15/bin/clang CXX=/lib/llvm-15/bin/clang cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 
       - name: Build Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-15 CXX=clang++-15 cmake --build . --target rpcdaemon_fuzzer_test -j 8
+        run: CC=/lib/llvm-15/bin/clang CXX=/lib/llvm-15/bin/clang cmake --build . --target rpcdaemon_fuzzer_test -j 8
 
       - name: Prepare Corpus Directories
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test

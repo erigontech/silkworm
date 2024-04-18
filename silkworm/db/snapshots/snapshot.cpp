@@ -24,8 +24,11 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "body_queries.hpp"
 #include "body_snapshot.hpp"
+#include "header_queries.hpp"
 #include "header_snapshot.hpp"
+#include "txn_queries.hpp"
 #include "txn_snapshot.hpp"
 #include "txn_snapshot_word_serializer.hpp"
 
@@ -45,28 +48,16 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
         return {};
     }
 
-    auto block_header_offset_opt = idx_header_hash_->ordinal_lookup_by_key(block_hash);
-    if (!block_header_offset_opt) {
-        return std::nullopt;
-    }
-    size_t block_header_offset = *block_header_offset_opt;
-    SILK_TRACE << "HeaderSnapshot::header_by_hash block_header_offset: " << block_header_offset;
-    // Finally, read the next header at specified offset
-    auto header = HeaderSnapshotReader{*this}.seek_one(block_header_offset, block_hash);
-    // We *must* ensure that the retrieved header hash matches because there is no way to know if key exists in MPHF
-    if (header && header->hash() != block_hash) {
-        header.reset();
-    }
-    return header;
+    return HeaderFindByHashQuery{*this, Index{*idx_header_hash_}}.exec(block_hash);
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
+    // TODO: move block_height checks inside ordinal_lookup_by_data_id or FindByIdQuery
     if (!idx_header_hash_ || block_height < path_.block_from() || block_height >= path_.block_to()) {
         return {};
     }
 
-    size_t block_header_offset = idx_header_hash_->ordinal_lookup_by_data_id(block_height);
-    return HeaderSnapshotReader{*this}.seek_one(block_header_offset);
+    return HeaderFindByBlockNumQuery{*this, Index{*idx_header_hash_}}.exec(block_height);
 }
 
 void HeaderSnapshot::reopen_index() {
@@ -123,12 +114,12 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
 }
 
 std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
+    // TODO: move block_height check inside ordinal_lookup_by_data_id
     if (!idx_body_number_ || block_height < idx_body_number_->base_data_id()) {
         return {};
     }
 
-    size_t block_body_offset = idx_body_number_->ordinal_lookup_by_data_id(block_height);
-    return BodySnapshotReader{*this}.seek_one(block_body_offset);
+    return BodyFindByBlockNumQuery{*this, Index{*idx_body_number_}}.exec(block_height);
 }
 
 void BodySnapshot::reopen_index() {
@@ -168,18 +159,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash
         return {};
     }
 
-    auto txn_offset_opt = idx_txn_hash_->ordinal_lookup_by_key(txn_hash);
-    if (!txn_offset_opt) {
-        return std::nullopt;
-    }
-    size_t txn_offset = *txn_offset_opt;
-    // Finally, read the next transaction at specified offset
-    auto txn = TransactionSnapshotReader{*this}.seek_one(txn_offset, txn_hash);
-    // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
-    if (txn && txn->hash() != txn_hash) {
-        return {};
-    }
-    return txn;
+    return TransactionFindByHashQuery{*this, Index{*idx_txn_hash_}}.exec(txn_hash);
 }
 
 std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const {
@@ -187,8 +167,7 @@ std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const
         return {};
     }
 
-    size_t txn_offset = idx_txn_hash_->ordinal_lookup_by_data_id(txn_id);
-    return TransactionSnapshotReader{*this}.seek_one(txn_offset);
+    return TransactionFindByIdQuery{*this, Index{*idx_txn_hash_}}.exec(txn_id);
 }
 
 std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& txn_hash) const {
@@ -211,38 +190,18 @@ std::optional<BlockNum> TransactionSnapshot::block_num_by_txn_hash(const Hash& t
     return block_number;
 }
 
-template <class TSnapshotReader>
-struct RangeFromDataIdQuery {
-    RangeFromDataIdQuery(
-        const Snapshot& snapshot,
-        const rec_split::RecSplitIndex& index)
-        : snapshot_(snapshot),
-          index_(index) {}
-
-    std::vector<typename TSnapshotReader::Iterator::value_type> exec_into_vector(uint64_t first_data_id, uint64_t count) {
-        size_t offset = index_.ordinal_lookup_by_data_id(first_data_id);
-        return TSnapshotReader{snapshot_}.read_into_vector(offset, count);
-    }
-
-  private:
-    const Snapshot& snapshot_;
-    const rec_split::RecSplitIndex& index_;
-};
-
 std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t first_txn_id, uint64_t count) const {
     if (!idx_txn_hash_) {
         return {};
     }
-    RangeFromDataIdQuery<TransactionSnapshotReader> query{*this, *idx_txn_hash_};
-    return query.exec_into_vector(first_txn_id, count);
+    return TransactionRangeFromIdQuery{*this, Index{*idx_txn_hash_}}.exec_into_vector(first_txn_id, count);
 }
 
 std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t first_txn_id, uint64_t count) const {
     if (!idx_txn_hash_) {
         return {};
     }
-    RangeFromDataIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>> query{*this, *idx_txn_hash_};
-    return query.exec_into_vector(first_txn_id, count);
+    return TransactionPayloadRlpRangeFromIdQuery{*this, Index{*idx_txn_hash_}}.exec_into_vector(first_txn_id, count);
 }
 
 void TransactionSnapshot::reopen_index() {

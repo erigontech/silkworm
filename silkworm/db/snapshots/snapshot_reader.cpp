@@ -51,27 +51,27 @@ Snapshot::Iterator& Snapshot::Iterator::operator++() {
     ++it_;
 
     if (has_next) {
-        serializer_->decode_word(*it_);
-        serializer_->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+        deserializer_->decode_word(*it_);
+        deserializer_->check_sanity_with_metadata(path_.block_from(), path_.block_to());
     } else {
-        serializer_.reset();
+        deserializer_.reset();
     }
     return *this;
 }
 
 bool operator==(const Snapshot::Iterator& lhs, const Snapshot::Iterator& rhs) {
-    return (lhs.serializer_ == rhs.serializer_) &&
-           (!lhs.serializer_ || (lhs.it_ == rhs.it_));
+    return (lhs.deserializer_ == rhs.deserializer_) &&
+           (!lhs.deserializer_ || (lhs.it_ == rhs.it_));
 }
 
-Snapshot::Iterator Snapshot::begin(std::shared_ptr<SnapshotWordSerializer> serializer) const {
+Snapshot::Iterator Snapshot::begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
     auto it = decoder_.begin();
     if (it == decoder_.end()) {
         return end();
     }
-    serializer->decode_word(*it);
-    serializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return Snapshot::Iterator{std::move(it), std::move(serializer), path()};
+    deserializer->decode_word(*it);
+    deserializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
 }
 
 Snapshot::Iterator Snapshot::end() const {
@@ -82,18 +82,18 @@ seg::Decompressor::Iterator Snapshot::seek_decoder(uint64_t offset, std::optiona
     return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
 }
 
-Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const {
+Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
     auto it = seek_decoder(offset, hash_prefix);
     if (it == decoder_.end()) {
         return end();
     }
     try {
-        serializer->decode_word(*it);
+        deserializer->decode_word(*it);
     } catch (...) {
         return end();
     }
-    serializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
-    return Snapshot::Iterator{std::move(it), std::move(serializer), path()};
+    deserializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
 }
 
 void Snapshot::close() {

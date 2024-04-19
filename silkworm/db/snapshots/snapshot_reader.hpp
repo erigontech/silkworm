@@ -45,7 +45,7 @@ class Snapshot {
   public:
     class Iterator {
       public:
-        using value_type = std::shared_ptr<SnapshotWordSerializer>;
+        using value_type = std::shared_ptr<SnapshotWordDeserializer>;
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
@@ -53,12 +53,12 @@ class Snapshot {
 
         Iterator(
             seg::Decompressor::Iterator it,
-            std::shared_ptr<SnapshotWordSerializer> serializer,
+            std::shared_ptr<SnapshotWordDeserializer> deserializer,
             SnapshotPath path)
-            : it_(std::move(it)), serializer_(std::move(serializer)), path_(std::move(path)) {}
+            : it_(std::move(it)), deserializer_(std::move(deserializer)), path_(std::move(path)) {}
 
-        reference operator*() const { return serializer_; }
-        pointer operator->() const { return &serializer_; }
+        reference operator*() const { return deserializer_; }
+        pointer operator->() const { return &deserializer_; }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++();
@@ -68,7 +68,7 @@ class Snapshot {
 
       private:
         seg::Decompressor::Iterator it_;
-        std::shared_ptr<SnapshotWordSerializer> serializer_;
+        std::shared_ptr<SnapshotWordDeserializer> deserializer_;
         SnapshotPath path_;
     };
 
@@ -98,10 +98,10 @@ class Snapshot {
     void reopen_segment();
     void close();
 
-    Iterator begin(std::shared_ptr<SnapshotWordSerializer> serializer) const;
+    Iterator begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const;
     Iterator end() const;
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordSerializer> serializer) const;
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const;
 
   private:
     seg::Decompressor::Iterator seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const;
@@ -112,12 +112,12 @@ class Snapshot {
     seg::Decompressor decoder_;
 };
 
-template <class TWordSerializer>
+template <class TWordDeserializer>
 class SnapshotReader {
   public:
     class Iterator {
       public:
-        using value_type = decltype(TWordSerializer::value);
+        using value_type = decltype(TWordDeserializer::value);
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
@@ -140,9 +140,9 @@ class SnapshotReader {
 
       private:
         value_type& value() const {
-            SnapshotWordSerializer& base_serializer = **it_;
-            // dynamic_cast is safe because TWordSerializer was used when creating the Iterator
-            auto& s = dynamic_cast<TWordSerializer&>(base_serializer);
+            SnapshotWordDeserializer& base_deserializer = **it_;
+            // dynamic_cast is safe because TWordDeserializer was used when creating the Iterator
+            auto& s = dynamic_cast<TWordDeserializer&>(base_deserializer);
             return s.value;
         }
 
@@ -154,7 +154,7 @@ class SnapshotReader {
     SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
 
     Iterator begin() const {
-        return Iterator{snapshot_.begin(std::make_shared<TWordSerializer>())};
+        return Iterator{snapshot_.begin(std::make_shared<TWordDeserializer>())};
     }
 
     Iterator end() const {
@@ -162,7 +162,7 @@ class SnapshotReader {
     }
 
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{snapshot_.seek(offset, hash_prefix, std::make_shared<TWordSerializer>())};
+        return Iterator{snapshot_.seek(offset, hash_prefix, std::make_shared<TWordDeserializer>())};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {

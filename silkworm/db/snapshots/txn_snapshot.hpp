@@ -21,9 +21,9 @@
 
 namespace silkworm::snapshots {
 
-struct TransactionSnapshotReader : public SnapshotReader<TransactionSnapshotWordSerializer> {};
+struct TransactionSnapshotReader : public SnapshotReader<TransactionSnapshotWordDeserializer> {};
 
 template <class TBytes = ByteView>
-struct TransactionSnapshotPayloadRlpReader : public SnapshotReader<TransactionSnapshotWordPayloadRlpSerializer<TBytes>> {};
+struct TransactionSnapshotPayloadRlpReader : public SnapshotReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>> {};
 
 }  // namespace silkworm::snapshots

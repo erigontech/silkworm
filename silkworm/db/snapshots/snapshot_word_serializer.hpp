@@ -21,8 +21,8 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotWordSerializer {
-    virtual ~SnapshotWordSerializer() = default;
+struct SnapshotWordDeserializer {
+    virtual ~SnapshotWordDeserializer() = default;
     virtual void decode_word(ByteView word) = 0;
     virtual void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) {}
 };

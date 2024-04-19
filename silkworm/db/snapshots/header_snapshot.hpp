@@ -27,10 +27,10 @@ namespace silkworm::snapshots {
 void decode_word_into_header(ByteView word, BlockHeader& header);
 void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNum block_from, BlockNum block_to);
 
-struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
+struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
     BlockHeader value;
 
-    ~HeaderSnapshotWordSerializer() override = default;
+    ~HeaderSnapshotWordDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_header(word, value);
@@ -41,6 +41,6 @@ struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
     }
 };
 
-struct HeaderSnapshotReader : public SnapshotReader<HeaderSnapshotWordSerializer> {};
+struct HeaderSnapshotReader : public SnapshotReader<HeaderSnapshotWordDeserializer> {};
 
 }  // namespace silkworm::snapshots

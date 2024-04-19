@@ -41,10 +41,10 @@ Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
 //! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
 void decode_word_into_tx(ByteView word, Transaction& tx);
 
-struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
+struct TransactionSnapshotWordDeserializer : public SnapshotWordDeserializer {
     Transaction value;
 
-    ~TransactionSnapshotWordSerializer() override = default;
+    ~TransactionSnapshotWordDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_tx(word, value);
@@ -52,10 +52,10 @@ struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
 };
 
 template <class TBytes = ByteView>
-struct TransactionSnapshotWordPayloadRlpSerializer : public SnapshotWordSerializer {
+struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeserializer {
     TBytes value;
 
-    ~TransactionSnapshotWordPayloadRlpSerializer() override = default;
+    ~TransactionSnapshotWordPayloadRlpDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         auto data = slice_tx_data(word);

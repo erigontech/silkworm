@@ -42,17 +42,17 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
-      - name: Preinstall Conan packages
-        working-directory: ${{runner.workspace}}/silkworm
-        run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
+      # - name: Preinstall Conan packages
+      #   working-directory: ${{runner.workspace}}/silkworm
+      #   run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=/lib/llvm-15/bin/clang CXX=/lib/llvm-15/bin/clang cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 
       - name: Build Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=/lib/llvm-15/bin/clang CXX=/lib/llvm-15/bin/clang cmake --build . --target rpcdaemon_fuzzer_test -j 8
+        run: cmake  --build . --target rpcdaemon_fuzzer_test -j 8
 
       - name: Prepare Corpus Directories
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test

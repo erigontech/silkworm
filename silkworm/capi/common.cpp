@@ -22,25 +22,25 @@
 static silkworm::log::Level make_log_level(const SilkwormLogLevel c_log_level) {
     silkworm::log::Level verbosity{};
     switch (c_log_level) {
-        case SilkwormLogLevel::NONE:
+        case SilkwormLogLevel::SILKWORM_LOG_NONE:
             verbosity = silkworm::log::Level::kNone;
             break;
-        case SilkwormLogLevel::CRITICAL:
+        case SilkwormLogLevel::SILKWORM_LOG_CRITICAL:
             verbosity = silkworm::log::Level::kCritical;
             break;
-        case SilkwormLogLevel::ERROR:
+        case SilkwormLogLevel::SILKWORM_LOG_ERROR:
             verbosity = silkworm::log::Level::kError;
             break;
-        case SilkwormLogLevel::WARNING:
+        case SilkwormLogLevel::SILKWORM_LOG_WARNING:
             verbosity = silkworm::log::Level::kWarning;
             break;
-        case SilkwormLogLevel::INFO:
+        case SilkwormLogLevel::SILKWORM_LOG_INFO:
             verbosity = silkworm::log::Level::kInfo;
             break;
-        case SilkwormLogLevel::DEBUG:
+        case SilkwormLogLevel::SILKWORM_LOG_DEBUG:
             verbosity = silkworm::log::Level::kDebug;
             break;
-        case SilkwormLogLevel::TRACE:
+        case SilkwormLogLevel::SILKWORM_LOG_TRACE:
             verbosity = silkworm::log::Level::kTrace;
             break;
     }

@@ -31,14 +31,10 @@ jobs:
           # sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
 
           # Set the compiler paths
-          # sudo ln -sfv /usr/bin/clang-15 /usr/bin/clang
-          # sudo ln -sfv /usr/bin/clang++-15 /usr/bin/clang++
-          # sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-          # sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
-          ln -sfv /usr/bin/clang-15 /usr/bin/clang
-          ln -sfv /usr/bin/clang++-15 /usr/bin/clang++
-          update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-          update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+          sudo ln -sfv /usr/bin/clang-15 /usr/bin/clang
+          sudo ln -sfv /usr/bin/clang++-15 /usr/bin/clang++
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
 
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build
@@ -106,14 +102,10 @@ jobs:
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
           # Reset compiler paths
-          # sudo update-alternatives --remove cc /usr/bin/clang
-          # sudo update-alternatives --remove c++ /usr/bin/clang++
-          # sudo rm -f /usr/bin/clang
-          # sudo rm -f /usr/bin/clang++
-          update-alternatives --remove cc /usr/bin/clang
-          update-alternatives --remove c++ /usr/bin/clang++
-          rm -f /usr/bin/clang
-          rm -f /usr/bin/clang++
+          sudo update-alternatives --remove cc /usr/bin/clang
+          sudo update-alternatives --remove c++ /usr/bin/clang++
+          sudo rm -f /usr/bin/clang
+          sudo rm -f /usr/bin/clang++
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

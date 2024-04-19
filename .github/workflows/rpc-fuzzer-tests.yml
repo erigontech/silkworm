@@ -12,31 +12,26 @@ jobs:
   fuzzer-test-suite:
     runs-on: self-hosted
     env:
-      ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
 
     steps:
       - name: Checkout Silkworm Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
 
       - name: Install Compiler (Clang 15)
         run: |
-          whoami
-          pwd
-          ls -a
-
           # Ensure the correct version of Clang is installed
           # sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
 
           # Set the compiler paths
           sudo ln -sfv /usr/bin/clang-15 /usr/bin/clang
           sudo ln -sfv /usr/bin/clang++-15 /usr/bin/clang++
-          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 120
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 120
           update-alternatives --query cc
           update-alternatives --query c++
 
@@ -46,6 +41,7 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
+      # Temporarily disabled, try to enable it if issues with building Conan packages (e.g. Boost) arise
       # - name: Preinstall Conan packages
       #   working-directory: ${{runner.workspace}}/silkworm
       #   run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
@@ -77,31 +73,20 @@ jobs:
 
       - name: Execute Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        id: test_step
         run: |
-          set +e # Disable exit on error
-
+          # Single thread execution
           ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86400 -detect_leaks=0
 
-          # To enable running multiple tests in parallel, use the following command
+          # Multi-thread execution
           # ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86400 -detect_leaks=0 -jobs=8
-          
-          # Check test runner exit status
-          if [ $test_exit_status -eq 0 ]; then
-            echo "tests completed successfully"
-            echo
-            echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "error detected during tests"
-            echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
-            
-            # Save failed results to a directory with timestamp and commit hash
-            cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/
-          fi
 
-      - name: Clean up
+      - name: Tear Down
         if: always()
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
         run: |
+          # Save failed results to a directory with timestamp and commit hash
+          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/
+
           # Resume the Erigon instance dedicated to db maintenance
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
@@ -110,14 +95,4 @@ jobs:
           sudo update-alternatives --remove c++ /usr/bin/clang++
           sudo rm -f /usr/bin/clang
           sudo rm -f /usr/bin/clang++
-
-      - name: Action for Success
-        if: steps.test_step.outputs.TEST_RESULT == 'success'
-        run: echo "::notice::Tests completed successfully"
-
-      - name: Action for Failure
-        if: steps.test_step.outputs.TEST_RESULT != 'success'
-        run: |
-          echo "::error::Error detected during tests"
-          exit 1
 

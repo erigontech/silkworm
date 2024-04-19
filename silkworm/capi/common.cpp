@@ -18,32 +18,30 @@
 
 #include <cstring>
 
-namespace log = silkworm::log;
-
 //! Build Silkworm log level from its C representation
-static log::Level make_log_level(const SilkwormLogLevel c_log_level) {
-    log::Level verbosity{};
+static silkworm::log::Level make_log_level(const SilkwormLogLevel c_log_level) {
+    silkworm::log::Level verbosity{};
     switch (c_log_level) {
         case SilkwormLogLevel::NONE:
-            verbosity = log::Level::kNone;
+            verbosity = silkworm::log::Level::kNone;
             break;
         case SilkwormLogLevel::CRITICAL:
-            verbosity = log::Level::kCritical;
+            verbosity = silkworm::log::Level::kCritical;
             break;
         case SilkwormLogLevel::ERROR:
-            verbosity = log::Level::kError;
+            verbosity = silkworm::log::Level::kError;
             break;
         case SilkwormLogLevel::WARNING:
-            verbosity = log::Level::kWarning;
+            verbosity = silkworm::log::Level::kWarning;
             break;
         case SilkwormLogLevel::INFO:
-            verbosity = log::Level::kInfo;
+            verbosity = silkworm::log::Level::kInfo;
             break;
         case SilkwormLogLevel::DEBUG:
-            verbosity = log::Level::kDebug;
+            verbosity = silkworm::log::Level::kDebug;
             break;
         case SilkwormLogLevel::TRACE:
-            verbosity = log::Level::kTrace;
+            verbosity = silkworm::log::Level::kTrace;
             break;
     }
     return verbosity;
@@ -56,7 +54,7 @@ std::filesystem::path parse_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
     return std::filesystem::path{begin, begin + len};
 }
 
-log::Settings make_log_settings(const SilkwormLogLevel c_log_level) {
+silkworm::log::Settings make_log_settings(const SilkwormLogLevel c_log_level) {
     return {
         .log_utc = false,       // display local time
         .log_timezone = false,  // no timezone ID

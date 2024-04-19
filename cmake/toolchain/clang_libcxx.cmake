@@ -16,6 +16,8 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/cxx20.cmake)
 
+message(STATUS "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+
 # coroutines support
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -stdlib=libc++"

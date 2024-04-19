@@ -211,7 +211,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     *handle = new SilkwormInstance{
         .log_settings = std::move(log_settings),
         .context_pool_settings = {
-            .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : concurrency::kDefaultNumContexts,
+            .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
         },
         .data_dir_path = parse_path(settings->data_dir_path),
         .snapshot_repository = std::move(snapshot_repository),

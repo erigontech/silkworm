@@ -23,9 +23,16 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
 
-      # - name: Install Compiler (Clang 15)
-      #   run: sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
-      
+      - name: Install Compiler (Clang 15)
+        run: |
+          # Ensure the correct version of Clang is installed
+          sudo apt-get install -y libc++-15-dev libc++abi-15-dev clang-15
+
+          # Set the compiler paths
+          sudo ln -sfv /usr/bin/clang-15 /usr/bin/clang
+          sudo ln -sfv /usr/bin/clang++-15 /usr/bin/clang++
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
 
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build
@@ -86,9 +93,17 @@ jobs:
             cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/
           fi
 
-      - name: Resume the Erigon instance dedicated to db maintenance
+      - name: Clean up
+        if: always()
         run: |
+          # Resume the Erigon instance dedicated to db maintenance
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+
+          # Reset compiler paths
+          sudo update-alternatives --remove cc /usr/bin/clang
+          sudo update-alternatives --remove c++ /usr/bin/clang++
+          sudo rm -f /usr/bin/clang
+          sudo rm -f /usr/bin/clang++
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

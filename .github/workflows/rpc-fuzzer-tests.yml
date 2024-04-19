@@ -84,15 +84,17 @@ jobs:
         if: always()
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
         run: |
-          # Save failed results to a directory with timestamp and commit hash
-          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/
-
-          # Resume the Erigon instance dedicated to db maintenance
-          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
-
           # Reset compiler paths
           sudo update-alternatives --remove cc /usr/bin/clang
           sudo update-alternatives --remove c++ /usr/bin/clang++
           sudo rm -f /usr/bin/clang
           sudo rm -f /usr/bin/clang++
+
+          # Save failed results to the crash directory (ignore errors)
+          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+          cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+
+          # Resume the Erigon instance dedicated to db maintenance
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+
 

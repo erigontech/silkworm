@@ -863,7 +863,8 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+        // auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+        auto receipts = co_await core::get_receipts2(tx_database, *block_with_hash, workers_);
         const auto& transactions = block_with_hash->block.transactions;
         if (receipts.size() != transactions.size()) {
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};

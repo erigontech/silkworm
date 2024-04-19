@@ -61,7 +61,8 @@ TEST_CASE("async remote buffer", "[rpc][core][remote_buffer]") {
         [[nodiscard]] Task<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-        [[nodiscard]] Task<void> walk_worker(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Worker /*w*/) const override {
+        [[nodiscard]] Task<void> walk_worker(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Worker /*w*/,
+                                             uint32_t /* max_size */) const override {
             co_return;
         }
         [[nodiscard]] Task<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {

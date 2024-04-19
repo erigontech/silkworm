@@ -84,7 +84,7 @@ Task<void> TransactionDatabase::walk(const std::string& table, ByteView start_ke
     co_return;
 }
 
-Task<void> TransactionDatabase::walk_worker(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Worker w) const {
+Task<void> TransactionDatabase::walk_worker(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Worker w, uint32_t max_records) const {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
     SILK_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
     const auto shift_bits = fixed_bits & 7;
@@ -100,17 +100,21 @@ Task<void> TransactionDatabase::walk_worker(const std::string& table, ByteView s
     auto k = kv_pair.key;
     auto v = kv_pair.value;
     SILK_TRACE << "k: " << k << " v: " << v;
-    core::rawdb::WorkerChannel result_channel{co_await ThisTask::executor, 50};
+    core::rawdb::WorkerChannel result_channel{co_await ThisTask::executor, max_records};
     std::size_t worker_count{0};
     while (
         !k.empty() &&
         k.size() >= fixed_bytes &&
         (fixed_bits == 0 || (k.compare(0, fixed_bytes - 1, start_key, 0, fixed_bytes - 1) == 0 && (k[fixed_bytes - 1] & mask) == (start_key[fixed_bytes - 1] & mask)))) {
-        boost::asio::post(w.second, [&]() { w.first(k, v, result_channel); });
+        boost::asio::post(w.second, [&, k = std::move(k), v = std::move(v)]() { w.first(k, v, result_channel); });
         kv_pair = co_await cursor->next();
         k = kv_pair.key;
         v = kv_pair.value;
         ++worker_count;
+
+        if (worker_count >= max_records) {
+            break;
+        }
     }
 
     while (worker_count) {

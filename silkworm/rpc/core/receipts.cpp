@@ -34,4 +34,17 @@ Task<Receipts> get_receipts(const core::rawdb::DatabaseReader& db_reader, const 
     co_return Receipts{};
 }
 
+Task<Receipts> get_receipts2(const core::rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash, boost::asio::thread_pool& worker_pool) {
+    const auto cached_receipts = co_await core::rawdb::read_receipts2(db_reader, block_with_hash, worker_pool);
+    if (cached_receipts) {
+        co_return *cached_receipts;
+    }
+
+    // If not already present, retrieve receipts by executing transactions
+    // auto block = co_await core::rawdb::read_block(db_reader, hash, number);
+    // TODO(canepat): implement
+    SILK_WARN << "retrieve receipts by executing transactions NOT YET IMPLEMENTED";
+    co_return Receipts{};
+}
+
 }  // namespace silkworm::rpc::core

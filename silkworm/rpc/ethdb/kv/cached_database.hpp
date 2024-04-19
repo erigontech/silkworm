@@ -53,7 +53,8 @@ class CachedDatabase : public core::rawdb::DatabaseReader {
         const std::string& table,
         silkworm::ByteView start_key,
         uint32_t fixed_bits,
-        core::rawdb::Worker w) const override;
+        core::rawdb::Worker w,
+        uint32_t max_size) const override;
 
     Task<void> for_prefix(
         const std::string& table,

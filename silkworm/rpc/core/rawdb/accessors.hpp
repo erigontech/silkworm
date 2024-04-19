@@ -46,7 +46,7 @@ class DatabaseReader {
     [[nodiscard]] virtual Task<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const = 0;
 
     [[nodiscard]] virtual Task<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Walker w) const = 0;
-    [[nodiscard]] virtual Task<void> walk_worker(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Worker w) const = 0;
+    [[nodiscard]] virtual Task<void> walk_worker(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, Worker w, uint32_t max_size) const = 0;
 
     [[nodiscard]] virtual Task<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
 };

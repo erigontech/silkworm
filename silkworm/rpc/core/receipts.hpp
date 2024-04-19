@@ -27,5 +27,6 @@
 namespace silkworm::rpc::core {
 
 Task<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts2(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash, boost::asio::thread_pool& worker_pool);
 
 }  // namespace silkworm::rpc::core

@@ -396,7 +396,8 @@ int start_rpcdaemon(SilkwormHandle handle, const rpc::DaemonSettings& /*settings
         .exclusive = true};
     ::mdbx::env_managed env{silkworm::db::open_env(config)};
 
-    const int status_code{silkworm_start_rpcdaemon(handle, &*env)};
+    SilkwormRpcSettings settings{};
+    const int status_code{silkworm_start_rpcdaemon(handle, &*env, &settings)};
     if (status_code != SILKWORM_OK) {
         SILK_ERROR << "silkworm_start_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
     }

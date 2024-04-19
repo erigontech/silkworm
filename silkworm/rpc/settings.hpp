@@ -24,6 +24,7 @@
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 
 namespace silkworm::rpc {
 
@@ -37,7 +38,7 @@ struct DaemonSettings {
     std::string engine_end_point{kDefaultEngineEndPoint};
     std::string eth_api_spec{kDefaultEth1ApiSpec};
     std::string private_api_addr{kDefaultPrivateApiAddr};
-    uint32_t num_workers{std::thread::hardware_concurrency() / 2};
+    uint32_t num_workers{kDefaultNumWorkers};
     std::vector<std::string> cors_domain;
     std::optional<std::string> jwt_secret_file;
     bool skip_protocol_check{false};

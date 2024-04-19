@@ -31,7 +31,6 @@
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test/api_test_database.hpp>
 
 namespace silkworm {
@@ -40,14 +39,7 @@ namespace snapshot_test = snapshots::test_util;
 
 struct CApiTest : public rpc::test::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
-
-  private:
-    // TODO(canepat) remove test_util::StreamSwap objects when C API settings include log level
-    std::stringstream string_cout, string_cerr;
-    test_util::StreamSwap cout_swap{std::cout, string_cout};
-    test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
-
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::NONE};
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array
@@ -72,14 +64,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_libmdbx_version: OK", "[silkworm][capi
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty settings", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INVALID_PATH);
     CHECK(!handle);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, "");
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -88,7 +78,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "");
     SilkwormHandle handle{nullptr};
@@ -97,7 +86,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm]
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "v0.1.0");
     SilkwormHandle handle{nullptr};
@@ -106,7 +94,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[si
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -121,7 +108,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: not initialized", "[silkworm][ca
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -133,7 +119,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
 //! \note This is useful for tests that do *not* specifically play with silkworm_init/silkworm_fini or invalid handles
 struct SilkwormLibrary {
     explicit SilkwormLibrary(const std::filesystem::path& db_path) {
-        SilkwormSettings settings{};
+        SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::NONE};
         copy_path(settings.data_dir_path, db_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);
@@ -155,7 +141,7 @@ struct SilkwormLibrary {
                                    uint64_t batch_size,
                                    bool write_change_sets,
                                    bool write_receipts,
-                                   bool write_call_traces) {
+                                   bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_ephemeral(handle_, txn,
@@ -172,7 +158,7 @@ struct SilkwormLibrary {
                                              uint64_t batch_size,
                                              bool write_change_sets,
                                              bool write_receipts,
-                                             bool write_call_traces) {
+                                             bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_perpetual(handle_, env,
@@ -182,8 +168,16 @@ struct SilkwormLibrary {
         return result;
     }
 
-    int add_snapshot(SilkwormChainSnapshot* snapshot) {
+    int add_snapshot(SilkwormChainSnapshot* snapshot) const {
         return silkworm_add_snapshot(handle_, snapshot);
+    }
+
+    int start_rpcdaemon(MDBX_env* env, const SilkwormRpcSettings* settings) const {
+        return silkworm_start_rpcdaemon(handle_, env, settings);
+    }
+
+    int stop_rpcdaemon() const {
+        return silkworm_stop_rpcdaemon(handle_);
     }
 
   private:
@@ -789,6 +783,81 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
         const int result{silkworm_lib.add_snapshot(&snapshot)};
         CHECK(result == SILKWORM_OK);
+    }
+}
+
+static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_port) {
+    SilkwormRpcSettings settings{
+        .eth_if_log_settings = {
+            .enabled = false,
+            .max_file_size_mb = 1,
+            .max_files = 1,
+            .dump_response = false,
+        },
+        .eth_api_port = api_listening_port,
+        .num_workers = 0,
+        .erigon_json_rpc_compatibility = false,
+        .ws_enabled = false,
+        .ws_compression = false,
+        .http_compression = false,
+        // We must skip internal protocol check here (would block because gRPC server not present)
+        .skip_internal_protocol_check = true,
+    };
+    (void)std::snprintf(settings.eth_if_log_settings.container_folder, SILKWORM_PATH_SIZE, "logs");
+    (void)std::snprintf(settings.eth_api_host, SILKWORM_RPC_SETTINGS_HOST_SIZE, "localhost");
+    (void)std::snprintf(settings.eth_api_spec, SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE, "eth,ots");
+    for (auto& domain : settings.cors_domains) {
+        domain[0] = 0;
+    }
+    (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
+    (void)std::snprintf(settings.jwt_file_path, SILKWORM_PATH_SIZE, "jwt.hex");
+    return settings;
+}
+
+static const SilkwormRpcSettings kInvalidRpcSettings{make_rpc_settings_for_test(10)};
+static const SilkwormRpcSettings kValidRpcSettings{make_rpc_settings_for_test(8545)};
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        CHECK(silkworm_start_rpcdaemon(handle, db, &kValidRpcSettings) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("invalid settings") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, nullptr) == SILKWORM_INVALID_SETTINGS);
+    }
+
+    SECTION("test settings: invalid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kInvalidRpcSettings) == SILKWORM_INTERNAL_ERROR);
+    }
+
+    SECTION("test settings: valid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
+    }
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        CHECK(silkworm_stop_rpcdaemon(handle) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("not yet started") {
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
+    }
+
+    SECTION("already started") {
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
 

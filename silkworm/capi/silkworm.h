@@ -101,13 +101,13 @@ struct SilkwormChainSnapshot {
 //! Silkworm library logging level
 //! \note using anonymous enum seems the only way to obtain enum type in Cgo generated code
 typedef enum : uint8_t {
-    NONE,
-    CRITICAL,
-    ERROR,
-    WARNING,
-    INFO,
-    DEBUG,
-    TRACE
+    SILKWORM_LOG_NONE,
+    SILKWORM_LOG_CRITICAL,
+    SILKWORM_LOG_ERROR,
+    SILKWORM_LOG_WARNING,
+    SILKWORM_LOG_INFO,
+    SILKWORM_LOG_DEBUG,
+    SILKWORM_LOG_TRACE
 } SilkwormLogLevel;
 
 //! Silkworm library general configuration options

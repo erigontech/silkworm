@@ -57,7 +57,7 @@ jobs:
       - name: Run Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 4 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --http-compression --eth.addr 127.0.0.1:51515 --contexts 64 &
+          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 4 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --http-compression --eth.addr 127.0.0.1:51515 --contexts 32 &
           SILKWORM_RPC_DAEMON_PID=$!
           echo "SILKWORM_RPC_DAEMON_PID=$SILKWORM_RPC_DAEMON_PID" >> $GITHUB_ENV
 

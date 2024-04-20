@@ -76,10 +76,9 @@ void Server::start() {
 }
 
 Task<void> Server::run() {
-    acceptor_.listen();
-
     auto this_executor = co_await ThisTask::executor;
     try {
+        acceptor_.listen();
         while (acceptor_.is_open()) {
             SILK_TRACE << "Server::run accepting using executor " << &this_executor << "...";
 
@@ -103,6 +102,9 @@ Task<void> Server::run() {
         } else {
             SILK_DEBUG << "Server::run operation_aborted: " << se.what();
         }
+    } catch (const std::exception& e) {
+        SILK_ERROR << "Server::run exception: " << e.what();
+        std::rethrow_exception(std::make_exception_ptr(e));
     }
     SILK_DEBUG << "Server::run exiting...";
 }

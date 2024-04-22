@@ -3,7 +3,7 @@ name: QA - RPC Performance Tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # Run every day at 00:00 AM UTC
+    - cron: '0 0 * * 1-6'  # Runs every day from Monday to Saturday at 00:00 AM UTC
 
 jobs:
   performance-test-suite:

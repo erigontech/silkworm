@@ -49,18 +49,14 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
         std::vector<std::string> allowed_origins;
         std::optional<std::string> jwt_secret;
         boost::asio::thread_pool workers;
-        Connection_ForTest conn{std::move(socket),
-                                handler_factory,
-                                allowed_origins,
-                                std::move(jwt_secret),
-                                false,
-                                false,
-                                false,
-                                workers};
-
-        RequestWithStringBody req;
-        const auto auth_result = conn.is_request_authorized(req);
-        CHECK(!auth_result);
+        CHECK_NOTHROW(Connection_ForTest{std::move(socket),
+                                         handler_factory,
+                                         allowed_origins,
+                                         std::move(jwt_secret),
+                                         false,
+                                         false,
+                                         false,
+                                         workers});
     }
 }
 

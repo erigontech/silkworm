@@ -48,8 +48,8 @@ class Snapshot {
         using value_type = std::shared_ptr<SnapshotWordDeserializer>;
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using pointer = const value_type*;
-        using reference = const value_type&;
+        using pointer = value_type*;
+        using reference = value_type&;
 
         Iterator(
             seg::Decompressor::Iterator it,
@@ -57,8 +57,7 @@ class Snapshot {
             SnapshotPath path)
             : it_(std::move(it)), deserializer_(std::move(deserializer)), path_(std::move(path)) {}
 
-        reference operator*() const { return deserializer_; }
-        pointer operator->() const { return &deserializer_; }
+        value_type operator*() const { return deserializer_; }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++();
@@ -120,8 +119,8 @@ class SnapshotReader {
         using value_type = decltype(TWordDeserializer::value);
         using iterator_category = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using pointer = const value_type*;
-        using reference = const value_type&;
+        using pointer = value_type*;
+        using reference = value_type&;
 
         explicit Iterator(Snapshot::Iterator it)
             : it_(std::move(it)) {}

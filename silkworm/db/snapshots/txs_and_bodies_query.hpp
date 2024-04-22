@@ -55,7 +55,7 @@ class TxsAndBodiesQuery {
         };
 
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
+        using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;
 
@@ -82,6 +82,8 @@ class TxsAndBodiesQuery {
         uint64_t expected_tx_count_;
         std::string log_title_;
     };
+
+    static_assert(std::input_or_output_iterator<Iterator>);
 
     TxsAndBodiesQuery(
         SnapshotPath txs_segment_path,

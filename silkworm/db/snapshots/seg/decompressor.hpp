@@ -224,7 +224,7 @@ class Decompressor {
         //! input_iterator concept boilerplate
 
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
+        using difference_type = std::ptrdiff_t;
         using value_type = Bytes;
         using pointer = value_type*;
         using reference = value_type&;
@@ -270,6 +270,8 @@ class Decompressor {
 
         std::shared_ptr<ReadModeGuard> read_mode_guard_;
     };
+
+    static_assert(std::input_or_output_iterator<Iterator>);
 
     explicit Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region = {});
     ~Decompressor();

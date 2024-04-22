@@ -42,17 +42,17 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("field initialization") {
-        //ClientContextPool context_pool{1};
-        //context_pool.start();
-        //boost::asio::thread_pool workers;
-        // Uncommenting the following lines you got stuck into llvm-cov problem:
-        // error: cmd/unit_test: Failed to load coverage: Malformed coverage data
+        // ClientContextPool context_pool{1};
+        // context_pool.start();
+        // boost::asio::thread_pool workers;
+        //  Uncommenting the following lines you got stuck into llvm-cov problem:
+        //  error: cmd/unit_test: Failed to load coverage: Malformed coverage data
         /*
         commands::RpcApiTable handler_table{""};
         Connection conn{context_pool.next_context(), workers, handler_table};
         */
-        //context_pool.stop();
-        //context_pool.join();
+        // context_pool.stop();
+        // context_pool.join();
 
         boost::asio::io_context ioc;
         boost::asio::ip::tcp::socket socket{ioc};

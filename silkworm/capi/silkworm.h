@@ -99,8 +99,8 @@ struct SilkwormChainSnapshot {
 #define SILKWORM_GIT_VERSION_SIZE 32
 
 //! Silkworm library logging level
-//! \note using anonymous enum seems the only way to obtain enum type in Cgo generated code
-typedef enum : uint8_t {
+//! \note using anonymous C99 enum is the most portable way to pass enum in Cgo
+typedef enum {  // NOLINT(performance-enum-size)
     SILKWORM_LOG_NONE,
     SILKWORM_LOG_CRITICAL,
     SILKWORM_LOG_ERROR,
@@ -153,7 +153,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, struct Silkworm
  * \brief Get libmdbx version for compatibility checks.
  * \return A string in git describe format.
  */
-SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT const char* silkworm_libmdbx_version(void) SILKWORM_NOEXCEPT;
 
 #define SILKWORM_RPC_SETTINGS_HOST_SIZE 128
 #define SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE 256

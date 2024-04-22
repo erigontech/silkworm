@@ -32,5 +32,8 @@ set(PRIVATE_LIBS
 target_link_libraries(execute PRIVATE ${PRIVATE_LIBS})
 
 # Target 'capi_main' is used to check that Silkworm C API header passes pure C compilation
-add_executable(capi_main main.c)
-target_link_libraries(capi_main PRIVATE silkworm_capi)
+# (avoid this target in sanitizer build due to linking errors w/ libFuzzingEngine dependencies)
+if(NOT SILKWORM_SANITIZE)
+  add_executable(capi_main main.c)
+  target_link_libraries(capi_main PRIVATE silkworm_capi)
+endif ()

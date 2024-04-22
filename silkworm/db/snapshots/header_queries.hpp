@@ -31,8 +31,6 @@ struct HeaderFindByBlockNumQuery : public FindByIdQuery<HeaderSnapshotReader> {
     }
 };
 
-struct HeaderFindByHashQuery : public FindByHashQuery<HeaderSnapshotReader> {
-    using FindByHashQuery<HeaderSnapshotReader>::FindByHashQuery;
-};
+using HeaderFindByHashQuery = FindByHashQuery<HeaderSnapshotReader>;
 
 }  // namespace silkworm::snapshots

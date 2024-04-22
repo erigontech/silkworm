@@ -23,21 +23,10 @@
 
 namespace silkworm::snapshots {
 
-struct TransactionFindByIdQuery : public FindByIdQuery<TransactionSnapshotReader> {
-    using FindByIdQuery<TransactionSnapshotReader>::FindByIdQuery;
-};
-
-struct TransactionFindByHashQuery : public FindByHashQuery<TransactionSnapshotReader> {
-    using FindByHashQuery<TransactionSnapshotReader>::FindByHashQuery;
-};
-
-struct TransactionRangeFromIdQuery : public RangeFromIdQuery<TransactionSnapshotReader> {
-    using RangeFromIdQuery<TransactionSnapshotReader>::RangeFromIdQuery;
-};
-
-struct TransactionPayloadRlpRangeFromIdQuery : public RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>> {
-    using RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>>::RangeFromIdQuery;
-};
+using TransactionFindByIdQuery = FindByIdQuery<TransactionSnapshotReader>;
+using TransactionFindByHashQuery = FindByHashQuery<TransactionSnapshotReader>;
+using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSnapshotReader>;
+using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>>;
 
 class TransactionBlockNumByTxnHashQuery {
   public:

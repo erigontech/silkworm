@@ -37,6 +37,6 @@ struct BodySnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
-struct BodySnapshotReader : public SnapshotReader<BodySnapshotWordDeserializer> {};
+using BodySnapshotReader = SnapshotReader<BodySnapshotWordDeserializer>;
 
 }  // namespace silkworm::snapshots

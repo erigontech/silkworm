@@ -39,6 +39,8 @@
 
 namespace silkworm::rpc::http {
 
+using RequestWithStringBody = boost::beast::http::request<boost::beast::http::string_body>;
+
 //! Represents a single connection from a client.
 class Connection : public StreamWriter {
   public:
@@ -65,23 +67,23 @@ class Connection : public StreamWriter {
     Task<void> close_stream() override;
     Task<std::size_t> write(std::string_view content, bool last) override;
 
-  private:
+  protected:
     //! Start the asynchronous read loop for the connection
     Task<void> read_loop();
 
     using AuthorizationError = std::string;
     using AuthorizationResult = tl::expected<void, AuthorizationError>;
-    AuthorizationResult is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    AuthorizationResult is_request_authorized(const RequestWithStringBody& req);
 
-    Task<void> handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
-    Task<void> handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req);
-    Task<void> handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> handle_request(const RequestWithStringBody& req);
+    Task<void> handle_actual_request(const RequestWithStringBody& req);
+    Task<void> handle_preflight(const RequestWithStringBody& req);
 
     bool is_origin_allowed(const std::vector<std::string>& allowed_origins, const std::string& origin);
     bool is_method_allowed(boost::beast::http::verb method);
     bool is_accepted_content_type(const std::string& content_type);
 
-    Task<void> do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req);
+    Task<void> do_upgrade(const RequestWithStringBody& req);
 
     template <class Body>
     void set_cors(boost::beast::http::response<Body>& res);

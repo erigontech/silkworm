@@ -56,24 +56,20 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
         SILK_INFO << "SnapshotSync: snapshot sync disabled, no snapshot must be downloaded";
         return true;
     }
-
     SILK_INFO << "SnapshotSync: snapshot repository: " << settings_.repository_dir.string();
 
-    if (settings_.no_downloader) {
-        reopen();
-        return true;
+    const auto snapshot_file_names = db::read_snapshots(txn);
+    if (!settings_.no_downloader) {
+        const bool download_completed = download_snapshots(snapshot_file_names);
+        if (!download_completed) return false;
+
+        db::write_snapshots(txn, snapshot_file_names);
+        SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
     }
 
-    const auto snapshot_file_names = db::read_snapshots(txn);
+    build_missing_indexes();
 
-    const bool download_completed = download_snapshots(snapshot_file_names);
-    if (!download_completed) return false;
-
-    db::write_snapshots(txn, snapshot_file_names);
-
-    SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
-
-    index_snapshots();
+    repository_->reopen_folder();
 
     const auto max_block_available = repository_->max_block_available();
     SILK_INFO << "SnapshotSync: max block available: " << max_block_available
@@ -88,12 +84,6 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     update_database(txn, max_block_available);
 
     return true;
-}
-
-void SnapshotSync::reopen() {
-    repository_->reopen_folder();
-    SILK_INFO << "SnapshotSync: reopen completed segment_max_block=" << std::to_string(repository_->segment_max_block())
-              << " idx_max_block=" << std::to_string(repository_->idx_max_block());
 }
 
 bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
@@ -183,22 +173,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     completed_connection.disconnect();
     stats_connection.disconnect();
 
-    reopen();
     return true;
-}
-
-void SnapshotSync::index_snapshots() {
-    if (!settings_.enabled) {
-        SILK_INFO << "SnapshotSync: snapshot sync disabled, no index must be created";
-        return;
-    }
-
-    // Build any missing snapshot index if needed, then reopen
-    if (repository_->idx_max_block() < repository_->segment_max_block()) {
-        SILK_INFO << "SnapshotSync: missing indexes detected, rebuild started";
-        build_missing_indexes();
-        reopen();
-    }
 }
 
 bool SnapshotSync::stop() {
@@ -215,6 +190,12 @@ void SnapshotSync::build_missing_indexes() {
 
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_->missing_indexes();
+    if (missing_indexes.empty()) {
+        return;
+    }
+
+    SILK_INFO << "SnapshotSync: missing indexes detected, rebuild started";
+
     for (const auto& index : missing_indexes) {
         workers.push_task([=]() {
             try {

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 
 #include <silkworm/core/common/bytes.hpp>
@@ -51,7 +52,12 @@ struct TransactionSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
-template <class TBytes = ByteView>
+static_assert(SnapshotWordDeserializerConcept<TransactionSnapshotWordDeserializer>);
+
+template <class TBytes>
+concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
+
+template <BytesOrByteView TBytes>
 struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeserializer {
     TBytes value;
 
@@ -62,5 +68,7 @@ struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeseri
         value = slice_tx_payload(data.tx_rlp);
     }
 };
+
+static_assert(SnapshotWordDeserializerConcept<TransactionSnapshotWordPayloadRlpDeserializer<Bytes>>);
 
 }  // namespace silkworm::snapshots

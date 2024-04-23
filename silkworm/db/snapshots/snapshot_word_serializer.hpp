@@ -27,4 +27,8 @@ struct SnapshotWordDeserializer {
     virtual void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) {}
 };
 
+template <class TWordDeserializer>
+concept SnapshotWordDeserializerConcept = std::derived_from<TWordDeserializer, SnapshotWordDeserializer> &&
+                                          requires(TWordDeserializer deserializer) { deserializer.value; };
+
 }  // namespace silkworm::snapshots

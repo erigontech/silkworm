@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
 #include <cstdint>
 #include <filesystem>
 #include <iterator>
@@ -111,7 +112,7 @@ class Snapshot {
     seg::Decompressor decoder_;
 };
 
-template <class TWordDeserializer>
+template <SnapshotWordDeserializerConcept TWordDeserializer>
 class SnapshotReader {
   public:
     class Iterator {
@@ -150,6 +151,8 @@ class SnapshotReader {
 
     static_assert(std::input_iterator<Iterator>);
 
+    using WordDeserializer = TWordDeserializer;
+
     SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
 
     Iterator begin() const {
@@ -183,6 +186,10 @@ class SnapshotReader {
   private:
     const Snapshot& snapshot_;
 };
+
+template <class TSnapshotReader>
+concept SnapshotReaderConcept = std::same_as<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>> ||
+                                std::derived_from<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>>;
 
 template <std::input_iterator It>
 void iterator_read_into(It it, size_t count, std::vector<typename It::value_type>& out) {

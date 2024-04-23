@@ -23,7 +23,7 @@ namespace silkworm::snapshots {
 
 using TransactionSnapshotReader = SnapshotReader<TransactionSnapshotWordDeserializer>;
 
-template <class TBytes = ByteView>
+template <BytesOrByteView TBytes>
 using TransactionSnapshotPayloadRlpReader = SnapshotReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
 
 }  // namespace silkworm::snapshots

@@ -41,6 +41,8 @@ struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
+static_assert(SnapshotWordDeserializerConcept<HeaderSnapshotWordDeserializer>);
+
 using HeaderSnapshotReader = SnapshotReader<HeaderSnapshotWordDeserializer>;
 
 }  // namespace silkworm::snapshots

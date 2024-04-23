@@ -56,7 +56,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         SILK_DEBUG << "balance for address " << from << ": 0x" << intx::hex(balance);
         if (call.value.value_or(0) > balance) {
             // TODO(sixtysixter) what is the right error code?
-            throw EstimateGasException{-1, "insufficient funds for transfer"};
+            throw EstimateGasException{-32000, "insufficient funds for transfer"};
         }
         auto available = balance - call.value.value_or(0);
         auto allowance = available / gas_price;
@@ -89,13 +89,12 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
-
             result = try_execution(executor, block, transaction);
             if (result.success()) {
                 hi = mid;
             } else {
                 lo = mid;
-                if (result.pre_check_error == std::nullopt) {
+                if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
                     break;
                 }
             }
@@ -106,7 +105,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             transaction.gas_limit = hi;
             result = try_execution(executor, block, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
-        } else if (result.error_code == std::nullopt) {
+        } else if (!result.pre_check_error_code || result.pre_check_error_code == PreCheckErrorCode::kIntrinsicGasTooLow) {
             result.pre_check_error = std::nullopt;
             result.error_code = evmc_status_code::EVMC_SUCCESS;
         }

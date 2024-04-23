@@ -36,19 +36,6 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-SnapshotRepository::ViewResult SnapshotRepository::view_segment(SnapshotType type, BlockNum number, const SnapshotWalker& walker) {
-    // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (auto& entry : std::ranges::reverse_view(bundles_)) {
-        const auto& bundle = entry.second;
-        // We're looking for the segment containing the target block number in its block range
-        if ((bundle.block_from() <= number) && (number < bundle.block_to())) {
-            const bool walk_done = walker({bundle.snapshot(type), bundle.index(type)});
-            return walk_done ? SnapshotRepository::kWalkSuccess : SnapshotRepository::kWalkFailed;
-        }
-    }
-    return SnapshotRepository::kSnapshotNotFound;
-}
-
 std::size_t SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     std::size_t visited_views{0};
@@ -145,18 +132,6 @@ bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
         }
     }
     return true;
-}
-
-SnapshotRepository::ViewResult SnapshotRepository::view_header_segment(BlockNum number, const SnapshotWalker& walker) {
-    return view_segment(SnapshotType::headers, number, walker);
-}
-
-SnapshotRepository::ViewResult SnapshotRepository::view_body_segment(BlockNum number, const SnapshotWalker& walker) {
-    return view_segment(SnapshotType::bodies, number, walker);
-}
-
-SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum number, const SnapshotWalker& walker) {
-    return view_segment(SnapshotType::transactions, number, walker);
 }
 
 std::size_t SnapshotRepository::view_segments(SnapshotType type, const SnapshotWalker& walker) {
@@ -324,10 +299,6 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files) {
 }
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
-    if (number > max_block_available()) {
-        return nullptr;
-    }
-
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (const auto& entry : std::ranges::reverse_view(bundles_)) {
         const auto& bundle = entry.second;

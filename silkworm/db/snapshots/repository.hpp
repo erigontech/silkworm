@@ -140,17 +140,7 @@ class SnapshotRepository {
         const Index& index;
     };
 
-    enum ViewResult : uint8_t {
-        kSnapshotNotFound,
-        kWalkFailed,
-        kWalkSuccess
-    };
-
     using SnapshotWalker = std::function<bool(SnapshotAndIndex result)>;
-
-    ViewResult view_header_segment(BlockNum number, const SnapshotWalker& walker);
-    ViewResult view_body_segment(BlockNum number, const SnapshotWalker& walker);
-    ViewResult view_tx_segment(BlockNum number, const SnapshotWalker& walker);
 
     using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
     std::size_t view_bundles(const SnapshotBundleWalker& walker);
@@ -173,7 +163,6 @@ class SnapshotRepository {
 
   private:
     void reopen_list(const SnapshotPathList& segment_files);
-    ViewResult view_segment(SnapshotType type, BlockNum number, const SnapshotWalker& walker);
     std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
     const SnapshotBundle* find_bundle(BlockNum number) const;
     std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;

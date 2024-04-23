@@ -66,10 +66,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SECTION("no snapshots") {
         repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
+
         CHECK(repository.view_header_segments(successful_walk) == 0);
         CHECK(repository.view_body_segments(successful_walk) == 0);
         CHECK(repository.view_tx_segments(successful_walk) == 0);
@@ -85,10 +85,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
         repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
+
         CHECK(repository.view_header_segments(successful_walk) == 0);  // empty snapshots are ignored by repository
         CHECK(repository.view_body_segments(successful_walk) == 0);    // empty snapshots are ignored by repository
         CHECK(repository.view_tx_segments(successful_walk) == 0);      // empty snapshots are ignored by repository
@@ -104,17 +104,14 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-014500-015000-transactions.seg"};
         repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, failing_walk) == ViewResult::kWalkFailed);
-        CHECK(repository.view_body_segment(14'500'000, failing_walk) == ViewResult::kWalkFailed);
-        CHECK(repository.view_tx_segment(14'500'000, failing_walk) == ViewResult::kWalkFailed);
         CHECK(repository.view_header_segments(failing_walk) == 1);
         CHECK(repository.view_body_segments(failing_walk) == 1);
         CHECK(repository.view_tx_segments(failing_walk) == 1);
 
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kWalkSuccess);
-        CHECK(repository.view_body_segment(14'500'000, successful_walk) == ViewResult::kWalkSuccess);
-        CHECK(repository.view_tx_segment(14'500'000, successful_walk) == ViewResult::kWalkSuccess);
+        CHECK(repository.find_header_segment(14'500'000).has_value());
+        CHECK(repository.find_body_segment(14'500'000).has_value());
+        CHECK(repository.find_tx_segment(14'500'000).has_value());
+
         CHECK(repository.view_header_segments(successful_walk) == 1);
         CHECK(repository.view_body_segments(successful_walk) == 1);
         CHECK(repository.view_tx_segments(successful_walk) == 1);

@@ -1082,7 +1082,7 @@ bool DataModel::read_body(BlockNum height, HashAsArray hash, bool read_senders, 
     const bool found = db::read_body(txn_, height, hash, read_senders, body);
     if (found) return found;
 
-    return read_body_from_snapshot(height, read_senders, body);
+    return read_body_from_snapshot(height, body);
 }
 
 bool DataModel::read_body(const Hash& hash, BlockNum height, BlockBody& body) const {
@@ -1142,14 +1142,14 @@ bool DataModel::read_block(HashAsSpan hash, BlockNum number, bool read_senders, 
     const bool found = db::read_block(txn_, hash, number, read_senders, block);
     if (found) return found;
 
-    return read_block_from_snapshot(number, read_senders, block);
+    return read_block_from_snapshot(number, block);
 }
 
 bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const {
     const bool found = db::read_block(txn_, hash, number, block);
     if (found) return found;
 
-    return read_block_from_snapshot(number, /*read_senders=*/true, block);
+    return read_block_from_snapshot(number, block);
 }
 
 void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
@@ -1203,7 +1203,7 @@ bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) con
     return read_block(hash->bytes, number, read_senders, block);
 }
 
-bool DataModel::read_block_from_snapshot(BlockNum height, bool read_senders, Block& block) {
+bool DataModel::read_block_from_snapshot(BlockNum height, Block& block) {
     if (!repository_) {
         return false;
     }
@@ -1213,7 +1213,7 @@ bool DataModel::read_block_from_snapshot(BlockNum height, bool read_senders, Blo
 
     block.header = std::move(*block_header);
 
-    return read_body_from_snapshot(height, read_senders, block);
+    return read_body_from_snapshot(height, block);
 }
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height) {
@@ -1244,7 +1244,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     return block_header;
 }
 
-bool DataModel::read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body) {
+bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
     if (!repository_) {
         return false;
     }
@@ -1261,7 +1261,7 @@ bool DataModel::read_body_from_snapshot(BlockNum height, bool read_senders, Bloc
     const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
 
     std::vector<Transaction> transactions;
-    const auto read_ok{read_transactions_from_snapshot(height, base_txn_id, txn_count, read_senders, transactions)};
+    const auto read_ok{read_transactions_from_snapshot(height, base_txn_id, txn_count, transactions)};
     if (!read_ok) return false;
 
     body.transactions = std::move(transactions);
@@ -1285,8 +1285,7 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     return false;
 }
 
-bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
-                                                bool /*read_senders*/, std::vector<Transaction>& txs) {
+bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) {
     txs.reserve(txn_count);
     if (txn_count == 0) {
         return true;

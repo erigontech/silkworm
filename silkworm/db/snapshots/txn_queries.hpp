@@ -39,7 +39,7 @@ class TransactionBlockNumByTxnHashQuery {
     std::optional<BlockNum> exec(const Hash& hash) {
         // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
         const auto transaction = cross_check_query_.exec(hash);
-        auto result = transaction ? index_.lookup_by_hash(hash) : std::nullopt;
+        auto result = transaction ? index_.lookup_ordinal_by_hash(hash) : std::nullopt;
         return result;
     }
 

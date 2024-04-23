@@ -326,14 +326,14 @@ void open_index(const SnapSettings& settings) {
             const uint64_t data_id{*settings.lookup_number};
             const uint64_t enumeration{data_id - idx.base_data_id()};
             if (enumeration < idx.key_count()) {
-                SILK_INFO << "Offset by ordinal lookup for " << data_id << ": " << idx.ordinal_lookup(enumeration);
+                SILK_INFO << "Offset by ordinal lookup for " << data_id << ": " << idx.lookup_by_ordinal(enumeration);
             } else {
                 SILK_WARN << "Invalid absolute data number " << data_id << " for ordinal lookup";
             }
         } else {
             for (size_t i{0}; i < idx.key_count(); ++i) {
                 if (i % (idx.key_count() / 10) == 0) {
-                    SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.ordinal_lookup(i)
+                    SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.lookup_by_ordinal(i)
                               << " [existence filter: " << int(idx.existence_filter()[i]) << "]";
                 }
             }

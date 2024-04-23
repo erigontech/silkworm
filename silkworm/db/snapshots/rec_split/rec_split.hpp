@@ -681,20 +681,20 @@ class RecSplit {
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    [[nodiscard]] std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
+    [[nodiscard]] std::size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
 
-    [[nodiscard]] std::size_t ordinal_lookup_by_data_id(uint64_t data_id) const {
+    [[nodiscard]] std::size_t lookup_by_data_id(uint64_t data_id) const {
         ensure(data_id >= base_data_id(), [&]() {
-            return std::string("ordinal_lookup_by_data_id: data_id is out of range") +
+            return std::string("lookup_by_data_id: data_id is out of range") +
                    " data_id = " + std::to_string(data_id) + ";" +
                    " base_data_id = " + std::to_string(base_data_id()) + ";";
         });
-        return ordinal_lookup(data_id - base_data_id());
+        return lookup_by_ordinal(data_id - base_data_id());
     }
 
-    [[nodiscard]] std::optional<std::size_t> ordinal_lookup_by_key(ByteView key) const {
+    [[nodiscard]] std::optional<std::size_t> lookup_by_key(ByteView key) const {
         auto [i, found] = lookup(key);
-        return found ? std::optional{ordinal_lookup(i)} : std::nullopt;
+        return found ? std::optional{lookup_by_ordinal(i)} : std::nullopt;
     }
 
     //! Return the number of keys used to build the RecSplit instance

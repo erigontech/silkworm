@@ -25,7 +25,7 @@ struct HeaderFindByBlockNumQuery : public FindByIdQuery<HeaderSnapshotReader> {
     using FindByIdQuery<HeaderSnapshotReader>::FindByIdQuery;
 
     std::optional<BlockHeader> exec(BlockNum id) {
-        // TODO: move this check inside ordinal_lookup_by_data_id if possible and remove this method
+        // TODO: move this check inside lookup_by_data_id if possible and remove this method
         if ((id < reader_.block_from()) || (id >= reader_.block_to())) return std::nullopt;
         return FindByIdQuery<HeaderSnapshotReader>::exec(id);
     }

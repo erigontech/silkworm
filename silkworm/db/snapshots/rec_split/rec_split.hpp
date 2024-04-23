@@ -683,12 +683,14 @@ class RecSplit {
     //! only access to the Elias-Fano structure containing all offsets
     [[nodiscard]] std::size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
 
-    [[nodiscard]] std::size_t lookup_by_data_id(uint64_t data_id) const {
-        ensure(data_id >= base_data_id(), [&]() {
-            return std::string("lookup_by_data_id: data_id is out of range") +
-                   " data_id = " + std::to_string(data_id) + ";" +
-                   " base_data_id = " + std::to_string(base_data_id()) + ";";
-        });
+    [[nodiscard]] std::optional<std::size_t> lookup_by_data_id(uint64_t data_id) const {
+        // check if data_id is not out of range
+        uint64_t min = base_data_id();
+        uint64_t max = min + key_count() - 1;
+        if ((data_id < min) || (data_id > max)) {
+            return std::nullopt;
+        }
+
         return lookup_by_ordinal(data_id - base_data_id());
     }
 

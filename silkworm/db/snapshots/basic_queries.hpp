@@ -45,8 +45,12 @@ struct FindByIdQuery : public BasicQuery<TSnapshotReader> {
     using BasicQuery<TSnapshotReader>::BasicQuery;
 
     std::optional<typename TSnapshotReader::Iterator::value_type> exec(uint64_t id) {
-        size_t offset = this->index_.lookup_by_data_id(id);
-        return this->reader_.seek_one(offset);
+        auto offset = this->index_.lookup_by_data_id(id);
+        if (!offset) {
+            return std::nullopt;
+        }
+
+        return this->reader_.seek_one(*offset);
     }
 };
 
@@ -76,8 +80,12 @@ struct RangeFromIdQuery : public BasicQuery<TSnapshotReader> {
     using BasicQuery<TSnapshotReader>::BasicQuery;
 
     std::vector<typename TSnapshotReader::Iterator::value_type> exec_into_vector(uint64_t first_id, uint64_t count) {
-        size_t offset = this->index_.lookup_by_data_id(first_id);
-        return this->reader_.read_into_vector(offset, count);
+        auto offset = this->index_.lookup_by_data_id(first_id);
+        if (!offset) {
+            return {};
+        }
+
+        return this->reader_.read_into_vector(*offset, count);
     }
 };
 

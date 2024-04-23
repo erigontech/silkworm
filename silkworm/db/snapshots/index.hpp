@@ -36,7 +36,7 @@ class Index {
         : path_(std::move(path)),
           region_(region) {}
 
-    std::size_t lookup_by_data_id(uint64_t id) const { return index_->lookup_by_data_id(id); };
+    std::optional<std::size_t> lookup_by_data_id(uint64_t id) const { return index_->lookup_by_data_id(id); };
     std::optional<std::size_t> lookup_by_hash(const Hash& hash) const { return index_->lookup_by_key(hash); };
 
     std::optional<std::size_t> lookup_ordinal_by_hash(const Hash& hash) const {

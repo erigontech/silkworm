@@ -21,14 +21,6 @@
 
 namespace silkworm::snapshots {
 
-struct BodyFindByBlockNumQuery : public FindByIdQuery<BodySnapshotReader> {
-    using FindByIdQuery<BodySnapshotReader>::FindByIdQuery;
-
-    std::optional<BlockBodyForStorage> exec(BlockNum id) {
-        // TODO: move this check inside lookup_by_data_id if possible and remove this method
-        if (id < reader_.block_from()) return std::nullopt;
-        return FindByIdQuery<BodySnapshotReader>::exec(id);
-    }
-};
+using BodyFindByBlockNumQuery = FindByIdQuery<BodySnapshotReader>;
 
 }  // namespace silkworm::snapshots

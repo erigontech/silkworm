@@ -21,9 +21,7 @@ namespace silkworm::snapshots {
 void Index::reopen_index() {
     close_index();
 
-    if (path_.exists()) {
-        index_ = std::make_unique<rec_split::RecSplitIndex>(path_.path(), region_);
-    }
+    index_ = std::make_unique<rec_split::RecSplitIndex>(path_.path(), region_);
 }
 
 void Index::close_index() {

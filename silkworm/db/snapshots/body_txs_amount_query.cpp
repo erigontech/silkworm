@@ -32,7 +32,7 @@ BodyTxsAmountQuery::Result BodyTxsAmountQuery::exec() {
         if (number == path.block_from()) {
             first_tx_id = body.base_txn_id;
         }
-        if (number == path.block_to() - 1) {
+        if (number >= path.block_to() - 1) {
             last_tx_id = body.base_txn_id;
             last_txs_amount = body.txn_count;
         }

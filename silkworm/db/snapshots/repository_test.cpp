@@ -102,18 +102,23 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     }
 
     SECTION("non-empty snapshots") {
-        test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-014500-015000-bodies.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-014500-015000-transactions.seg"};
+        test::SampleHeaderSnapshotFile tmp_snapshot_1{tmp_dir.path()};
+        test::SampleBodySnapshotFile tmp_snapshot_2{tmp_dir.path()};
+        test::SampleTransactionSnapshotFile tmp_snapshot_3{tmp_dir.path()};
+
+        for (auto& index_builder : repository.missing_indexes()) {
+            index_builder->build();
+        }
+
         repository.reopen_folder();
 
         CHECK(repository.view_header_segments(failing_walk) == 1);
         CHECK(repository.view_body_segments(failing_walk) == 1);
         CHECK(repository.view_tx_segments(failing_walk) == 1);
 
-        CHECK(repository.find_header_segment(14'500'000).has_value());
-        CHECK(repository.find_body_segment(14'500'000).has_value());
-        CHECK(repository.find_tx_segment(14'500'000).has_value());
+        CHECK(repository.find_header_segment(1'500'000).has_value());
+        CHECK(repository.find_body_segment(1'500'000).has_value());
+        CHECK(repository.find_tx_segment(1'500'000).has_value());
 
         CHECK(repository.view_header_segments(successful_walk) == 1);
         CHECK(repository.view_body_segments(successful_walk) == 1);
@@ -198,7 +203,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_tx_segment(1'500'014));
     }
     SECTION("greater than max_block_available") {
-        CHECK_FALSE(repository.find_body_segment(repository.max_block_available() + 1));
+        CHECK_FALSE(repository.find_body_segment(repository.max_block_available() + 10));
     }
 }
 

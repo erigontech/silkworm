@@ -304,7 +304,8 @@ const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
     for (const auto& entry : std::ranges::reverse_view(bundles_)) {
         const auto& bundle = entry.second;
         // We're looking for the segment containing the target block number in its block range
-        if ((bundle.block_from() <= number) && (number < bundle.block_to())) {
+        if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
+            ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {
             return &bundle;
         }
     }

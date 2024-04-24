@@ -187,7 +187,15 @@ TEST_CASE("serialize empty block header", "[rpc][to_json]") {
         "timestamp":"0x0",
         "extraData":"0x",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null,
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 
@@ -233,7 +241,15 @@ TEST_CASE("serialize block header", "[rpc][to_json]") {
         "extraData":"0x0001ff0100",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000001",
         "nonce":"0x00000000000000ff",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null,
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 
@@ -282,7 +298,15 @@ TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000001",
         "nonce":"0x0102030405060708",
         "baseFeePerGas":"0x3e8",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null, 
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 

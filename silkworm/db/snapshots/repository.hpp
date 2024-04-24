@@ -134,6 +134,7 @@ class SnapshotRepository {
 
     [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
+    void remove_stale_indexes() const;
 
     struct SnapshotAndIndex {
         const Snapshot& snapshot;
@@ -178,6 +179,7 @@ class SnapshotRepository {
     [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
     [[nodiscard]] BlockNum max_idx_available();
+    SnapshotPathList stale_index_paths() const;
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;

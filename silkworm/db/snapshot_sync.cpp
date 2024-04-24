@@ -67,6 +67,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
         SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
     }
 
+    repository_->remove_stale_indexes();
     build_missing_indexes();
 
     repository_->reopen_folder();

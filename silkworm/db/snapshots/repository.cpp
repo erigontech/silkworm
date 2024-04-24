@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iterator>
 #include <ranges>
 
 #include <silkworm/core/common/assert.hpp>
@@ -349,6 +350,28 @@ BlockNum SnapshotRepository::max_idx_available() {
         result = bundle.block_to() - 1;
     }
     return result;
+}
+
+bool is_stale_index_path(const SnapshotPath& index_path) {
+    SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
+                                     ? SnapshotType::transactions
+                                     : index_path.type();
+    SnapshotPath snapshot_path = index_path.snapshot_path_for_type(snapshot_type);
+    return (index_path.last_write_time() < snapshot_path.last_write_time());
+}
+
+SnapshotPathList SnapshotRepository::stale_index_paths() const {
+    SnapshotPathList results;
+    auto all_files = this->get_idx_files();
+    std::copy_if(all_files.begin(), all_files.end(), std::back_inserter(results), is_stale_index_path);
+    return results;
+}
+
+void SnapshotRepository::remove_stale_indexes() const {
+    for (auto& path : stale_index_paths()) {
+        const bool removed = fs::remove(path.path());
+        ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
+    }
 }
 
 }  // namespace silkworm::snapshots

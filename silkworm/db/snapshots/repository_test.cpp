@@ -16,6 +16,9 @@
 
 #include "repository.hpp"
 
+#include <chrono>
+#include <filesystem>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/db/snapshots/body_index.hpp>
@@ -236,6 +239,43 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     // unknown txn hash
     block_number = repository.find_block_number(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
     // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
+}
+
+template <class Rep, class Period>
+static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
+    const auto ftime = std::filesystem::last_write_time(p);
+    std::filesystem::last_write_time(p, ftime + d);
+    return std::filesystem::last_write_time(p) - ftime;
+}
+
+TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot][index]") {
+    using namespace std::chrono_literals;
+
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{tmp_dir.path()};
+    SnapshotRepository repository{settings};
+
+    // create a snapshot file
+    test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
+    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
+
+    // build an index
+    auto index_builder = HeaderIndex::make(header_snapshot_path);
+    REQUIRE_NOTHROW(index_builder.build());
+    auto index_path = index_builder.path().path();
+
+    // the index is not stale
+    repository.remove_stale_indexes();
+    CHECK(std::filesystem::exists(index_path));
+
+    // move the snapshot last write time 1 hour to the future to make its index "stale"
+    const auto last_write_time_diff = move_last_write_time(header_snapshot_path.path(), 1h);
+    CHECK(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
+
+    // the index is stale
+    repository.remove_stale_indexes();
+    CHECK_FALSE(std::filesystem::exists(index_path));
 }
 
 }  // namespace silkworm::snapshots

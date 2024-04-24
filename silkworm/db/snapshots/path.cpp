@@ -89,20 +89,24 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     return SnapshotPath{std::move(path), version, block_from, block_to, *type};
 }
 
-SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
-    const auto filename = SnapshotPath::build_filename(version, block_from, block_to, type);
+SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type, const char* ext) {
+    const auto filename = SnapshotPath::build_filename(version, block_from, block_to, type, ext);
     return SnapshotPath{dir / filename, version, block_from, block_to, type};
 }
 
-fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type, const char* ext) {
     std::string snapshot_type_name{magic_enum::enum_name(type)};
     std::string filename{absl::StrFormat("v%d-%06d-%06d-%s%s",
                                          version,
                                          block_from / kFileNameBlockScaleFactor,
                                          block_to / kFileNameBlockScaleFactor,
                                          absl::StrReplaceAll(snapshot_type_name, {{"_", "-"}}),
-                                         kSegmentExtension)};
+                                         ext)};
     return fs::path{filename};
+}
+
+SnapshotPath SnapshotPath::related_path(SnapshotType type, const char* ext) const {
+    return SnapshotPath::from(path_.parent_path(), version_, block_from_, block_to_, type, ext);
 }
 
 SnapshotPath::SnapshotPath(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)

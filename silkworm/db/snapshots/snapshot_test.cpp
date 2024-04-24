@@ -37,7 +37,6 @@
 
 namespace silkworm::snapshots {
 
-using namespace std::chrono_literals;
 namespace test = test_util;
 using silkworm::test_util::SetLogVerbosityGuard;
 
@@ -60,13 +59,6 @@ class Snapshot_ForTest : public Snapshot {
     Snapshot_ForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
         : Snapshot(SnapshotPath_ForTest{tmp_dir, block_from, block_to}) {}
 };
-
-template <class Rep, class Period>
-static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
-    const auto ftime = std::filesystem::last_write_time(p);
-    std::filesystem::last_write_time(p, ftime + d);
-    return std::filesystem::last_write_time(p) - ftime;
-}
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
@@ -450,35 +442,6 @@ TEST_CASE("slice_tx_payload", "[silkworm][node][snapshot]") {
         CHECK_NOTHROW(decoded = slice_tx_payload(encoded));
         CHECK(decoded == encoded.substr(3));  // 3-byte envelope for this blob tx
     }
-}
-
-TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
-    // SKIP("TODO: see Index::reopen_index");
-    return;
-
-    SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    test::SampleHeaderSnapshotFile sample_header_snapshot{tmp_dir.path()};
-    test::SampleHeaderSnapshotPath header_snapshot_path{sample_header_snapshot.path()};
-
-    auto index_builder = HeaderIndex::make(header_snapshot_path);
-    REQUIRE_NOTHROW(index_builder.build());
-
-    Snapshot snapshot{header_snapshot_path};
-    snapshot.reopen_segment();
-
-    Index index{snapshot.path().index_file()};
-    index.reopen_index();
-    REQUIRE(std::filesystem::exists(snapshot.path().index_file().path()));
-
-    // Move 1 hour to the future the last write time for sample header snapshot
-    const auto last_write_time_diff = move_last_write_time(snapshot.path().path(), 1h);
-    REQUIRE(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
-
-    // Verify that reopening the index removes the index file because it was created in the past
-    CHECK(std::filesystem::exists(snapshot.path().index_file().path()));
-    index.reopen_index();
-    CHECK_FALSE(std::filesystem::exists(snapshot.path().index_file().path()));
 }
 
 }  // namespace silkworm::snapshots

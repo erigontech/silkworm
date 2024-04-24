@@ -236,8 +236,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     json["parentBeaconBlockRoot"] = nullptr;
     if (header.withdrawals_root) {
         json["withdrawalsRoot"] = *header.withdrawals_root;
-    }
-    else {
+    } else {
         json["withdrawalsRoot"] = nullptr;
     }
 }

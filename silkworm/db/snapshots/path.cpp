@@ -37,7 +37,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
-    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, '-');
+    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, absl::MaxSplits('-', 3));
     if (tokens.size() != 4) {
         return std::nullopt;
     }
@@ -79,8 +79,10 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    // Expected tag format: headers|bodies|transactions (parsing relies on magic_enum, so SnapshotType items must match exactly)
-    std::string_view tag_str{tag.data(), tag.size()};
+    // Expected tag format: headers|bodies|transactions|transactions-to-block
+    // parsing relies on magic_enum, so SnapshotType items must match exactly
+    std::string tag_str{tag.data(), tag.size()};
+    std::replace(tag_str.begin(), tag_str.end(), '-', '_');
     const auto type = magic_enum::enum_cast<SnapshotType>(tag_str);
     if (!type) {
         return std::nullopt;

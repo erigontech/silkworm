@@ -61,29 +61,40 @@ void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     BlockNum block_from = bundle.block_from();
     BlockNum block_to = bundle.block_to();
 
+    bundle.reopen();
+
     bundles_.emplace(block_from, std::move(bundle));
 
     segment_max_block_ = std::max(segment_max_block_, block_to - 1);
     idx_max_block_ = max_idx_available();
 }
 
-void SnapshotRepository::reopen_folder() {
-    SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
-    SnapshotPathList segment_files = get_segment_files();
-    reopen_list(segment_files);
-    SILK_INFO << "Total reopened snapshots: " << total_snapshots_count();
+void SnapshotBundle::reopen() {
+    for (auto& snapshot_ref : snapshots()) {
+        snapshot_ref.get().reopen_segment();
+        ensure(!snapshot_ref.get().empty(), [&]() {
+            return "invalid empty snapshot " + snapshot_ref.get().fs_path().string();
+        });
+    }
+    for (auto& index_ref : indexes()) {
+        index_ref.get().reopen_index();
+    }
+}
+
+void SnapshotBundle::close() {
+    for (auto& index_ref : indexes()) {
+        index_ref.get().close_index();
+    }
+    for (auto& snapshot_ref : snapshots()) {
+        snapshot_ref.get().close();
+    }
 }
 
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
     for (auto& entry : bundles_) {
         auto& bundle = entry.second;
-        for (auto& index_ref : bundle.indexes()) {
-            index_ref.get().close_index();
-        }
-        for (auto& snapshot_ref : bundle.snapshots()) {
-            snapshot_ref.get().close();
-        }
+        bundle.close();
     }
 }
 
@@ -228,65 +239,59 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     return missing_index_list;
 }
 
-void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files) {
-    std::map<BlockNum, SnapshotPath> header_snapshot_paths;
-    std::map<BlockNum, SnapshotPath> body_snapshot_paths;
-    std::map<BlockNum, SnapshotPath> txn_snapshot_paths;
+void SnapshotRepository::reopen_folder() {
+    SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
+    SnapshotPathList all_snapshot_paths = get_segment_files();
+    SnapshotPathList all_index_paths = get_idx_files();
 
-    for (const SnapshotPath& path : segment_files) {
-        switch (path.type()) {
-            case SnapshotType::headers:
-                header_snapshot_paths.emplace(path.block_from(), path);
-                break;
-            case SnapshotType::bodies:
-                body_snapshot_paths.emplace(path.block_from(), path);
-                break;
-            case SnapshotType::transactions:
-                txn_snapshot_paths.emplace(path.block_from(), path);
-                break;
-            case SnapshotType::transactions_to_block:
-                assert(false);
-                break;
-        }
+    std::map<BlockNum, std::map<bool, std::map<SnapshotType, size_t>>> groups;
+
+    for (size_t i = 0; i < all_snapshot_paths.size(); i++) {
+        auto& path = all_snapshot_paths[i];
+        auto& group = groups[path.block_from()][false];
+        group[path.type()] = i;
+    }
+
+    for (size_t i = 0; i < all_index_paths.size(); i++) {
+        auto& path = all_index_paths[i];
+        auto& group = groups[path.block_from()][true];
+        group[path.type()] = i;
     }
 
     BlockNum num = 0;
-    if (!header_snapshot_paths.empty()) {
-        num = header_snapshot_paths.begin()->first;
+    if (!groups.empty()) {
+        num = groups.begin()->first;
     }
 
-    while (
-        header_snapshot_paths.contains(num) &&
-        body_snapshot_paths.contains(num) &&
-        txn_snapshot_paths.contains(num)) {
+    while (groups.contains(num) &&
+           (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&
+           (groups[num][true].size() == SnapshotBundle::kIndexesCount)) {
         if (!bundles_.contains(num)) {
-            SnapshotBundle bundle{
-                .header_snapshot = Snapshot(header_snapshot_paths.at(num)),
-                .idx_header_hash = Index(header_snapshot_paths.at(num).index_file()),
-
-                .body_snapshot = Snapshot(body_snapshot_paths.at(num)),
-                .idx_body_number = Index(body_snapshot_paths.at(num).index_file()),
-
-                .txn_snapshot = Snapshot(txn_snapshot_paths.at(num)),
-                .idx_txn_hash = Index(txn_snapshot_paths.at(num).index_file_for_type(SnapshotType::transactions)),
-                .idx_txn_hash_2_block = Index(txn_snapshot_paths.at(num).index_file_for_type(SnapshotType::transactions_to_block)),
+            auto snapshot_path = [&](SnapshotType type) {
+                return all_snapshot_paths[groups[num][false][type]];
+            };
+            auto index_path = [&](SnapshotType type) {
+                return all_index_paths[groups[num][true][type]];
             };
 
-            for (auto& snapshot_ref : bundle.snapshots()) {
-                snapshot_ref.get().reopen_segment();
-                ensure(!snapshot_ref.get().empty(), [&]() {
-                    return "invalid empty snapshot " + snapshot_ref.get().fs_path().string();
-                });
-            }
+            SnapshotBundle bundle{
+                .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
+                .idx_header_hash = Index(index_path(SnapshotType::headers)),
+
+                .body_snapshot = Snapshot(snapshot_path(SnapshotType::bodies)),
+                .idx_body_number = Index(index_path(SnapshotType::bodies)),
+
+                .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
+                .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
+                .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
+            };
+
+            bundle.reopen();
 
             bundles_.emplace(num, std::move(bundle));
         }
 
         auto& bundle = bundles_.at(num);
-        for (auto& index_ref : bundle.indexes()) {
-            index_ref.get().reopen_index();
-        }
-
         segment_max_block_ = std::max(segment_max_block_, bundle.block_to() - 1);
 
         if (num < bundle.block_to()) {
@@ -297,6 +302,7 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files) {
     }
 
     idx_max_block_ = max_idx_available();
+    SILK_INFO << "Total reopened snapshots: " << total_snapshots_count();
 }
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {

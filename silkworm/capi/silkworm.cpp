@@ -332,9 +332,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::Snapshot header_snapshot{*headers_segment_path, make_region(hs.segment)};
-    header_snapshot.reopen_segment();
     snapshots::Index idx_header_hash{headers_segment_path->index_file(), make_region(hs.header_hash_index)};
-    idx_header_hash.reopen_index();
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -345,9 +343,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::Snapshot body_snapshot{*bodies_segment_path, make_region(bs.segment)};
-    body_snapshot.reopen_segment();
     snapshots::Index idx_body_number{bodies_segment_path->index_file(), make_region(bs.block_num_index)};
-    idx_body_number.reopen_index();
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -358,11 +354,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::Snapshot txn_snapshot{*transactions_segment_path, make_region(ts.segment)};
-    txn_snapshot.reopen_segment();
     snapshots::Index idx_txn_hash{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions), make_region(ts.tx_hash_index)};
-    idx_txn_hash.reopen_index();
     snapshots::Index idx_txn_hash_2_block{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions_to_block), make_region(ts.tx_hash_2_block_index)};
-    idx_txn_hash_2_block.reopen_index();
 
     snapshots::SnapshotBundle bundle{
         .header_snapshot = std::move(header_snapshot),

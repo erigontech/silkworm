@@ -51,7 +51,10 @@ struct SnapshotBundle {
     //! Index transaction_hash -> block_num
     Index idx_txn_hash_2_block;
 
-    std::array<std::reference_wrapper<Snapshot>, 3> snapshots() {
+    static constexpr size_t kSnapshotsCount = 3;
+    static constexpr size_t kIndexesCount = 4;
+
+    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
         return {
             header_snapshot,
             body_snapshot,
@@ -59,7 +62,7 @@ struct SnapshotBundle {
         };
     }
 
-    std::array<std::reference_wrapper<Index>, 4> indexes() {
+    std::array<std::reference_wrapper<Index>, kIndexesCount> indexes() {
         return {
             idx_header_hash,
             idx_body_number,
@@ -100,6 +103,9 @@ struct SnapshotBundle {
     // assume that all snapshots have the same block range, and use one of them
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
+
+    void reopen();
+    void close();
 };
 
 //! Read-only repository for all snapshot files.
@@ -163,7 +169,6 @@ class SnapshotRepository {
     [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
 
   private:
-    void reopen_list(const SnapshotPathList& segment_files);
     std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
     const SnapshotBundle* find_bundle(BlockNum number) const;
     std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;

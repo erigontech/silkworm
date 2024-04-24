@@ -58,15 +58,8 @@ SnapshotRepository::~SnapshotRepository() {
 }
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
-    BlockNum block_from = bundle.block_from();
-    BlockNum block_to = bundle.block_to();
-
     bundle.reopen();
-
-    bundles_.emplace(block_from, std::move(bundle));
-
-    segment_max_block_ = std::max(segment_max_block_, block_to - 1);
-    idx_max_block_ = max_idx_available();
+    bundles_.emplace(bundle.block_from(), std::move(bundle));
 }
 
 void SnapshotBundle::reopen() {
@@ -96,6 +89,15 @@ void SnapshotRepository::close() {
         auto& bundle = entry.second;
         bundle.close();
     }
+}
+
+BlockNum SnapshotRepository::max_block_available() const {
+    if (bundles_.empty())
+        return 0;
+
+    // a bundle with the max block range is last in the sorted bundles map
+    auto& bundle = bundles_.rbegin()->second;
+    return (bundle.block_from() < bundle.block_to()) ? bundle.block_to() - 1 : bundle.block_from();
 }
 
 std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
@@ -292,7 +294,6 @@ void SnapshotRepository::reopen_folder() {
         }
 
         auto& bundle = bundles_.at(num);
-        segment_max_block_ = std::max(segment_max_block_, bundle.block_to() - 1);
 
         if (num < bundle.block_to()) {
             num = bundle.block_to();
@@ -301,8 +302,9 @@ void SnapshotRepository::reopen_folder() {
         }
     }
 
-    idx_max_block_ = max_idx_available();
-    SILK_INFO << "Total reopened snapshots: " << total_snapshots_count();
+    SILK_INFO << "Total reopened bundles: " << bundles_count()
+              << " snapshots: " << total_snapshots_count()
+              << " indexes: " << total_indexes_count();
 }
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
@@ -343,20 +345,6 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     std::sort(snapshot_files.begin(), snapshot_files.end());
 
     return snapshot_files;
-}
-
-BlockNum SnapshotRepository::max_idx_available() {
-    BlockNum result = 0;
-    for (auto& entry : bundles_) {
-        auto& bundle = entry.second;
-        for (auto& index_ref : bundle.indexes()) {
-            if (!index_ref.get().is_open()) {
-                return result;
-            }
-        }
-        result = bundle.block_to() - 1;
-    }
-    return result;
 }
 
 bool is_stale_index_path(const SnapshotPath& index_path) {

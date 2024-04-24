@@ -51,9 +51,7 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
     repository.reopen_folder();
-    CHECK(repository.header_snapshots_count() == 0);
-    CHECK(repository.body_snapshots_count() == 0);
-    CHECK(repository.tx_snapshots_count() == 0);
+    CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
 }
 
@@ -203,7 +201,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_tx_segment(1'500'014));
     }
     SECTION("greater than max_block_available") {
-        CHECK_FALSE(repository.find_body_segment(repository.max_block_available() + 10));
+        CHECK_FALSE(repository.find_body_segment(repository.max_block_available() + 1));
     }
 }
 

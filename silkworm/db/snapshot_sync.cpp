@@ -73,9 +73,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     repository_->reopen_folder();
 
     const auto max_block_available = repository_->max_block_available();
-    SILK_INFO << "SnapshotSync: max block available: " << max_block_available
-              << " (segment max block: " << repository_->segment_max_block()
-              << ", idx max block: " << repository_->idx_max_block() << ")";
+    SILK_INFO << "SnapshotSync: max block available: " << max_block_available;
 
     const auto snapshot_config = Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     const auto configured_max_block_number = snapshot_config.max_block_number();

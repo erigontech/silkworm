@@ -127,18 +127,15 @@ class SnapshotRepository {
 
     void add_snapshot_bundle(SnapshotBundle bundle);
 
-    [[nodiscard]] std::size_t header_snapshots_count() const { return bundles_.size(); }
-    [[nodiscard]] std::size_t body_snapshots_count() const { return bundles_.size(); }
-    [[nodiscard]] std::size_t tx_snapshots_count() const { return bundles_.size(); }
-    [[nodiscard]] std::size_t total_snapshots_count() const {
-        return header_snapshots_count() + body_snapshots_count() + tx_snapshots_count();
-    }
+    [[nodiscard]] std::size_t bundles_count() const { return bundles_.size(); }
+    [[nodiscard]] std::size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
+    [[nodiscard]] std::size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
-    [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
-    [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
-    [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
+    //! All types of .seg and .idx files are available up to this block number
+    [[nodiscard]] BlockNum max_block_available() const;
 
     [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
+
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
@@ -183,17 +180,10 @@ class SnapshotRepository {
 
     [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
-    [[nodiscard]] BlockNum max_idx_available();
     SnapshotPathList stale_index_paths() const;
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;
-
-    //! All types of .seg files are available - up to this block number
-    BlockNum segment_max_block_{0};
-
-    //! All types of .idx files are available - up to this block number
-    BlockNum idx_max_block_{0};
 
     //! Full snapshot bundles ordered by block_from
     std::map<BlockNum, SnapshotBundle> bundles_;

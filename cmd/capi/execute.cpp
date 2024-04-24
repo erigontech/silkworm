@@ -205,9 +205,9 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
             return true;
         });
 
-    ensure(headers_snapshot_sequence.size() == snapshot_repository.header_snapshots_count(), "invalid header snapshot count");
-    ensure(bodies_snapshot_sequence.size() == snapshot_repository.body_snapshots_count(), "invalid body snapshot count");
-    ensure(transactions_snapshot_sequence.size() == snapshot_repository.tx_snapshots_count(), "invalid tx snapshot count");
+    ensure(headers_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid header snapshot count");
+    ensure(bodies_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid body snapshot count");
+    ensure(transactions_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid tx snapshot count");
 
     std::vector<SilkwormChainSnapshot> snapshot_sequence;
     snapshot_sequence.reserve(headers_snapshot_sequence.size());

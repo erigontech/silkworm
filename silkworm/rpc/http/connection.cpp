@@ -17,6 +17,7 @@
 #include "connection.hpp"
 
 #include <array>
+#include <chrono>
 #include <exception>
 #include <string_view>
 
@@ -38,10 +39,13 @@
 
 namespace silkworm::rpc::http {
 
+using namespace std::chrono_literals;
+
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
 static constexpr auto kGzipEncoding{"gzip"};
+static constexpr auto kBearerTokenPrefix{"Bearer "sv};  // space matters: format is `Bearer <token>`
 
 Task<void> Connection::run_read_loop(std::shared_ptr<Connection> connection) {
     co_await connection->read_loop();
@@ -125,7 +129,7 @@ Task<bool> Connection::do_read() {
     co_return true;
 }
 
-Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::do_upgrade(const RequestWithStringBody& req) {
     // Now that talking to the socket is successful, we tie the socket object to a WebSocket stream
     boost::beast::websocket::stream<boost::beast::tcp_stream> stream(std::move(socket_));
 
@@ -137,7 +141,7 @@ Task<void> Connection::do_upgrade(const boost::beast::http::request<boost::beast
     boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), boost::asio::detached);
 }
 
-Task<void> Connection::handle_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::handle_request(const RequestWithStringBody& req) {
     if (req.method() == boost::beast::http::verb::options &&
         !req[boost::beast::http::field::access_control_request_method].empty()) {
         co_await handle_preflight(req);
@@ -146,7 +150,7 @@ Task<void> Connection::handle_request(const boost::beast::http::request<boost::b
     }
 }
 
-Task<void> Connection::handle_preflight(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::handle_preflight(const RequestWithStringBody& req) {
     boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_http_version_};
     std::string vary = req[boost::beast::http::field::vary];
 
@@ -174,7 +178,7 @@ Task<void> Connection::handle_preflight(const boost::beast::http::request<boost:
     co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
 }
 
-Task<void> Connection::handle_actual_request(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
     if (req.body().empty()) {
         co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
         co_return;
@@ -324,39 +328,48 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
     co_return;
 }
 
-Connection::AuthorizationResult Connection::is_request_authorized(const boost::beast::http::request<boost::beast::http::string_body>& req) {
+Connection::AuthorizationResult Connection::is_request_authorized(const RequestWithStringBody& req) {
     if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
         return {};
     }
 
-    auto it = req.find("Authorization");
-    if (it == req.end()) {
-        SILK_ERROR << "JWT request without Authorization Header: " << req.body();
+    // Bearer authentication system: HTTP Authorization header with expected value `Bearer <token>`
+    const auto authorization_it = req.find("Authorization");
+    if (authorization_it == req.end()) {
+        SILK_ERROR << "HTTP request without Authorization header received from " << socket_.remote_endpoint();
         return tl::make_unexpected("missing token");
     }
 
     std::string client_token;
-    if (it->value().substr(0, 7) == "Bearer ") {
-        client_token = it->value().substr(7);
+    const auto authorization_value{authorization_it->value()};
+    if (authorization_value.starts_with(kBearerTokenPrefix)) {
+        client_token = authorization_value.substr(kBearerTokenPrefix.size());
     } else {
-        SILK_ERROR << "JWT client request without token";
+        SILK_ERROR << "HTTP request without Bearer token in Authorization header received from " << socket_.remote_endpoint();
         return tl::make_unexpected("missing token");
     }
     try {
-        // Parse token
-        auto decoded_client_token = jwt::decode(client_token);
+        // Parse JWT token payload
+        const auto decoded_client_token = jwt::decode(client_token);
         if (decoded_client_token.has_issued_at() == 0) {
-            SILK_ERROR << "JWT iat (Issued At) not defined";
-            return tl::make_unexpected("missing issued-at");
+            SILK_ERROR << "JWT iat (issued-at) claim not present in token received from " << socket_.remote_endpoint();
+            return tl::make_unexpected("missing issued-at claim");
         }
-        // Validate token
-        auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
-
+        // Ensure JWT iat timestamp is within +-60 seconds from the current time
+        // https://github.com/ethereum/execution-apis/blob/main/src/engine/authentication.md#jwt-claims
+        const auto issued_at_timestamp{decoded_client_token.get_issued_at()};
+        const auto current_timestamp{std::chrono::system_clock::now()};
+        if (std::chrono::abs(std::chrono::duration_cast<std::chrono::seconds>(current_timestamp - issued_at_timestamp)) > 60s) {
+            SILK_ERROR << "JWT iat (issued-at) claim not present in token received from " << socket_.remote_endpoint();
+            return tl::make_unexpected("invalid issued-at claim");
+        }
+        // Validate received JWT token
+        const auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
         SILK_TRACE << "JWT client token: " << client_token << " secret: " << *jwt_secret_;
         verifier.verify(decoded_client_token);
-    } catch (const boost::system::system_error& se) {
+    } catch (const std::system_error& se) {
         SILK_ERROR << "JWT invalid token: " << se.what();
-        return tl::make_unexpected("invalid token");
+        return tl::make_unexpected(se.what());
     } catch (const std::exception& se) {
         SILK_ERROR << "JWT invalid token: " << se.what();
         return tl::make_unexpected("invalid token");

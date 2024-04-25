@@ -30,6 +30,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/common/compatibility.hpp>
 
 namespace silkworm::rpc {
 
@@ -162,6 +163,7 @@ TEST_CASE("serialize non-empty bytes32", "[rpc][to_json]") {
 
 TEST_CASE("serialize empty block header", "[rpc][to_json]") {
     silkworm::BlockHeader header{};
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     nlohmann::json j = header;
     CHECK(j == R"({
         "baseFeePerGas":null,
@@ -200,6 +202,7 @@ TEST_CASE("serialize empty block header", "[rpc][to_json]") {
 }
 
 TEST_CASE("serialize block header", "[rpc][to_json]") {
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     silkworm::BlockHeader header{
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
@@ -254,6 +257,7 @@ TEST_CASE("serialize block header", "[rpc][to_json]") {
 }
 
 TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     silkworm::BlockHeader header{
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,

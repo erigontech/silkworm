@@ -306,7 +306,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         const auto header{co_await chain_storage->read_canonical_header(block_number)};
 
         if (!header) {
-            auto error_msg = "block header not found: " + block_number;
+            const auto error_msg = "block header not found: " + std::to_string(block_number);
             reply = make_json_error(request, -32000, error_msg);
         } else {
             reply = make_json_content(request, *header);

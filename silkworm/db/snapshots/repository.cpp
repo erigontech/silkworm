@@ -204,40 +204,44 @@ std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) con
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
     std::vector<std::shared_ptr<IndexBuilder>> missing_index_list;
-    missing_index_list.reserve(segment_files.size());
-    for (const auto& seg_file : segment_files) {
-        const auto index_file = seg_file.index_file();
-        SILK_TRACE << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
-        if (!std::filesystem::exists(index_file.path())) {
-            std::shared_ptr<IndexBuilder> index;
-            switch (seg_file.type()) {
-                case SnapshotType::headers: {
-                    index = std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                    break;
-                }
-                case SnapshotType::bodies: {
-                    index = std::make_shared<IndexBuilder>(BodyIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                    break;
-                }
-                case SnapshotType::transactions: {
-                    auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
-                    if (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end()) {
-                        index = std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file));
-                        missing_index_list.push_back(index);
 
-                        index = std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file));
-                        missing_index_list.push_back(index);
-                    }
-                    break;
+    for (const auto& seg_file : segment_files) {
+        switch (seg_file.type()) {
+            case SnapshotType::headers: {
+                if (!fs::exists(seg_file.index_file().path())) {
+                    auto index = std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file));
+                    missing_index_list.push_back(index);
                 }
-                default: {
-                    SILKWORM_ASSERT(false);
+                break;
+            }
+            case SnapshotType::bodies: {
+                if (!fs::exists(seg_file.index_file().path())) {
+                    auto index = std::make_shared<IndexBuilder>(BodyIndex::make(seg_file));
+                    missing_index_list.push_back(index);
                 }
+                break;
+            }
+            case SnapshotType::transactions: {
+                auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
+                bool has_bodies_segment = (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end());
+
+                if (!fs::exists(seg_file.index_file().path()) && has_bodies_segment) {
+                    auto index = std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file));
+                    missing_index_list.push_back(index);
+                }
+
+                if (!fs::exists(seg_file.index_file_for_type(SnapshotType::transactions_to_block).path()) && has_bodies_segment) {
+                    auto index = std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file));
+                    missing_index_list.push_back(index);
+                }
+                break;
+            }
+            default: {
+                SILKWORM_ASSERT(false);
             }
         }
     }
+
     return missing_index_list;
 }
 

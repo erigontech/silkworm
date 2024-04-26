@@ -245,7 +245,7 @@ Task<std::optional<BlockBody>> RemoteClient::get_body(BlockNum block_number) {
     co_return body;
 }
 
-Task<void> RemoteClient::insert_headers(const BlockVector& blocks) {
+Task<void> RemoteClient::insert_headers(const BlockVector& /*blocks*/) {
     /*::execution::InsertHeadersRequest request;
     for (const auto& b : blocks) {
         ::execution::Header* header = request.add_headers();
@@ -256,7 +256,7 @@ Task<void> RemoteClient::insert_headers(const BlockVector& blocks) {
     co_return;
 }
 
-Task<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
+Task<void> RemoteClient::insert_bodies(const BlockVector& /*blocks*/) {
     /*::execution::InsertBodiesRequest request;
     for (const auto& b : blocks) {
         ::execution::BlockBody* body = request.add_bodies();

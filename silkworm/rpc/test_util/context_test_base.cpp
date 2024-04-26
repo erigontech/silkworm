@@ -37,7 +37,6 @@ ContextTestBase::ContextTestBase()
       grpc_context_{*context_.grpc_context()},
       context_thread_{[&]() { context_.execute_loop(); }},
       engine_{std::make_unique<ExecutionEngineMock>()} {
-    // const auto engine = std::make_unique<test::ExecutionEngineMock>();
     add_shared_service(io_context_, std::make_shared<BlockCache>());
     add_shared_service(io_context_, std::make_shared<FilterStorage>(1024));
     add_shared_service<ethdb::kv::StateCache>(io_context_, std::make_shared<ethdb::kv::CoherentStateCache>());

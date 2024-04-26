@@ -87,11 +87,10 @@ void BlockNumberOrHash::build(const std::string& bnoh) {
     value_ = uint64_t{0};
     if (bnoh == core::kEarliestBlockId) {
         value_ = core::kEarliestBlockNumber;
-    } else if (bnoh == core::kLatestBlockId || bnoh == core::kPendingBlockId) {
-        value_ = bnoh;
-    } else if (bnoh == core::kFinalizedBlockId) {
-        value_ = bnoh;
-    } else if (bnoh == core::kSafeBlockId) {
+    } else if (bnoh == core::kLatestBlockId ||
+               bnoh == core::kPendingBlockId ||
+               bnoh == core::kFinalizedBlockId ||
+               bnoh == core::kSafeBlockId) {
         value_ = bnoh;
     } else if (absl::StartsWithIgnoreCase(bnoh, "0x")) {
         if (bnoh.length() == 66) {

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <chrono>
-#include <memory>
 #include <utility>
 
 #include <boost/asio/co_spawn.hpp>
@@ -56,7 +55,6 @@ class ContextTestBase {
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;
     std::thread context_thread_;
-    std::unique_ptr<engine::ExecutionEngine> engine_;
 };
 
 }  // namespace silkworm::rpc::test

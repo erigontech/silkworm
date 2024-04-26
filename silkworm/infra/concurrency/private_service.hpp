@@ -17,7 +17,6 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
 
 #include <boost/asio/execution_context.hpp>
 
@@ -64,47 +63,6 @@ T* must_use_private_service(boost::asio::execution_context& context) {
         throw std::logic_error{"unregistered private service: " + std::string{typeid(T).name()}};
     }
     return use_service<PrivateService<T>>(context).ptr();
-}
-
-template <typename T>
-class RawPrivateService : public BaseService<RawPrivateService<T>> {
-  public:
-    explicit RawPrivateService(boost::asio::execution_context& owner) : BaseService<RawPrivateService>(owner) {}
-
-    void shutdown() override {}
-
-    //! *Do not take ownership* of pointer
-    void set_ptr(T* ptr) {
-        ptr_ = ptr;
-    }
-    T* ptr() { return ptr_; }
-
-  private:
-    T* ptr_;
-};
-
-template <typename T>
-void add_raw_private_service(boost::asio::execution_context& context, T* ptr) {
-    if (!has_service<RawPrivateService<T>>(context)) {
-        make_service<RawPrivateService<T>>(context);
-    }
-    use_service<RawPrivateService<T>>(context).set_ptr(ptr);
-}
-
-template <typename T>
-T* use_raw_private_service(boost::asio::execution_context& context) {
-    if (!has_service<RawPrivateService<T>>(context)) {
-        return nullptr;
-    }
-    return use_service<RawPrivateService<T>>(context).ptr();
-}
-
-template <typename T>
-T* must_use_raw_private_service(boost::asio::execution_context& context) {
-    if (!has_service<RawPrivateService<T>>(context)) {
-        throw std::logic_error{"unregistered raw private service: " + std::string{typeid(T).name()}};
-    }
-    return use_service<RawPrivateService<T>>(context).ptr();
 }
 
 }  // namespace silkworm

@@ -136,8 +136,6 @@ static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
     .rule_set_config = protocol::CliqueConfig{}};
 
 TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabilities", "[silkworm][rpc][commands][engine_api]") {
-    engine_ = std::make_unique<test::ExecutionEngineMock>();  // TODO(canepat) remove this workaround
-
     nlohmann::json reply;
 
     SECTION("request params is empty: return error") {

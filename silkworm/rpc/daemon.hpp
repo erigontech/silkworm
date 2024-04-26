@@ -58,7 +58,7 @@ class Daemon {
 
     ClientContextPool& context_pool() { return context_pool_; }
 
-    void add_execution_services(const std::vector<engine::ExecutionEngine*>& engines);
+    void add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines);
 
     DaemonChecklist run_checklist();
 

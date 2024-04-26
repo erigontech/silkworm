@@ -24,6 +24,7 @@
 #include <tl/expected.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/engine/execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
@@ -42,7 +43,7 @@ class EngineRpcApi {
     explicit EngineRpcApi(boost::asio::io_context& io_context)
         : EngineRpcApi(
               must_use_private_service<ethdb::Database>(io_context),
-              must_use_raw_private_service<engine::ExecutionEngine>(io_context),
+              must_use_shared_service<engine::ExecutionEngine>(io_context),
               must_use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~EngineRpcApi() = default;
 

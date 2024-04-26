@@ -278,17 +278,19 @@ void Daemon::add_shared_services() {
         add_shared_service(io_context, block_cache);
         add_shared_service<ethdb::kv::StateCache>(io_context, state_cache);
         add_shared_service(io_context, filter_storage);
+        // TODO(canepat) replace w/ proper Execution remote client
+        add_shared_service<engine::ExecutionEngine>(io_context, nullptr);
     }
 }
 
-void Daemon::add_execution_services(const std::vector<engine::ExecutionEngine*>& engines) {
+void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines) {
     ensure(engines.size() == settings_.context_pool_settings.num_contexts,
            "Daemon::add_execution_services: number of execution engines must be equal to the number of contexts");
 
     // Add the Engine API execution service to each execution context
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
-        add_raw_private_service<engine::ExecutionEngine>(io_context, engines[i]);
+        add_shared_service<engine::ExecutionEngine>(io_context, engines[i]);
     }
 }
 

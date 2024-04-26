@@ -167,7 +167,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (!block_with_hash) {
             const std::string error_msg = "block not found ";
-            SILK_ERROR << "erigon_get_block_by_timestamè: core::read_block_by_number: " << error_msg << request.dump();
+            SILK_ERROR << "erigon_get_block_by_timestamp: core::read_block_by_number: " << error_msg << request.dump();
             make_glaze_json_error(request, 100, error_msg, reply);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
@@ -259,7 +259,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
 
         const auto header{co_await chain_storage->read_header(block_hash)};
         if (!header) {
-            reply = make_json_error(request, 100, "block not found");
+            auto error_msg = "block header not found: 0x" + silkworm::to_hex(block_hash);
+            reply = make_json_error(request, -32000, error_msg);
         } else {
             reply = make_json_content(request, *header);
         }
@@ -305,7 +306,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         const auto header{co_await chain_storage->read_canonical_header(block_number)};
 
         if (!header) {
-            reply = make_json_error(request, 100, "block not found");
+            const auto error_msg = "block header not found: " + std::to_string(block_number);
+            reply = make_json_error(request, -32000, error_msg);
         } else {
             reply = make_json_content(request, *header);
         }

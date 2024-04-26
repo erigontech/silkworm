@@ -27,6 +27,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -226,7 +227,21 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     } else {
         json["baseFeePerGas"] = nullptr;
     }
-    json["withdrawalsRoot"] = nullptr;  // waiting EIP-4895
+    if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+        json["AuRaSeal"] = nullptr;
+        json["AuRaStep"] = 0;
+        json["Verkle"] = false;
+        json["VerkleKeyVals"] = nullptr;
+        json["VerkleProof"] = nullptr;
+    }
+    json["blobGasUsed"] = nullptr;
+    json["excessBlobGas"] = nullptr;
+    json["parentBeaconBlockRoot"] = nullptr;
+    if (header.withdrawals_root) {
+        json["withdrawalsRoot"] = *header.withdrawals_root;
+    } else {
+        json["withdrawalsRoot"] = nullptr;
+    }
 }
 
 }  // namespace silkworm

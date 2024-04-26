@@ -27,6 +27,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/engine/execution_engine.hpp>
 
 namespace silkworm::rpc::test {
 
@@ -55,6 +56,7 @@ class ContextTestBase {
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;
     std::thread context_thread_;
+    std::unique_ptr<engine::ExecutionEngine> engine_;
 };
 
 }  // namespace silkworm::rpc::test

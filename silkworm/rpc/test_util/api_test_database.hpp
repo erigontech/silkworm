@@ -37,12 +37,13 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
-#include <silkworm/rpc/test/context_test_base.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::test {
@@ -113,20 +114,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table_;
 };
 
-class TestDatabaseContext {
-  public:
-    TestDatabaseContext();
-
-    ~TestDatabaseContext() {
-        auto db_path = db.get_path();
-        db.close();
-        std::filesystem::remove_all(db_path);
-    }
-
-    mdbx::env_managed db;
-};
-
-class RpcApiE2ETest : public TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
+class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
   public:
     explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {
         // Ensure JSON RPC spec has been loaded into the validator

@@ -24,6 +24,7 @@
 #include <tl/expected.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/rpc/engine/execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -36,11 +37,12 @@ namespace silkworm::rpc::commands {
 
 class EngineRpcApi {
   public:
-    EngineRpcApi(ethdb::Database* database, ethbackend::BackEnd* backend)
-        : database_{database}, backend_{backend} {}
+    EngineRpcApi(ethdb::Database* database, engine::ExecutionEngine* engine, ethbackend::BackEnd* backend)
+        : database_{database}, engine_{engine}, backend_{backend} {}
     explicit EngineRpcApi(boost::asio::io_context& io_context)
         : EngineRpcApi(
               must_use_private_service<ethdb::Database>(io_context),
+              must_use_raw_private_service<engine::ExecutionEngine>(io_context),
               must_use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~EngineRpcApi() = default;
 
@@ -80,6 +82,7 @@ class EngineRpcApi {
                                                    const std::optional<silkworm::ChainConfig>& config);
 
     ethdb::Database* database_;
+    engine::ExecutionEngine* engine_;
     ethbackend::BackEnd* backend_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;

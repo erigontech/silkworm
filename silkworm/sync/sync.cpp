@@ -18,7 +18,6 @@
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
-#include "engine_api_backend.hpp"
 #include "sync_pos.hpp"
 #include "sync_pow.hpp"
 
@@ -55,9 +54,8 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_unique<PoSSync>(block_exchange_, execution);
-        std::vector<std::unique_ptr<rpc::ethbackend::BackEnd>> backends;
-        backends.push_back(std::make_unique<EngineApiBackend>(*pos_sync));  // just one PoS-based Engine backend
-        engine_rpc_server_->add_backend_services(std::move(backends));
+        std::vector<rpc::engine::ExecutionEngine*> engines{pos_sync.get()};  // just one PoS-based Engine backend
+        engine_rpc_server_->add_execution_services(engines);
         chain_sync_ = std::move(pos_sync);
     } else {
         // Create the synchronization algorithm based on GHOST, i.e. PoW

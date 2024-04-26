@@ -20,7 +20,8 @@
 #include <boost/regex.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::json_rpc {
 
@@ -483,7 +484,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][js
 TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
-    const auto tests_dir = test::get_tests_dir();
+    const auto tests_dir = db::test_util::get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
             auto test_name = test_file.path().filename().string();

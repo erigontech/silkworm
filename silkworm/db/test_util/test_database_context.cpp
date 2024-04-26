@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,18 @@
    limitations under the License.
 */
 
-#include "api_test_database.hpp"
+#include "test_database_context.hpp"
 
+#include <fstream>
+
+#include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/execution/execution.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/genesis.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::rpc::test {
+namespace silkworm::db::test_util {
 
 std::filesystem::path get_tests_dir() {
     auto working_dir = std::filesystem::current_path();
@@ -184,4 +190,4 @@ namespace {
 
 TestDatabaseContext::TestDatabaseContext() : db{initialize_test_database()} {}
 
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::db::test_util

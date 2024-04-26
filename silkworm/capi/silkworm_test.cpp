@@ -31,13 +31,13 @@
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm {
 
 namespace snapshot_test = snapshots::test_util;
 
-struct CApiTest : public rpc::test::TestDatabaseContext {
+struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
 };

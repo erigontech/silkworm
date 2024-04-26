@@ -46,7 +46,7 @@ silkworm_library(
 # cmake-format: on
 
 if(NOT NO_TEST)
-  target_link_libraries(silkworm_capi_test PRIVATE silkworm_core silkworm_db silkworm_infra silkworm_rpcdaemon)
+  target_link_libraries(silkworm_capi_test PRIVATE silkworm_core silkworm_db silkworm_infra silkworm_rpcdaemon silkworm_db_test_util)
 endif()
 
 # Remove custom stack_size linker option for this target

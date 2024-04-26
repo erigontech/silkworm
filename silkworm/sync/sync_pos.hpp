@@ -24,6 +24,7 @@
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
+#include <silkworm/rpc/engine/execution_engine.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
@@ -33,7 +34,7 @@
 
 namespace silkworm::chainsync {
 
-class PoSSync : public ChainSync {
+class PoSSync : public ChainSync, public rpc::engine::ExecutionEngine {
   public:
     PoSSync(BlockExchange&, execution::Client&);
 
@@ -43,11 +44,11 @@ class PoSSync : public ChainSync {
     Task<void> download_blocks(); /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    Task<rpc::PayloadStatus> new_payload(const rpc::NewPayloadRequest& request, std::chrono::milliseconds timeout);
-    Task<rpc::ForkChoiceUpdatedReply> fork_choice_update(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout);
-    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId, std::chrono::milliseconds timeout);
-    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes, std::chrono::milliseconds timeout);
-    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds timeout);
+    Task<rpc::PayloadStatus> new_payload(const rpc::NewPayloadRequest& request, std::chrono::milliseconds timeout) override;
+    Task<rpc::ForkChoiceUpdatedReply> fork_choice_updated(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) override;
+    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId, std::chrono::milliseconds timeout) override;
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes, std::chrono::milliseconds timeout) override;
+    Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds timeout) override;
 
   private:
     static std::shared_ptr<Block> make_execution_block(const rpc::ExecutionPayload& payload);

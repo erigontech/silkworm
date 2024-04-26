@@ -51,6 +51,9 @@ class MockSentryStub : public Sentry::StubInterface {
   MOCK_METHOD2(PeerEventsRaw, ::grpc::ClientReaderInterface< ::sentry::PeerEvent>*(::grpc::ClientContext* context, const ::sentry::PeerEventsRequest& request));
   MOCK_METHOD4(AsyncPeerEventsRaw, ::grpc::ClientAsyncReaderInterface< ::sentry::PeerEvent>*(::grpc::ClientContext* context, const ::sentry::PeerEventsRequest& request, ::grpc::CompletionQueue* cq, void* tag));
   MOCK_METHOD3(PrepareAsyncPeerEventsRaw, ::grpc::ClientAsyncReaderInterface< ::sentry::PeerEvent>*(::grpc::ClientContext* context, const ::sentry::PeerEventsRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(AddPeer, ::grpc::Status(::grpc::ClientContext* context, const ::sentry::AddPeerRequest& request, ::sentry::AddPeerReply* response));
+  MOCK_METHOD3(AsyncAddPeerRaw, ::grpc::ClientAsyncResponseReaderInterface< ::sentry::AddPeerReply>*(::grpc::ClientContext* context, const ::sentry::AddPeerRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncAddPeerRaw, ::grpc::ClientAsyncResponseReaderInterface< ::sentry::AddPeerReply>*(::grpc::ClientContext* context, const ::sentry::AddPeerRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(NodeInfo, ::grpc::Status(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::NodeInfoReply* response));
   MOCK_METHOD3(AsyncNodeInfoRaw, ::grpc::ClientAsyncResponseReaderInterface< ::types::NodeInfoReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncNodeInfoRaw, ::grpc::ClientAsyncResponseReaderInterface< ::types::NodeInfoReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));

@@ -58,7 +58,7 @@ class Daemon {
 
     ClientContextPool& context_pool() { return context_pool_; }
 
-    void add_backend_services(std::vector<std::unique_ptr<ethbackend::BackEnd>>&& backends);
+    void add_execution_services(const std::vector<engine::ExecutionEngine*>& engines);
 
     DaemonChecklist run_checklist();
 

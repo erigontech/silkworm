@@ -26,6 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
+#include <silkworm/rpc/ethbackend/backend.hpp>
 
 namespace silkworm::rpc::test {
 

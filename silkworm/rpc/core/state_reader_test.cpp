@@ -24,8 +24,8 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/test/context_test_base.hpp>
-#include <silkworm/rpc/test/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/mock_database_reader.hpp>
 
 namespace silkworm::rpc {
 

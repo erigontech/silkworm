@@ -30,10 +30,10 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test/context_test_base.hpp>
-#include <silkworm/rpc/test/mock_back_end.hpp>
-#include <silkworm/rpc/test/mock_chain_storage.hpp>
-#include <silkworm/rpc/test/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
+#include <silkworm/rpc/test_util/mock_chain_storage.hpp>
+#include <silkworm/rpc/test_util/mock_database_reader.hpp>
 
 namespace silkworm::rpc::state {
 

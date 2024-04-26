@@ -39,11 +39,6 @@ class BackEnd {
     virtual Task<uint64_t> net_version() = 0;
     virtual Task<std::string> client_version() = 0;
     virtual Task<uint64_t> net_peer_count() = 0;
-    virtual Task<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) = 0;
-    virtual Task<PayloadStatus> engine_new_payload(const rpc::NewPayloadRequest& request) = 0;
-    virtual Task<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& request) = 0;
-    virtual Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) = 0;
-    virtual Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) = 0;
     virtual Task<NodeInfos> engine_node_info() = 0;
     virtual Task<PeerInfos> peers() = 0;
     virtual Task<bool> get_block(BlockNum block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;

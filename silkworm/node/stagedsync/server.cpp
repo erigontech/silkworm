@@ -103,7 +103,7 @@ Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
         } else if (std::holds_alternative<stagedsync::ValidationError>(verification)) {
             auto validation_error = std::get<stagedsync::ValidationError>(verification);
             validation = ValidationError{.latest_valid_head = validation_error.latest_valid_head.hash,
-                                         .missing_block = {}};  // todo: provide missing_block
+                                         .error = ""};  // todo: provide error
         } else {
             throw std::logic_error("Execution Server, unknown error");
         }

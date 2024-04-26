@@ -23,8 +23,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/test/grpc_actions.hpp>
-#include <silkworm/rpc/test/kv_test_base.hpp>
+#include <silkworm/rpc/test_util/grpc_actions.hpp>
+#include <silkworm/rpc/test_util/kv_test_base.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 

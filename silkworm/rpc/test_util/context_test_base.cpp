@@ -26,6 +26,8 @@
 #include <silkworm/rpc/txpool/miner.hpp>
 #include <silkworm/rpc/txpool/transaction_pool.hpp>
 
+#include "mock_execution_engine.hpp"
+
 namespace silkworm::rpc::test {
 
 ContextTestBase::ContextTestBase()
@@ -33,7 +35,9 @@ ContextTestBase::ContextTestBase()
       context_{0},
       io_context_{*context_.io_context()},
       grpc_context_{*context_.grpc_context()},
-      context_thread_{[&]() { context_.execute_loop(); }} {
+      context_thread_{[&]() { context_.execute_loop(); }},
+      engine_{std::make_unique<ExecutionEngineMock>()} {
+    // const auto engine = std::make_unique<test::ExecutionEngineMock>();
     add_shared_service(io_context_, std::make_shared<BlockCache>());
     add_shared_service(io_context_, std::make_shared<FilterStorage>(1024));
     add_shared_service<ethdb::kv::StateCache>(io_context_, std::make_shared<ethdb::kv::CoherentStateCache>());
@@ -42,6 +46,7 @@ ContextTestBase::ContextTestBase()
     add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<ethbackend::RemoteBackEnd>(io_context_, grpc_channel, grpc_context_));
     add_private_service<txpool::Miner>(io_context_, std::make_unique<txpool::Miner>(io_context_, grpc_channel, grpc_context_));
     add_private_service<txpool::TransactionPool>(io_context_, std::make_unique<txpool::TransactionPool>(io_context_, grpc_channel, grpc_context_));
+    add_raw_private_service<engine::ExecutionEngine>(io_context_, engine_.get());
 }
 
 ContextTestBase::~ContextTestBase() {

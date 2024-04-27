@@ -1422,7 +1422,7 @@ class CallGasTracer : public EvmTracer {
         return call_gas_cost_;
     }
 
-private:
+  private:
     std::optional<long> temporary_gas_;
     std::vector<long> call_gas_cost_;
 };
@@ -1437,18 +1437,17 @@ void CallGasTracer::on_instruction_start(unsigned int pc, const intx::uint256*, 
         call_gas_cost_.push_back(cost);
         temporary_gas_.reset();
     }
-    if (opcode == 0xf1) { // CALL
+    if (opcode == 0xf1) {  // CALL
         temporary_gas_ = gas;
     }
 
     temporary_gas_ = gas;
-
 }
 
 TEST_CASE("Get gas for CALL", "[core][execution]") {
     Block block{};
-    block.header.number = 1'029'553; // real block on GOERLI chain see https://goerli.etherscan.io/block/1029553
-//    block.header.timestamp = 1564461581;
+    block.header.number = 1'029'553;  // real block on GOERLI chain see https://goerli.etherscan.io/block/1029553
+                                      //    block.header.timestamp = 1564461581;
 
     evmc::address caller_address{0x8882042B8E93C85312f623F058eF252c8025a7Ae_address};
     evmc::address callee_address{0x37803fC1b1FA2075B6D79f3e4CDF2873B9237281_address};
@@ -1477,7 +1476,7 @@ TEST_CASE("Get gas for CALL", "[core][execution]") {
     CallGasTracer tracer;
     evm.add_tracer(tracer);
 
-    Transaction txn{}; // txn #o in block 1'029'553, see https://goerli.etherscan.io/tx/0x81b9951cde95115515c6049382e8227dc9a96972793df7da814ab22cc62dd091
+    Transaction txn{};  // txn #o in block 1'029'553, see https://goerli.etherscan.io/tx/0x81b9951cde95115515c6049382e8227dc9a96972793df7da814ab22cc62dd091
     txn.set_sender(caller_address);
     txn.to = callee_address;
     txn.data = ByteView{*from_hex("9890220b")};

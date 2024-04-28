@@ -93,10 +93,11 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             if (result.success()) {
                 hi = mid;
             } else {
-                lo = mid;
                 if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
-                    break;
+                    result.error_code = evmc_status_code::EVMC_SUCCESS;
+                    return result;
                 }
+                lo = mid;
             }
         }
 
@@ -116,7 +117,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     });
 
     if (!exec_result.success()) {
-        throw_exception(exec_result, cap);
+        throw_exception(exec_result);
     }
     co_return hi;
 }
@@ -125,10 +126,10 @@ ExecutionResult EstimateGasOracle::try_execution(EVMExecutor& executor, const si
     return executor.call(block, transaction);
 }
 
-void EstimateGasOracle::throw_exception(ExecutionResult& result, uint64_t cap) {
+void EstimateGasOracle::throw_exception(ExecutionResult& result) {
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
-        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
+        throw EstimateGasException{-32000, *result.pre_check_error};
     } else {
         auto error_message = result.error_message();
         SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;

@@ -1440,8 +1440,6 @@ void CallGasTracer::on_instruction_start(unsigned int pc, const intx::uint256*, 
     if (opcode == 0xf1) {  // CALL
         temporary_gas_ = gas;
     }
-
-    temporary_gas_ = gas;
 }
 
 TEST_CASE("Get gas for CALL", "[core][execution]") {

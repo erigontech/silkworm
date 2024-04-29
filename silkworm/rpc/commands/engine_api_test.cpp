@@ -93,10 +93,6 @@ namespace {
 
 class EngineRpcApi_ForTest : public EngineRpcApi {
   public:
-    explicit EngineRpcApi_ForTest()
-        : EngineRpcApi(database_mock.get(), engine_mock.get(), backend_mock.get()) {}
-    EngineRpcApi_ForTest(ethdb::Database* database, engine::ExecutionEngine* engine, ethbackend::BackEnd* backend)
-        : EngineRpcApi(database, engine, backend) {}
     explicit EngineRpcApi_ForTest(boost::asio::io_context& io_context) : EngineRpcApi(io_context) {}
 
     using EngineRpcApi::handle_engine_exchange_capabilities;
@@ -104,10 +100,6 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
     using EngineRpcApi::handle_engine_forkchoice_updated_v1;
     using EngineRpcApi::handle_engine_get_payload_v1;
     using EngineRpcApi::handle_engine_new_payload_v1;
-
-    static inline auto database_mock{std::make_unique<test::MockDatabase>()};
-    static inline auto engine_mock{std::make_unique<test::ExecutionEngineMock>()};
-    static inline auto backend_mock{std::make_unique<test::BackEndMock>()};
 };
 
 using testing::_;
@@ -120,8 +112,8 @@ struct EngineRpcApiTest : public test::JsonApiTestBase<EngineRpcApi_ForTest> {
         add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<test::BackEndMock>());
     }
 
-    static inline auto mock_engine{std::make_shared<test::ExecutionEngineMock>()};
-    static inline auto mock_cursor{std::make_shared<test::MockCursor>()};
+    std::shared_ptr<test::ExecutionEngineMock> mock_engine{std::make_shared<test::ExecutionEngineMock>()};
+    std::shared_ptr<test::MockCursor> mock_cursor{std::make_shared<test::MockCursor>()};
 };
 
 #ifndef SILKWORM_SANITIZE

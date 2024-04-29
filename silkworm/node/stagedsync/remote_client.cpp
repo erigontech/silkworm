@@ -29,6 +29,8 @@ namespace silkworm::execution {
 using namespace std::chrono;
 using namespace boost::asio;
 
+// TODO(canepat) RemoteClient::insert_headers/RemoteClient::insert_bodies replaced by insert_blocks
+// TODO(canepat) We also need to refactor LocalClient/RemoteClient to use execute proto I/F
 /*static void serialize_header(const BlockHeader& bh, ::execution::Header* header) {
     header->set_allocated_parent_hash(rpc::H256_from_bytes32(bh.parent_hash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(bh.beneficiary).release());

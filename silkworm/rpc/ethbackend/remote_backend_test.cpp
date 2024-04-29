@@ -245,6 +245,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
     }
 }
 
+// TODO(canepat) move these unit tests to execute.proto I/F implementation
 /*TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EngineGetPayloadResponse> reader;
     EXPECT_CALL(*stub_, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));

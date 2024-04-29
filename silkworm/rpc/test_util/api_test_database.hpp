@@ -48,12 +48,6 @@
 
 namespace silkworm::rpc::test {
 
-std::filesystem::path get_tests_dir();
-
-InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& tests_dir);
-
-void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InMemoryState& state_buffer);
-
 class ChannelForTest : public StreamWriter {
   public:
     Task<void> open_stream() override { co_return; }

@@ -48,7 +48,10 @@ if(NOT SILKWORM_CORE_ONLY)
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=${FUZZER_TEST_COMPILE_SANITIZE})
-    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_rpcdaemon_test_util -fsanitize=${FUZZER_TEST_LINK_SANITIZE})
+    target_link_libraries(
+      rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_rpcdaemon_test_util
+                                    -fsanitize=${FUZZER_TEST_LINK_SANITIZE}
+    )
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
@@ -59,7 +62,8 @@ if(NOT SILKWORM_CORE_ONLY)
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=${FUZZER_DIAG_COMPILE_SANITIZE})
     target_link_libraries(
-      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_rpcdaemon_test_util CLI11::CLI11 -fsanitize=${FUZZER_DIAG_LINK_SANITIZE}
+      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_rpcdaemon_test_util CLI11::CLI11
+                                           -fsanitize=${FUZZER_DIAG_LINK_SANITIZE}
     )
   endif()
 

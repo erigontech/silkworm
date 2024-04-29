@@ -18,8 +18,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/json_rpc/validator.hpp>
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
 
@@ -27,20 +26,15 @@ using namespace silkworm::rpc::json_rpc;
 using namespace silkworm::rpc::test;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
-    // Ensure JSON RPC spec is loaded into the validator
-    JsonRpcValidator::load_specification();
-
-    static auto context = TestDatabaseContext();
-
-    auto request = std::string(reinterpret_cast<const char*>(Data), Size);
+    const auto request = std::string(reinterpret_cast<const char*>(Data), Size);
     if (!nlohmann::json::accept(request)) {
         return -1;
     }
     const auto request_json = nlohmann::json::parse(request);
 
-    auto request_handler = RpcApiTestBase<RequestHandler_ForTest>(context.db);
+    RpcApiE2ETest api_e2e_test;
     std::string reply;
-    request_handler.run<&RequestHandler_ForTest::handle_request>(request, reply);
+    api_e2e_test.run<&RequestHandler_ForTest::handle_request>(request, reply);
 
     if (!nlohmann::json::accept(reply)) {
         return -1;

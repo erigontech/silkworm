@@ -50,9 +50,16 @@ void Collector::flush_buffer() {
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
         const auto [_, duration]{sw.stop()};
-        log::Info("ETL collector flushed file", {"path", std::string(file_providers_.back()->get_file_name()),
-                                                 "size", human_size(file_providers_.back()->get_file_size()),
-                                                 "in", StopWatch::format(duration)});
+        log::Debug(
+            "ETL collector flushed file",
+            {
+                "path",
+                std::string(file_providers_.back()->get_file_name()),
+                "size",
+                human_size(file_providers_.back()->get_file_size()),
+                "in",
+                StopWatch::format(duration),
+            });
     }
 }
 

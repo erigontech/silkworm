@@ -16,42 +16,96 @@
 
 #pragma once
 
+#include <array>
+#include <cassert>
 #include <filesystem>
 #include <functional>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
-#include <silkworm/db/snapshots/snapshot.hpp>
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
 
 namespace silkworm::snapshots {
 
 struct IndexBuilder;
 
-template <typename T>
-concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
-
-template <ConcreteSnapshot T>
-using SnapshotsByPath = std::map<std::filesystem::path, std::unique_ptr<T>>;
-
-template <ConcreteSnapshot T>
-using SnapshotWalker = std::function<bool(const T* snapshot)>;
-using HeaderSnapshotWalker = SnapshotWalker<HeaderSnapshot>;
-using BodySnapshotWalker = SnapshotWalker<BodySnapshot>;
-using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
-
 struct SnapshotBundle {
-    SnapshotPath headers_snapshot_path;
-    std::unique_ptr<HeaderSnapshot> headers_snapshot;
-    SnapshotPath bodies_snapshot_path;
-    std::unique_ptr<BodySnapshot> bodies_snapshot;
-    SnapshotPath tx_snapshot_path;
-    std::unique_ptr<TransactionSnapshot> tx_snapshot;
+    Snapshot header_snapshot;
+    //! Index header_hash -> block_num -> headers_segment_offset
+    Index idx_header_hash;
+
+    Snapshot body_snapshot;
+    //! Index block_num -> bodies_segment_offset
+    Index idx_body_number;
+
+    Snapshot txn_snapshot;
+    //! Index transaction_hash -> txn_id -> transactions_segment_offset
+    Index idx_txn_hash;
+    //! Index transaction_hash -> block_num
+    Index idx_txn_hash_2_block;
+
+    static constexpr size_t kSnapshotsCount = 3;
+    static constexpr size_t kIndexesCount = 4;
+
+    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
+        return {
+            header_snapshot,
+            body_snapshot,
+            txn_snapshot,
+        };
+    }
+
+    std::array<std::reference_wrapper<Index>, kIndexesCount> indexes() {
+        return {
+            idx_header_hash,
+            idx_body_number,
+            idx_txn_hash,
+            idx_txn_hash_2_block,
+        };
+    }
+
+    const Snapshot& snapshot(SnapshotType type) const {
+        switch (type) {
+            case headers:
+                return header_snapshot;
+            case bodies:
+                return body_snapshot;
+            case transactions:
+            case transactions_to_block:
+                return txn_snapshot;
+        }
+        assert(false);
+        return header_snapshot;
+    }
+
+    const Index& index(SnapshotType type) const {
+        switch (type) {
+            case headers:
+                return idx_header_hash;
+            case bodies:
+                return idx_body_number;
+            case transactions:
+                return idx_txn_hash;
+            case transactions_to_block:
+                return idx_txn_hash_2_block;
+        }
+        assert(false);
+        return idx_header_hash;
+    }
+
+    // assume that all snapshots have the same block range, and use one of them
+    BlockNum block_from() const { return header_snapshot.block_from(); }
+    BlockNum block_to() const { return header_snapshot.block_to(); }
+
+    void reopen();
+    void close();
 };
 
 //! Read-only repository for all snapshot files.
@@ -68,68 +122,57 @@ class SnapshotRepository {
     [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
     [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
-    [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
-
-    [[nodiscard]] SnapshotPathList get_segment_files() const {
-        return get_files(kSegmentExtension);
-    }
-
-    void add_snapshot_bundle(SnapshotBundle&& bundle);
-
-    void reopen_list(const SnapshotPathList& segment_files, bool optimistic = false);
-    void reopen_file(const SnapshotPath& segment_path, bool optimistic = false);
     void reopen_folder();
     void close();
 
-    bool for_each_header(const HeaderSnapshot::Walker& fn);
-    bool for_each_body(const BodySnapshot::Walker& fn);
+    void add_snapshot_bundle(SnapshotBundle bundle);
 
-    [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }
-    [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }
-    [[nodiscard]] std::size_t tx_snapshots_count() const { return tx_segments_.size(); }
-    [[nodiscard]] std::size_t total_snapshots_count() const {
-        return header_snapshots_count() + body_snapshots_count() + tx_snapshots_count();
-    }
+    [[nodiscard]] std::size_t bundles_count() const { return bundles_.size(); }
+    [[nodiscard]] std::size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
+    [[nodiscard]] std::size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
+
+    //! All types of .seg and .idx files are available up to this block number
+    [[nodiscard]] BlockNum max_block_available() const;
 
     [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
-    enum ViewResult {
-        kSnapshotNotFound,
-        kWalkFailed,
-        kWalkSuccess
-    };
-    ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
-    ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
-    ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
-
-    std::size_t view_header_segments(const HeaderSnapshotWalker& walker);
-    std::size_t view_body_segments(const BodySnapshotWalker& walker);
-    std::size_t view_tx_segments(const TransactionSnapshotWalker& walker);
-
-    [[nodiscard]] const HeaderSnapshot* get_header_segment(const SnapshotPath& path) const;
-    [[nodiscard]] const BodySnapshot* get_body_segment(const SnapshotPath& path) const;
-    [[nodiscard]] const TransactionSnapshot* get_tx_segment(const SnapshotPath& path) const;
-
-    [[nodiscard]] const HeaderSnapshot* find_header_segment(BlockNum number) const;
-    [[nodiscard]] const BodySnapshot* find_body_segment(BlockNum number) const;
-    [[nodiscard]] const TransactionSnapshot* find_tx_segment(BlockNum number) const;
 
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
+    void remove_stale_indexes() const;
 
-    [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
-    [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
+    struct SnapshotAndIndex {
+        const Snapshot& snapshot;
+        const Index& index;
+    };
+
+    using SnapshotWalker = std::function<bool(SnapshotAndIndex result)>;
+
+    using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
+    std::size_t view_bundles(const SnapshotBundleWalker& walker);
+
+    std::size_t view_header_segments(const SnapshotWalker& walker);
+    std::size_t view_body_segments(const SnapshotWalker& walker);
+    std::size_t view_tx_segments(const SnapshotWalker& walker);
+
+    [[nodiscard]] std::optional<SnapshotAndIndex> find_header_segment(BlockNum number) const;
+    [[nodiscard]] std::optional<SnapshotAndIndex> find_body_segment(BlockNum number) const;
+    [[nodiscard]] std::optional<SnapshotAndIndex> find_tx_segment(BlockNum number) const;
+
+    using HeaderWalker = std::function<bool(const BlockHeader& header)>;
+    bool for_each_header(const HeaderWalker& fn);
+
+    using BodyWalker = std::function<bool(BlockNum number, const BlockBodyForStorage& body)>;
+    bool for_each_body(const BodyWalker& fn);
 
     [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
 
   private:
-    bool reopen_header(const SnapshotPath& seg_file);
-    bool reopen_body(const SnapshotPath& seg_file);
-    bool reopen_transaction(const SnapshotPath& seg_file);
+    std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
+    const SnapshotBundle* find_bundle(BlockNum number) const;
+    std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
-    template <ConcreteSnapshot T>
-    const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const;
-
-    template <ConcreteSnapshot T>
-    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);
+    [[nodiscard]] SnapshotPathList get_segment_files() const {
+        return get_files(kSegmentExtension);
+    }
 
     [[nodiscard]] SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);
@@ -137,25 +180,13 @@ class SnapshotRepository {
 
     [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
-    [[nodiscard]] BlockNum max_idx_available() const;
+    SnapshotPathList stale_index_paths() const;
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;
 
-    //! All types of .seg files are available - up to this block number
-    BlockNum segment_max_block_{0};
-
-    //! All types of .idx files are available - up to this block number
-    BlockNum idx_max_block_{0};
-
-    //! The snapshots containing the block Headers
-    SnapshotsByPath<HeaderSnapshot> header_segments_;
-
-    //! The snapshots containing the block Bodies
-    SnapshotsByPath<BodySnapshot> body_segments_;
-
-    //! The snapshots containing the Transactions
-    SnapshotsByPath<TransactionSnapshot> tx_segments_;
+    //! Full snapshot bundles ordered by block_from
+    std::map<BlockNum, SnapshotBundle> bundles_;
 };
 
 }  // namespace silkworm::snapshots

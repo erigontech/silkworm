@@ -224,7 +224,7 @@ class Decompressor {
         //! input_iterator concept boilerplate
 
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
+        using difference_type = std::ptrdiff_t;
         using value_type = Bytes;
         using pointer = value_type*;
         using reference = value_type&;
@@ -271,8 +271,13 @@ class Decompressor {
         std::shared_ptr<ReadModeGuard> read_mode_guard_;
     };
 
+    static_assert(std::input_or_output_iterator<Iterator>);
+
     explicit Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region = {});
     ~Decompressor();
+
+    Decompressor(Decompressor&&) = default;
+    Decompressor& operator=(Decompressor&&) = default;
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
 
@@ -296,8 +301,15 @@ class Decompressor {
     [[nodiscard]] Iterator make_iterator() const { return Iterator{this, {}}; }
 
     //! Begin reading the words, expected to read in sequential order
-    Iterator begin();
+    Iterator begin() const;
     Iterator end() const { return Iterator::make_end(this); }
+
+    /**
+     * Returns an iterator at a given offset.
+     * If the offset is invalid it returns end().
+     * Seek makes sure that the result starts with a given prefix, otherwise returns end().
+     */
+    Iterator seek(uint64_t offset, ByteView prefix = {}) const;
 
     void close();
 

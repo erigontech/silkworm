@@ -64,8 +64,8 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
         auto txs_snapshot_path = *SnapshotPath::parse(txs_snapshot_file.path());
         auto bodies_snapshot_path = *SnapshotPath::parse(bodies_snapshot_file.path());
 
-        CHECK_THROWS_WITH(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("empty body snapshot"));
-        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), StartsWith("empty body snapshot"));
+        CHECK_THROWS_WITH(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), Contains("empty body snapshot"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), Contains("empty body snapshot"));
     }
 }
 

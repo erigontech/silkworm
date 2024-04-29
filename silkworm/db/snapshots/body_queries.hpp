@@ -16,13 +16,11 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/types/hash.hpp>
+#include "basic_queries.hpp"
+#include "body_snapshot.hpp"
 
 namespace silkworm::snapshots {
 
-Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
+using BodyFindByBlockNumQuery = FindByIdQuery<BodySnapshotReader>;
 
 }  // namespace silkworm::snapshots

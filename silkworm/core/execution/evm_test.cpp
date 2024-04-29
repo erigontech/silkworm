@@ -1415,15 +1415,15 @@ class CallGasCostTracer : public EvmTracer {
     CallGasCostTracer(const CallGasCostTracer&) = delete;
     CallGasCostTracer& operator=(const CallGasCostTracer&) = delete;
 
-//    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
-//                              const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override;
+    //    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
+    //                              const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override;
     void on_instruction_start(unsigned int pc, const intx::uint256*, int, long gas,
                               const evmone::ExecutionState& execution_state,
                               const IntraBlockState&) noexcept override {
         const auto opcode = execution_state.original_code[pc];
 
         if (temporary_gas_) {
-            auto cost = temporary_gas_.value() - gas; // ops gas cost is evaluated as gas_left difference
+            auto cost = temporary_gas_.value() - gas;  // ops gas cost is evaluated as gas_left difference
             call_gas_cost_.push_back(cost);
             temporary_gas_.reset();
         }
@@ -1440,7 +1440,6 @@ class CallGasCostTracer : public EvmTracer {
     std::optional<long> temporary_gas_;
     std::vector<long> call_gas_cost_;
 };
-
 
 TEST_CASE("Get gas for CALL", "[core][execution]") {
     Block block{};
@@ -1467,7 +1466,7 @@ TEST_CASE("Get gas for CALL", "[core][execution]") {
     state.set_nonce(callee_address, 0x1);
 
     ChainConfig cc{kGoerliConfig};
-    cc.petersburg_block = 0; // the addressed block is after petersburg fork, this force the petersburg revision in EVM
+    cc.petersburg_block = 0;  // the addressed block is after petersburg fork, this force the petersburg revision in EVM
     EVM evm{block, state, cc};
 
     CallGasCostTracer tracer;

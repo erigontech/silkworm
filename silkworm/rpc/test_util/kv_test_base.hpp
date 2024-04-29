@@ -21,8 +21,8 @@
 #include <agrpc/test.hpp>
 
 #include <silkworm/interfaces/remote/kv_mock.grpc.pb.h>
-#include <silkworm/rpc/test/context_test_base.hpp>
-#include <silkworm/rpc/test/grpc_responder.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/grpc_responder.hpp>
 
 namespace silkworm::rpc::test {
 

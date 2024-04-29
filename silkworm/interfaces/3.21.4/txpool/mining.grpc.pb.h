@@ -118,7 +118,7 @@ class Mining final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::txpool::HashRateReply>> PrepareAsyncHashRate(::grpc::ClientContext* context, const ::txpool::HashRateRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::txpool::HashRateReply>>(PrepareAsyncHashRateRaw(context, request, cq));
     }
-    // Mining returns an indication if this node is currently mining and it's mining configuration
+    // Mining returns an indication if this node is currently mining and its mining configuration
     virtual ::grpc::Status Mining(::grpc::ClientContext* context, const ::txpool::MiningRequest& request, ::txpool::MiningReply* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::txpool::MiningReply>> AsyncMining(::grpc::ClientContext* context, const ::txpool::MiningRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::txpool::MiningReply>>(AsyncMiningRaw(context, request, cq));
@@ -163,7 +163,7 @@ class Mining final {
       // HashRate returns the current hashrate for local CPU miner and remote miner.
       virtual void HashRate(::grpc::ClientContext* context, const ::txpool::HashRateRequest* request, ::txpool::HashRateReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void HashRate(::grpc::ClientContext* context, const ::txpool::HashRateRequest* request, ::txpool::HashRateReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // Mining returns an indication if this node is currently mining and it's mining configuration
+      // Mining returns an indication if this node is currently mining and its mining configuration
       virtual void Mining(::grpc::ClientContext* context, const ::txpool::MiningRequest* request, ::txpool::MiningReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void Mining(::grpc::ClientContext* context, const ::txpool::MiningRequest* request, ::txpool::MiningReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
@@ -360,7 +360,7 @@ class Mining final {
     virtual ::grpc::Status SubmitHashRate(::grpc::ServerContext* context, const ::txpool::SubmitHashRateRequest* request, ::txpool::SubmitHashRateReply* response);
     // HashRate returns the current hashrate for local CPU miner and remote miner.
     virtual ::grpc::Status HashRate(::grpc::ServerContext* context, const ::txpool::HashRateRequest* request, ::txpool::HashRateReply* response);
-    // Mining returns an indication if this node is currently mining and it's mining configuration
+    // Mining returns an indication if this node is currently mining and its mining configuration
     virtual ::grpc::Status Mining(::grpc::ServerContext* context, const ::txpool::MiningRequest* request, ::txpool::MiningReply* response);
   };
   template <class BaseClass>

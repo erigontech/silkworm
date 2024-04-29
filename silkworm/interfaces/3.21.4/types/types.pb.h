@@ -1450,8 +1450,8 @@ class ExecutionPayload final :
     kGasLimitFieldNumber = 9,
     kGasUsedFieldNumber = 10,
     kTimestampFieldNumber = 11,
-    kDataGasUsedFieldNumber = 17,
-    kExcessDataGasFieldNumber = 18,
+    kBlobGasUsedFieldNumber = 17,
+    kExcessBlobGasFieldNumber = 18,
     kVersionFieldNumber = 1,
   };
   // repeated bytes transactions = 15;
@@ -1690,30 +1690,30 @@ class ExecutionPayload final :
   void _internal_set_timestamp(uint64_t value);
   public:
 
-  // optional uint64 data_gas_used = 17;
-  bool has_data_gas_used() const;
+  // optional uint64 blob_gas_used = 17;
+  bool has_blob_gas_used() const;
   private:
-  bool _internal_has_data_gas_used() const;
+  bool _internal_has_blob_gas_used() const;
   public:
-  void clear_data_gas_used();
-  uint64_t data_gas_used() const;
-  void set_data_gas_used(uint64_t value);
+  void clear_blob_gas_used();
+  uint64_t blob_gas_used() const;
+  void set_blob_gas_used(uint64_t value);
   private:
-  uint64_t _internal_data_gas_used() const;
-  void _internal_set_data_gas_used(uint64_t value);
+  uint64_t _internal_blob_gas_used() const;
+  void _internal_set_blob_gas_used(uint64_t value);
   public:
 
-  // optional uint64 excess_data_gas = 18;
-  bool has_excess_data_gas() const;
+  // optional uint64 excess_blob_gas = 18;
+  bool has_excess_blob_gas() const;
   private:
-  bool _internal_has_excess_data_gas() const;
+  bool _internal_has_excess_blob_gas() const;
   public:
-  void clear_excess_data_gas();
-  uint64_t excess_data_gas() const;
-  void set_excess_data_gas(uint64_t value);
+  void clear_excess_blob_gas();
+  uint64_t excess_blob_gas() const;
+  void set_excess_blob_gas(uint64_t value);
   private:
-  uint64_t _internal_excess_data_gas() const;
-  void _internal_set_excess_data_gas(uint64_t value);
+  uint64_t _internal_excess_blob_gas() const;
+  void _internal_set_excess_blob_gas(uint64_t value);
   public:
 
   // uint32 version = 1;
@@ -1750,8 +1750,8 @@ class ExecutionPayload final :
     uint64_t gas_limit_;
     uint64_t gas_used_;
     uint64_t timestamp_;
-    uint64_t data_gas_used_;
-    uint64_t excess_data_gas_;
+    uint64_t blob_gas_used_;
+    uint64_t excess_blob_gas_;
     uint32_t version_;
   };
   union { Impl_ _impl_; };
@@ -5015,60 +5015,60 @@ ExecutionPayload::withdrawals() const {
   return _impl_.withdrawals_;
 }
 
-// optional uint64 data_gas_used = 17;
-inline bool ExecutionPayload::_internal_has_data_gas_used() const {
+// optional uint64 blob_gas_used = 17;
+inline bool ExecutionPayload::_internal_has_blob_gas_used() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool ExecutionPayload::has_data_gas_used() const {
-  return _internal_has_data_gas_used();
+inline bool ExecutionPayload::has_blob_gas_used() const {
+  return _internal_has_blob_gas_used();
 }
-inline void ExecutionPayload::clear_data_gas_used() {
-  _impl_.data_gas_used_ = uint64_t{0u};
+inline void ExecutionPayload::clear_blob_gas_used() {
+  _impl_.blob_gas_used_ = uint64_t{0u};
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline uint64_t ExecutionPayload::_internal_data_gas_used() const {
-  return _impl_.data_gas_used_;
+inline uint64_t ExecutionPayload::_internal_blob_gas_used() const {
+  return _impl_.blob_gas_used_;
 }
-inline uint64_t ExecutionPayload::data_gas_used() const {
-  // @@protoc_insertion_point(field_get:types.ExecutionPayload.data_gas_used)
-  return _internal_data_gas_used();
+inline uint64_t ExecutionPayload::blob_gas_used() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.blob_gas_used)
+  return _internal_blob_gas_used();
 }
-inline void ExecutionPayload::_internal_set_data_gas_used(uint64_t value) {
+inline void ExecutionPayload::_internal_set_blob_gas_used(uint64_t value) {
   _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.data_gas_used_ = value;
+  _impl_.blob_gas_used_ = value;
 }
-inline void ExecutionPayload::set_data_gas_used(uint64_t value) {
-  _internal_set_data_gas_used(value);
-  // @@protoc_insertion_point(field_set:types.ExecutionPayload.data_gas_used)
+inline void ExecutionPayload::set_blob_gas_used(uint64_t value) {
+  _internal_set_blob_gas_used(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.blob_gas_used)
 }
 
-// optional uint64 excess_data_gas = 18;
-inline bool ExecutionPayload::_internal_has_excess_data_gas() const {
+// optional uint64 excess_blob_gas = 18;
+inline bool ExecutionPayload::_internal_has_excess_blob_gas() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
-inline bool ExecutionPayload::has_excess_data_gas() const {
-  return _internal_has_excess_data_gas();
+inline bool ExecutionPayload::has_excess_blob_gas() const {
+  return _internal_has_excess_blob_gas();
 }
-inline void ExecutionPayload::clear_excess_data_gas() {
-  _impl_.excess_data_gas_ = uint64_t{0u};
+inline void ExecutionPayload::clear_excess_blob_gas() {
+  _impl_.excess_blob_gas_ = uint64_t{0u};
   _impl_._has_bits_[0] &= ~0x00000002u;
 }
-inline uint64_t ExecutionPayload::_internal_excess_data_gas() const {
-  return _impl_.excess_data_gas_;
+inline uint64_t ExecutionPayload::_internal_excess_blob_gas() const {
+  return _impl_.excess_blob_gas_;
 }
-inline uint64_t ExecutionPayload::excess_data_gas() const {
-  // @@protoc_insertion_point(field_get:types.ExecutionPayload.excess_data_gas)
-  return _internal_excess_data_gas();
+inline uint64_t ExecutionPayload::excess_blob_gas() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.excess_blob_gas)
+  return _internal_excess_blob_gas();
 }
-inline void ExecutionPayload::_internal_set_excess_data_gas(uint64_t value) {
+inline void ExecutionPayload::_internal_set_excess_blob_gas(uint64_t value) {
   _impl_._has_bits_[0] |= 0x00000002u;
-  _impl_.excess_data_gas_ = value;
+  _impl_.excess_blob_gas_ = value;
 }
-inline void ExecutionPayload::set_excess_data_gas(uint64_t value) {
-  _internal_set_excess_data_gas(value);
-  // @@protoc_insertion_point(field_set:types.ExecutionPayload.excess_data_gas)
+inline void ExecutionPayload::set_excess_blob_gas(uint64_t value) {
+  _internal_set_excess_blob_gas(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.excess_blob_gas)
 }
 
 // -------------------------------------------------------------------

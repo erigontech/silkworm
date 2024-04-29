@@ -22,15 +22,23 @@
 namespace execution {
 
 static const char* Execution_method_names[] = {
-  "/execution.Execution/InsertHeaders",
-  "/execution.Execution/InsertBodies",
+  "/execution.Execution/InsertBlocks",
   "/execution.Execution/ValidateChain",
   "/execution.Execution/UpdateForkChoice",
   "/execution.Execution/AssembleBlock",
+  "/execution.Execution/GetAssembledBlock",
+  "/execution.Execution/CurrentHeader",
+  "/execution.Execution/GetTD",
   "/execution.Execution/GetHeader",
   "/execution.Execution/GetBody",
+  "/execution.Execution/HasBlock",
+  "/execution.Execution/GetBodiesByRange",
+  "/execution.Execution/GetBodiesByHashes",
   "/execution.Execution/IsCanonicalHash",
   "/execution.Execution/GetHeaderHashNumber",
+  "/execution.Execution/GetForkChoice",
+  "/execution.Execution/Ready",
+  "/execution.Execution/FrozenBlocks",
 };
 
 std::unique_ptr< Execution::Stub> Execution::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -40,128 +48,182 @@ std::unique_ptr< Execution::Stub> Execution::NewStub(const std::shared_ptr< ::gr
 }
 
 Execution::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
-  : channel_(channel), rpcmethod_InsertHeaders_(Execution_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_InsertBodies_(Execution_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ValidateChain_(Execution_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UpdateForkChoice_(Execution_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_AssembleBlock_(Execution_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetHeader_(Execution_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetBody_(Execution_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_IsCanonicalHash_(Execution_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetHeaderHashNumber_(Execution_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  : channel_(channel), rpcmethod_InsertBlocks_(Execution_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ValidateChain_(Execution_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdateForkChoice_(Execution_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_AssembleBlock_(Execution_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetAssembledBlock_(Execution_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CurrentHeader_(Execution_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetTD_(Execution_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetHeader_(Execution_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetBody_(Execution_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HasBlock_(Execution_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetBodiesByRange_(Execution_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetBodiesByHashes_(Execution_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_IsCanonicalHash_(Execution_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetHeaderHashNumber_(Execution_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetForkChoice_(Execution_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Ready_(Execution_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_FrozenBlocks_(Execution_method_names[16], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
-::grpc::Status Execution::Stub::InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::execution::EmptyMessage* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::execution::InsertHeadersRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_InsertHeaders_, context, request, response);
+::grpc::Status Execution::Stub::InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::execution::InsertionResult* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::InsertBlocksRequest, ::execution::InsertionResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_InsertBlocks_, context, request, response);
 }
 
-void Execution::Stub::async::InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::execution::InsertHeadersRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertHeaders_, context, request, response, std::move(f));
+void Execution::Stub::async::InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::InsertBlocksRequest, ::execution::InsertionResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertBlocks_, context, request, response, std::move(f));
 }
 
-void Execution::Stub::async::InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertHeaders_, context, request, response, reactor);
+void Execution::Stub::async::InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertBlocks_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* Execution::Stub::PrepareAsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::EmptyMessage, ::execution::InsertHeadersRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_InsertHeaders_, context, request);
+::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>* Execution::Stub::PrepareAsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::InsertionResult, ::execution::InsertBlocksRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_InsertBlocks_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* Execution::Stub::AsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>* Execution::Stub::AsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
-    this->PrepareAsyncInsertHeadersRaw(context, request, cq);
+    this->PrepareAsyncInsertBlocksRaw(context, request, cq);
   result->StartCall();
   return result;
 }
 
-::grpc::Status Execution::Stub::InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::execution::EmptyMessage* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::execution::InsertBodiesRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_InsertBodies_, context, request, response);
+::grpc::Status Execution::Stub::ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::execution::ValidationReceipt* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::ValidationRequest, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ValidateChain_, context, request, response);
 }
 
-void Execution::Stub::async::InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::execution::InsertBodiesRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertBodies_, context, request, response, std::move(f));
+void Execution::Stub::async::ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::ValidationRequest, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ValidateChain_, context, request, response, std::move(f));
 }
 
-void Execution::Stub::async::InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_InsertBodies_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* Execution::Stub::PrepareAsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::EmptyMessage, ::execution::InsertBodiesRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_InsertBodies_, context, request);
-}
-
-::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* Execution::Stub::AsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-  auto* result =
-    this->PrepareAsyncInsertBodiesRaw(context, request, cq);
-  result->StartCall();
-  return result;
-}
-
-::grpc::Status Execution::Stub::ValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ValidationReceipt* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::types::H256, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ValidateChain_, context, request, response);
-}
-
-void Execution::Stub::async::ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::types::H256, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ValidateChain_, context, request, response, std::move(f));
-}
-
-void Execution::Stub::async::ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) {
+void Execution::Stub::async::ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ValidateChain_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* Execution::Stub::PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ValidationReceipt, ::types::H256, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ValidateChain_, context, request);
+::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* Execution::Stub::PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ValidationReceipt, ::execution::ValidationRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ValidateChain_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* Execution::Stub::AsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* Execution::Stub::AsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncValidateChainRaw(context, request, cq);
   result->StartCall();
   return result;
 }
 
-::grpc::Status Execution::Stub::UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ForkChoiceReceipt* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::types::H256, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UpdateForkChoice_, context, request, response);
+::grpc::Status Execution::Stub::UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::execution::ForkChoiceReceipt* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::ForkChoice, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UpdateForkChoice_, context, request, response);
 }
 
-void Execution::Stub::async::UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::types::H256, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateForkChoice_, context, request, response, std::move(f));
+void Execution::Stub::async::UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::ForkChoice, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateForkChoice_, context, request, response, std::move(f));
 }
 
-void Execution::Stub::async::UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) {
+void Execution::Stub::async::UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateForkChoice_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* Execution::Stub::PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ForkChoiceReceipt, ::types::H256, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_UpdateForkChoice_, context, request);
+::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* Execution::Stub::PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ForkChoiceReceipt, ::execution::ForkChoice, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_UpdateForkChoice_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* Execution::Stub::AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* Execution::Stub::AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncUpdateForkChoiceRaw(context, request, cq);
   result->StartCall();
   return result;
 }
 
-::grpc::Status Execution::Stub::AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::types::ExecutionPayload* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::execution::EmptyMessage, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AssembleBlock_, context, request, response);
+::grpc::Status Execution::Stub::AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::execution::AssembleBlockResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AssembleBlock_, context, request, response);
 }
 
-void Execution::Stub::async::AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::execution::EmptyMessage, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AssembleBlock_, context, request, response, std::move(f));
+void Execution::Stub::async::AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AssembleBlock_, context, request, response, std::move(f));
 }
 
-void Execution::Stub::async::AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, ::grpc::ClientUnaryReactor* reactor) {
+void Execution::Stub::async::AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_AssembleBlock_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* Execution::Stub::PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::ExecutionPayload, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_AssembleBlock_, context, request);
+::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>* Execution::Stub::PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::AssembleBlockResponse, ::execution::AssembleBlockRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_AssembleBlock_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* Execution::Stub::AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>* Execution::Stub::AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncAssembleBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::execution::GetAssembledBlockResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetAssembledBlock_, context, request, response);
+}
+
+void Execution::Stub::async::GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetAssembledBlock_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetAssembledBlock_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>* Execution::Stub::PrepareAsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::GetAssembledBlockResponse, ::execution::GetAssembledBlockRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetAssembledBlock_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>* Execution::Stub::AsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetAssembledBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::GetHeaderResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::execution::GetHeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CurrentHeader_, context, request, response);
+}
+
+void Execution::Stub::async::CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::execution::GetHeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CurrentHeader_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CurrentHeader_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* Execution::Stub::PrepareAsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::GetHeaderResponse, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_CurrentHeader_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* Execution::Stub::AsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncCurrentHeaderRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::GetTDResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::GetSegmentRequest, ::execution::GetTDResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetTD_, context, request, response);
+}
+
+void Execution::Stub::async::GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::GetSegmentRequest, ::execution::GetTDResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetTD_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetTD_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>* Execution::Stub::PrepareAsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::GetTDResponse, ::execution::GetSegmentRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetTD_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>* Execution::Stub::AsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetTDRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -212,6 +274,75 @@ void Execution::Stub::async::GetBody(::grpc::ClientContext* context, const ::exe
   return result;
 }
 
+::grpc::Status Execution::Stub::HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::HasBlockResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::GetSegmentRequest, ::execution::HasBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HasBlock_, context, request, response);
+}
+
+void Execution::Stub::async::HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::GetSegmentRequest, ::execution::HasBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HasBlock_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HasBlock_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>* Execution::Stub::PrepareAsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::HasBlockResponse, ::execution::GetSegmentRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HasBlock_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>* Execution::Stub::AsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHasBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::execution::GetBodiesBatchResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetBodiesByRange_, context, request, response);
+}
+
+void Execution::Stub::async::GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetBodiesByRange_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetBodiesByRange_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* Execution::Stub::PrepareAsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::GetBodiesBatchResponse, ::execution::GetBodiesByRangeRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetBodiesByRange_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* Execution::Stub::AsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetBodiesByRangeRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::execution::GetBodiesBatchResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetBodiesByHashes_, context, request, response);
+}
+
+void Execution::Stub::async::GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetBodiesByHashes_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetBodiesByHashes_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* Execution::Stub::PrepareAsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::GetBodiesBatchResponse, ::execution::GetBodiesByHashesRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetBodiesByHashes_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* Execution::Stub::AsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetBodiesByHashesRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::Status Execution::Stub::IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256& request, ::execution::IsCanonicalResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::types::H256, ::execution::IsCanonicalResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_IsCanonicalHash_, context, request, response);
 }
@@ -258,59 +389,148 @@ void Execution::Stub::async::GetHeaderHashNumber(::grpc::ClientContext* context,
   return result;
 }
 
+::grpc::Status Execution::Stub::GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ForkChoice* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::execution::ForkChoice, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetForkChoice_, context, request, response);
+}
+
+void Execution::Stub::async::GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::execution::ForkChoice, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetForkChoice_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetForkChoice_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>* Execution::Stub::PrepareAsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ForkChoice, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetForkChoice_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>* Execution::Stub::AsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetForkChoiceRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ReadyResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::execution::ReadyResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Ready_, context, request, response);
+}
+
+void Execution::Stub::async::Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::execution::ReadyResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Ready_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Ready_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>* Execution::Stub::PrepareAsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::ReadyResponse, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Ready_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>* Execution::Stub::AsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncReadyRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Execution::Stub::FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::FrozenBlocksResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::execution::FrozenBlocksResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_FrozenBlocks_, context, request, response);
+}
+
+void Execution::Stub::async::FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::execution::FrozenBlocksResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FrozenBlocks_, context, request, response, std::move(f));
+}
+
+void Execution::Stub::async::FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_FrozenBlocks_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>* Execution::Stub::PrepareAsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::execution::FrozenBlocksResponse, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_FrozenBlocks_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>* Execution::Stub::AsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncFrozenBlocksRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 Execution::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Execution_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::InsertHeadersRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::InsertBlocksRequest, ::execution::InsertionResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::execution::InsertHeadersRequest* req,
-             ::execution::EmptyMessage* resp) {
-               return service->InsertHeaders(ctx, req, resp);
+             const ::execution::InsertBlocksRequest* req,
+             ::execution::InsertionResult* resp) {
+               return service->InsertBlocks(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Execution_method_names[1],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::InsertBodiesRequest, ::execution::EmptyMessage, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::ValidationRequest, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::execution::InsertBodiesRequest* req,
-             ::execution::EmptyMessage* resp) {
-               return service->InsertBodies(ctx, req, resp);
-             }, this)));
-  AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[2],
-      ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::types::H256, ::execution::ValidationReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
-          [](Execution::Service* service,
-             ::grpc::ServerContext* ctx,
-             const ::types::H256* req,
+             const ::execution::ValidationRequest* req,
              ::execution::ValidationReceipt* resp) {
                return service->ValidateChain(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[3],
+      Execution_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::types::H256, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::ForkChoice, ::execution::ForkChoiceReceipt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::types::H256* req,
+             const ::execution::ForkChoice* req,
              ::execution::ForkChoiceReceipt* resp) {
                return service->UpdateForkChoice(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[4],
+      Execution_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::EmptyMessage, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::execution::EmptyMessage* req,
-             ::types::ExecutionPayload* resp) {
+             const ::execution::AssembleBlockRequest* req,
+             ::execution::AssembleBlockResponse* resp) {
                return service->AssembleBlock(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::execution::GetAssembledBlockRequest* req,
+             ::execution::GetAssembledBlockResponse* resp) {
+               return service->GetAssembledBlock(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
       Execution_method_names[5],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::google::protobuf::Empty, ::execution::GetHeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::execution::GetHeaderResponse* resp) {
+               return service->CurrentHeader(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[6],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetSegmentRequest, ::execution::GetTDResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::execution::GetSegmentRequest* req,
+             ::execution::GetTDResponse* resp) {
+               return service->GetTD(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetSegmentRequest, ::execution::GetHeaderResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
@@ -320,7 +540,7 @@ Execution::Service::Service() {
                return service->GetHeader(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[6],
+      Execution_method_names[8],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetSegmentRequest, ::execution::GetBodyResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
@@ -330,7 +550,37 @@ Execution::Service::Service() {
                return service->GetBody(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[7],
+      Execution_method_names[9],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetSegmentRequest, ::execution::HasBlockResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::execution::GetSegmentRequest* req,
+             ::execution::HasBlockResponse* resp) {
+               return service->HasBlock(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[10],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::execution::GetBodiesByRangeRequest* req,
+             ::execution::GetBodiesBatchResponse* resp) {
+               return service->GetBodiesByRange(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[11],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::execution::GetBodiesByHashesRequest* req,
+             ::execution::GetBodiesBatchResponse* resp) {
+               return service->GetBodiesByHashes(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[12],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Execution::Service, ::types::H256, ::execution::IsCanonicalResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
@@ -340,7 +590,7 @@ Execution::Service::Service() {
                return service->IsCanonicalHash(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Execution_method_names[8],
+      Execution_method_names[13],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Execution::Service, ::types::H256, ::execution::GetHeaderHashNumberResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Execution::Service* service,
@@ -349,40 +599,84 @@ Execution::Service::Service() {
              ::execution::GetHeaderHashNumberResponse* resp) {
                return service->GetHeaderHashNumber(ctx, req, resp);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[14],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::google::protobuf::Empty, ::execution::ForkChoice, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::execution::ForkChoice* resp) {
+               return service->GetForkChoice(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[15],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::google::protobuf::Empty, ::execution::ReadyResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::execution::ReadyResponse* resp) {
+               return service->Ready(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Execution_method_names[16],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Execution::Service, ::google::protobuf::Empty, ::execution::FrozenBlocksResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Execution::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::execution::FrozenBlocksResponse* resp) {
+               return service->FrozenBlocks(ctx, req, resp);
+             }, this)));
 }
 
 Execution::Service::~Service() {
 }
 
-::grpc::Status Execution::Service::InsertHeaders(::grpc::ServerContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response) {
+::grpc::Status Execution::Service::InsertBlocks(::grpc::ServerContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response) {
   (void) context;
   (void) request;
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status Execution::Service::InsertBodies(::grpc::ServerContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response) {
+::grpc::Status Execution::Service::ValidateChain(::grpc::ServerContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response) {
   (void) context;
   (void) request;
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status Execution::Service::ValidateChain(::grpc::ServerContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response) {
+::grpc::Status Execution::Service::UpdateForkChoice(::grpc::ServerContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response) {
   (void) context;
   (void) request;
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status Execution::Service::UpdateForkChoice(::grpc::ServerContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response) {
+::grpc::Status Execution::Service::AssembleBlock(::grpc::ServerContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response) {
   (void) context;
   (void) request;
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status Execution::Service::AssembleBlock(::grpc::ServerContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response) {
+::grpc::Status Execution::Service::GetAssembledBlock(::grpc::ServerContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::CurrentHeader(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::GetTD(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -403,6 +697,27 @@ Execution::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status Execution::Service::HasBlock(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::GetBodiesByRange(::grpc::ServerContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::GetBodiesByHashes(::grpc::ServerContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 ::grpc::Status Execution::Service::IsCanonicalHash(::grpc::ServerContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response) {
   (void) context;
   (void) request;
@@ -411,6 +726,27 @@ Execution::Service::~Service() {
 }
 
 ::grpc::Status Execution::Service::GetHeaderHashNumber(::grpc::ServerContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::GetForkChoice(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::Ready(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Execution::Service::FrozenBlocks(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response) {
   (void) context;
   (void) request;
   (void) response;

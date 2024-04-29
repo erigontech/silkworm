@@ -28,6 +28,7 @@
 #include <gsl/pointers>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/interfaces/execution/execution.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/rpc/ethbackend/backend.hpp>
@@ -49,26 +50,14 @@ class RemoteBackEnd final : public BackEnd {
     Task<uint64_t> net_version() override;
     Task<std::string> client_version() override;
     Task<uint64_t> net_peer_count() override;
-    Task<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
-    Task<PayloadStatus> engine_new_payload(const rpc::NewPayloadRequest& request) override;
-    Task<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
-    Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
-    Task<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
     Task<NodeInfos> engine_node_info() override;
     Task<PeerInfos> peers() override;
     Task<bool> get_block(BlockNum block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
     Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) override;
 
   private:
-    static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& grpc_payload);
-    static ::types::ExecutionPayload encode_execution_payload(const ExecutionPayload& execution_payload);
-    static gsl::owner<::remote::EngineForkChoiceState*> encode_forkchoice_state(const ForkChoiceState&);
-    static gsl::owner<::remote::EnginePayloadAttributes*> encode_payload_attributes(const PayloadAttributes& payload_attributes);
-    static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request);
     static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);
     static std::vector<Withdrawal> decode(const ::google::protobuf::RepeatedPtrField<::types::Withdrawal>& grpc_withdrawals);
-    static PayloadStatus decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc);
-    static std::string decode_status_message(const ::remote::EngineStatus& status);
 
     boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub_;

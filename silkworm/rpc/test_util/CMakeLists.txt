@@ -1,5 +1,5 @@
 #[[
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
    limitations under the License.
 ]]
 
-find_package(benchmark REQUIRED)
+set(TARGET silkworm_rpcdaemon_test_util)
 
-file(GLOB_RECURSE SILKWORM_BENCHMARK_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/*_benchmark.cpp")
-add_executable(benchmark_test benchmark_test.cpp ${SILKWORM_BENCHMARK_TESTS})
+find_package(Boost REQUIRED headers)
+find_package(GTest REQUIRED)
+
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+
+add_library(${TARGET} ${SRC})
+
 target_link_libraries(
-  benchmark_test
-  silkworm_infra
-  silkworm_node
-  silkworm_rpcdaemon
-  silkworm_rpcdaemon_test_util
-  benchmark::benchmark
+  ${TARGET}
+  PUBLIC silkworm_infra silkworm_rpcdaemon
+  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
 )

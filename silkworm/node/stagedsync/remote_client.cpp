@@ -29,7 +29,9 @@ namespace silkworm::execution {
 using namespace std::chrono;
 using namespace boost::asio;
 
-static void serialize_header(const BlockHeader& bh, ::execution::Header* header) {
+// TODO(canepat) RemoteClient::insert_headers/RemoteClient::insert_bodies replaced by insert_blocks
+// TODO(canepat) We also need to refactor LocalClient/RemoteClient to use execute proto I/F
+/*static void serialize_header(const BlockHeader& bh, ::execution::Header* header) {
     header->set_allocated_parent_hash(rpc::H256_from_bytes32(bh.parent_hash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(bh.beneficiary).release());
     header->set_allocated_state_root(rpc::H256_from_bytes32(bh.state_root).release());
@@ -53,12 +55,12 @@ static void serialize_header(const BlockHeader& bh, ::execution::Header* header)
         header->set_allocated_withdrawal_hash(rpc::H256_from_bytes32(*bh.withdrawals_root).release());
     }
     if (bh.blob_gas_used) {
-        header->set_data_gas_used(*bh.blob_gas_used);
+        header->set_blob_gas_used(*bh.blob_gas_used);
     }
     if (bh.excess_blob_gas) {
-        header->set_excess_data_gas(*bh.excess_blob_gas);
+        header->set_excess_blob_gas(*bh.excess_blob_gas);
     }
-}
+}*/
 
 static void deserialize_header(const ::execution::Header& received_header, BlockHeader& header) {
     header.parent_hash = rpc::bytes32_from_H256(received_header.parent_hash());
@@ -83,11 +85,11 @@ static void deserialize_header(const ::execution::Header& received_header, Block
     if (received_header.has_withdrawal_hash()) {
         header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawal_hash());
     }
-    if (received_header.has_data_gas_used()) {
-        header.blob_gas_used = received_header.data_gas_used();
+    if (received_header.has_blob_gas_used()) {
+        header.blob_gas_used = received_header.blob_gas_used();
     }
-    if (received_header.has_excess_data_gas()) {
-        header.excess_blob_gas = received_header.excess_data_gas();
+    if (received_header.has_excess_blob_gas()) {
+        header.excess_blob_gas = received_header.excess_blob_gas();
     }
 }
 
@@ -245,18 +247,19 @@ Task<std::optional<BlockBody>> RemoteClient::get_body(BlockNum block_number) {
     co_return body;
 }
 
-Task<void> RemoteClient::insert_headers(const BlockVector& blocks) {
-    ::execution::InsertHeadersRequest request;
+Task<void> RemoteClient::insert_headers(const BlockVector& /*blocks*/) {
+    /*::execution::InsertHeadersRequest request;
     for (const auto& b : blocks) {
         ::execution::Header* header = request.add_headers();
         serialize_header(b->header, header);
     }
     co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, *context_.grpc_context(), "failure inserting headers");
+        &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, *context_.grpc_context(), "failure inserting headers");*/
+    co_return;
 }
 
-Task<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
-    ::execution::InsertBodiesRequest request;
+Task<void> RemoteClient::insert_bodies(const BlockVector& /*blocks*/) {
+    /*::execution::InsertBodiesRequest request;
     for (const auto& b : blocks) {
         ::execution::BlockBody* body = request.add_bodies();
         body->set_allocated_block_hash(rpc::H256_from_bytes32(b->header.hash()).release());
@@ -281,7 +284,8 @@ Task<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
         }
     }
     co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, *context_.grpc_context(), "failure inserting bodies");
+        &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, *context_.grpc_context(), "failure inserting bodies");*/
+    co_return;
 }
 
 Task<void> RemoteClient::insert_blocks(const BlockVector&) {
@@ -314,22 +318,24 @@ static Hash hash_from_H256(const types::H256& orig) {
 }
 
 Task<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
-    std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
+    std::unique_ptr<types::H256> hash = rpc::H256_from_bytes32(head_block_hash);
+    ::execution::ValidationRequest request;
+    request.set_allocated_hash(hash.release());
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncValidateChain, stub_, *request, *context_.grpc_context(), "failure verifying chain");
+        &::execution::Execution::Stub::AsyncValidateChain, stub_, request, *context_.grpc_context(), "failure verifying chain");
 
     ValidationResult result;
     switch (response.validation_status()) {
-        case ::execution::ValidationStatus::Success:
+        case ::execution::ExecutionStatus::Success:
             result = ValidChain{.current_head = hash_from_H256(response.latest_valid_hash())};
             break;
-        case ::execution::ValidationStatus::InvalidChain:
+        case ::execution::ExecutionStatus::InvalidForkchoice:
             result = InvalidChain{.latest_valid_head = hash_from_H256(response.latest_valid_hash())};
             break;
-        case ::execution::ValidationStatus::TooFarAway:
-        case ::execution::ValidationStatus::MissingSegment:
+        case ::execution::ExecutionStatus::TooFarAway:
+        case ::execution::ExecutionStatus::MissingSegment:
             result = ValidationError{.latest_valid_head = hash_from_H256(response.latest_valid_hash()),
-                                     .missing_block = hash_from_H256(response.missing_hash())};
+                                     .error = response.validation_error()};
             break;
         default:
             throw std::runtime_error("unknown validation status");
@@ -339,11 +345,14 @@ Task<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
 }
 
 Task<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> /*finalized_block_hash*/) {
-    std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
+    std::unique_ptr<types::H256> hash = rpc::H256_from_bytes32(head_block_hash);
+    ::execution::ForkChoice request;
+    request.set_allocated_head_block_hash(hash.release());
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, *request, *context_.grpc_context(), "failure updating fork choice");
+        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, request, *context_.grpc_context(), "failure updating fork choice");
 
-    ForkChoiceApplication result{.success = response.success(), .current_head = hash_from_H256(response.latest_valid_hash())};
+    ForkChoiceApplication result{.success = response.status() == ::execution::ExecutionStatus::Success,
+                                 .current_head = hash_from_H256(response.latest_valid_hash())};
 
     co_return result;
 }

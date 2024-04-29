@@ -75,7 +75,7 @@ class Sync {
     BlockExchange block_exchange_;
 
     //! The chain synchronization algorithm
-    std::unique_ptr<ChainSync> chain_sync_;
+    std::shared_ptr<ChainSync> chain_sync_;
 
     //! The Execution Layer Engine API RPC server
     std::unique_ptr<rpc::Daemon> engine_rpc_server_;

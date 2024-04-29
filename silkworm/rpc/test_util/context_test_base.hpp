@@ -17,7 +17,6 @@
 #pragma once
 
 #include <chrono>
-#include <memory>
 #include <utility>
 
 #include <boost/asio/co_spawn.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/engine/execution_engine.hpp>
 
 namespace silkworm::rpc::test {
 

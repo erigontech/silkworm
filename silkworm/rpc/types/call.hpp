@@ -45,6 +45,10 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
+    void set_gas_price(const intx::uint256& new_gas_price) {
+        gas_price = new_gas_price;
+    }
+
     void set_access_list(const AccessList& new_access_list) {
         access_list = new_access_list;
     }

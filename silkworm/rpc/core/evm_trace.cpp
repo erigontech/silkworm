@@ -573,9 +573,8 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         } else {
             index_prefix_.push(std::to_string(transaction_index_) + "-");
         }
-    } else if (!vm_trace_.ops.empty()) {
+    } else if (!traces_stack_.empty()) {
         auto& vm_trace = traces_stack_.top().get();
-
         auto index_prefix = index_prefix_.top();
         index_prefix = index_prefix + std::to_string(vm_trace.ops.size() - 1) + "-";
         index_prefix_.push(index_prefix);
@@ -654,11 +653,14 @@ void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, c
     SILK_DEBUG << "VmTraceTracer::on_precompiled_run:"
                << " status: " << result.status_code << ", gas: " << std::dec << gas << "\n";
 
-    if (!vm_trace_.ops.empty()) {
-        auto& op = vm_trace_.ops[vm_trace_.ops.size() - 1];
-        op.precompiled_call_gas = gas;
-        op.sub = std::make_shared<VmTrace>();
-        op.sub->code = "0x";
+    if (!traces_stack_.empty()) {
+        auto& vm_trace = traces_stack_.top().get();
+        if (!vm_trace.ops.empty()) {
+            auto &op = vm_trace.ops[vm_trace.ops.size() - 1];
+            op.precompiled_call_gas = gas;
+            op.sub = std::make_shared<VmTrace>();
+            op.sub->code = "0x";
+        }
     }
 }
 

@@ -72,13 +72,14 @@ jobs:
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
       - name: Execute Silkworm Fuzzer Test
+        timeout-minutes: 1440
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
         run: |
-          # Single thread execution
-          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86400 -detect_leaks=0
+          # # Single thread execution
+          # ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0
 
           # Multi-thread execution
-          # ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86400 -detect_leaks=0 -jobs=8
+          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0 -jobs=8
 
       - name: Tear Down
         if: always()

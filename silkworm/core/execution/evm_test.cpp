@@ -1441,14 +1441,11 @@ class CallGasCostTracer : public EvmTracer {
     std::vector<long> call_gas_cost_;
 };
 
-TEST_CASE("Get gas for CALL", "[core][execution]") {
+TEST_CASE("Get gas cost for CALL", "[core][execution]") {
     Block block{};
     block.header.number = 1'029'553;  // real block on GOERLI chain see https://goerli.etherscan.io/block/1029553
-                                      //    block.header.timestamp = 1564461581;
 
-    evmc::address caller_address{0x8882042B8E93C85312f623F058eF252c8025a7Ae_address};
-    // The caller code: no code.
-    Bytes caller_code{*from_hex("")};
+    evmc::address sender_address{0x8882042B8E93C85312f623F058eF252c8025a7Ae_address};
 
     evmc::address callee_address{0x37803fC1b1FA2075B6D79f3e4CDF2873B9237281_address};
     // The callee code.
@@ -1458,22 +1455,19 @@ TEST_CASE("Get gas for CALL", "[core][execution]") {
     IntraBlockState state{db};
 
     state.set_balance(0x0000000000000000000000000000000000000000_address, intx::from_string<intx::uint256>("0x01"));
-    state.set_code(caller_address, caller_code);
-    state.set_balance(caller_address, intx::from_string<intx::uint256>("0x70155dca4fd46a6b49"));
-    state.set_nonce(caller_address, 0xb02);
+    state.set_balance(sender_address, intx::from_string<intx::uint256>("0x70155dca4fd46a6b49"));
+    state.set_nonce(sender_address, 0xb02);
     state.set_code(callee_address, callee_code);
     state.set_balance(callee_address, intx::from_string<intx::uint256>("0x1ab6f94d08a0800000"));
     state.set_nonce(callee_address, 0x1);
 
-    ChainConfig cc{kGoerliConfig};
-    cc.petersburg_block = 0;  // the addressed block is after petersburg fork, this force the petersburg revision in EVM
-    EVM evm{block, state, cc};
+    EVM evm{block, state, kGoerliConfig};
 
     CallGasCostTracer tracer;
     evm.add_tracer(tracer);
 
     Transaction txn{};  // txn #0 in block 1'029'553, see https://goerli.etherscan.io/tx/0x81b9951cde95115515c6049382e8227dc9a96972793df7da814ab22cc62dd091
-    txn.set_sender(caller_address);
+    txn.set_sender(sender_address);
     txn.to = callee_address;
     txn.data = ByteView{*from_hex("9890220b")};
 

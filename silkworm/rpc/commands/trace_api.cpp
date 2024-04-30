@@ -23,6 +23,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -435,7 +436,10 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
             trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
 
-            uint16_t index = indices[0] + 1;  // Erigon RpcDaemon compatibility
+            uint16_t index = indices[0];
+            if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
+                index = index + 1;  // Erigon RpcDaemon compatibility
+            }
             if (result.size() > index) {
                 reply = make_json_content(request, result[index]);
             } else {

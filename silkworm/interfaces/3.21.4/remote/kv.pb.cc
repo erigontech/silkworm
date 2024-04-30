@@ -93,6 +93,8 @@ PROTOBUF_CONSTEXPR StateChangeBatch::StateChangeBatch(
   , /*decltype(_impl_.state_version_id_)*/uint64_t{0u}
   , /*decltype(_impl_.pending_block_base_fee_)*/uint64_t{0u}
   , /*decltype(_impl_.block_gas_limit_)*/uint64_t{0u}
+  , /*decltype(_impl_.finalized_block_)*/uint64_t{0u}
+  , /*decltype(_impl_.pending_blob_fee_per_gas_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct StateChangeBatchDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StateChangeBatchDefaultTypeInternal()
@@ -420,6 +422,8 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.change_batch_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.pending_block_base_fee_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.block_gas_limit_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.finalized_block_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.pending_blob_fee_per_gas_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -590,22 +594,22 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 22, -1, -1, sizeof(::remote::StorageChange)},
   { 30, -1, -1, sizeof(::remote::AccountChange)},
   { 42, -1, -1, sizeof(::remote::StateChangeBatch)},
-  { 52, -1, -1, sizeof(::remote::StateChange)},
-  { 63, -1, -1, sizeof(::remote::StateChangeRequest)},
-  { 71, -1, -1, sizeof(::remote::SnapshotsRequest)},
-  { 77, -1, -1, sizeof(::remote::SnapshotsReply)},
-  { 85, -1, -1, sizeof(::remote::RangeReq)},
-  { 99, -1, -1, sizeof(::remote::DomainGetReq)},
-  { 111, -1, -1, sizeof(::remote::DomainGetReply)},
-  { 119, -1, -1, sizeof(::remote::HistoryGetReq)},
-  { 129, -1, -1, sizeof(::remote::HistoryGetReply)},
-  { 137, -1, -1, sizeof(::remote::IndexRangeReq)},
-  { 152, -1, -1, sizeof(::remote::IndexRangeReply)},
-  { 160, -1, -1, sizeof(::remote::HistoryRangeReq)},
-  { 174, -1, -1, sizeof(::remote::DomainRangeReq)},
-  { 190, -1, -1, sizeof(::remote::Pairs)},
-  { 199, -1, -1, sizeof(::remote::ParisPagination)},
-  { 207, -1, -1, sizeof(::remote::IndexPagination)},
+  { 54, -1, -1, sizeof(::remote::StateChange)},
+  { 65, -1, -1, sizeof(::remote::StateChangeRequest)},
+  { 73, -1, -1, sizeof(::remote::SnapshotsRequest)},
+  { 79, -1, -1, sizeof(::remote::SnapshotsReply)},
+  { 87, -1, -1, sizeof(::remote::RangeReq)},
+  { 101, -1, -1, sizeof(::remote::DomainGetReq)},
+  { 113, -1, -1, sizeof(::remote::DomainGetReply)},
+  { 121, -1, -1, sizeof(::remote::HistoryGetReq)},
+  { 131, -1, -1, sizeof(::remote::HistoryGetReply)},
+  { 139, -1, -1, sizeof(::remote::IndexRangeReq)},
+  { 154, -1, -1, sizeof(::remote::IndexRangeReply)},
+  { 162, -1, -1, sizeof(::remote::HistoryRangeReq)},
+  { 176, -1, -1, sizeof(::remote::DomainRangeReq)},
+  { 192, -1, -1, sizeof(::remote::Pairs)},
+  { 201, -1, -1, sizeof(::remote::ParisPagination)},
+  { 209, -1, -1, sizeof(::remote::IndexPagination)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -645,72 +649,73 @@ const char descriptor_table_protodef_remote_2fkv_2eproto[] PROTOBUF_SECTION_VARI
   "\013incarnation\030\002 \001(\004\022\036\n\006action\030\003 \001(\0162\016.rem"
   "ote.Action\022\014\n\004data\030\004 \001(\014\022\014\n\004code\030\005 \001(\014\022."
   "\n\017storage_changes\030\006 \003(\0132\025.remote.Storage"
-  "Change\"\220\001\n\020StateChangeBatch\022\030\n\020state_ver"
+  "Change\"\313\001\n\020StateChangeBatch\022\030\n\020state_ver"
   "sion_id\030\001 \001(\004\022)\n\014change_batch\030\002 \003(\0132\023.re"
   "mote.StateChange\022\036\n\026pending_block_base_f"
-  "ee\030\003 \001(\004\022\027\n\017block_gas_limit\030\004 \001(\004\"\237\001\n\013St"
-  "ateChange\022$\n\tdirection\030\001 \001(\0162\021.remote.Di"
-  "rection\022\024\n\014block_height\030\002 \001(\004\022\037\n\nblock_h"
-  "ash\030\003 \001(\0132\013.types.H256\022&\n\007changes\030\004 \003(\0132"
-  "\025.remote.AccountChange\022\013\n\003txs\030\005 \003(\014\"E\n\022S"
-  "tateChangeRequest\022\024\n\014with_storage\030\001 \001(\010\022"
-  "\031\n\021with_transactions\030\002 \001(\010\"\022\n\020SnapshotsR"
-  "equest\"=\n\016SnapshotsReply\022\024\n\014blocks_files"
-  "\030\001 \003(\t\022\025\n\rhistory_files\030\002 \003(\t\"\234\001\n\010RangeR"
-  "eq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\023\n\013from"
-  "_prefix\030\003 \001(\014\022\021\n\tto_prefix\030\004 \001(\014\022\024\n\014orde"
-  "r_ascend\030\005 \001(\010\022\r\n\005limit\030\006 \001(\022\022\021\n\tpage_si"
-  "ze\030\007 \001(\005\022\022\n\npage_token\030\010 \001(\t\"_\n\014DomainGe"
-  "tReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030"
-  "\003 \001(\014\022\n\n\002ts\030\004 \001(\004\022\n\n\002k2\030\005 \001(\014\022\016\n\006latest\030"
-  "\006 \001(\010\"\'\n\016DomainGetReply\022\t\n\001v\030\001 \001(\014\022\n\n\002ok"
-  "\030\002 \001(\010\"D\n\rHistoryGetReq\022\r\n\005tx_id\030\001 \001(\004\022\r"
-  "\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004\"(\n\017"
-  "HistoryGetReply\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244"
-  "\001\n\rIndexRangeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table"
-  "\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\017\n\007from_ts\030\004 \001(\022\022\r\n\005to"
-  "_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005limit"
-  "\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_token\030"
-  "\t \001(\t\">\n\017IndexRangeReply\022\022\n\ntimestamps\030\001"
-  " \003(\004\022\027\n\017next_page_token\030\002 \001(\t\"\233\001\n\017Histor"
-  "yRangeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022"
-  "\017\n\007from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014order"
-  "_ascend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_siz"
-  "e\030\010 \001(\005\022\022\n\npage_token\030\t \001(\t\"\270\001\n\016DomainRa"
-  "ngeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\020\n\010"
-  "from_key\030\003 \001(\014\022\016\n\006to_key\030\004 \001(\014\022\n\n\002ts\030\005 \001"
-  "(\004\022\016\n\006latest\030\006 \001(\010\022\024\n\014order_ascend\030\007 \001(\010"
-  "\022\r\n\005limit\030\010 \001(\022\022\021\n\tpage_size\030\t \001(\005\022\022\n\npa"
-  "ge_token\030\n \001(\t\">\n\005Pairs\022\014\n\004keys\030\001 \003(\014\022\016\n"
-  "\006values\030\002 \003(\014\022\027\n\017next_page_token\030\003 \001(\t\"2"
-  "\n\017ParisPagination\022\020\n\010next_key\030\001 \001(\014\022\r\n\005l"
-  "imit\030\002 \001(\022\"9\n\017IndexPagination\022\027\n\017next_ti"
-  "me_stamp\030\001 \001(\022\022\r\n\005limit\030\002 \001(\022*\206\002\n\002Op\022\t\n\005"
-  "FIRST\020\000\022\r\n\tFIRST_DUP\020\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK"
-  "_BOTH\020\003\022\013\n\007CURRENT\020\004\022\010\n\004LAST\020\006\022\014\n\010LAST_D"
-  "UP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NEXT_DUP\020\t\022\017\n\013NEXT_NO_"
-  "DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010PREV_DUP\020\r\022\017\n\013PREV_NO"
-  "_DUP\020\016\022\016\n\nSEEK_EXACT\020\017\022\023\n\017SEEK_BOTH_EXAC"
-  "T\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLOSE\020\037\022\021\n\rOPEN_DUP_SOR"
-  "T\020 \022\t\n\005COUNT\020!*H\n\006Action\022\013\n\007STORAGE\020\000\022\n\n"
-  "\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017\n\013UPSERT_CODE\020\003\022\n\n\006"
-  "REMOVE\020\004*$\n\tDirection\022\013\n\007FORWARD\020\000\022\n\n\006UN"
-  "WIND\020\0012\272\004\n\002KV\0226\n\007Version\022\026.google.protob"
-  "uf.Empty\032\023.types.VersionReply\022&\n\002Tx\022\016.re"
-  "mote.Cursor\032\014.remote.Pair(\0010\001\022F\n\014StateCh"
-  "anges\022\032.remote.StateChangeRequest\032\030.remo"
-  "te.StateChangeBatch0\001\022=\n\tSnapshots\022\030.rem"
-  "ote.SnapshotsRequest\032\026.remote.SnapshotsR"
-  "eply\022(\n\005Range\022\020.remote.RangeReq\032\r.remote"
-  ".Pairs\0229\n\tDomainGet\022\024.remote.DomainGetRe"
-  "q\032\026.remote.DomainGetReply\022<\n\nHistoryGet\022"
-  "\025.remote.HistoryGetReq\032\027.remote.HistoryG"
-  "etReply\022<\n\nIndexRange\022\025.remote.IndexRang"
-  "eReq\032\027.remote.IndexRangeReply\0226\n\014History"
-  "Range\022\027.remote.HistoryRangeReq\032\r.remote."
-  "Pairs\0224\n\013DomainRange\022\026.remote.DomainRang"
-  "eReq\032\r.remote.PairsB\021Z\017./remote;remoteb\006"
-  "proto3"
+  "ee\030\003 \001(\004\022\027\n\017block_gas_limit\030\004 \001(\004\022\027\n\017fin"
+  "alized_block\030\005 \001(\004\022 \n\030pending_blob_fee_p"
+  "er_gas\030\006 \001(\004\"\237\001\n\013StateChange\022$\n\tdirectio"
+  "n\030\001 \001(\0162\021.remote.Direction\022\024\n\014block_heig"
+  "ht\030\002 \001(\004\022\037\n\nblock_hash\030\003 \001(\0132\013.types.H25"
+  "6\022&\n\007changes\030\004 \003(\0132\025.remote.AccountChang"
+  "e\022\013\n\003txs\030\005 \003(\014\"E\n\022StateChangeRequest\022\024\n\014"
+  "with_storage\030\001 \001(\010\022\031\n\021with_transactions\030"
+  "\002 \001(\010\"\022\n\020SnapshotsRequest\"=\n\016SnapshotsRe"
+  "ply\022\024\n\014blocks_files\030\001 \003(\t\022\025\n\rhistory_fil"
+  "es\030\002 \003(\t\"\234\001\n\010RangeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005"
+  "table\030\002 \001(\t\022\023\n\013from_prefix\030\003 \001(\014\022\021\n\tto_p"
+  "refix\030\004 \001(\014\022\024\n\014order_ascend\030\005 \001(\010\022\r\n\005lim"
+  "it\030\006 \001(\022\022\021\n\tpage_size\030\007 \001(\005\022\022\n\npage_toke"
+  "n\030\010 \001(\t\"_\n\014DomainGetReq\022\r\n\005tx_id\030\001 \001(\004\022\r"
+  "\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004\022\n\n\002"
+  "k2\030\005 \001(\014\022\016\n\006latest\030\006 \001(\010\"\'\n\016DomainGetRep"
+  "ly\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"D\n\rHistoryGetR"
+  "eq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 "
+  "\001(\014\022\n\n\002ts\030\004 \001(\004\"(\n\017HistoryGetReply\022\t\n\001v\030"
+  "\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244\001\n\rIndexRangeReq\022\r\n\005t"
+  "x_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\017\n\007"
+  "from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014order_as"
+  "cend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_size\030\010"
+  " \001(\005\022\022\n\npage_token\030\t \001(\t\">\n\017IndexRangeRe"
+  "ply\022\022\n\ntimestamps\030\001 \003(\004\022\027\n\017next_page_tok"
+  "en\030\002 \001(\t\"\233\001\n\017HistoryRangeReq\022\r\n\005tx_id\030\001 "
+  "\001(\004\022\r\n\005table\030\002 \001(\t\022\017\n\007from_ts\030\004 \001(\022\022\r\n\005t"
+  "o_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005limi"
+  "t\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_token"
+  "\030\t \001(\t\"\270\001\n\016DomainRangeReq\022\r\n\005tx_id\030\001 \001(\004"
+  "\022\r\n\005table\030\002 \001(\t\022\020\n\010from_key\030\003 \001(\014\022\016\n\006to_"
+  "key\030\004 \001(\014\022\n\n\002ts\030\005 \001(\004\022\016\n\006latest\030\006 \001(\010\022\024\n"
+  "\014order_ascend\030\007 \001(\010\022\r\n\005limit\030\010 \001(\022\022\021\n\tpa"
+  "ge_size\030\t \001(\005\022\022\n\npage_token\030\n \001(\t\">\n\005Pai"
+  "rs\022\014\n\004keys\030\001 \003(\014\022\016\n\006values\030\002 \003(\014\022\027\n\017next"
+  "_page_token\030\003 \001(\t\"2\n\017ParisPagination\022\020\n\010"
+  "next_key\030\001 \001(\014\022\r\n\005limit\030\002 \001(\022\"9\n\017IndexPa"
+  "gination\022\027\n\017next_time_stamp\030\001 \001(\022\022\r\n\005lim"
+  "it\030\002 \001(\022*\206\002\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DUP\020"
+  "\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK_BOTH\020\003\022\013\n\007CURRENT\020\004\022"
+  "\010\n\004LAST\020\006\022\014\n\010LAST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NEX"
+  "T_DUP\020\t\022\017\n\013NEXT_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010PR"
+  "EV_DUP\020\r\022\017\n\013PREV_NO_DUP\020\016\022\016\n\nSEEK_EXACT\020"
+  "\017\022\023\n\017SEEK_BOTH_EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLOS"
+  "E\020\037\022\021\n\rOPEN_DUP_SORT\020 \022\t\n\005COUNT\020!*H\n\006Act"
+  "ion\022\013\n\007STORAGE\020\000\022\n\n\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017"
+  "\n\013UPSERT_CODE\020\003\022\n\n\006REMOVE\020\004*$\n\tDirection"
+  "\022\013\n\007FORWARD\020\000\022\n\n\006UNWIND\020\0012\272\004\n\002KV\0226\n\007Vers"
+  "ion\022\026.google.protobuf.Empty\032\023.types.Vers"
+  "ionReply\022&\n\002Tx\022\016.remote.Cursor\032\014.remote."
+  "Pair(\0010\001\022F\n\014StateChanges\022\032.remote.StateC"
+  "hangeRequest\032\030.remote.StateChangeBatch0\001"
+  "\022=\n\tSnapshots\022\030.remote.SnapshotsRequest\032"
+  "\026.remote.SnapshotsReply\022(\n\005Range\022\020.remot"
+  "e.RangeReq\032\r.remote.Pairs\0229\n\tDomainGet\022\024"
+  ".remote.DomainGetReq\032\026.remote.DomainGetR"
+  "eply\022<\n\nHistoryGet\022\025.remote.HistoryGetRe"
+  "q\032\027.remote.HistoryGetReply\022<\n\nIndexRange"
+  "\022\025.remote.IndexRangeReq\032\027.remote.IndexRa"
+  "ngeReply\0226\n\014HistoryRange\022\027.remote.Histor"
+  "yRangeReq\032\r.remote.Pairs\0224\n\013DomainRange\022"
+  "\026.remote.DomainRangeReq\032\r.remote.PairsB\021"
+  "Z\017./remote;remoteb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -718,7 +723,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto
 };
 static ::_pbi::once_flag descriptor_table_remote_2fkv_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fkv_2eproto = {
-    false, false, 3086, descriptor_table_protodef_remote_2fkv_2eproto,
+    false, false, 3145, descriptor_table_protodef_remote_2fkv_2eproto,
     "remote/kv.proto",
     &descriptor_table_remote_2fkv_2eproto_once, descriptor_table_remote_2fkv_2eproto_deps, 2, 21,
     schemas, file_default_instances, TableStruct_remote_2fkv_2eproto::offsets,
@@ -2131,12 +2136,14 @@ StateChangeBatch::StateChangeBatch(const StateChangeBatch& from)
     , decltype(_impl_.state_version_id_){}
     , decltype(_impl_.pending_block_base_fee_){}
     , decltype(_impl_.block_gas_limit_){}
+    , decltype(_impl_.finalized_block_){}
+    , decltype(_impl_.pending_blob_fee_per_gas_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.state_version_id_, &from._impl_.state_version_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.block_gas_limit_) -
-    reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.block_gas_limit_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.pending_blob_fee_per_gas_) -
+    reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.pending_blob_fee_per_gas_));
   // @@protoc_insertion_point(copy_constructor:remote.StateChangeBatch)
 }
 
@@ -2149,6 +2156,8 @@ inline void StateChangeBatch::SharedCtor(
     , decltype(_impl_.state_version_id_){uint64_t{0u}}
     , decltype(_impl_.pending_block_base_fee_){uint64_t{0u}}
     , decltype(_impl_.block_gas_limit_){uint64_t{0u}}
+    , decltype(_impl_.finalized_block_){uint64_t{0u}}
+    , decltype(_impl_.pending_blob_fee_per_gas_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2179,8 +2188,8 @@ void StateChangeBatch::Clear() {
 
   _impl_.change_batch_.Clear();
   ::memset(&_impl_.state_version_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.block_gas_limit_) -
-      reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.block_gas_limit_));
+      reinterpret_cast<char*>(&_impl_.pending_blob_fee_per_gas_) -
+      reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.pending_blob_fee_per_gas_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2223,6 +2232,22 @@ const char* StateChangeBatch::_InternalParse(const char* ptr, ::_pbi::ParseConte
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
           _impl_.block_gas_limit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 finalized_block = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.finalized_block_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 pending_blob_fee_per_gas = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.pending_blob_fee_per_gas_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2282,6 +2307,18 @@ uint8_t* StateChangeBatch::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_block_gas_limit(), target);
   }
 
+  // uint64 finalized_block = 5;
+  if (this->_internal_finalized_block() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_finalized_block(), target);
+  }
+
+  // uint64 pending_blob_fee_per_gas = 6;
+  if (this->_internal_pending_blob_fee_per_gas() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(6, this->_internal_pending_blob_fee_per_gas(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2320,6 +2357,16 @@ size_t StateChangeBatch::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_gas_limit());
   }
 
+  // uint64 finalized_block = 5;
+  if (this->_internal_finalized_block() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_finalized_block());
+  }
+
+  // uint64 pending_blob_fee_per_gas = 6;
+  if (this->_internal_pending_blob_fee_per_gas() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_pending_blob_fee_per_gas());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -2348,6 +2395,12 @@ void StateChangeBatch::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
   if (from._internal_block_gas_limit() != 0) {
     _this->_internal_set_block_gas_limit(from._internal_block_gas_limit());
   }
+  if (from._internal_finalized_block() != 0) {
+    _this->_internal_set_finalized_block(from._internal_finalized_block());
+  }
+  if (from._internal_pending_blob_fee_per_gas() != 0) {
+    _this->_internal_set_pending_blob_fee_per_gas(from._internal_pending_blob_fee_per_gas());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -2367,8 +2420,8 @@ void StateChangeBatch::InternalSwap(StateChangeBatch* other) {
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.change_batch_.InternalSwap(&other->_impl_.change_batch_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.block_gas_limit_)
-      + sizeof(StateChangeBatch::_impl_.block_gas_limit_)
+      PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.pending_blob_fee_per_gas_)
+      + sizeof(StateChangeBatch::_impl_.pending_blob_fee_per_gas_)
       - PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.state_version_id_)>(
           reinterpret_cast<char*>(&_impl_.state_version_id_),
           reinterpret_cast<char*>(&other->_impl_.state_version_id_));

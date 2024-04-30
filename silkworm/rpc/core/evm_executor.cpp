@@ -182,29 +182,31 @@ void EVMExecutor::reset() {
     ibs_state_.clear_journal_and_substate();
 }
 
-std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
+std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn,
+                                                                  const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
     const evmc_revision rev{evm.revision()};
 
     if (rev >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < base_fee_per_gas) {
                 const std::string from = address_to_hex(*txn.sender());
-                return "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
-                       intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
+                std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
+                                    intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
+                return PreCheckResult{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
                 std::string from = address_to_hex(*txn.sender());
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
-                return error;
+                return PreCheckResult{error, PreCheckErrorCode::kTipHigherThanFeeCap};
             }
         }
     }
     if (txn.gas_limit < g0) {
         std::string from = address_to_hex(*txn.sender());
         std::string error = "intrinsic gas too low: address " + from + ", have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
-        return error;
+        return PreCheckResult{error, PreCheckErrorCode::kIntrinsicGasTooLow};
     }
     return std::nullopt;
 }
@@ -238,10 +240,10 @@ ExecutionResult EVMExecutor::call(
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
-    const auto error = pre_check(evm, txn, base_fee_per_gas, g0);
-    if (error) {
+    const auto pre_check_result = pre_check(evm, txn, base_fee_per_gas, g0);
+    if (pre_check_result) {
         Bytes data{};
-        return {std::nullopt, txn.gas_limit, data, error};
+        return {std::nullopt, txn.gas_limit, data, pre_check_result->pre_check_error, pre_check_result->pre_check_error_code};
     }
 
     intx::uint256 want;
@@ -258,7 +260,7 @@ ExecutionResult EVMExecutor::call(
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());
             std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
-            return {std::nullopt, txn.gas_limit, data, msg};
+            return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
         }
     } else {
         ibs_state_.subtract_from_balance(*txn.sender(), want);

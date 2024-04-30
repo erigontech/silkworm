@@ -52,6 +52,3 @@
 	path = third_party/execution-apis
 	url = https://github.com/ethereum/execution-apis.git
 	branch = main
-[submodule "picohttpparser"]
-	path = third_party/picohttpparser/picohttpparser
-	url = https://github.com/h2o/picohttpparser

@@ -56,29 +56,24 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
         SILK_INFO << "SnapshotSync: snapshot sync disabled, no snapshot must be downloaded";
         return true;
     }
-
     SILK_INFO << "SnapshotSync: snapshot repository: " << settings_.repository_dir.string();
 
-    if (settings_.no_downloader) {
-        reopen();
-        return true;
+    const auto snapshot_file_names = db::read_snapshots(txn);
+    if (!settings_.no_downloader) {
+        const bool download_completed = download_snapshots(snapshot_file_names);
+        if (!download_completed) return false;
+
+        db::write_snapshots(txn, snapshot_file_names);
+        SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
     }
 
-    const auto snapshot_file_names = db::read_snapshots(txn);
+    repository_->remove_stale_indexes();
+    build_missing_indexes();
 
-    const bool download_completed = download_snapshots(snapshot_file_names);
-    if (!download_completed) return false;
-
-    db::write_snapshots(txn, snapshot_file_names);
-
-    SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
-
-    index_snapshots();
+    repository_->reopen_folder();
 
     const auto max_block_available = repository_->max_block_available();
-    SILK_INFO << "SnapshotSync: max block available: " << max_block_available
-              << " (segment max block: " << repository_->segment_max_block()
-              << ", idx max block: " << repository_->idx_max_block() << ")";
+    SILK_INFO << "SnapshotSync: max block available: " << max_block_available;
 
     const auto snapshot_config = Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     const auto configured_max_block_number = snapshot_config.max_block_number();
@@ -88,12 +83,6 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     update_database(txn, max_block_available);
 
     return true;
-}
-
-void SnapshotSync::reopen() {
-    repository_->reopen_folder();
-    SILK_INFO << "SnapshotSync: reopen completed segment_max_block=" << std::to_string(repository_->segment_max_block())
-              << " idx_max_block=" << std::to_string(repository_->idx_max_block());
 }
 
 bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
@@ -183,22 +172,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     completed_connection.disconnect();
     stats_connection.disconnect();
 
-    reopen();
     return true;
-}
-
-void SnapshotSync::index_snapshots() {
-    if (!settings_.enabled) {
-        SILK_INFO << "SnapshotSync: snapshot sync disabled, no index must be created";
-        return;
-    }
-
-    // Build any missing snapshot index if needed, then reopen
-    if (repository_->idx_max_block() < repository_->segment_max_block()) {
-        SILK_INFO << "SnapshotSync: missing indexes detected, rebuild started";
-        build_missing_indexes();
-        reopen();
-    }
 }
 
 bool SnapshotSync::stop() {
@@ -215,6 +189,12 @@ void SnapshotSync::build_missing_indexes() {
 
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_->missing_indexes();
+    if (missing_indexes.empty()) {
+        return;
+    }
+
+    SILK_INFO << "SnapshotSync: missing indexes detected, rebuild started";
+
     for (const auto& index : missing_indexes) {
         workers.push_task([=]() {
             try {
@@ -257,15 +237,15 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     db::etl_mdbx::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
-    repository_->for_each_header([&](const BlockHeader* header) -> bool {
-        SILK_TRACE << "SnapshotSync: header number=" << header->number << " hash=" << Hash{header->hash()}.to_hex();
-        const auto block_number = header->number;
+    repository_->for_each_header([&](const BlockHeader& header) -> bool {
+        SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
+        const auto block_number = header.number;
         if (block_number > max_block_available) return true;
 
-        const auto block_hash = header->hash();
+        const auto block_hash = header.hash();
 
         // Write block header into kDifficulty table
-        total_difficulty += header->difficulty;
+        total_difficulty += header.difficulty;
         db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
         // Write block header into kCanonicalHashes table
@@ -311,8 +291,8 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
 
     // Reset sequence for kBlockTransactions table
     const auto tx_snapshot = repository_->find_tx_segment(max_block_available);
-    ensure(tx_snapshot, "SnapshotSync: snapshots max block not found in any snapshot");
-    const auto last_tx_id = tx_snapshot->idx_txn_hash()->base_data_id() + tx_snapshot->item_count();
+    ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
+    const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
     SILK_INFO << "SnapshotSync: database table BlockTransactions sequence reset";
 

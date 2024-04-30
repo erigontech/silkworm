@@ -16,6 +16,9 @@
 
 #include "repository.hpp"
 
+#include <chrono>
+#include <filesystem>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/db/snapshots/body_index.hpp>
@@ -38,19 +41,17 @@ TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]"
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
 }
 
-TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][node][snapshot]") {
+TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
     test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
-    SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
+    SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
-    CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
-    CHECK(repository.header_snapshots_count() == 0);
-    CHECK(repository.body_snapshots_count() == 0);
-    CHECK(repository.tx_snapshots_count() == 0);
+    repository.reopen_folder();
+    CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
 }
 
@@ -66,62 +67,60 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SECTION("no snapshots") {
         repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
+
         CHECK(repository.view_header_segments(successful_walk) == 0);
         CHECK(repository.view_body_segments(successful_walk) == 0);
         CHECK(repository.view_tx_segments(successful_walk) == 0);
 
-        CHECK(repository.find_header_segment(14'500'000) == nullptr);
-        CHECK(repository.find_body_segment(11'500'000) == nullptr);
-        CHECK(repository.find_tx_segment(15'000'000) == nullptr);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
     }
 
-    SECTION("empty snapshots") {
+    SECTION("partial bundle") {
         test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
         test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
         test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
-        CHECK_THROWS_AS(repository.reopen_folder(), std::logic_error);
+        repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
-        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
+
         CHECK(repository.view_header_segments(successful_walk) == 0);  // empty snapshots are ignored by repository
         CHECK(repository.view_body_segments(successful_walk) == 0);    // empty snapshots are ignored by repository
         CHECK(repository.view_tx_segments(successful_walk) == 0);      // empty snapshots are ignored by repository
 
-        CHECK(repository.find_header_segment(14'500'000) == nullptr);
-        CHECK(repository.find_body_segment(11'500'000) == nullptr);
-        CHECK(repository.find_tx_segment(15'000'000) == nullptr);
+        CHECK_FALSE(repository.find_header_segment(14'500'000));
+        CHECK_FALSE(repository.find_body_segment(11'500'000));
+        CHECK_FALSE(repository.find_tx_segment(15'000'000));
     }
 
     SECTION("non-empty snapshots") {
-        test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
-        test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
+        test::SampleHeaderSnapshotFile tmp_snapshot_1{tmp_dir.path()};
+        test::SampleBodySnapshotFile tmp_snapshot_2{tmp_dir.path()};
+        test::SampleTransactionSnapshotFile tmp_snapshot_3{tmp_dir.path()};
+
+        for (auto& index_builder : repository.missing_indexes()) {
+            index_builder->build();
+        }
+
         repository.reopen_folder();
 
-        using ViewResult = SnapshotRepository::ViewResult;
-        CHECK(repository.view_header_segment(14'500'000, failing_walk) == ViewResult::kWalkFailed);
-        CHECK(repository.view_body_segment(11'500'000, failing_walk) == ViewResult::kWalkFailed);
-        CHECK(repository.view_tx_segment(15'000'000, failing_walk) == ViewResult::kWalkFailed);
         CHECK(repository.view_header_segments(failing_walk) == 1);
         CHECK(repository.view_body_segments(failing_walk) == 1);
         CHECK(repository.view_tx_segments(failing_walk) == 1);
 
-        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kWalkSuccess);
-        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kWalkSuccess);
-        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kWalkSuccess);
+        CHECK(repository.find_header_segment(1'500'000).has_value());
+        CHECK(repository.find_body_segment(1'500'000).has_value());
+        CHECK(repository.find_tx_segment(1'500'000).has_value());
+
         CHECK(repository.view_header_segments(successful_walk) == 1);
         CHECK(repository.view_body_segments(successful_walk) == 1);
         CHECK(repository.view_tx_segments(successful_walk) == 1);
-
-        // CHECK(repository.find_header_segment(14'500'000) != nullptr);  // needs index after check vs max_block_available
-        // CHECK(repository.find_body_segment(11'500'000) != nullptr);
-        // CHECK(repository.find_tx_segment(15'000'000) != nullptr);
     }
 }
 
@@ -153,22 +152,22 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     SECTION("header w/o index") {
-        CHECK(repository.find_header_segment(1'500'011) == nullptr);
-        CHECK(repository.find_header_segment(1'500'012) == nullptr);
-        CHECK(repository.find_header_segment(1'500'013) == nullptr);
-        CHECK(repository.find_header_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_header_segment(1'500'011));
+        CHECK_FALSE(repository.find_header_segment(1'500'012));
+        CHECK_FALSE(repository.find_header_segment(1'500'013));
+        CHECK_FALSE(repository.find_header_segment(1'500'014));
     }
     SECTION("body w/o index") {
-        CHECK(repository.find_body_segment(1'500'011) == nullptr);
-        CHECK(repository.find_body_segment(1'500'012) == nullptr);
-        CHECK(repository.find_body_segment(1'500'013) == nullptr);
-        CHECK(repository.find_body_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_body_segment(1'500'011));
+        CHECK_FALSE(repository.find_body_segment(1'500'012));
+        CHECK_FALSE(repository.find_body_segment(1'500'013));
+        CHECK_FALSE(repository.find_body_segment(1'500'014));
     }
     SECTION("tx w/o index") {
-        CHECK(repository.find_tx_segment(1'500'011) == nullptr);
-        CHECK(repository.find_tx_segment(1'500'012) == nullptr);
-        CHECK(repository.find_tx_segment(1'500'013) == nullptr);
-        CHECK(repository.find_tx_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_tx_segment(1'500'011));
+        CHECK_FALSE(repository.find_tx_segment(1'500'012));
+        CHECK_FALSE(repository.find_tx_segment(1'500'013));
+        CHECK_FALSE(repository.find_tx_segment(1'500'014));
     }
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
@@ -184,25 +183,25 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     REQUIRE_NOTHROW(repository.reopen_folder());
 
     SECTION("header w/ index") {
-        CHECK(repository.find_header_segment(1'500'011) == nullptr);
+        CHECK_FALSE(repository.find_header_segment(1'500'011));
         // CHECK(repository.find_header_segment(1'500'012) != nullptr);  // needs full block number in snapshot file names
         // CHECK(repository.find_header_segment(1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK(repository.find_header_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_header_segment(1'500'014));
     }
     SECTION("body w/ index") {
-        CHECK(repository.find_body_segment(1'500'011) == nullptr);
+        CHECK_FALSE(repository.find_body_segment(1'500'011));
         // CHECK(repository.find_body_segment(1'500'012) != nullptr);  // needs full block number in snapshot file names
         // CHECK(repository.find_body_segment(1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK(repository.find_body_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_body_segment(1'500'014));
     }
     SECTION("tx w/ index") {
-        CHECK(repository.find_tx_segment(1'500'011) == nullptr);
+        CHECK_FALSE(repository.find_tx_segment(1'500'011));
         // CHECK(repository.find_tx_segment(1'500'012) != nullptr);  // needs full block number in snapshot file names
         // CHECK(repository.find_tx_segment(1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK(repository.find_tx_segment(1'500'014) == nullptr);
+        CHECK_FALSE(repository.find_tx_segment(1'500'014));
     }
     SECTION("greater than max_block_available") {
-        CHECK(repository.find_body_segment(repository.max_block_available() + 1) == nullptr);
+        CHECK_FALSE(repository.find_body_segment(repository.max_block_available() + 1));
     }
 }
 
@@ -243,6 +242,43 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     // unknown txn hash
     block_number = repository.find_block_number(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
     // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
+}
+
+template <class Rep, class Period>
+static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
+    const auto ftime = std::filesystem::last_write_time(p);
+    std::filesystem::last_write_time(p, ftime + d);
+    return std::filesystem::last_write_time(p) - ftime;
+}
+
+TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot][index]") {
+    using namespace std::chrono_literals;
+
+    SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{tmp_dir.path()};
+    SnapshotRepository repository{settings};
+
+    // create a snapshot file
+    test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
+    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
+
+    // build an index
+    auto index_builder = HeaderIndex::make(header_snapshot_path);
+    REQUIRE_NOTHROW(index_builder.build());
+    auto index_path = index_builder.path().path();
+
+    // the index is not stale
+    repository.remove_stale_indexes();
+    CHECK(std::filesystem::exists(index_path));
+
+    // move the snapshot last write time 1 hour to the future to make its index "stale"
+    const auto last_write_time_diff = move_last_write_time(header_snapshot_path.path(), 1h);
+    CHECK(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
+
+    // the index is stale
+    repository.remove_stale_indexes();
+    CHECK_FALSE(std::filesystem::exists(index_path));
 }
 
 }  // namespace silkworm::snapshots

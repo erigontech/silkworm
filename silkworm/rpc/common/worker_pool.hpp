@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,14 +12,20 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-add_library(pico_http_parser "picohttpparser/picohttpparser.c")
+#pragma once
 
-if(MSVC)
-  target_compile_options(pico_http_parser PRIVATE /w)
-else()
-  target_compile_options(pico_http_parser PRIVATE -Wno-error)
-endif(MSVC)
+#include <thread>
 
-target_include_directories(pico_http_parser PUBLIC "picohttpparser")
+#include <boost/asio/thread_pool.hpp>
+
+namespace silkworm::rpc {
+
+//! Default number of threads in worker pool (i.e. dedicated to heavier tasks)
+inline const auto kDefaultNumWorkers{std::thread::hardware_concurrency() / 2};
+
+// TODO(canepat) replace boost::asio::thread_pool with WorkerPool
+// using WorkerPool = boost::asio::thread_pool;
+
+}  // namespace silkworm::rpc

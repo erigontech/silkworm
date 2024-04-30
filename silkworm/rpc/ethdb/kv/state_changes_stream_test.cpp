@@ -23,8 +23,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/test/grpc_actions.hpp>
-#include <silkworm/rpc/test/kv_test_base.hpp>
+#include <silkworm/rpc/test_util/grpc_actions.hpp>
+#include <silkworm/rpc/test_util/kv_test_base.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -89,7 +89,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::open", "[rpc][ethd
 TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[rpc][ethdb][kv][state_changes_stream]") {
     RegistrationIntervalGuard guard{std::chrono::milliseconds{10}};
 
-    SECTION("stream closed-by-peer/reopened/cancelled") {
+    SECTION("stream closed-by-peer") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncStateChangesRaw calls succeed
         EXPECT_CALL(*stub_, PrepareAsyncStateChangesRaw)
@@ -111,29 +111,6 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[rpc][ethdb
                     });
 
                 return statechanges_reader_ptr_.release();
-            }))
-            .WillOnce(InvokeWithoutArgs([&]() {
-                // Recreate mocked reader for StateChanges RPC because StateChanges RPC has been *recreated*
-                statechanges_reader_ptr_ = std::make_unique<StrictMockKVStateChangesAsyncReader>();
-                statechanges_reader_ = statechanges_reader_ptr_.get();
-
-                // 2. AsyncReader<remote::StateChangeBatch>::StartCall call succeed
-                EXPECT_CALL(*statechanges_reader_, StartCall)
-                    .WillOnce([&](void* tag) {
-                        agrpc::process_grpc_tag(grpc_context_, tag, true);
-
-                        // 3. AsyncReader<remote::StateChangeBatch>::Read 1st/2nd/3rd calls succeed, 4th fails
-                        EXPECT_CALL(*statechanges_reader_, Read)
-                            .WillOnce(test::read_success_with(grpc_context_, make_batch()))
-                            .WillOnce(test::read_success_with(grpc_context_, make_batch()))
-                            .WillOnce(test::read_success_with(grpc_context_, make_batch()))
-                            .WillOnce(test::read_failure(grpc_context_));
-                        // 4. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
-                        EXPECT_CALL(*statechanges_reader_, Finish)
-                            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
-                    });
-
-                return statechanges_reader_ptr_.release();
             }));
 
         // Execute the test: running the stream should succeed until finishes
@@ -145,8 +122,8 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[rpc][ethdb
         expect_request_async_statechanges(/*.ok=*/true);
         // 2. AsyncReader<remote::StateChangeBatch>::Read call fails
         EXPECT_CALL(*statechanges_reader_, Read).WillOnce(test::read_failure(grpc_context_));
-        // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
+        EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
         // Execute the test: running the stream should succeed until finishes
         CHECK_NOTHROW(spawn_and_wait(stream_.run()));
@@ -159,8 +136,8 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::run", "[rpc][ethdb
         EXPECT_CALL(*statechanges_reader_, Read)
             .WillOnce(test::read_success_with(grpc_context_, make_batch()))
             .WillOnce(test::read_failure(grpc_context_));
-        // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
+        EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
         // Execute the test: running the stream should succeed until finishes
         CHECK_NOTHROW(spawn_and_wait(stream_.run()));
@@ -188,14 +165,14 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         // 2. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
-        // Execute the precondition: the stream must be running
+        // Execute the pre-condition: the stream must be running
         std::future<void> run_result;
         CHECK_NOTHROW(run_result = spawn(stream_.run()));
 
         // Execute the test: closing the stream should succeed
         CHECK_NOTHROW(stream_.close());
 
-        // Execute the postcondition: the running stream finishes
+        // Execute the post-condition: the running stream finishes
         CHECK_NOTHROW(run_result.get());
     }
     SECTION("while reading w/ error every 10ms") {
@@ -220,7 +197,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         EXPECT_CALL(*statechanges_reader_, Finish)
             .WillRepeatedly(test::finish_streaming_cancelled(grpc_context_));
 
-        // Execute the precondition: the stream must be running at least for 30ms
+        // Execute the pre-condition: the stream must be running at least for 30ms
         std::future<void> run_result;
         CHECK_NOTHROW(run_result = spawn(stream_.run()));
         sleep_for(30ms);
@@ -228,7 +205,7 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[rpc][eth
         // Execute the test: closing the stream should succeed
         CHECK_NOTHROW(stream_.close());
 
-        // Execute the postcondition: the running stream finishes
+        // Execute the post-condition: the running stream finishes
         CHECK_NOTHROW(run_result.get());
     }
 }

@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::json_rpc {
 

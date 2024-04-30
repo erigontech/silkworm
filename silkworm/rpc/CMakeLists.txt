@@ -16,6 +16,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(test_util)
+
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers container)
@@ -41,7 +43,6 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     Boost::headers
     protobuf::libprotobuf
     intx::intx
-    pico_http_parser
 )
 
 # cmake-format: off
@@ -58,4 +59,4 @@ silkworm_library(
   PRIVATE ${SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES}
 )
 
-target_link_libraries(silkworm_rpcdaemon_test PRIVATE GTest::gmock)
+target_link_libraries(silkworm_rpcdaemon_test PRIVATE silkworm_rpcdaemon_test_util GTest::gmock)

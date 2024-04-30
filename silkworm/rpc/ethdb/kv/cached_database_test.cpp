@@ -30,10 +30,10 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/rpc/test/dummy_transaction.hpp>
-#include <silkworm/rpc/test/mock_cursor.hpp>
-#include <silkworm/rpc/test/mock_state_cache.hpp>
-#include <silkworm/rpc/test/mock_transaction.hpp>
+#include <silkworm/rpc/test_util/dummy_transaction.hpp>
+#include <silkworm/rpc/test_util/mock_cursor.hpp>
+#include <silkworm/rpc/test_util/mock_state_cache.hpp>
+#include <silkworm/rpc/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc::ethdb::kv {

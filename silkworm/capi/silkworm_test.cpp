@@ -25,29 +25,22 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/snapshot.hpp>
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm {
 
 namespace snapshot_test = snapshots::test_util;
 
-struct CApiTest : public rpc::test::TestDatabaseContext {
+struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
-
-  private:
-    // TODO(canepat) remove test_util::StreamSwap objects when C API settings include log level
-    std::stringstream string_cout, string_cerr;
-    test_util::StreamSwap cout_swap{std::cout, string_cout};
-    test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
-
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array
@@ -72,14 +65,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_libmdbx_version: OK", "[silkworm][capi
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty settings", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INVALID_PATH);
     CHECK(!handle);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, "");
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -88,7 +79,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "");
     SilkwormHandle handle{nullptr};
@@ -97,7 +87,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm]
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "v0.1.0");
     SilkwormHandle handle{nullptr};
@@ -106,7 +95,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[si
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -121,7 +109,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: not initialized", "[silkworm][ca
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
-    SilkwormSettings settings{};
     copy_path(settings.data_dir_path, db.get_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
@@ -133,7 +120,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
 //! \note This is useful for tests that do *not* specifically play with silkworm_init/silkworm_fini or invalid handles
 struct SilkwormLibrary {
     explicit SilkwormLibrary(const std::filesystem::path& db_path) {
-        SilkwormSettings settings{};
+        SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
         copy_path(settings.data_dir_path, db_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);
@@ -155,7 +142,7 @@ struct SilkwormLibrary {
                                    uint64_t batch_size,
                                    bool write_change_sets,
                                    bool write_receipts,
-                                   bool write_call_traces) {
+                                   bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_ephemeral(handle_, txn,
@@ -172,7 +159,7 @@ struct SilkwormLibrary {
                                              uint64_t batch_size,
                                              bool write_change_sets,
                                              bool write_receipts,
-                                             bool write_call_traces) {
+                                             bool write_call_traces) const {
         ExecutionResult result;
         result.execute_block_result =
             silkworm_execute_blocks_perpetual(handle_, env,
@@ -182,8 +169,16 @@ struct SilkwormLibrary {
         return result;
     }
 
-    int add_snapshot(SilkwormChainSnapshot* snapshot) {
+    int add_snapshot(SilkwormChainSnapshot* snapshot) const {
         return silkworm_add_snapshot(handle_, snapshot);
+    }
+
+    int start_rpcdaemon(MDBX_env* env, const SilkwormRpcSettings* settings) const {
+        return silkworm_start_rpcdaemon(handle_, env, settings);
+    }
+
+    int stop_rpcdaemon() const {
+        return silkworm_stop_rpcdaemon(handle_);
     }
 
   private:
@@ -649,34 +644,38 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{tmp_dir.path()};
     snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
 
-    auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
-    REQUIRE_NOTHROW(header_index.build());
-    snapshots::HeaderSnapshot header_snapshot{header_snapshot_path};
+    auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
+    REQUIRE_NOTHROW(header_index_builder.build());
+    snapshots::Snapshot header_snapshot{header_snapshot_path};
     header_snapshot.reopen_segment();
-    header_snapshot.reopen_index();
+    snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
+    idx_header_hash.reopen_index();
 
-    auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
-    REQUIRE_NOTHROW(body_index.build());
-    snapshots::BodySnapshot body_snapshot{body_snapshot_path};
+    auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
+    REQUIRE_NOTHROW(body_index_builder.build());
+    snapshots::Snapshot body_snapshot{body_snapshot_path};
     body_snapshot.reopen_segment();
-    body_snapshot.reopen_index();
+    snapshots::Index idx_body_number{body_snapshot_path.index_file()};
+    idx_body_number.reopen_index();
 
-    auto tx_index = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
-    tx_index.build();
-    auto tx_index_hash_to_block = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
-    tx_index_hash_to_block.build();
-    snapshots::TransactionSnapshot tx_snapshot{tx_snapshot_path};
+    auto tx_index_builder = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    tx_index_builder.build();
+    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
+    tx_index_hash_to_block_builder.build();
+    snapshots::Snapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();
-    tx_snapshot.reopen_index();
+    snapshots::Index idx_txn_hash{tx_snapshot_path.index_file()};
+    idx_txn_hash.reopen_index();
+    snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
+    idx_txn_hash_2_block.reopen_index();
 
     const auto header_snapshot_path_string{header_snapshot_path.path().string()};
-    const auto header_index_path_string{header_index.path().path().string()};
+    const auto header_index_path_string{idx_header_hash.path().path().string()};
     const auto body_snapshot_path_string{body_snapshot_path.path().string()};
-    const auto body_index_path_string{body_index.path().path().string()};
+    const auto body_index_path_string{idx_body_number.path().path().string()};
     const auto tx_snapshot_path_string{tx_snapshot_path.path().string()};
-    const auto tx_hash_index_path_string{tx_snapshot_path.index_file().path().string()};
-    const auto tx_hash2block_index_path_string{
-        tx_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions_to_block).path().string()};
+    const auto tx_hash_index_path_string{idx_txn_hash.path().path().string()};
+    const auto tx_hash2block_index_path_string{idx_txn_hash_2_block.path().path().string()};
 
     // Prepare templates for valid header/body/transaction C data structures
     SilkwormHeadersSnapshot valid_shs{
@@ -687,8 +686,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         },
         .header_hash_index = SilkwormMemoryMappedFile{
             .file_path = header_index_path_string.c_str(),
-            .memory_address = header_snapshot.idx_header_hash()->memory_file_region().data(),
-            .memory_length = header_snapshot.idx_header_hash()->memory_file_region().size(),
+            .memory_address = idx_header_hash.memory_file_region().data(),
+            .memory_length = idx_header_hash.memory_file_region().size(),
         },
     };
     SilkwormBodiesSnapshot valid_sbs{
@@ -699,8 +698,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         },
         .block_num_index = SilkwormMemoryMappedFile{
             .file_path = body_index_path_string.c_str(),
-            .memory_address = body_snapshot.idx_body_number()->memory_file_region().data(),
-            .memory_length = body_snapshot.idx_body_number()->memory_file_region().size(),
+            .memory_address = idx_body_number.memory_file_region().data(),
+            .memory_length = idx_body_number.memory_file_region().size(),
         },
     };
     SilkwormTransactionsSnapshot valid_sts{
@@ -711,13 +710,13 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         },
         .tx_hash_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash_index_path_string.c_str(),
-            .memory_address = tx_snapshot.idx_txn_hash()->memory_file_region().data(),
-            .memory_length = tx_snapshot.idx_txn_hash()->memory_file_region().size(),
+            .memory_address = idx_txn_hash.memory_file_region().data(),
+            .memory_length = idx_txn_hash.memory_file_region().size(),
         },
         .tx_hash_2_block_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash2block_index_path_string.c_str(),
-            .memory_address = tx_snapshot.idx_txn_hash_2_block()->memory_file_region().data(),
-            .memory_length = tx_snapshot.idx_txn_hash_2_block()->memory_file_region().size(),
+            .memory_address = idx_txn_hash_2_block.memory_file_region().data(),
+            .memory_length = idx_txn_hash_2_block.memory_file_region().size(),
         },
     };
 
@@ -789,6 +788,84 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
         const int result{silkworm_lib.add_snapshot(&snapshot)};
         CHECK(result == SILKWORM_OK);
+    }
+}
+
+static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_port) {
+    SilkwormRpcSettings settings{
+        .eth_if_log_settings = {
+            .enabled = false,
+            .max_file_size_mb = 1,
+            .max_files = 1,
+            .dump_response = false,
+        },
+        .eth_api_port = api_listening_port,
+        .num_workers = 0,
+        .erigon_json_rpc_compatibility = false,
+        .ws_enabled = false,
+        .ws_compression = false,
+        .http_compression = false,
+        // We must skip internal protocol check here (would block because gRPC server not present)
+        .skip_internal_protocol_check = true,
+    };
+    (void)std::snprintf(settings.eth_if_log_settings.container_folder, SILKWORM_PATH_SIZE, "logs");
+    (void)std::snprintf(settings.eth_api_host, SILKWORM_RPC_SETTINGS_HOST_SIZE, "localhost");
+    (void)std::snprintf(settings.eth_api_spec, SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE, "eth,ots");
+    for (auto& domain : settings.cors_domains) {
+        domain[0] = 0;
+    }
+    (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
+    (void)std::snprintf(settings.jwt_file_path, SILKWORM_PATH_SIZE, "jwt.hex");
+    return settings;
+}
+
+static const SilkwormRpcSettings kInvalidRpcSettings{make_rpc_settings_for_test(10)};
+static const SilkwormRpcSettings kValidRpcSettings{make_rpc_settings_for_test(8545)};
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        CHECK(silkworm_start_rpcdaemon(handle, db, &kValidRpcSettings) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("invalid settings") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, nullptr) == SILKWORM_INVALID_SETTINGS);
+    }
+
+    // The following test fails on Windows with silkworm_start_rpcdaemon returning SILKWORM_OK
+#ifndef _WIN32
+    SECTION("test settings: invalid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kInvalidRpcSettings) == SILKWORM_INTERNAL_ERROR);
+    }
+#endif  // _WIN32
+
+    SECTION("test settings: valid port") {
+        CHECK(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
+    }
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
+    SECTION("invalid handle") {
+        // We purposely do not call silkworm_init to provide a null handle
+        SilkwormHandle handle{nullptr};
+        CHECK(silkworm_stop_rpcdaemon(handle) == SILKWORM_INVALID_HANDLE);
+    }
+
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{db.get_path()};
+
+    SECTION("not yet started") {
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
+    }
+
+    SECTION("already started") {
+        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
 

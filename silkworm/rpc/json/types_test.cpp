@@ -30,6 +30,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/common/compatibility.hpp>
 
 namespace silkworm::rpc {
 
@@ -162,6 +163,7 @@ TEST_CASE("serialize non-empty bytes32", "[rpc][to_json]") {
 
 TEST_CASE("serialize empty block header", "[rpc][to_json]") {
     silkworm::BlockHeader header{};
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     nlohmann::json j = header;
     CHECK(j == R"({
         "baseFeePerGas":null,
@@ -187,11 +189,20 @@ TEST_CASE("serialize empty block header", "[rpc][to_json]") {
         "timestamp":"0x0",
         "extraData":"0x",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null,
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 
 TEST_CASE("serialize block header", "[rpc][to_json]") {
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     silkworm::BlockHeader header{
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
@@ -233,11 +244,20 @@ TEST_CASE("serialize block header", "[rpc][to_json]") {
         "extraData":"0x0001ff0100",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000001",
         "nonce":"0x00000000000000ff",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null,
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 
 TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
+    rpc::compatibility::set_erigon_json_api_compatibility_required(true);
     silkworm::BlockHeader header{
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
@@ -282,7 +302,15 @@ TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000001",
         "nonce":"0x0102030405060708",
         "baseFeePerGas":"0x3e8",
-        "withdrawalsRoot":null
+        "withdrawalsRoot":null, 
+        "AuRaSeal":null,
+        "AuRaStep":0,
+        "Verkle":false,
+        "VerkleKeyVals":null,
+        "VerkleProof":null,
+        "blobGasUsed":null,
+        "excessBlobGas": null,
+        "parentBeaconBlockRoot": null
     })"_json);
 }
 

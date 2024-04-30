@@ -23,8 +23,9 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -76,7 +77,7 @@ static const std::vector<std::string> tests_to_ignore = {
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    auto tests_dir = test::get_tests_dir();
+    auto tests_dir = db::test_util::get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
             auto test_name = test_file.path().filename().string();
@@ -93,7 +94,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             }
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
-                auto context = test::TestDatabaseContext();
+                auto context = db::test_util::TestDatabaseContext();
                 test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
 
                 std::string line_out;
@@ -126,7 +127,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 
 TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    auto context = test::TestDatabaseContext();
+    auto context = db::test_util::TestDatabaseContext();
     test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
 
     SECTION("sample test") {

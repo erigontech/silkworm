@@ -17,7 +17,7 @@
 #include <benchmark/benchmark.h>
 #include <boost/asio/thread_pool.hpp>
 
-#include <silkworm/rpc/test/context_test_base.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
 
 #include "async_task.hpp"
 

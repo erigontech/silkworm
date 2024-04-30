@@ -183,9 +183,9 @@ void PoWSync::execution_loop() {
 
         } else if (std::holds_alternative<ValidationError>(verification)) {
             // if it returned a validation error, raise an exception
-            auto error = std::get<ValidationError>(verification);
-            throw std::logic_error("Consensus, validation error, last point=" + to_hex(error.latest_valid_head) +
-                                   ", missing block=" + to_hex(error.missing_block));
+            auto validation_error = std::get<ValidationError>(verification);
+            throw std::logic_error("Consensus validation error: last point=" + to_hex(validation_error.latest_valid_head) +
+                                   ", error=" + validation_error.error);
 
         } else {
             throw std::logic_error("Consensus, unknown error");

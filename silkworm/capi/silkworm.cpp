@@ -36,17 +36,20 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
+#include "common.hpp"
 #include "instance.hpp"
 
 using namespace std::chrono_literals;
@@ -56,12 +59,6 @@ static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
 }
 
-//! Log configuration matching Erigon log format
-static log::Settings kLogSettingsLikeErigon{
-    .log_utc = false,       // display local time
-    .log_timezone = false,  // no timezone ID
-    .log_trim = true,       // compact rendering (i.e. no whitespaces)
-};
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kAnalysisCacheSize{5'000};
 static constexpr size_t kMaxPrefetchedBlocks{10'240};
@@ -140,13 +137,6 @@ static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std
         std::to_string(Directory{db_path}.size())};
 }
 
-static std::filesystem::path make_path(const char data_dir_path[SILKWORM_PATH_SIZE]) {
-    // treat as char8_t so that filesystem::path assumes UTF-8 encoding of the input path
-    auto begin = reinterpret_cast<const char8_t*>(data_dir_path);
-    size_t len = strnlen(data_dir_path, SILKWORM_PATH_SIZE);
-    return std::filesystem::path{begin, begin + len};
-}
-
 //! Generate log arguments for execution progress at specified block
 static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_t current_block) {
     static auto float_to_string = [](float f) -> std::string {
@@ -212,7 +202,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     is_initialized = true;
 
-    log::init(kLogSettingsLikeErigon);
+    log::Settings log_settings{make_log_settings(settings->log_verbosity)};
+    log::init(log_settings);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>();
@@ -220,12 +211,15 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
-        {},  // context_pool_settings
-        make_path(settings->data_dir_path),
-        std::move(snapshot_repository),
-        {},  // rpcdaemon unique_ptr
-        {},  // sentry_thread unique_ptr
-        {},  // sentry_stop_signal
+        .log_settings = std::move(log_settings),
+        .context_pool_settings = {
+            .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
+        },
+        .data_dir_path = parse_path(settings->data_dir_path),
+        .snapshot_repository = std::move(snapshot_repository),
+        .rpcdaemon = {},
+        .sentry_thread = {},
+        .sentry_stop_signal = {},
     };
     return SILKWORM_OK;
 }
@@ -337,12 +331,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedHeadersSnapshot mapped_h_snapshot{
-        .segment = make_region(hs.segment),
-        .header_hash_index = make_region(hs.header_hash_index)};
-    auto headers_snapshot = std::make_unique<snapshots::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
-    headers_snapshot->reopen_segment();
-    headers_snapshot->reopen_index();
+    snapshots::Snapshot header_snapshot{*headers_segment_path, make_region(hs.segment)};
+    snapshots::Index idx_header_hash{headers_segment_path->index_file(), make_region(hs.header_hash_index)};
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -352,12 +342,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedBodiesSnapshot mapped_b_snapshot{
-        .segment = make_region(bs.segment),
-        .block_num_index = make_region(bs.block_num_index)};
-    auto bodies_snapshot = std::make_unique<snapshots::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
-    bodies_snapshot->reopen_segment();
-    bodies_snapshot->reopen_index();
+    snapshots::Snapshot body_snapshot{*bodies_segment_path, make_region(bs.segment)};
+    snapshots::Index idx_body_number{bodies_segment_path->index_file(), make_region(bs.block_num_index)};
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -367,83 +353,27 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedTransactionsSnapshot mapped_t_snapshot{
-        .segment = make_region(ts.segment),
-        .tx_hash_index = make_region(ts.tx_hash_index),
-        .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)};
-    auto transactions_snapshot = std::make_unique<snapshots::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
-    transactions_snapshot->reopen_segment();
-    transactions_snapshot->reopen_index();
+    snapshots::Snapshot txn_snapshot{*transactions_segment_path, make_region(ts.segment)};
+    snapshots::Index idx_txn_hash{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions), make_region(ts.tx_hash_index)};
+    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions_to_block), make_region(ts.tx_hash_2_block_index)};
 
     snapshots::SnapshotBundle bundle{
-        .headers_snapshot_path = *headers_segment_path,
-        .headers_snapshot = std::move(headers_snapshot),
-        .bodies_snapshot_path = *bodies_segment_path,
-        .bodies_snapshot = std::move(bodies_snapshot),
-        .tx_snapshot_path = *transactions_segment_path,
-        .tx_snapshot = std::move(transactions_snapshot)};
+        .header_snapshot = std::move(header_snapshot),
+        .idx_header_hash = std::move(idx_header_hash),
+
+        .body_snapshot = std::move(body_snapshot),
+        .idx_body_number = std::move(idx_body_number),
+
+        .txn_snapshot = std::move(txn_snapshot),
+        .idx_txn_hash = std::move(idx_txn_hash),
+        .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
+    };
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 
 SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
     return ::mdbx::get_version().git.describe;
-}
-
-SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* env) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (handle->rpcdaemon) {
-        return SILKWORM_SERVICE_ALREADY_STARTED;
-    }
-
-    db::EnvUnmanaged unmanaged_env{env};
-
-    // TODO(canepat) add RPC options in API and convert them
-    rpc::DaemonSettings settings{
-        .engine_end_point = "",  // disable end-point for Engine RPC API
-        .skip_protocol_check = true,
-        .erigon_json_rpc_compatibility = true,
-    };
-
-    // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(settings, std::make_optional<mdbx::env>(unmanaged_env));
-
-    // Check protocol version compatibility with Core Services
-    if (!settings.skip_protocol_check) {
-        SILK_INFO << "[Silkworm RPC] Checking protocol version compatibility with core services...";
-
-        const auto checklist = handle->rpcdaemon->run_checklist();
-        for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILK_INFO << protocol_check.result;
-        }
-        checklist.success_or_throw();
-    } else {
-        SILK_TRACE << "[Silkworm RPC] Skip protocol version compatibility check with core services";
-    }
-
-    SILK_INFO << "[Silkworm RPC] Starting ETH API at " << settings.eth_end_point;
-    handle->rpcdaemon->start();
-
-    return SILKWORM_OK;
-}
-
-SILKWORM_EXPORT int silkworm_stop_rpcdaemon(SilkwormHandle handle) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (!handle->rpcdaemon) {
-        return SILKWORM_OK;
-    }
-
-    handle->rpcdaemon->stop();
-    SILK_INFO << "[Silkworm RPC] Exiting...";
-    handle->rpcdaemon->join();
-    SILK_INFO << "[Silkworm RPC] Stopped";
-    handle->rpcdaemon.reset();
-
-    return SILKWORM_OK;
 }
 
 class BlockProvider {

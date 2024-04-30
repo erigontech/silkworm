@@ -119,6 +119,19 @@ struct PeerMinBlockRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PeerMinBlockRequestDefaultTypeInternal _PeerMinBlockRequest_default_instance_;
+PROTOBUF_CONSTEXPR AddPeerRequest::AddPeerRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.url_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct AddPeerRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR AddPeerRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~AddPeerRequestDefaultTypeInternal() {}
+  union {
+    AddPeerRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AddPeerRequestDefaultTypeInternal _AddPeerRequest_default_instance_;
 PROTOBUF_CONSTEXPR InboundMessage::InboundMessage(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.data_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -311,8 +324,21 @@ struct PeerEventDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PeerEventDefaultTypeInternal _PeerEvent_default_instance_;
+PROTOBUF_CONSTEXPR AddPeerReply::AddPeerReply(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.success_)*/false
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct AddPeerReplyDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR AddPeerReplyDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~AddPeerReplyDefaultTypeInternal() {}
+  union {
+    AddPeerReply _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AddPeerReplyDefaultTypeInternal _AddPeerReply_default_instance_;
 }  // namespace sentry
-static ::_pb::Metadata file_level_metadata_p2psentry_2fsentry_2eproto[21];
+static ::_pb::Metadata file_level_metadata_p2psentry_2fsentry_2eproto[23];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_p2psentry_2fsentry_2eproto[4];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_p2psentry_2fsentry_2eproto = nullptr;
 
@@ -373,6 +399,13 @@ const uint32_t TableStruct_p2psentry_2fsentry_2eproto::offsets[] PROTOBUF_SECTIO
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerMinBlockRequest, _impl_.peer_id_),
   PROTOBUF_FIELD_OFFSET(::sentry::PeerMinBlockRequest, _impl_.min_block_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::AddPeerRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::sentry::AddPeerRequest, _impl_.url_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::InboundMessage, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -481,6 +514,13 @@ const uint32_t TableStruct_p2psentry_2fsentry_2eproto::offsets[] PROTOBUF_SECTIO
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerEvent, _impl_.peer_id_),
   PROTOBUF_FIELD_OFFSET(::sentry::PeerEvent, _impl_.event_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::AddPeerReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::sentry::AddPeerReply, _impl_.success_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::sentry::OutboundMessageData)},
@@ -490,20 +530,22 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 33, -1, -1, sizeof(::sentry::SentPeers)},
   { 40, -1, -1, sizeof(::sentry::PenalizePeerRequest)},
   { 48, -1, -1, sizeof(::sentry::PeerMinBlockRequest)},
-  { 56, -1, -1, sizeof(::sentry::InboundMessage)},
-  { 65, -1, -1, sizeof(::sentry::Forks)},
-  { 74, -1, -1, sizeof(::sentry::StatusData)},
-  { 86, -1, -1, sizeof(::sentry::SetStatusReply)},
-  { 92, -1, -1, sizeof(::sentry::HandShakeReply)},
-  { 99, -1, -1, sizeof(::sentry::MessagesRequest)},
-  { 106, -1, -1, sizeof(::sentry::PeersReply)},
-  { 113, -1, -1, sizeof(::sentry::PeerCountRequest)},
-  { 119, -1, -1, sizeof(::sentry::PeerCountPerProtocol)},
-  { 127, -1, -1, sizeof(::sentry::PeerCountReply)},
-  { 135, -1, -1, sizeof(::sentry::PeerByIdRequest)},
-  { 142, 149, -1, sizeof(::sentry::PeerByIdReply)},
-  { 150, -1, -1, sizeof(::sentry::PeerEventsRequest)},
-  { 156, -1, -1, sizeof(::sentry::PeerEvent)},
+  { 56, -1, -1, sizeof(::sentry::AddPeerRequest)},
+  { 63, -1, -1, sizeof(::sentry::InboundMessage)},
+  { 72, -1, -1, sizeof(::sentry::Forks)},
+  { 81, -1, -1, sizeof(::sentry::StatusData)},
+  { 93, -1, -1, sizeof(::sentry::SetStatusReply)},
+  { 99, -1, -1, sizeof(::sentry::HandShakeReply)},
+  { 106, -1, -1, sizeof(::sentry::MessagesRequest)},
+  { 113, -1, -1, sizeof(::sentry::PeersReply)},
+  { 120, -1, -1, sizeof(::sentry::PeerCountRequest)},
+  { 126, -1, -1, sizeof(::sentry::PeerCountPerProtocol)},
+  { 134, -1, -1, sizeof(::sentry::PeerCountReply)},
+  { 142, -1, -1, sizeof(::sentry::PeerByIdRequest)},
+  { 149, 156, -1, sizeof(::sentry::PeerByIdReply)},
+  { 157, -1, -1, sizeof(::sentry::PeerEventsRequest)},
+  { 163, -1, -1, sizeof(::sentry::PeerEvent)},
+  { 171, -1, -1, sizeof(::sentry::AddPeerReply)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -514,6 +556,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::sentry::_SentPeers_default_instance_._instance,
   &::sentry::_PenalizePeerRequest_default_instance_._instance,
   &::sentry::_PeerMinBlockRequest_default_instance_._instance,
+  &::sentry::_AddPeerRequest_default_instance_._instance,
   &::sentry::_InboundMessage_default_instance_._instance,
   &::sentry::_Forks_default_instance_._instance,
   &::sentry::_StatusData_default_instance_._instance,
@@ -528,6 +571,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::sentry::_PeerByIdReply_default_instance_._instance,
   &::sentry::_PeerEventsRequest_default_instance_._instance,
   &::sentry::_PeerEvent_default_instance_._instance,
+  &::sentry::_AddPeerReply_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_p2psentry_2fsentry_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -547,77 +591,80 @@ const char descriptor_table_protodef_p2psentry_2fsentry_2eproto[] PROTOBUF_SECTI
   "t\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022$\n\007penal"
   "ty\030\002 \001(\0162\023.sentry.PenaltyKind\"F\n\023PeerMin"
   "BlockRequest\022\034\n\007peer_id\030\001 \001(\0132\013.types.H5"
-  "12\022\021\n\tmin_block\030\002 \001(\004\"[\n\016InboundMessage\022"
-  "\035\n\002id\030\001 \001(\0162\021.sentry.MessageId\022\014\n\004data\030\002"
-  " \001(\014\022\034\n\007peer_id\030\003 \001(\0132\013.types.H512\"O\n\005Fo"
-  "rks\022\034\n\007genesis\030\001 \001(\0132\013.types.H256\022\024\n\014hei"
-  "ght_forks\030\002 \003(\004\022\022\n\ntime_forks\030\003 \003(\004\"\273\001\n\n"
-  "StatusData\022\022\n\nnetwork_id\030\001 \001(\004\022%\n\020total_"
-  "difficulty\030\002 \001(\0132\013.types.H256\022\036\n\tbest_ha"
-  "sh\030\003 \001(\0132\013.types.H256\022 \n\tfork_data\030\004 \001(\013"
-  "2\r.sentry.Forks\022\030\n\020max_block_height\030\005 \001("
-  "\004\022\026\n\016max_block_time\030\006 \001(\004\"\020\n\016SetStatusRe"
-  "ply\"4\n\016HandShakeReply\022\"\n\010protocol\030\001 \001(\0162"
-  "\020.sentry.Protocol\"1\n\017MessagesRequest\022\036\n\003"
-  "ids\030\001 \003(\0162\021.sentry.MessageId\",\n\nPeersRep"
-  "ly\022\036\n\005peers\030\001 \003(\0132\017.types.PeerInfo\"\022\n\020Pe"
-  "erCountRequest\"I\n\024PeerCountPerProtocol\022\""
-  "\n\010protocol\030\001 \001(\0162\020.sentry.Protocol\022\r\n\005co"
-  "unt\030\002 \001(\004\"Z\n\016PeerCountReply\022\r\n\005count\030\001 \001"
-  "(\004\0229\n\023counts_per_protocol\030\002 \003(\0132\034.sentry"
-  ".PeerCountPerProtocol\"/\n\017PeerByIdRequest"
-  "\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\"<\n\rPeerBy"
-  "IdReply\022\"\n\004peer\030\001 \001(\0132\017.types.PeerInfoH\000"
-  "\210\001\001B\007\n\005_peer\"\023\n\021PeerEventsRequest\"\206\001\n\tPe"
-  "erEvent\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022/\n"
-  "\010event_id\030\002 \001(\0162\035.sentry.PeerEvent.PeerE"
-  "ventId\"*\n\013PeerEventId\022\013\n\007Connect\020\000\022\016\n\nDi"
-  "sconnect\020\001*\200\006\n\tMessageId\022\r\n\tSTATUS_65\020\000\022"
-  "\030\n\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK_HEADE"
-  "RS_65\020\002\022\023\n\017BLOCK_HASHES_65\020\003\022\027\n\023GET_BLOC"
-  "K_BODIES_65\020\004\022\023\n\017BLOCK_BODIES_65\020\005\022\024\n\020GE"
-  "T_NODE_DATA_65\020\006\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GE"
-  "T_RECEIPTS_65\020\010\022\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_"
-  "BLOCK_HASHES_65\020\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017T"
-  "RANSACTIONS_65\020\014\022$\n NEW_POOLED_TRANSACTI"
-  "ON_HASHES_65\020\r\022\036\n\032GET_POOLED_TRANSACTION"
-  "S_65\020\016\022\032\n\026POOLED_TRANSACTIONS_65\020\017\022\r\n\tST"
-  "ATUS_66\020\021\022\027\n\023NEW_BLOCK_HASHES_66\020\022\022\020\n\014NE"
-  "W_BLOCK_66\020\023\022\023\n\017TRANSACTIONS_66\020\024\022$\n NEW"
-  "_POOLED_TRANSACTION_HASHES_66\020\025\022\030\n\024GET_B"
-  "LOCK_HEADERS_66\020\026\022\027\n\023GET_BLOCK_BODIES_66"
-  "\020\027\022\024\n\020GET_NODE_DATA_66\020\030\022\023\n\017GET_RECEIPTS"
-  "_66\020\031\022\036\n\032GET_POOLED_TRANSACTIONS_66\020\032\022\024\n"
-  "\020BLOCK_HEADERS_66\020\033\022\023\n\017BLOCK_BODIES_66\020\034"
-  "\022\020\n\014NODE_DATA_66\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026P"
-  "OOLED_TRANSACTIONS_66\020\037\022$\n NEW_POOLED_TR"
-  "ANSACTION_HASHES_68\020 *\027\n\013PenaltyKind\022\010\n\004"
-  "Kick\020\000*6\n\010Protocol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001"
-  "\022\t\n\005ETH67\020\002\022\t\n\005ETH68\020\0032\243\007\n\006Sentry\0227\n\tSet"
-  "Status\022\022.sentry.StatusData\032\026.sentry.SetS"
-  "tatusReply\022C\n\014PenalizePeer\022\033.sentry.Pena"
-  "lizePeerRequest\032\026.google.protobuf.Empty\022"
-  "C\n\014PeerMinBlock\022\033.sentry.PeerMinBlockReq"
-  "uest\032\026.google.protobuf.Empty\022;\n\tHandShak"
-  "e\022\026.google.protobuf.Empty\032\026.sentry.HandS"
-  "hakeReply\022P\n\025SendMessageByMinBlock\022$.sen"
-  "try.SendMessageByMinBlockRequest\032\021.sentr"
-  "y.SentPeers\022D\n\017SendMessageById\022\036.sentry."
-  "SendMessageByIdRequest\032\021.sentry.SentPeer"
-  "s\022V\n\030SendMessageToRandomPeers\022\'.sentry.S"
-  "endMessageToRandomPeersRequest\032\021.sentry."
-  "SentPeers\022B\n\020SendMessageToAll\022\033.sentry.O"
-  "utboundMessageData\032\021.sentry.SentPeers\022=\n"
-  "\010Messages\022\027.sentry.MessagesRequest\032\026.sen"
-  "try.InboundMessage0\001\0223\n\005Peers\022\026.google.p"
-  "rotobuf.Empty\032\022.sentry.PeersReply\022=\n\tPee"
-  "rCount\022\030.sentry.PeerCountRequest\032\026.sentr"
-  "y.PeerCountReply\022:\n\010PeerById\022\027.sentry.Pe"
-  "erByIdRequest\032\025.sentry.PeerByIdReply\022<\n\n"
-  "PeerEvents\022\031.sentry.PeerEventsRequest\032\021."
-  "sentry.PeerEvent0\001\0228\n\010NodeInfo\022\026.google."
-  "protobuf.Empty\032\024.types.NodeInfoReplyB\021Z\017"
-  "./sentry;sentryb\006proto3"
+  "12\022\021\n\tmin_block\030\002 \001(\004\"\035\n\016AddPeerRequest\022"
+  "\013\n\003url\030\001 \001(\t\"[\n\016InboundMessage\022\035\n\002id\030\001 \001"
+  "(\0162\021.sentry.MessageId\022\014\n\004data\030\002 \001(\014\022\034\n\007p"
+  "eer_id\030\003 \001(\0132\013.types.H512\"O\n\005Forks\022\034\n\007ge"
+  "nesis\030\001 \001(\0132\013.types.H256\022\024\n\014height_forks"
+  "\030\002 \003(\004\022\022\n\ntime_forks\030\003 \003(\004\"\273\001\n\nStatusDat"
+  "a\022\022\n\nnetwork_id\030\001 \001(\004\022%\n\020total_difficult"
+  "y\030\002 \001(\0132\013.types.H256\022\036\n\tbest_hash\030\003 \001(\0132"
+  "\013.types.H256\022 \n\tfork_data\030\004 \001(\0132\r.sentry"
+  ".Forks\022\030\n\020max_block_height\030\005 \001(\004\022\026\n\016max_"
+  "block_time\030\006 \001(\004\"\020\n\016SetStatusReply\"4\n\016Ha"
+  "ndShakeReply\022\"\n\010protocol\030\001 \001(\0162\020.sentry."
+  "Protocol\"1\n\017MessagesRequest\022\036\n\003ids\030\001 \003(\016"
+  "2\021.sentry.MessageId\",\n\nPeersReply\022\036\n\005pee"
+  "rs\030\001 \003(\0132\017.types.PeerInfo\"\022\n\020PeerCountRe"
+  "quest\"I\n\024PeerCountPerProtocol\022\"\n\010protoco"
+  "l\030\001 \001(\0162\020.sentry.Protocol\022\r\n\005count\030\002 \001(\004"
+  "\"Z\n\016PeerCountReply\022\r\n\005count\030\001 \001(\004\0229\n\023cou"
+  "nts_per_protocol\030\002 \003(\0132\034.sentry.PeerCoun"
+  "tPerProtocol\"/\n\017PeerByIdRequest\022\034\n\007peer_"
+  "id\030\001 \001(\0132\013.types.H512\"<\n\rPeerByIdReply\022\""
+  "\n\004peer\030\001 \001(\0132\017.types.PeerInfoH\000\210\001\001B\007\n\005_p"
+  "eer\"\023\n\021PeerEventsRequest\"\206\001\n\tPeerEvent\022\034"
+  "\n\007peer_id\030\001 \001(\0132\013.types.H512\022/\n\010event_id"
+  "\030\002 \001(\0162\035.sentry.PeerEvent.PeerEventId\"*\n"
+  "\013PeerEventId\022\013\n\007Connect\020\000\022\016\n\nDisconnect\020"
+  "\001\"\037\n\014AddPeerReply\022\017\n\007success\030\001 \001(\010*\200\006\n\tM"
+  "essageId\022\r\n\tSTATUS_65\020\000\022\030\n\024GET_BLOCK_HEA"
+  "DERS_65\020\001\022\024\n\020BLOCK_HEADERS_65\020\002\022\023\n\017BLOCK"
+  "_HASHES_65\020\003\022\027\n\023GET_BLOCK_BODIES_65\020\004\022\023\n"
+  "\017BLOCK_BODIES_65\020\005\022\024\n\020GET_NODE_DATA_65\020\006"
+  "\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GET_RECEIPTS_65\020\010\022"
+  "\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_BLOCK_HASHES_65\020"
+  "\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017TRANSACTIONS_65\020\014"
+  "\022$\n NEW_POOLED_TRANSACTION_HASHES_65\020\r\022\036"
+  "\n\032GET_POOLED_TRANSACTIONS_65\020\016\022\032\n\026POOLED"
+  "_TRANSACTIONS_65\020\017\022\r\n\tSTATUS_66\020\021\022\027\n\023NEW"
+  "_BLOCK_HASHES_66\020\022\022\020\n\014NEW_BLOCK_66\020\023\022\023\n\017"
+  "TRANSACTIONS_66\020\024\022$\n NEW_POOLED_TRANSACT"
+  "ION_HASHES_66\020\025\022\030\n\024GET_BLOCK_HEADERS_66\020"
+  "\026\022\027\n\023GET_BLOCK_BODIES_66\020\027\022\024\n\020GET_NODE_D"
+  "ATA_66\020\030\022\023\n\017GET_RECEIPTS_66\020\031\022\036\n\032GET_POO"
+  "LED_TRANSACTIONS_66\020\032\022\024\n\020BLOCK_HEADERS_6"
+  "6\020\033\022\023\n\017BLOCK_BODIES_66\020\034\022\020\n\014NODE_DATA_66"
+  "\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026POOLED_TRANSACTIO"
+  "NS_66\020\037\022$\n NEW_POOLED_TRANSACTION_HASHES"
+  "_68\020 *\027\n\013PenaltyKind\022\010\n\004Kick\020\000*6\n\010Protoc"
+  "ol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001\022\t\n\005ETH67\020\002\022\t\n\005E"
+  "TH68\020\0032\334\007\n\006Sentry\0227\n\tSetStatus\022\022.sentry."
+  "StatusData\032\026.sentry.SetStatusReply\022C\n\014Pe"
+  "nalizePeer\022\033.sentry.PenalizePeerRequest\032"
+  "\026.google.protobuf.Empty\022C\n\014PeerMinBlock\022"
+  "\033.sentry.PeerMinBlockRequest\032\026.google.pr"
+  "otobuf.Empty\022;\n\tHandShake\022\026.google.proto"
+  "buf.Empty\032\026.sentry.HandShakeReply\022P\n\025Sen"
+  "dMessageByMinBlock\022$.sentry.SendMessageB"
+  "yMinBlockRequest\032\021.sentry.SentPeers\022D\n\017S"
+  "endMessageById\022\036.sentry.SendMessageByIdR"
+  "equest\032\021.sentry.SentPeers\022V\n\030SendMessage"
+  "ToRandomPeers\022\'.sentry.SendMessageToRand"
+  "omPeersRequest\032\021.sentry.SentPeers\022B\n\020Sen"
+  "dMessageToAll\022\033.sentry.OutboundMessageDa"
+  "ta\032\021.sentry.SentPeers\022=\n\010Messages\022\027.sent"
+  "ry.MessagesRequest\032\026.sentry.InboundMessa"
+  "ge0\001\0223\n\005Peers\022\026.google.protobuf.Empty\032\022."
+  "sentry.PeersReply\022=\n\tPeerCount\022\030.sentry."
+  "PeerCountRequest\032\026.sentry.PeerCountReply"
+  "\022:\n\010PeerById\022\027.sentry.PeerByIdRequest\032\025."
+  "sentry.PeerByIdReply\022<\n\nPeerEvents\022\031.sen"
+  "try.PeerEventsRequest\032\021.sentry.PeerEvent"
+  "0\001\0227\n\007AddPeer\022\026.sentry.AddPeerRequest\032\024."
+  "sentry.AddPeerReply\0228\n\010NodeInfo\022\026.google"
+  ".protobuf.Empty\032\024.types.NodeInfoReplyB\021Z"
+  "\017./sentry;sentryb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -625,9 +672,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_
 };
 static ::_pbi::once_flag descriptor_table_p2psentry_2fsentry_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_p2psentry_2fsentry_2eproto = {
-    false, false, 3463, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
+    false, false, 3584, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
     "p2psentry/sentry.proto",
-    &descriptor_table_p2psentry_2fsentry_2eproto_once, descriptor_table_p2psentry_2fsentry_2eproto_deps, 2, 21,
+    &descriptor_table_p2psentry_2fsentry_2eproto_once, descriptor_table_p2psentry_2fsentry_2eproto_deps, 2, 23,
     schemas, file_default_instances, TableStruct_p2psentry_2fsentry_2eproto::offsets,
     file_level_metadata_p2psentry_2fsentry_2eproto, file_level_enum_descriptors_p2psentry_2fsentry_2eproto,
     file_level_service_descriptors_p2psentry_2fsentry_2eproto,
@@ -2336,6 +2383,209 @@ void PeerMinBlockRequest::InternalSwap(PeerMinBlockRequest* other) {
 
 // ===================================================================
 
+class AddPeerRequest::_Internal {
+ public:
+};
+
+AddPeerRequest::AddPeerRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:sentry.AddPeerRequest)
+}
+AddPeerRequest::AddPeerRequest(const AddPeerRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  AddPeerRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.url_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.url_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.url_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_url().empty()) {
+    _this->_impl_.url_.Set(from._internal_url(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:sentry.AddPeerRequest)
+}
+
+inline void AddPeerRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.url_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.url_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.url_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+AddPeerRequest::~AddPeerRequest() {
+  // @@protoc_insertion_point(destructor:sentry.AddPeerRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void AddPeerRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.url_.Destroy();
+}
+
+void AddPeerRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void AddPeerRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.AddPeerRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.url_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* AddPeerRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string url = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_url();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "sentry.AddPeerRequest.url"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* AddPeerRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.AddPeerRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string url = 1;
+  if (!this->_internal_url().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_url().data(), static_cast<int>(this->_internal_url().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "sentry.AddPeerRequest.url");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_url(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.AddPeerRequest)
+  return target;
+}
+
+size_t AddPeerRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.AddPeerRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string url = 1;
+  if (!this->_internal_url().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_url());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData AddPeerRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    AddPeerRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AddPeerRequest::GetClassData() const { return &_class_data_; }
+
+
+void AddPeerRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<AddPeerRequest*>(&to_msg);
+  auto& from = static_cast<const AddPeerRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:sentry.AddPeerRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_url().empty()) {
+    _this->_internal_set_url(from._internal_url());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void AddPeerRequest::CopyFrom(const AddPeerRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.AddPeerRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AddPeerRequest::IsInitialized() const {
+  return true;
+}
+
+void AddPeerRequest::InternalSwap(AddPeerRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.url_, lhs_arena,
+      &other->_impl_.url_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata AddPeerRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
+      file_level_metadata_p2psentry_2fsentry_2eproto[7]);
+}
+
+// ===================================================================
+
 class InboundMessage::_Internal {
  public:
   static const ::types::H512& peer_id(const InboundMessage* msg);
@@ -2611,7 +2861,7 @@ void InboundMessage::InternalSwap(InboundMessage* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata InboundMessage::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[7]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[8]);
 }
 
 // ===================================================================
@@ -2894,7 +3144,7 @@ void Forks::InternalSwap(Forks* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Forks::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[8]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[9]);
 }
 
 // ===================================================================
@@ -3264,7 +3514,7 @@ void StatusData::InternalSwap(StatusData* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata StatusData::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[9]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[10]);
 }
 
 // ===================================================================
@@ -3304,7 +3554,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SetStatusReply::GetClassData()
 ::PROTOBUF_NAMESPACE_ID::Metadata SetStatusReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[10]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[11]);
 }
 
 // ===================================================================
@@ -3485,7 +3735,7 @@ void HandShakeReply::InternalSwap(HandShakeReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HandShakeReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[11]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[12]);
 }
 
 // ===================================================================
@@ -3682,7 +3932,7 @@ void MessagesRequest::InternalSwap(MessagesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata MessagesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[12]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[13]);
 }
 
 // ===================================================================
@@ -3870,7 +4120,7 @@ void PeersReply::InternalSwap(PeersReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeersReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[13]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[14]);
 }
 
 // ===================================================================
@@ -3910,7 +4160,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PeerCountRequest::GetClassData
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerCountRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[14]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[15]);
 }
 
 // ===================================================================
@@ -4124,7 +4374,7 @@ void PeerCountPerProtocol::InternalSwap(PeerCountPerProtocol* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerCountPerProtocol::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[15]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[16]);
 }
 
 // ===================================================================
@@ -4336,7 +4586,7 @@ void PeerCountReply::InternalSwap(PeerCountReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerCountReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[16]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[17]);
 }
 
 // ===================================================================
@@ -4535,7 +4785,7 @@ void PeerByIdRequest::InternalSwap(PeerByIdRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerByIdRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[17]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[18]);
 }
 
 // ===================================================================
@@ -4744,7 +4994,7 @@ void PeerByIdReply::InternalSwap(PeerByIdReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerByIdReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[18]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[19]);
 }
 
 // ===================================================================
@@ -4784,7 +5034,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PeerEventsRequest::GetClassDat
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerEventsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[19]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[20]);
 }
 
 // ===================================================================
@@ -5017,7 +5267,185 @@ void PeerEvent::InternalSwap(PeerEvent* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerEvent::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
-      file_level_metadata_p2psentry_2fsentry_2eproto[20]);
+      file_level_metadata_p2psentry_2fsentry_2eproto[21]);
+}
+
+// ===================================================================
+
+class AddPeerReply::_Internal {
+ public:
+};
+
+AddPeerReply::AddPeerReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:sentry.AddPeerReply)
+}
+AddPeerReply::AddPeerReply(const AddPeerReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  AddPeerReply* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.success_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.success_ = from._impl_.success_;
+  // @@protoc_insertion_point(copy_constructor:sentry.AddPeerReply)
+}
+
+inline void AddPeerReply::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.success_){false}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+AddPeerReply::~AddPeerReply() {
+  // @@protoc_insertion_point(destructor:sentry.AddPeerReply)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void AddPeerReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void AddPeerReply::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void AddPeerReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.AddPeerReply)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.success_ = false;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* AddPeerReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // bool success = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.success_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* AddPeerReply::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.AddPeerReply)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool success = 1;
+  if (this->_internal_success() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(1, this->_internal_success(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.AddPeerReply)
+  return target;
+}
+
+size_t AddPeerReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.AddPeerReply)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bool success = 1;
+  if (this->_internal_success() != 0) {
+    total_size += 1 + 1;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData AddPeerReply::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    AddPeerReply::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AddPeerReply::GetClassData() const { return &_class_data_; }
+
+
+void AddPeerReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<AddPeerReply*>(&to_msg);
+  auto& from = static_cast<const AddPeerReply&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:sentry.AddPeerReply)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_success() != 0) {
+    _this->_internal_set_success(from._internal_success());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void AddPeerReply::CopyFrom(const AddPeerReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.AddPeerReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AddPeerReply::IsInitialized() const {
+  return true;
+}
+
+void AddPeerReply::InternalSwap(AddPeerReply* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.success_, other->_impl_.success_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata AddPeerReply::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_p2psentry_2fsentry_2eproto_getter, &descriptor_table_p2psentry_2fsentry_2eproto_once,
+      file_level_metadata_p2psentry_2fsentry_2eproto[22]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -5050,6 +5478,10 @@ Arena::CreateMaybeMessage< ::sentry::PenalizePeerRequest >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::sentry::PeerMinBlockRequest*
 Arena::CreateMaybeMessage< ::sentry::PeerMinBlockRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::PeerMinBlockRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::AddPeerRequest*
+Arena::CreateMaybeMessage< ::sentry::AddPeerRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::AddPeerRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::sentry::InboundMessage*
 Arena::CreateMaybeMessage< ::sentry::InboundMessage >(Arena* arena) {
@@ -5106,6 +5538,10 @@ Arena::CreateMaybeMessage< ::sentry::PeerEventsRequest >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::sentry::PeerEvent*
 Arena::CreateMaybeMessage< ::sentry::PeerEvent >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::PeerEvent >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::AddPeerReply*
+Arena::CreateMaybeMessage< ::sentry::AddPeerReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::AddPeerReply >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

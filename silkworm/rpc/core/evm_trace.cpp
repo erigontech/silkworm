@@ -656,7 +656,7 @@ void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, c
     if (!traces_stack_.empty()) {
         auto& vm_trace = traces_stack_.top().get();
         if (!vm_trace.ops.empty()) {
-            auto &op = vm_trace.ops[vm_trace.ops.size() - 1];
+            auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
             op.precompiled_call_gas = gas;
             op.sub = std::make_shared<VmTrace>();
             op.sub->code = "0x";

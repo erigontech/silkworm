@@ -28,6 +28,17 @@
 
 namespace silkworm::rpc {
 
+void to_json(nlohmann::json& json, const Logs& logs) {
+    json = nlohmann::json::array();
+    if (logs.empty()) {
+       json = nullptr;
+    } else {
+        for (std::size_t i{0}; i < logs.size(); i++) {
+           json.push_back(logs[i]);
+        }
+    }
+}
+
 void to_json(nlohmann::json& json, const Log& log) {
     json["address"] = log.address;
     json["topics"] = log.topics;

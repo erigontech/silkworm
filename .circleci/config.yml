@@ -461,16 +461,3 @@ workflows:
           name: linux-clang-fuzzer
       - linux-clang-tidy
       - linux-wasm-build
-  
-  fuzzer:
-    triggers:
-      - schedule:
-          cron: "0 0 * * 6"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - linux-clang-fuzzer:
-          name: linux-clang-run-fuzzer
-          run_tests: true

@@ -44,20 +44,20 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& 
             start = end = block_number;
         }
     } else {
-        uint64_t last_executed_block_number = std::numeric_limits<uint64_t>::max();
+        uint64_t last_block_number = std::numeric_limits<uint64_t>::max();
         if (filter.from_block.has_value()) {
             start = co_await core::get_block_number(filter.from_block.value(), tx_database_);
         } else {
-            last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database_);
-            start = last_executed_block_number;
+            last_block_number = co_await core::get_latest_block_number(tx_database_);
+            start = last_block_number;
         }
         if (filter.to_block.has_value()) {
             end = co_await core::get_block_number(filter.to_block.value(), tx_database_);
         } else {
-            if (last_executed_block_number == std::numeric_limits<uint64_t>::max()) {
-                last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database_);
+            if (last_block_number == std::numeric_limits<uint64_t>::max()) {
+                last_block_number = co_await core::get_latest_block_number(tx_database_);
             }
-            end = last_executed_block_number;
+            end = last_block_number;
         }
     }
     co_return std::make_pair(start, end);

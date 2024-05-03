@@ -204,7 +204,6 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
         }
     }
 
-
     if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
         if (evm.block().header.excess_blob_gas) {
             std::string error = "internal Error Cancun is active but ExcessBlobGas is nil";

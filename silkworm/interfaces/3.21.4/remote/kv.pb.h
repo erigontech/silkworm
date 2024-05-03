@@ -1173,6 +1173,8 @@ class StateChangeBatch final :
     kStateVersionIdFieldNumber = 1,
     kPendingBlockBaseFeeFieldNumber = 3,
     kBlockGasLimitFieldNumber = 4,
+    kFinalizedBlockFieldNumber = 5,
+    kPendingBlobFeePerGasFieldNumber = 6,
   };
   // repeated .remote.StateChange change_batch = 2;
   int change_batch_size() const;
@@ -1219,6 +1221,24 @@ class StateChangeBatch final :
   void _internal_set_block_gas_limit(uint64_t value);
   public:
 
+  // uint64 finalized_block = 5;
+  void clear_finalized_block();
+  uint64_t finalized_block() const;
+  void set_finalized_block(uint64_t value);
+  private:
+  uint64_t _internal_finalized_block() const;
+  void _internal_set_finalized_block(uint64_t value);
+  public:
+
+  // uint64 pending_blob_fee_per_gas = 6;
+  void clear_pending_blob_fee_per_gas();
+  uint64_t pending_blob_fee_per_gas() const;
+  void set_pending_blob_fee_per_gas(uint64_t value);
+  private:
+  uint64_t _internal_pending_blob_fee_per_gas() const;
+  void _internal_set_pending_blob_fee_per_gas(uint64_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:remote.StateChangeBatch)
  private:
   class _Internal;
@@ -1231,6 +1251,8 @@ class StateChangeBatch final :
     uint64_t state_version_id_;
     uint64_t pending_block_base_fee_;
     uint64_t block_gas_limit_;
+    uint64_t finalized_block_;
+    uint64_t pending_blob_fee_per_gas_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -5243,6 +5265,46 @@ inline void StateChangeBatch::_internal_set_block_gas_limit(uint64_t value) {
 inline void StateChangeBatch::set_block_gas_limit(uint64_t value) {
   _internal_set_block_gas_limit(value);
   // @@protoc_insertion_point(field_set:remote.StateChangeBatch.block_gas_limit)
+}
+
+// uint64 finalized_block = 5;
+inline void StateChangeBatch::clear_finalized_block() {
+  _impl_.finalized_block_ = uint64_t{0u};
+}
+inline uint64_t StateChangeBatch::_internal_finalized_block() const {
+  return _impl_.finalized_block_;
+}
+inline uint64_t StateChangeBatch::finalized_block() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.finalized_block)
+  return _internal_finalized_block();
+}
+inline void StateChangeBatch::_internal_set_finalized_block(uint64_t value) {
+  
+  _impl_.finalized_block_ = value;
+}
+inline void StateChangeBatch::set_finalized_block(uint64_t value) {
+  _internal_set_finalized_block(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.finalized_block)
+}
+
+// uint64 pending_blob_fee_per_gas = 6;
+inline void StateChangeBatch::clear_pending_blob_fee_per_gas() {
+  _impl_.pending_blob_fee_per_gas_ = uint64_t{0u};
+}
+inline uint64_t StateChangeBatch::_internal_pending_blob_fee_per_gas() const {
+  return _impl_.pending_blob_fee_per_gas_;
+}
+inline uint64_t StateChangeBatch::pending_blob_fee_per_gas() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.pending_blob_fee_per_gas)
+  return _internal_pending_blob_fee_per_gas();
+}
+inline void StateChangeBatch::_internal_set_pending_blob_fee_per_gas(uint64_t value) {
+  
+  _impl_.pending_blob_fee_per_gas_ = value;
+}
+inline void StateChangeBatch::set_pending_blob_fee_per_gas(uint64_t value) {
+  _internal_set_pending_blob_fee_per_gas(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.pending_blob_fee_per_gas)
 }
 
 // -------------------------------------------------------------------

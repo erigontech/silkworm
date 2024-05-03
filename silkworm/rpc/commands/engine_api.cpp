@@ -16,6 +16,7 @@
 
 #include "engine_api.hpp"
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,14 @@
 #include <silkworm/rpc/types/execution_payload.hpp>
 
 namespace silkworm::rpc::commands {
+
+using namespace std::chrono_literals;
+
+// Engine API standard timeouts
+constexpr auto kGetPayloadTimeout{1s};
+constexpr auto kGetPayloadBodiesTimeout{10s};
+constexpr auto kNewPayloadTimeout{8s};
+constexpr auto kForkChoiceUpdatedTimeout{8s};
 
 constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
@@ -49,10 +58,13 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
     const Capabilities el_capabilities{
         "engine_newPayloadV1",
         "engine_newPayloadV2",
+        "engine_newPayloadV3",
         "engine_forkchoiceUpdatedV1",
         "engine_forkchoiceUpdatedV2",
+        "engine_forkchoiceUpdatedV3",
         "engine_getPayloadV1",
         "engine_getPayloadV2",
+        "engine_getPayloadV3",
         "engine_getPayloadBodiesByHashV1",
         "engine_getPayloadBodiesByRangeV1",
         "engine_exchangeTransitionConfigurationV1",
@@ -75,7 +87,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& requ
     try {
 #endif
         const auto payload_quantity = params[0].get<std::string>();
-        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        const auto payload_and_value = co_await engine_->get_payload(from_quantity(payload_quantity), kGetPayloadTimeout);
         reply = make_json_content(request, payload_and_value.payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
@@ -112,7 +124,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& requ
 
     try {
         const auto payload_quantity = params[0].get<std::string>();
-        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        const auto payload_and_value = co_await engine_->get_payload(from_quantity(payload_quantity), kGetPayloadTimeout);
         reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -148,7 +160,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v3(const nlohmann::json& requ
     try {
         const auto payload_quantity = params[0].get<std::string>();
         // TODO(canepat) we need a way to specify V3 i.e. blobs should be returned (hint: use versioned struct PayloadIdentifier)
-        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        const auto payload_and_value = co_await engine_->get_payload(from_quantity(payload_quantity), kGetPayloadTimeout);
         reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -189,7 +201,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohm
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kTooLargeRequest, error_msg);
         }
-        const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_hash(block_hashes);
+        const auto payload_bodies = co_await engine_->get_payload_bodies_by_hash(block_hashes, kGetPayloadBodiesTimeout);
         reply = make_json_content(request, payload_bodies);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -233,7 +245,7 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nloh
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kTooLargeRequest, error_msg);
         }
-        const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_range(start, count);
+        const auto payload_bodies = co_await engine_->get_payload_bodies_by_range(start, count, kGetPayloadBodiesTimeout);
         reply = make_json_content(request, payload_bodies);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -262,7 +274,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& requ
 #endif
         auto payload = params[0].get<ExecutionPayload>();
         NewPayloadRequest new_payload_v1_request{.execution_payload = std::move(payload)};
-        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v1_request);
+        const auto new_payload = co_await engine_->new_payload(new_payload_v1_request, kNewPayloadTimeout);
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
@@ -323,7 +335,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         }
 
         NewPayloadRequest new_payload_v2_request{.execution_payload = std::move(payload)};
-        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v2_request);
+        const auto new_payload = co_await engine_->new_payload(new_payload_v2_request, kNewPayloadTimeout);
 
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
@@ -379,7 +391,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
             .expected_blob_versioned_hashes = std::move(expected_blob_versioned_hashes),
             .parent_beacon_block_root = parent_beacon_block_root,
         };
-        const auto new_payload = co_await backend_->engine_new_payload(new_payload_v3_request);
+        const auto new_payload = co_await engine_->new_payload(new_payload_v3_request, kNewPayloadTimeout);
 
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE
@@ -425,7 +437,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::jso
             payload_attributes = params[1].get<PayloadAttributes>();
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
-        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+        const auto fcu_reply = co_await engine_->fork_choice_updated(fcu_request, kForkChoiceUpdatedTimeout);
 
         reply = make_json_content(request, fcu_reply);
 #ifndef BUILD_COVERAGE
@@ -468,7 +480,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::jso
             payload_attributes = params[1].get<PayloadAttributes>();
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
-        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+        const auto fcu_reply = co_await engine_->fork_choice_updated(fcu_request, kForkChoiceUpdatedTimeout);
 
         // We MUST check that CL has sent consistent PayloadAttributes [Shanghai Specification 2.]
         const auto chain_config{co_await read_chain_config()};
@@ -518,7 +530,7 @@ Task<void> EngineRpcApi::handle_engine_forkchoice_updated_v3(const nlohmann::jso
             payload_attributes = params[1].get<PayloadAttributes>();
         }
         const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
-        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+        const auto fcu_reply = co_await engine_->fork_choice_updated(fcu_request, kForkChoiceUpdatedTimeout);
 
         // We MUST check that CL has sent consistent PayloadAttributes [Cancun Specification 2.]
         const auto chain_config{co_await read_chain_config()};

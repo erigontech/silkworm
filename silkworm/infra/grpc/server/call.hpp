@@ -34,7 +34,7 @@ namespace silkworm::rpc {
 //! Register a server-side RPC repeatedly: whenever a client request is accepted, another waiting RPC is started
 template <class RPC, class AsyncService, class RequestHandler>
 void request_repeatedly(agrpc::GrpcContext& grpc_context, const AsyncService& service, RPC rpc, RequestHandler&& handler) {
-    agrpc::repeatedly_request(rpc, *service, boost::asio::bind_executor(grpc_context, handler));
+    agrpc::repeatedly_request(rpc, *service, boost::asio::bind_executor(grpc_context, std::forward<decltype(handler)>(handler)));
 }
 
 namespace server {

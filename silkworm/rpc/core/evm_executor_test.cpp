@@ -31,9 +31,9 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test/dummy_transaction.hpp>
-#include <silkworm/rpc/test/mock_back_end.hpp>
-#include <silkworm/rpc/test/mock_cursor.hpp>
+#include <silkworm/rpc/test_util/dummy_transaction.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
+#include <silkworm/rpc/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc {

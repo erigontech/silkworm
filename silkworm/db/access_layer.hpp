@@ -331,14 +331,13 @@ class DataModel {
     void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const;
 
   private:
-    static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
+    static bool read_block_from_snapshot(BlockNum height, Block& block);
     static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);
     static std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash);
-    static bool read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body);
+    static bool read_body_from_snapshot(BlockNum height, BlockBody& body);
     static bool is_body_in_snapshot(BlockNum height);
     static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
-    static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
-                                                bool read_senders, std::vector<Transaction>& txs);
+    static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs);
     [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
     [[nodiscard]] static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
 

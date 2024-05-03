@@ -36,7 +36,9 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/db/stages.hpp>
@@ -329,12 +331,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedHeadersSnapshot mapped_h_snapshot{
-        .segment = make_region(hs.segment),
-        .header_hash_index = make_region(hs.header_hash_index)};
-    auto headers_snapshot = std::make_unique<snapshots::HeaderSnapshot>(*headers_segment_path, mapped_h_snapshot);
-    headers_snapshot->reopen_segment();
-    headers_snapshot->reopen_index();
+    snapshots::Snapshot header_snapshot{*headers_segment_path, make_region(hs.segment)};
+    snapshots::Index idx_header_hash{headers_segment_path->index_file(), make_region(hs.header_hash_index)};
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -344,12 +342,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedBodiesSnapshot mapped_b_snapshot{
-        .segment = make_region(bs.segment),
-        .block_num_index = make_region(bs.block_num_index)};
-    auto bodies_snapshot = std::make_unique<snapshots::BodySnapshot>(*bodies_segment_path, mapped_b_snapshot);
-    bodies_snapshot->reopen_segment();
-    bodies_snapshot->reopen_index();
+    snapshots::Snapshot body_snapshot{*bodies_segment_path, make_region(bs.segment)};
+    snapshots::Index idx_body_number{bodies_segment_path->index_file(), make_region(bs.block_num_index)};
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -359,21 +353,21 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::MappedTransactionsSnapshot mapped_t_snapshot{
-        .segment = make_region(ts.segment),
-        .tx_hash_index = make_region(ts.tx_hash_index),
-        .tx_hash_2_block_index = make_region(ts.tx_hash_2_block_index)};
-    auto transactions_snapshot = std::make_unique<snapshots::TransactionSnapshot>(*transactions_segment_path, mapped_t_snapshot);
-    transactions_snapshot->reopen_segment();
-    transactions_snapshot->reopen_index();
+    snapshots::Snapshot txn_snapshot{*transactions_segment_path, make_region(ts.segment)};
+    snapshots::Index idx_txn_hash{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions), make_region(ts.tx_hash_index)};
+    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions_to_block), make_region(ts.tx_hash_2_block_index)};
 
     snapshots::SnapshotBundle bundle{
-        .headers_snapshot_path = *headers_segment_path,
-        .headers_snapshot = std::move(headers_snapshot),
-        .bodies_snapshot_path = *bodies_segment_path,
-        .bodies_snapshot = std::move(bodies_snapshot),
-        .tx_snapshot_path = *transactions_segment_path,
-        .tx_snapshot = std::move(transactions_snapshot)};
+        .header_snapshot = std::move(header_snapshot),
+        .idx_header_hash = std::move(idx_header_hash),
+
+        .body_snapshot = std::move(body_snapshot),
+        .idx_body_number = std::move(idx_body_number),
+
+        .txn_snapshot = std::move(txn_snapshot),
+        .idx_txn_hash = std::move(idx_txn_hash),
+        .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
+    };
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }

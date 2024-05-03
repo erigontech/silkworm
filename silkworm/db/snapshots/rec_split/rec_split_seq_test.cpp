@@ -257,7 +257,7 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit][ign
         const auto [enumeration_index, found] = rs2.lookup("key " + std::to_string(i));
         CHECK(enumeration_index == i);
         CHECK(found);
-        CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
+        CHECK(rs2.lookup_by_ordinal(enumeration_index) == i * 17);
     }
 }
 

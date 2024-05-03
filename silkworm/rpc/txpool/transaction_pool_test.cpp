@@ -28,10 +28,10 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
-#include <silkworm/rpc/test/api_test_base.hpp>
-#include <silkworm/rpc/test/grpc_actions.hpp>
-#include <silkworm/rpc/test/grpc_responder.hpp>
-#include <silkworm/rpc/test/interfaces/txpool_mock_fix24351.grpc.pb.h>
+#include <silkworm/rpc/test_util/api_test_base.hpp>
+#include <silkworm/rpc/test_util/grpc_actions.hpp>
+#include <silkworm/rpc/test_util/grpc_responder.hpp>
+#include <silkworm/rpc/test_util/interfaces/txpool_mock_fix24351.grpc.pb.h>
 
 namespace grpc {
 

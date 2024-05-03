@@ -56,7 +56,7 @@ struct IndexInputDataQuery {
             : query_(query), impl_(std::move(impl)), entry_(entry) {}
 
         using iterator_category = std::input_iterator_tag;
-        using difference_type = void;
+        using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;
 
@@ -74,6 +74,8 @@ struct IndexInputDataQuery {
         std::shared_ptr<void> impl_;
         value_type entry_;
     };
+
+    static_assert(std::input_or_output_iterator<Iterator>);
 
     virtual ~IndexInputDataQuery() = default;
 

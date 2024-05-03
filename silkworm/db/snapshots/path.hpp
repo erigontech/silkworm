@@ -65,7 +65,8 @@ class SnapshotPath {
                                            uint8_t version,
                                            BlockNum block_from,
                                            BlockNum block_to,
-                                           SnapshotType type);
+                                           SnapshotType type,
+                                           const char* ext = kSegmentExtension);
 
     [[nodiscard]] std::string filename() const { return path_.filename().string(); }
 
@@ -100,20 +101,27 @@ class SnapshotPath {
     }
 
     [[nodiscard]] SnapshotPath index_file() const {
-        return SnapshotPath(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
+        return related_path(type_, kIdxExtension);
     }
 
     [[nodiscard]] SnapshotPath index_file_for_type(SnapshotType type) const {
-        std::filesystem::path index_path{path_};
-        index_path.replace_filename(build_filename(version_, block_from_, block_to_, type));
-        return SnapshotPath(index_path.replace_extension(kIdxExtension), version_, block_from_, block_to_, type);
+        return related_path(type, kIdxExtension);
+    }
+
+    [[nodiscard]] SnapshotPath snapshot_path_for_type(SnapshotType type) const {
+        return related_path(type, kSegmentExtension);
+    }
+
+    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+        return std::filesystem::last_write_time(path_);
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
     friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 
   protected:
-    static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
+    static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type, const char* ext);
+    SnapshotPath related_path(SnapshotType type, const char* ext) const;
 
     explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 

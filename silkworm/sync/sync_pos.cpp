@@ -275,7 +275,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             // ERROR
             const auto validation_error = std::get<ValidationError>(verification);
             log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << validation_error.latest_valid_head
-                        << " missing_block=" << validation_error.missing_block;
+                        << " validation_error=" << validation_error.error;
             co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"};
         }
 
@@ -294,7 +294,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
     }
 }
 
-Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) {
+Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) {
     // Implementation of engine_forkchoiceUpdatedVx method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -356,7 +356,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_update(const rpc::ForkCho
             // ERROR
             const auto validation_error = std::get<ValidationError>(verification);
             log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << validation_error.latest_valid_head
-                        << " missing_block=" << validation_error.missing_block;
+                        << " validation_error=" << validation_error.error;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"}};
         }
 

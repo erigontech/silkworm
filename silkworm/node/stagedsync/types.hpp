@@ -44,7 +44,7 @@ struct InvalidChain {
 
 struct ValidationError {
     Hash latest_valid_head;
-    Hash missing_block;
+    std::string error;
 };
 
 using ValidationResult = std::variant<ValidChain, InvalidChain, ValidationError>;

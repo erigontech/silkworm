@@ -22,7 +22,7 @@
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/rpc/test/context_test_base.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
 
 namespace silkworm::rpc {
 

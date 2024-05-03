@@ -38,7 +38,7 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
       public:
         [[maybe_unused]] typedef std::output_iterator_tag iterator_category;
         [[maybe_unused]] typedef void value_type;
-        [[maybe_unused]] typedef void difference_type;
+        [[maybe_unused]] typedef std::ptrdiff_t difference_type;
         [[maybe_unused]] typedef void pointer;
         [[maybe_unused]] typedef void reference;
 
@@ -60,6 +60,8 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
       private:
         std::list<T*>* container_;
     };
+
+    static_assert(std::output_iterator<BackInsertPtrIterator, T>);
 
     std::list<T*> out;
     std::default_random_engine random_engine{std::random_device{}()};

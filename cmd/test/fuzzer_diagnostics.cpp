@@ -23,8 +23,7 @@
 #include <CLI/CLI.hpp>
 #include <gsl/util>
 
-#include <silkworm/rpc/json_rpc/validator.hpp>
-#include <silkworm/rpc/test/api_test_database.hpp>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 #include "address_sanitizer_fix.hpp"
 
@@ -95,11 +94,8 @@ int main(int argc, char* argv[]) {
     std::string reply;
 
     try {
-        JsonRpcValidator::load_specification();
-        auto context = TestDatabaseContext();
-        auto request_handler = new RpcApiTestBase<RequestHandler_ForTest>(context.db);
-
-        request_handler->run<&RequestHandler_ForTest::handle_request>(input_str, reply);
+        RpcApiE2ETest api_e2e_test;
+        api_e2e_test.run<&RequestHandler_ForTest::handle_request>(input_str, reply);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {

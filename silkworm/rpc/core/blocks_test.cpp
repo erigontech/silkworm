@@ -29,7 +29,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
-#include <silkworm/rpc/test/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/mock_database_reader.hpp>
 
 namespace silkworm::rpc::core {
 

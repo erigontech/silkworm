@@ -31,9 +31,9 @@
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_transaction.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test/kv_test_base.hpp>
-#include <silkworm/rpc/test/mock_back_end.hpp>
-#include <silkworm/rpc/test/mock_estimate_gas_oracle.hpp>
+#include <silkworm/rpc/test_util/kv_test_base.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
+#include <silkworm/rpc/test_util/mock_estimate_gas_oracle.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {

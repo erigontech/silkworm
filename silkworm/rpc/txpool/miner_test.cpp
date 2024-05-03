@@ -28,10 +28,10 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
-#include <silkworm/rpc/test/api_test_base.hpp>
-#include <silkworm/rpc/test/grpc_actions.hpp>
-#include <silkworm/rpc/test/grpc_responder.hpp>
-#include <silkworm/rpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
+#include <silkworm/rpc/test_util/api_test_base.hpp>
+#include <silkworm/rpc/test_util/grpc_actions.hpp>
+#include <silkworm/rpc/test_util/grpc_responder.hpp>
+#include <silkworm/rpc/test_util/interfaces/mining_mock_fix24351.grpc.pb.h>
 
 namespace silkworm::rpc::txpool {
 

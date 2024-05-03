@@ -25,7 +25,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/test/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/mock_database_reader.hpp>
 
 namespace silkworm::rpc::stages {
 

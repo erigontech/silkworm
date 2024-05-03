@@ -26,7 +26,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/rpc/test/context_test_base.hpp>
+#include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 

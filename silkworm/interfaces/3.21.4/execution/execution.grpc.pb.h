@@ -36,44 +36,59 @@ class Execution final {
    public:
     virtual ~StubInterface() {}
     // Chain Putters.
-    virtual ::grpc::Status InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::execution::EmptyMessage* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>> AsyncInsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>>(AsyncInsertHeadersRaw(context, request, cq));
+    virtual ::grpc::Status InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::execution::InsertionResult* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>> AsyncInsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>>(AsyncInsertBlocksRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>> PrepareAsyncInsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>>(PrepareAsyncInsertHeadersRaw(context, request, cq));
-    }
-    virtual ::grpc::Status InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::execution::EmptyMessage* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>> AsyncInsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>>(AsyncInsertBodiesRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>> PrepareAsyncInsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>>(PrepareAsyncInsertBodiesRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>> PrepareAsyncInsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>>(PrepareAsyncInsertBlocksRaw(context, request, cq));
     }
     // Chain Validation and ForkChoice.
-    virtual ::grpc::Status ValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ValidationReceipt* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>> AsyncValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    virtual ::grpc::Status ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::execution::ValidationReceipt* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>> AsyncValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>>(AsyncValidateChainRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>> PrepareAsyncValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>> PrepareAsyncValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>>(PrepareAsyncValidateChainRaw(context, request, cq));
     }
-    virtual ::grpc::Status UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ForkChoiceReceipt* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>> AsyncUpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    virtual ::grpc::Status UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::execution::ForkChoiceReceipt* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>> AsyncUpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>>(AsyncUpdateForkChoiceRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>> PrepareAsyncUpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>> PrepareAsyncUpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>>(PrepareAsyncUpdateForkChoiceRaw(context, request, cq));
     }
-    virtual ::grpc::Status AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::types::ExecutionPayload* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>> AsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>>(AsyncAssembleBlockRaw(context, request, cq));
+    // Block Assembly
+    // EAGAIN design here, AssembleBlock initiates the asynchronous request, and GetAssembleBlock just return it if ready.
+    virtual ::grpc::Status AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::execution::AssembleBlockResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>> AsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>>(AsyncAssembleBlockRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>> PrepareAsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>>(PrepareAsyncAssembleBlockRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>> PrepareAsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>>(PrepareAsyncAssembleBlockRaw(context, request, cq));
     }
-    // Builds on top of current head.
+    virtual ::grpc::Status GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::execution::GetAssembledBlockResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>> AsyncGetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>>(AsyncGetAssembledBlockRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>> PrepareAsyncGetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>>(PrepareAsyncGetAssembledBlockRaw(context, request, cq));
+    }
     // Chain Getters.
+    virtual ::grpc::Status CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::GetHeaderResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>> AsyncCurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>>(AsyncCurrentHeaderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>> PrepareAsyncCurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>>(PrepareAsyncCurrentHeaderRaw(context, request, cq));
+    }
+    virtual ::grpc::Status GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::GetTDResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>> AsyncGetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>>(AsyncGetTDRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>> PrepareAsyncGetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>>(PrepareAsyncGetTDRaw(context, request, cq));
+    }
     virtual ::grpc::Status GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::GetHeaderResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>> AsyncGetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>>(AsyncGetHeaderRaw(context, request, cq));
@@ -88,6 +103,29 @@ class Execution final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodyResponse>> PrepareAsyncGetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodyResponse>>(PrepareAsyncGetBodyRaw(context, request, cq));
     }
+    virtual ::grpc::Status HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::HasBlockResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>> AsyncHasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>>(AsyncHasBlockRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>> PrepareAsyncHasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>>(PrepareAsyncHasBlockRaw(context, request, cq));
+    }
+    // Ranges
+    virtual ::grpc::Status GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::execution::GetBodiesBatchResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>> AsyncGetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>>(AsyncGetBodiesByRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>> PrepareAsyncGetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>>(PrepareAsyncGetBodiesByRangeRaw(context, request, cq));
+    }
+    virtual ::grpc::Status GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::execution::GetBodiesBatchResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>> AsyncGetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>>(AsyncGetBodiesByHashesRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>> PrepareAsyncGetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>>(PrepareAsyncGetBodiesByHashesRaw(context, request, cq));
+    }
+    // Chain checkers
     virtual ::grpc::Status IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256& request, ::execution::IsCanonicalResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::IsCanonicalResponse>> AsyncIsCanonicalHash(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::IsCanonicalResponse>>(AsyncIsCanonicalHashRaw(context, request, cq));
@@ -102,92 +140,168 @@ class Execution final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderHashNumberResponse>> PrepareAsyncGetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderHashNumberResponse>>(PrepareAsyncGetHeaderHashNumberRaw(context, request, cq));
     }
+    virtual ::grpc::Status GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ForkChoice* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>> AsyncGetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>>(AsyncGetForkChoiceRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>> PrepareAsyncGetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>>(PrepareAsyncGetForkChoiceRaw(context, request, cq));
+    }
+    // Misc
+    // We want to figure out whether we processed snapshots and cleanup sync cycles.
+    virtual ::grpc::Status Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ReadyResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>> AsyncReady(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>>(AsyncReadyRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>> PrepareAsyncReady(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>>(PrepareAsyncReadyRaw(context, request, cq));
+    }
+    // Frozen blocks are how many blocks are in snapshots .seg files.
+    virtual ::grpc::Status FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::FrozenBlocksResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>> AsyncFrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>>(AsyncFrozenBlocksRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>> PrepareAsyncFrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>>(PrepareAsyncFrozenBlocksRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
       // Chain Putters.
-      virtual void InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Chain Validation and ForkChoice.
-      virtual void ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // Builds on top of current head.
+      virtual void ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Block Assembly
+      // EAGAIN design here, AssembleBlock initiates the asynchronous request, and GetAssembleBlock just return it if ready.
+      virtual void AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Chain Getters.
+      virtual void CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void GetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Ranges
+      virtual void GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Chain checkers
       virtual void IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void GetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Misc
+      // We want to figure out whether we processed snapshots and cleanup sync cycles.
+      virtual void Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Frozen blocks are how many blocks are in snapshots .seg files.
+      virtual void FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>* AsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>* PrepareAsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>* AsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::EmptyMessage>* PrepareAsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>* AsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>* PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>* AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>* PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>* AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::ExecutionPayload>* PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>* AsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::InsertionResult>* PrepareAsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>* AsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ValidationReceipt>* PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>* AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoiceReceipt>* PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>* AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::AssembleBlockResponse>* PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>* AsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetAssembledBlockResponse>* PrepareAsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>* AsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>* PrepareAsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>* AsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetTDResponse>* PrepareAsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>* AsyncGetHeaderRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderResponse>* PrepareAsyncGetHeaderRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodyResponse>* AsyncGetBodyRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodyResponse>* PrepareAsyncGetBodyRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>* AsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::HasBlockResponse>* PrepareAsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>* AsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>* PrepareAsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>* AsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetBodiesBatchResponse>* PrepareAsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::IsCanonicalResponse>* AsyncIsCanonicalHashRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::IsCanonicalResponse>* PrepareAsyncIsCanonicalHashRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderHashNumberResponse>* AsyncGetHeaderHashNumberRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::GetHeaderHashNumberResponse>* PrepareAsyncGetHeaderHashNumberRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>* AsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ForkChoice>* PrepareAsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>* AsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::ReadyResponse>* PrepareAsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>* AsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::execution::FrozenBlocksResponse>* PrepareAsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
-    ::grpc::Status InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::execution::EmptyMessage* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>> AsyncInsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>>(AsyncInsertHeadersRaw(context, request, cq));
+    ::grpc::Status InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::execution::InsertionResult* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>> AsyncInsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>>(AsyncInsertBlocksRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>> PrepareAsyncInsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>>(PrepareAsyncInsertHeadersRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>> PrepareAsyncInsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>>(PrepareAsyncInsertBlocksRaw(context, request, cq));
     }
-    ::grpc::Status InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::execution::EmptyMessage* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>> AsyncInsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>>(AsyncInsertBodiesRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>> PrepareAsyncInsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>>(PrepareAsyncInsertBodiesRaw(context, request, cq));
-    }
-    ::grpc::Status ValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ValidationReceipt* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>> AsyncValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    ::grpc::Status ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::execution::ValidationReceipt* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>> AsyncValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>>(AsyncValidateChainRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>> PrepareAsyncValidateChain(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>> PrepareAsyncValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>>(PrepareAsyncValidateChainRaw(context, request, cq));
     }
-    ::grpc::Status UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::execution::ForkChoiceReceipt* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>> AsyncUpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    ::grpc::Status UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::execution::ForkChoiceReceipt* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>> AsyncUpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>>(AsyncUpdateForkChoiceRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>> PrepareAsyncUpdateForkChoice(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>> PrepareAsyncUpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>>(PrepareAsyncUpdateForkChoiceRaw(context, request, cq));
     }
-    ::grpc::Status AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::types::ExecutionPayload* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>> AsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>>(AsyncAssembleBlockRaw(context, request, cq));
+    ::grpc::Status AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::execution::AssembleBlockResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>> AsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>>(AsyncAssembleBlockRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>> PrepareAsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>>(PrepareAsyncAssembleBlockRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>> PrepareAsyncAssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>>(PrepareAsyncAssembleBlockRaw(context, request, cq));
+    }
+    ::grpc::Status GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::execution::GetAssembledBlockResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>> AsyncGetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>>(AsyncGetAssembledBlockRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>> PrepareAsyncGetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>>(PrepareAsyncGetAssembledBlockRaw(context, request, cq));
+    }
+    ::grpc::Status CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::GetHeaderResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>> AsyncCurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>>(AsyncCurrentHeaderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>> PrepareAsyncCurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>>(PrepareAsyncCurrentHeaderRaw(context, request, cq));
+    }
+    ::grpc::Status GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::GetTDResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>> AsyncGetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>>(AsyncGetTDRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>> PrepareAsyncGetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>>(PrepareAsyncGetTDRaw(context, request, cq));
     }
     ::grpc::Status GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::GetHeaderResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>> AsyncGetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
@@ -203,6 +317,27 @@ class Execution final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodyResponse>> PrepareAsyncGetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodyResponse>>(PrepareAsyncGetBodyRaw(context, request, cq));
     }
+    ::grpc::Status HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::execution::HasBlockResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>> AsyncHasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>>(AsyncHasBlockRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>> PrepareAsyncHasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>>(PrepareAsyncHasBlockRaw(context, request, cq));
+    }
+    ::grpc::Status GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::execution::GetBodiesBatchResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>> AsyncGetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>>(AsyncGetBodiesByRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>> PrepareAsyncGetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>>(PrepareAsyncGetBodiesByRangeRaw(context, request, cq));
+    }
+    ::grpc::Status GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::execution::GetBodiesBatchResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>> AsyncGetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>>(AsyncGetBodiesByHashesRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>> PrepareAsyncGetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>>(PrepareAsyncGetBodiesByHashesRaw(context, request, cq));
+    }
     ::grpc::Status IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256& request, ::execution::IsCanonicalResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::IsCanonicalResponse>> AsyncIsCanonicalHash(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::IsCanonicalResponse>>(AsyncIsCanonicalHashRaw(context, request, cq));
@@ -217,27 +352,64 @@ class Execution final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderHashNumberResponse>> PrepareAsyncGetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderHashNumberResponse>>(PrepareAsyncGetHeaderHashNumberRaw(context, request, cq));
     }
+    ::grpc::Status GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ForkChoice* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>> AsyncGetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>>(AsyncGetForkChoiceRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>> PrepareAsyncGetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>>(PrepareAsyncGetForkChoiceRaw(context, request, cq));
+    }
+    ::grpc::Status Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::ReadyResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>> AsyncReady(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>>(AsyncReadyRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>> PrepareAsyncReady(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>>(PrepareAsyncReadyRaw(context, request, cq));
+    }
+    ::grpc::Status FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::execution::FrozenBlocksResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>> AsyncFrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>>(AsyncFrozenBlocksRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>> PrepareAsyncFrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>>(PrepareAsyncFrozenBlocksRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
-      void InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)>) override;
-      void InsertHeaders(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, std::function<void(::grpc::Status)>) override;
-      void InsertBodies(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)>) override;
-      void ValidateChain(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)>) override;
-      void UpdateForkChoice(::grpc::ClientContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, std::function<void(::grpc::Status)>) override;
-      void AssembleBlock(::grpc::ClientContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, std::function<void(::grpc::Status)>) override;
+      void InsertBlocks(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, std::function<void(::grpc::Status)>) override;
+      void ValidateChain(::grpc::ClientContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, std::function<void(::grpc::Status)>) override;
+      void UpdateForkChoice(::grpc::ClientContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, std::function<void(::grpc::Status)>) override;
+      void AssembleBlock(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, std::function<void(::grpc::Status)>) override;
+      void GetAssembledBlock(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, std::function<void(::grpc::Status)>) override;
+      void CurrentHeader(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, std::function<void(::grpc::Status)>) override;
+      void GetTD(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response, std::function<void(::grpc::Status)>) override;
       void GetHeader(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response, std::function<void(::grpc::Status)>) override;
       void GetBody(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, std::function<void(::grpc::Status)>) override;
+      void HasBlock(::grpc::ClientContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)>) override;
+      void GetBodiesByRange(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, std::function<void(::grpc::Status)>) override;
+      void GetBodiesByHashes(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response, std::function<void(::grpc::Status)>) override;
       void IsCanonicalHash(::grpc::ClientContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response, std::function<void(::grpc::Status)>) override;
       void GetHeaderHashNumber(::grpc::ClientContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, std::function<void(::grpc::Status)>) override;
+      void GetForkChoice(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, std::function<void(::grpc::Status)>) override;
+      void Ready(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, std::function<void(::grpc::Status)>) override;
+      void FrozenBlocks(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -249,33 +421,57 @@ class Execution final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
-    ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* AsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* PrepareAsyncInsertHeadersRaw(::grpc::ClientContext* context, const ::execution::InsertHeadersRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* AsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::EmptyMessage>* PrepareAsyncInsertBodiesRaw(::grpc::ClientContext* context, const ::execution::InsertBodiesRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* AsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::EmptyMessage& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>* AsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::InsertionResult>* PrepareAsyncInsertBlocksRaw(::grpc::ClientContext* context, const ::execution::InsertBlocksRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* AsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ValidationReceipt>* PrepareAsyncValidateChainRaw(::grpc::ClientContext* context, const ::execution::ValidationRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* AsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoiceReceipt>* PrepareAsyncUpdateForkChoiceRaw(::grpc::ClientContext* context, const ::execution::ForkChoice& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>* AsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::AssembleBlockResponse>* PrepareAsyncAssembleBlockRaw(::grpc::ClientContext* context, const ::execution::AssembleBlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>* AsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetAssembledBlockResponse>* PrepareAsyncGetAssembledBlockRaw(::grpc::ClientContext* context, const ::execution::GetAssembledBlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* AsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* PrepareAsyncCurrentHeaderRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>* AsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetTDResponse>* PrepareAsyncGetTDRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* AsyncGetHeaderRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderResponse>* PrepareAsyncGetHeaderRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetBodyResponse>* AsyncGetBodyRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetBodyResponse>* PrepareAsyncGetBodyRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>* AsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::HasBlockResponse>* PrepareAsyncHasBlockRaw(::grpc::ClientContext* context, const ::execution::GetSegmentRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* AsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* PrepareAsyncGetBodiesByRangeRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByRangeRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* AsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::GetBodiesBatchResponse>* PrepareAsyncGetBodiesByHashesRaw(::grpc::ClientContext* context, const ::execution::GetBodiesByHashesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::IsCanonicalResponse>* AsyncIsCanonicalHashRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::IsCanonicalResponse>* PrepareAsyncIsCanonicalHashRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderHashNumberResponse>* AsyncGetHeaderHashNumberRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::execution::GetHeaderHashNumberResponse>* PrepareAsyncGetHeaderHashNumberRaw(::grpc::ClientContext* context, const ::types::H256& request, ::grpc::CompletionQueue* cq) override;
-    const ::grpc::internal::RpcMethod rpcmethod_InsertHeaders_;
-    const ::grpc::internal::RpcMethod rpcmethod_InsertBodies_;
+    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>* AsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ForkChoice>* PrepareAsyncGetForkChoiceRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>* AsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::ReadyResponse>* PrepareAsyncReadyRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>* AsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::execution::FrozenBlocksResponse>* PrepareAsyncFrozenBlocksRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_InsertBlocks_;
     const ::grpc::internal::RpcMethod rpcmethod_ValidateChain_;
     const ::grpc::internal::RpcMethod rpcmethod_UpdateForkChoice_;
     const ::grpc::internal::RpcMethod rpcmethod_AssembleBlock_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetAssembledBlock_;
+    const ::grpc::internal::RpcMethod rpcmethod_CurrentHeader_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetTD_;
     const ::grpc::internal::RpcMethod rpcmethod_GetHeader_;
     const ::grpc::internal::RpcMethod rpcmethod_GetBody_;
+    const ::grpc::internal::RpcMethod rpcmethod_HasBlock_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetBodiesByRange_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetBodiesByHashes_;
     const ::grpc::internal::RpcMethod rpcmethod_IsCanonicalHash_;
     const ::grpc::internal::RpcMethod rpcmethod_GetHeaderHashNumber_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetForkChoice_;
+    const ::grpc::internal::RpcMethod rpcmethod_Ready_;
+    const ::grpc::internal::RpcMethod rpcmethod_FrozenBlocks_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -284,57 +480,51 @@ class Execution final {
     Service();
     virtual ~Service();
     // Chain Putters.
-    virtual ::grpc::Status InsertHeaders(::grpc::ServerContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response);
-    virtual ::grpc::Status InsertBodies(::grpc::ServerContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response);
+    virtual ::grpc::Status InsertBlocks(::grpc::ServerContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response);
     // Chain Validation and ForkChoice.
-    virtual ::grpc::Status ValidateChain(::grpc::ServerContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response);
-    virtual ::grpc::Status UpdateForkChoice(::grpc::ServerContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response);
-    virtual ::grpc::Status AssembleBlock(::grpc::ServerContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response);
-    // Builds on top of current head.
+    virtual ::grpc::Status ValidateChain(::grpc::ServerContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response);
+    virtual ::grpc::Status UpdateForkChoice(::grpc::ServerContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response);
+    // Block Assembly
+    // EAGAIN design here, AssembleBlock initiates the asynchronous request, and GetAssembleBlock just return it if ready.
+    virtual ::grpc::Status AssembleBlock(::grpc::ServerContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response);
+    virtual ::grpc::Status GetAssembledBlock(::grpc::ServerContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response);
     // Chain Getters.
+    virtual ::grpc::Status CurrentHeader(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response);
+    virtual ::grpc::Status GetTD(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response);
     virtual ::grpc::Status GetHeader(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response);
     virtual ::grpc::Status GetBody(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response);
+    virtual ::grpc::Status HasBlock(::grpc::ServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response);
+    // Ranges
+    virtual ::grpc::Status GetBodiesByRange(::grpc::ServerContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response);
+    virtual ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response);
+    // Chain checkers
     virtual ::grpc::Status IsCanonicalHash(::grpc::ServerContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response);
     virtual ::grpc::Status GetHeaderHashNumber(::grpc::ServerContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response);
+    virtual ::grpc::Status GetForkChoice(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response);
+    // Misc
+    // We want to figure out whether we processed snapshots and cleanup sync cycles.
+    virtual ::grpc::Status Ready(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response);
+    // Frozen blocks are how many blocks are in snapshots .seg files.
+    virtual ::grpc::Status FrozenBlocks(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response);
   };
   template <class BaseClass>
-  class WithAsyncMethod_InsertHeaders : public BaseClass {
+  class WithAsyncMethod_InsertBlocks : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_InsertHeaders() {
+    WithAsyncMethod_InsertBlocks() {
       ::grpc::Service::MarkMethodAsync(0);
     }
-    ~WithAsyncMethod_InsertHeaders() override {
+    ~WithAsyncMethod_InsertBlocks() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestInsertHeaders(::grpc::ServerContext* context, ::execution::InsertHeadersRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::EmptyMessage>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestInsertBlocks(::grpc::ServerContext* context, ::execution::InsertBlocksRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::InsertionResult>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
-  class WithAsyncMethod_InsertBodies : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithAsyncMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodAsync(1);
-    }
-    ~WithAsyncMethod_InsertBodies() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void RequestInsertBodies(::grpc::ServerContext* context, ::execution::InsertBodiesRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::EmptyMessage>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -343,18 +533,18 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodAsync(2);
+      ::grpc::Service::MarkMethodAsync(1);
     }
     ~WithAsyncMethod_ValidateChain() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestValidateChain(::grpc::ServerContext* context, ::types::H256* request, ::grpc::ServerAsyncResponseWriter< ::execution::ValidationReceipt>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    void RequestValidateChain(::grpc::ServerContext* context, ::execution::ValidationRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::ValidationReceipt>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -363,18 +553,18 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(2);
     }
     ~WithAsyncMethod_UpdateForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestUpdateForkChoice(::grpc::ServerContext* context, ::types::H256* request, ::grpc::ServerAsyncResponseWriter< ::execution::ForkChoiceReceipt>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    void RequestUpdateForkChoice(::grpc::ServerContext* context, ::execution::ForkChoice* request, ::grpc::ServerAsyncResponseWriter< ::execution::ForkChoiceReceipt>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -383,18 +573,78 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodAsync(4);
+      ::grpc::Service::MarkMethodAsync(3);
     }
     ~WithAsyncMethod_AssembleBlock() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestAssembleBlock(::grpc::ServerContext* context, ::execution::EmptyMessage* request, ::grpc::ServerAsyncResponseWriter< ::types::ExecutionPayload>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestAssembleBlock(::grpc::ServerContext* context, ::execution::AssembleBlockRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::AssembleBlockResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodAsync(4);
+    }
+    ~WithAsyncMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetAssembledBlock(::grpc::ServerContext* context, ::execution::GetAssembledBlockRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetAssembledBlockResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodAsync(5);
+    }
+    ~WithAsyncMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCurrentHeader(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetHeaderResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetTD() {
+      ::grpc::Service::MarkMethodAsync(6);
+    }
+    ~WithAsyncMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetTD(::grpc::ServerContext* context, ::execution::GetSegmentRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetTDResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -403,7 +653,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetHeader() {
-      ::grpc::Service::MarkMethodAsync(5);
+      ::grpc::Service::MarkMethodAsync(7);
     }
     ~WithAsyncMethod_GetHeader() override {
       BaseClassMustBeDerivedFromService(this);
@@ -414,7 +664,7 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetHeader(::grpc::ServerContext* context, ::execution::GetSegmentRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetHeaderResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -423,7 +673,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetBody() {
-      ::grpc::Service::MarkMethodAsync(6);
+      ::grpc::Service::MarkMethodAsync(8);
     }
     ~WithAsyncMethod_GetBody() override {
       BaseClassMustBeDerivedFromService(this);
@@ -434,7 +684,67 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetBody(::grpc::ServerContext* context, ::execution::GetSegmentRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetBodyResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_HasBlock() {
+      ::grpc::Service::MarkMethodAsync(9);
+    }
+    ~WithAsyncMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestHasBlock(::grpc::ServerContext* context, ::execution::GetSegmentRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::HasBlockResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodAsync(10);
+    }
+    ~WithAsyncMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetBodiesByRange(::grpc::ServerContext* context, ::execution::GetBodiesByRangeRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetBodiesBatchResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodAsync(11);
+    }
+    ~WithAsyncMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetBodiesByHashes(::grpc::ServerContext* context, ::execution::GetBodiesByHashesRequest* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetBodiesBatchResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -443,7 +753,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodAsync(7);
+      ::grpc::Service::MarkMethodAsync(12);
     }
     ~WithAsyncMethod_IsCanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -454,7 +764,7 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestIsCanonicalHash(::grpc::ServerContext* context, ::types::H256* request, ::grpc::ServerAsyncResponseWriter< ::execution::IsCanonicalResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -463,7 +773,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodAsync(8);
+      ::grpc::Service::MarkMethodAsync(13);
     }
     ~WithAsyncMethod_GetHeaderHashNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -474,63 +784,96 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetHeaderHashNumber(::grpc::ServerContext* context, ::types::H256* request, ::grpc::ServerAsyncResponseWriter< ::execution::GetHeaderHashNumberResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_InsertHeaders<WithAsyncMethod_InsertBodies<WithAsyncMethod_ValidateChain<WithAsyncMethod_UpdateForkChoice<WithAsyncMethod_AssembleBlock<WithAsyncMethod_GetHeader<WithAsyncMethod_GetBody<WithAsyncMethod_IsCanonicalHash<WithAsyncMethod_GetHeaderHashNumber<Service > > > > > > > > > AsyncService;
   template <class BaseClass>
-  class WithCallbackMethod_InsertHeaders : public BaseClass {
+  class WithAsyncMethod_GetForkChoice : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithCallbackMethod_InsertHeaders() {
+    WithAsyncMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodAsync(14);
+    }
+    ~WithAsyncMethod_GetForkChoice() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetForkChoice(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::execution::ForkChoice>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_Ready : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_Ready() {
+      ::grpc::Service::MarkMethodAsync(15);
+    }
+    ~WithAsyncMethod_Ready() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestReady(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::execution::ReadyResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodAsync(16);
+    }
+    ~WithAsyncMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestFrozenBlocks(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::execution::FrozenBlocksResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_InsertBlocks<WithAsyncMethod_ValidateChain<WithAsyncMethod_UpdateForkChoice<WithAsyncMethod_AssembleBlock<WithAsyncMethod_GetAssembledBlock<WithAsyncMethod_CurrentHeader<WithAsyncMethod_GetTD<WithAsyncMethod_GetHeader<WithAsyncMethod_GetBody<WithAsyncMethod_HasBlock<WithAsyncMethod_GetBodiesByRange<WithAsyncMethod_GetBodiesByHashes<WithAsyncMethod_IsCanonicalHash<WithAsyncMethod_GetHeaderHashNumber<WithAsyncMethod_GetForkChoice<WithAsyncMethod_Ready<WithAsyncMethod_FrozenBlocks<Service > > > > > > > > > > > > > > > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_InsertBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_InsertBlocks() {
       ::grpc::Service::MarkMethodCallback(0,
-          new ::grpc::internal::CallbackUnaryHandler< ::execution::InsertHeadersRequest, ::execution::EmptyMessage>(
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::InsertBlocksRequest, ::execution::InsertionResult>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::execution::InsertHeadersRequest* request, ::execution::EmptyMessage* response) { return this->InsertHeaders(context, request, response); }));}
-    void SetMessageAllocatorFor_InsertHeaders(
-        ::grpc::MessageAllocator< ::execution::InsertHeadersRequest, ::execution::EmptyMessage>* allocator) {
+                   ::grpc::CallbackServerContext* context, const ::execution::InsertBlocksRequest* request, ::execution::InsertionResult* response) { return this->InsertBlocks(context, request, response); }));}
+    void SetMessageAllocatorFor_InsertBlocks(
+        ::grpc::MessageAllocator< ::execution::InsertBlocksRequest, ::execution::InsertionResult>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::InsertHeadersRequest, ::execution::EmptyMessage>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::InsertBlocksRequest, ::execution::InsertionResult>*>(handler)
               ->SetMessageAllocator(allocator);
     }
-    ~WithCallbackMethod_InsertHeaders() override {
+    ~WithCallbackMethod_InsertBlocks() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* InsertHeaders(
-      ::grpc::CallbackServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/)  { return nullptr; }
-  };
-  template <class BaseClass>
-  class WithCallbackMethod_InsertBodies : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithCallbackMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodCallback(1,
-          new ::grpc::internal::CallbackUnaryHandler< ::execution::InsertBodiesRequest, ::execution::EmptyMessage>(
-            [this](
-                   ::grpc::CallbackServerContext* context, const ::execution::InsertBodiesRequest* request, ::execution::EmptyMessage* response) { return this->InsertBodies(context, request, response); }));}
-    void SetMessageAllocatorFor_InsertBodies(
-        ::grpc::MessageAllocator< ::execution::InsertBodiesRequest, ::execution::EmptyMessage>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::InsertBodiesRequest, ::execution::EmptyMessage>*>(handler)
-              ->SetMessageAllocator(allocator);
-    }
-    ~WithCallbackMethod_InsertBodies() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    virtual ::grpc::ServerUnaryReactor* InsertBodies(
-      ::grpc::CallbackServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/)  { return nullptr; }
+    virtual ::grpc::ServerUnaryReactor* InsertBlocks(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_ValidateChain : public BaseClass {
@@ -538,26 +881,26 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodCallback(2,
-          new ::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::ValidationReceipt>(
+      ::grpc::Service::MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::ValidationRequest, ::execution::ValidationReceipt>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::types::H256* request, ::execution::ValidationReceipt* response) { return this->ValidateChain(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::execution::ValidationRequest* request, ::execution::ValidationReceipt* response) { return this->ValidateChain(context, request, response); }));}
     void SetMessageAllocatorFor_ValidateChain(
-        ::grpc::MessageAllocator< ::types::H256, ::execution::ValidationReceipt>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::ValidationReceipt>*>(handler)
+        ::grpc::MessageAllocator< ::execution::ValidationRequest, ::execution::ValidationReceipt>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::ValidationRequest, ::execution::ValidationReceipt>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_ValidateChain() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* ValidateChain(
-      ::grpc::CallbackServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_UpdateForkChoice : public BaseClass {
@@ -565,26 +908,26 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodCallback(3,
-          new ::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::ForkChoiceReceipt>(
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::ForkChoice, ::execution::ForkChoiceReceipt>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::types::H256* request, ::execution::ForkChoiceReceipt* response) { return this->UpdateForkChoice(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::execution::ForkChoice* request, ::execution::ForkChoiceReceipt* response) { return this->UpdateForkChoice(context, request, response); }));}
     void SetMessageAllocatorFor_UpdateForkChoice(
-        ::grpc::MessageAllocator< ::types::H256, ::execution::ForkChoiceReceipt>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::ForkChoiceReceipt>*>(handler)
+        ::grpc::MessageAllocator< ::execution::ForkChoice, ::execution::ForkChoiceReceipt>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::ForkChoice, ::execution::ForkChoiceReceipt>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_UpdateForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* UpdateForkChoice(
-      ::grpc::CallbackServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_AssembleBlock : public BaseClass {
@@ -592,26 +935,107 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodCallback(4,
-          new ::grpc::internal::CallbackUnaryHandler< ::execution::EmptyMessage, ::types::ExecutionPayload>(
+      ::grpc::Service::MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::execution::EmptyMessage* request, ::types::ExecutionPayload* response) { return this->AssembleBlock(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::execution::AssembleBlockRequest* request, ::execution::AssembleBlockResponse* response) { return this->AssembleBlock(context, request, response); }));}
     void SetMessageAllocatorFor_AssembleBlock(
-        ::grpc::MessageAllocator< ::execution::EmptyMessage, ::types::ExecutionPayload>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::EmptyMessage, ::types::ExecutionPayload>*>(handler)
+        ::grpc::MessageAllocator< ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_AssembleBlock() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* AssembleBlock(
-      ::grpc::CallbackServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::execution::GetAssembledBlockRequest* request, ::execution::GetAssembledBlockResponse* response) { return this->GetAssembledBlock(context, request, response); }));}
+    void SetMessageAllocatorFor_GetAssembledBlock(
+        ::grpc::MessageAllocator< ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetAssembledBlock(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::GetHeaderResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::execution::GetHeaderResponse* response) { return this->CurrentHeader(context, request, response); }));}
+    void SetMessageAllocatorFor_CurrentHeader(
+        ::grpc::MessageAllocator< ::google::protobuf::Empty, ::execution::GetHeaderResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::GetHeaderResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CurrentHeader(
+      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetTD() {
+      ::grpc::Service::MarkMethodCallback(6,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetTDResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetTDResponse* response) { return this->GetTD(context, request, response); }));}
+    void SetMessageAllocatorFor_GetTD(
+        ::grpc::MessageAllocator< ::execution::GetSegmentRequest, ::execution::GetTDResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetTDResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetTD(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_GetHeader : public BaseClass {
@@ -619,13 +1043,13 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetHeader() {
-      ::grpc::Service::MarkMethodCallback(5,
+      ::grpc::Service::MarkMethodCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetHeaderResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetHeaderResponse* response) { return this->GetHeader(context, request, response); }));}
     void SetMessageAllocatorFor_GetHeader(
         ::grpc::MessageAllocator< ::execution::GetSegmentRequest, ::execution::GetHeaderResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetHeaderResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -646,13 +1070,13 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetBody() {
-      ::grpc::Service::MarkMethodCallback(6,
+      ::grpc::Service::MarkMethodCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetBodyResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::GetBodyResponse* response) { return this->GetBody(context, request, response); }));}
     void SetMessageAllocatorFor_GetBody(
         ::grpc::MessageAllocator< ::execution::GetSegmentRequest, ::execution::GetBodyResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::GetBodyResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -668,18 +1092,99 @@ class Execution final {
       ::grpc::CallbackServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetBodyResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_HasBlock() {
+      ::grpc::Service::MarkMethodCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::HasBlockResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::execution::GetSegmentRequest* request, ::execution::HasBlockResponse* response) { return this->HasBlock(context, request, response); }));}
+    void SetMessageAllocatorFor_HasBlock(
+        ::grpc::MessageAllocator< ::execution::GetSegmentRequest, ::execution::HasBlockResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetSegmentRequest, ::execution::HasBlockResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HasBlock(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodCallback(10,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::execution::GetBodiesByRangeRequest* request, ::execution::GetBodiesBatchResponse* response) { return this->GetBodiesByRange(context, request, response); }));}
+    void SetMessageAllocatorFor_GetBodiesByRange(
+        ::grpc::MessageAllocator< ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetBodiesByRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodCallback(11,
+          new ::grpc::internal::CallbackUnaryHandler< ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::execution::GetBodiesByHashesRequest* request, ::execution::GetBodiesBatchResponse* response) { return this->GetBodiesByHashes(context, request, response); }));}
+    void SetMessageAllocatorFor_GetBodiesByHashes(
+        ::grpc::MessageAllocator< ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetBodiesByHashes(
+      ::grpc::CallbackServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_IsCanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodCallback(7,
+      ::grpc::Service::MarkMethodCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::IsCanonicalResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::types::H256* request, ::execution::IsCanonicalResponse* response) { return this->IsCanonicalHash(context, request, response); }));}
     void SetMessageAllocatorFor_IsCanonicalHash(
         ::grpc::MessageAllocator< ::types::H256, ::execution::IsCanonicalResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::IsCanonicalResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -700,13 +1205,13 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodCallback(8,
+      ::grpc::Service::MarkMethodCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::GetHeaderHashNumberResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::types::H256* request, ::execution::GetHeaderHashNumberResponse* response) { return this->GetHeaderHashNumber(context, request, response); }));}
     void SetMessageAllocatorFor_GetHeaderHashNumber(
         ::grpc::MessageAllocator< ::types::H256, ::execution::GetHeaderHashNumberResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::types::H256, ::execution::GetHeaderHashNumberResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -721,38 +1226,102 @@ class Execution final {
     virtual ::grpc::ServerUnaryReactor* GetHeaderHashNumber(
       ::grpc::CallbackServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::GetHeaderHashNumberResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_InsertHeaders<WithCallbackMethod_InsertBodies<WithCallbackMethod_ValidateChain<WithCallbackMethod_UpdateForkChoice<WithCallbackMethod_AssembleBlock<WithCallbackMethod_GetHeader<WithCallbackMethod_GetBody<WithCallbackMethod_IsCanonicalHash<WithCallbackMethod_GetHeaderHashNumber<Service > > > > > > > > > CallbackService;
-  typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
-  class WithGenericMethod_InsertHeaders : public BaseClass {
+  class WithCallbackMethod_GetForkChoice : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_InsertHeaders() {
-      ::grpc::Service::MarkMethodGeneric(0);
+    WithCallbackMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodCallback(14,
+          new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::ForkChoice>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::execution::ForkChoice* response) { return this->GetForkChoice(context, request, response); }));}
+    void SetMessageAllocatorFor_GetForkChoice(
+        ::grpc::MessageAllocator< ::google::protobuf::Empty, ::execution::ForkChoice>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::ForkChoice>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
-    ~WithGenericMethod_InsertHeaders() override {
+    ~WithCallbackMethod_GetForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
+    virtual ::grpc::ServerUnaryReactor* GetForkChoice(
+      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithGenericMethod_InsertBodies : public BaseClass {
+  class WithCallbackMethod_Ready : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodGeneric(1);
+    WithCallbackMethod_Ready() {
+      ::grpc::Service::MarkMethodCallback(15,
+          new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::ReadyResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::execution::ReadyResponse* response) { return this->Ready(context, request, response); }));}
+    void SetMessageAllocatorFor_Ready(
+        ::grpc::MessageAllocator< ::google::protobuf::Empty, ::execution::ReadyResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::ReadyResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
-    ~WithGenericMethod_InsertBodies() override {
+    ~WithCallbackMethod_Ready() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Ready(
+      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodCallback(16,
+          new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::FrozenBlocksResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::execution::FrozenBlocksResponse* response) { return this->FrozenBlocks(context, request, response); }));}
+    void SetMessageAllocatorFor_FrozenBlocks(
+        ::grpc::MessageAllocator< ::google::protobuf::Empty, ::execution::FrozenBlocksResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(16);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::execution::FrozenBlocksResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* FrozenBlocks(
+      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_InsertBlocks<WithCallbackMethod_ValidateChain<WithCallbackMethod_UpdateForkChoice<WithCallbackMethod_AssembleBlock<WithCallbackMethod_GetAssembledBlock<WithCallbackMethod_CurrentHeader<WithCallbackMethod_GetTD<WithCallbackMethod_GetHeader<WithCallbackMethod_GetBody<WithCallbackMethod_HasBlock<WithCallbackMethod_GetBodiesByRange<WithCallbackMethod_GetBodiesByHashes<WithCallbackMethod_IsCanonicalHash<WithCallbackMethod_GetHeaderHashNumber<WithCallbackMethod_GetForkChoice<WithCallbackMethod_Ready<WithCallbackMethod_FrozenBlocks<Service > > > > > > > > > > > > > > > > > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_InsertBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_InsertBlocks() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_InsertBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -763,13 +1332,13 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodGeneric(2);
+      ::grpc::Service::MarkMethodGeneric(1);
     }
     ~WithGenericMethod_ValidateChain() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -780,13 +1349,13 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(2);
     }
     ~WithGenericMethod_UpdateForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -797,13 +1366,64 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodGeneric(4);
+      ::grpc::Service::MarkMethodGeneric(3);
     }
     ~WithGenericMethod_AssembleBlock() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodGeneric(4);
+    }
+    ~WithGenericMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodGeneric(5);
+    }
+    ~WithGenericMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetTD() {
+      ::grpc::Service::MarkMethodGeneric(6);
+    }
+    ~WithGenericMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -814,7 +1434,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetHeader() {
-      ::grpc::Service::MarkMethodGeneric(5);
+      ::grpc::Service::MarkMethodGeneric(7);
     }
     ~WithGenericMethod_GetHeader() override {
       BaseClassMustBeDerivedFromService(this);
@@ -831,7 +1451,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetBody() {
-      ::grpc::Service::MarkMethodGeneric(6);
+      ::grpc::Service::MarkMethodGeneric(8);
     }
     ~WithGenericMethod_GetBody() override {
       BaseClassMustBeDerivedFromService(this);
@@ -843,12 +1463,63 @@ class Execution final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_HasBlock() {
+      ::grpc::Service::MarkMethodGeneric(9);
+    }
+    ~WithGenericMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodGeneric(10);
+    }
+    ~WithGenericMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodGeneric(11);
+    }
+    ~WithGenericMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_IsCanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodGeneric(7);
+      ::grpc::Service::MarkMethodGeneric(12);
     }
     ~WithGenericMethod_IsCanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -865,7 +1536,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodGeneric(8);
+      ::grpc::Service::MarkMethodGeneric(13);
     }
     ~WithGenericMethod_GetHeaderHashNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -877,43 +1548,74 @@ class Execution final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_InsertHeaders : public BaseClass {
+  class WithGenericMethod_GetForkChoice : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_InsertHeaders() {
-      ::grpc::Service::MarkMethodRaw(0);
+    WithGenericMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodGeneric(14);
     }
-    ~WithRawMethod_InsertHeaders() override {
+    ~WithGenericMethod_GetForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void RequestInsertHeaders(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
-  class WithRawMethod_InsertBodies : public BaseClass {
+  class WithGenericMethod_Ready : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodRaw(1);
+    WithGenericMethod_Ready() {
+      ::grpc::Service::MarkMethodGeneric(15);
     }
-    ~WithRawMethod_InsertBodies() override {
+    ~WithGenericMethod_Ready() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestInsertBodies(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+  };
+  template <class BaseClass>
+  class WithGenericMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodGeneric(16);
+    }
+    ~WithGenericMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_InsertBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_InsertBlocks() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_InsertBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestInsertBlocks(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -922,18 +1624,18 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodRaw(2);
+      ::grpc::Service::MarkMethodRaw(1);
     }
     ~WithRawMethod_ValidateChain() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestValidateChain(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -942,18 +1644,18 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(2);
     }
     ~WithRawMethod_UpdateForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestUpdateForkChoice(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -962,18 +1664,78 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodRaw(4);
+      ::grpc::Service::MarkMethodRaw(3);
     }
     ~WithRawMethod_AssembleBlock() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestAssembleBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodRaw(4);
+    }
+    ~WithRawMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetAssembledBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodRaw(5);
+    }
+    ~WithRawMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCurrentHeader(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetTD() {
+      ::grpc::Service::MarkMethodRaw(6);
+    }
+    ~WithRawMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetTD(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -982,7 +1744,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetHeader() {
-      ::grpc::Service::MarkMethodRaw(5);
+      ::grpc::Service::MarkMethodRaw(7);
     }
     ~WithRawMethod_GetHeader() override {
       BaseClassMustBeDerivedFromService(this);
@@ -993,7 +1755,7 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetHeader(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1002,7 +1764,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetBody() {
-      ::grpc::Service::MarkMethodRaw(6);
+      ::grpc::Service::MarkMethodRaw(8);
     }
     ~WithRawMethod_GetBody() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1013,7 +1775,67 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetBody(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_HasBlock() {
+      ::grpc::Service::MarkMethodRaw(9);
+    }
+    ~WithRawMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestHasBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodRaw(10);
+    }
+    ~WithRawMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetBodiesByRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodRaw(11);
+    }
+    ~WithRawMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetBodiesByHashes(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1022,7 +1844,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodRaw(7);
+      ::grpc::Service::MarkMethodRaw(12);
     }
     ~WithRawMethod_IsCanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1033,7 +1855,7 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestIsCanonicalHash(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1042,7 +1864,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodRaw(8);
+      ::grpc::Service::MarkMethodRaw(13);
     }
     ~WithRawMethod_GetHeaderHashNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1053,51 +1875,89 @@ class Execution final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetHeaderHashNumber(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
-  class WithRawCallbackMethod_InsertHeaders : public BaseClass {
+  class WithRawMethod_GetForkChoice : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawCallbackMethod_InsertHeaders() {
+    WithRawMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodRaw(14);
+    }
+    ~WithRawMethod_GetForkChoice() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetForkChoice(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_Ready : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_Ready() {
+      ::grpc::Service::MarkMethodRaw(15);
+    }
+    ~WithRawMethod_Ready() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestReady(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodRaw(16);
+    }
+    ~WithRawMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestFrozenBlocks(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_InsertBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_InsertBlocks() {
       ::grpc::Service::MarkMethodRawCallback(0,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->InsertHeaders(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->InsertBlocks(context, request, response); }));
     }
-    ~WithRawCallbackMethod_InsertHeaders() override {
+    ~WithRawCallbackMethod_InsertBlocks() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* InsertHeaders(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
-  };
-  template <class BaseClass>
-  class WithRawCallbackMethod_InsertBodies : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithRawCallbackMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodRawCallback(1,
-          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-            [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->InsertBodies(context, request, response); }));
-    }
-    ~WithRawCallbackMethod_InsertBodies() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    virtual ::grpc::ServerUnaryReactor* InsertBodies(
+    virtual ::grpc::ServerUnaryReactor* InsertBlocks(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -1106,7 +1966,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodRawCallback(2,
+      ::grpc::Service::MarkMethodRawCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ValidateChain(context, request, response); }));
@@ -1115,7 +1975,7 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1128,7 +1988,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->UpdateForkChoice(context, request, response); }));
@@ -1137,7 +1997,7 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1150,7 +2010,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodRawCallback(4,
+      ::grpc::Service::MarkMethodRawCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->AssembleBlock(context, request, response); }));
@@ -1159,11 +2019,77 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* AssembleBlock(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodRawCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetAssembledBlock(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetAssembledBlock(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CurrentHeader(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CurrentHeader(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetTD() {
+      ::grpc::Service::MarkMethodRawCallback(6,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetTD(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetTD(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -1172,7 +2098,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetHeader() {
-      ::grpc::Service::MarkMethodRawCallback(5,
+      ::grpc::Service::MarkMethodRawCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetHeader(context, request, response); }));
@@ -1194,7 +2120,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetBody() {
-      ::grpc::Service::MarkMethodRawCallback(6,
+      ::grpc::Service::MarkMethodRawCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetBody(context, request, response); }));
@@ -1211,12 +2137,78 @@ class Execution final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_HasBlock() {
+      ::grpc::Service::MarkMethodRawCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HasBlock(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HasBlock(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodRawCallback(10,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetBodiesByRange(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetBodiesByRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodRawCallback(11,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetBodiesByHashes(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetBodiesByHashes(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_IsCanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodRawCallback(7,
+      ::grpc::Service::MarkMethodRawCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->IsCanonicalHash(context, request, response); }));
@@ -1238,7 +2230,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodRawCallback(8,
+      ::grpc::Service::MarkMethodRawCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetHeaderHashNumber(context, request, response); }));
@@ -1255,58 +2247,97 @@ class Execution final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_InsertHeaders : public BaseClass {
+  class WithRawCallbackMethod_GetForkChoice : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithStreamedUnaryMethod_InsertHeaders() {
-      ::grpc::Service::MarkMethodStreamed(0,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::execution::InsertHeadersRequest, ::execution::EmptyMessage>(
-            [this](::grpc::ServerContext* context,
-                   ::grpc::ServerUnaryStreamer<
-                     ::execution::InsertHeadersRequest, ::execution::EmptyMessage>* streamer) {
-                       return this->StreamedInsertHeaders(context,
-                         streamer);
-                  }));
+    WithRawCallbackMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodRawCallback(14,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetForkChoice(context, request, response); }));
     }
-    ~WithStreamedUnaryMethod_InsertHeaders() override {
+    ~WithRawCallbackMethod_GetForkChoice() override {
       BaseClassMustBeDerivedFromService(this);
     }
-    // disable regular version of this method
-    ::grpc::Status InsertHeaders(::grpc::ServerContext* /*context*/, const ::execution::InsertHeadersRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    // disable synchronous version of this method
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedInsertHeaders(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::InsertHeadersRequest,::execution::EmptyMessage>* server_unary_streamer) = 0;
+    virtual ::grpc::ServerUnaryReactor* GetForkChoice(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_InsertBodies : public BaseClass {
+  class WithRawCallbackMethod_Ready : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithStreamedUnaryMethod_InsertBodies() {
-      ::grpc::Service::MarkMethodStreamed(1,
+    WithRawCallbackMethod_Ready() {
+      ::grpc::Service::MarkMethodRawCallback(15,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Ready(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Ready() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Ready(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodRawCallback(16,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->FrozenBlocks(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* FrozenBlocks(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_InsertBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_InsertBlocks() {
+      ::grpc::Service::MarkMethodStreamed(0,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::execution::InsertBodiesRequest, ::execution::EmptyMessage>(
+          ::execution::InsertBlocksRequest, ::execution::InsertionResult>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::execution::InsertBodiesRequest, ::execution::EmptyMessage>* streamer) {
-                       return this->StreamedInsertBodies(context,
+                     ::execution::InsertBlocksRequest, ::execution::InsertionResult>* streamer) {
+                       return this->StreamedInsertBlocks(context,
                          streamer);
                   }));
     }
-    ~WithStreamedUnaryMethod_InsertBodies() override {
+    ~WithStreamedUnaryMethod_InsertBlocks() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status InsertBodies(::grpc::ServerContext* /*context*/, const ::execution::InsertBodiesRequest* /*request*/, ::execution::EmptyMessage* /*response*/) override {
+    ::grpc::Status InsertBlocks(::grpc::ServerContext* /*context*/, const ::execution::InsertBlocksRequest* /*request*/, ::execution::InsertionResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedInsertBodies(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::InsertBodiesRequest,::execution::EmptyMessage>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedInsertBlocks(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::InsertBlocksRequest,::execution::InsertionResult>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_ValidateChain : public BaseClass {
@@ -1314,12 +2345,12 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ValidateChain() {
-      ::grpc::Service::MarkMethodStreamed(2,
+      ::grpc::Service::MarkMethodStreamed(1,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::types::H256, ::execution::ValidationReceipt>(
+          ::execution::ValidationRequest, ::execution::ValidationReceipt>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::types::H256, ::execution::ValidationReceipt>* streamer) {
+                     ::execution::ValidationRequest, ::execution::ValidationReceipt>* streamer) {
                        return this->StreamedValidateChain(context,
                          streamer);
                   }));
@@ -1328,12 +2359,12 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
+    ::grpc::Status ValidateChain(::grpc::ServerContext* /*context*/, const ::execution::ValidationRequest* /*request*/, ::execution::ValidationReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedValidateChain(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::types::H256,::execution::ValidationReceipt>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedValidateChain(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::ValidationRequest,::execution::ValidationReceipt>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_UpdateForkChoice : public BaseClass {
@@ -1341,12 +2372,12 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_UpdateForkChoice() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::types::H256, ::execution::ForkChoiceReceipt>(
+          ::execution::ForkChoice, ::execution::ForkChoiceReceipt>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::types::H256, ::execution::ForkChoiceReceipt>* streamer) {
+                     ::execution::ForkChoice, ::execution::ForkChoiceReceipt>* streamer) {
                        return this->StreamedUpdateForkChoice(context,
                          streamer);
                   }));
@@ -1355,12 +2386,12 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::types::H256* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
+    ::grpc::Status UpdateForkChoice(::grpc::ServerContext* /*context*/, const ::execution::ForkChoice* /*request*/, ::execution::ForkChoiceReceipt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedUpdateForkChoice(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::types::H256,::execution::ForkChoiceReceipt>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedUpdateForkChoice(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::ForkChoice,::execution::ForkChoiceReceipt>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_AssembleBlock : public BaseClass {
@@ -1368,12 +2399,12 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_AssembleBlock() {
-      ::grpc::Service::MarkMethodStreamed(4,
+      ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::execution::EmptyMessage, ::types::ExecutionPayload>(
+          ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::execution::EmptyMessage, ::types::ExecutionPayload>* streamer) {
+                     ::execution::AssembleBlockRequest, ::execution::AssembleBlockResponse>* streamer) {
                        return this->StreamedAssembleBlock(context,
                          streamer);
                   }));
@@ -1382,12 +2413,93 @@ class Execution final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::EmptyMessage* /*request*/, ::types::ExecutionPayload* /*response*/) override {
+    ::grpc::Status AssembleBlock(::grpc::ServerContext* /*context*/, const ::execution::AssembleBlockRequest* /*request*/, ::execution::AssembleBlockResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedAssembleBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::EmptyMessage,::types::ExecutionPayload>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedAssembleBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::AssembleBlockRequest,::execution::AssembleBlockResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetAssembledBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetAssembledBlock() {
+      ::grpc::Service::MarkMethodStreamed(4,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::execution::GetAssembledBlockRequest, ::execution::GetAssembledBlockResponse>* streamer) {
+                       return this->StreamedGetAssembledBlock(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetAssembledBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetAssembledBlock(::grpc::ServerContext* /*context*/, const ::execution::GetAssembledBlockRequest* /*request*/, ::execution::GetAssembledBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetAssembledBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetAssembledBlockRequest,::execution::GetAssembledBlockResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_CurrentHeader : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_CurrentHeader() {
+      ::grpc::Service::MarkMethodStreamed(5,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::google::protobuf::Empty, ::execution::GetHeaderResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::google::protobuf::Empty, ::execution::GetHeaderResponse>* streamer) {
+                       return this->StreamedCurrentHeader(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_CurrentHeader() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status CurrentHeader(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::GetHeaderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedCurrentHeader(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::execution::GetHeaderResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetTD : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetTD() {
+      ::grpc::Service::MarkMethodStreamed(6,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::execution::GetSegmentRequest, ::execution::GetTDResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::execution::GetSegmentRequest, ::execution::GetTDResponse>* streamer) {
+                       return this->StreamedGetTD(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetTD() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetTD(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::GetTDResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetTD(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetSegmentRequest,::execution::GetTDResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_GetHeader : public BaseClass {
@@ -1395,7 +2507,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetHeader() {
-      ::grpc::Service::MarkMethodStreamed(5,
+      ::grpc::Service::MarkMethodStreamed(7,
         new ::grpc::internal::StreamedUnaryHandler<
           ::execution::GetSegmentRequest, ::execution::GetHeaderResponse>(
             [this](::grpc::ServerContext* context,
@@ -1422,7 +2534,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetBody() {
-      ::grpc::Service::MarkMethodStreamed(6,
+      ::grpc::Service::MarkMethodStreamed(8,
         new ::grpc::internal::StreamedUnaryHandler<
           ::execution::GetSegmentRequest, ::execution::GetBodyResponse>(
             [this](::grpc::ServerContext* context,
@@ -1444,12 +2556,93 @@ class Execution final {
     virtual ::grpc::Status StreamedGetBody(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetSegmentRequest,::execution::GetBodyResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_HasBlock : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_HasBlock() {
+      ::grpc::Service::MarkMethodStreamed(9,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::execution::GetSegmentRequest, ::execution::HasBlockResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::execution::GetSegmentRequest, ::execution::HasBlockResponse>* streamer) {
+                       return this->StreamedHasBlock(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_HasBlock() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status HasBlock(::grpc::ServerContext* /*context*/, const ::execution::GetSegmentRequest* /*request*/, ::execution::HasBlockResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedHasBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetSegmentRequest,::execution::HasBlockResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetBodiesByRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetBodiesByRange() {
+      ::grpc::Service::MarkMethodStreamed(10,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::execution::GetBodiesByRangeRequest, ::execution::GetBodiesBatchResponse>* streamer) {
+                       return this->StreamedGetBodiesByRange(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetBodiesByRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetBodiesByRange(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByRangeRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetBodiesByRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetBodiesByRangeRequest,::execution::GetBodiesBatchResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetBodiesByHashes : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetBodiesByHashes() {
+      ::grpc::Service::MarkMethodStreamed(11,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::execution::GetBodiesByHashesRequest, ::execution::GetBodiesBatchResponse>* streamer) {
+                       return this->StreamedGetBodiesByHashes(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetBodiesByHashes() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetBodiesByHashes(::grpc::ServerContext* /*context*/, const ::execution::GetBodiesByHashesRequest* /*request*/, ::execution::GetBodiesBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetBodiesByHashes(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::execution::GetBodiesByHashesRequest,::execution::GetBodiesBatchResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_IsCanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_IsCanonicalHash() {
-      ::grpc::Service::MarkMethodStreamed(7,
+      ::grpc::Service::MarkMethodStreamed(12,
         new ::grpc::internal::StreamedUnaryHandler<
           ::types::H256, ::execution::IsCanonicalResponse>(
             [this](::grpc::ServerContext* context,
@@ -1476,7 +2669,7 @@ class Execution final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetHeaderHashNumber() {
-      ::grpc::Service::MarkMethodStreamed(8,
+      ::grpc::Service::MarkMethodStreamed(13,
         new ::grpc::internal::StreamedUnaryHandler<
           ::types::H256, ::execution::GetHeaderHashNumberResponse>(
             [this](::grpc::ServerContext* context,
@@ -1497,9 +2690,90 @@ class Execution final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedGetHeaderHashNumber(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::types::H256,::execution::GetHeaderHashNumberResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_InsertHeaders<WithStreamedUnaryMethod_InsertBodies<WithStreamedUnaryMethod_ValidateChain<WithStreamedUnaryMethod_UpdateForkChoice<WithStreamedUnaryMethod_AssembleBlock<WithStreamedUnaryMethod_GetHeader<WithStreamedUnaryMethod_GetBody<WithStreamedUnaryMethod_IsCanonicalHash<WithStreamedUnaryMethod_GetHeaderHashNumber<Service > > > > > > > > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetForkChoice : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetForkChoice() {
+      ::grpc::Service::MarkMethodStreamed(14,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::google::protobuf::Empty, ::execution::ForkChoice>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::google::protobuf::Empty, ::execution::ForkChoice>* streamer) {
+                       return this->StreamedGetForkChoice(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetForkChoice() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetForkChoice(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ForkChoice* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetForkChoice(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::execution::ForkChoice>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_Ready : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_Ready() {
+      ::grpc::Service::MarkMethodStreamed(15,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::google::protobuf::Empty, ::execution::ReadyResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::google::protobuf::Empty, ::execution::ReadyResponse>* streamer) {
+                       return this->StreamedReady(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_Ready() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status Ready(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::ReadyResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedReady(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::execution::ReadyResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_FrozenBlocks : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_FrozenBlocks() {
+      ::grpc::Service::MarkMethodStreamed(16,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::google::protobuf::Empty, ::execution::FrozenBlocksResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::google::protobuf::Empty, ::execution::FrozenBlocksResponse>* streamer) {
+                       return this->StreamedFrozenBlocks(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_FrozenBlocks() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status FrozenBlocks(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::execution::FrozenBlocksResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedFrozenBlocks(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::execution::FrozenBlocksResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_InsertBlocks<WithStreamedUnaryMethod_ValidateChain<WithStreamedUnaryMethod_UpdateForkChoice<WithStreamedUnaryMethod_AssembleBlock<WithStreamedUnaryMethod_GetAssembledBlock<WithStreamedUnaryMethod_CurrentHeader<WithStreamedUnaryMethod_GetTD<WithStreamedUnaryMethod_GetHeader<WithStreamedUnaryMethod_GetBody<WithStreamedUnaryMethod_HasBlock<WithStreamedUnaryMethod_GetBodiesByRange<WithStreamedUnaryMethod_GetBodiesByHashes<WithStreamedUnaryMethod_IsCanonicalHash<WithStreamedUnaryMethod_GetHeaderHashNumber<WithStreamedUnaryMethod_GetForkChoice<WithStreamedUnaryMethod_Ready<WithStreamedUnaryMethod_FrozenBlocks<Service > > > > > > > > > > > > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_InsertHeaders<WithStreamedUnaryMethod_InsertBodies<WithStreamedUnaryMethod_ValidateChain<WithStreamedUnaryMethod_UpdateForkChoice<WithStreamedUnaryMethod_AssembleBlock<WithStreamedUnaryMethod_GetHeader<WithStreamedUnaryMethod_GetBody<WithStreamedUnaryMethod_IsCanonicalHash<WithStreamedUnaryMethod_GetHeaderHashNumber<Service > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_InsertBlocks<WithStreamedUnaryMethod_ValidateChain<WithStreamedUnaryMethod_UpdateForkChoice<WithStreamedUnaryMethod_AssembleBlock<WithStreamedUnaryMethod_GetAssembledBlock<WithStreamedUnaryMethod_CurrentHeader<WithStreamedUnaryMethod_GetTD<WithStreamedUnaryMethod_GetHeader<WithStreamedUnaryMethod_GetBody<WithStreamedUnaryMethod_HasBlock<WithStreamedUnaryMethod_GetBodiesByRange<WithStreamedUnaryMethod_GetBodiesByHashes<WithStreamedUnaryMethod_IsCanonicalHash<WithStreamedUnaryMethod_GetHeaderHashNumber<WithStreamedUnaryMethod_GetForkChoice<WithStreamedUnaryMethod_Ready<WithStreamedUnaryMethod_FrozenBlocks<Service > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace execution

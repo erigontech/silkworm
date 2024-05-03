@@ -381,7 +381,7 @@ void Decompressor::open() {
     compressed_file_->advise_random();
 }
 
-Decompressor::Iterator Decompressor::begin() {
+Decompressor::Iterator Decompressor::begin() const {
     ensure(bool(compressed_file_), "decompressor closed, call open first");
     auto read_mode_guard = std::make_shared<ReadModeGuard>(*compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
     Iterator it{this, std::move(read_mode_guard)};
@@ -390,6 +390,27 @@ Decompressor::Iterator Decompressor::begin() {
         return it;
     }
     return end();
+}
+
+Decompressor::Iterator Decompressor::seek(uint64_t offset, ByteView prefix) const {
+    SILK_TRACE << "Decompressor::seek offset: " << offset;
+    Iterator it = make_iterator();
+    it.reset(offset);
+    if (!it.has_next()) {
+        return end();
+    }
+
+    if (!prefix.empty() && !it.has_prefix(prefix)) {
+        return end();
+    }
+
+    try {
+        ++it;
+        return it;
+    } catch (const std::runtime_error& re) {
+        SILK_WARN << "Decompressor::seek invalid offset: " << offset << " what: " << re.what();
+        return end();
+    }
 }
 
 void Decompressor::close() {

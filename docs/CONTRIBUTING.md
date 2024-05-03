@@ -107,6 +107,17 @@ If you need to update library `lib` in Silkworm submodules to `commit_hash`, the
 1. cd third_party/<lib>/<lib>
 2. git checkout <commit_hash>
 
+
+## Updating Internal gRPC Interfaces
+
+If you need to update gRPC protocol definitions (i.e. `.proto` files) and related stubs/skeletons for internal
+[Erigon interfaces][erigon-interfaces], the following procedure  must be applied:
+
+1. determine the current version used in Erigon as `commit_hash` from [here][erigon-interfaces-version]
+2. cd third_party/erigon-interfaces
+3. git checkout <commit_hash>
+
+
 ## Updating Snapshots
 
 If you need to update the list of builtin snapshots in Silkworm, the following procedure must be applied:
@@ -212,6 +223,7 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [grpc]: https://grpc.io
 [erigon]: https://github.com/ledgerwatch/erigon
 [erigon-interfaces]: https://github.com/ledgerwatch/interfaces
+[erigon-interfaces-version]: https://github.com/ledgerwatch/erigon/blob/devel/erigon-lib/go.mod
 [ethereum-execution-api]: https://github.com/ethereum/execution-apis
 
 [^1]: You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`

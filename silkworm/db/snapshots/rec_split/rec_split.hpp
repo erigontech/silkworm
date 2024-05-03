@@ -55,6 +55,7 @@
 #include <limits>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -680,7 +681,23 @@ class RecSplit {
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    [[nodiscard]] std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
+    [[nodiscard]] std::size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
+
+    [[nodiscard]] std::optional<std::size_t> lookup_by_data_id(uint64_t data_id) const {
+        // check if data_id is not out of range
+        uint64_t min = base_data_id();
+        uint64_t max = min + key_count() - 1;
+        if ((data_id < min) || (data_id > max)) {
+            return std::nullopt;
+        }
+
+        return lookup_by_ordinal(data_id - base_data_id());
+    }
+
+    [[nodiscard]] std::optional<std::size_t> lookup_by_key(ByteView key) const {
+        auto [i, found] = lookup(key);
+        return found ? std::optional{lookup_by_ordinal(i)} : std::nullopt;
+    }
 
     //! Return the number of keys used to build the RecSplit instance
     [[nodiscard]] std::size_t key_count() const { return key_count_; }

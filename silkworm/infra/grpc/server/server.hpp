@@ -155,6 +155,8 @@ class Server {
     //! Subclasses must override this method to register initial server-side RPC requests.
     virtual void register_request_calls() = 0;
 
+    const ServerSettings& settings() const { return settings_; }
+
   private:
     //! The server configuration options.
     ServerSettings settings_;

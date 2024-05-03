@@ -42,11 +42,12 @@
 namespace silkworm::rpc {
 
 enum PreCheckErrorCode {
-    kIntrinsicGasTooLow,
-    kInsufficientFunds,
     kFeeCapLessThanBlockFeePerGas,
-    kTipHigherThanFeeCap,
-    kMaxFeePerBlobGasTooLowError
+    kInsufficientFunds,
+    kInternalError,
+    kIntrinsicGasTooLow,
+    kMaxFeePerBlobGasTooLowError,
+    kTipHigherThanFeeCap
 };
 
 struct ExecutionResult {

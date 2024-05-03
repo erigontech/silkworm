@@ -46,8 +46,10 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(Call& call, const silkworm::
         SILK_DEBUG << "Evaluate HI with gas in block " << header->gas_limit;
     }
 
-    intx::uint256 gas_price = call.gas_price.value_or(0);
-    if (gas_price != 0) {
+    std::optional<intx::uint256> gas_price = call.gas_price;
+    intx::uint256 gas_price_value = call.gas_price.value_or(0);
+    
+    if (gas_price_value != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 
         std::optional<silkworm::Account> account{co_await account_reader_(from, block_number + 1)};
@@ -59,22 +61,18 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(Call& call, const silkworm::
             throw EstimateGasException{-32000, "insufficient funds for transfer"};
         }
         auto available = balance - call.value.value_or(0);
-        auto allowance = available / gas_price;
+        auto allowance = available / gas_price_value;
         SILK_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance);
         if (hi > allowance) {
             SILK_WARN << "gas estimation capped by limited funds: original " << hi
                       << ", balance 0x" << intx::hex(balance)
                       << ", sent " << intx::hex(call.value.value_or(0))
-                      << ", gasprice " << intx::hex(gas_price)
+                      << ", gasprice " << intx::hex(gas_price_value)
                       << ", allowance " << allowance;
             hi = uint64_t(allowance);
         }
     } else {
-        const auto base_fee_per_gas = block.header.base_fee_per_gas;
-        if (base_fee_per_gas) {
-            std::cout << "set gas_price to: " << intx::to_string(*base_fee_per_gas);
-            call.set_gas_price(*base_fee_per_gas);
-        }
+        gas_price = block.header.base_fee_per_gas;
     }
 
     if (hi > kGasCap) {
@@ -90,7 +88,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(Call& call, const silkworm::
         auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-        silkworm::Transaction transaction{call.to_transaction()};
+        silkworm::Transaction transaction{call.to_transaction(gas_price)};
         while (lo + 1 < hi) {
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;

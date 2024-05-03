@@ -69,8 +69,8 @@ struct Call {
         if (gas > kDefaultGasLimit) {
             txn.gas_limit = kDefaultGasLimit;
         }
-        
-        txn.max_priority_fee_per_gas = override_gas_price.value_or(gas_price.value_or(intx::uint256{0})); 
+
+        txn.max_priority_fee_per_gas = override_gas_price.value_or(gas_price.value_or(intx::uint256{0}));
         txn.max_fee_per_gas = override_gas_price.value_or(gas_price.value_or(intx::uint256{0}));
         txn.value = value.value_or(intx::uint256{0});
         txn.data = data.value_or(silkworm::Bytes{});

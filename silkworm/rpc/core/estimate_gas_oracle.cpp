@@ -48,7 +48,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     std::optional<intx::uint256> gas_price = call.gas_price;
     intx::uint256 gas_price_value = call.gas_price.value_or(0);
-    
+
     if (gas_price_value != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 

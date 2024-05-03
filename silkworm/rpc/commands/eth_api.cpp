@@ -910,7 +910,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         reply = make_json_error(request, 100, error_msg);
         co_return;
     }
-    auto call = params[0].get<Call>();
+    const auto call = params[0].get<Call>();
     SILK_DEBUG << "call: " << call;
 
     auto tx = co_await database_->begin();

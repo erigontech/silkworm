@@ -204,6 +204,7 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
         }
     }
 
+
     if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
         if (evm.block().header.excess_blob_gas) {
             std::string error = "internal Error Cancun is active but ExcessBlobGas is nil";
@@ -216,7 +217,7 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
             std::string error = "max fee per blob gas too low: address " + from + ", maxFeePerBlobGas: " + intx::to_string(max_fee_per_blob_gas) +
                                 " blobGasPrice: " + intx::to_string(*blob_gas_price) +
                                 ", excessBlobGas: " + std::to_string(*evm.block().header.excess_blob_gas);
-            return PreCheckResult{error, PreCheckErrorCode::kMaxFeePerBlobGasTooLOwError};
+            return PreCheckResult{error, PreCheckErrorCode::kMaxFeePerBlobGasTooLowError};
         }
     }
 
@@ -263,26 +264,25 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, data, pre_check_result->pre_check_error, pre_check_result->pre_check_error_code};
     }
 
+    // EIP-1559 normal gas cost
     intx::uint256 want;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
         const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-        want = txn.gas_limit * effective_gas_price + txn.value;
+        want = txn.gas_limit * effective_gas_price;
     } else {
-        want = txn.value;
+        want = 0;
     }
 
+    // EIP-4844 blob gas cost (calc_data_fee)
     if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
         // compute blob fee for eip-4844 data blobs if any
-        auto blob_gas_used = evm.block().header.blob_gas_used;
-        auto max_fee_per_blob_gas = txn.max_fee_per_blob_gas;
-        auto max_blob_fee = max_fee_per_blob_gas * *blob_gas_used;
-
-        want += max_blob_fee;
+        const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
+        want += txn.total_blob_gas() * blob_gas_price;
     }
 
     const auto have = ibs_state_.get_balance(*txn.sender());
-    if (have < want) {
+    if (have < want + txn.value) {
         if (!gas_bailout) {
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());

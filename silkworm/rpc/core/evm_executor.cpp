@@ -205,18 +205,9 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
     }
 
     if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
-        if (evm.block().header.excess_blob_gas) {
+        if (!evm.block().header.excess_blob_gas) {
             std::string error = "internal Error Cancun is active but ExcessBlobGas is nil";
             return PreCheckResult{error, PreCheckErrorCode::kInternalError};
-        }
-        auto blob_gas_price = evm.block().header.blob_gas_price();
-        auto max_fee_per_blob_gas = txn.max_fee_per_blob_gas;
-        if (blob_gas_price > max_fee_per_blob_gas) {
-            std::string from = address_to_hex(*txn.sender());
-            std::string error = "max fee per blob gas too low: address " + from + ", maxFeePerBlobGas: " + intx::to_string(max_fee_per_blob_gas) +
-                                " blobGasPrice: " + intx::to_string(*blob_gas_price) +
-                                ", excessBlobGas: " + std::to_string(*evm.block().header.excess_blob_gas);
-            return PreCheckResult{error, PreCheckErrorCode::kMaxFeePerBlobGasTooLowError};
         }
     }
 

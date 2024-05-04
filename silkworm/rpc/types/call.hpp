@@ -67,8 +67,8 @@ struct Call {
         }
 
         if (override_gas_price) {
-           txn.max_priority_fee_per_gas = override_gas_price.value();
-           txn.max_fee_per_gas = override_gas_price.value();
+            txn.max_priority_fee_per_gas = override_gas_price.value();
+            txn.max_fee_per_gas = override_gas_price.value();
         } else if (gas_price) {
             txn.max_priority_fee_per_gas = gas_price.value();
             txn.max_fee_per_gas = gas_price.value();

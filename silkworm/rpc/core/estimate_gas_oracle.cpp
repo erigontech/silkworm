@@ -47,9 +47,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     }
 
     std::optional<intx::uint256> gas_price = call.gas_price;
-    intx::uint256 gas_price_value = call.gas_price.value_or(0);
-
-    if (gas_price_value != 0) {
+    if (gas_price && gas_price != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 
         std::optional<silkworm::Account> account{co_await account_reader_(from, block_number + 1)};
@@ -61,13 +59,13 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             throw EstimateGasException{-32000, "insufficient funds for transfer"};
         }
         auto available = balance - call.value.value_or(0);
-        auto allowance = available / gas_price_value;
+        auto allowance = available / *gas_price;
         SILK_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance);
         if (hi > allowance) {
             SILK_WARN << "gas estimation capped by limited funds: original " << hi
                       << ", balance 0x" << intx::hex(balance)
                       << ", sent " << intx::hex(call.value.value_or(0))
-                      << ", gasprice " << intx::hex(gas_price_value)
+                      << ", gasprice " << intx::hex(*gas_price)
                       << ", allowance " << allowance;
             hi = uint64_t(allowance);
         }

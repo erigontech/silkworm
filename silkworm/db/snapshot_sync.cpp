@@ -32,7 +32,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
-namespace silkworm::node {
+namespace silkworm::db {
 
 //! Interval between successive checks for either completion or stop requested
 static constexpr std::chrono::seconds kCheckCompletionInterval{1};
@@ -253,7 +253,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
 
         // Collect entries for later loading kHeaderNumbers table
         Bytes block_hash_bytes{block_hash.bytes, kHashLength};
-        Bytes encoded_block_number{sizeof(uint64_t), '\0'};
+        Bytes encoded_block_number(sizeof(BlockNum), '\0');
         endian::store_big_u64(encoded_block_number.data(), block_number);
         hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_number)});
 
@@ -334,4 +334,4 @@ void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_avail
     SILK_INFO << "SnapshotSync: database Senders stage progress updated [" << stage_progress << "]";
 }
 
-}  // namespace silkworm::node
+}  // namespace silkworm::db

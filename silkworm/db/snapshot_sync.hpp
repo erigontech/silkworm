@@ -27,7 +27,7 @@
 #include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
-namespace silkworm::node {
+namespace silkworm::db {
 
 class SnapshotSync : public Stoppable {
   public:
@@ -39,7 +39,7 @@ class SnapshotSync : public Stoppable {
     bool download_and_index_snapshots(db::RWTxn& txn);
     bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
 
-  private:
+  protected:
     void build_missing_indexes();
     void update_database(db::RWTxn& txn, BlockNum max_block_available);
     void update_block_headers(db::RWTxn& txn, BlockNum max_block_available);
@@ -54,4 +54,4 @@ class SnapshotSync : public Stoppable {
     std::thread client_thread_;
 };
 
-}  // namespace silkworm::node
+}  // namespace silkworm::db

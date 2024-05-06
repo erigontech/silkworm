@@ -46,8 +46,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         SILK_DEBUG << "Evaluate HI with gas in block " << header->gas_limit;
     }
 
-    intx::uint256 gas_price = call.gas_price.value_or(0);
-    if (gas_price != 0) {
+    std::optional<intx::uint256> gas_price = call.gas_price;
+    if (gas_price && gas_price != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 
         std::optional<silkworm::Account> account{co_await account_reader_(from, block_number + 1)};
@@ -59,16 +59,18 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             throw EstimateGasException{-32000, "insufficient funds for transfer"};
         }
         auto available = balance - call.value.value_or(0);
-        auto allowance = available / gas_price;
+        auto allowance = available / *gas_price;
         SILK_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance);
         if (hi > allowance) {
             SILK_WARN << "gas estimation capped by limited funds: original " << hi
                       << ", balance 0x" << intx::hex(balance)
                       << ", sent " << intx::hex(call.value.value_or(0))
-                      << ", gasprice " << intx::hex(gas_price)
+                      << ", gasprice " << intx::hex(*gas_price)
                       << ", allowance " << allowance;
             hi = uint64_t(allowance);
         }
+    } else {
+        gas_price = block.header.base_fee_per_gas;
     }
 
     if (hi > kGasCap) {
@@ -84,7 +86,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-        silkworm::Transaction transaction{call.to_transaction()};
+        silkworm::Transaction transaction{call.to_transaction(gas_price)};
         while (lo + 1 < hi) {
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;
@@ -93,10 +95,11 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             if (result.success()) {
                 hi = mid;
             } else {
-                lo = mid;
                 if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
-                    break;
+                    result.error_code = evmc_status_code::EVMC_SUCCESS;
+                    return result;
                 }
+                lo = mid;
             }
         }
 
@@ -116,7 +119,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     });
 
     if (!exec_result.success()) {
-        throw_exception(exec_result, cap);
+        throw_exception(exec_result);
     }
     co_return hi;
 }
@@ -125,10 +128,10 @@ ExecutionResult EstimateGasOracle::try_execution(EVMExecutor& executor, const si
     return executor.call(block, transaction);
 }
 
-void EstimateGasOracle::throw_exception(ExecutionResult& result, uint64_t cap) {
+void EstimateGasOracle::throw_exception(ExecutionResult& result) {
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
-        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
+        throw EstimateGasException{-32000, *result.pre_check_error};
     } else {
         auto error_message = result.error_message();
         SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;

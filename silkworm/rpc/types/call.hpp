@@ -49,7 +49,7 @@ struct Call {
         access_list = new_access_list;
     }
 
-    [[nodiscard]] silkworm::Transaction to_transaction() const {
+    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt) const {
         silkworm::Transaction txn{};
         if (from) {
             txn.set_sender(*from);
@@ -65,7 +65,11 @@ struct Call {
         if (gas > kDefaultGasLimit) {
             txn.gas_limit = kDefaultGasLimit;
         }
-        if (gas_price) {
+
+        if (override_gas_price) {
+            txn.max_priority_fee_per_gas = override_gas_price.value();
+            txn.max_fee_per_gas = override_gas_price.value();
+        } else if (gas_price) {
             txn.max_priority_fee_per_gas = gas_price.value();
             txn.max_fee_per_gas = gas_price.value();
         } else {

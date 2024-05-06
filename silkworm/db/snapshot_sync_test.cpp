@@ -21,9 +21,9 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
+#include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
-#include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -84,13 +84,13 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 }
 
 struct SnapshotSync_ForTest : public SnapshotSync {
-    using SnapshotSync::SnapshotSync;
     using SnapshotSync::build_missing_indexes;
-    using SnapshotSync::update_database;
-    using SnapshotSync::update_block_headers;
+    using SnapshotSync::SnapshotSync;
     using SnapshotSync::update_block_bodies;
     using SnapshotSync::update_block_hashes;
+    using SnapshotSync::update_block_headers;
     using SnapshotSync::update_block_senders;
+    using SnapshotSync::update_database;
 };
 
 TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {

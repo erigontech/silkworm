@@ -27,7 +27,7 @@
 #include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
-namespace silkworm::node {
+namespace silkworm::db {
 
 class SnapshotSync : public Stoppable {
   public:
@@ -54,4 +54,4 @@ class SnapshotSync : public Stoppable {
     std::thread client_thread_;
 };
 
-}  // namespace silkworm::node
+}  // namespace silkworm::db

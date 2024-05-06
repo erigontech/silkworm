@@ -109,7 +109,7 @@ void NodeImpl::setup_snapshots() {
         db::RWTxnManaged rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
-        SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
+        db::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
         snapshot_sync.download_and_index_snapshots(rw_txn);
 
         rw_txn.commit_and_stop();

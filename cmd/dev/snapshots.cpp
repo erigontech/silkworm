@@ -709,7 +709,7 @@ void lookup_transaction(const SnapSettings& settings) {
 void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SnapshotRepository snapshot_repository{settings};
-    node::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
+    db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
     std::vector<std::string> snapshot_file_names;
     if (settings.snapshot_file_name) {
         snapshot_file_names.push_back(*settings.snapshot_file_name);

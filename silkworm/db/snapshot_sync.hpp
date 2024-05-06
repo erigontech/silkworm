@@ -39,7 +39,7 @@ class SnapshotSync : public Stoppable {
     bool download_and_index_snapshots(db::RWTxn& txn);
     bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
 
-  private:
+  protected:
     void build_missing_indexes();
     void update_database(db::RWTxn& txn, BlockNum max_block_available);
     void update_block_headers(db::RWTxn& txn, BlockNum max_block_available);

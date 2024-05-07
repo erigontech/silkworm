@@ -50,8 +50,6 @@ class MockROCursor : public ROCursor {
     MOCK_METHOD((bool), eof, (), (const));
     MOCK_METHOD((bool), on_first, (), (const));
     MOCK_METHOD((bool), on_last, (), (const));
-
-    //CursorResult find(const Slice&) override { return CursorResult{{}, {}, false}; }
 };
 
 }  // namespace silkworm::db::test_util

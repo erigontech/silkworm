@@ -26,11 +26,11 @@ class MockROTxn : public ROTxn {
   public:
     explicit MockROTxn() : ROTxn(txn_) {}
 
-    MOCK_METHOD((bool), is_open, (), (const));
-    MOCK_METHOD((mdbx::env), db, (), (const));
-    MOCK_METHOD((std::unique_ptr<ROCursor>), ro_cursor, (const MapConfig&));
-    MOCK_METHOD((std::unique_ptr<ROCursorDupSort>), ro_cursor_dup_sort, (const MapConfig&));
-    MOCK_METHOD((void), abort, ());
+    MOCK_METHOD((bool), is_open, (), (const, override));
+    MOCK_METHOD((mdbx::env), db, (), (const, override));
+    MOCK_METHOD((std::unique_ptr<ROCursor>), ro_cursor, (const MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<ROCursorDupSort>), ro_cursor_dup_sort, (const MapConfig&), (override));
+    MOCK_METHOD((void), abort, (), (override));
 
   private:
     ::mdbx::txn txn_;

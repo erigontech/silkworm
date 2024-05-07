@@ -24,32 +24,32 @@ namespace silkworm::db::test_util {
 
 class MockROCursor : public ROCursor {
   public:
-    MOCK_METHOD((void), bind, (ROTxn&, const MapConfig&));
-    MOCK_METHOD((size_t), size, (), (const));
+    MOCK_METHOD((void), bind, (ROTxn&, const MapConfig&), (override));
+    MOCK_METHOD((size_t), size, (), (const, override));
     MOCK_METHOD((bool), empty, (), (const));
-    MOCK_METHOD((bool), is_multi_value, (), (const));
-    MOCK_METHOD((bool), is_dangling, (), (const));
-    MOCK_METHOD((::mdbx::map_handle), map, (), (const));
-    MOCK_METHOD((CursorResult), to_first, ());
-    MOCK_METHOD((CursorResult), to_first, (bool));
-    MOCK_METHOD((CursorResult), to_previous, ());
-    MOCK_METHOD((CursorResult), to_previous, (bool));
-    MOCK_METHOD((CursorResult), current, (), (const));
-    MOCK_METHOD((CursorResult), current, (bool), (const));
-    MOCK_METHOD((CursorResult), to_next, ());
-    MOCK_METHOD((CursorResult), to_next, (bool));
-    MOCK_METHOD((CursorResult), to_last, ());
-    MOCK_METHOD((CursorResult), to_last, (bool));
-    MOCK_METHOD((CursorResult), find, (const Slice&));
-    MOCK_METHOD((CursorResult), find, (const Slice&, bool));
-    MOCK_METHOD((CursorResult), lower_bound, (const Slice&));
-    MOCK_METHOD((CursorResult), lower_bound, (const Slice&, bool));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, bool));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, const Slice&, bool));
-    MOCK_METHOD((bool), seek, (const Slice&));
-    MOCK_METHOD((bool), eof, (), (const));
-    MOCK_METHOD((bool), on_first, (), (const));
-    MOCK_METHOD((bool), on_last, (), (const));
+    MOCK_METHOD((bool), is_multi_value, (), (const, override));
+    MOCK_METHOD((bool), is_dangling, (), (const, override));
+    MOCK_METHOD((::mdbx::map_handle), map, (), (const, override));
+    MOCK_METHOD((CursorResult), to_first, (), (override));
+    MOCK_METHOD((CursorResult), to_first, (bool), (override));
+    MOCK_METHOD((CursorResult), to_previous, (), (override));
+    MOCK_METHOD((CursorResult), to_previous, (bool), (override));
+    MOCK_METHOD((CursorResult), current, (), (const, override));
+    MOCK_METHOD((CursorResult), current, (bool), (const, override));
+    MOCK_METHOD((CursorResult), to_next, (), (override));
+    MOCK_METHOD((CursorResult), to_next, (bool), (override));
+    MOCK_METHOD((CursorResult), to_last, (), (override));
+    MOCK_METHOD((CursorResult), to_last, (bool), (override));
+    MOCK_METHOD((CursorResult), find, (const Slice&), (override));
+    MOCK_METHOD((CursorResult), find, (const Slice&, bool), (override));
+    MOCK_METHOD((CursorResult), lower_bound, (const Slice&), (override));
+    MOCK_METHOD((CursorResult), lower_bound, (const Slice&, bool), (override));
+    MOCK_METHOD((MoveResult), move, (MoveOperation, bool), (override));
+    MOCK_METHOD((MoveResult), move, (MoveOperation, const Slice&, bool), (override));
+    MOCK_METHOD((bool), seek, (const Slice&), (override));
+    MOCK_METHOD((bool), eof, (), (const, override));
+    MOCK_METHOD((bool), on_first, (), (const, override));
+    MOCK_METHOD((bool), on_last, (), (const, override));
 };
 
 }  // namespace silkworm::db::test_util

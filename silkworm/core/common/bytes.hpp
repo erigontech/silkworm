@@ -51,7 +51,7 @@ class ByteView : public std::basic_string_view<uint8_t> {
     [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };
 
-template<std::size_t Extent>
+template <std::size_t Extent>
 using ByteSpan = std::span<uint8_t, Extent>;
 
 }  // namespace silkworm

@@ -213,7 +213,7 @@ TEST_CASE("convertibility", "[rpc][conversion]") {
         const auto& s2 = string_from_H512(*h512_ptr2);
         CHECK(s1 == s2);
 
-        std::array<uint8_t , 64> a1{};
+        std::array<uint8_t, 64> a1{};
         span_from_H512(*h512_ptr1, a1);
         const Bytes b1{bytes_from_H512(*h512_ptr1)};
         CHECK(Bytes{a1.data(), a1.size()} == b1);

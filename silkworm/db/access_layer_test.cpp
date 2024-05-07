@@ -23,15 +23,15 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/protocol/param.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+
+#include "test_util/mock_cursor.hpp"
+#include "test_util/mock_txn.hpp"
 
 namespace silkworm {
 
@@ -116,7 +116,7 @@ namespace silkworm::db {
 
 using silkworm::test_util::SetLogVerbosityGuard;
 
-TEST_CASE("Db Opening", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Db Opening", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
@@ -161,7 +161,7 @@ TEST_CASE("Db Opening", "[silkworm][node][db][access_layer]") {
     env.close();
 }
 
-TEST_CASE("Methods cursor_for_each/cursor_for_count", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -187,7 +187,7 @@ TEST_CASE("Methods cursor_for_each/cursor_for_count", "[silkworm][node][db][acce
     CHECK(table_names.size() == max_count);
 }
 
-TEST_CASE("VersionBase primitives", "[silkworm][node][db][access_layer]") {
+TEST_CASE("VersionBase primitives", "[db][access_layer]") {
     VersionBase v1{0, 0, 0};
     VersionBase v2{0, 0, 1};
     VersionBase v3{0, 0, 1};
@@ -198,7 +198,7 @@ TEST_CASE("VersionBase primitives", "[silkworm][node][db][access_layer]") {
     CHECK(v2 == v3);
 }
 
-TEST_CASE("Sequences", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Sequences", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -245,7 +245,7 @@ TEST_CASE("Sequences", "[silkworm][node][db][access_layer]") {
     CHECK(thrown);
 }
 
-TEST_CASE("Schema Version", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Schema Version", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context(/*with_create_tables=*/false);
 
@@ -283,7 +283,7 @@ TEST_CASE("Schema Version", "[silkworm][node][db][access_layer]") {
     }
 }
 
-TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.txn()};
@@ -410,7 +410,7 @@ TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
     }
 }
 
-TEST_CASE("Stages", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Stages", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -449,7 +449,7 @@ TEST_CASE("Stages", "[silkworm][node][db][access_layer]") {
     CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
 }
 
-TEST_CASE("Snapshots", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Snapshots", "[db][access_layer]") {
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -463,7 +463,7 @@ TEST_CASE("Snapshots", "[silkworm][node][db][access_layer]") {
     CHECK(read_snapshots(txn) == snapshot_list);
 }
 
-TEST_CASE("Difficulty", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Difficulty", "[db][access_layer]") {
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -477,7 +477,7 @@ TEST_CASE("Difficulty", "[silkworm][node][db][access_layer]") {
     CHECK(model.read_total_difficulty(block_num, hash) == difficulty);
 }
 
-TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Headers and bodies", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -595,7 +595,7 @@ TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
     }
 }
 
-TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Storage", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -624,7 +624,7 @@ TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
     CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
 }
 
-TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Account history", "[db][access_layer]") {
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -659,7 +659,7 @@ TEST_CASE("Account history", "[silkworm][node][db][access_layer]") {
     CHECK(*previous_incarnation == account.incarnation - 1);
 }
 
-TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Account changes", "[db][access_layer]") {
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -718,7 +718,7 @@ TEST_CASE("Account changes", "[silkworm][node][db][access_layer]") {
     CHECK(changes.empty());
 }
 
-TEST_CASE("Storage changes", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Storage changes", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -798,7 +798,7 @@ TEST_CASE("Storage changes", "[silkworm][node][db][access_layer]") {
     CHECK(db_changes == expected_changes3);
 }
 
-TEST_CASE("Chain config", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Chain config", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -821,7 +821,7 @@ TEST_CASE("Chain config", "[silkworm][node][db][access_layer]") {
     CHECK(chain_config3 == kSepoliaConfig);
 }
 
-TEST_CASE("Head header", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Head header", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -831,7 +831,7 @@ TEST_CASE("Head header", "[silkworm][node][db][access_layer]") {
     REQUIRE(db::read_head_header_hash(txn).value() == kSepoliaGenesisHash);
 }
 
-TEST_CASE("Last Fork Choice", "[silkworm][node][db][access_layer]") {
+TEST_CASE("Last Fork Choice", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -849,7 +849,7 @@ TEST_CASE("Last Fork Choice", "[silkworm][node][db][access_layer]") {
     CHECK(db::read_last_finalized_block(txn) == hash3);
 }
 
-TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]") {
+TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -880,7 +880,7 @@ TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]")
     }
 }
 
-TEST_CASE("write and read body w/ withdrawals", "[silkworm][node][db][access_layer]") {
+TEST_CASE("write and read body w/ withdrawals", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
@@ -898,6 +898,139 @@ TEST_CASE("write and read body w/ withdrawals", "[silkworm][node][db][access_lay
     BlockBody body_out{};
     CHECK_NOTHROW(read_body(txn, header.number, hash.bytes, false, body_out));
     CHECK(body_out == body_in);
+}
+
+using testing::InvokeWithoutArgs;
+using testing::_;
+
+static void expect_mock_ro_cursor(test_util::MockROTxn& mock_ro_txn, test_util::MockROCursor* mock_ro_cursor) {
+    EXPECT_CALL(mock_ro_txn, ro_cursor(_))
+        .WillOnce(InvokeWithoutArgs([=]() mutable -> std::unique_ptr<ROCursor> {
+            return std::unique_ptr<test_util::MockROCursor>(mock_ro_cursor);
+        }));
+}
+
+struct AccessLayerTest {
+    explicit AccessLayerTest() {
+        expect_mock_ro_cursor(mock_ro_txn, mock_ro_cursor);
+    }
+
+    SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::MockROTxn mock_ro_txn;
+    test_util::MockROCursor* mock_ro_cursor = new test_util::MockROCursor;
+};
+
+static const Hash kBlockHash;  // empty but it doesn't matter for the tests
+static const ::mdbx::slice kValidBlockHashSlice{kBlockHash.bytes, kHashLength};
+static const ::mdbx::slice kInvalidBlockHashSlice{kBlockHash.bytes, 30};
+
+TEST_CASE_METHOD(AccessLayerTest, "read_block_number", "[db][access_layer]") {
+    const ::mdbx::slice valid_block_number_slice{*from_hex("0000000000000002")};
+    const ::mdbx::slice invalid_block_number_slice{*from_hex("0002")};
+
+    SECTION("valid block number") {
+        EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
+            .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
+                return CursorResult{kValidBlockHashSlice, valid_block_number_slice, /*.done=*/true};
+            }));
+        CHECK(read_block_number(mock_ro_txn, kBlockHash) == 2);
+    }
+    SECTION("data not found") {
+        EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
+            .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
+                return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, /*.done=*/false};
+            }));
+        CHECK_FALSE(read_block_number(mock_ro_txn, kBlockHash));
+    }
+    SECTION("invalid block number value size") {
+        EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
+            .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
+                return CursorResult{kValidBlockHashSlice, invalid_block_number_slice, /*.done=*/true};
+            }));
+        CHECK_THROWS_AS(read_block_number(mock_ro_txn, kBlockHash), std::length_error);
+    }
+}
+
+TEST_CASE_METHOD(AccessLayerTest, "read_canonical_head", "[db][access_layer]") {
+    const ::mdbx::slice valid_block_number_slice{*from_hex("0000000000000002")};
+    const ::mdbx::slice invalid_block_number_slice{*from_hex("0002")};
+
+    SECTION("valid canonical head") {
+        EXPECT_CALL(*mock_ro_cursor, to_last())
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{valid_block_number_slice, kValidBlockHashSlice, /*.done=*/true};
+            }));
+        CHECK(read_canonical_head(mock_ro_txn) == std::tuple<BlockNum, Hash>{2, kBlockHash});
+    }
+    SECTION("data not found") {
+        EXPECT_CALL(*mock_ro_cursor, to_last())
+            .WillOnce(InvokeWithoutArgs([]() mutable -> CursorResult {
+                return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, /*.done=*/false};
+            }));
+        CHECK(read_canonical_head(mock_ro_txn) == std::tuple<BlockNum, Hash>{});
+    }
+    SECTION("invalid key size") {
+        EXPECT_CALL(*mock_ro_cursor, to_last())
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{invalid_block_number_slice, kValidBlockHashSlice, /*.done=*/true};
+            }));
+        CHECK_THROWS_AS(read_canonical_head(mock_ro_txn), std::length_error);
+    }
+    SECTION("invalid value size") {
+        EXPECT_CALL(*mock_ro_cursor, to_last())
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{valid_block_number_slice, kInvalidBlockHashSlice, /*.done=*/true};
+            }));
+        CHECK_THROWS_AS(read_canonical_head(mock_ro_txn), std::length_error);
+    }
+}
+
+TEST_CASE_METHOD(AccessLayerTest, "read_canonical_header_hash", "[db][access_layer]") {
+    BlockNum block_number{2};
+    const ::mdbx::slice block_key_slice{to_slice(block_key(block_number))};
+
+    SECTION("valid canonical header hash") {
+        EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{block_key_slice, kValidBlockHashSlice, /*.done=*/true};
+            }));
+        CHECK(read_canonical_header_hash(mock_ro_txn, block_number) == kBlockHash);
+    }
+    SECTION("data not found") {
+        EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
+            .WillOnce(InvokeWithoutArgs([]() mutable -> CursorResult {
+                return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, /*.done=*/false};
+            }));
+        CHECK_FALSE(read_canonical_header_hash(mock_ro_txn, block_number));
+    }
+    SECTION("invalid value size") {
+        EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{block_key_slice, kInvalidBlockHashSlice, /*.done=*/true};
+            }));
+        CHECK_THROWS_AS(read_canonical_header_hash(mock_ro_txn, block_number), std::length_error);
+    }
+}
+
+TEST_CASE_METHOD(AccessLayerTest, "read_block_by_number", "[db][access_layer]") {
+    BlockNum block_number{2};
+    const ::mdbx::slice block_key_slice{to_slice(block_key(block_number))};
+    Block block;
+
+    SECTION("data not found") {
+        EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
+            .WillOnce(InvokeWithoutArgs([]() mutable -> CursorResult {
+                return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, false};
+            }));
+        CHECK_FALSE(read_block_by_number(mock_ro_txn, block_number, /*read_senders=*/false, block));
+    }
+    SECTION("invalid value size") {
+        EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
+            .WillOnce(InvokeWithoutArgs([&]() mutable -> CursorResult {
+                return CursorResult{block_key_slice, kInvalidBlockHashSlice, true};
+            }));
+        CHECK_THROWS_AS(read_block_by_number(mock_ro_txn, block_number, /*read_senders=*/false, block), std::length_error);
+    }
 }
 
 }  // namespace silkworm::db

@@ -115,6 +115,7 @@ struct BlockTransactionsResponse {
     std::vector<silkworm::BlockHeader> ommers;
     std::vector<silkworm::rpc::Receipt> receipts;
     std::vector<silkworm::Transaction> transactions;
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};
 };
 
 struct TransactionsWithReceipts {

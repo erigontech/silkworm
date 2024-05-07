@@ -226,8 +226,16 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
-            BlockTransactionsResponse block_transactions{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
-                                                         transaction_count, block_with_hash->block.ommers};
+            BlockTransactionsResponse block_transactions{
+                block_size,
+                block_with_hash->hash,
+                block_with_hash->block.header,
+                *total_difficulty,
+                transaction_count,
+                block_with_hash->block.ommers,
+                {},  // receipt
+                {},  // transactions
+                block_with_hash->block.withdrawals};
 
             auto page_end = block_with_hash->block.transactions.size() - (page_size * page_number);
 

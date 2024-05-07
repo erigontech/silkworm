@@ -362,6 +362,16 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["timestamp"] = to_quantity(b.header.timestamp);
     json["fullblock"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
     json["fullblock"]["transactionCount"] = b.transaction_count;
+    if (b.header.base_fee_per_gas) {
+        json["fullblock"]["baseFeePerGas"] = rpc::to_quantity(b.header.base_fee_per_gas.value_or(0));
+    }
+    if (b.header.withdrawals_root) {
+        json["fullblock"]["withdrawalsRoot"] = *b.header.withdrawals_root;
+    }
+
+    if (b.withdrawals) {
+        json["fullblock"]["withdrawals"] = *(b.withdrawals);
+    }
 
     json["fullblock"]["transactions"] = b.transactions;
     for (std::size_t i{0}; i < json["fullblock"]["transactions"].size(); i++) {

@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,28 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(TARGET silkworm_db_test_util)
+#pragma once
 
-find_package(GTest REQUIRED)
-find_package(nlohmann_json REQUIRED)
+#include <gmock/gmock.h>
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-add_library(${TARGET} ${SRC})
+#include <silkworm/db/mdbx/mdbx.hpp>
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_core silkworm_infra silkworm_db GTest::gmock
-  PRIVATE nlohmann_json::nlohmann_json
-)
+namespace silkworm::db::test_util {
+
+class MockROTxn : public ROTxn {
+  public:
+    explicit MockROTxn() : ROTxn(txn_) {}
+
+    MOCK_METHOD((bool), is_open, (), (const));
+    MOCK_METHOD((mdbx::env), db, (), (const));
+    MOCK_METHOD((std::unique_ptr<ROCursor>), ro_cursor, (const MapConfig&));
+    MOCK_METHOD((std::unique_ptr<ROCursorDupSort>), ro_cursor_dup_sort, (const MapConfig&));
+    MOCK_METHOD((void), abort, ());
+
+  private:
+    ::mdbx::txn txn_;
+};
+
+}  // namespace silkworm::db::test_util

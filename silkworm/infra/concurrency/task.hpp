@@ -19,6 +19,7 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 /// Use just \silkworm as namespace here to make these definitions available everywhere
@@ -31,5 +32,8 @@ using Task = boost::asio::awaitable<T>;
 
 //! Namespace for the current coroutine types
 namespace ThisTask = boost::asio::this_coro;
+
+//! Executor for asynchronous tasks returned by any coroutine
+using TaskExecutor = boost::asio::io_context::executor_type;
 
 }  // namespace silkworm

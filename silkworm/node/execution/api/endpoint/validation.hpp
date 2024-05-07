@@ -20,6 +20,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <variant>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block_id.hpp>

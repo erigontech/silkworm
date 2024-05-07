@@ -38,7 +38,7 @@ api::ValidationResult validation_result_from_response(const proto::ValidationRec
         result = api::ValidChain{
             .current_head = BlockId{.hash = latest_valid_head},
         };
-    } else if (receipt.validation_status()  == proto::ExecutionStatus::InvalidForkchoice) {
+    } else if (receipt.validation_status() == proto::ExecutionStatus::InvalidForkchoice) {
         result = api::InvalidChain{
             .unwind_point = BlockId{.hash = latest_valid_head},
         };

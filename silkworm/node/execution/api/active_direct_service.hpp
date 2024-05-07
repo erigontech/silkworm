@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/task.hpp>
+
+#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "direct_service.hpp"

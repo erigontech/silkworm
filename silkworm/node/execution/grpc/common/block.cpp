@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include "block.hpp"
+
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-
-#include "block.hpp"
 
 namespace silkworm::execution::grpc {
 

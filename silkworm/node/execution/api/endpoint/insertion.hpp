@@ -27,7 +27,7 @@ namespace silkworm::execution::api {
 
 using Blocks = std::vector<std::shared_ptr<Block>>;
 
-struct InsertionResult{
+struct InsertionResult {
     ExecutionStatus status;
 
     operator bool() const { return success(status); }

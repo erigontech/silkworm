@@ -37,7 +37,7 @@ api::BlockHashes block_hashes_from_request(const proto::GetBodiesByHashesRequest
     return hashes;
 }
 
-proto::GetBodiesBatchResponse response_from_bodies(const api::BlockBodies & bodies) {
+proto::GetBodiesBatchResponse response_from_bodies(const api::BlockBodies& bodies) {
     proto::GetBodiesBatchResponse response;
     for (const auto& body : bodies) {
         proto::BlockBody* proto_body{response.add_bodies()};

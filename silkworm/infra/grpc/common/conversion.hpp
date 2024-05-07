@@ -31,6 +31,8 @@
 // operator== overloading is *NOT* present in gRPC generated sources
 namespace types {
 
+bool operator==(const H2048& lhs, const H2048& rhs);
+bool operator==(const H1024& lhs, const H1024& rhs);
 bool operator==(const H512& lhs, const H512& rhs);
 bool operator==(const H256& lhs, const H256& rhs);
 bool operator==(const H160& lhs, const H160& rhs);
@@ -46,13 +48,23 @@ std::string string_from_H2048(const ::types::H2048& orig);
 //! Convert internal gRPC H2048 type instance to Bytes.
 Bytes bytes_from_H2048(const ::types::H2048& h2048);
 
+//! Convert internal gRPC H2048 type instance into provided fixed-size ByteSpan.
+void span_from_H2048(const ::types::H2048& h2048, ByteSpan<256> bytes);
+
 //! Convert internal gRPC H1024 type instance to Bytes.
 Bytes bytes_from_H1024(const ::types::H1024& h1024);
+
+//! Convert internal gRPC H1024 type instance into provided fixed-size ByteSpan.
+void span_from_H1024(const ::types::H1024& h1024, ByteSpan<128> bytes);
 
 //! Convert internal gRPC H512 type instance to std::string.
 std::string string_from_H512(const ::types::H512& orig);
 
+//! Convert internal gRPC H512 type instance to Bytes.
 Bytes bytes_from_H512(const ::types::H512& h512);
+
+//! Convert internal gRPC H512 type instance into provided fixed-size ByteSpan.
+void span_from_H512(const ::types::H512& h512, ByteSpan<64> bytes);
 
 //! Convert internal gRPC H256 type instance to evmc::bytes32.
 evmc::bytes32 bytes32_from_H256(const ::types::H256& orig);
@@ -63,11 +75,17 @@ intx::uint256 uint256_from_H256(const ::types::H256& orig);
 //! Convert internal gRPC H256 type instance to Bytes.
 Bytes bytes_from_H256(const ::types::H256& h256);
 
+//! Convert internal gRPC H256 type instance into provided fixed-size ByteSpan.
+void span_from_H256(const ::types::H256& h256, ByteSpan<32> bytes);
+
 //! Convert internal gRPC H160 type instance to evmc::address.
 evmc::address address_from_H160(const ::types::H160& orig);
 
 //! Convert internal gRPC H128 type instance to Bytes.
 Bytes bytes_from_H128(const ::types::H128& h128);
+
+//! Convert internal gRPC H128 type instance into provided fixed-size ByteSpan.
+void span_from_H128(const ::types::H128& h128, ByteSpan<16> bytes);
 
 //! Convert std::string_view to internal gRPC H2048 type instance.
 std::unique_ptr<::types::H2048> H2048_from_string(std::string_view orig);

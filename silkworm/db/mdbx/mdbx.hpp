@@ -218,6 +218,7 @@ class ROTxn {
   protected:
     explicit ROTxn(::mdbx::txn& txn_ref) : txn_ref_{txn_ref} {}
 
+  private:
     ::mdbx::txn& txn_ref_;
 };
 

@@ -213,11 +213,14 @@ static Bytes header_numbers_key(evmc::bytes32 hash) {
 }
 
 std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash) {
-    auto blockhashes_cursor = txn.ro_cursor(db::table::kHeaderNumbers);
+    auto header_number_cursor = txn.ro_cursor(table::kHeaderNumbers);
     auto key = header_numbers_key(hash);
-    auto data = blockhashes_cursor->find(db::to_slice(key), /*throw_notfound*/ false);
+    auto data = header_number_cursor->find(to_slice(key), /*throw_notfound*/ false);
     if (!data) {
         return std::nullopt;
+    }
+    if (data.value.length() != sizeof(BlockNum)) {
+        throw std::length_error("Bad block number size " + std::to_string(data.value.length()) + " in db");
     }
     auto block_num = endian::load_big_u64(static_cast<const unsigned char*>(data.value.data()));
     return block_num;
@@ -276,6 +279,12 @@ std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn) {
     auto cursor = txn.ro_cursor(table::kCanonicalHashes);
     auto data = cursor->to_last();
     if (!data) return {};
+    if (data.key.length() != sizeof(BlockNum)) {
+        throw std::length_error("Bad block number size " + std::to_string(data.key.length()) + " in db");
+    }
+    if (data.value.length() != kHashLength) {
+        throw std::length_error("Bad block hash size " + std::to_string(data.value.length()) + " in db");
+    }
     evmc::bytes32 hash{};
     std::memcpy(hash.bytes, data.value.data(), kHashLength);
     BlockNum bn = endian::load_big_u64(static_cast<const unsigned char*>(data.key.data()));
@@ -288,6 +297,9 @@ std::optional<evmc::bytes32> read_canonical_header_hash(ROTxn& txn, BlockNum num
     auto data{cursor->find(to_slice(key), /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
+    }
+    if (data.value.length() != kHashLength) {
+        throw std::length_error("Bad block hash size " + std::to_string(data.value.length()) + " in db");
     }
     evmc::bytes32 ret{};
     std::memcpy(ret.bytes, data.value.data(), kHashLength);
@@ -370,7 +382,9 @@ bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block&
     if (!data) {
         return false;
     }
-    SILKWORM_ASSERT(data.value.length() == kHashLength);
+    if (data.value.length() != kHashLength) {
+        throw std::length_error("Bad block hash size " + std::to_string(data.value.length()) + " in db");
+    }
     const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
     return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }

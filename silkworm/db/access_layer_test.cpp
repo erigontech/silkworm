@@ -900,8 +900,8 @@ TEST_CASE("write and read body w/ withdrawals", "[db][access_layer]") {
     CHECK(body_out == body_in);
 }
 
-using testing::InvokeWithoutArgs;
 using testing::_;
+using testing::InvokeWithoutArgs;
 
 static void expect_mock_ro_cursor(test_util::MockROTxn& mock_ro_txn, test_util::MockROCursor* mock_ro_cursor) {
     EXPECT_CALL(mock_ro_txn, ro_cursor(_))

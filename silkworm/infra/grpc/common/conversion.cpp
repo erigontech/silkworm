@@ -19,6 +19,14 @@
 // operator== overloading is *NOT* present in gRPC generated sources
 namespace types {
 
+bool operator==(const H2048& lhs, const H2048& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
+bool operator==(const H1024& lhs, const H1024& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
 bool operator==(const H512& lhs, const H512& rhs) {
     return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
 }
@@ -67,6 +75,13 @@ Bytes bytes_from_H2048(const ::types::H2048& h2048) {
     return bytes;
 }
 
+void span_from_H2048(const ::types::H2048& h2048, ByteSpan<256> bytes) {
+    const auto& hi{h2048.hi()};
+    const auto& lo{h2048.lo()};
+    span_from_H1024(hi, bytes.subspan<0, 128>());
+    span_from_H1024(lo, bytes.subspan<128, 128>());
+}
+
 Bytes bytes_from_H1024(const ::types::H1024& h1024) {
     Bytes bytes(128, '\0');
     const auto& hi{h1024.hi()};
@@ -74,6 +89,13 @@ Bytes bytes_from_H1024(const ::types::H1024& h1024) {
     std::memcpy(&bytes[0], bytes_from_H512(hi).data(), 64);
     std::memcpy(&bytes[64], bytes_from_H512(lo).data(), 64);
     return bytes;
+}
+
+void span_from_H1024(const ::types::H1024& h1024, ByteSpan<128> bytes) {
+    const auto& hi{h1024.hi()};
+    const auto& lo{h1024.lo()};
+    span_from_H512(hi, bytes.subspan<0, 64>());
+    span_from_H512(lo, bytes.subspan<64, 64>());
 }
 
 std::string string_from_H512(const types::H512& orig) {
@@ -109,6 +131,13 @@ Bytes bytes_from_H512(const ::types::H512& h512) {
     return bytes;
 }
 
+void span_from_H512(const ::types::H512& h512, ByteSpan<64> bytes) {
+    const auto& hi{h512.hi()};
+    const auto& lo{h512.lo()};
+    span_from_H256(hi, bytes.subspan<0, 32>());
+    span_from_H256(lo, bytes.subspan<32, 32>());
+}
+
 evmc::bytes32 bytes32_from_H256(const ::types::H256& orig) {
     uint64_t hi_hi = orig.hi().hi();
     uint64_t hi_lo = orig.hi().lo();
@@ -131,6 +160,13 @@ Bytes bytes_from_H256(const ::types::H256& h256) {
     std::memcpy(&bytes[0], bytes_from_H128(hi).data(), 16);
     std::memcpy(&bytes[16], bytes_from_H128(lo).data(), 16);
     return bytes;
+}
+
+void span_from_H256(const ::types::H256& h256, ByteSpan<32> bytes) {
+    const auto& hi{h256.hi()};
+    const auto& lo{h256.lo()};
+    span_from_H128(hi, bytes.subspan<0, 16>());
+    span_from_H128(lo, bytes.subspan<16, 16>());
 }
 
 intx::uint256 uint256_from_H256(const ::types::H256& orig) {
@@ -160,6 +196,11 @@ Bytes bytes_from_H128(const ::types::H128& h128) {
     endian::store_big_u64(&bytes[0], h128.hi());
     endian::store_big_u64(&bytes[8], h128.lo());
     return bytes;
+}
+
+void span_from_H128(const ::types::H128& h128, ByteSpan<16> bytes) {
+    endian::store_big_u64(&bytes[0], h128.hi());
+    endian::store_big_u64(&bytes[8], h128.lo());
 }
 
 std::unique_ptr<::types::H2048> H2048_from_string(std::string_view orig) {

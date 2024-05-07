@@ -111,7 +111,7 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
     // Set the ExecutionPayload version (default is V1)
     SILKWORM_ASSERT(execution_payload.version == ExecutionPayload::V1);
     if (execution_payload.withdrawals) {
-        if (execution_payload.blob_gas_used != execution_payload.excess_blob_gas) {
+        if (execution_payload.blob_gas_used.has_value() != execution_payload.excess_blob_gas.has_value()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument),
                                     "ExecutionPayload: invalid V3 payload, missing " +
                                         std::string{execution_payload.blob_gas_used ? "excess_blob_gas" : "blob_gas_used"}};

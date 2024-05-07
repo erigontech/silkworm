@@ -412,7 +412,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
             "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"],
             "withdrawals":[],
             "blobGasUsed":"0x1000",
-            "excessBlobGas":"0x1000"
+            "excessBlobGas":"0x0100"
         })"_json;
         CHECK(payload.version == ExecutionPayload::V3);
         CHECK(payload.parent_hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
@@ -428,7 +428,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
         CHECK(payload.transactions == std::vector<Bytes>{{0xf9, 0x2e, 0xbd, 0xea, 0xb4, 0x5d, 0x36, 0x8f, 0x63, 0x54, 0xe8, 0xc5, 0xa8, 0xac, 0x58, 0x6c}});
         CHECK(payload.withdrawals == std::vector<Withdrawal>{});
         CHECK(payload.blob_gas_used == 0x1000);
-        CHECK(payload.excess_blob_gas == 0x1000);
+        CHECK(payload.excess_blob_gas == 0x0100);
     }
     SECTION("missing excess_blob_gas") {
         const auto json = R"({

@@ -45,20 +45,24 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
-    void set_access_list(const AccessList& new_access_list) {
-        access_list = new_access_list;
-    }
-
-    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt) const {
+    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt, 
+                                                       const std::optional<AccessList>& override_access_list = std::nullopt,
+                                                       const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
         if (from) {
             txn.set_sender(*from);
         }
         txn.to = to;
-        if (nonce) {
+        if (override_nonce) {
+            txn.nonce = *override_nonce;
+        }
+        else if (nonce) {
             txn.nonce = *nonce;
         }
-        if (!access_list.empty()) {
+
+        if (override_access_list) {
+            txn.access_list = *override_access_list;
+        } else if (!access_list.empty()) {
             txn.access_list = access_list;
         }
         txn.gas_limit = gas.value_or(kDefaultGasLimit);

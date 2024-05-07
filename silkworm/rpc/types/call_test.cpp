@@ -154,24 +154,6 @@ AccessList access_list{
     {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
 };
 
-TEST_CASE("create call without access list and set it", "[rpc][types][call][set_access_list]") {
-    Call call{
-        std::nullopt,
-        std::nullopt,
-        235,    // gas
-        21000,  // gas_price
-        std::nullopt,
-        std::nullopt,
-        31337,  // value
-        {},     // data
-        1,      // value
-    };
-    CHECK(call.access_list.empty());
-
-    call.set_access_list(access_list);
-    CHECK(call.access_list.size() == 2);
-}
-
 TEST_CASE("create call with no gas price and no max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
     Call call{
         std::nullopt,

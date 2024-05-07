@@ -41,8 +41,8 @@ bool ActiveDirectService::stop() {
 
 // rpc InsertBlocks(InsertBlocksRequest) returns(InsertionResult);
 Task<InsertionResult> ActiveDirectService::insert_blocks(const Blocks& blocks) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto blocks) {
-        return self->DirectService::insert_blocks(blocks);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto bb) {
+        return self->DirectService::insert_blocks(bb);
     }(this, blocks));
 }
 
@@ -50,15 +50,15 @@ Task<InsertionResult> ActiveDirectService::insert_blocks(const Blocks& blocks) {
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
 Task<ValidationResult> ActiveDirectService::validate_chain(BlockNumAndHash number_and_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_and_hash) {
-        return self->DirectService::validate_chain(number_and_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_and_hash) {
+        return self->DirectService::validate_chain(num_and_hash);
     }(this, number_and_hash));
 }
 
 // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
 Task<ForkChoiceResult> ActiveDirectService::update_fork_choice(const ForkChoice& fork_choice) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto fork_choice) {
-        return self->DirectService::update_fork_choice(fork_choice);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto choice) {
+        return self->DirectService::update_fork_choice(choice);
     }(this, fork_choice));
 }
 
@@ -66,15 +66,15 @@ Task<ForkChoiceResult> ActiveDirectService::update_fork_choice(const ForkChoice&
 
 // rpc AssembleBlock(AssembleBlockRequest) returns(AssembleBlockResponse);
 Task<AssembleBlockResult> ActiveDirectService::assemble_block(const api::BlockUnderConstruction& block) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto block) {
-        return self->DirectService::assemble_block(block);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto b) {
+        return self->DirectService::assemble_block(b);
     }(this, block));
 }
 
 // rpc GetAssembledBlock(GetAssembledBlockRequest) returns(GetAssembledBlockResponse);
 Task<AssembledBlockResult> ActiveDirectService::get_assembled_block(PayloadId payload_id) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto payload_id) {
-        return self->DirectService::get_assembled_block(payload_id);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto id) {
+        return self->DirectService::get_assembled_block(id);
     }(this, payload_id));
 }
 
@@ -89,29 +89,29 @@ Task<std::optional<BlockHeader>> ActiveDirectService::current_header() {
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
 Task<std::optional<TotalDifficulty>> ActiveDirectService::get_td(BlockNumberOrHash number_or_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_or_hash) {
-        return self->DirectService::get_td(number_or_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_or_hash) {
+        return self->DirectService::get_td(num_or_hash);
     }(this, number_or_hash));
 }
 
 // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
 Task<std::optional<BlockHeader>> ActiveDirectService::get_header(BlockNumberOrHash number_or_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_or_hash) {
-        return self->DirectService::get_header(number_or_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_or_hash) {
+        return self->DirectService::get_header(num_or_hash);
     }(this, number_or_hash));
 }
 
 // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
 Task<std::optional<BlockBody>> ActiveDirectService::get_body(BlockNumberOrHash number_or_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_or_hash) {
-        return self->DirectService::get_body(number_or_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_or_hash) {
+        return self->DirectService::get_body(num_or_hash);
     }(this, number_or_hash));
 }
 
 // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
 Task<bool> ActiveDirectService::has_block(BlockNumberOrHash number_or_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_or_hash) {
-        return self->DirectService::has_block(number_or_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_or_hash) {
+        return self->DirectService::has_block(num_or_hash);
     }(this, number_or_hash));
 }
 
@@ -119,15 +119,15 @@ Task<bool> ActiveDirectService::has_block(BlockNumberOrHash number_or_hash) {
 
 // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
 Task<BlockBodies> ActiveDirectService::get_bodies_by_range(BlockNumRange number_range) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto number_range) {
-        return self->DirectService::get_bodies_by_range(number_range);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto num_range) {
+        return self->DirectService::get_bodies_by_range(num_range);
     }(this, number_range));
 }
 
 // rpc GetBodiesByHashes(GetBodiesByHashesRequest) returns(GetBodiesBatchResponse);
 Task<BlockBodies> ActiveDirectService::get_bodies_by_hashes(const BlockHashes& hashes) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto hashes) {
-        return self->DirectService::get_bodies_by_hashes(hashes);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto hh) {
+        return self->DirectService::get_bodies_by_hashes(hh);
     }(this, hashes));
 }
 
@@ -135,15 +135,15 @@ Task<BlockBodies> ActiveDirectService::get_bodies_by_hashes(const BlockHashes& h
 
 // rpc IsCanonicalHash(types.H256) returns(IsCanonicalResponse);
 Task<bool> ActiveDirectService::is_canonical_hash(Hash block_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto block_hash) {
-        return self->DirectService::is_canonical_hash(block_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto h) {
+        return self->DirectService::is_canonical_hash(h);
     }(this, block_hash));
 }
 
 // rpc GetHeaderHashNumber(types.H256) returns(GetHeaderHashNumberResponse);
 Task<std::optional<BlockNum>> ActiveDirectService::get_header_hash_number(Hash block_hash) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto block_hash) {
-        return self->DirectService::get_header_hash_number(block_hash);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto h) {
+        return self->DirectService::get_header_hash_number(h);
     }(this, block_hash));
 }
 
@@ -173,8 +173,8 @@ Task<uint64_t> ActiveDirectService::frozen_blocks() {
 /** Additional non-RPC methods **/
 
 Task<BlockHeaders> ActiveDirectService::get_last_headers(uint64_t n) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto n) {
-        return self->DirectService::get_last_headers(n);
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto how_many) {
+        return self->DirectService::get_last_headers(how_many);
     }(this, n));
 }
 

@@ -52,7 +52,8 @@ namespace asio = boost::asio;
  */
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ~ExecutionEngine() override = default;
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -63,12 +64,15 @@ class ExecutionEngine : public Stoppable {
 
     concurrency::AwaitableFuture<VerificationResult> verify_chain(Hash head_block_hash);
 
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    bool notify_fork_choice_update(Hash head_block_hash,
+                                   std::optional<Hash> finalized_block_hash = {},
+                                   std::optional<Hash> safe_block_hash = {});
 
     // state
     BlockNum block_progress() const;
-    BlockId last_finalized_block() const;
     BlockId last_fork_choice() const;
+    BlockId last_finalized_block() const;
+    BlockId last_safe_block() const;
 
     // header/body retrieval
     std::optional<BlockHeader> get_header(Hash) const;
@@ -102,8 +106,9 @@ class ExecutionEngine : public Stoppable {
 
     BlockNum block_progress_{0};
     bool fork_tracking_active_{false};
-    BlockId last_finalized_block_;
     BlockId last_fork_choice_;
+    BlockId last_finalized_block_;
+    BlockId last_safe_block_;
 };
 
 }  // namespace silkworm::stagedsync

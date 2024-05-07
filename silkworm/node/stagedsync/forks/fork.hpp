@@ -50,12 +50,13 @@ class Fork {
     // verify chain up to current head
     VerificationResult verify_chain();
     // accept the current chain up to head_block_hash
-    bool fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    bool fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = {}, std::optional<Hash> safe_block_hash = {});
 
     // state
     BlockId current_head() const;
     std::optional<VerificationResult> head_status() const;
     BlockId finalized_head() const;
+    BlockId safe_head() const;
 
     // checks
     bool extends_head(const BlockHeader&) const;
@@ -83,6 +84,7 @@ class Fork {
     BlockId current_head_;
     std::optional<VerificationResult> head_status_;
     BlockId finalized_head_;
+    BlockId safe_head_;
 };
 
 // find the fork with the specified head

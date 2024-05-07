@@ -54,6 +54,10 @@ BlockId ExecutionEngine::last_finalized_block() const {
     return last_finalized_block_;
 }
 
+BlockId ExecutionEngine::last_safe_block() const {
+    return last_safe_block_;
+}
+
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {
     SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
@@ -165,7 +169,9 @@ concurrency::AwaitableFuture<VerificationResult> ExecutionEngine::verify_chain(H
     return (*fork)->verify_chain();
 }
 
-bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
+                                                std::optional<Hash> finalized_block_hash,
+                                                std::optional<Hash> safe_block_hash) {
     log::Info("ExecutionEngine") << "updating fork choice to " << head_block_hash.to_hex();
 
     if (!fork_tracking_active_ || head_block_hash == last_fork_choice_.hash) {
@@ -192,7 +198,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         }
 
         // notify the fork of the update - we need to block here to restore the invariant
-        auto updated = (*f)->fork_choice(head_block_hash, finalized_block_hash).get();  // BLOCKING
+        auto updated = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash).get();  // BLOCKING
         if (!updated) return false;
 
         std::unique_ptr<ExtendingFork> fork = std::move(*f);
@@ -207,10 +213,16 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
     }
 
     if (finalized_block_hash) {
-        auto finalized_header = main_chain_.get_header(*finalized_block_hash);  // BLOCKING
+        const auto finalized_header = main_chain_.get_header(*finalized_block_hash);
         ensure_invariant(finalized_header.has_value(), "finalized block not found in main chain");
 
         last_finalized_block_ = {finalized_header->number, *finalized_block_hash};
+    }
+    if (safe_block_hash) {
+        const auto safe_header = main_chain_.get_header(*safe_block_hash);
+        ensure_invariant(safe_header.has_value(), "safe block not found in main chain");
+
+        last_safe_block_ = {safe_header->number, *safe_block_hash};
     }
 
     return true;

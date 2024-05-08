@@ -45,7 +45,7 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
-    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt, 
+    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt,
                                                        const std::optional<AccessList>& override_access_list = std::nullopt,
                                                        const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
@@ -55,8 +55,7 @@ struct Call {
         txn.to = to;
         if (override_nonce) {
             txn.nonce = *override_nonce;
-        }
-        else if (nonce) {
+        } else if (nonce) {
             txn.nonce = *nonce;
         }
 

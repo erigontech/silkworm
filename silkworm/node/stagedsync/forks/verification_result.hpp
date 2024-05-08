@@ -21,6 +21,7 @@
 #include <variant>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -37,5 +38,8 @@ struct ValidationError {
 };
 
 using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+
+using VerificationResultFuture = concurrency::AwaitableFuture<VerificationResult>;
+using VerificationResultPromise = concurrency::AwaitablePromise<VerificationResult>;
 
 }  // namespace silkworm::stagedsync

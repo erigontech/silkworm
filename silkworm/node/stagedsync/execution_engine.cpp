@@ -134,19 +134,19 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     return {std::move(path)};
 }
 
-concurrency::AwaitableFuture<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {
+VerificationResultFuture ExecutionEngine::verify_chain(Hash head_block_hash) {
     log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
 
     if (last_fork_choice_.hash == head_block_hash) {
         SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
-        concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};
+        VerificationResultPromise promise{io_context_.get_executor()};
         promise.set_value(ValidChain{last_fork_choice_});
         return promise.get_future();
     }
 
     if (!fork_tracking_active_) {
         auto verification = main_chain_.verify_chain(head_block_hash);  // BLOCKING
-        concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};
+        VerificationResultPromise promise{io_context_.get_executor()};
         promise.set_value(std::move(verification));
         return promise.get_future();
     }
@@ -155,12 +155,12 @@ concurrency::AwaitableFuture<VerificationResult> ExecutionEngine::verify_chain(H
     if (fork == forks_.end()) {
         if (main_chain_.is_finalized_canonical(head_block_hash)) {
             SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
-            concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};
+            VerificationResultPromise promise{io_context_.get_executor()};
             promise.set_value(ValidChain{last_fork_choice_});
             return promise.get_future();
         } else {
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
-            concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};
+            VerificationResultPromise promise{io_context_.get_executor()};
             promise.set_value(ValidationError{});
             return promise.get_future();
         }

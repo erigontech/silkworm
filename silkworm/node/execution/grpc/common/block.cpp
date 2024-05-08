@@ -24,7 +24,7 @@ namespace silkworm::execution::grpc {
 
 namespace proto = ::execution;
 
-void deserialize_hex_as_bytes(const std::string& hex, std::vector<Bytes>& sequence) {
+void deserialize_hex_as_bytes(std::string_view hex, std::vector<Bytes>& sequence) {
     auto blob_bytes{from_hex(hex)};
     if (blob_bytes) {
         sequence.push_back(std::move(*blob_bytes));
@@ -46,7 +46,7 @@ void header_from_proto(const ::execution::Header& proto_header, BlockHeader& hea
     header.prev_randao = rpc::bytes32_from_H256(proto_header.prev_randao());
     rpc::span_from_H2048(proto_header.logs_bloom(), header.logs_bloom);
     endian::store_big_u64(header.nonce.data(), proto_header.nonce());
-    std::copy(proto_header.extra_data().cbegin(), proto_header.extra_data().cend(), header.extra_data.begin());
+    header.extra_data = string_view_to_byte_view(proto_header.extra_data());
     if (proto_header.has_base_fee_per_gas()) {
         header.base_fee_per_gas = rpc::uint256_from_H256(proto_header.base_fee_per_gas());
     }
@@ -109,7 +109,7 @@ void proto_from_header(const BlockHeader& bh, proto::Header* header) {
     header->set_gas_used(bh.gas_used);
     header->set_timestamp(bh.timestamp);
     header->set_nonce(endian::load_big_u64(bh.nonce.data()));
-    header->set_extra_data(bh.extra_data.data(), bh.extra_data.size());
+    header->set_allocated_extra_data(new std::string{byte_ptr_cast(bh.extra_data.data()), bh.extra_data.size()});
     header->set_allocated_difficulty(rpc::H256_from_uint256(bh.difficulty).release());
     header->set_allocated_block_hash(rpc::H256_from_bytes32(bh.hash()).release());
     header->set_allocated_ommer_hash(rpc::H256_from_bytes32(bh.ommers_hash).release());

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <string>
+#include <string_view>
 #include <vector>
 
 #include <silkworm/core/common/bytes.hpp>
@@ -30,7 +30,7 @@
 
 namespace silkworm::execution::grpc {
 
-void deserialize_hex_as_bytes(const std::string&, std::vector<Bytes>&);
+void deserialize_hex_as_bytes(std::string_view, std::vector<Bytes>&);
 
 void header_from_proto(const ::execution::Header&, BlockHeader&);
 BlockHeader header_from_proto(const ::execution::Header&);

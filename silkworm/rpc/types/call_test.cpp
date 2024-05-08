@@ -154,24 +154,6 @@ AccessList access_list{
     {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
 };
 
-TEST_CASE("create call without access list and set it", "[rpc][types][call][set_access_list]") {
-    Call call{
-        std::nullopt,
-        std::nullopt,
-        235,    // gas
-        21000,  // gas_price
-        std::nullopt,
-        std::nullopt,
-        31337,  // value
-        {},     // data
-        1,      // value
-    };
-    CHECK(call.access_list.empty());
-
-    call.set_access_list(access_list);
-    CHECK(call.access_list.size() == 2);
-}
-
 TEST_CASE("create call with no gas price and no max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
     Call call{
         std::nullopt,
@@ -238,6 +220,46 @@ TEST_CASE("create call with AccessList", "[rpc][types][call]") {
     CHECK(txn.nonce == 1);
     CHECK(!txn.access_list.empty());
     CHECK(txn.access_list == access_list);
+}
+
+TEST_CASE("create call with no AccessList and pass it to_transaction", "[rpc][types][call]") {
+    Call call{
+        std::nullopt,
+        std::nullopt,
+        235,           // gas
+        21000,         // gas_price
+        std::nullopt,  // max_priority_fee_per_gas
+        std::nullopt,  // max_fee_per_gas
+        31337,         // value
+        {},            // data
+        1};            // nonce
+    silkworm::Transaction txn = call.to_transaction(std::nullopt, access_list);
+    CHECK(txn.gas_limit == 235);
+    CHECK(txn.max_fee_per_gas == 21000);
+    CHECK(txn.max_priority_fee_per_gas == 21000);
+    CHECK(txn.nonce == 1);
+    CHECK(!txn.access_list.empty());
+    CHECK(txn.access_list == access_list);
+}
+
+TEST_CASE("create call with no nonce and pass it to_transaction", "[rpc][types][call]") {
+    uint64_t nonce = 5;
+    Call call{
+        std::nullopt,
+        std::nullopt,
+        235,            // gas
+        21000,          // gas_price
+        std::nullopt,   // max_priority_fee_per_gas
+        std::nullopt,   // max_fee_per_gas
+        31337,          // value
+        {},             // data
+        std::nullopt};  // nonce
+    silkworm::Transaction txn = call.to_transaction(std::nullopt, std::nullopt, nonce);
+    CHECK(txn.gas_limit == 235);
+    CHECK(txn.max_fee_per_gas == 21000);
+    CHECK(txn.max_priority_fee_per_gas == 21000);
+    CHECK(txn.nonce == nonce);
+    CHECK(txn.access_list.empty());
 }
 
 }  // namespace silkworm::rpc

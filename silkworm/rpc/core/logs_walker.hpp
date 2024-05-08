@@ -50,7 +50,7 @@ class LogsWalker {
                         std::vector<Log>& logs);
 
   private:
-    void filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs);
+    void filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs, size_t max_logs);
 
     ethbackend::BackEnd* backend_;
     BlockCache& block_cache_;

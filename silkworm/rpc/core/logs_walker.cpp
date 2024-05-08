@@ -133,7 +133,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
 
             filtered_chunk_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
+            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - logCount);
 
             if (!filtered_chunk_logs.empty()) {
                 const auto tx_index = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
@@ -179,8 +179,10 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     co_return;
 }
 
-void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs) {
+void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs, 
+                             size_t max_logs) {
     SILK_DEBUG << "filter_logs: addresses: " << addresses << ", topics: " << topics;
+    size_t log_count = 0;
     for (auto& log : logs) {
         SILK_DEBUG << "log: " << log;
         if (!addresses.empty() && std::find(addresses.begin(), addresses.end(), log.address) == addresses.end()) {
@@ -216,6 +218,9 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
         SILK_DEBUG << "matches: " << std::boolalpha << matches;
         if (matches) {
             filtered_logs.push_back(log);
+        }
+        if (max_logs != 0 && ++log_count >= max_logs) {
+           return;
         }
     }
 }

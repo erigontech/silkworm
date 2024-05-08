@@ -179,7 +179,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     co_return;
 }
 
-void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs, 
+void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs,
                              size_t max_logs) {
     SILK_DEBUG << "filter_logs: addresses: " << addresses << ", topics: " << topics;
     size_t log_count = 0;
@@ -220,7 +220,7 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
             filtered_logs.push_back(log);
         }
         if (max_logs != 0 && ++log_count >= max_logs) {
-           return;
+            return;
         }
     }
 }

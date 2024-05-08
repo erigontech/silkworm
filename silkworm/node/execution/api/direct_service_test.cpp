@@ -22,9 +22,9 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
-#include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
@@ -33,10 +33,10 @@ namespace silkworm::execution::api {
 using testing::_;
 using testing::InvokeWithoutArgs;
 
-using silkworm::test_util::SetLogVerbosityGuard;
-using silkworm::test_util::TaskRunner;
 using silkworm::db::test_util::TempChainData;
 using silkworm::node::test_util::make_node_settings_from_temp_chain_data;
+using silkworm::test_util::SetLogVerbosityGuard;
+using silkworm::test_util::TaskRunner;
 
 class MockExecutionEngine : public stagedsync::ExecutionEngine {
   public:

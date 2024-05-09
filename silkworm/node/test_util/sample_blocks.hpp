@@ -155,4 +155,10 @@ inline BlockBody sample_block_body() {
     return body;
 }
 
+inline Block sample_block() {
+    Block block{sample_block_body()};
+    block.header = sample_block_header();
+    return block;
+}
+
 }  // namespace silkworm::test_util

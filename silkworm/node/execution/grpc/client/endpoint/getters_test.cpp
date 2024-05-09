@@ -33,6 +33,7 @@ namespace silkworm::execution::grpc::client {
 using namespace evmc::literals;
 using namespace silkworm::execution::test_util;
 using namespace silkworm::test_util;
+namespace proto = ::execution;
 
 static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
     if (has_number) {
@@ -42,9 +43,9 @@ static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
     }
 }
 
-static ::execution::GetSegmentRequest sample_proto_get_segment_request(std::optional<BlockNum> number,
-                                                                       std::optional<Hash> hash) {
-    ::execution::GetSegmentRequest request;
+static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<BlockNum> number,
+                                                                 std::optional<Hash> hash) {
+    proto::GetSegmentRequest request;
     if (number) {
         request.set_block_number(*number);
     }
@@ -55,7 +56,7 @@ static ::execution::GetSegmentRequest sample_proto_get_segment_request(std::opti
 }
 
 TEST_CASE("request_from_block_number_or_hash", "[node][execution][grpc]") {
-    const Fixtures<api::BlockNumberOrHash, ::execution::GetSegmentRequest> fixtures{
+    const Fixtures<api::BlockNumberOrHash, proto::GetSegmentRequest> fixtures{
         {{}, sample_proto_get_segment_request(0, {})},  // BlockNumberOrHash contains 1st variant as default
         {sample_block_number_or_hash(true), sample_proto_get_segment_request(kSampleBlockNumber, {})},
         {sample_block_number_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
@@ -78,8 +79,8 @@ TEST_CASE("request_from_block_number_or_hash", "[node][execution][grpc]") {
 
 static constexpr TotalDifficulty kTotalDifficulty{1'000'000};
 
-static ::execution::GetTDResponse sample_td_response(bool has_value) {
-    ::execution::GetTDResponse response;
+static proto::GetTDResponse sample_td_response(bool has_value) {
+    proto::GetTDResponse response;
     if (has_value) {
         response.set_allocated_td(rpc::H256_from_uint256(kTotalDifficulty).release());
     }
@@ -91,7 +92,7 @@ static std::optional<TotalDifficulty> sample_total_difficulty(bool has_value) {
 }
 
 TEST_CASE("total_difficulty_from_response", "[node][execution][grpc]") {
-    const Fixtures<::execution::GetTDResponse, std::optional<TotalDifficulty>> fixtures{
+    const Fixtures<proto::GetTDResponse, std::optional<TotalDifficulty>> fixtures{
         {sample_td_response(false), sample_total_difficulty(false)},
         {sample_td_response(true), sample_total_difficulty(true)},
     };
@@ -103,14 +104,14 @@ TEST_CASE("total_difficulty_from_response", "[node][execution][grpc]") {
     }
 }
 
-static ::execution::GetHeaderResponse sample_get_header_response() {
-    ::execution::GetHeaderResponse response;
+static proto::GetHeaderResponse sample_get_header_response() {
+    proto::GetHeaderResponse response;
     sample_proto_header(response.mutable_header());
     return response;
 }
 
 TEST_CASE("header_from_response", "[node][execution][grpc]") {
-    const Fixtures<::execution::GetHeaderResponse, std::optional<BlockHeader>> fixtures{
+    const Fixtures<proto::GetHeaderResponse, std::optional<BlockHeader>> fixtures{
         {{}, {}},
         {sample_get_header_response(), sample_block_header()},
     };
@@ -122,14 +123,14 @@ TEST_CASE("header_from_response", "[node][execution][grpc]") {
     }
 }
 
-static ::execution::GetBodyResponse sample_get_body_response() {
-    ::execution::GetBodyResponse response;
+static proto::GetBodyResponse sample_get_body_response() {
+    proto::GetBodyResponse response;
     sample_proto_body(response.mutable_body());
     return response;
 }
 
 TEST_CASE("body_from_response", "[node][execution][grpc]") {
-    const Fixtures<::execution::GetBodyResponse, std::optional<BlockBody>> fixtures{
+    const Fixtures<proto::GetBodyResponse, std::optional<BlockBody>> fixtures{
         {{}, {}},
         {sample_get_body_response(), sample_block_body()},
     };

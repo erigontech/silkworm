@@ -27,8 +27,9 @@
 namespace silkworm::execution::test_util {
 
 using namespace silkworm::test_util;
+namespace proto = ::execution;
 
-inline void sample_proto_header(::execution::Header* header) {
+inline void sample_proto_header(proto::Header* header) {
     header->set_allocated_parent_hash(rpc::H256_from_bytes32(kSampleParentHash).release());
     header->set_allocated_ommer_hash(rpc::H256_from_bytes32(kSampleOmmersHash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(kSampleBeneficiary).release());
@@ -46,8 +47,8 @@ inline void sample_proto_header(::execution::Header* header) {
     header->set_allocated_base_fee_per_gas(rpc::H256_from_uint256(kSampleBaseFeePerGas).release());
 }
 
-inline ::execution::Header sample_proto_header() {
-    ::execution::Header header;
+inline proto::Header sample_proto_header() {
+    proto::Header header;
     sample_proto_header(&header);
     return header;
 }
@@ -68,7 +69,7 @@ inline std::string sample_proto_tx1() {
     return sample_proto_transaction(rlp_tx1);
 }
 
-inline void sample_proto_ommer(::execution::Header* header) {
+inline void sample_proto_ommer(proto::Header* header) {
     header->set_allocated_parent_hash(rpc::H256_from_bytes32(kSampleOmmerParentHash).release());
     header->set_allocated_ommer_hash(rpc::H256_from_bytes32(kEmptyListHash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(kSampleOmmerBeneficiary).release());
@@ -80,10 +81,8 @@ inline void sample_proto_ommer(::execution::Header* header) {
     header->set_gas_limit(kSampleOmmerGasLimit);
     header->set_gas_used(kSampleOmmerGasUsed);
     header->set_timestamp(kSampleOmmerTimestamp);
-    // header->set_extra_data(byte_ptr_cast(kSampleExtraData.data()), kSampleExtraData.size());
     header->set_allocated_prev_randao(rpc::H256_from_bytes32(kSampleOmmerPrevRandao).release());
     header->set_nonce(endian::load_big_u64(kSampleOmmerNonce.data()));
-    // header->set_allocated_base_fee_per_gas(rpc::H256_from_uint256(kSampleBaseFeePerGas).release());
 }
 
 inline void sample_proto_withdrawal(::types::Withdrawal* withdrawal, const Withdrawal& w) {
@@ -93,7 +92,7 @@ inline void sample_proto_withdrawal(::types::Withdrawal* withdrawal, const Withd
     withdrawal->set_amount(w.amount);
 }
 
-inline void sample_proto_body(::execution::BlockBody* body) {
+inline void sample_proto_body(proto::BlockBody* body) {
     body->set_block_number(kSampleBlockNumber);
     body->set_allocated_block_hash(rpc::H256_from_bytes32(kSampleBlockHash).release());
 
@@ -104,6 +103,11 @@ inline void sample_proto_body(::execution::BlockBody* body) {
     sample_proto_withdrawal(body->add_withdrawals(), kSampleWithdrawal1);
     sample_proto_withdrawal(body->add_withdrawals(), kSampleWithdrawal2);
     sample_proto_withdrawal(body->add_withdrawals(), kSampleWithdrawal3);
+}
+
+inline void sample_proto_block(proto::Block* block) {
+    sample_proto_header(block->mutable_header());
+    sample_proto_body(block->mutable_body());
 }
 
 }  // namespace silkworm::execution::test_util

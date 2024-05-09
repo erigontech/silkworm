@@ -26,22 +26,25 @@
 #include <silkworm/interfaces/execution/execution.pb.h>
 #include <silkworm/node/test_util/fixture.hpp>
 
-using namespace evmc::literals;
+#include "../../../test_util/sample_protos.hpp"
 
 namespace silkworm::execution::grpc::client {
 
-static constexpr BlockNum kBlockNumber{100};
+using namespace evmc::literals;
+using namespace silkworm::execution::test_util;
+using namespace silkworm::test_util;
+namespace proto = ::execution;
 
-static ::execution::GetHeaderHashNumberResponse sample_response() {
-    ::execution::GetHeaderHashNumberResponse response;
-    response.set_block_number(kBlockNumber);
+static proto::GetHeaderHashNumberResponse sample_response() {
+    proto::GetHeaderHashNumberResponse response;
+    response.set_block_number(kSampleBlockNumber);
     return response;
 }
 
 TEST_CASE("block_number_from_response", "[node][execution][grpc]") {
-    const test_util::Fixtures<::execution::GetHeaderHashNumberResponse, std::optional<BlockNum>> fixtures{
+    const Fixtures<proto::GetHeaderHashNumberResponse, std::optional<BlockNum>> fixtures{
         {{}, std::nullopt},
-        {sample_response(), kBlockNumber},
+        {sample_response(), kSampleBlockNumber},
     };
     for (const auto& [response, expected_block_num] : fixtures) {
         SECTION("rps block number: " + std::to_string(response.block_number())) {
@@ -55,8 +58,8 @@ static constexpr auto kFinalizedHash{0x00000000000000000000000000000000000000000
 static constexpr auto kSafeHash{0x0000000000000000000000000000000000000000000000000000000000000003_bytes32};
 static constexpr auto kTimeout{100u};
 
-static ::execution::ForkChoice sample_proto_fork_choice() {
-    ::execution::ForkChoice fork_choice;
+static proto::ForkChoice sample_proto_fork_choice() {
+    proto::ForkChoice fork_choice;
     fork_choice.set_allocated_head_block_hash(rpc::H256_from_bytes32(kHeadHash).release());
     fork_choice.set_timeout(kTimeout);
     fork_choice.set_allocated_finalized_block_hash(rpc::H256_from_bytes32(kFinalizedHash).release());
@@ -76,7 +79,7 @@ static api::ForkChoice sample_fork_choice() {
 }
 
 TEST_CASE("fork_choice_from_response", "[node][execution][grpc]") {
-    const test_util::Fixtures<::execution::ForkChoice, api::ForkChoice> fixtures{
+    const Fixtures<proto::ForkChoice, api::ForkChoice> fixtures{
         {{}, {}},
         {sample_proto_fork_choice(), sample_fork_choice()},
     };

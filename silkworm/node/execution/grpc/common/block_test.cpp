@@ -30,6 +30,7 @@ namespace silkworm::execution::grpc {
 
 using namespace silkworm::execution::test_util;
 using namespace silkworm::test_util;
+namespace proto = ::execution;
 
 TEST_CASE("deserialize_hex_as_bytes", "[node][execution][grpc]") {
     const Fixtures<std::string_view, std::vector<Bytes>> fixtures{
@@ -52,7 +53,7 @@ TEST_CASE("deserialize_hex_as_bytes", "[node][execution][grpc]") {
 }
 
 TEST_CASE("header_from_proto", "[node][execution][grpc]") {
-    const Fixtures<::execution::Header, BlockHeader> fixtures{
+    const Fixtures<proto::Header, BlockHeader> fixtures{
         {{}, {}},
         {sample_proto_header(), sample_block_header()},
     };
@@ -67,7 +68,7 @@ TEST_CASE("header_from_proto", "[node][execution][grpc]") {
 }
 
 TEST_CASE("convertibility", "[node][execution][grpc]") {
-    const Fixtures<::execution::Header, BlockHeader> fixtures{
+    const Fixtures<proto::Header, BlockHeader> fixtures{
         {{}, {}},
         {sample_proto_header(), sample_block_header()},
     };
@@ -75,9 +76,9 @@ TEST_CASE("convertibility", "[node][execution][grpc]") {
         SECTION("header: " + std::to_string(expected_proto_header.block_number())) {
             const BlockHeader header = header_from_proto(expected_proto_header);
             CHECK(header == expected_block_header);
-            ::execution::Header proto_header;
+            proto::Header proto_header;
             proto_from_header(header, &proto_header);
-            // CHECK(proto_header == expected_proto_header);  // requires operator== for ::execution::Header
+            // CHECK(proto_header == expected_proto_header);  // requires operator== for proto::Header
             CHECK(header_from_proto(proto_header) == expected_block_header);
         }
     }

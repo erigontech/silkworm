@@ -236,12 +236,19 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     }
     if (header.blob_gas_used) {
        json["blobGasUsed"] = rpc::to_quantity(*(header.blob_gas_used));
+    }  else {
+       json["blobGasUsed"] = nullptr;
     }
+
     if (header.excess_blob_gas) {
        json["excessBlobGas"] = rpc::to_quantity(*(header.excess_blob_gas)); 
+    } else {
+       json["excessBlobGas"] = nullptr;
     }
     if (header.parent_beacon_block_root) {
        json["parentBeaconBlockRoot"] = "0x" + to_hex(*(header.parent_beacon_block_root));
+    } else {
+       json["parentBeaconBlockRoot"] = nullptr;
     }
     if (header.withdrawals_root) {
         json["withdrawalsRoot"] = *header.withdrawals_root;

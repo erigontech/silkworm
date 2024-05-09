@@ -79,7 +79,7 @@ jobs:
           # ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0
 
           # Multi-thread execution
-          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0 -jobs=8
+          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0 -jobs=4 -rss_limit_mb=8192
 
       - name: Tear Down
         if: always()

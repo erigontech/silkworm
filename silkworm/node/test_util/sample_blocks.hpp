@@ -21,8 +21,8 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
 

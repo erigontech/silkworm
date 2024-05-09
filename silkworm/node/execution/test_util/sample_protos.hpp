@@ -80,10 +80,10 @@ inline void sample_proto_ommer(::execution::Header* header) {
     header->set_gas_limit(kSampleOmmerGasLimit);
     header->set_gas_used(kSampleOmmerGasUsed);
     header->set_timestamp(kSampleOmmerTimestamp);
-    //header->set_extra_data(byte_ptr_cast(kSampleExtraData.data()), kSampleExtraData.size());
+    // header->set_extra_data(byte_ptr_cast(kSampleExtraData.data()), kSampleExtraData.size());
     header->set_allocated_prev_randao(rpc::H256_from_bytes32(kSampleOmmerPrevRandao).release());
     header->set_nonce(endian::load_big_u64(kSampleOmmerNonce.data()));
-    //header->set_allocated_base_fee_per_gas(rpc::H256_from_uint256(kSampleBaseFeePerGas).release());
+    // header->set_allocated_base_fee_per_gas(rpc::H256_from_uint256(kSampleBaseFeePerGas).release());
 }
 
 inline void sample_proto_withdrawal(::types::Withdrawal* withdrawal, const Withdrawal& w) {

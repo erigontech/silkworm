@@ -368,7 +368,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
         json["block"]["withdrawalsRoot"] = *b.block.header.withdrawals_root;
     }
     if (b.block.withdrawals) {
-        json["fullblock"]["withdrawals"] = (*b.block.withdrawals);
+        json["block"]["withdrawals"] = (*b.block.withdrawals);
     }
 }
 

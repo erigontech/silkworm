@@ -239,7 +239,6 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     } else {
         json["blobGasUsed"] = nullptr;
     }
-
     if (header.excess_blob_gas) {
         json["excessBlobGas"] = rpc::to_quantity(*(header.excess_blob_gas));
     } else {
@@ -353,6 +352,19 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     }
 
     json["totalFees"] = to_quantity(b.total_fees);
+
+    if (b.block.header.blob_gas_used) {
+        json["block"]["blobGasUsed"] = rpc::to_quantity(*(b.block.header.blob_gas_used));
+    }
+    if (b.block.header.excess_blob_gas) {
+        json["block"]["excessBlobGas"] = rpc::to_quantity(*(b.block.header.excess_blob_gas));
+    }
+    if (b.block.header.parent_beacon_block_root) {
+        json["block"]["parentBeaconBlockRoot"] = "0x" + silkworm::to_hex(*(b.block.header.parent_beacon_block_root));
+    }
+    if (b.block.header.withdrawals_root) {
+        json["block"]["withdrawalsRoot"] = *b.block.header.withdrawals_root;
+    }
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {

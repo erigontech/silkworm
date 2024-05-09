@@ -30,7 +30,7 @@ using namespace evmc::literals;
 
 namespace silkworm::execution::grpc::client {
 
-static const BlockNum kBlockNumber{100};
+static constexpr BlockNum kBlockNumber{100};
 
 static ::execution::GetHeaderHashNumberResponse sample_response() {
     ::execution::GetHeaderHashNumberResponse response;
@@ -81,7 +81,7 @@ TEST_CASE("fork_choice_from_response", "[node][execution][grpc]") {
         {sample_proto_fork_choice(), sample_fork_choice()},
     };
     for (const auto& [proto_fork_choice, expected_fork_choice] : fixtures) {
-        SECTION("rps head hash: " + std::to_string(proto_fork_choice.timeout())) {
+        SECTION("response: " + std::to_string(proto_fork_choice.timeout())) {
             const auto fork_choice{fork_choice_from_response(proto_fork_choice)};
             CHECK(fork_choice.head_block_hash == expected_fork_choice.head_block_hash);
             CHECK(fork_choice.timeout == expected_fork_choice.timeout);

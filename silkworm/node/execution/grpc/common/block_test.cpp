@@ -17,17 +17,17 @@
 #include "block.hpp"
 
 #include <string_view>
-#include <utility>
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/node/test_util/fixture.hpp>
 
 namespace silkworm::execution::grpc {
 
 TEST_CASE("deserialize_hex_as_bytes", "[node][execution][grpc]") {
-    const std::vector<std::pair<std::string_view, std::vector<Bytes>>> fixtures{
+    const test_util::Fixtures<std::string_view, std::vector<Bytes>> fixtures{
         {"", {Bytes{}}},
         {"0x01", {Bytes{0x01}}},
         {"0x0102", {Bytes{0x01, 0x02}}},
@@ -46,8 +46,8 @@ TEST_CASE("deserialize_hex_as_bytes", "[node][execution][grpc]") {
     }
 }
 
-static auto parent_hash{0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32};
-static auto ommers_hash{0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32};
+static constexpr auto parent_hash{0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32};
+static constexpr auto ommers_hash{0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32};
 static auto beneficiary{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
 static auto state_root{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126d_bytes32};
 static auto transactions_root{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32};
@@ -57,7 +57,7 @@ static auto block_number{5u};
 static auto gas_limit{1000000u};
 static auto gas_used{1000000u};
 static auto timestamp{5405021u};
-static Bytes extra_data{*from_hex("0001FF0100")};
+static const Bytes extra_data{*from_hex("0001FF0100")};
 static auto prev_randao{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
 static auto nonce{255u};
 static auto nonce_as_array{std::array<uint8_t, 8>{0, 0, 0, 0, 0, 0, 0, 255}};
@@ -104,7 +104,7 @@ static BlockHeader sample_block_header() {
 }
 
 TEST_CASE("header_from_proto", "[node][execution][grpc]") {
-    const std::vector<std::pair<::execution::Header, BlockHeader>> fixtures{
+    const test_util::Fixtures<::execution::Header, BlockHeader> fixtures{
         {{}, {}},
         {sample_proto_header(), sample_block_header()},
     };
@@ -119,7 +119,7 @@ TEST_CASE("header_from_proto", "[node][execution][grpc]") {
 }
 
 TEST_CASE("convertibility", "[node][execution][grpc]") {
-    const std::vector<std::pair<::execution::Header, BlockHeader>> fixtures{
+    const test_util::Fixtures<::execution::Header, BlockHeader> fixtures{
         {{}, {}},
         {sample_proto_header(), sample_block_header()},
     };

@@ -34,9 +34,13 @@ api::ForkChoice fork_choice_from_response(const ::execution::ForkChoice& respons
     api::ForkChoice fork_choice{
         .head_block_hash = rpc::bytes32_from_H256(response.head_block_hash()),
         .timeout = response.timeout(),
-        .finalized_block_hash = rpc::bytes32_from_H256(response.finalized_block_hash()),
-        .safe_block_hash = rpc::bytes32_from_H256(response.safe_block_hash()),
     };
+    if (response.has_finalized_block_hash()) {
+        fork_choice.finalized_block_hash = rpc::bytes32_from_H256(response.finalized_block_hash());
+    }
+    if (response.has_safe_block_hash()) {
+        fork_choice.safe_block_hash = rpc::bytes32_from_H256(response.safe_block_hash());
+    }
     return fork_choice;
 }
 

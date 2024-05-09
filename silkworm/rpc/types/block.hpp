@@ -92,6 +92,7 @@ struct BlockDetails {
     intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
     std::vector<silkworm::BlockHeader> ommers;
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};
 };
 
 struct IssuanceDetails {

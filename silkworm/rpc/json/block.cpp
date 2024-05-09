@@ -104,6 +104,9 @@ struct GlazeJsonBlock {
     std::optional<std::vector<GlazeJsonTransaction>> transactions;
     std::optional<std::vector<GlazeJsonWithdrawals>> withdrawals;
     std::optional<std::string> withdrawals_root;
+    std::optional<std::string> blob_gas_used;
+    std::optional<std::string> excess_blob_gas;
+    std::optional<std::string> parent_beacon_block_root;
 
     struct glaze {
         using T = GlazeJsonBlock;
@@ -121,6 +124,9 @@ struct GlazeJsonBlock {
             "miner", &T::miner,
             "size", &T::size,
             "gasLimit", &T::gas_limit,
+            "blobGasUsed", &T::blob_gas_used,
+            "excessBlobGas", &T::excess_blob_gas,
+            "parentBeaconBlockRoot", &T::parent_beacon_block_root,
             "timestamp", &T::timestamp,
             "difficulty", &T::difficulty,
             "totalDifficulty", &T::total_difficulty,
@@ -187,6 +193,15 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     to_hex(std::span(result.logs_bloom), header.logs_bloom);
     if (header.withdrawals_root) {
         result.withdrawals_root = std::make_optional("0x" + silkworm::to_hex(*(header.withdrawals_root)));
+    }
+    if (header.blob_gas_used) {
+        result.blob_gas_used = std::make_optional(to_quantity(*(header.blob_gas_used)));
+    }
+    if (header.excess_blob_gas) {
+        result.excess_blob_gas = std::make_optional(to_quantity(*(header.excess_blob_gas)));
+    }
+    if (header.parent_beacon_block_root) {
+        result.parent_beacon_block_root = std::make_optional("0x" + silkworm::to_hex(*(header.parent_beacon_block_root)));
     }
     to_hex(std::span(result.state_root), header.state_root.bytes);
     to_hex(std::span(result.receipts_root), header.receipts_root.bytes);

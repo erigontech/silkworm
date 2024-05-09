@@ -234,9 +234,21 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["VerkleKeyVals"] = nullptr;
         json["VerkleProof"] = nullptr;
     }
-    json["blobGasUsed"] = nullptr;
-    json["excessBlobGas"] = nullptr;
-    json["parentBeaconBlockRoot"] = nullptr;
+    if (header.blob_gas_used) {
+        json["blobGasUsed"] = rpc::to_quantity(*header.blob_gas_used);
+    } else {
+        json["blobGasUsed"] = nullptr;
+    }
+    if (header.excess_blob_gas) {
+        json["excessBlobGas"] = rpc::to_quantity(*header.excess_blob_gas);
+    } else {
+        json["excessBlobGas"] = nullptr;
+    }
+    if (header.parent_beacon_block_root) {
+        json["parentBeaconBlockRoot"] = "0x" + to_hex(*header.parent_beacon_block_root);
+    } else {
+        json["parentBeaconBlockRoot"] = nullptr;
+    }
     if (header.withdrawals_root) {
         json["withdrawalsRoot"] = *header.withdrawals_root;
     } else {
@@ -340,6 +352,22 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     }
 
     json["totalFees"] = to_quantity(b.total_fees);
+
+    if (b.block.header.blob_gas_used) {
+        json["block"]["blobGasUsed"] = rpc::to_quantity(*b.block.header.blob_gas_used);
+    }
+    if (b.block.header.excess_blob_gas) {
+        json["block"]["excessBlobGas"] = rpc::to_quantity(*b.block.header.excess_blob_gas);
+    }
+    if (b.block.header.parent_beacon_block_root) {
+        json["block"]["parentBeaconBlockRoot"] = "0x" + silkworm::to_hex(*b.block.header.parent_beacon_block_root);
+    }
+    if (b.block.header.withdrawals_root) {
+        json["block"]["withdrawalsRoot"] = *b.block.header.withdrawals_root;
+    }
+    if (b.block.withdrawals) {
+        json["block"]["withdrawals"] = *b.block.withdrawals;
+    }
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {

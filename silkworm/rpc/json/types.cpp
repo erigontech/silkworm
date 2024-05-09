@@ -234,9 +234,15 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["VerkleKeyVals"] = nullptr;
         json["VerkleProof"] = nullptr;
     }
-    json["blobGasUsed"] = nullptr;
-    json["excessBlobGas"] = nullptr;
-    json["parentBeaconBlockRoot"] = nullptr;
+    if (header.blob_gas_used) {
+       json["blobGasUsed"] = rpc::to_quantity(*(header.blob_gas_used));
+    }
+    if (header.excess_blob_gas) {
+       json["excessBlobGas"] = rpc::to_quantity(*(header.excess_blob_gas)); 
+    }
+    if (header.parent_beacon_block_root) {
+       json["parentBeaconBlockRoot"] = "0x" + to_hex(*(header.parent_beacon_block_root));
+    }
     if (header.withdrawals_root) {
         json["withdrawalsRoot"] = *header.withdrawals_root;
     } else {

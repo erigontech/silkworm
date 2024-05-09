@@ -19,25 +19,26 @@
 #include <optional>
 
 #include <catch2/catch.hpp>
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/interfaces/execution/execution.pb.h>
 #include <silkworm/node/test_util/fixture.hpp>
+#include <silkworm/node/test_util/sample_blocks.hpp>
 
-using namespace evmc::literals;
+#include "../../../test_util/sample_protos.hpp"
 
 namespace silkworm::execution::grpc::client {
 
-static constexpr BlockNum kBlockNumber{100};
-static constexpr auto kBlockHash{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
+using namespace evmc::literals;
+using namespace silkworm::execution::test_util;
+using namespace silkworm::test_util;
 
 static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
     if (has_number) {
-        return kBlockNumber;
+        return kSampleBlockNumber;
     } else {
-        return kBlockHash;
+        return kSampleBlockHash;
     }
 }
 
@@ -54,10 +55,10 @@ static ::execution::GetSegmentRequest sample_proto_get_segment_request(std::opti
 }
 
 TEST_CASE("request_from_block_number_or_hash", "[node][execution][grpc]") {
-    const test_util::Fixtures<api::BlockNumberOrHash, ::execution::GetSegmentRequest> fixtures{
+    const Fixtures<api::BlockNumberOrHash, ::execution::GetSegmentRequest> fixtures{
         {{}, sample_proto_get_segment_request(0, {})},  // BlockNumberOrHash contains 1st variant as default
-        {sample_block_number_or_hash(true), sample_proto_get_segment_request(kBlockNumber, {})},
-        {sample_block_number_or_hash(false), sample_proto_get_segment_request({}, kBlockHash)},
+        {sample_block_number_or_hash(true), sample_proto_get_segment_request(kSampleBlockNumber, {})},
+        {sample_block_number_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
     };
     for (const auto& [number_or_hash, expected_segment_request] : fixtures) {
         SECTION("block_number_or_hash index: " + std::to_string(number_or_hash.index())) {
@@ -90,7 +91,7 @@ static std::optional<TotalDifficulty> sample_total_difficulty(bool has_value) {
 }
 
 TEST_CASE("total_difficulty_from_response", "[node][execution][grpc]") {
-    const test_util::Fixtures<::execution::GetTDResponse, std::optional<TotalDifficulty>> fixtures{
+    const Fixtures<::execution::GetTDResponse, std::optional<TotalDifficulty>> fixtures{
         {sample_td_response(false), sample_total_difficulty(false)},
         {sample_td_response(true), sample_total_difficulty(true)},
     };
@@ -98,6 +99,44 @@ TEST_CASE("total_difficulty_from_response", "[node][execution][grpc]") {
         SECTION("expected_total_difficulty: " + std::to_string(expected_total_difficulty.has_value())) {
             const auto total_difficulty{total_difficulty_from_response(response)};
             CHECK(total_difficulty == expected_total_difficulty);
+        }
+    }
+}
+
+static ::execution::GetHeaderResponse sample_get_header_response() {
+    ::execution::GetHeaderResponse response;
+    sample_proto_header(response.mutable_header());
+    return response;
+}
+
+TEST_CASE("header_from_response", "[node][execution][grpc]") {
+    const Fixtures<::execution::GetHeaderResponse, std::optional<BlockHeader>> fixtures{
+        {{}, {}},
+        {sample_get_header_response(), sample_block_header()},
+    };
+    for (const auto& [response, expected_block_header] : fixtures) {
+        SECTION("expected_block_header: " + std::to_string(expected_block_header.has_value())) {
+            const auto block_header{header_from_response(response)};
+            CHECK(block_header == expected_block_header);
+        }
+    }
+}
+
+static ::execution::GetBodyResponse sample_get_body_response() {
+    ::execution::GetBodyResponse response;
+    sample_proto_body(response.mutable_body());
+    return response;
+}
+
+TEST_CASE("body_from_response", "[node][execution][grpc]") {
+    const Fixtures<::execution::GetBodyResponse, std::optional<BlockBody>> fixtures{
+        {{}, {}},
+        {sample_get_body_response(), sample_block_body()},
+    };
+    for (const auto& [response, expected_block_body] : fixtures) {
+        SECTION("expected_block_body: " + std::to_string(expected_block_body.has_value())) {
+            const auto block_body{body_from_response(response)};
+            CHECK(block_body == expected_block_body);
         }
     }
 }

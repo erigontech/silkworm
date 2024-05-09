@@ -146,7 +146,21 @@ Task<void> GetBodyCall::operator()(api::DirectService& service) {
     try {
         const auto block_number_or_hash{block_number_or_hash_from_request(request_)};
         const std::optional<BlockBody> result = co_await service.get_body(block_number_or_hash);
-        reply = response_from_body(result);
+        const std::optional<BlockHeader> header = co_await service.get_header(block_number_or_hash);
+        Hash block_hash{};
+        BlockNum block_number{0};
+        if (std::holds_alternative<Hash>(block_number_or_hash)) {
+            block_hash = std::get<Hash>(block_number_or_hash);
+            if (header) {
+                block_number = header->number;
+            }
+        } else {
+            block_number = std::get<BlockNum>(block_number_or_hash);
+            if (header) {
+                block_hash = header->hash();
+            }
+        }
+        reply = response_from_body(result, block_hash, block_number);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
         status = ::grpc::Status{::grpc::StatusCode::INTERNAL, e.what()};

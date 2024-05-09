@@ -28,7 +28,7 @@
 
 #include "../../../test_util/sample_protos.hpp"
 
-namespace silkworm::execution::grpc::client {
+namespace silkworm::execution::grpc::server {
 
 using namespace evmc::literals;
 using namespace silkworm::execution::test_util;
@@ -41,14 +41,19 @@ static proto::GetHeaderHashNumberResponse sample_response() {
     return response;
 }
 
-TEST_CASE("block_number_from_response", "[node][execution][grpc]") {
-    const Fixtures<proto::GetHeaderHashNumberResponse, std::optional<BlockNum>> fixtures{
-        {{}, std::nullopt},
-        {sample_response(), kSampleBlockNumber},
+TEST_CASE("response_from_block_number", "[node][execution][grpc]") {
+    const Fixtures<std::optional<BlockNum>, proto::GetHeaderHashNumberResponse> fixtures{
+        {std::nullopt, {}},
+        {kSampleBlockNumber, sample_response()},
     };
-    for (const auto& [response, expected_block_num] : fixtures) {
-        SECTION("response: " + std::to_string(response.block_number())) {
-            CHECK(block_number_from_response(response) == expected_block_num);
+    for (const auto& [block_num, expected_response] : fixtures) {
+        SECTION("response: " + std::to_string(expected_response.block_number())) {
+            const auto response{response_from_block_number(block_num)};
+            // CHECK(response == expected_response);  // requires operator== in gRPC
+            CHECK(response.has_block_number() == expected_response.has_block_number());
+            if (response.has_block_number()) {
+                CHECK(response.block_number() == expected_response.block_number());
+            }
         }
     }
 }
@@ -78,20 +83,23 @@ static api::ForkChoice sample_fork_choice() {
     return fork_choice;
 }
 
-TEST_CASE("fork_choice_from_response", "[node][execution][grpc]") {
-    const Fixtures<proto::ForkChoice, api::ForkChoice> fixtures{
+TEST_CASE("response_from_fork_choice", "[node][execution][grpc]") {
+    const Fixtures<api::ForkChoice, proto::ForkChoice> fixtures{
         {{}, {}},
-        {sample_proto_fork_choice(), sample_fork_choice()},
+        {sample_fork_choice(), sample_proto_fork_choice()},
     };
-    for (const auto& [proto_fork_choice, expected_fork_choice] : fixtures) {
-        SECTION("response: " + std::to_string(proto_fork_choice.timeout())) {
-            const auto fork_choice{fork_choice_from_response(proto_fork_choice)};
-            CHECK(fork_choice.head_block_hash == expected_fork_choice.head_block_hash);
-            CHECK(fork_choice.timeout == expected_fork_choice.timeout);
-            CHECK(fork_choice.finalized_block_hash == expected_fork_choice.finalized_block_hash);
-            CHECK(fork_choice.safe_block_hash == expected_fork_choice.safe_block_hash);
+    for (const auto& [fork_choice, expected_proto_fork_choice] : fixtures) {
+        SECTION("response: " + std::to_string(fork_choice.timeout)) {
+            const auto proto_fork_choice{response_from_fork_choice(fork_choice)};
+            // CHECK(proto_fork_choice == expected_proto_fork_choice);  // requires operator== in gRPC
+            CHECK(proto_fork_choice.head_block_hash() == expected_proto_fork_choice.head_block_hash());
+            CHECK(proto_fork_choice.timeout() == expected_proto_fork_choice.timeout());
+            CHECK(proto_fork_choice.has_finalized_block_hash() == expected_proto_fork_choice.has_finalized_block_hash());
+            CHECK(proto_fork_choice.finalized_block_hash() == expected_proto_fork_choice.finalized_block_hash());
+            CHECK(proto_fork_choice.has_safe_block_hash() == expected_proto_fork_choice.has_safe_block_hash());
+            CHECK(proto_fork_choice.safe_block_hash() == expected_proto_fork_choice.safe_block_hash());
         }
     }
 }
 
-}  // namespace silkworm::execution::grpc::client
+}  // namespace silkworm::execution::grpc::server

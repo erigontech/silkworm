@@ -105,8 +105,8 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         std::reverse(matching_block_numbers.begin(), matching_block_numbers.end());
     }
 
-    std::uint64_t logCount{0};
-    std::uint64_t blockCount{0};
+    std::uint64_t log_count{0};
+    std::uint64_t block_count{0};
 
     Logs chunk_logs;
     Logs filtered_chunk_logs;
@@ -133,7 +133,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
 
             filtered_chunk_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - logCount);
+            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
 
             if (!filtered_chunk_logs.empty()) {
                 const auto tx_index = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
@@ -141,11 +141,11 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                 for (auto& log : filtered_chunk_logs) {
                     log.tx_index = tx_index;
                 }
-                logCount += filtered_chunk_logs.size();
-                SILK_TRACE << "logCount: " << logCount;
+                log_count += filtered_chunk_logs.size();
+                SILK_TRACE << "log_count: " << log_count;
                 filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.rbegin(), filtered_chunk_logs.rend());
             }
-            return options.log_count == 0 || options.log_count > logCount;
+            return options.log_count == 0 || options.log_count > log_count;
         });
         SILK_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size();
 
@@ -166,11 +166,11 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             }
             logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
         }
-        blockCount++;
-        if (options.log_count != 0 && options.log_count <= logCount) {
+        block_count++;
+        if (options.log_count != 0 && options.log_count <= log_count) {
             break;
         }
-        if (options.block_count != 0 && options.block_count == blockCount) {
+        if (options.block_count != 0 && options.block_count == block_count) {
             break;
         }
     }

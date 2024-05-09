@@ -58,7 +58,7 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
 TEST_CASE("block_number_or_hash_from_request", "[node][execution][grpc]") {
     const Fixtures<proto::GetSegmentRequest, api::BlockNumberOrHash> fixtures{
         {sample_proto_get_segment_request({}, {}), {}},  // BlockNumberOrHash contains 1st variant as default
-        {sample_proto_get_segment_request(0, {}), {}},  // BlockNumberOrHash contains 1st variant as default
+        {sample_proto_get_segment_request(0, {}), {}},   // BlockNumberOrHash contains 1st variant as default
         {sample_proto_get_segment_request(kSampleBlockNumber, {}), sample_block_number_or_hash(true)},
         {sample_proto_get_segment_request({}, kSampleBlockHash), sample_block_number_or_hash(false)},
     };

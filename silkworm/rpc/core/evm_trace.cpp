@@ -802,6 +802,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack
     const auto opcode = execution_state.original_code[pc];
     auto opcode_name = get_op_name(opcode_names_, opcode);
 
+    current_opcode_ = opcode;
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(opcode)
@@ -854,7 +855,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "bad instruction";
+            trace.error = "invalid opcode: opcode 0x" + evmc::hex(current_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
@@ -874,6 +875,8 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
     }
+
+    current_opcode_.reset();
 
     SILK_DEBUG << "TraceTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
@@ -907,17 +910,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
 
     switch (result.status) {
         case evmc_status_code::EVMC_SUCCESS:
-            trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
-            if (!result.data.empty()) {
-                if (trace.trace_result->code) {
-                    trace.trace_result->code = result.data;
-                } else if (trace.trace_result->output) {
-                    trace.trace_result->output = result.data;
-                }
-            }
-            break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "Reverted";
             trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {
@@ -926,31 +919,8 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
                     trace.trace_result->output = result.data;
                 }
             }
-            break;
-        case evmc_status_code::EVMC_OUT_OF_GAS:
-        case evmc_status_code::EVMC_STACK_OVERFLOW:
-            trace.error = "out of gas";
-            trace.trace_result.reset();
-            break;
-        case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "bad instruction";
-            trace.trace_result.reset();
-            break;
-        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
-            trace.error = "invalid opcode: INVALID";
-            trace.trace_result.reset();
-            break;
-        case evmc_status_code::EVMC_STACK_UNDERFLOW:
-            trace.error = "stack underflow";
-            trace.trace_result.reset();
-            break;
-        case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            trace.error = "invalid jump destination";
-            trace.trace_result.reset();
             break;
         default:
-            trace.error = "";
-            trace.trace_result.reset();
             break;
     }
 }

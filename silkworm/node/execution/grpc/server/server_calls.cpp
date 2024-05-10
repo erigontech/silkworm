@@ -25,6 +25,7 @@
 #include "endpoint/getters.hpp"
 #include "endpoint/insertion.hpp"
 #include "endpoint/range.hpp"
+#include "endpoint/status.hpp"
 #include "endpoint/validation.hpp"
 
 namespace silkworm::execution::grpc::server {
@@ -34,8 +35,12 @@ Task<void> InsertBlocksCall::operator()(api::DirectService& service) {
     ::grpc::Status status;
     try {
         const auto blocks{blocks_from_insertion_request(request_)};
-        const api::InsertionResult result = co_await service.insert_blocks(blocks);
-        reply = response_from_insertion_result(result);
+        if (blocks) {
+            const api::InsertionResult result = co_await service.insert_blocks(*blocks);
+            reply = response_from_insertion_result(result);
+        } else {
+            reply.set_result(proto_from_execution_status(api::ExecutionStatus::kBadBlock));
+        }
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
         status = ::grpc::Status{::grpc::StatusCode::INTERNAL, e.what()};

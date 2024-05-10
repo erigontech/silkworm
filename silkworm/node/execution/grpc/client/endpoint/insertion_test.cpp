@@ -52,7 +52,7 @@ static proto::InsertBlocksRequest sample_proto_insert_block_request() {
 
 TEST_CASE("insertion_request_from_blocks", "[node][execution][grpc]") {
     const Fixtures<api::Blocks, proto::InsertBlocksRequest> fixtures{
-        //{{}, {}},
+        {{}, {}},
         {sample_blocks(), sample_proto_insert_block_request()},
     };
     for (const auto& [blocks, expected_insertion_request] : fixtures) {

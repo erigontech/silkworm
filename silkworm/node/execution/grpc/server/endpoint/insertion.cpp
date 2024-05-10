@@ -23,7 +23,7 @@ namespace silkworm::execution::grpc::server {
 
 namespace proto = ::execution;
 
-api::Blocks blocks_from_insertion_request(const proto::InsertBlocksRequest& request) {
+std::optional<api::Blocks> blocks_from_insertion_request(const proto::InsertBlocksRequest& request) {
     api::Blocks blocks;
     for (int index{0}; index < request.blocks_size(); ++index) {
         const auto& request_block{request.blocks(index)};
@@ -31,7 +31,9 @@ api::Blocks blocks_from_insertion_request(const proto::InsertBlocksRequest& requ
         header_from_proto(request_block.header(), block->header);
         Hash block_hash;
         body_from_proto(request_block.body(), *block, block_hash, block->header.number);
-        SILKWORM_ASSERT(block->header.hash() == block_hash);
+        if (block->header.hash() != block_hash) {
+            return {};
+        }
         blocks.emplace_back(std::move(block));
     }
     return blocks;

@@ -25,7 +25,7 @@ namespace silkworm::chainsync {
 
 Sync::Sync(const boost::asio::any_io_executor& executor,
            mdbx::env chaindata_env,
-           execution::Client& execution,
+           execution::api::Client& execution,
            const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
            const EngineRpcSettings& rpc_settings)

@@ -36,7 +36,7 @@ namespace silkworm::chainsync {
 
 class PoSSync : public ChainSync, public rpc::engine::ExecutionEngine {
   public:
-    PoSSync(BlockExchange&, execution::Client&);
+    PoSSync(BlockExchange&, execution::api::Client&);
 
     Task<void> async_run() override;
 

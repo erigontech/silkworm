@@ -295,7 +295,7 @@ int main(int argc, char* argv[]) {
         // Execution: the execution layer engine
         // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         silkworm::node::Node execution_node{settings.node_settings, sentry_client, chaindata_db};
-        execution::LocalClient& execution_client{execution_node.execution_local_client()};
+        execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
 
         // Set up the execution node (e.g. load pre-verified hashes, download+index snapshots...)
         execution_node.setup();

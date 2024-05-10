@@ -21,7 +21,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/stagedsync/client.hpp>
+#include <silkworm/node/execution/api/client.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 
@@ -34,7 +34,7 @@ namespace asio = boost::asio;
 
 class PoWSync : public ChainSync, ActiveComponent {
   public:
-    PoWSync(BlockExchange&, execution::Client&);
+    PoWSync(BlockExchange&, execution::api::Client&);
 
     Task<void> async_run() override;
 

@@ -51,6 +51,9 @@ struct Call {
         silkworm::Transaction txn{};
         if (from) {
             txn.set_sender(*from);
+        } else {
+            constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
+            txn.set_sender(zero_address);
         }
         txn.to = to;
         if (override_nonce) {

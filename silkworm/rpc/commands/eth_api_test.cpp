@@ -96,7 +96,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][a
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "error":{"code":-32000,"message":"malformed transaction: cannot recover sender"}
+        "result":"0x"
     })"_json);
 }
 

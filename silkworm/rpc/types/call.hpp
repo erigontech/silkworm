@@ -49,12 +49,7 @@ struct Call {
                                                        const std::optional<AccessList>& override_access_list = std::nullopt,
                                                        const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
-        if (from) {
-            txn.set_sender(*from);
-        } else {
-            constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
-            txn.set_sender(zero_address);
-        }
+        txn.set_sender(from ? *from : evmc::address{});
         txn.to = to;
         if (override_nonce) {
             txn.nonce = *override_nonce;

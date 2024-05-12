@@ -227,7 +227,7 @@ class TraceTracer : public silkworm::EvmTracer {
     bool is_precompile_{false};
     std::vector<Trace>& traces_;
     silkworm::IntraBlockState& initial_ibs_;
-    std::optional<std::uint8_t> current_opcode_;
+    std::optional<uint8_t> current_opcode_;
     const char* const* opcode_names_ = nullptr;
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};

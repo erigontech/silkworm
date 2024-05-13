@@ -855,7 +855,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "invalid opcode: opcode 0x" + evmc::hex(current_opcode_.value_or(0)) + " not defined";
+            trace.error = "invalid opcode: opcode 0x" + get_op_name(opcode_names_, current_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:

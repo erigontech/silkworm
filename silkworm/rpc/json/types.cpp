@@ -348,7 +348,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
         json["issuance"]["uncleReward"] = to_quantity(b.issuance.ommers_reward);
         json["issuance"]["blockReward"] = to_quantity(b.issuance.total_reward);
     } else {
-        json["issuance"] = nlohmann::json::object();
+        json["issuance"]["issuance"] = "0x0";
+        json["issuance"]["uncleReward"] = "0x0";
+        json["issuance"]["blockReward"] = "0x0";
     }
 
     json["totalFees"] = to_quantity(b.total_fees);

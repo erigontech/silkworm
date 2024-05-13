@@ -1468,7 +1468,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
                 "to": "0x6951c35e335fa18c97cb207119133cd8009580cd",
                 "value": "0x0"
             },
-            "error": "bad instruction",
+            "error": "invalid opcode: opcode 0x4b not defined",
             "result": null,
             "subtraces": 0,
             "traceAddress": [],

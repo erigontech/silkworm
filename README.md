@@ -1,6 +1,6 @@
 # Silkworm - C++ Ethereum Execution Client
 
-C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon architecture].
+C++ implementation of the [Ethereum] Execution Layer (EL) protocol based on the [Erigon architecture].
 
 [![Linux](https://img.shields.io/circleci/build/gh/erigontech/silkworm?label=Linux)](https://circleci.com/gh/erigontech/silkworm)
 [![macOS](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/erigontech/silkworm/actions/workflows/macOS.yml)
@@ -13,6 +13,7 @@ C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [E
 ## Table of Contents
 
 - [About Silkworm](#about)
+- [About Silkworm for Erigon, aka Erigon++](#erigon++)
 - [Obtaining Source Code](#source-code)
 - [Building on Linux & macOS](#build-on-unix)
 - [Building on Windows](#build-on-windows)
@@ -28,11 +29,34 @@ Silkworm is a greenfield C++ implementation of the Ethereum protocol based on th
 It aims to be the fastest Ethereum client while maintaining the high quality and readability of its source code.
 Silkworm uses [libmdbx] as the database engine.
 
-Silkworm was conceived as an evolution of the [Erigon] project,
-as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
+Silkworm was conceived as an evolution of the [Erigon] project, as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
 
 Silkworm is under active development and hasn't reached the alpha phase yet.
 Hence, there have been no releases so far.
+
+
+<a name="erigon++"></a>
+## About Silkworm for Erigon a.k.a. Erigon++
+
+At the very beginning, one of the main goals of Silkworm was implementing high-performance C++ libraries to be used
+directly within Erigon itself. Recently we focused again on this initial target, making it our highest priority and
+delivering the first release of [Erigon++] starting from Erigon 2.59.0.
+
+Please note that Erigon++ is just a fancy name for identifying such usage of Silkworm libraries within Erigon, which can
+be selectively enabled by specifying optional flags in Erigon command-line.
+
+There are two possible usages of Erigon++:
+
+* as a user, you may want to test Erigon++ features out of the box: in this case, no Silkworm build is required, you
+just build Erigon as usual and then enable any of the command-line flags:
+```
+--silkworm.exec [enables historical block execution powered by Silkworm]
+--silkworm.rpc [enables Ethereum JSON-RPC API powered by Silkworm]
+--silkworm.sentry [enables Execution Layer p2p networking powered by Silkworm]
+```
+* as a developer, you may want to experiment how you can build Erigon with Silkworm bindings and how you can play with
+them together through [Cgo]. If you are interested, we have some documentation about the development process of our
+[C API for Erigon](https://github.com/erigontech/silkworm/blob/master/docs/CONTRIBUTING.md#c-api-for-erigon).
 
 
 <a name="source-code"></a>
@@ -198,11 +222,15 @@ Silkworm is licensed under the terms of the Apache license.
 See [LICENSE](LICENSE) for more information.
 
 
+[Ethereum]: https://ethereum.org
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
 [Erigon architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
+[Erigon++]: https://erigon.tech/erigonpp
+[Cgo]: https://go.dev/blog/cgo
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
 [staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md
 [Visual Studio]: https://www.visualstudio.com/downloads
 [Yellow Paper]: https://ethereum.github.io/yellowpaper/paper.pdf
+

@@ -716,7 +716,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
     }
 }
 
-void VmTraceTracer::on_creation_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
+void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
     vm_trace_.code = "0x" + silkworm::to_hex(ByteView{msg.input_data, msg.input_size});
 }
 
@@ -892,9 +892,9 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
                << " gas_left: " << std::dec << result.gas_left;
 }
 
-void TraceTracer::on_creation_check_failed(const evmc_result& result, const evmc_message& msg) noexcept {
+void TraceTracer::on_pre_check_failed(const evmc_result& result, const evmc_message& msg) noexcept {
     Trace trace;
-    trace.type = "create";
+    trace.type = (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2) ? "create" : "call";
 
     auto& trace_action = std::get<TraceAction>(trace.action);
 

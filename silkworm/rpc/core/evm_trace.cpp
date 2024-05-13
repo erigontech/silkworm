@@ -535,16 +535,20 @@ void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
     }
 }
 
+static std::string get_opcode_hex(uint8_t opcode) {
+    auto hex = evmc::hex(opcode);
+    if (opcode < 16) {
+        hex = hex.substr(1);
+    }
+    return hex;
+}
+
 std::string get_op_name(const char* const* names, std::uint8_t opcode) {
     const auto name = names[opcode];
     if (name != nullptr) {
         return name;
     }
-    auto hex = evmc::hex(opcode);
-    if (opcode < 16) {
-        hex = hex.substr(1);
-    }
-    return "opcode 0x" + hex + " not defined";
+    return "opcode 0x" + get_opcode_hex(opcode) + " not defined";
 }
 
 static const char* PADDING = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -855,7 +859,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "invalid opcode: opcode 0x" + evmc::hex(current_opcode_.value_or(0)) + " not defined";
+            trace.error = "invalid opcode: opcode 0x" + get_opcode_hex(current_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:

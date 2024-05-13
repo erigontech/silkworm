@@ -144,7 +144,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     state_.create_contract(contract_addr);
 
-//    const evmc_revision rev{revision()};
+    //    const evmc_revision rev{revision()};
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         state_.set_nonce(contract_addr, 1);
     }

@@ -1807,5 +1807,4 @@ void TouchTracer::on_self_destruct(const evmc::address& address, const evmc::add
     }
 }
 
-
 }  // namespace silkworm::rpc::trace

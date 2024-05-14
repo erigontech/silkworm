@@ -429,6 +429,7 @@ class TouchTracer : public silkworm::EvmTracer {
     TouchTracer& operator=(const TouchTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     bool found() const { return found_; }
 

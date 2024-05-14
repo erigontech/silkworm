@@ -1530,7 +1530,7 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
         auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
         Tracers tracers{tracer};
 
-        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
         return tracer->found();
     });
 
@@ -1782,22 +1782,30 @@ void TouchTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     auto sender = evmc::address{msg.sender};
     auto recipient = evmc::address{msg.recipient};
     auto code_address = evmc::address{msg.code_address};
+    auto kind = msg.kind;
 
-    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
-
-    if (!found_ && (sender == address_ || recipient == address_ || code_address == address_)) {
-        this->found_ = true;
+    if (sender == address_ || recipient == address_ || (code_address == address_ && (kind == EVMC_DELEGATECALL || kind == EVMC_CALLCODE))) {
+        found_ = true;
     }
 
     SILK_DEBUG << "TouchTracer::on_execution_start: gas: " << std::dec << msg.gas
-               << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
                << ", sender: " << sender
-               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", recipient: " << recipient
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code);
 }
+
+void TouchTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    if (found_) {
+        return;
+    }
+    if (address == address_ || beneficiary == address_) {
+        found_ = true;
+    }
+}
+
 
 }  // namespace silkworm::rpc::trace

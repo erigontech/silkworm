@@ -21,7 +21,7 @@ namespace silkworm::remote::kv::api {
 DirectService::DirectService() = default;
 
 /** Temporal Point Queries **/
-    
+
 // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
 Task<HistoryPointResult> DirectService::get_history(const HistoryPointQuery&) {
     // TODO(canepat) implement

@@ -24,8 +24,8 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 

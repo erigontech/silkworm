@@ -42,9 +42,9 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
+#include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
 #include <silkworm/node/remote/kv/grpc/server/kv_calls.hpp>
-#include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 
 using namespace std::chrono_literals;

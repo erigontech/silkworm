@@ -65,8 +65,8 @@ class ExecutionEngine : public Stoppable {
     virtual VerificationResultFuture verify_chain(Hash head_block_hash);
 
     virtual bool notify_fork_choice_update(Hash head_block_hash,
-                                           std::optional<Hash> finalized_block_hash = {},
-                                           std::optional<Hash> safe_block_hash = {});
+                                           std::optional<Hash> finalized_block_hash,
+                                           std::optional<Hash> safe_block_hash);
 
     // state
     virtual BlockNum block_progress() const;

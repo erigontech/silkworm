@@ -197,7 +197,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(!present_in_canonical);
 
         // reverting the chain
-        bool updated = exec_engine.notify_fork_choice_update(*header0_hash);
+        bool updated = exec_engine.notify_fork_choice_update(*header0_hash, {}, {});
         CHECK(updated);
 
         CHECK(exec_engine.last_fork_choice() == last_fcu_at_start_time);  // not changed
@@ -257,7 +257,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(!present_in_canonical);  // the current head is not yet accepted
 
         // confirming the chain
-        exec_engine.notify_fork_choice_update(block1_hash, header0_hash);
+        exec_engine.notify_fork_choice_update(block1_hash, header0_hash, {});
 
         // checking the status
         CHECK(exec_engine.last_fork_choice() == block1_id);
@@ -288,7 +288,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(valid_chain.current_head == BlockId{3, block3_hash});
 
         // confirming the chain
-        auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, block1_hash);
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, block1_hash, {});
         CHECK(fcu_updated);
 
         CHECK(exec_engine.last_fork_choice() == BlockId{3, block3_hash});
@@ -316,7 +316,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(valid_chain.current_head == BlockId{4, block4_hash});
 
             // confirming the chain (i.e. flushing the memory mutation on the main db)
-            fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block1_hash);
+            fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block1_hash, {});
             CHECK(fcu_updated);
 
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
@@ -348,7 +348,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
 
             // confirming the chain
-            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, header0_hash);
+            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, header0_hash, {});
             CHECK(fcu_updated);
 
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});

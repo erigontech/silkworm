@@ -115,16 +115,18 @@ concurrency::AwaitableFuture<VerificationResult> ExtendingFork::verify_chain() {
     return awaitable_future;
 }
 
-concurrency::AwaitableFuture<bool> ExtendingFork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+concurrency::AwaitableFuture<bool> ExtendingFork::fork_choice(Hash head_block_hash,
+                                                              std::optional<Hash> finalized_block_hash,
+                                                              std::optional<Hash> safe_block_hash) {
     propagate_exception_if_any();
 
     concurrency::AwaitablePromise<bool> promise{io_context_.get_executor()};  // note: promise uses an external io_context
     auto awaitable_future = promise.get_future();
 
-    post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash]() mutable {
+    post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash, safe_block_hash]() mutable {
         try {
             if (exception_) return;
-            auto updated = fork_->fork_choice(head_block_hash, finalized_block_hash);
+            auto updated = fork_->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);
             current_head_ = fork_->current_head();
             promise_.set_value(updated);
         } catch (...) {

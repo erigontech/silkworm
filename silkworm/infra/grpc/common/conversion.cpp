@@ -205,9 +205,9 @@ void span_from_H128(const ::types::H128& h128, ByteSpan<16> bytes) {
 
 std::unique_ptr<::types::H2048> H2048_from_string(std::string_view orig) {
     auto lo_lo = H512_from_string(orig);
-    auto lo_hi = H512_from_string(orig.substr(512));
-    auto hi_lo = H512_from_string(orig.substr(1024));
-    auto hi_hi = H512_from_string(orig.substr(1536));
+    auto lo_hi = H512_from_string(orig.substr(64));
+    auto hi_lo = H512_from_string(orig.substr(128));
+    auto hi_hi = H512_from_string(orig.substr(192));
 
     auto hi = std::make_unique<::types::H1024>();
     auto lo = std::make_unique<::types::H1024>();

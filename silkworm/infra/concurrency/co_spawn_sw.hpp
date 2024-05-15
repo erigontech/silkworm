@@ -369,4 +369,12 @@ inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(
                          std::forward<CompletionToken>(token));
 }
 
+template <typename Executor, typename F>
+inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(
+    boost::asio::use_awaitable,
+    typename boost::asio::detail::awaitable_signature<typename boost::asio::result_of<F()>::type>::type = 0)
+    co_spawn_and_await(const Executor& ex, F&& f) {
+    return (co_spawn_sw)(ex, std::forward<F>(f), boost::asio::use_awaitable);
+}
+
 }  // namespace silkworm::concurrency

@@ -52,23 +52,27 @@ namespace asio = boost::asio;
  */
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ~ExecutionEngine() override = default;
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
 
     // actions
-    void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
+    virtual void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
     bool insert_block(const std::shared_ptr<Block>& block);
 
-    concurrency::AwaitableFuture<VerificationResult> verify_chain(Hash head_block_hash);
+    virtual VerificationResultFuture verify_chain(Hash head_block_hash);
 
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    virtual bool notify_fork_choice_update(Hash head_block_hash,
+                                           std::optional<Hash> finalized_block_hash = {},
+                                           std::optional<Hash> safe_block_hash = {});
 
     // state
-    BlockNum block_progress() const;
-    BlockId last_finalized_block() const;
-    BlockId last_fork_choice() const;
+    virtual BlockNum block_progress() const;
+    virtual BlockId last_fork_choice() const;
+    virtual BlockId last_finalized_block() const;
+    virtual BlockId last_safe_block() const;
 
     // header/body retrieval
     std::optional<BlockHeader> get_header(Hash) const;
@@ -78,8 +82,8 @@ class ExecutionEngine : public Stoppable {
     std::optional<BlockBody> get_body(Hash) const;
     std::optional<BlockBody> get_canonical_body(BlockNum) const;
     bool is_canonical(Hash) const;
-    std::optional<BlockNum> get_block_number(Hash) const;
-    std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
+    virtual std::optional<BlockNum> get_block_number(Hash) const;
+    virtual std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const;
 
   protected:
@@ -102,8 +106,9 @@ class ExecutionEngine : public Stoppable {
 
     BlockNum block_progress_{0};
     bool fork_tracking_active_{false};
-    BlockId last_finalized_block_;
     BlockId last_fork_choice_;
+    BlockId last_finalized_block_;
+    BlockId last_safe_block_;
 };
 
 }  // namespace silkworm::stagedsync

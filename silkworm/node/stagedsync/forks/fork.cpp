@@ -19,11 +19,8 @@
 #include <set>
 
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/db_utils.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-
-#include "main_chain.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -76,6 +73,10 @@ BlockId Fork::current_head() const {
 
 BlockId Fork::finalized_head() const {
     return finalized_head_;
+}
+
+BlockId Fork::safe_head() const {
+    return safe_head_;
 }
 
 std::optional<VerificationResult> Fork::head_status() const {
@@ -214,7 +215,7 @@ VerificationResult Fork::verify_chain() {
     return verify_result;
 }
 
-bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash, std::optional<Hash> safe_block_hash) {
     SILK_TRACE << "Fork: fork choice update " << head_block_hash.to_hex();
 
     /* this block is to handle fork choice in the middle of this fork; it requires suitable ExecutionEngine behavior
@@ -253,8 +254,15 @@ bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block
 
     if (finalized_block_hash) {
         db::write_last_finalized_block(memory_tx_, *finalized_block_hash);
-        auto finalized_header = get_header(*finalized_block_hash);
+        const auto finalized_header = get_header(*finalized_block_hash);
+        if (!finalized_header) return false;
         finalized_head_ = {finalized_header->number, *finalized_block_hash};
+    }
+    if (safe_block_hash) {
+        db::write_last_safe_block(memory_tx_, *safe_block_hash);
+        const auto safe_header = get_header(*safe_block_hash);
+        if (!safe_header) return false;
+        safe_head_ = {safe_header->number, *safe_block_hash};
     }
 
     memory_tx_.enable_commit();

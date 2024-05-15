@@ -34,7 +34,7 @@ struct ForkChoice {
 };
 
 struct ForkChoiceResult {
-    ExecutionStatus status;
+    ExecutionStatus status{ExecutionStatus::kSuccess};
     Hash latest_valid_head;
     std::string validation_error;
 

@@ -114,7 +114,7 @@ Task<ValidationResult> Server::validate_chain(Hash head_block_hash) {
 
 Task<ForkChoiceApplication> Server::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
     auto lambda = [](Server* me, Hash h, std::optional<Hash> f) -> Task<ForkChoiceApplication> {
-        bool updated = me->exec_engine_.notify_fork_choice_update(h, f);  // BLOCKING, will block the entire io_context thread
+        bool updated = me->exec_engine_.notify_fork_choice_update(h, f, {});  // BLOCKING, will block the entire io_context thread
 
         auto last_fc = me->exec_engine_.last_fork_choice();
         ForkChoiceApplication application{

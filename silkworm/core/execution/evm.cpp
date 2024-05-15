@@ -101,6 +101,11 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     auto value{intx::be::load<intx::uint256>(message.value)};
     if (state_.get_balance(message.sender) < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
+
+        for (auto tracer : tracers_) {
+            tracer.get().on_pre_check_failed(res.raw(), message);
+        }
+
         return res;
     }
 
@@ -109,6 +114,10 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         // EIP-2681: Limit account nonce to 2^64-1
         // See also https://github.com/ethereum/go-ethereum/blob/v1.10.13/core/vm/evm.go#L426
         res.status_code = EVMC_ARGUMENT_OUT_OF_RANGE;
+
+        for (auto tracer : tracers_) {
+            tracer.get().on_pre_check_failed(res.raw(), message);
+        }
         return res;
     }
     state_.set_nonce(message.sender, nonce + 1);

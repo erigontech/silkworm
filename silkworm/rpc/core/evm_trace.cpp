@@ -716,6 +716,10 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
     }
 }
 
+void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
+    vm_trace_.code = "0x" + silkworm::to_hex(ByteView{msg.input_data, msg.input_size});
+}
+
 void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
@@ -888,9 +892,38 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
                << " gas_left: " << std::dec << result.gas_left;
 }
 
+void TraceTracer::on_pre_check_failed(const evmc_result& result, const evmc_message& msg) noexcept {
+    Trace trace;
+    trace.type = (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2) ? "create" : "call";
+
+    auto& trace_action = std::get<TraceAction>(trace.action);
+
+    auto sender = evmc::address{msg.sender};
+
+    trace_action.from = sender;
+    trace_action.gas = msg.gas;
+    trace_action.init = ByteView{msg.input_data, msg.input_size};
+    trace_action.value = intx::be::load<intx::uint256>(msg.value);
+
+    switch (result.status_code) {
+        case evmc_status_code::EVMC_ARGUMENT_OUT_OF_RANGE:
+            trace.error = "nonce uint64 overflow";
+            break;
+        case evmc_status_code::EVMC_INSUFFICIENT_BALANCE:
+            trace.error = "insufficient balance for transfer";
+            break;
+        default:
+            trace.error = "";
+            break;
+    }
+
+    traces_.push_back(trace);
+}
+
 void TraceTracer::on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     if (index_stack_.empty())
         return;
+
     auto index = index_stack_.top();
     auto start_gas = start_gas_.top();
     index_stack_.pop();

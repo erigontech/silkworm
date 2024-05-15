@@ -179,6 +179,8 @@ class FromToBlockProvider : public BlockProvider {
     Task<BlockProviderResponse> get() override;
 };
 
+inline constexpr int kMaxPageSize = 25;
+
 class OtsRpcApi {
   public:
     OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)

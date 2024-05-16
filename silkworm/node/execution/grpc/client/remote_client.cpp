@@ -217,7 +217,6 @@ class RemoteClientImpl final : public api::Service {
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
-    std::function<Task<void>()> on_disconnect_;
 };
 
 RemoteClient::RemoteClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)

@@ -26,7 +26,7 @@
 #include <silkworm/interfaces/execution/execution.pb.h>
 #include <silkworm/node/test_util/fixture.hpp>
 
-#include "../../../test_util/sample_protos.hpp"
+#include "../../test_util/sample_protos.hpp"
 
 namespace silkworm::execution::grpc::client {
 

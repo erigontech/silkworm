@@ -1779,10 +1779,10 @@ void TouchTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     if (found_) {
         return;
     }
-    auto sender = evmc::address{msg.sender};
-    auto recipient = evmc::address{msg.recipient};
-    auto code_address = evmc::address{msg.code_address};
-    auto kind = msg.kind;
+    const auto& sender = evmc::address{msg.sender};
+    const auto& recipient = evmc::address{msg.recipient};
+    const auto& code_address = evmc::address{msg.code_address};
+    const auto kind = msg.kind;
 
     if (sender == address_ || recipient == address_ || (code_address == address_ && (kind == EVMC_DELEGATECALL || kind == EVMC_CALLCODE))) {
         found_ = true;

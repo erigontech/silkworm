@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <silkworm/node/stagedsync/execution_engine.hpp>
-
 #include "service.hpp"
 
 namespace silkworm::remote::kv::api {

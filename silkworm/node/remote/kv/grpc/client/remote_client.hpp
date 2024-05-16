@@ -20,6 +20,8 @@
 
 #include <agrpc/detail/forward.hpp>
 
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
+
 #include "../../api/client.hpp"
 #include "../../api/service.hpp"
 
@@ -29,6 +31,7 @@ class RemoteClientImpl;
 
 struct RemoteClient : public api::Client {
     RemoteClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context);
+    RemoteClient(std::unique_ptr<::remote::KV::StubInterface> stub, agrpc::GrpcContext& grpc_context);
     ~RemoteClient() override;
 
     std::shared_ptr<api::Service> service() override;

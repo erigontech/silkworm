@@ -72,7 +72,7 @@ class RemoteClient : public Client {
   private:
     rpc::ClientContext& context_;
     std::shared_ptr<::grpc::Channel> channel_;
-    std::unique_ptr<::execution::Execution::Stub> stub_;
+    std::unique_ptr<::execution::Execution::StubInterface> stub_;
 };
 
 }  // namespace silkworm::execution

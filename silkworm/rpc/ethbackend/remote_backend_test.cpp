@@ -25,10 +25,10 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
+#include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
 #include <silkworm/interfaces/remote/ethbackend_mock.grpc.pb.h>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
-#include <silkworm/rpc/test_util/grpc_actions.hpp>
-#include <silkworm/rpc/test_util/grpc_responder.hpp>
 
 namespace silkworm::rpc {
 

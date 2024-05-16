@@ -16,6 +16,7 @@
 
 #include "sentry_client.hpp"
 
+#include <fstream>
 #include <future>
 #include <optional>
 #include <sstream>
@@ -33,6 +34,13 @@
 #include "messages/inbound_get_block_headers.hpp"
 #include "messages/inbound_new_block.hpp"
 #include "messages/inbound_new_block_hashes.hpp"
+
+// In debug mode we dump malformed messages received from Sentry
+#ifdef NDEBUG
+constexpr bool dump_malformed_msg{false};
+#else
+constexpr bool dump_malformed_msg{true};
+#endif
 
 namespace silkworm {
 
@@ -81,9 +89,19 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
         message = std::shared_ptr(decode_inbound_message(message_from_peer));
     } catch (DecodingException& error) {
         PeerId peer_id = message_from_peer.peer_public_key->serialized();
-        log::Warning(kLogTitle) << "received and ignored a malformed message, peer= " << human_readable_id(peer_id)
-                                << ", msg id= " << static_cast<int>(message_from_peer.message.id)
-                                << " data= " << message_from_peer.message.data << " error= " << error.what();
+        log::Warning(kLogTitle) << "received and ignored a malformed message peer=" << human_readable_id(peer_id)
+                                << " msg_id=" << static_cast<int>(message_from_peer.message.id)
+                                << " eth_message_id=" << static_cast<int>(eth_message_id)
+                                << " error=" << error.what();
+        if (dump_malformed_msg) {
+            static int i{0};
+            std::ofstream malformed_msg{"sentry_malformed_msg_" + std::to_string(++i) + ".txt", std::ios::binary};
+            malformed_msg << std::hex << "peer=" << peer_id << "\n";
+            malformed_msg << std::hex << "msg_id=" << static_cast<int>(message_from_peer.message.id) << "\n";
+            malformed_msg << std::hex << "eth_message_id=" << static_cast<int>(eth_message_id) << "\n";
+            malformed_msg << std::hex << "error=" << error.what() << "\n";
+            malformed_msg << std::hex << "data=" << message_from_peer.message.data;
+        }
         penalize_peer_id = std::move(peer_id);
     }
 

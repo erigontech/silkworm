@@ -32,7 +32,6 @@ class HeaderRetrieval {
     static const long max_headers_serve = 1024;               // Amount of block headers to be fetched per retrieval request
 
     explicit HeaderRetrieval(db::ROAccess);
-    void close();
 
     // Headers
     std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);

@@ -39,7 +39,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>

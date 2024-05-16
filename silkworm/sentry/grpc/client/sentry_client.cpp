@@ -42,7 +42,7 @@
 namespace silkworm::sentry::grpc::client {
 
 namespace proto = ::sentry;
-using Stub = proto::Sentry::Stub;
+using Stub = proto::Sentry::StubInterface;
 namespace sw_rpc = silkworm::rpc;
 using namespace api;
 

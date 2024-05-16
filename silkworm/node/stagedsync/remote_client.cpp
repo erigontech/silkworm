@@ -172,7 +172,7 @@ Task<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) {
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
+        &::execution::Execution::StubInterface::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
 
     if (!response.has_header()) {
         co_return std::nullopt;
@@ -194,7 +194,7 @@ Task<std::optional<BlockHeader>> RemoteClient::get_header(BlockNum height, Hash 
     request.set_allocated_block_hash(rpc::H256_from_bytes32(hash).release());
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
+        &::execution::Execution::StubInterface::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
 
     if (!response.has_header()) {
         co_return std::nullopt;
@@ -214,7 +214,7 @@ Task<std::optional<BlockBody>> RemoteClient::get_body(Hash block_hash) {
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
+        &::execution::Execution::StubInterface::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
 
     if (!response.has_body()) {
         co_return std::nullopt;
@@ -233,7 +233,7 @@ Task<std::optional<BlockBody>> RemoteClient::get_body(BlockNum block_number) {
     request.set_block_number(block_number);
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
+        &::execution::Execution::StubInterface::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
 
     if (!response.has_body()) {
         co_return std::nullopt;
@@ -295,7 +295,7 @@ Task<void> RemoteClient::insert_blocks(const BlockVector&) {
 Task<bool> RemoteClient::is_canonical(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncIsCanonicalHash, stub_, *request, *context_.grpc_context(), "failure checking canonical hash");
+        &::execution::Execution::StubInterface::AsyncIsCanonicalHash, stub_, *request, *context_.grpc_context(), "failure checking canonical hash");
 
     co_return response.canonical();
 }
@@ -303,7 +303,7 @@ Task<bool> RemoteClient::is_canonical(Hash block_hash) {
 Task<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, *context_.grpc_context(), "failure getting block number");
+        &::execution::Execution::StubInterface::AsyncGetHeaderHashNumber, stub_, *request, *context_.grpc_context(), "failure getting block number");
 
     if (!response.has_block_number()) co_return std::nullopt;
     co_return response.block_number();
@@ -322,7 +322,7 @@ Task<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
     ::execution::ValidationRequest request;
     request.set_allocated_hash(hash.release());
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncValidateChain, stub_, request, *context_.grpc_context(), "failure verifying chain");
+        &::execution::Execution::StubInterface::AsyncValidateChain, stub_, request, *context_.grpc_context(), "failure verifying chain");
 
     ValidationResult result;
     switch (response.validation_status()) {
@@ -349,7 +349,7 @@ Task<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_block_has
     ::execution::ForkChoice request;
     request.set_allocated_head_block_hash(hash.release());
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, request, *context_.grpc_context(), "failure updating fork choice");
+        &::execution::Execution::StubInterface::AsyncUpdateForkChoice, stub_, request, *context_.grpc_context(), "failure updating fork choice");
 
     ForkChoiceApplication result{.success = response.status() == ::execution::ExecutionStatus::Success,
                                  .current_head = hash_from_H256(response.latest_valid_hash())};

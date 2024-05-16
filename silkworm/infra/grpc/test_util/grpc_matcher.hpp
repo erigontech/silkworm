@@ -22,17 +22,17 @@
 
 namespace silkworm::rpc::test {
 
-inline auto exception_has_grpc_status_code(grpc::StatusCode status_code) {
+inline auto exception_has_grpc_status_code(::grpc::StatusCode status_code) {
     return Catch::Predicate<const boost::system::system_error&>(
         [status_code](auto& e) { return std::error_code(e.code()).value() == status_code; });
 }
 
 inline auto exception_has_cancelled_grpc_status_code() {
-    return test::exception_has_grpc_status_code(grpc::StatusCode::CANCELLED);
+    return test::exception_has_grpc_status_code(::grpc::StatusCode::CANCELLED);
 }
 
 inline auto exception_has_unknown_grpc_status_code() {
-    return test::exception_has_grpc_status_code(grpc::StatusCode::UNKNOWN);
+    return test::exception_has_grpc_status_code(::grpc::StatusCode::UNKNOWN);
 }
 
 }  // namespace silkworm::rpc::test

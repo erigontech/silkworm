@@ -31,10 +31,11 @@
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/rpc/test_util/interfaces/ethbackend_mock_fix24351.grpc.pb.h>
-#include <silkworm/rpc/test_util/interfaces/kv_mock_fix24351.grpc.pb.h>
-#include <silkworm/rpc/test_util/interfaces/mining_mock_fix24351.grpc.pb.h>
-#include <silkworm/rpc/test_util/interfaces/txpool_mock_fix24351.grpc.pb.h>
+
+#include "../test_util/interfaces/ethbackend_mock_fix24351.grpc.pb.h"
+#include "../test_util/interfaces/kv_mock_fix24351.grpc.pb.h"
+#include "../test_util/interfaces/mining_mock_fix24351.grpc.pb.h"
+#include "../test_util/interfaces/txpool_mock_fix24351.grpc.pb.h"
 
 namespace silkworm::rpc {
 

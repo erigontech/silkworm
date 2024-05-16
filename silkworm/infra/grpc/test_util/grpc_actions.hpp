@@ -24,7 +24,7 @@
 
 namespace silkworm::rpc::test {
 
-inline auto finish_with_status(agrpc::GrpcContext& grpc_context, const grpc::Status& status, bool ok) {
+inline auto finish_with_status(agrpc::GrpcContext& grpc_context, const ::grpc::Status& status, bool ok) {
     return [&grpc_context, status, ok](auto&&, ::grpc::Status* status_ptr, void* tag) {
         *status_ptr = status;
         agrpc::process_grpc_tag(grpc_context, tag, ok);
@@ -32,11 +32,11 @@ inline auto finish_with_status(agrpc::GrpcContext& grpc_context, const grpc::Sta
 }
 
 inline auto finish_ok(agrpc::GrpcContext& grpc_context) {
-    return finish_with_status(grpc_context, grpc::Status::OK, /*ok=*/true);
+    return finish_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/true);
 }
 
 inline auto finish_cancelled(agrpc::GrpcContext& grpc_context) {
-    return finish_with_status(grpc_context, grpc::Status::CANCELLED, /*ok=*/true);
+    return finish_with_status(grpc_context, ::grpc::Status::CANCELLED, /*ok=*/true);
 }
 
 template <typename Reply>
@@ -44,15 +44,15 @@ auto finish_with(agrpc::GrpcContext& grpc_context, Reply&& reply) {
     return [&grpc_context, reply = std::forward<Reply>(reply)](auto* reply_ptr, ::grpc::Status* status,
                                                                void* tag) mutable {
         *reply_ptr = std::move(reply);
-        finish_with_status(grpc_context, grpc::Status::OK, /*ok=*/true)(reply_ptr, status, tag);
+        finish_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/true)(reply_ptr, status, tag);
     };
 }
 
 inline auto finish_error(agrpc::GrpcContext& grpc_context) {
-    return finish_with_status(grpc_context, grpc::Status::OK, /*ok=*/false);
+    return finish_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/false);
 }
 
-inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, const grpc::Status& status, bool ok) {
+inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, const ::grpc::Status& status, bool ok) {
     return [&grpc_context, status, ok](::grpc::Status* status_ptr, void* tag) {
         *status_ptr = status;
         agrpc::process_grpc_tag(grpc_context, tag, ok);
@@ -60,19 +60,19 @@ inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, const
 }
 
 inline auto finish_streaming_ok(agrpc::GrpcContext& grpc_context) {
-    return finish_streaming_with_status(grpc_context, grpc::Status::OK, /*ok=*/true);
+    return finish_streaming_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/true);
 }
 
 inline auto finish_streaming_cancelled(agrpc::GrpcContext& grpc_context) {
-    return finish_streaming_with_status(grpc_context, grpc::Status::CANCELLED, /*ok=*/true);
+    return finish_streaming_with_status(grpc_context, ::grpc::Status::CANCELLED, /*ok=*/true);
 }
 
 inline auto finish_streaming_aborted(agrpc::GrpcContext& grpc_context) {
-    return finish_streaming_with_status(grpc_context, grpc::Status{grpc::StatusCode::ABORTED, ""}, /*ok=*/true);
+    return finish_streaming_with_status(grpc_context, ::grpc::Status{::grpc::StatusCode::ABORTED, ""}, /*ok=*/true);
 }
 
 inline auto finish_streaming_error(agrpc::GrpcContext& grpc_context) {
-    return finish_streaming_with_status(grpc_context, grpc::Status::OK, /*ok=*/false);
+    return finish_streaming_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/false);
 }
 
 inline auto write(agrpc::GrpcContext& grpc_context, bool ok) {

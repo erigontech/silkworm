@@ -54,7 +54,7 @@ class GrpcStatusError : public std::runtime_error {
 
 template <class Stub, class Request, class Response>
 Task<Response> unary_rpc(
-    agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
+    agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
@@ -62,7 +62,7 @@ Task<Response> unary_rpc(
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
 
-    std::unique_ptr<grpc::ClientAsyncResponseReader<Response>> reader =
+    std::unique_ptr<grpc::ClientAsyncResponseReaderInterface<Response>> reader =
         agrpc::request(rpc, stub, client_context, request, grpc_context);
 
     Response reply;
@@ -78,7 +78,7 @@ Task<Response> unary_rpc(
 
 template <class Stub, class Request, class Response>
 Task<void> streaming_rpc(
-    agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReader<Response>> rpc,
+    agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
@@ -86,7 +86,7 @@ Task<void> streaming_rpc(
     const std::string& error_message = "") {
     grpc::ClientContext client_context;
 
-    std::unique_ptr<grpc::ClientAsyncReader<Response>> reader;
+    std::unique_ptr<grpc::ClientAsyncReaderInterface<Response>> reader;
     bool ok = co_await agrpc::request(
         rpc,
         stub,
@@ -113,7 +113,7 @@ Task<void> streaming_rpc(
 
 template <class Stub, class Request, class Response>
 Task<Response> unary_rpc_with_retries(
-    agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
+    agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
@@ -140,7 +140,7 @@ Task<Response> unary_rpc_with_retries(
 
 template <class Stub, class Request, class Response>
 Task<void> streaming_rpc_with_retries(
-    agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReader<Response>> rpc,
+    agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,

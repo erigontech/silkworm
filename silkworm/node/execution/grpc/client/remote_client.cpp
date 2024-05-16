@@ -32,7 +32,7 @@
 namespace silkworm::execution::grpc::client {
 
 namespace proto = ::execution;
-using Stub = proto::Execution::Stub;
+using Stub = proto::Execution::StubInterface;
 
 static std::shared_ptr<::grpc::Channel> make_grpc_channel(const std::string& address_uri) {
     return ::grpc::CreateChannel(address_uri, ::grpc::InsecureChannelCredentials());

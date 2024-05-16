@@ -20,7 +20,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
@@ -28,7 +27,7 @@
 namespace silkworm::remote::kv::grpc::client {
 
 namespace proto = ::remote;
-using Stub = proto::KV::Stub;
+using Stub = proto::KV::StubInterface;
 
 static std::shared_ptr<::grpc::Channel> make_grpc_channel(const std::string& address_uri) {
     return ::grpc::CreateChannel(address_uri, ::grpc::InsecureChannelCredentials());
@@ -39,6 +38,9 @@ class RemoteClientImpl final : public api::Service {
     explicit RemoteClientImpl(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
         : channel_{make_grpc_channel(address_uri)},
           stub_{proto::KV::NewStub(channel_)},
+          grpc_context_{grpc_context} {}
+    explicit RemoteClientImpl(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+        : stub_{std::move(stub)},
           grpc_context_{grpc_context} {}
 
     ~RemoteClientImpl() override = default;
@@ -92,7 +94,10 @@ class RemoteClientImpl final : public api::Service {
 };
 
 RemoteClient::RemoteClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
-    : p_impl_(std::make_shared<RemoteClientImpl>(address_uri, grpc_context)) {}
+    : p_impl_{std::make_shared<RemoteClientImpl>(address_uri, grpc_context)} {}
+
+RemoteClient::RemoteClient(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub), grpc_context)} {}
 
 // Must be here (not in header) because RemoteClientImpl size is necessary for std::unique_ptr in PIMPL idiom
 RemoteClient::~RemoteClient() = default;

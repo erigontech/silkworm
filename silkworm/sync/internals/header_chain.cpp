@@ -17,7 +17,6 @@
 #include "header_chain.hpp"
 
 #include <algorithm>
-#include <ranges>
 
 #include <gsl/util>
 
@@ -41,15 +40,17 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(protocol::rule_set_factory(chain_config)) {}
+HeaderChain::HeaderChain(const ChainConfig& chain_config)
+    : HeaderChain(protocol::rule_set_factory(chain_config), chain_config.terminal_total_difficulty) {}
 
-HeaderChain::HeaderChain(protocol::RuleSetPtr rule_set)
+HeaderChain::HeaderChain(protocol::RuleSetPtr rule_set, std::optional<intx::uint256> terminal_total_difficulty)
     : highest_in_db_(0),
       top_seen_height_(0),
       preverified_hashes_(PreverifiedHashes::current),
       seen_announces_(1000),
       rule_set_{std::move(rule_set)},
-      chain_state_(persisted_link_queue_) {  // Erigon reads past headers from db, we hope to find them from this queue
+      chain_state_(persisted_link_queue_),  // Erigon reads past headers from db, we hope to find them from this queue
+      terminal_total_difficulty_{terminal_total_difficulty} {
     if (!rule_set_) {
         throw std::logic_error("HeaderChain exception, cause: unknown protocol rule set");
         // or must the sync go on and return StageResult::kUnknownProtocolRuleSet?
@@ -563,10 +564,9 @@ bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
             log::Warning("HeaderStage") << "received malformed header: " << header.number;
             return true;
         }
-        // TODO(canepat) IMHO we should remove the following check entirely, alternatively check must be based on TD
-        // Quick-and-dirty validity check based on header difficulty and hard-coded Ethereum PoS merge block
-        if (header.difficulty == 0 && header.number < 15'537'393) {
-            log::Warning("HeaderStage") << "received header w/ zero difficulty, block num=" << header.number;
+        // Quick-and-dirty validity check based on header difficulty and PoS transition
+        if (header.difficulty == 0 && !terminal_total_difficulty_.has_value()) {
+            log::Warning("HeaderStage") << "received header w/ zero difficulty, block=" << header.number;
             return true;
         }
         Hash header_hash = header.hash();
@@ -589,8 +589,8 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
 
     statistics_.received_items += headers.size();
 
-    if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .
-        !is_valid_request_id(requestId)) {             // anyway is not requested by us..
+    if (headers.begin()->number < top_seen_height_ &&  // an old header announcement?
+        !is_valid_request_id(requestId)) {             // anyway is not requested by us...
         statistics_.reject_causes.not_requested += headers.size();
         SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
         return {Penalty::NoPenalty, request_more_headers};

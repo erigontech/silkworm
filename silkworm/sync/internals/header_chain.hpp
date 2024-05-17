@@ -17,6 +17,9 @@
 #pragma once
 
 #include <cstdio>
+#include <optional>
+
+#include <intx/intx.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
@@ -56,9 +59,8 @@ namespace silkworm {
  */
 class HeaderChain {
   public:
-    explicit HeaderChain(const ChainConfig&);
-
-    explicit HeaderChain(protocol::RuleSetPtr);  // alternative constructor
+    explicit HeaderChain(const ChainConfig& chain_config);
+    explicit HeaderChain(protocol::RuleSetPtr rule_set, std::optional<intx::uint256> terminal_total_difficulty = {});
 
     // sync current state - this must be done at header forward
     void initial_state(const std::vector<BlockHeader>& last_headers);
@@ -176,6 +178,7 @@ class HeaderChain {
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request_;
     time_point_t last_nack_;
+    std::optional<intx::uint256> terminal_total_difficulty_;
 
     uint64_t generate_request_id();
     uint64_t is_valid_request_id(uint64_t request_id) const;

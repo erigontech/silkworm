@@ -32,22 +32,31 @@ bool OutboundGetBlockBodies::packet_present() const { return !packet_.request.em
 
 void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     if (packet_present()) {
-        auto send_outcome = send_packet(sentry);
+        try {
+            auto send_outcome = send_packet(sentry);
 
-        SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet_ << "), min_block " << min_block_
-                   << ", received by " << send_outcome.size() << "/" << sentry.active_peers() << " peer(s)";
+            SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet_ << "), min_block " << min_block_
+                       << ", received by " << send_outcome.size() << "/" << sentry.active_peers() << " peer(s)";
 
-        if (send_outcome.empty()) {
+            if (send_outcome.empty()) {
+                bs.request_nack(packet_);
+                nack_reqs_++;
+            } else {
+                sent_reqs_++;
+            }
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "OutboundGetBlockBodies failed send_packet error: " << se.what();
             bs.request_nack(packet_);
-            nack_reqs_++;
-        } else {
-            sent_reqs_++;
         }
     }
 
     for (auto& penalization : penalizations_) {
-        SILK_TRACE << "Penalizing " << penalization;
-        sentry.penalize_peer(penalization.peerId, penalization.penalty);
+        try {
+            SILK_TRACE << "Penalizing " << penalization;
+            sentry.penalize_peer(penalization.peerId, penalization.penalty);
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "OutboundGetBlockBodies failed penalizing " << penalization << " error: " << se.what();
+        }
     }
 }
 

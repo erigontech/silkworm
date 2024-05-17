@@ -61,11 +61,14 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
                << reply.request.size() << " headers";
 
-    OutboundBlockHeaders reply_message{std::move(reply)};
-    [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
+    try {
+        OutboundBlockHeaders reply_message{std::move(reply)};
+        [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
 
-    SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
-               << std::to_string(peers.size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of " << identify(*this) << ": " << std::to_string(peers.size()) + " peer(s)";
+    } catch (const boost::system::system_error& se) {
+        SILK_TRACE << "InboundGetBlockHeaders failed send_message_by_id error: " << se.what();
+    }
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

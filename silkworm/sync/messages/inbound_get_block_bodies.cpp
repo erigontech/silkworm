@@ -32,16 +32,6 @@ InboundGetBlockBodies::InboundGetBlockBodies(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-/*
- // ReplyBlockBodiesRLP is the eth/66 version of SendBlockBodiesRLP.
-func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
-        // Not packed into BlockBodiesPacket to avoid RLP decoding
-        return p2p.Send(p.rw, BlockBodiesMsg, BlockBodiesRLPPacket66{
-                RequestId:            id,
-                BlockBodiesRLPPacket: bodies,
-        })
-}
- */
 void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
@@ -64,11 +54,14 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
                << reply.request.size() << " bodies";
 
-    OutboundBlockBodies reply_message{std::move(reply)};
-    [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
+    try {
+        OutboundBlockBodies reply_message{std::move(reply)};
+        [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
 
-    SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
-               << std::to_string(peers.size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of " << identify(*this) << ": " << std::to_string(peers.size()) + " peer(s)";
+    } catch (const boost::system::system_error& se) {
+        SILK_TRACE << "InboundGetBlockBodies failed send_message_by_id error: " << se.what();
+    }
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

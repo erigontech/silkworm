@@ -46,11 +46,19 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     if (penalty != Penalty::NoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
-        sentry.penalize_peer(peerId_, penalty);
+        try {
+            sentry.penalize_peer(peerId_, penalty);
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "InboundBlockHeaders failed penalize_peer error: " << se.what();
+        }
     }
 
-    SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
-    sentry.peer_min_block(peerId_, highestBlock);
+    try {
+        SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
+        sentry.peer_min_block(peerId_, highestBlock);
+    } catch (const boost::system::system_error& se) {
+        SILK_TRACE << "InboundBlockHeaders failed peer_min_block error: " << se.what();
+    }
 }
 
 uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }

@@ -37,7 +37,11 @@ void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, S
     if (penalty != Penalty::NoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
-        sentry.penalize_peer(peerId_, penalty);
+        try {
+            sentry.penalize_peer(peerId_, penalty);
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "InboundBlockBodies failed penalize_peer error: " << se.what();
+        }
     }
 }
 

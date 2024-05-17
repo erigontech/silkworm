@@ -32,10 +32,14 @@ void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, Sentry
     for (auto& block_ptr : blocks_to_announce_) {
         const BlockEx& block = *block_ptr;
         NewBlockPacket packet{block, block.td};  // NOLINT(cppcoreguidelines-slicing)
-        auto peers = send_packet(sentry, std::move(packet));
+        try {
+            auto peers = send_packet(sentry, std::move(packet));
 
-        // no peers available
-        if (peers.empty()) break;
+            // no peers available
+            if (peers.empty()) break;
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "OutboundNewBlock failed send_packet error: " << se.what();
+        }
     }
 }
 

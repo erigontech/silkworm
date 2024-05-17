@@ -57,11 +57,15 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
         // request header
         SILK_TRACE << "Replying to " << identify(*this) << " requesting header with send_message_by_id, content: " << *packet;
 
-        OutboundGetBlockHeaders request_message{packet.value()};
-        [[maybe_unused]] auto peers = sentry.send_message_by_id(request_message, peerId_);
+        try {
+            OutboundGetBlockHeaders request_message{packet.value()};
+            [[maybe_unused]] auto peers = sentry.send_message_by_id(request_message, peerId_);
 
-        SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
-                   << std::to_string(peers.size()) + " peer(s)";
+            SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
+                       << std::to_string(peers.size()) + " peer(s)";
+        } catch (const boost::system::system_error& se) {
+            SILK_TRACE << "Received error from sentry send_message_by_id for " << identify(*this) << " error: " << se.what();
+        }
     }
 
     hc.top_seen_block_height(max);

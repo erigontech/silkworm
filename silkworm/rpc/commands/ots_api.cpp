@@ -719,16 +719,10 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
 
             for (const auto& item : transactions_with_receipts_vec) {
-                for (size_t i = item.transactions.size() - 1; i > 0; i--) {
-                    receipts.push_back(std::move(item.receipts.at(i)));
-                    transactions.push_back(std::move(item.transactions.at(i)));
-                    blocks.push_back(std::move(item.blocks.at(i)));
-                }
-
-                if (!item.transactions.empty()) {
-                    receipts.push_back(std::move(item.receipts.at(0)));
-                    transactions.push_back(std::move(item.transactions.at(0)));
-                    blocks.push_back(std::move(item.blocks.at(0)));
+                for (int i = item.transactions.size() - 1; i >= 0; i--) {
+                    receipts.push_back(std::move(item.receipts.at(static_cast<size_t>(i))));
+                    transactions.push_back(std::move(item.transactions.at(static_cast<size_t>(i))));
+                    blocks.push_back(std::move(item.blocks.at(static_cast<size_t>(i))));
                 }
 
                 result_count += item.transactions.size();
@@ -857,15 +851,14 @@ Task<bool> OtsRpcApi::trace_blocks(
     uint64_t est_blocks_to_trace = page_size - result_count;
     uint64_t total_blocks_traced = 0;
     bool has_more = true;
-
     results.clear();
     results.resize(est_blocks_to_trace);
 
-    for (uint64_t i = 0; i < est_blocks_to_trace; i++) {
+    for (size_t i = 0; i < est_blocks_to_trace; i++) {
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
         auto next_block = from_to_response.block_number;
-        if (next_block == 0) {
-            has_more = false;
+        has_more = from_to_response.has_more;
+        if (!from_to_response.has_more && next_block == 0) {
             break;
         }
 
@@ -900,7 +893,7 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
     const Block extended_block{block_with_hash, *total_difficulty, false};
     const auto block_size = extended_block.get_block_size();
 
-    for (uint64_t i = 0; i < block_with_hash->block.transactions.size(); i++) {
+    for (size_t i = 0; i < block_with_hash->block.transactions.size(); i++) {
         const auto& transaction = block_with_hash->block.transactions.at(i);
         trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, tx};
         const auto found = co_await executor.trace_touch_transaction(block_with_hash->block, transaction, search_addr);
@@ -996,6 +989,7 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
         key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
 
         if (key_value.key.empty()) {
+    
             co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, false};
         }
 
@@ -1033,7 +1027,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
             co_return BlockProviderResponse{0, false, false};
         }
 
-        auto chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
+        auto chunk_provider_res = co_await chunk_provider_.get();
 
         if (chunk_provider_res.error) {
             finished_ = true;
@@ -1143,7 +1137,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             co_return BlockProviderResponse{0, false, false};
         }
 
-        auto chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
+        auto chunk_provider_res = co_await chunk_provider_.get();
 
         if (chunk_provider_res.error) {
             finished_ = true;
@@ -1170,7 +1164,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             reverse_iterator(bitmap);
 
             if (!has_next()) {
-                chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
+                chunk_provider_res = co_await chunk_provider_.get();
 
                 if (chunk_provider_res.error) {
                     finished_ = true;
@@ -1247,17 +1241,15 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
+        next_from_ = from_prov_res.block_number;
+        has_more_from_ = from_prov_res.has_more || next_from_ != 0;
 
         auto to_prov_res = co_await callToProvider_->get();
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-
-        next_from_ = from_prov_res.block_number;
         next_to_ = to_prov_res.block_number;
-
-        has_more_from_ = has_more_from_ || next_from_ != 0;
-        has_more_to_ = has_more_to_ || next_to_ != 0;
+        has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 
     if (!has_more_from_ && !has_more_to_) {
@@ -1290,9 +1282,8 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-
         next_from_ = from_prov_res.block_number;
-        has_more_from_ = has_more_from_ || next_from_ != 0;
+        has_more_from_ = from_prov_res.has_more || next_from_ != 0;
     }
 
     if (has_more_to_ && block_num == next_to_) {
@@ -1303,7 +1294,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         }
 
         next_to_ = to_prov_res.block_number;
-        has_more_to_ = has_more_to_ || next_to_ != 0;
+        has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 
     co_return BlockProviderResponse{block_num, has_more_from_ || has_more_to_, false};

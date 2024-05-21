@@ -719,7 +719,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
 
             for (const auto& item : transactions_with_receipts_vec) {
-                for (int i = item.transactions.size() - 1; i >= 0; i--) {
+                for (int i = static_cast<int>(item.transactions.size()) - 1; i >= 0; i--) {
                     receipts.push_back(std::move(item.receipts.at(static_cast<size_t>(i))));
                     transactions.push_back(std::move(item.transactions.at(static_cast<size_t>(i))));
                     blocks.push_back(std::move(item.blocks.at(static_cast<size_t>(i))));

@@ -706,12 +706,12 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         BackwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
         FromToBlockProvider from_to_provider{false, &from_provider, &to_provider};
 
-        std::vector<silkworm::rpc::Receipt> receipts;
-        std::vector<silkworm::Transaction> transactions;
-        std::vector<BlockDetails> blocks;
-
         uint64_t result_count = 0;
         bool has_more = true;
+
+        TransactionsWithReceipts results{
+           .first_page = is_first_page
+        };
 
         while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
@@ -719,11 +719,9 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
 
             for (const auto& item : transactions_with_receipts_vec) {
-                for (int i = static_cast<int>(item.transactions.size()) - 1; i >= 0; i--) {
-                    receipts.push_back(std::move(item.receipts.at(static_cast<size_t>(i))));
-                    transactions.push_back(std::move(item.transactions.at(static_cast<size_t>(i))));
-                    blocks.push_back(std::move(item.blocks.at(static_cast<size_t>(i))));
-                }
+                results.receipts.insert(results.receipts.end(), item.receipts.rbegin(), item.receipts.rend());
+                results.transactions.insert(results.transactions.end(), item.transactions.rbegin(), item.transactions.rend());
+                results.blocks.insert(results.blocks.end(), item.blocks.rbegin(), item.blocks.rend());
 
                 result_count += item.transactions.size();
 
@@ -733,7 +731,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             }
         }
 
-        TransactionsWithReceipts results{is_first_page, !has_more, receipts, transactions, blocks};
+        results.last_page = !has_more;
         reply = make_json_content(request, results);
 
     } catch (const std::invalid_argument& iv) {
@@ -792,12 +790,12 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         ForwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
         FromToBlockProvider from_to_provider{true, &from_provider, &to_provider};
 
-        std::vector<silkworm::rpc::Receipt> receipts;
-        std::vector<silkworm::Transaction> transactions;
-        std::vector<BlockDetails> blocks;
-
         uint64_t result_count = 0;
         bool has_more = true;
+
+        TransactionsWithReceipts results{
+           .last_page = is_last_page
+        };
 
         while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
@@ -805,9 +803,9 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
 
             for (const auto& item : transactions_with_receipts_vec) {
-                receipts.insert(receipts.end(), item.receipts.begin(), item.receipts.end());
-                transactions.insert(transactions.end(), item.transactions.begin(), item.transactions.end());
-                blocks.insert(blocks.end(), item.blocks.begin(), item.blocks.end());
+                results.receipts.insert(results.receipts.end(), item.receipts.begin(), item.receipts.end());
+                results.transactions.insert(results.transactions.end(), item.transactions.begin(), item.transactions.end());
+                results.blocks.insert(results.blocks.end(), item.blocks.begin(), item.blocks.end());
 
                 result_count += item.transactions.size();
 
@@ -818,12 +816,11 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         }
 
         // Reverse results
-        std::reverse(transactions.begin(), transactions.end());
-        std::reverse(receipts.begin(), receipts.end());
-        std::reverse(blocks.begin(), blocks.end());
+        std::reverse(results.transactions.begin(), results.transactions.end());
+        std::reverse(results.receipts.begin(), results.receipts.end());
+        std::reverse(results.blocks.begin(), results.blocks.end());
 
-        TransactionsWithReceipts results{!has_more, is_last_page, receipts, transactions, blocks};
-
+        results.first_page = !has_more;
         reply = make_json_content(request, results);
 
     } catch (const std::invalid_argument& iv) {

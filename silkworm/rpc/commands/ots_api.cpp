@@ -822,7 +822,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         std::reverse(receipts.begin(), receipts.end());
         std::reverse(blocks.begin(), blocks.end());
 
-        TransactionsWithReceipts results{is_last_page, !has_more, receipts, transactions, blocks};
+        TransactionsWithReceipts results{!has_more, is_last_page, receipts, transactions, blocks};
 
         reply = make_json_content(request, results);
 
@@ -1107,12 +1107,14 @@ void ForwardBlockProvider::iterator(roaring::Roaring64Map& bitmap) {
 }
 
 void ForwardBlockProvider::advance_if_needed(BlockNum min_block) {
-    for (uint64_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
+    auto found_index = bitmap_vector_.size();
+    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
         if (bitmap_vector_.at(i) >= min_block) {
-            bitmap_index_ = i;
+            found_index = i;
             break;
         }
     }
+    bitmap_index_ = found_index;
 }
 
 Task<BlockProviderResponse> BackwardBlockProvider::get() {

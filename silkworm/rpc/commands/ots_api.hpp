@@ -117,7 +117,7 @@ class ForwardBlockProvider : public BlockProvider {
     void advance_if_needed(BlockNum min_block);
 
   public:
-    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum min_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
+    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         min_block_ = min_block;

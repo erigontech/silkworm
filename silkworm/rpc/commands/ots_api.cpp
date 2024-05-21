@@ -989,7 +989,6 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
         key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
 
         if (key_value.key.empty()) {
-    
             co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, false};
         }
 

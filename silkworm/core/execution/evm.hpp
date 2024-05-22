@@ -78,7 +78,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout = false) noexcept;
 
     ~EVM();
 
@@ -122,6 +122,7 @@ class EVM {
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;
+    bool gas_bailout_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;

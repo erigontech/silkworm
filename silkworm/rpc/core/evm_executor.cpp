@@ -228,7 +228,7 @@ ExecutionResult EVMExecutor::call(
     SILK_DEBUG << "EVMExecutor::call: transaction: " << rpc::Transaction{txn};
 
     auto& svc = use_service<AnalysisCacheService>(workers_);
-    EVM evm{block, ibs_state_, config_};
+    EVM evm{block, ibs_state_, config_, gas_bailout};
     evm.analysis_cache = svc.get_analysis_cache();
     evm.state_pool = svc.get_object_pool();
     evm.beneficiary = rule_set_->get_beneficiary(block.header);

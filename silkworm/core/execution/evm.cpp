@@ -100,7 +100,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas, 0};
 
     auto value{intx::be::load<intx::uint256>(message.value)};
-    if (state_.get_balance(message.sender) < value) {
+    if (!gas_bailout_ && state_.get_balance(message.sender) < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {

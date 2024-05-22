@@ -81,7 +81,6 @@ Task<void> Server::run(
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::invalid_argument) {
                 log::Error("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
-                // throw std::runtime_error("Sentry RLPx server got invalid_argument on accept " + std::to_string(port_));
                 continue;
             } else {
                 log::Critical("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";

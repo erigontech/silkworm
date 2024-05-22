@@ -34,7 +34,7 @@ Task<void> StatusManager::run() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            log::Critical("sentry") << "StatusManager::run unexpected end [operation_canceled]";
+            log::Debug("sentry") << "StatusManager::run unexpected end [operation_canceled]";
         } else {
             log::Critical("sentry") << "StatusManager::run unexpected end [" + std::string{se.what()} + "]";
         }

@@ -216,9 +216,9 @@ Task<void> Peer::handle() {
         }
         log::Error("sentry") << "Peer::handle system_error: " << ex.what();
         throw;
-    } catch (const std::nested_exception& ex) {
+    } catch (const std::nested_exception& ne) {
         try {
-            ex.rethrow_nested();
+            ne.rethrow_nested();
         } catch (const DisconnectedError&) {
             log::Debug("sentry") << "Peer::handle nested disconnection error";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);

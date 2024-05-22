@@ -216,6 +216,27 @@ Task<void> Peer::handle() {
         }
         log::Error("sentry") << "Peer::handle system_error: " << ex.what();
         throw;
+    } catch (const std::nested_exception& ex) {
+        try {
+            ex.rethrow_nested();
+        } catch (const DisconnectedError&) {
+            log::Debug("sentry") << "Peer::handle nested disconnection error";
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
+            disconnect_reason_.set({reason});
+            co_return;
+        } catch (const boost::system::system_error& ex) {
+            if (is_fatal_network_error(ex)) {
+                log::Debug("sentry") << "Peer::handle nested network error: " << ex.what();
+                auto reason = disconnect_reason_.get().value_or(DisconnectReason::NetworkError);
+                disconnect_reason_.set({reason});
+                co_return;
+            } else if (ex.code() == boost::system::errc::operation_canceled) {
+                log::Debug("sentry") << "Peer::handle nested cancellation";
+                co_return;
+            }
+            log::Error("sentry") << "Peer::handle nested system_error: " << ex.what();
+            throw;
+        }
     } catch (const std::exception& ex) {
         log::Error("sentry") << "Peer::handle exception: " << ex.what();
         throw;
@@ -313,7 +334,11 @@ void Peer::close() {
 }
 
 void Peer::post_message(const std::shared_ptr<Peer>& peer, const Message& message) {
-    peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
+    try {
+        peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
+    } catch (const concurrency::TaskGroup::SpawnAfterCloseError&) {
+        log::Warning("sentry") << "Peer::post_message cannot spawn send_message after close";
+    }
 }
 
 Task<void> Peer::send_message(std::shared_ptr<Peer> peer, Message message) {

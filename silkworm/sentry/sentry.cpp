@@ -189,15 +189,24 @@ Task<void> SentryImpl::run_tasks() {
     co_await status_manager_.wait_for_status();
     log::Info("sentry") << "Sentry received initial status message";
 
-    co_await (
-        run_status_manager() &&
-        run_server() &&
-        run_discovery() &&
-        run_peer_manager() &&
-        run_message_sender() &&
-        run_message_receiver() &&
-        run_peer_manager_api() &&
-        run_peer_discovery_feedback());
+    try {
+        co_await (
+            run_status_manager() &&
+            run_server() &&
+            run_discovery() &&
+            run_peer_manager() &&
+            run_message_sender() &&
+            run_message_receiver() &&
+            run_peer_manager_api() &&
+            run_peer_discovery_feedback());
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "Sentry run_tasks unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "Sentry run_tasks unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
@@ -234,23 +243,68 @@ Task<void> SentryImpl::run_discovery() {
 }
 
 Task<void> SentryImpl::run_peer_manager() {
-    return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
+    try {
+        return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "run_peer_manager unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "run_peer_manager unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryImpl::run_message_sender() {
-    return message_sender_.run(peer_manager_);
+    try {
+        return message_sender_.run(peer_manager_);
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "run_message_sender unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "run_message_sender unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryImpl::run_message_receiver() {
-    return MessageReceiver::run(message_receiver_, peer_manager_);
+    try {
+        return MessageReceiver::run(message_receiver_, peer_manager_);
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "run_message_receiver unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "run_message_receiver unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryImpl::run_peer_manager_api() {
-    return PeerManagerApi::run(peer_manager_api_);
+    try {
+        return PeerManagerApi::run(peer_manager_api_);
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "run_peer_manager_api unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "run_peer_manager_api unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryImpl::run_peer_discovery_feedback() {
-    return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
+    try {
+        return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Critical("sentry") << "run_peer_discovery_feedback unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "run_peer_discovery_feedback unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryImpl::run_grpc_server() {

@@ -883,26 +883,13 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
         co_return;
     }
 
-    const auto block_hash = block_with_hash->hash;
     const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
     ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
     const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
     const Block extended_block{block_with_hash, *total_difficulty, false};
-    const auto block_size = extended_block.get_block_size();
 
-    for (size_t i = 0; i < block_with_hash->block.transactions.size(); i++) {
-        const auto& transaction = block_with_hash->block.transactions.at(i);
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, tx};
-        const auto found = co_await executor.trace_touch_transaction(block_with_hash->block, transaction, search_addr);
-
-        if (found) {
-            const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, *total_difficulty,
-                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-            results.transactions.push_back(transaction);
-            results.receipts.push_back(receipts.at(i));
-            results.blocks.push_back(block_details);
-        }
-    }
+    trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, tx};
+    co_await executor.trace_touch_transaction(block_with_hash, search_addr, extended_block.get_block_size(), *total_difficulty, receipts, results);
     co_return;
 }
 

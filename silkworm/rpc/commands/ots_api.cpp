@@ -844,12 +844,13 @@ Task<bool> OtsRpcApi::trace_blocks(
     uint64_t result_count,
     std::vector<TransactionsWithReceipts>& results) {
     uint64_t est_blocks_to_trace = page_size - result_count;
-    uint64_t total_blocks_traced = 0;
     bool has_more = true;
     results.clear();
-    results.resize(est_blocks_to_trace);
+    results.reserve(est_blocks_to_trace);
 
     for (size_t i = 0; i < est_blocks_to_trace; i++) {
+        TransactionsWithReceipts transactions_with_receipts;
+
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
         auto next_block = from_to_response.block_number;
         has_more = from_to_response.has_more;
@@ -857,20 +858,11 @@ Task<bool> OtsRpcApi::trace_blocks(
             break;
         }
 
-        total_blocks_traced++;
-        co_await search_trace_block(tx, address, i, next_block, results);
+        co_await trace_block(tx, next_block, address, transactions_with_receipts);
+        results.push_back(std::move(transactions_with_receipts));
     }
 
-    results.resize(total_blocks_traced);
-
     co_return has_more;
-}
-
-Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, const evmc::address& address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results) {
-    TransactionsWithReceipts transactions_with_receipts;
-    co_await trace_block(tx, block_number, address, transactions_with_receipts);
-    results[index] = transactions_with_receipts;
-    co_return;
 }
 
 Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {

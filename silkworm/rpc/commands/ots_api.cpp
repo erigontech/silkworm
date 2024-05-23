@@ -839,7 +839,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 Task<bool> OtsRpcApi::trace_blocks(
     FromToBlockProvider& from_to_provider,
     ethdb::Transaction& tx,
-    evmc::address address,
+    const evmc::address& address,
     uint64_t page_size,
     uint64_t result_count,
     std::vector<TransactionsWithReceipts>& results) {
@@ -866,14 +866,14 @@ Task<bool> OtsRpcApi::trace_blocks(
     co_return has_more;
 }
 
-Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results) {
+Task<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, const evmc::address& address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results) {
     TransactionsWithReceipts transactions_with_receipts;
     co_await trace_block(tx, block_number, address, transactions_with_receipts);
     results[index] = transactions_with_receipts;
     co_return;
 }
 
-Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
     ethdb::TransactionDatabase tx_database{tx};
     const auto chain_storage = tx.create_storage(tx_database, backend_);
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
@@ -958,7 +958,7 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
     co_return ChunkProviderResponse{key_value.value, true, false};
 }
 
-ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value) {
+ChunkProvider::ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward, silkworm::KeyValue first_seek_key_value) {
     cursor_ = cursor;
     address_ = address;
     navigate_forward_ = navigate_forward;
@@ -981,7 +981,7 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
     }
 }
 
-ChunkLocator::ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward) {
+ChunkLocator::ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward) {
     cursor_ = cursor;
     address_ = address;
     navigate_forward_ = navigate_forward;

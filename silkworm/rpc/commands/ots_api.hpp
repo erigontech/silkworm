@@ -58,7 +58,7 @@ class ChunkProvider {
 
   public:
     ChunkProvider() = default;
-    ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
+    ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
 
     Task<ChunkProviderResponse> get();
 };
@@ -76,7 +76,7 @@ class ChunkLocator {
     bool navigate_forward_;
 
   public:
-    ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward);
+    ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward);
 
     Task<ChunkLocatorResponse> get(BlockNum min_block);
 };
@@ -117,7 +117,7 @@ class ForwardBlockProvider : public BlockProvider {
     void advance_if_needed(BlockNum min_block);
 
   public:
-    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
+    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         min_block_ = min_block;
@@ -148,7 +148,7 @@ class BackwardBlockProvider : public BlockProvider {
     void reverse_iterator(roaring::Roaring64Map& bitmap);
 
   public:
-    BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
+    BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         max_block_ = max_block;
@@ -224,13 +224,13 @@ class OtsRpcApi {
     Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,
         ethdb::Transaction& tx,
-        evmc::address address,
+        const evmc::address& address,
         uint64_t page_size,
         uint64_t result_count,
         std::vector<TransactionsWithReceipts>& results);
 
-    Task<void> search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results);
-    Task<void> trace_block(ethdb::Transaction& tx, BlockNum block_number, evmc::address search_addr, TransactionsWithReceipts& results);
+    Task<void> search_trace_block(ethdb::Transaction& tx, const evmc::address& address, unsigned long index, BlockNum block_number, std::vector<TransactionsWithReceipts>& results);
+    Task<void> trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts);
 };

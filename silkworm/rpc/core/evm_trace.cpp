@@ -1513,7 +1513,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_transaction(const std::shared_ptr<silkworm::BlockWithHash> block_with_hash,
+Task<bool> TraceCallExecutor::trace_touch_block(const std::shared_ptr<silkworm::BlockWithHash> block_with_hash,
                                                       const evmc::address& address,
                                                       uint64_t block_size, intx::uint<256> total_difficulty,
                                                       const std::vector<Receipt>& receipts,

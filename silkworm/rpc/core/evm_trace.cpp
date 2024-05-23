@@ -1514,10 +1514,10 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 }
 
 Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
-                                                      const evmc::address& address,
-                                                      uint64_t block_size, intx::uint<256> total_difficulty,
-                                                      const std::vector<Receipt>& receipts,
-                                                      TransactionsWithReceipts& results) {
+                                                const evmc::address& address,
+                                                uint64_t block_size, intx::uint<256> total_difficulty,
+                                                const std::vector<Receipt>& receipts,
+                                                TransactionsWithReceipts& results) {
     auto& block = block_with_hash.block;
     auto block_number = block.header.number;
     auto& hash = block_with_hash.hash;

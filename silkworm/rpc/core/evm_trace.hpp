@@ -432,6 +432,7 @@ class TouchTracer : public silkworm::EvmTracer {
     TouchTracer& operator=(const TouchTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     bool found() const { return found_; }
 
@@ -475,7 +476,9 @@ class TraceCallExecutor {
     Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     Task<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
     Task<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
-    Task<bool> trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address);
+    Task<bool> trace_touch_block(const silkworm::BlockWithHash& block_with_hash, const evmc::address& address,
+                                 uint64_t block_size, intx::uint<256> total_difficulty, const std::vector<Receipt>& receipts, TransactionsWithReceipts& results);
+
     Task<void> trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream);
 
   private:

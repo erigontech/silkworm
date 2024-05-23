@@ -1546,8 +1546,14 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
+Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
+                                                const evmc::address& address,
+                                                uint64_t block_size, intx::uint<256> total_difficulty,
+                                                const std::vector<Receipt>& receipts,
+                                                TransactionsWithReceipts& results) {
+    auto& block = block_with_hash.block;
     auto block_number = block.header.number;
+    auto& hash = block_with_hash.hash;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1560,11 +1566,20 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& blo
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-        auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
-        Tracers tracers{tracer};
+        for (size_t i = 0; i < block.transactions.size(); i++) {
+            auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
+            Tracers tracers{tracer};
+            const auto& txn = block.transactions.at(i);
+            executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
-        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
-        return tracer->found();
+            if (tracer->found()) {
+                const BlockDetails block_details{block_size, hash, block.header, total_difficulty, block.transactions.size(), block.ommers};
+                results.transactions.push_back(txn);
+                results.receipts.push_back(receipts.at(i));
+                results.blocks.push_back(block_details);
+            }
+        }
+        return result;
     });
 
     co_return result;
@@ -1812,25 +1827,32 @@ void TouchTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     if (found_) {
         return;
     }
-    auto sender = evmc::address{msg.sender};
-    auto recipient = evmc::address{msg.recipient};
-    auto code_address = evmc::address{msg.code_address};
+    const auto& sender = evmc::address{msg.sender};
+    const auto& recipient = evmc::address{msg.recipient};
+    const auto& code_address = evmc::address{msg.code_address};
+    const auto kind = msg.kind;
 
-    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
-
-    if (!found_ && (sender == address_ || recipient == address_ || code_address == address_)) {
-        this->found_ = true;
+    if (sender == address_ || recipient == address_ || (code_address == address_ && (kind == EVMC_DELEGATECALL || kind == EVMC_CALLCODE))) {
+        found_ = true;
     }
 
     SILK_DEBUG << "TouchTracer::on_execution_start: gas: " << std::dec << msg.gas
-               << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
                << ", sender: " << sender
-               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", recipient: " << recipient
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code);
+}
+
+void TouchTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    if (found_) {
+        return;
+    }
+    if (address == address_ || beneficiary == address_) {
+        found_ = true;
+    }
 }
 
 }  // namespace silkworm::rpc::trace

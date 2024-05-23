@@ -27,9 +27,18 @@ Task<void> StatusManager::wait_for_status() {
 }
 
 Task<void> StatusManager::run() {
-    // loop until wait_for_status() throws a cancelled exception
-    while (true) {
-        co_await wait_for_status();
+    try {
+        // loop until wait_for_status() throws a cancelled exception
+        while (true) {
+            co_await wait_for_status();
+        }
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Debug("sentry") << "StatusManager::run unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sentry") << "StatusManager::run unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
     }
 }
 

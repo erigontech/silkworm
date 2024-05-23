@@ -76,7 +76,17 @@ Task<void> Server::run(
     while (acceptor.is_open()) {
         auto client_executor = executor_pool.any_executor();
         SocketStream stream{client_executor};
-        co_await acceptor.async_accept(stream.socket(), use_awaitable);
+        try {
+            co_await acceptor.async_accept(stream.socket(), use_awaitable);
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::system::errc::invalid_argument) {
+                log::Error("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
+                continue;
+            } else {
+                log::Critical("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";
+                throw;
+            }
+        }
 
         auto remote_endpoint = stream.socket().remote_endpoint();
         log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;

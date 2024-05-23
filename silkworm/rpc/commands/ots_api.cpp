@@ -710,8 +710,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         bool has_more = true;
 
         TransactionsWithReceipts results{
-           .first_page = is_first_page
-        };
+            .first_page = is_first_page};
 
         while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
@@ -794,8 +793,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         bool has_more = true;
 
         TransactionsWithReceipts results{
-           .last_page = is_last_page
-        };
+            .last_page = is_last_page};
 
         while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;

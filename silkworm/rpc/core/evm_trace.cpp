@@ -1513,9 +1513,9 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_transaction(const std::shared_ptr<silkworm::BlockWithHash> block_with_hash, 
-                                                      const evmc::address& address, 
-                                                      uint64_t block_size, intx::uint<256> total_difficulty, 
+Task<bool> TraceCallExecutor::trace_touch_transaction(const std::shared_ptr<silkworm::BlockWithHash> block_with_hash,
+                                                      const evmc::address& address,
+                                                      uint64_t block_size, intx::uint<256> total_difficulty,
                                                       const std::vector<Receipt>& receipts,
                                                       TransactionsWithReceipts& results) {
     auto& block = block_with_hash->block;
@@ -1533,20 +1533,20 @@ Task<bool> TraceCallExecutor::trace_touch_transaction(const std::shared_ptr<silk
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
         for (size_t i = 0; i < block.transactions.size(); i++) {
-             auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
-             Tracers tracers{tracer};
-             const auto& txn = block.transactions.at(i);
-             executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+            auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
+            Tracers tracers{tracer};
+            const auto& txn = block.transactions.at(i);
+            executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
-             if (tracer->found()) {
-                 const BlockDetails block_details{block_size, block_with_hash->hash, block.header, total_difficulty,
-                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
-                 results.transactions.push_back(txn);
-                 results.receipts.push_back(receipts.at(i));
-                 results.blocks.push_back(block_details);
+            if (tracer->found()) {
+                const BlockDetails block_details{block_size, block_with_hash->hash, block.header, total_difficulty,
+                                                 block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+                results.transactions.push_back(txn);
+                results.receipts.push_back(receipts.at(i));
+                results.blocks.push_back(block_details);
             }
-       }
-       return result;
+        }
+        return result;
     });
 
     co_return result;

@@ -1513,13 +1513,14 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_block(const std::shared_ptr<silkworm::BlockWithHash> block_with_hash,
+Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
                                                       const evmc::address& address,
                                                       uint64_t block_size, intx::uint<256> total_difficulty,
                                                       const std::vector<Receipt>& receipts,
                                                       TransactionsWithReceipts& results) {
-    auto& block = block_with_hash->block;
+    auto& block = block_with_hash.block;
     auto block_number = block.header.number;
+    auto& hash = block_with_hash.hash;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1539,8 +1540,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const std::shared_ptr<silkworm::
             executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
             if (tracer->found()) {
-                const BlockDetails block_details{block_size, block_with_hash->hash, block.header, total_difficulty,
-                                                 block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+                const BlockDetails block_details{block_size, hash, block.header, total_difficulty, block.transactions.size(), block.ommers};
                 results.transactions.push_back(txn);
                 results.receipts.push_back(receipts.at(i));
                 results.blocks.push_back(block_details);

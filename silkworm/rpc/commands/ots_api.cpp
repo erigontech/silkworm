@@ -879,7 +879,7 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
     const Block extended_block{block_with_hash, *total_difficulty, false};
 
     trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, tx};
-    co_await executor.trace_touch_block(block_with_hash, search_addr, extended_block.get_block_size(), *total_difficulty, receipts, results);
+    co_await executor.trace_touch_block(*block_with_hash, search_addr, extended_block.get_block_size(), *total_difficulty, receipts, results);
     co_return;
 }
 
@@ -928,10 +928,8 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
             key_value = first_seek_key_value_;
         } else {
             if (navigate_forward_) {
-                std::cout << "NEXT\n";
                 key_value = co_await cursor_->next();
             } else {
-                std::cout << "PREV\n";
                 key_value = co_await cursor_->previous();
             }
         }

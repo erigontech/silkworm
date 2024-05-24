@@ -1475,7 +1475,8 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
 }
 
 Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash->block.header.number;
+    const auto& block = transaction_with_block.block_with_hash->block;
+    const auto block_number = block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1488,15 +1489,29 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
         Tracers tracers{};
+        bool found = false;
+        ExecutionResult execution_result{};
 
-        const auto execution_result = executor.call(transaction_with_block.block_with_hash->block,
-                                                    transaction_with_block.transaction,
-                                                    tracers,
-                                                    /*refund=*/true, /*gas_bailout=*/true);
+        for (size_t idx = 0; idx < block.transactions.size(); idx++) {
+            const auto& txn = block.transactions.at(idx);
+            execution_result = executor.call(block,
+                                             txn,
+                                             tracers,
+                                             /*refund=*/true, /*gas_bailout=*/false);
 
+            if (transaction_with_block.transaction.transaction_index == idx) {
+                found = true;
+                break;
+            }
+        }
         std::string result = "0x";
-        if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-            result = "0x" + silkworm::to_hex(execution_result.data);
+        if (found) {
+            if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+                result = "0x" + silkworm::to_hex(execution_result.data);
+            }
+            return result;
+        } else {
+            SILK_ERROR << "trace_transaction_error: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";
         }
         return result;
     });

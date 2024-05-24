@@ -457,7 +457,6 @@ void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<
     const int top = get_stack_count(op_code);
     trace_stack.reserve(top > 0 ? static_cast<std::size_t>(top) : 0);
     for (int i = top - 1; i >= 0; i--) {
-        //        const auto str = intx::to_string(stack[-i], 16);
         trace_stack.push_back("0x" + intx::to_string(stack[-i], 16));
     }
 }
@@ -998,7 +997,6 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
 
     if (opcode == evmc_opcode::OP_SSTORE) {
         auto key = to_string(stack_top[0]);
-        //        auto value = to_string(stack_top[-1]);
         auto address = evmc::address{execution_state.msg->recipient};
         auto& keys = diff_storage_[address];
         keys.insert(key);

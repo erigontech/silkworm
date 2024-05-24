@@ -100,6 +100,8 @@ inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
 
 std::ostream& operator<<(std::ostream& out, const Account& account);
 
+std::string get_opcode_hex(uint8_t opcode);
+std::string get_opcode_name(const char* const* names, std::uint8_t opcode);
 }  // namespace silkworm
 
 inline auto hash_of(const silkworm::ByteView& bytes) {

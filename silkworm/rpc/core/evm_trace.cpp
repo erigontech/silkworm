@@ -457,7 +457,7 @@ void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<
     const int top = get_stack_count(op_code);
     trace_stack.reserve(top > 0 ? static_cast<std::size_t>(top) : 0);
     for (int i = top - 1; i >= 0; i--) {
-        const auto str = intx::to_string(stack[-i], 16);
+//        const auto str = intx::to_string(stack[-i], 16);
         trace_stack.push_back("0x" + intx::to_string(stack[-i], 16));
     }
 }
@@ -535,22 +535,6 @@ void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
     }
 }
 
-static std::string get_opcode_hex(uint8_t opcode) {
-    auto hex = evmc::hex(opcode);
-    if (opcode < 16) {
-        hex = hex.substr(1);
-    }
-    return hex;
-}
-
-std::string get_op_name(const char* const* names, std::uint8_t opcode) {
-    const auto name = names[opcode];
-    if (name != nullptr) {
-        return name;
-    }
-    return "opcode 0x" + get_opcode_hex(opcode) + " not defined";
-}
-
 static const char* PADDING = "0x0000000000000000000000000000000000000000000000000000000000000000";
 std::string to_string(intx::uint256 value) {
     const auto out = intx::to_string(value, 16);
@@ -611,7 +595,7 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
 void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                          const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto op_code = execution_state.original_code[pc];
-    auto op_name = get_op_name(opcode_names_, op_code);
+    auto op_name = get_opcode_name(opcode_names_, op_code);
 
     auto& vm_trace = traces_stack_.top().get();
     if (!vm_trace.ops.empty()) {
@@ -808,7 +792,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, const int /*stack_height*/, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_op_name(opcode_names_, opcode);
+    auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
     current_opcode_ = opcode;
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
@@ -863,7 +847,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "invalid opcode: opcode 0x" + get_opcode_hex(current_opcode_.value_or(0)) + " not defined";
+            trace.error = "invalid opcode: opcode " + get_opcode_hex(current_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
@@ -1010,11 +994,11 @@ void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& 
 void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_op_name(opcode_names_, opcode);
+    auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
     if (opcode == evmc_opcode::OP_SSTORE) {
         auto key = to_string(stack_top[0]);
-        auto value = to_string(stack_top[-1]);
+//        auto value = to_string(stack_top[-1]);
         auto address = evmc::address{execution_state.msg->recipient};
         auto& keys = diff_storage_[address];
         keys.insert(key);

@@ -75,11 +75,6 @@ std::string uint256_to_hex(const evmone::uint256& x) {
     return ss.str();
 }
 
-std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
-    const auto name = names[opcode];
-    return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
-}
-
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
     for (int i = int(stack_size - 1); i >= 0; --i) {

@@ -28,10 +28,6 @@ std::ostream& operator<<(std::ostream& out, const Account& account) {
     return out;
 }
 
-}  // namespace silkworm
-
-namespace silkworm {
-
 static const char* kBase64Chars[2] = {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
@@ -148,6 +144,25 @@ const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
         throw std::runtime_error{"unknown chain ID: " + std::to_string(chain_id)};
     }
     return *chain_config;
+}
+
+std::string get_opcode_hex(uint8_t opcode) {
+    static constexpr auto hex_digits = "0123456789abcdef";
+    if (opcode < 16) {
+        return {'0', 'x', hex_digits[opcode]};
+    } else {
+        return {'0', 'x', hex_digits[opcode >> 4], hex_digits[opcode & 0xf]};
+    }
+}
+
+std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
+    assert(names != nullptr);
+
+    const auto name = names[opcode];
+    if (name != nullptr) {
+        return name;
+    }
+    return "opcode " + get_opcode_hex(opcode) + " not defined";
 }
 
 }  // namespace silkworm

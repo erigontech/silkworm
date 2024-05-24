@@ -243,4 +243,59 @@ TEST_CASE("lookup_chain_config", "[rpc][common][util]") {
     }
 }
 
+TEST_CASE("get_opcode_name") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    const char *names[256] = {
+            /* 0x00 */ "STOP",
+            /* 0x01 */ "ADD",
+            /* 0x02 */ "MUL",
+            /* 0x03 */ "SUB",
+            /* 0x04 */ "DIV",
+            /* 0x05 */ "SDIV",
+            /* 0x06 */ "MOD",
+            /* 0x07 */ "SMOD",
+            /* 0x08 */ "ADDMOD",
+            /* 0x09 */ "MULMOD",
+            /* 0x0a */ "EXP",
+            /* 0x0b */ "SIGNEXTEND",
+            /* 0x0c */ nullptr,
+            /* 0x0d */ nullptr,
+            /* 0x0e */ nullptr,
+            /* 0x0f */ nullptr,
+            /* 0x10 */ "LT",
+            /* 0x11 */ "GT",
+            /* 0x12 */ "SLT",
+            /* 0x13 */ "SGT",
+            /* 0x14 */ "EQ",
+            /* 0x15 */ "ISZERO",
+            /* 0x16 */ "AND"
+    };
+
+    SECTION("valid op_code") {
+        auto op_code_name = get_opcode_name(names, 0x00);
+        CHECK(op_code_name == "STOP");
+    }SECTION("not existent op_code") {
+        auto op_code_name = get_opcode_name(names, 0x0d);
+        CHECK(op_code_name == "opcode 0xd not defined");
+    }
+}
+
+TEST_CASE("get_opcode_hex") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    SECTION("1 digit opcode") {
+        auto op_code = get_opcode_hex(0x00);
+        CHECK(op_code == "0x0");
+
+        op_code = get_opcode_hex(0x0a);
+        CHECK(op_code == "0xa");
+    }
+    SECTION("2 digit opcode") {
+        auto op_code = get_opcode_hex(0x10);
+        CHECK(op_code == "0x10");
+
+        op_code = get_opcode_hex(0x4f);
+        CHECK(op_code == "0x4f");
+    }
+}
+
 }  // namespace silkworm

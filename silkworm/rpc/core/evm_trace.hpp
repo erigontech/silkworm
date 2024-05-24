@@ -73,7 +73,6 @@ struct TraceFilter {
 
 void from_json(const nlohmann::json& json, TraceFilter& tf);
 
-std::string get_op_name(const char* const* names, std::uint8_t opcode);
 std::string to_string(intx::uint256 value);
 std::ostream& operator<<(std::ostream& out, const TraceConfig& tc);
 std::ostream& operator<<(std::ostream& out, const TraceFilter& tf);

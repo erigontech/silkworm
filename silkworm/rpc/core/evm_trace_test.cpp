@@ -6385,43 +6385,6 @@ TEST_CASE("push_memory_offset_len") {
     }
 }
 
-TEST_CASE("get_op_name") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    const char* names[256] = {
-        /* 0x00 */ "STOP",
-        /* 0x01 */ "ADD",
-        /* 0x02 */ "MUL",
-        /* 0x03 */ "SUB",
-        /* 0x04 */ "DIV",
-        /* 0x05 */ "SDIV",
-        /* 0x06 */ "MOD",
-        /* 0x07 */ "SMOD",
-        /* 0x08 */ "ADDMOD",
-        /* 0x09 */ "MULMOD",
-        /* 0x0a */ "EXP",
-        /* 0x0b */ "SIGNEXTEND",
-        /* 0x0c */ nullptr,
-        /* 0x0d */ nullptr,
-        /* 0x0e */ nullptr,
-        /* 0x0f */ nullptr,
-        /* 0x10 */ "LT",
-        /* 0x11 */ "GT",
-        /* 0x12 */ "SLT",
-        /* 0x13 */ "SGT",
-        /* 0x14 */ "EQ",
-        /* 0x15 */ "ISZERO",
-        /* 0x16 */ "AND"};
-
-    SECTION("valid op_code") {
-        auto op_code_name = get_op_name(names, 0x00);
-        CHECK(op_code_name == "STOP");
-    }
-    SECTION("not existent op_code") {
-        auto op_code_name = get_op_name(names, 0x0d);
-        CHECK(op_code_name == "opcode 0xd not defined");
-    }
-}
-
 TEST_CASE("to_string") {
     SECTION("value == 0") {
         auto out = to_string(intx::uint256{0});

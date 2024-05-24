@@ -1494,11 +1494,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
 
         for (size_t idx = 0; idx < block.transactions.size(); idx++) {
             const auto& txn = block.transactions.at(idx);
-            execution_result = executor.call(block,
-                                             txn,
-                                             tracers,
-                                             /*refund=*/true, /*gas_bailout=*/false);
-
+            execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
             if (transaction_with_block.transaction.transaction_index == idx) {
                 found = true;
                 break;

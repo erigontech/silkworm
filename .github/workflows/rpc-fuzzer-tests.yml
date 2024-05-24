@@ -14,7 +14,7 @@ jobs:
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
-
+    timeout-minutes: 1440
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4

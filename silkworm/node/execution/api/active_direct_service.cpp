@@ -41,7 +41,7 @@ bool ActiveDirectService::stop() {
 
 // rpc InsertBlocks(InsertBlocksRequest) returns(InsertionResult);
 Task<InsertionResult> ActiveDirectService::insert_blocks(const Blocks& blocks) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto bb) {
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, const auto& bb) {
         return self->DirectService::insert_blocks(bb);
     }(this, blocks));
 }
@@ -57,7 +57,7 @@ Task<ValidationResult> ActiveDirectService::validate_chain(BlockNumAndHash numbe
 
 // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
 Task<ForkChoiceResult> ActiveDirectService::update_fork_choice(const ForkChoice& fork_choice) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto choice) {
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, const auto& choice) {
         return self->DirectService::update_fork_choice(choice);
     }(this, fork_choice));
 }
@@ -66,7 +66,7 @@ Task<ForkChoiceResult> ActiveDirectService::update_fork_choice(const ForkChoice&
 
 // rpc AssembleBlock(AssembleBlockRequest) returns(AssembleBlockResponse);
 Task<AssembleBlockResult> ActiveDirectService::assemble_block(const api::BlockUnderConstruction& block) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto b) {
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, const auto& b) {
         return self->DirectService::assemble_block(b);
     }(this, block));
 }
@@ -126,7 +126,7 @@ Task<BlockBodies> ActiveDirectService::get_bodies_by_range(BlockNumRange number_
 
 // rpc GetBodiesByHashes(GetBodiesByHashesRequest) returns(GetBodiesBatchResponse);
 Task<BlockBodies> ActiveDirectService::get_bodies_by_hashes(const BlockHashes& hashes) {
-    return concurrency::co_spawn_and_await(executor_, [](auto* self, auto hh) {
+    return concurrency::co_spawn_and_await(executor_, [](auto* self, const auto& hh) {
         return self->DirectService::get_bodies_by_hashes(hh);
     }(this, hashes));
 }

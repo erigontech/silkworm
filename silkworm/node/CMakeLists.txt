@@ -17,11 +17,13 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(stagedsync/stages)
+add_subdirectory(test_util)
 
 find_package(absl REQUIRED strings)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers)
 find_package(gRPC REQUIRED)
+find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(Protobuf REQUIRED)
@@ -56,4 +58,4 @@ silkworm_library(
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
 )
 
-target_link_libraries(silkworm_node_test PRIVATE silkworm_db_test_util)
+target_link_libraries(silkworm_node_test PRIVATE silkworm_node_test_util GTest::gmock)

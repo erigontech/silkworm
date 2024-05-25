@@ -415,6 +415,7 @@ class OperationTracer : public silkworm::EvmTracer {
     OperationTracer& operator=(const OperationTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     TraceOperationsResult result() const { return result_; }
 

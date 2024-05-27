@@ -65,9 +65,12 @@ ApplicationInfo make_application_info(const buildinfo* info) {
 
 log::Args build_info_as_log_args(const buildinfo* info) {
     return {
-        "version", std::string(info->git_branch) + std::string(info->project_version),
-        "build", std::string(info->system_name) + "-" + std::string(info->system_processor) + " " + std::string(info->build_type),
-        "compiler", std::string(info->compiler_id) + " " + std::string(info->compiler_version),
+        "version",
+        std::string(info->git_branch) + std::string(info->project_version),
+        "build",
+        std::string(info->system_name) + "-" + std::string(info->system_processor) + " " + std::string(info->build_type),
+        "compiler",
+        std::string(info->compiler_id) + " " + std::string(info->compiler_version),
     };
 }
 

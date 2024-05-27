@@ -1516,7 +1516,8 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
 }
 
 Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash->block.header.number;
+    const auto& block = transaction_with_block.block_with_hash->block;
+    auto block_number = block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1528,12 +1529,28 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        bool found = false;
 
-        auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
-        Tracers tracers{entry_tracer};
+        std::shared_ptr<trace::OperationTracer> entry_tracer = nullptr;
+        for (size_t idx = 0; idx < block.transactions.size(); idx++) {
+            const auto& txn = block.transactions.at(idx);
 
-        executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-        return entry_tracer->result();
+            if (transaction_with_block.transaction.transaction_index == idx) {
+                entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+                Tracers tracers{entry_tracer};
+                executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+                found = true;
+                break;
+            } else {
+                executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
+            }
+        }
+        if (found) {
+            return entry_tracer->result();
+        } else {
+            SILK_ERROR << "trace_operations: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";
+            return {};
+        }
     });
 
     co_return trace_op_result;
@@ -1783,18 +1800,21 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
                << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
 }
 
+void OperationTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    auto balance = initial_ibs_.get_balance(address);
+    result_.push_back(InternalOperation{OperationType::OP_SELF_DESTRUCT, address, beneficiary, "0x" + intx::to_string(balance, 16)});
+}
+
 void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    auto sender = evmc::address{msg.sender};
-    auto recipient = evmc::address{msg.recipient};
-    auto code_address = evmc::address{msg.code_address};
+    const auto& sender = evmc::address{msg.sender};
+    const auto& recipient = evmc::address{msg.recipient};
+    const auto& code_address = evmc::address{msg.code_address};
+    const auto depth = msg.depth;
+    const auto kind = msg.kind;
 
-    auto depth = msg.depth;
-    auto kind = msg.kind;
-
-    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
     auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
 
-    if (create && msg.depth > 0) {
+    if (msg.depth > 0) {
         if (msg.kind == evmc_call_kind::EVMC_CREATE) {
             result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
@@ -1805,11 +1825,10 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
     }
 
     SILK_DEBUG << "OperationTracer::on_execution_start: gas: " << std::dec << msg.gas
-               << " create: " << create
                << ", msg.depth: " << depth
                << ", msg.kind: " << kind
                << ", sender: " << sender
-               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", recipient: " << recipient
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)

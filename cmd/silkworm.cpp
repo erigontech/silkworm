@@ -63,7 +63,6 @@ using silkworm::cmd::common::add_node_options;
 using silkworm::cmd::common::add_option_data_dir;
 using silkworm::cmd::common::add_rpcdaemon_options;
 using silkworm::cmd::common::add_sentry_options;
-using silkworm::cmd::common::get_node_name_from_build_info;
 using silkworm::cmd::common::ShutdownSignal;
 using silkworm::cmd::common::SilkwormSettings;
 
@@ -238,22 +237,9 @@ int main(int argc, char* argv[]) {
 
         // Output BuildInfo
         const auto build_info{silkworm_get_buildinfo()};
-        node_settings.build_info =
-            "version=" + std::string(build_info->git_branch) + std::string(build_info->project_version) +
-            "build=" + std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) +
-            " " + std::string(build_info->build_type) +
-            "compiler=" + std::string(build_info->compiler_id) +
-            " " + std::string(build_info->compiler_version);
-        node_settings.node_name = get_node_name_from_build_info(build_info);
+        node_settings.build_info = make_application_info(build_info);
 
-        sw_log::Info(
-            "Silkworm",
-            {"version", std::string(build_info->git_branch) + std::string(build_info->project_version),
-             "build",
-             std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
-                 std::string(build_info->build_type),
-             "compiler",
-             std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)});
+        sw_log::Info("Silkworm", build_info_as_log_args(build_info));
 
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};

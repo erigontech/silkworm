@@ -52,6 +52,7 @@ set(LIBS_PRIVATE
     Boost::container # required for asio-grpc
     magic_enum::magic_enum
     spdlog::spdlog
+    silkworm-buildinfo
 )
 # cmake-format: on
 

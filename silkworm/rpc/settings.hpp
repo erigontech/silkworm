@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -29,6 +30,7 @@
 namespace silkworm::rpc {
 
 struct DaemonSettings {
+    ApplicationInfo build_info;
     log::Settings log_settings;
     InterfaceLogSettings eth_ifc_log_settings{.ifc_name = "eth_rpc_api"};
     InterfaceLogSettings engine_ifc_log_settings{.ifc_name = "engine_rpc_api"};

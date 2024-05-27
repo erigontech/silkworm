@@ -98,6 +98,7 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
     using EngineRpcApi::handle_engine_exchange_capabilities;
     using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
     using EngineRpcApi::handle_engine_forkchoice_updated_v1;
+    using EngineRpcApi::handle_engine_get_client_version_v1;
     using EngineRpcApi::handle_engine_get_payload_v1;
     using EngineRpcApi::handle_engine_new_payload_v1;
 };
@@ -176,6 +177,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
                 "id":1,
                 "jsonrpc":"2.0",
                 "result":[
+                    "engine_getClientVersionV1",
                     "engine_newPayloadV1",
                     "engine_newPayloadV2",
                     "engine_newPayloadV3",
@@ -190,6 +192,38 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
                     "engine_exchangeTransitionConfigurationV1"
                 ]
         })"_json);
+    }
+}
+
+TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_client_version_v1", "[silkworm][rpc][commands][engine_api]") {
+    std::string reply;
+
+    SECTION("request params is empty: return error") {
+        nlohmann::json request = R"({
+            "jsonrpc":"2.0",
+            "id":1,
+            "method":"engine_getClientVersionV1",
+            "params":[]
+        })"_json;
+        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_client_version_v1>(request, reply));
+
+        CHECK(reply == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"invalid engine_getClientVersionV1 params: []"}})");
+    }
+    SECTION("CL client version is present and we must return our EL client version") {
+        nlohmann::json request = R"({
+            "jsonrpc":"2.0",
+            "id":1,
+            "method":"engine_getClientVersionV1",
+            "params":[{
+                "code":"CA",
+                "name":"caplin",
+                "version":"1.0.0",
+                "commit":"aa00bb11"
+            }]
+        })"_json;
+        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_client_version_v1>(request, reply));
+
+        CHECK(reply == R"({"jsonrpc":"2.0","id":1,"result":[{"code":"SW","name":"silkworm","version":"","commit":""}]})");
     }
 }
 

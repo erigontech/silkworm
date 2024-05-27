@@ -232,6 +232,8 @@ void RpcApiTable::add_engine_handlers() {
     method_handlers_[json_rpc::method::k_engine_forkchoiceUpdatedV2] = &commands::RpcApi::handle_engine_forkchoice_updated_v2;
     method_handlers_[json_rpc::method::k_engine_forkchoiceUpdatedV3] = &commands::RpcApi::handle_engine_forkchoice_updated_v3;
     method_handlers_[json_rpc::method::k_engine_exchangeTransitionConfiguration] = &commands::RpcApi::handle_engine_exchange_transition_configuration_v1;
+
+    method_handlers_glaze_[json_rpc::method::k_engine_getClientVersionV1] = &commands::RpcApi::handle_engine_get_client_version_v1;
 }
 
 void RpcApiTable::add_txpool_handlers() {

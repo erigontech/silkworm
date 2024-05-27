@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/rpc/commands/admin_api.hpp>
 #include <silkworm/rpc/commands/debug_api.hpp>
 #include <silkworm/rpc/commands/engine_api.hpp>
@@ -53,7 +54,7 @@ class RpcApi : protected EthereumRpcApi,
                TxPoolRpcApi,
                OtsRpcApi {
   public:
-    explicit RpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+    explicit RpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers, ApplicationInfo build_info = {})
         : EthereumRpcApi{io_context, workers},
           NetRpcApi{io_context},
           AdminRpcApi{io_context},
@@ -62,7 +63,7 @@ class RpcApi : protected EthereumRpcApi,
           ParityRpcApi{io_context},
           ErigonRpcApi{io_context},
           TraceRpcApi{io_context, workers},
-          EngineRpcApi(io_context),
+          EngineRpcApi(io_context, std::move(build_info)),
           TxPoolRpcApi(io_context),
           OtsRpcApi{io_context, workers} {}
 

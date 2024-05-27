@@ -129,6 +129,7 @@ inline constexpr const char* k_parity_getBlockReceipts{"parity_getBlockReceipts"
 inline constexpr const char* k_parity_listStorageKeys{"parity_listStorageKeys"};
 
 inline constexpr const char* k_engine_exchangeCapabilities{"engine_exchangeCapabilities"};
+inline constexpr const char* k_engine_getClientVersionV1{"engine_getClientVersionV1"};
 inline constexpr const char* k_engine_getPayloadV1{"engine_getPayloadV1"};
 inline constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 inline constexpr const char* k_engine_getPayloadV3{"engine_getPayloadV3"};

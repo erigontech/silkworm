@@ -41,7 +41,7 @@ std::string get_description_from_build_info(const buildinfo* info);
 //! Create the application versioning information from the Cable build information
 ApplicationInfo make_application_info(const buildinfo* info);
 
-//! Format the Cable build information Get as log arguments
+//! Format the Cable build information as log arguments
 log::Args build_info_as_log_args(const buildinfo* info);
 
 }  // namespace silkworm

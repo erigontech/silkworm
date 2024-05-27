@@ -321,7 +321,7 @@ void Daemon::start() {
                                   boost::asio::io_context& ioc,
                                   std::optional<std::string> jwt_secret,
                                   InterfaceLogSettings ilog_settings) {
-        commands::RpcApi rpc_api{ioc, worker_pool_, settings_.build_info};
+        commands::RpcApi rpc_api{ioc, worker_pool_};
         commands::RpcApiTable handler_table{api_spec};
         auto make_jsonrpc_handler = [rpc_api = std::move(rpc_api),
                                      handler_table = std::move(handler_table),

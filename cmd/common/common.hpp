@@ -22,14 +22,11 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/buildinfo.h>
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 
 namespace silkworm::cmd::common {
-
-//! Assemble the full node name using the Cable build information
-std::string get_node_name_from_build_info(const buildinfo* build_info);
 
 //! \brief Set up options to populate log settings after cli.parse()
 void add_logging_options(CLI::App& cli, log::Settings& log_settings);

@@ -135,7 +135,7 @@ void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kTxLookupKey,
                     std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
     stages_.emplace(db::stages::kFinishKey,
-                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info));
+                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),

@@ -24,6 +24,7 @@
 #include <stdexcept>
 
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/version.hpp>
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -56,7 +57,7 @@ void DaemonChecklist::success_or_throw() const {
     }
 }
 
-const char* current_exception_name() {
+static const char* current_exception_name() {
 #ifdef WIN32
     return "<Exception name not supported on Windows>";
 #else
@@ -65,7 +66,16 @@ const char* current_exception_name() {
 #endif
 }
 
-int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
+//! Assemble the relevant library version information
+static std::string get_library_versions() {
+    std::string library_versions{"gRPC: "};
+    library_versions.append(grpc::Version());
+    library_versions.append(" Boost Asio: ");
+    library_versions.append(std::to_string(BOOST_ASIO_VERSION));
+    return library_versions;
+}
+
+int Daemon::run(const DaemonSettings& settings) {
     const bool are_settings_valid{validate_settings(settings)};
     if (!are_settings_valid) {
         return -1;
@@ -76,9 +86,9 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
     log::init(log_settings);
     log::set_thread_name("main-thread");
 
-    auto mdbx_ver{mdbx::get_version()};
-    auto mdbx_bld{mdbx::get_build()};
-    SILK_INFO << "Silkrpc build info: " << info.build << " " << info.libraries;
+    const auto mdbx_ver{mdbx::get_version()};
+    const auto mdbx_bld{mdbx::get_build()};
+    SILK_INFO << "Silkrpc starting " << settings.build_info.build_description << " " << get_library_versions();
     SILK_INFO << "Silkrpc libmdbx version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
 
     std::set_terminate([]() {

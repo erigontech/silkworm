@@ -48,7 +48,7 @@ class ExtendingFork {
     void extend_with(Hash head_hash, const Block& head);
 
     // verification
-    concurrency::AwaitableFuture<VerificationResult> verify_chain();
+    VerificationResultFuture verify_chain();
     concurrency::AwaitableFuture<bool> fork_choice(Hash head_block_hash,
                                                    std::optional<Hash> finalized_block_hash = {},
                                                    std::optional<Hash> safe_block_hash = {});

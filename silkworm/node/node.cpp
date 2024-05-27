@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include <boost/asio/io_context.hpp>
+
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -25,8 +27,11 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/execution/api/active_direct_service.hpp>
+#include <silkworm/node/execution/grpc/server/server.hpp>
 #include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/resource_usage.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::node {
@@ -45,7 +50,7 @@ class NodeImpl final {
     NodeImpl(const NodeImpl&) = delete;
     NodeImpl& operator=(const NodeImpl&) = delete;
 
-    execution::LocalClient& execution_local_client() { return execution_local_client_; }
+    execution::api::DirectClient& execution_direct_client() { return execution_direct_client_; }
     std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
     void setup();
@@ -69,8 +74,11 @@ class NodeImpl final {
     snapshots::SnapshotRepository snapshot_repository_;
 
     //! The execution layer server engine
-    execution::Server execution_server_;
-    execution::LocalClient execution_local_client_;
+    boost::asio::io_context execution_context_;
+    execution::ExecutionEngine execution_engine_;
+    std::shared_ptr<execution::api::ActiveDirectService> execution_service_;
+    execution::grpc::server::Server execution_server_;
+    execution::api::DirectClient execution_direct_client_;
     SentryClientPtr sentry_client_;
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<rpc::BackEndKvServer> backend_kv_rpc_server_;
@@ -78,17 +86,26 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
+static auto make_execution_server_settings() {
+    return rpc::ServerSettings{
+        .address_uri = "localhost:9092",
+        .context_pool_settings = {.num_contexts = 1},  // just one execution context
+    };
+}
+
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
     : settings_{settings},
       chaindata_db_{std::move(chaindata_db)},
       snapshot_repository_{settings_.snapshot_settings},
-      execution_server_{settings_, db::RWAccess{chaindata_db_}},
-      execution_local_client_{execution_server_},
+      execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_db_}},
+      execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
+      execution_server_{make_execution_server_settings(), execution_service_},
+      execution_direct_client_{execution_service_},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.node_name);
-    backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings.server_settings, *backend_);
+    backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
 
@@ -133,7 +150,11 @@ Task<void> NodeImpl::run_tasks() {
 
 Task<void> NodeImpl::start_execution_server() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
-    return execution_server_.async_run("exec-engine", /*stack_size=*/kExecutionThreadStackSize);
+    if (settings_.execution_server_enabled) {
+        co_await execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
+    } else {
+        co_await execution_service_->async_run("exec-engine", /*stack_size=*/kExecutionThreadStackSize);
+    }
 }
 
 Task<void> NodeImpl::start_backend_kv_grpc_server() {
@@ -184,8 +205,8 @@ Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindat
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;
 
-execution::LocalClient& Node::execution_local_client() {
-    return p_impl_->execution_local_client();
+execution::api::DirectClient& Node::execution_direct_client() {
+    return p_impl_->execution_direct_client();
 }
 
 void Node::setup() {

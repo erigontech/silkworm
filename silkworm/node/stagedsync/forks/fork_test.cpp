@@ -21,13 +21,13 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "main_chain.hpp"
@@ -35,6 +35,7 @@
 namespace silkworm {
 
 namespace asio = boost::asio;
+using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
@@ -42,34 +43,15 @@ class Fork_ForTest : public Fork {
   public:
     using Fork::canonical_chain_;
     using Fork::current_head_;
-    using Fork::Fork;
+    using Fork::Fork;  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     using Fork::main_tx_;
     using Fork::memory_db_;
     using Fork::memory_tx_;
     using Fork::pipeline_;
 };
 
-static Block generateSampleChildrenBlock(const BlockHeader& parent) {
-    Block block;
-    auto parent_hash = parent.hash();
-
-    // BlockHeader
-    block.header.number = parent.number + 1;
-    block.header.difficulty = 17'000'000'000 + block.header.number;
-    block.header.parent_hash = parent_hash;
-    block.header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
-    block.header.state_root = kEmptyRoot;
-    block.header.receipts_root = kEmptyRoot;
-    block.header.gas_limit = 10'000'000;
-    block.header.gas_used = 0;
-    block.header.timestamp = parent.timestamp + 12;
-    block.header.extra_data = {};
-
-    return block;
-}
-
 TEST_CASE("Fork") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     db::test_util::TempChainData context;
     context.add_genesis_data();
@@ -94,19 +76,19 @@ TEST_CASE("Fork") {
     auto header0 = db::read_canonical_header(tx, 0);
     REQUIRE(header0.has_value());
 
-    auto block1 = generateSampleChildrenBlock(*header0);
-    auto block1_hash = block1.header.hash();
+    auto block1 = generate_sample_child_blocks(*header0);
+    auto block1_hash = block1->header.hash();
 
-    auto block2 = generateSampleChildrenBlock(block1.header);
+    auto block2 = generate_sample_child_blocks(block1->header);
     // auto block2_hash = block2.header.hash();
 
-    auto block3 = generateSampleChildrenBlock(block2.header);
-    auto block3_hash = block3.header.hash();
+    auto block3 = generate_sample_child_blocks(block2->header);
+    auto block3_hash = block3->header.hash();
 
     // inserting & verifying the block
-    main_chain.insert_block(block1);
-    main_chain.insert_block(block2);
-    main_chain.insert_block(block3);
+    main_chain.insert_block(*block1);
+    main_chain.insert_block(*block2);
+    main_chain.insert_block(*block3);
     auto verification = main_chain.verify_chain(block3_hash);
 
     REQUIRE(holds_alternative<ValidChain>(verification));
@@ -128,8 +110,8 @@ TEST_CASE("Fork") {
         std::exception_ptr test_failure;
         auto fork_thread = std::thread([&]() {  // avoid mdbx limitations on txns & threads
             try {
-                auto block4 = generateSampleChildrenBlock(block3.header);
-                auto block4_hash = block4.header.hash();
+                auto block4 = generate_sample_child_blocks(block3->header);
+                auto block4_hash = block4->header.hash();
 
                 BlockId forking_point = main_chain.last_chosen_head();
 
@@ -144,7 +126,7 @@ TEST_CASE("Fork") {
                 CHECK(!fork.head_status().has_value());
 
                 // inserting blocks
-                fork.extend_with(block4);
+                fork.extend_with(*block4);
                 CHECK(db::read_header(fork.memory_tx_, 4, block4_hash));
 
                 // verification

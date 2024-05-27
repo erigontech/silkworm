@@ -45,7 +45,8 @@ class PayloadValidationError : public std::logic_error {
     explicit PayloadValidationError(const std::string& reason) : std::logic_error(reason) {}
 };
 
-PoSSync::PoSSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
+PoSSync::PoSSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
+    : ChainSync(block_exchange, exec_client) {}
 
 Task<void> PoSSync::async_run() {
     co_await download_blocks();
@@ -60,16 +61,16 @@ Task<void> PoSSync::download_blocks() {
     auto executor = co_await asio::this_coro::executor;
 
     // BlockExchange & ChainForkView need a bunch of previous headers to attach the new ones
-    const auto last_headers = co_await exec_engine_.get_last_headers(1000);
+    const auto last_headers = co_await exec_engine_->get_last_headers(1000);
     block_exchange_.initial_state(last_headers);
     for (const auto& header : last_headers) {
         auto hash = header.hash();
-        auto td = co_await exec_engine_.get_header_td(hash, std::nullopt);
+        auto td = co_await exec_engine_->get_td(hash);
         chain_fork_view_.add(header, *td);  // add to cache
     }
 
     // initialization
-    auto initial_block_progress = co_await exec_engine_.block_progress();
+    const auto initial_block_progress = co_await exec_engine_->block_progress();
     auto block_progress = initial_block_progress;
 
     block_exchange_.download_blocks(block_progress, BlockExchange::Target_Tracking::kByNewPayloads);
@@ -100,7 +101,11 @@ Task<void> PoSSync::download_blocks() {
         });
 
         // insert blocks into database
-        co_await exec_engine_.insert_blocks(to_plain_blocks(blocks));
+        const auto insert_result{co_await exec_engine_->insert_blocks(to_plain_blocks(blocks))};
+        if (!insert_result) {
+            log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+            continue;
+        }
 
         downloaded_headers.set(block_progress);
         log::Info() << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
@@ -223,7 +228,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
         if (!parent_td) {
             // if not found, try to get it from the execution engine
-            auto parent = co_await exec_engine_.get_header(block->header.number - 1, block->header.parent_hash);
+            const auto parent = co_await exec_engine_->get_header(block->header.parent_hash);
             if (!parent) {
                 log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " NOT found, extend the chain";
                 // send payload to the block exchange to extend the chain up to it
@@ -232,7 +237,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             }
             log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " found, add to chain fork";
             // if found, add it to the chain_fork_view_ and calc total difficulty
-            parent_td = co_await exec_engine_.get_header_td(block->header.parent_hash, block->header.number - 1);
+            parent_td = co_await exec_engine_->get_td(block->header.parent_hash);
             // TODO(canepat) either remove caching here or use a distinct cache (the same ChainForkView eats on itself)
             chain_fork_view_.add(*parent, *parent_td);
         }  // maybe we can simplify the code above returning Syncing if parent_td is not found on  chain_fork_view
@@ -244,37 +249,41 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
 
         // insert the new block
         std::vector<std::shared_ptr<Block>> blocks{block};
-        co_await exec_engine_.insert_blocks(blocks);
-        // auto inserted = co_await exec_engine_.insert_block(block); this is not working due to proto interface limitations
-        const auto inserted = co_await exec_engine_.get_block_num(block_hash);
-        if (!inserted) {
+        const auto insert_result{co_await exec_engine_->insert_blocks(blocks)};
+        if (!insert_result) {
+            log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+            co_return rpc::PayloadStatus::Syncing;
+        }
+
+        const auto block_number = co_await exec_engine_->get_header_hash_number(block_hash);
+        if (!block_number) {
             co_return rpc::PayloadStatus::Accepted;
         }
-        log::Trace() << "PoSSync: new_payload block_number=" << *inserted << " inserted";
+        log::Trace() << "PoSSync: new_payload block_number=" << *block_number << " inserted";
 
         // NOTE: from here the method execution can be cancelled
         ++active_chain_validations_;
-        auto verification = co_await (exec_engine_.validate_chain(block_hash) || concurrency::timeout(timeout));
+        const auto verification = co_await (exec_engine_->validate_chain({*block_number, block_hash}) || concurrency::timeout(timeout));
         --active_chain_validations_;
 
-        if (std::holds_alternative<ValidChain>(verification)) {
+        if (std::holds_alternative<execution::api::ValidChain>(verification)) {
             // VALID
-            log::Info() << "PoSSync: new_payload VALID current_head=" << std::get<ValidChain>(verification).current_head;
+            log::Info() << "PoSSync: new_payload VALID current_head=" << std::get<execution::api::ValidChain>(verification).current_head.hash;
             co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kValid, .latest_valid_hash = block_hash};
-        } else if (std::holds_alternative<InvalidChain>(verification)) {
+        } else if (std::holds_alternative<execution::api::InvalidChain>(verification)) {
             // INVALID
-            const auto invalid_chain = std::get<InvalidChain>(verification);
+            const auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
             // auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
-            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
+            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.unwind_point.hash);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
-                                         : invalid_chain.latest_valid_head;
+                                         : invalid_chain.unwind_point.hash;
             log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
         } else {
             // ERROR
-            const auto validation_error = std::get<ValidationError>(verification);
-            log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << validation_error.latest_valid_head
+            const auto validation_error = std::get<execution::api::ValidationError>(verification);
+            log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
                         << " validation_error=" << validation_error.error;
             co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"};
         }
@@ -311,7 +320,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
                     << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         Hash head_header_hash = state.head_block_hash;
-        auto head_header = co_await exec_engine_.get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
+        const auto head_header = co_await exec_engine_->get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!head_header) {
             auto [valid, last_valid] = has_valid_ancestor(head_header_hash);
             if (!valid) co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"}};
@@ -324,7 +333,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
 
         // BlockId head{head_header->number, head_header_hash};
 
-        auto parent = co_await exec_engine_.get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
+        const auto parent = co_await exec_engine_->get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {
             log::Info() << "PoSSync: fork_choice_update parent header not found => SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing};
@@ -340,53 +349,58 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
 
         // NOTE: from here the method execution can be cancelled
         ++active_chain_validations_;
-        auto verification = co_await (exec_engine_.validate_chain(head_header_hash) || concurrency::timeout(timeout));  // does nothing if previously validated
+        const auto verification = co_await (exec_engine_->validate_chain({head_header->number, head_header_hash}) ||
+                                            concurrency::timeout(timeout));  // does nothing if previously validated
         --active_chain_validations_;
 
-        if (std::holds_alternative<InvalidChain>(verification)) {
+        if (std::holds_alternative<execution::api::InvalidChain>(verification)) {
             // INVALID
-            auto invalid_chain = std::get<InvalidChain>(verification);
-            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
+            auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
+            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.unwind_point.hash);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
-                                         : invalid_chain.latest_valid_head;
+                                         : invalid_chain.unwind_point.hash;
             log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, latest_valid_hash}};
-        } else if (!std::holds_alternative<ValidChain>(verification)) {
+        } else if (std::holds_alternative<execution::api::ValidationError>(verification)) {
             // ERROR
-            const auto validation_error = std::get<ValidationError>(verification);
-            log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << validation_error.latest_valid_head
+            const auto validation_error = std::get<execution::api::ValidationError>(verification);
+            log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
                         << " validation_error=" << validation_error.error;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"}};
         }
 
         // VALID
-        // auto valid_chain = std::get<ValidChain>(verification);
-
-        std::optional<Hash> finalized_block_hash =
+        const std::optional<Hash> finalized_block_hash =
             state.finalized_block_hash != kZeroHash ? std::optional<Hash>{state.finalized_block_hash} : std::nullopt;
+        const std::optional<Hash> safe_block_hash =
+            state.safe_block_hash != kZeroHash ? std::optional<Hash>{state.safe_block_hash} : std::nullopt;
 
-        const auto fcu_application = co_await (
-            exec_engine_.update_fork_choice(state.head_block_hash, finalized_block_hash) || concurrency::timeout(timeout));
-        ensure(std::holds_alternative<ForkChoiceApplication>(fcu_application), "PoSSync: unexpected awaitable operators outcome");
-        auto application{std::get<ForkChoiceApplication>(fcu_application)};
-        log::Info() << "PoSSync: fork_choice_update " << (application.success ? "OK" : "KO")
-                    << " latest_valid_hash=" << (application.success ? Hash(state.head_block_hash).to_hex() : application.current_head.to_hex())
-                    << " current_head=" << application.current_head << " current_height=" << application.current_height;
-        if (!application.success) {
+        api::ForkChoice fork_choice_point{
+            .head_block_hash = state.head_block_hash,
+            .finalized_block_hash = finalized_block_hash,
+            .safe_block_hash = safe_block_hash,
+        };
+        const auto result = co_await (exec_engine_->update_fork_choice(fork_choice_point) || concurrency::timeout(timeout));
+        ensure(std::holds_alternative<api::ForkChoiceResult>(result), "PoSSync: unexpected awaitable operators outcome");
+        const auto fcu_result{std::get<api::ForkChoiceResult>(result)};
+        log::Info() << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
+                    << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
+                    << " current_head=" << fcu_result.latest_valid_head << " current_height=";
+        if (!fcu_result) {
             // at the moment application doesn't carry information to disambiguate between invalid head and
             // finalized_block_hash not found, so we need additional calls:
 
             if (finalized_block_hash) {
-                auto is_canonical = co_await exec_engine_.is_canonical(*finalized_block_hash);
+                auto is_canonical = co_await exec_engine_->is_canonical_hash(*finalized_block_hash);
                 if (!is_canonical) throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidForkChoiceState)};
             }
-            if (state.safe_block_hash != kZeroHash) {
-                auto is_canonical = co_await exec_engine_.is_canonical(state.safe_block_hash);
+            if (safe_block_hash) {
+                auto is_canonical = co_await exec_engine_->is_canonical_hash(*safe_block_hash);
                 if (!is_canonical) throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidForkChoiceState)};
             }
 
-            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, application.current_head, "invalid fork choice update"}};
+            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, fcu_result.latest_valid_head, "invalid fork choice update"}};
         }
 
         std::optional<uint64_t> buildProcessId;
@@ -424,7 +438,7 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_hash(const std:
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(block_hashes.size());
     for (const auto& bh : block_hashes) {
-        const auto block_body{co_await exec_engine_.get_body(bh)};
+        const auto block_body{co_await exec_engine_->get_body(bh)};
         if (block_body) {
             std::vector<Bytes> rlp_txs;
             rlp_txs.reserve(block_body->transactions.size());
@@ -450,7 +464,7 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum 
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(count);
     for (BlockNum number{start}; number < start + count; ++number) {
-        const auto block_body{co_await exec_engine_.get_body(number)};
+        const auto block_body{co_await exec_engine_->get_body(number)};
         if (block_body) {
             std::vector<Bytes> rlp_txs;
             rlp_txs.reserve(block_body->transactions.size());

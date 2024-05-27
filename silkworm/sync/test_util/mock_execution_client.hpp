@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -27,37 +28,54 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/node/stagedsync/types.hpp>
+#include <silkworm/node/execution/api/client.hpp>
 
 namespace silkworm::chainsync::test_util {
 
-//! \brief MockBlockExchange is the gMock mock class for execution::Client.
-class MockClient : public execution::Client {
+namespace api = execution::api;
+
+//! \brief gMock mock class for Execution API Service.
+class MockExecutionService : public execution::api::Service {
   public:
-    MOCK_METHOD((boost::asio::io_context&), get_executor, (), (override));
+    MOCK_METHOD((Task<api::InsertionResult>), insert_blocks, (const api::Blocks&), (override));
 
-    MOCK_METHOD((Task<void>), insert_headers, (const execution::BlockVector&), (override));
-    MOCK_METHOD((Task<void>), insert_bodies, (const execution::BlockVector&), (override));
-    MOCK_METHOD((Task<void>), insert_blocks, (const execution::BlockVector&), (override));
+    MOCK_METHOD((Task<api::ValidationResult>), validate_chain, (api::BlockNumAndHash), (override));
+    MOCK_METHOD((Task<api::ForkChoiceResult>), update_fork_choice, (const api::ForkChoice&), (override));
 
-    MOCK_METHOD((Task<execution::ValidationResult>), validate_chain, (Hash), (override));
+    MOCK_METHOD((Task<api::AssembleBlockResult>), assemble_block, (const api::BlockUnderConstruction&), (override));
+    MOCK_METHOD((Task<api::AssembledBlockResult>), get_assembled_block, (api::PayloadId), (override));
 
-    MOCK_METHOD((Task<execution::ForkChoiceApplication>), update_fork_choice, (Hash, std::optional<Hash>), (override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), current_header, (), (override));
+    MOCK_METHOD((Task<std::optional<TotalDifficulty>>), get_td, (api::BlockNumberOrHash), (override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), get_header, (api::BlockNumberOrHash), (override));
+    MOCK_METHOD((Task<std::optional<BlockBody>>), get_body, (api::BlockNumberOrHash), (override));
+    MOCK_METHOD((Task<bool>), has_block, (api::BlockNumberOrHash), (override));
 
+    MOCK_METHOD((Task<api::BlockBodies>), get_bodies_by_range, (BlockNumRange), (override));
+    MOCK_METHOD((Task<api::BlockBodies>), get_bodies_by_hashes, (const api::BlockHashes&), (override));
+
+    MOCK_METHOD((Task<bool>), is_canonical_hash, (Hash), (override));
+    MOCK_METHOD((Task<std::optional<BlockNum>>), get_header_hash_number, (Hash), (override));
+    MOCK_METHOD((Task<api::ForkChoice>), get_fork_choice, (), (override));
+
+    MOCK_METHOD((Task<bool>), ready, (), (override));
+    MOCK_METHOD((Task<uint64_t>), frozen_blocks, (), (override));
+
+    MOCK_METHOD((Task<api::BlockHeaders>), get_last_headers, (uint64_t), (override));
     MOCK_METHOD((Task<BlockNum>), block_progress, (), (override));
-    MOCK_METHOD((Task<BlockId>), last_fork_choice, (), (override));
+};
 
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), get_header, (Hash), (override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), get_header, (BlockNum, Hash), (override));
-    MOCK_METHOD((Task<std::optional<BlockBody>>), get_body, (Hash), (override));
-    MOCK_METHOD((Task<std::optional<BlockBody>>), get_body, (BlockNum), (override));
+//! \brief gMock mock class for Execution API Client.
+struct MockExecutionClient : public execution::api::Client {
+    explicit MockExecutionClient(std::shared_ptr<MockExecutionService> service)
+        : service_{std::move(service)} {}
 
-    MOCK_METHOD((Task<bool>), is_canonical, (Hash), (override));
-    MOCK_METHOD((Task<std::optional<BlockNum>>), get_block_num, (Hash), (override));
+    std::shared_ptr<execution::api::Service> service() override {
+        return service_;
+    }
 
-    MOCK_METHOD((Task<std::vector<BlockHeader>>), get_last_headers, (BlockNum), (override));
-    MOCK_METHOD((Task<std::optional<TotalDifficulty>>), get_header_td, (Hash, std::optional<BlockNum>), (override));
+  private:
+    std::shared_ptr<MockExecutionService> service_;
 };
 
 }  // namespace silkworm::chainsync::test_util

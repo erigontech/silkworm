@@ -42,6 +42,8 @@ elseif((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MAT
       add_compile_options(-Wno-error=maybe-uninitialized)
     endif()
 
+    add_compile_options(-Wno-error=mismatched-new-delete)
+
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_compile_options(-Wconversion) # too much noise in gcc
 

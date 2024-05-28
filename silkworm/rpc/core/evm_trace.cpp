@@ -1773,7 +1773,7 @@ void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
 void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(TraceEntry{"SELFDESTRUCT", current_depth_+1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"}); 
+    result_.push_back(TraceEntry{"SELFDESTRUCT", current_depth_ + 1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"});
 }
 
 void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {

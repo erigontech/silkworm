@@ -1760,7 +1760,7 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
 }
 
 void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
-    curr_depth_--;
+    current_depth_--;
     if (traces_stack_idx_.empty())
         return;
     auto& trace_idx = traces_stack_idx_.top();
@@ -1773,7 +1773,7 @@ void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
 void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(TraceEntry{"SELFDESTRUCT", curr_depth_, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"}); /* msg.depth ?? */
+    result_.push_back(TraceEntry{"SELFDESTRUCT", current_depth_+1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"}); 
 }
 
 void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1817,7 +1817,7 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         }
     }
     traces_stack_idx_.emplace(result_.size() - 1);
-    curr_depth_ = msg.depth;
+    current_depth_ = msg.depth;
 
     SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
                << ", msg.depth: " << msg.depth

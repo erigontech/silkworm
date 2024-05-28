@@ -409,6 +409,7 @@ class EntryTracer : public silkworm::EvmTracer {
     const silkworm::IntraBlockState& initial_ibs_;
     TraceEntriesResult result_;
     std::stack<uint64_t> traces_stack_idx_;
+    int32_t current_depth_{-1};
 };
 
 class OperationTracer : public silkworm::EvmTracer {

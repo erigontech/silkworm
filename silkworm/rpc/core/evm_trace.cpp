@@ -1817,7 +1817,7 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         }
     }
     traces_stack_idx_.emplace(result_.size() - 1);
-    cur_depth_ = msg.depth;
+    curr_depth_ = msg.depth;
 
     SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
                << ", msg.depth: " << msg.depth

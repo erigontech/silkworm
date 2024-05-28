@@ -1760,10 +1760,14 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
 }
 
 void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
+    if (traces_stack_idx_.empty())
+       return;  
     auto& trace_idx = traces_stack_idx_.top();
     traces_stack_idx_.pop();
-
-    result_[trace_idx].output = silkworm::to_hex(silkworm::ByteView{result.output_data, result.output_size});
+ 
+    if (trace_idx != std::numeric_limits<uint64_t>::max()) {
+       result_[trace_idx].output = "0x" + silkworm::to_hex(silkworm::ByteView{result.output_data, result.output_size});
+    }
 }
 
 void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
@@ -1771,7 +1775,7 @@ void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::add
     result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), std::nullopt}); /* msg.depth ?? */
 }
 
-void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     const auto& sender = evmc::address{msg.sender};
     const auto& recipient = evmc::address{msg.recipient};
     const auto& code_address = evmc::address{msg.code_address};
@@ -1779,8 +1783,12 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
 
     const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
     auto str_input = "0x" + silkworm::to_hex(input);
-    if (str_input == "0x") {
-        str_input = "0x" + silkworm::to_hex(code);
+
+    // Ignore precompiles in the returned trace (maybe we shouldn't?)
+    if (precompile::is_precompile(msg.code_address, rev)) {
+       // writes special value for index
+       traces_stack_idx_.emplace(std::numeric_limits<uint64_t>::max());
+       return;
     }
 
     if (msg.kind == evmc_call_kind::EVMC_CREATE) {

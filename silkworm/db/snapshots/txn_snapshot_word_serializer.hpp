@@ -64,6 +64,11 @@ struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeseri
     ~TransactionSnapshotWordPayloadRlpDeserializer() override = default;
 
     void decode_word(ByteView word) override {
+        if (word.empty()) {
+            value = TBytes{};
+            return;
+        }
+
         auto data = slice_tx_data(word);
         value = slice_tx_payload(data.tx_rlp);
     }

@@ -51,7 +51,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         brew install gmp
-        pip3 install --user conan==1.60.2 chardet
+        pip3 install --user conan==1.64.1 chardet
         echo "$(python3 -m site --user-base)/bin" >> $GITHUB_PATH
         echo "$($(python3 -m site --user-base)/bin/conan --version)"
 

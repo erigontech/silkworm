@@ -1772,7 +1772,7 @@ void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
 void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), std::nullopt}); /* msg.depth ?? */
+    result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x"}); /* msg.depth ?? */
 }
 
 void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1782,10 +1782,7 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const auto& input = silkworm::ByteView{msg.input_data, msg.input_size};
 
     const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
-    std::optional<std::string> str_input = std::nullopt;
-    if (msg.input_size) {
-        str_input = "0x" + silkworm::to_hex(input);
-    }
+    auto  str_input = "0x" + silkworm::to_hex(input);
 
     // Ignore precompiles in the returned trace (maybe we shouldn't?)
     if (precompile::is_precompile(msg.code_address, rev)) {

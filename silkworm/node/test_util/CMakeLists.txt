@@ -1,5 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
+#[[
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,16 +12,19 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#include "chain_sync.hpp"
+set(TARGET silkworm_node_test_util)
 
-namespace silkworm::chainsync {
+find_package(Boost REQUIRED headers)
+find_package(GTest REQUIRED)
 
-ChainSync::ChainSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
-    : block_exchange_{block_exchange},
-      exec_engine_{exec_client.service()},
-      chain_fork_view_{ChainForkView::head_at_genesis(block_exchange.chain_config())} {
-}
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 
-}  // namespace silkworm::chainsync
+add_library(${TARGET} ${SRC})
+
+target_link_libraries(
+  ${TARGET}
+  PUBLIC silkworm_infra silkworm_node
+  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
+)

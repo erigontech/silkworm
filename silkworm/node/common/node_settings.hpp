@@ -32,12 +32,13 @@
 #include <silkworm/db/etl/collector_settings.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm {
 
 struct NodeSettings {
-    std::string build_info{};                              // Hold build info (human-readable)
+    ApplicationInfo build_info;                            // Application build info (human-readable)
     boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
     std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
     db::EnvConfig chaindata_env_config{};                  // Chaindata db config
@@ -51,7 +52,6 @@ struct NodeSettings {
     db::PruneMode prune_mode;                              // Prune mode
     uint32_t sync_loop_throttle_seconds{0};                // Minimum interval amongst sync cycle
     uint32_t sync_loop_log_interval_seconds{30};           // Interval for sync loop to emit logs
-    std::string node_name;                                 // The node identifying name
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
 
     inline db::etl::CollectorSettings etl() const {

@@ -14,11 +14,7 @@
    limitations under the License.
 */
 
-#include <string>
-
 #include <CLI/CLI.hpp>
-#include <boost/asio/version.hpp>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/rpc/daemon.hpp>
@@ -29,20 +25,6 @@
 using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::rpc;
-
-//! Assemble the application fully-qualified name using the Cable build information
-std::string get_name_from_build_info() {
-    return get_node_name_from_build_info(silkworm_get_buildinfo());
-}
-
-//! Assemble the relevant library version information
-std::string get_library_versions() {
-    std::string library_versions{"gRPC: "};
-    library_versions.append(grpc::Version());
-    library_versions.append(" Boost Asio: ");
-    library_versions.append(std::to_string(BOOST_ASIO_VERSION));
-    return library_versions;
-}
 
 int main(int argc, char* argv[]) {
     CLI::App cli{"Silkrpc - C++ implementation of Ethereum JSON RPC API service"};
@@ -57,7 +39,10 @@ int main(int argc, char* argv[]) {
         add_rpcdaemon_options(cli, settings);
         cli.parse(argc, argv);
 
-        return Daemon::run(settings, {get_name_from_build_info(), get_library_versions()});
+        // Extract versioning information from Cable build information
+        settings.build_info = make_application_info(silkworm_get_buildinfo());
+
+        return Daemon::run(settings);
     } catch (const CLI::ParseError& pe) {
         return cli.exit(pe);
     }

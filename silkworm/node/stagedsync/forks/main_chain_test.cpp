@@ -16,8 +16,6 @@
 
 #include "main_chain.hpp"
 
-#include <iostream>
-
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
@@ -30,11 +28,13 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
 
 namespace asio = boost::asio;
+using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
@@ -48,25 +48,6 @@ class MainChain_ForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::pipeline_;
     using stagedsync::MainChain::tx_;
 };
-
-static Block generateSampleChildrenBlock(const BlockHeader& parent) {
-    Block block;
-    auto parent_hash = parent.hash();
-
-    // BlockHeader
-    block.header.number = parent.number + 1;
-    block.header.difficulty = 17'000'000'000 + block.header.number;
-    block.header.parent_hash = parent_hash;
-    block.header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
-    block.header.state_root = kEmptyRoot;
-    block.header.receipts_root = kEmptyRoot;
-    block.header.gas_limit = 10'000'000;
-    block.header.gas_used = 0;
-    block.header.timestamp = parent.timestamp + 12;
-    block.header.extra_data = {};
-
-    return block;
-}
 
 TEST_CASE("MainChain") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
@@ -276,12 +257,12 @@ TEST_CASE("MainChain") {
         CHECK(extends_canonical);
 
         // Testing a mini re-org
-        Block new_block1 = generateSampleChildrenBlock(*header0);
-        const auto new_block1_hash{new_block1.header.hash()};
+        auto new_block1 = generate_sample_child_blocks(*header0);
+        const auto new_block1_hash{new_block1->header.hash()};
         BlockId new_block1_id{1, new_block1_hash};
 
         // inserting & verifying the block
-        main_chain.insert_block(new_block1);
+        main_chain.insert_block(*new_block1);
         const auto new_verification1 = main_chain.verify_chain(new_block1_hash);
         CHECK(holds_alternative<ValidChain>(new_verification1));
         CHECK(std::get<ValidChain>(new_verification1).current_head == new_block1_id);
@@ -292,21 +273,21 @@ TEST_CASE("MainChain") {
     }
 
     SECTION("diverting the head") {
-        Block block1 = generateSampleChildrenBlock(*header0);
+        auto block1 = generate_sample_child_blocks(*header0);
 
-        Block block2 = generateSampleChildrenBlock(block1.header);
+        auto block2 = generate_sample_child_blocks(block1->header);
 
-        Block block3 = generateSampleChildrenBlock(block2.header);
-        auto block3_hash = block3.header.hash();
+        auto block3 = generate_sample_child_blocks(block2->header);
+        auto block3_hash = block3->header.hash();
         BlockId block3_id{3, block3_hash};
 
         // inserting & verifying the block
-        main_chain.insert_block(block1);
-        main_chain.insert_block(block2);
-        main_chain.insert_block(block3);
+        main_chain.insert_block(*block1);
+        main_chain.insert_block(*block2);
+        main_chain.insert_block(*block3);
 
         auto block_progress = main_chain.get_block_progress();
-        REQUIRE(block_progress == block3.header.number);
+        REQUIRE(block_progress == block3->header.number);
 
         auto verification = main_chain.verify_chain(block3_hash);
 
@@ -325,13 +306,13 @@ TEST_CASE("MainChain") {
 
         // Creating a fork and changing the head (trigger unwind)
         {
-            Block block2b = generateSampleChildrenBlock(block1.header);
-            block2b.header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
-            auto block2b_hash = block2b.header.hash();
+            auto block2b = generate_sample_child_blocks(block1->header);
+            block2b->header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
+            auto block2b_hash = block2b->header.hash();
             BlockId block2b_id{2, block2b_hash};
 
             // inserting & verifying the block
-            main_chain.insert_block(block2b);
+            main_chain.insert_block(*block2b);
             verification = main_chain.verify_chain(block2b_hash);
 
             REQUIRE(holds_alternative<ValidChain>(verification));

@@ -25,7 +25,6 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -36,12 +35,13 @@
 namespace silkworm::chainsync {
 
 struct PoSSyncTest : public rpc::test::ContextTestBase {
-    SentryClient sentry_client_{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
-    mdbx::env_managed chaindata_env_{};
-    db::ROAccess db_access_{chaindata_env_};
-    test_util::MockBlockExchange block_exchange_{sentry_client_, db_access_, kGoerliConfig};
-    test_util::MockClient execution_client_;
-    PoSSync sync_{block_exchange_, execution_client_};
+    SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
+    mdbx::env_managed chaindata_env{};
+    db::ROAccess db_access{chaindata_env};
+    test_util::MockBlockExchange block_exchange{sentry_client, db_access, kGoerliConfig};
+    std::shared_ptr<test_util::MockExecutionService> execution_service{std::make_shared<test_util::MockExecutionService>()};
+    test_util::MockExecutionClient execution_client{execution_service};
+    PoSSync sync_{block_exchange, execution_client};
 };
 
 Task<void> sleep(std::chrono::milliseconds duration) {
@@ -124,24 +124,26 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     for (size_t i{0}; i < requests.size(); ++i) {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
+        execution::api::BlockNumAndHash block_number_or_hash{payload.number, payload.block_hash};
+        execution::api::BlockNumberOrHash parent_number_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
-            EXPECT_CALL(execution_client_, get_header(payload.number - 1, Hash{payload.parent_hash}))
+            EXPECT_CALL(*execution_service, get_header(parent_number_or_hash))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
                     co_return BlockHeader{};
                 }));
-            EXPECT_CALL(execution_client_, get_header_td(Hash{payload.parent_hash}, std::make_optional(payload.number - 1)))
+            EXPECT_CALL(*execution_service, get_td(parent_number_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
                     co_return kGoerliConfig.terminal_total_difficulty;
                 }));
-            EXPECT_CALL(execution_client_, insert_blocks(_))
-                .WillOnce(InvokeWithoutArgs([]() -> Task<void> { co_return; }));
-            EXPECT_CALL(execution_client_, get_block_num(Hash{payload.block_hash}))
+            EXPECT_CALL(*execution_service, insert_blocks(_))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));
+            EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
                 // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                 .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.number; }));
-            EXPECT_CALL(execution_client_, validate_chain(Hash{payload.block_hash}))
-                .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::ValidationResult> {
+            EXPECT_CALL(*execution_service, validate_chain(block_number_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::api::ValidationResult> {
                     co_await sleep(1h);  // simulate exaggeratedly long-running task
-                    co_return execution::ValidChain{};
+                    co_return execution::api::ValidChain{};
                 }));
 
             CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncing);

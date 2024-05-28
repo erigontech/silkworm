@@ -1552,6 +1552,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        bool found = false;
 
         if (!run_previous_transactions(executor, block, transaction_with_block.transaction.transaction_index)) {
             SILK_ERROR << "trace_operations: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";

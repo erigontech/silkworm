@@ -27,6 +27,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/json/client_version.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
 
@@ -56,6 +57,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
     const auto cl_capabilities = params[0].get<Capabilities>();
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities consensus layer capabilities: " << cl_capabilities;
     const Capabilities el_capabilities{
+        "engine_getClientVersionV1",
         "engine_newPayloadV1",
         "engine_newPayloadV2",
         "engine_newPayloadV3",
@@ -71,6 +73,18 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
     };
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities execution layer capabilities: " << el_capabilities;
     reply = make_json_content(request, el_capabilities);
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/identification.md#ClientVersionV1
+Task<void> EngineRpcApi::handle_engine_get_client_version_v1(const nlohmann::json& request, std::string& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getClientVersionV1 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
+        co_return;
+    }
+    make_glaze_json_content(request, build_info_, reply);
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_getpayloadv1

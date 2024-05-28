@@ -34,6 +34,7 @@
 
 namespace silkworm::execution::api {
 
+//! Common Execution API definition for both in-process and out-of-process client/server
 struct Service {
     virtual ~Service() = default;
 

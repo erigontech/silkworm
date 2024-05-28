@@ -25,6 +25,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -79,7 +80,19 @@ ByteView slice_tx_payload(ByteView tx_rlp) {
     return tx_rlp.substr(tx_payload_offset);
 }
 
+Transaction empty_system_tx() {
+    static Transaction tx;
+    tx.type = TransactionType::kSystem;
+    tx.set_sender(protocol::kSystemAddress);
+    return tx;
+}
+
 void decode_word_into_tx(ByteView word, Transaction& tx) {
+    if (word.empty()) {
+        tx = empty_system_tx();
+        return;
+    }
+
     auto [_, senders_data, tx_rlp] = slice_tx_data(word);
     const auto result = rlp::decode(tx_rlp, tx);
     success_or_throw(result, "decode_word_into_tx: rlp::decode error");

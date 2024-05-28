@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include "chain_sync.hpp"
+#pragma once
 
-namespace silkworm::chainsync {
+#include <nlohmann/json.hpp>
 
-ChainSync::ChainSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
-    : block_exchange_{block_exchange},
-      exec_engine_{exec_client.service()},
-      chain_fork_view_{ChainForkView::head_at_genesis(block_exchange.chain_config())} {
-}
+#include <silkworm/infra/common/application_info.hpp>
 
-}  // namespace silkworm::chainsync
+namespace silkworm::rpc {
+
+void make_glaze_json_content(const nlohmann::json& request_json, const ApplicationInfo& build_info, std::string& json_reply);
+
+}  // namespace silkworm::rpc

@@ -14,11 +14,13 @@
    limitations under the License.
 */
 
-#include "direct_service.hpp"
+#include "active_direct_service.hpp"
 
 #include <stdexcept>
+#include <thread>
 #include <utility>
 
+#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
@@ -39,15 +41,29 @@ using silkworm::node::test_util::make_node_settings_from_temp_chain_data;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
-struct DirectServiceTest : public TaskRunner {
-    explicit DirectServiceTest()
+class ActiveDirectService_ForTest : public ActiveDirectService {
+  public:
+    using ActiveDirectService::ActiveDirectService, ActiveComponent::execution_loop, ActiveComponent::stop;
+};
+
+struct ActiveDirectServiceTest : public TaskRunner {
+    explicit ActiveDirectServiceTest()
         : log_guard{log::Level::kNone},
           settings{make_node_settings_from_temp_chain_data(tmp_chaindata)},
           dba{tmp_chaindata.env()} {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
         mock_execution_engine = std::make_unique<MockExecutionEngine>(context(), settings, dba);
-        direct_service = std::make_unique<DirectService>(*mock_execution_engine);
+        direct_service = std::make_unique<ActiveDirectService_ForTest>(*mock_execution_engine, execution_context);
+        execution_context_thread = std::thread{[this]() {
+            direct_service->execution_loop();
+        }};
+    }
+    ~ActiveDirectServiceTest() override {
+        direct_service->stop();
+        if (execution_context_thread.joinable()) {
+            execution_context_thread.join();
+        }
     }
 
     SetLogVerbosityGuard log_guard;
@@ -55,10 +71,12 @@ struct DirectServiceTest : public TaskRunner {
     NodeSettings settings;
     db::RWAccess dba;
     std::unique_ptr<MockExecutionEngine> mock_execution_engine;
-    std::unique_ptr<DirectService> direct_service;
+    boost::asio::io_context execution_context;
+    std::unique_ptr<ActiveDirectService_ForTest> direct_service;
+    std::thread execution_context_thread;
 };
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::insert_blocks", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::insert_blocks", "[node][execution][api]") {
     const std::vector<Blocks> test_vectors = {
         Blocks{},
         Blocks{std::make_shared<Block>()},
@@ -76,7 +94,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::insert_blocks", "[node][exec
     }
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::verify_chain", "[node][execution][api]") {
     const Hash latest_valid_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     const Hash new_hash{0x000000000000000000000000000000000000000000000000000000000000000B_bytes32};
     const BlockNumAndHash latest_valid_head{
@@ -127,7 +145,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execu
     }
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::update_fork_choice", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::update_fork_choice", "[node][execution][api]") {
     const Hash head_block_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     const Hash finalized_block_hash{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
     const Hash safe_block_hash{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
@@ -160,7 +178,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::update_fork_choice", "[node]
     }
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_block_number", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_number", "[node][execution][api]") {
     const Hash block_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     SECTION("non-existent") {
         EXPECT_CALL(*mock_execution_engine, get_block_number(block_hash))
@@ -183,7 +201,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_block_number", "[node][e
     }
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_fork_choice", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_fork_choice", "[node][execution][api]") {
     const Hash head_block_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     const Hash finalized_block_hash{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
     const Hash safe_block_hash{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
@@ -214,7 +232,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_fork_choice", "[node][ex
     CHECK(last_choice.safe_block_hash == expected_fork_choice.safe_block_hash);
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_last_headers", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_last_headers", "[node][execution][api]") {
     const std::vector<std::pair<uint64_t, BlockHeaders>> test_vectors = {
         {0, {}},
         {1, {BlockHeader{}}},
@@ -232,7 +250,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_last_headers", "[node][e
     }
 }
 
-TEST_CASE_METHOD(DirectServiceTest, "DirectService::block_progress", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::block_progress", "[node][execution][api]") {
     const BlockNum progress{123'456'789};
     EXPECT_CALL(*mock_execution_engine, block_progress())
         .WillOnce(InvokeWithoutArgs([=]() -> BlockNum {

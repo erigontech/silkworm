@@ -111,7 +111,7 @@ struct PayloadStatus {
     static const PayloadStatus InvalidBlockHash;
 
     std::string status;
-    std::optional<evmc::bytes32> latest_valid_hash;
+    std::optional<Hash> latest_valid_hash;
     std::optional<std::string> validation_error;
 };
 

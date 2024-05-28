@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,4 @@
    limitations under the License.
 */
 
-#include "chain_sync.hpp"
-
-namespace silkworm::chainsync {
-
-ChainSync::ChainSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
-    : block_exchange_{block_exchange},
-      exec_engine_{exec_client.service()},
-      chain_fork_view_{ChainForkView::head_at_genesis(block_exchange.chain_config())} {
-}
-
-}  // namespace silkworm::chainsync
+// Empty compilation unit just to make silkworm_infra_test_util build under macOS

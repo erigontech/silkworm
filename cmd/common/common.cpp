@@ -128,21 +128,4 @@ void add_context_pool_options(CLI::App& cli, concurrency::ContextPoolSettings& s
     add_option_wait_mode(cli, settings.wait_mode);
 }
 
-std::string get_node_name_from_build_info(const buildinfo* build_info) {
-    std::string node_name{"silkworm/"};
-    node_name.append(build_info->git_branch);
-    node_name.append(build_info->project_version);
-    node_name.append("/");
-    node_name.append(build_info->system_name);
-    node_name.append("-");
-    node_name.append(build_info->system_processor);
-    node_name.append("_");
-    node_name.append(build_info->build_type);
-    node_name.append("/");
-    node_name.append(build_info->compiler_id);
-    node_name.append("-");
-    node_name.append(build_info->compiler_version);
-    return node_name;
-}
-
 }  // namespace silkworm::cmd::common

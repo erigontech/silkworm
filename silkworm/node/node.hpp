@@ -23,8 +23,8 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>
+#include <silkworm/node/execution/api/direct_client.hpp>
 #include <silkworm/node/settings.hpp>
-#include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
 
@@ -42,7 +42,7 @@ class Node {
     Node(const Node&) = delete;
     Node& operator=(const Node&) = delete;
 
-    execution::LocalClient& execution_local_client();
+    execution::api::DirectClient& execution_direct_client();
 
     void setup();
 

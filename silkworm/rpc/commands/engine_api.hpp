@@ -23,6 +23,7 @@
 #include <nlohmann/json.hpp>
 #include <tl/expected.hpp>
 
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/engine/execution_engine.hpp>
@@ -38,13 +39,17 @@ namespace silkworm::rpc::commands {
 
 class EngineRpcApi {
   public:
-    EngineRpcApi(ethdb::Database* database, engine::ExecutionEngine* engine, ethbackend::BackEnd* backend)
-        : database_{database}, engine_{engine}, backend_{backend} {}
-    explicit EngineRpcApi(boost::asio::io_context& io_context)
+    EngineRpcApi(ethdb::Database* database,
+                 engine::ExecutionEngine* engine,
+                 ethbackend::BackEnd* backend,
+                 ApplicationInfo build_info = {})
+        : database_{database}, engine_{engine}, backend_{backend}, build_info_{std::move(build_info)} {}
+    explicit EngineRpcApi(boost::asio::io_context& io_context, ApplicationInfo build_info = {})
         : EngineRpcApi(
               must_use_private_service<ethdb::Database>(io_context),
               must_use_shared_service<engine::ExecutionEngine>(io_context),
-              must_use_private_service<ethbackend::BackEnd>(io_context)) {}
+              must_use_private_service<ethbackend::BackEnd>(io_context),
+              std::move(build_info)) {}
     virtual ~EngineRpcApi() = default;
 
     EngineRpcApi(const EngineRpcApi&) = delete;
@@ -53,6 +58,7 @@ class EngineRpcApi {
 
   protected:
     Task<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_client_version_v1(const nlohmann::json& request, std::string& reply);
     Task<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
@@ -85,6 +91,7 @@ class EngineRpcApi {
     ethdb::Database* database_;
     engine::ExecutionEngine* engine_;
     ethbackend::BackEnd* backend_;
+    ApplicationInfo build_info_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };

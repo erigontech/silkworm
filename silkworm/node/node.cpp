@@ -32,7 +32,6 @@
 #include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::node {
 
@@ -75,7 +74,7 @@ class NodeImpl final {
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
-    execution::ExecutionEngine execution_engine_;
+    stagedsync::ExecutionEngine execution_engine_;
     std::shared_ptr<execution::api::ActiveDirectService> execution_service_;
     execution::grpc::server::Server execution_server_;
     execution::api::DirectClient execution_direct_client_;

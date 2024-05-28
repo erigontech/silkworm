@@ -334,7 +334,8 @@ struct TraceEntry {
     evmc::address from;
     evmc::address to;
     std::string value;
-    std::string input;
+    std::optional<std::string> input;
+    std::optional<std::string> output;
 };
 
 enum OperationType : int {
@@ -399,6 +400,7 @@ class EntryTracer : public silkworm::EvmTracer {
     EntryTracer& operator=(const EntryTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     TraceEntriesResult result() const { return result_; }
 

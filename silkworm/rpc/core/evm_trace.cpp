@@ -298,7 +298,16 @@ void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {
     } else {
         json["value"] = trace_entry.value;
     }
-    json["input"] = trace_entry.input;
+    if (!trace_entry.input) {
+        json["input"] = nullptr;
+    } else {
+        json["input"] = *trace_entry.input;
+    }
+    if (!trace_entry.output) {
+        json["output"] = nullptr;
+    } else {
+        json["output"] = *trace_entry.output;
+    }
 }
 
 void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
@@ -471,7 +480,7 @@ void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace
         tm.data = "0x";
         const auto data = memory.data();
         const auto start = tm.offset;
-        for (uint64_t idx{0}; idx < tm.len; idx++) {
+        for (size_t idx{0}; idx < tm.len; idx++) {
             std::string entry{evmc::hex({data + start + idx, 1})};
             tm.data.append(entry);
         }
@@ -1154,7 +1163,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         .state_diff = false,
     };
     const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
-    for (std::uint64_t pos = 0; pos < trace_call_results.size(); pos++) {
+    for (size_t pos = 0; pos < trace_call_results.size(); pos++) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
         const auto tnx_hash = transaction.hash();
 
@@ -1282,7 +1291,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
-        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); index++) {
             const silkworm::Transaction& transaction{block.transactions[index]};
 
             auto& result = trace_call_result.at(index);
@@ -1349,7 +1358,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
         TraceManyCallResult result;
-        for (std::size_t index{0}; index < calls.size(); index++) {
+        for (size_t index{0}; index < calls.size(); index++) {
             const auto& config = calls[index].trace_config;
 
             silkworm::Transaction transaction{calls[index].call.to_transaction()};
@@ -1412,7 +1421,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 
         auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
         Tracers tracers{create_tracer};
-        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); index++) {
             const silkworm::Transaction& transaction{block.transactions[index]};
             executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
             executor.reset();
@@ -1747,31 +1756,29 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
                << ", code: " << silkworm::to_hex(code);
 }
 
-void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    auto sender = evmc::address{msg.sender};
-    auto recipient = evmc::address{msg.recipient};
-    auto code_address = evmc::address{msg.code_address};
-    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
-    auto input = silkworm::ByteView{msg.input_data, msg.input_size};
+void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    auto balance = initial_ibs_.get_balance(address);
+    result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), std::nullopt}); /* msg.depth ?? */
+}
 
-    auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
+void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    const auto& sender = evmc::address{msg.sender};
+    const auto& recipient = evmc::address{msg.recipient};
+    const auto& code_address = evmc::address{msg.code_address};
+    const auto& input = silkworm::ByteView{msg.input_data, msg.input_size};
+
+    const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
     auto str_input = "0x" + silkworm::to_hex(input);
     if (str_input == "0x") {
         str_input = "0x" + silkworm::to_hex(code);
     }
 
-    if (create) {
-        if (msg.depth > 0) {
-            if (msg.kind == evmc_call_kind::EVMC_CREATE) {
-                result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
-            } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
-                result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
-            }
-        } else {
-            result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
-        }
+    if (msg.kind == evmc_call_kind::EVMC_CREATE) {
+        result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
+    } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
+        result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
     } else {
-        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
+        const bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
                 in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
@@ -1782,18 +1789,18 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
             case evmc_call_kind::EVMC_CALLCODE:
                 result_.push_back(TraceEntry{"CALLCODE", msg.depth, sender, recipient, str_value, str_input});
                 break;
-            case evmc_call_kind::EVMC_CREATE:
-            case evmc_call_kind::EVMC_CREATE2:
+            default:
+                // safeguard in case new CALL-like opcodes are introduced but not handled,
+                result_.push_back(TraceEntry{"UNKNWON", msg.depth, sender, recipient, str_value, str_input});
                 break;
         }
     }
 
     SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
-               << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
                << ", sender: " << sender
-               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", recipient: " << recipient
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)

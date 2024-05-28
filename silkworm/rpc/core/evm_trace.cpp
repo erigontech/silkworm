@@ -1772,7 +1772,7 @@ void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
 void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x"}); /* msg.depth ?? */
+    result_.push_back(TraceEntry{"SELFDESTRUCT", 1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"}); /* msg.depth ?? */
 }
 
 void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1792,8 +1792,10 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     }
 
     if (msg.kind == evmc_call_kind::EVMC_CREATE) {
+        str_input = "0x" + silkworm::to_hex(code);
         result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
     } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
+        str_input = "0x" + silkworm::to_hex(code);
         result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
     } else {
         const bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;

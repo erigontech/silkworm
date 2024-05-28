@@ -1761,12 +1761,12 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
 
 void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
     if (traces_stack_idx_.empty())
-       return;  
+        return;
     auto& trace_idx = traces_stack_idx_.top();
     traces_stack_idx_.pop();
- 
+
     if (trace_idx != std::numeric_limits<uint64_t>::max()) {
-       result_[trace_idx].output = "0x" + silkworm::to_hex(silkworm::ByteView{result.output_data, result.output_size});
+        result_[trace_idx].output = "0x" + silkworm::to_hex(silkworm::ByteView{result.output_data, result.output_size});
     }
 }
 
@@ -1784,14 +1784,14 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
     std::optional<std::string> str_input = std::nullopt;
     if (msg.input_size) {
-       str_input = "0x" + silkworm::to_hex(input);
+        str_input = "0x" + silkworm::to_hex(input);
     }
 
     // Ignore precompiles in the returned trace (maybe we shouldn't?)
     if (precompile::is_precompile(msg.code_address, rev)) {
-       // writes special value for index
-       traces_stack_idx_.emplace(std::numeric_limits<uint64_t>::max());
-       return;
+        // writes special value for index
+        traces_stack_idx_.emplace(std::numeric_limits<uint64_t>::max());
+        return;
     }
 
     if (msg.kind == evmc_call_kind::EVMC_CREATE) {

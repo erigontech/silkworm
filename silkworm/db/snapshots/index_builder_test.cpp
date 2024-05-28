@@ -79,7 +79,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             tmp_dir.path(),
             "v1-015000-015500-bodies.seg",
             test::SnapshotHeader{
-                .words_count = 0,
+                .words_count = 7,
                 .empty_words_count = 0,
                 .patterns = {},
                 .positions = {}},
@@ -147,9 +147,9 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             tmp_dir.path(),
             "000000000000000e000000000000000000000000000000000000000000000004"
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0} <- c7 instead of c6
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d901c0"};
+            "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
+            "04d980c001c6837004d980c001c7837004d901c0"};  // {01, c7837004d980c0} <- c7 instead of c6
         test::SampleBodySnapshotPath bodies_snapshot_path{invalid_bodies_snapshot.path()};
         test::SampleTransactionSnapshotFile valid_txs_snapshot{tmp_dir.path()};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers

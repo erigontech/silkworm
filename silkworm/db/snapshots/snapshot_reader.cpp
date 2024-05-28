@@ -59,6 +59,17 @@ Snapshot::Iterator& Snapshot::Iterator::operator++() {
     return *this;
 }
 
+Snapshot::Iterator& Snapshot::Iterator::operator+=(size_t count) {
+    while ((count > 1) && it_.has_next()) {
+        it_.skip();
+        count--;
+    }
+    if (count > 0) {
+        ++*this;
+    }
+    return *this;
+}
+
 bool operator==(const Snapshot::Iterator& lhs, const Snapshot::Iterator& rhs) {
     return (lhs.deserializer_ == rhs.deserializer_) &&
            (!lhs.deserializer_ || (lhs.it_ == rhs.it_));

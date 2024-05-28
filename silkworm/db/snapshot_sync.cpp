@@ -16,6 +16,7 @@
 
 #include "snapshot_sync.hpp"
 
+#include <atomic>
 #include <exception>
 #include <latch>
 
@@ -193,14 +194,19 @@ void SnapshotSync::build_missing_indexes() {
         return;
     }
 
-    SILK_INFO << "SnapshotSync: missing indexes detected, rebuild started";
+    SILK_INFO << "SnapshotSync: " << missing_indexes.size() << " missing indexes to build";
+    size_t total_tasks = missing_indexes.size();
+    std::atomic_size_t done_tasks;
 
     for (const auto& index : missing_indexes) {
-        workers.push_task([=]() {
+        workers.push_task([index, total_tasks, &done_tasks]() {
             try {
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " start";
+                SILK_INFO << "SnapshotSync: building index " << index->path().filename() << " ...";
                 index->build();
-                SILK_INFO << "SnapshotSync: build index: " << index->path().filename() << " end";
+                done_tasks++;
+                SILK_INFO << "SnapshotSync: built index " << index->path().filename() << ";"
+                          << " progress: " << (done_tasks * 100 / total_tasks) << "% "
+                          << done_tasks << " of " << total_tasks << " indexes ready";
             } catch (const std::exception& ex) {
                 SILK_CRIT << "SnapshotSync: build index: " << index->path().filename() << " failed [" << ex.what() << "]";
                 throw;
@@ -215,6 +221,8 @@ void SnapshotSync::build_missing_indexes() {
     // Wait for any already-started-but-unfinished work in case of stop request
     workers.pause();
     workers.wait_for_tasks();
+
+    SILK_INFO << "SnapshotSync: built missing indexes";
 }
 
 void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available) {

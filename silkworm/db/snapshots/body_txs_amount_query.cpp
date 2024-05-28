@@ -23,27 +23,20 @@
 namespace silkworm::snapshots {
 
 BodyTxsAmountQuery::Result BodyTxsAmountQuery::exec() {
-    auto path = snapshot_.path();
-    uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
-    BlockNum number = path.block_from();
+    size_t body_count = snapshot_.item_count();
+    if (body_count == 0) {
+        throw std::runtime_error("BodyTxsAmountQuery empty body snapshot: " + snapshot_.path().path().string());
+    }
 
     BodySnapshotReader reader{snapshot_};
-    for (auto& body : reader) {
-        if (number == path.block_from()) {
-            first_tx_id = body.base_txn_id;
-        }
-        if (number >= path.block_to() - 1) {
-            last_tx_id = body.base_txn_id;
-            last_txs_amount = body.txn_count;
-        }
-        number++;
-    }
+    auto it = reader.begin();
+    uint64_t first_tx_id = it->base_txn_id;
 
-    if ((first_tx_id == 0) && (last_tx_id == 0)) {
-        throw std::runtime_error("BodyTxsAmountQuery empty body snapshot: " + path.path().string());
-    }
+    it += body_count - 1;
+    auto& last_body = *it;
 
-    uint64_t count = last_tx_id + last_txs_amount - first_tx_id;
+    uint64_t end_tx_id = last_body.base_txn_id + last_body.txn_count;
+    uint64_t count = end_tx_id - first_tx_id;
 
     return Result{
         first_tx_id,

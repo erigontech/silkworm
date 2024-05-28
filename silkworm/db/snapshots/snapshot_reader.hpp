@@ -63,6 +63,8 @@ class Snapshot {
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++();
 
+        Iterator& operator+=(size_t count);
+
         friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
         friend bool operator==(const Iterator& lhs, const Iterator& rhs);
 
@@ -132,6 +134,11 @@ class SnapshotReader {
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
             ++it_;
+            return *this;
+        }
+
+        Iterator& operator+=(size_t count) {
+            it_ += count;
             return *this;
         }
 

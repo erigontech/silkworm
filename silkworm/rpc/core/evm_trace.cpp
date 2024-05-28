@@ -1782,7 +1782,10 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const auto& input = silkworm::ByteView{msg.input_data, msg.input_size};
 
     const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
-    auto str_input = "0x" + silkworm::to_hex(input);
+    std::optional<std::string> str_input = std::nullopt;
+    if (msg.input_size) {
+       str_input = "0x" + silkworm::to_hex(input);
+    }
 
     // Ignore precompiles in the returned trace (maybe we shouldn't?)
     if (precompile::is_precompile(msg.code_address, rev)) {

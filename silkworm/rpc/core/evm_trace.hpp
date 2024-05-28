@@ -400,6 +400,7 @@ class EntryTracer : public silkworm::EvmTracer {
     EntryTracer& operator=(const EntryTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     TraceEntriesResult result() const { return result_; }
@@ -407,6 +408,7 @@ class EntryTracer : public silkworm::EvmTracer {
   private:
     const silkworm::IntraBlockState& initial_ibs_;
     TraceEntriesResult result_;
+    std::stack<uint64_t> traces_stack_idx_;
 };
 
 class OperationTracer : public silkworm::EvmTracer {
@@ -490,6 +492,8 @@ class TraceCallExecutor {
         const rpc::Transaction& transaction,
         std::int32_t index,
         const TraceConfig& config);
+
+    bool run_previous_transactions(EVMExecutor& executor, const silkworm::Block& block, uint64_t tx_id);
 
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;

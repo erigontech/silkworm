@@ -49,7 +49,6 @@ if(NOT SILKWORM_CORE_ONLY)
       common/db_checklist.hpp
       common/db_max_readers_option.cpp
       common/db_max_readers_option.hpp
-      common/human_size_parser_validator.hpp
       common/node_options.cpp
       common/node_options.hpp
       common/rpcdaemon_options.cpp

@@ -41,7 +41,6 @@
 
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
-#include "common/human_size_parser_validator.hpp"
 #include "common/node_options.hpp"
 #include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
@@ -93,12 +92,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     std::filesystem::path data_dir_path;
     add_option_data_dir(cli, data_dir_path);
-
-    std::string chaindata_max_size_str{human_size(node_settings.chaindata_env_config.max_size)};
-    std::string chaindata_growth_size_str{human_size(node_settings.chaindata_env_config.growth_size)};
-    std::string chaindata_page_size_str{human_size(node_settings.chaindata_env_config.page_size)};
-    std::string batch_size_str{human_size(node_settings.batch_size)};
-    std::string etl_buffer_size_str{human_size(node_settings.etl_buffer_size)};
 
     // Node settings
     add_node_options(cli, node_settings);
@@ -153,28 +146,23 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     cli.parse(argc, argv);
 
     // Validate and assign settings
-    const auto chaindata_page_size{parse_size(chaindata_page_size_str)};
-    if (!chaindata_page_size.has_value() || (*chaindata_page_size & (*chaindata_page_size - 1)) != 0) {
+
+    const size_t chaindata_page_size = node_settings.chaindata_env_config.page_size;
+    if ((chaindata_page_size & (chaindata_page_size - 1)) != 0) {
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
     }
-    node_settings.chaindata_env_config.page_size = chaindata_page_size.value();
-    const auto mdbx_max_size_hard_limit{chaindata_page_size.value() * sw_db::kMdbxMaxPages};
-    const auto chaindata_max_size{parse_size(chaindata_max_size_str)};
-    if (chaindata_max_size.value() > mdbx_max_size_hard_limit) {
+
+    const size_t mdbx_max_size_hard_limit = chaindata_page_size * sw_db::kMdbxMaxPages;
+    if (node_settings.chaindata_env_config.max_size > mdbx_max_size_hard_limit) {
         throw std::invalid_argument("--chaindata.maxsize exceeds max allowed size by page size i.e" +
                                     human_size(mdbx_max_size_hard_limit));
     }
-    const auto chaindata_growth_size{parse_size(chaindata_growth_size_str)};
-    if (chaindata_growth_size > (mdbx_max_size_hard_limit / /* two increments ?*/ 2u)) {
+
+    if (node_settings.chaindata_env_config.growth_size > (mdbx_max_size_hard_limit / /* two increments ?*/ 2u)) {
         throw std::invalid_argument("--chaindata.growthsize must be <=" + human_size(mdbx_max_size_hard_limit / 2));
     }
 
     node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, /*create=*/true);
-    node_settings.chaindata_env_config.max_size = chaindata_max_size.value();
-    node_settings.chaindata_env_config.growth_size = chaindata_growth_size.value();
-
-    node_settings.batch_size = parse_size(batch_size_str).value();
-    node_settings.etl_buffer_size = parse_size(etl_buffer_size_str).value();
 
     // Parse prune mode
     sw_db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;

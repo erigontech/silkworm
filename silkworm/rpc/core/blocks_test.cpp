@@ -20,7 +20,7 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/bytes.hpp>
@@ -332,7 +332,7 @@ TEST_CASE("get_latest_block_number with head forkchoice number", "[rpc][core][bl
     CHECK(result.get() == 0x3d0900);
 }
 
-TEST_CASE("get_finalized_forkchoice_number with no finalized block we return genesis number", "[rpc][core][blocks]") {
+TEST_CASE("get_forkchoice_finalized_block_number genesis number if no finalized block", "[rpc][core][blocks]") {
     test::MockTransaction transaction;
     WorkerPool pool{1};
 
@@ -344,7 +344,7 @@ TEST_CASE("get_finalized_forkchoice_number with no finalized block we return gen
     CHECK(result.get() == 0x0);
 }
 
-TEST_CASE("get_safe_forkchoice_number with no safe block we return genesis number", "[rpc][core][blocks]") {
+TEST_CASE("get_forkchoice_safe_block_number genesis number if no safe block", "[rpc][core][blocks]") {
     test::MockTransaction transaction;
     WorkerPool pool{1};
 

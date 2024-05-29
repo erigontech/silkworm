@@ -27,7 +27,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <absl/strings/match.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>

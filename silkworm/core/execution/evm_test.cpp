@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <evmone/execution_state.hpp>
 
 #include <silkworm/core/common/test_util.hpp>

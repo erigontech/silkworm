@@ -20,7 +20,7 @@
 #include <string>
 #include <string_view>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>

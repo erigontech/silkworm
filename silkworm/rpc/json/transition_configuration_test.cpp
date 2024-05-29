@@ -16,7 +16,7 @@
 
 #include "transition_configuration.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 
 namespace silkworm::rpc {

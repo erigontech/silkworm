@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/db/test_util/temp_chain_data.hpp>

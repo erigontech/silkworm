@@ -18,7 +18,8 @@
 
 #include <vector>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>

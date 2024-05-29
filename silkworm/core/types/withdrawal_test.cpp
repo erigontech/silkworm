@@ -16,7 +16,7 @@
 
 #include "withdrawal.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/trie/vector_root.hpp>

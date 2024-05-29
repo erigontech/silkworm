@@ -17,7 +17,7 @@
 #include "connection.hpp"
 
 #include <boost/asio/thread_pool.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 

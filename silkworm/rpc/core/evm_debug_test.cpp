@@ -20,7 +20,7 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/thread_pool.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/db/tables.hpp>

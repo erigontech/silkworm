@@ -21,7 +21,7 @@
 #include <string>
 
 #include <absl/strings/match.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 #include <grpcpp/server_builder.h>
 

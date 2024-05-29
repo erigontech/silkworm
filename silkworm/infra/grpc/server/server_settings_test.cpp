@@ -16,7 +16,7 @@
 
 #include "server_settings.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/test_util/log.hpp>

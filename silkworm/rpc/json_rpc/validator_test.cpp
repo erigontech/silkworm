@@ -18,7 +18,7 @@
 
 #include <absl/strings/match.h>
 #include <boost/regex.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
@@ -31,12 +31,12 @@ static JsonRpcValidator create_validator_for_test() {
     return {};
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator loads spec in constructor", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator loads spec in constructor", "[rpc][http][json_rpc_validator]") {
     REQUIRE_NOTHROW(JsonRpcValidator::load_specification());
     CHECK(JsonRpcValidator::openrpc_version() == "1.2.4");
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates request fields", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -50,7 +50,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates request fields", "[rpc][http][j
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator detects missing request field", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -81,7 +81,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects missing request field", "[rpc][ht
     CHECK(result.error() == "Request not valid, required fields: jsonrpc,id,method,params");
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates invalid request fields", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -126,7 +126,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates invalid request fields", "[rpc]
     CHECK(result.error() == "Invalid field: id");
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator accepts missing params field", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -139,7 +139,7 @@ TEST_CASE("rpc::http::JsonRpcValidator accepts missing params field", "[rpc][htt
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator rejects missing params field if required", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator rejects missing params field if required", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -152,7 +152,7 @@ TEST_CASE("rpc::http::JsonRpcValidator rejects missing params field if required"
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -166,7 +166,7 @@ TEST_CASE("rpc::http::JsonRpcValidator detects unknown fields", "[rpc][http][jso
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator accepts missing optional parameter", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator accepts missing optional parameter", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -180,7 +180,7 @@ TEST_CASE("rpc::http::JsonRpcValidator accepts missing optional parameter", "[rp
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates string parameter", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -238,7 +238,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates string parameter", "[rpc][http]
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates optional parameter if provided", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates optional parameter if provided", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -251,7 +251,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates optional parameter if provided"
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates enum", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -282,7 +282,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates enum", "[rpc][http][json_rpc_va
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates hash", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates hash", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -303,7 +303,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates hash", "[rpc][http][json_rpc_va
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates array", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -323,7 +323,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates array", "[rpc][http][json_rpc_v
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates object", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -398,7 +398,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates object", "[rpc][http][json_rpc_
     CHECK(!result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates uppercase hex value", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates uppercase hex value", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -412,7 +412,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates uppercase hex value", "[rpc][ht
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates `data` field", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates `data` field", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     nlohmann::json request = {
@@ -426,7 +426,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates `data` field", "[rpc][http][jso
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates nested arrays", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     auto request1 = R"({
@@ -481,7 +481,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates nested arrays", "[rpc][http][js
     CHECK(result3);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator validates spec test request", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     const auto tests_dir = db::test_util::get_tests_dir();
@@ -504,7 +504,7 @@ TEST_CASE("rpc::http::JsonRpcValidator validates spec test request", "[rpc][http
     }
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator engine_newPayloadV3: patch blobGasUsed regex", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator engine_newPayloadV3: patch blobGasUsed regex", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     // blobGasUsed regex at commit 5849052: "^0x([1-9a-f]+[0-9a-f]{0,15})|0$" does not work for input "blobGasUsed":"0x0"
@@ -541,7 +541,7 @@ TEST_CASE("rpc::http::JsonRpcValidator engine_newPayloadV3: patch blobGasUsed re
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator engine_newPayloadV3: patch gasUsed regex", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator engine_newPayloadV3: patch gasUsed regex", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     // gasUsed regex at commit 5849052: "^0x([1-9a-f]+[0-9a-f]{0,15})|0$" does not work for input "gasUsed":"0x0"
@@ -578,7 +578,7 @@ TEST_CASE("rpc::http::JsonRpcValidator engine_newPayloadV3: patch gasUsed regex"
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: null payloadAttributes param", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator engine_forkchoiceUpdatedV3: null payloadAttributes param", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     // Payload attributes at commit 5849052 does NOT allow for null value
@@ -599,7 +599,7 @@ TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: null payloadA
     CHECK(result);
 }
 
-TEST_CASE("rpc::http::JsonRpcValidator engine_forkchoiceUpdatedV3: missing payloadAttributes param", "[rpc][http][json_rpc_validator]") {
+TEST_CASE("JsonRpcValidator engine_forkchoiceUpdatedV3: missing payloadAttributes param", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
     auto request = R"({

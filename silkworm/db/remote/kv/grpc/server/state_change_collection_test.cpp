@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/base.hpp>

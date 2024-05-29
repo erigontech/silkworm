@@ -298,7 +298,16 @@ void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {
     } else {
         json["value"] = trace_entry.value;
     }
-    json["input"] = trace_entry.input;
+    if (!trace_entry.input) {
+        json["input"] = nullptr;
+    } else {
+        json["input"] = *trace_entry.input;
+    }
+    if (!trace_entry.output) {
+        json["output"] = nullptr;
+    } else {
+        json["output"] = *trace_entry.output;
+    }
 }
 
 void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
@@ -471,7 +480,7 @@ void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace
         tm.data = "0x";
         const auto data = memory.data();
         const auto start = tm.offset;
-        for (uint64_t idx{0}; idx < tm.len; idx++) {
+        for (size_t idx{0}; idx < tm.len; idx++) {
             std::string entry{evmc::hex({data + start + idx, 1})};
             tm.data.append(entry);
         }
@@ -1154,7 +1163,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         .state_diff = false,
     };
     const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
-    for (std::uint64_t pos = 0; pos < trace_call_results.size(); pos++) {
+    for (size_t pos = 0; pos < trace_call_results.size(); pos++) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
         const auto tnx_hash = transaction.hash();
 
@@ -1282,7 +1291,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
-        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); index++) {
             const silkworm::Transaction& transaction{block.transactions[index]};
 
             auto& result = trace_call_result.at(index);
@@ -1349,7 +1358,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
         TraceManyCallResult result;
-        for (std::size_t index{0}; index < calls.size(); index++) {
+        for (size_t index{0}; index < calls.size(); index++) {
             const auto& config = calls[index].trace_config;
 
             silkworm::Transaction transaction{calls[index].call.to_transaction()};
@@ -1412,7 +1421,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 
         auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
         Tracers tracers{create_tracer};
-        for (std::uint64_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); index++) {
             const silkworm::Transaction& transaction{block.transactions[index]};
             executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
             executor.reset();
@@ -1451,8 +1460,24 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHas
     co_return traces;
 }
 
+bool TraceCallExecutor::run_previous_transactions(EVMExecutor& executor, const silkworm::Block& block, uint64_t tx_id) {
+    if (tx_id == 0) {
+        return true;
+    }
+    for (size_t idx = 0; idx < block.transactions.size(); idx++) {
+        const auto& txn = block.transactions.at(idx);
+
+        if (tx_id == idx) {
+            return true;
+        }
+        executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
+    }
+    return false;
+}
+
 Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
-    auto block_number = transaction_with_block.block_with_hash->block.header.number;
+    const auto& block = transaction_with_block.block_with_hash->block;
+    const auto block_number = block.header.number;
 
     const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
@@ -1464,10 +1489,16 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-        auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
-        Tracers tracers{entry_tracer};
+        if (!run_previous_transactions(executor, block, transaction_with_block.transaction.transaction_index)) {
+            SILK_ERROR << "trace_operations: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";
+            return {};
+        }
 
-        executor.call(transaction_with_block.block_with_hash->block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        const auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
+        Tracers tracers{entry_tracer};
+        const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
+        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+
         return entry_tracer->result();
     });
 
@@ -1488,26 +1519,18 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
 
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
-        Tracers tracers{};
-        bool found = false;
-        ExecutionResult execution_result{};
 
-        for (size_t idx = 0; idx < block.transactions.size(); idx++) {
-            const auto& txn = block.transactions.at(idx);
-            execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
-            if (transaction_with_block.transaction.transaction_index == idx) {
-                found = true;
-                break;
-            }
-        }
-        std::string result = "0x";
-        if (found) {
-            if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-                result = "0x" + silkworm::to_hex(execution_result.data);
-            }
-            return result;
-        } else {
+        if (!run_previous_transactions(executor, block, transaction_with_block.transaction.transaction_index)) {
             SILK_ERROR << "trace_transaction_error: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";
+            return {};
+        }
+
+        const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
+        auto execution_result = executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
+
+        std::string result = "0x";
+        if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+            result = "0x" + silkworm::to_hex(execution_result.data);
         }
         return result;
     });
@@ -1529,28 +1552,17 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
-        bool found = false;
 
-        std::shared_ptr<trace::OperationTracer> entry_tracer = nullptr;
-        for (size_t idx = 0; idx < block.transactions.size(); idx++) {
-            const auto& txn = block.transactions.at(idx);
-
-            if (transaction_with_block.transaction.transaction_index == idx) {
-                entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
-                Tracers tracers{entry_tracer};
-                executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
-                found = true;
-                break;
-            } else {
-                executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
-            }
-        }
-        if (found) {
-            return entry_tracer->result();
-        } else {
+        if (!run_previous_transactions(executor, block, transaction_with_block.transaction.transaction_index)) {
             SILK_ERROR << "trace_operations: transaction idx: " << transaction_with_block.transaction.transaction_index << " not found";
             return {};
         }
+
+        auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+        Tracers tracers{entry_tracer};
+        const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
+        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+        return entry_tracer->result();
     });
 
     co_return trace_op_result;
@@ -1747,31 +1759,47 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
                << ", code: " << silkworm::to_hex(code);
 }
 
-void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    auto sender = evmc::address{msg.sender};
-    auto recipient = evmc::address{msg.recipient};
-    auto code_address = evmc::address{msg.code_address};
-    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
-    auto input = silkworm::ByteView{msg.input_data, msg.input_size};
+void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
+    current_depth_--;
+    if (traces_stack_idx_.empty())
+        return;
+    auto& trace_idx = traces_stack_idx_.top();
+    traces_stack_idx_.pop();
 
-    auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
+    if (trace_idx != std::numeric_limits<uint64_t>::max()) {
+        result_[trace_idx].output = "0x" + silkworm::to_hex(silkworm::ByteView{result.output_data, result.output_size});
+    }
+}
+
+void EntryTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
+    auto balance = initial_ibs_.get_balance(address);
+    result_.push_back(TraceEntry{"SELFDESTRUCT", current_depth_ + 1, address, beneficiary, "0x" + intx::to_string(balance, 16), "0x", "0x"});
+}
+
+void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    const auto& sender = evmc::address{msg.sender};
+    const auto& recipient = evmc::address{msg.recipient};
+    const auto& code_address = evmc::address{msg.code_address};
+    const auto& input = silkworm::ByteView{msg.input_data, msg.input_size};
+
+    const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
     auto str_input = "0x" + silkworm::to_hex(input);
-    if (str_input == "0x") {
-        str_input = "0x" + silkworm::to_hex(code);
+
+    // Ignore precompiles in the returned trace (maybe we shouldn't?)
+    if (precompile::is_precompile(msg.code_address, rev)) {
+        // writes special value for index
+        traces_stack_idx_.emplace(std::numeric_limits<uint64_t>::max());
+        return;
     }
 
-    if (create) {
-        if (msg.depth > 0) {
-            if (msg.kind == evmc_call_kind::EVMC_CREATE) {
-                result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
-            } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
-                result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
-            }
-        } else {
-            result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
-        }
+    if (msg.kind == evmc_call_kind::EVMC_CREATE) {
+        str_input = "0x" + silkworm::to_hex(code);
+        result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
+    } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
+        str_input = "0x" + silkworm::to_hex(code);
+        result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
     } else {
-        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
+        const bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
                 in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
@@ -1782,18 +1810,20 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
             case evmc_call_kind::EVMC_CALLCODE:
                 result_.push_back(TraceEntry{"CALLCODE", msg.depth, sender, recipient, str_value, str_input});
                 break;
-            case evmc_call_kind::EVMC_CREATE:
-            case evmc_call_kind::EVMC_CREATE2:
+            default:
+                // safeguard in case new CALL-like opcodes are introduced but not handled,
+                result_.push_back(TraceEntry{"UNKNWON", msg.depth, sender, recipient, str_value, str_input});
                 break;
         }
     }
+    traces_stack_idx_.emplace(result_.size() - 1);
+    current_depth_ = msg.depth;
 
     SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
-               << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
                << ", sender: " << sender
-               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", recipient: " << recipient
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)

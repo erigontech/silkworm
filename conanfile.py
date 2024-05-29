@@ -62,6 +62,10 @@ class SilkwormRecipe(ConanFile):
         if self.settings.os == 'Linux':
             self.options['mimalloc'].override = True
 
+        # Disable Catch2 version 3.x.x signaling handling on WASM
+        if self.settings.os == 'Emscripten':
+            self.options['catch2'].no_posix_signals = True
+
         self.options['boost'].asio_no_deprecated = True
         if self.settings.os == 'Macos':
             CMAKE_OSX_DEPLOYMENT_TARGET = '10.13'

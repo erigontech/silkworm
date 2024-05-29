@@ -289,7 +289,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         spawn_and_wait(stream.close());
 
         CHECK((string_writer.get_content() ==
-              "{\"result\":[{\"item\":1,\"logs\":[{\"item\":1.1}]},{\"item\":2,\"logs\":[{\"item\":2.1}]}]}"));
+               "{\"result\":[{\"item\":1,\"logs\":[{\"item\":1.1}]},{\"item\":2,\"logs\":[{\"item\":2.1}]}]}"));
     }
     SECTION("simple array 1") {
         nlohmann::json json = R"({

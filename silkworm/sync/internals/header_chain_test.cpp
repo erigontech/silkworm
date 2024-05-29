@@ -378,7 +378,8 @@ TEST_CASE("HeaderChain: (1) simple chain") {
      * output:
      *         1 anchor, 2 links
      */
-    INFO("new_anchor"); {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1], headers[2]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -410,7 +411,8 @@ TEST_CASE("HeaderChain: (1) simple chain") {
      * output:
      *         1 anchor, 4 links
      */
-    INFO("extend_up"); {
+    INFO("extend_up");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -446,7 +448,8 @@ TEST_CASE("HeaderChain: (1) simple chain") {
      * output:
      *         2 anchor, 6 links
      */
-    INFO("new_anchor"); {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -495,7 +498,8 @@ TEST_CASE("HeaderChain: (1) simple chain") {
      * output:
      *         2 anchor, 8 links
      */
-    INFO("extend_down"); {
+    INFO("extend_down");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[6], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -538,7 +542,8 @@ TEST_CASE("HeaderChain: (1) simple chain") {
      * output:
      *         1 anchor, 9 links
      */
-    INFO("connect"); {
+    INFO("connect");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -695,7 +700,8 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
      * output:
      *         1 anchor, 1 links -> triggering new_anchor
      */
-    INFO("creating first anchor"); {
+    INFO("creating first anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -726,7 +732,8 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
      * output:
      *         1 anchor, 5 links
      */
-    INFO("adding 3 segments"); {
+    INFO("adding 3 segments");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[2], h3a, h4a, headers[3]}, request_id, peer_id);
 
@@ -767,7 +774,8 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
      * output:
      *         2 anchor, 8 links
      */
-    INFO("adding a disconnected segment"); {
+    INFO("adding a disconnected segment");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[8], headers[9], headers[7]}, request_id, peer_id);
 
@@ -976,7 +984,8 @@ TEST_CASE("HeaderChain: (5) pre-verified hashes") {
     /*
      *    h1 <-----                                  <----- h6 (pre-verified)
      */
-    INFO("new anchor"); {
+    INFO("new anchor");
+    {
         // adding the last chain segment
         chain.accept_headers({headers[6]}, request_id, peer_id);
 
@@ -987,7 +996,8 @@ TEST_CASE("HeaderChain: (5) pre-verified hashes") {
     /*
      *    h1 <-----              <----- h4 <----- h5 <----- h6 (pre-verified)
      */
-    INFO("extend down"); {
+    INFO("extend down");
+    {
         // adding two headers to extend down the anchor
         chain.accept_headers({headers[5], headers[4]}, request_id, peer_id);
 
@@ -1001,7 +1011,8 @@ TEST_CASE("HeaderChain: (5) pre-verified hashes") {
     /*
      *    h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
      */
-    INFO("connect"); {
+    INFO("connect");
+    {
         // adding two headers to extend down the anchor
         chain.accept_headers({headers[2], headers[3]}, request_id, peer_id);
 
@@ -1106,7 +1117,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
     /* chain:
      *         h5
      */
-    INFO("new_anchor"); {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -1129,7 +1141,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
     /* chain:
      *         h3 <-- h4 <-- h5
      */
-    INFO("extend_down overlapping"); {
+    INFO("extend_down overlapping");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
@@ -1157,7 +1170,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
      *     (h2) <--- h3 <--- h4 <--- h5
      *      |----------------------- h5'
      */
-    INFO("extend up with wrong header"); {
+    INFO("extend up with wrong header");
+    {
         BlockHeader h5p;
         h5p.number = 5;
         h5p.parent_hash = headers[2].hash();  // wrong, it should have number = 3
@@ -1193,7 +1207,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
      *      |----------------------- h5'
      *                         X---- h5"
      */
-    INFO("new anchor with unknown parent"); {
+    INFO("new anchor with unknown parent");
+    {
         BlockHeader h5s;
         h5s.number = 5;
         h5s.parent_hash = h5s.hash();  // a wrong hash
@@ -1245,7 +1260,8 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
     h5p.difficulty = 5;
     h5p.extra_data = string_view_to_byte_view("I'm different");
     h5p.parent_hash = headers[4].hash();
-    INFO("new_anchor"); {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
@@ -1268,7 +1284,8 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         REQUIRE(child1->next[0]->hash == headers[6].hash());
     }
 
-    INFO("invalidating"); {
+    INFO("invalidating");
+    {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
@@ -1293,7 +1310,8 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         CHECK(chain.links_.empty());
     }
 
-    INFO("new_anchor again"); {
+    INFO("new_anchor again");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
@@ -1343,7 +1361,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
     h5p.difficulty = 5;
     h5p.parent_hash = h5p.hash();  // a wrong hash, h5p hash will also be different
 
-    INFO("a wrong anchor"); {
+    INFO("a wrong anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -1364,7 +1383,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         REQUIRE(anchor->links[0]->next.empty());
     }
 
-    INFO("a segment with a sibling"); {
+    INFO("a segment with a sibling");
+    {
         // ad a segment terminating with the header[5] that is a sibling of the anchor h5p
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
@@ -1406,7 +1426,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("failed extending anchor"); {
+    INFO("failed extending anchor");
+    {
         // trying extending h5p get the correct chain, headers[3], headers[4], headers[5], so extending fails
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
@@ -1451,7 +1472,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("requesting again an anchor"); {
+    INFO("requesting again an anchor");
+    {
         using namespace std::literals::chrono_literals;
 
         // affected anchor
@@ -1489,7 +1511,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         CHECK(anchor->timestamp == prev_timestamp);
     }
 
-    INFO("invalidating"); {
+    INFO("invalidating");
+    {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
@@ -1544,7 +1567,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("reducing links"); {
+    INFO("reducing links");
+    {
         // add a new anchor + link
         chain.accept_headers({headers[7], headers[8]}, request_id, peer_id);
 
@@ -1579,7 +1603,8 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         REQUIRE(deepest_link != nullptr);
     }
 
-    INFO("connect to evicted link"); {
+    INFO("connect to evicted link");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], headers[6], headers[7]}, request_id, peer_id);
 

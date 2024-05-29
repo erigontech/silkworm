@@ -20,7 +20,7 @@ find_package(magic_enum REQUIRED)
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test PRIVATE silkworm_core Catch2::Catch2WithMain)
+target_link_libraries(core_test silkworm_core Catch2::Catch2WithMain)
 
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)

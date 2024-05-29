@@ -6,7 +6,7 @@ FROM cimg/python:3.12.0 as base
 # 1 Install dependencies
 RUN sudo apt-get update
 RUN sudo apt install -y python3-pip
-RUN sudo pip install conan==1.60.2 chardet
+RUN sudo pip install conan==1.64.1 chardet
 RUN sudo apt-get update
 
 # 2 Get repo and submodules

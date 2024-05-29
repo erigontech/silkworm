@@ -79,6 +79,12 @@ commands:
                 cmake --build ~/build -j16 --target <<parameters.target>>
             fi
 
+  install_conan:
+    steps:
+      - run:
+          name: "Install Conan"
+          command: sudo pip3 install conan==1.64.1 chardet
+
   build_using_conan:
     parameters:
       build_type:
@@ -92,9 +98,7 @@ commands:
         type: string
         default: all
     steps:
-      - run:
-          name: "Install Conan"
-          command: sudo pip3 install conan==1.60.2 chardet
+      - install_conan
       - run:
           name: "Select Conan profile"
           command: |
@@ -130,8 +134,7 @@ commands:
           command: |
             sudo apt-get update
             sudo apt install -y python3-pip
-            sudo pip install conan==1.60.2 chardet
-            sudo apt-get update
+      - install_conan
       - run:
           name: "Install compiler"
           command: cmake/setup/compiler_install.sh clang 15
@@ -378,9 +381,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y texinfo libtinfo5
-      - run:
-          name: "Install Conan"
-          command: sudo pip3 install conan==1.60.2 chardet
+      - install_conan
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2

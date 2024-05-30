@@ -641,7 +641,8 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
+            const auto error_msg = "transaction 0x" + silkworm::to_hex(transaction_hash) + " not found"; 
+            reply = make_json_error(request, -32000, error_msg);
             co_await tx->close();
             co_return;
         }

@@ -19,12 +19,10 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
-#include <ranges>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/body_snapshot.hpp>
-#include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/header_snapshot.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
@@ -37,15 +35,6 @@
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
-
-void SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
-    // Search for target segment in reverse order (from the newest segment to the oldest one)
-    bool walk_done{false};
-    for (const auto& bundle : std::ranges::reverse_view(MapValuesView{bundles_})) {
-        walk_done = walker(bundle);
-        if (walk_done) break;
-    }
-}
 
 // NOLINTNEXTLINE(modernize-pass-by-value)
 SnapshotRepository::SnapshotRepository(const SnapshotSettings& settings) : settings_(settings) {}
@@ -114,7 +103,7 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
 }
 
 bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
-    for (const auto& bundle : MapValuesView{bundles_}) {
+    for (const auto& bundle : this->view_bundles()) {
         const Snapshot& header_snapshot = bundle.header_snapshot;
         SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot.fs_path().string();
 
@@ -128,7 +117,7 @@ bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
 }
 
 bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
-    for (const auto& bundle : MapValuesView{bundles_}) {
+    for (const auto& bundle : this->view_bundles()) {
         const Snapshot& body_snapshot = bundle.body_snapshot;
         SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot.fs_path().string();
 
@@ -152,7 +141,7 @@ std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType ty
 }
 
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (const auto& bundle : std::ranges::reverse_view(MapValuesView{bundles_})) {
+    for (const auto& bundle : this->view_bundles_reverse()) {
         const auto& snapshot = bundle.txn_snapshot;
 
         const Index& idx_txn_hash = bundle.idx_txn_hash;
@@ -277,7 +266,7 @@ void SnapshotRepository::reopen_folder() {
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (const auto& bundle : std::ranges::reverse_view(MapValuesView{bundles_})) {
+    for (const auto& bundle : this->view_bundles_reverse()) {
         // We're looking for the segment containing the target block number in its block range
         if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
             ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {

@@ -70,10 +70,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
         size_t bundles_count = 0;
-        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+        for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
             bundles_count++;
-            return true;
-        });
+        }
         CHECK(bundles_count == 0);
 
         CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
@@ -92,10 +91,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
         size_t bundles_count = 0;
-        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+        for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
             bundles_count++;
-            return true;
-        });
+        }
         // empty snapshots are ignored by repository
         CHECK(bundles_count == 0);
 
@@ -116,10 +114,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         repository.reopen_folder();
 
         size_t bundles_count = 0;
-        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+        for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
             bundles_count++;
-            return false;
-        });
+        }
         CHECK(bundles_count == 1);
 
         CHECK(repository.find_segment(SnapshotType::headers, 1'500'000).has_value());
@@ -127,10 +124,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK(repository.find_segment(SnapshotType::transactions, 1'500'000).has_value());
 
         bundles_count = 0;
-        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+        for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
             bundles_count++;
-            return true;
-        });
+        }
         CHECK(bundles_count == 1);
     }
 }

@@ -19,12 +19,14 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
@@ -66,8 +68,8 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
-    void view_bundles(const SnapshotBundleWalker& walker);
+    MapValuesView<BlockNum, SnapshotBundle> view_bundles() const { return MapValuesView{bundles_}; }
+    auto view_bundles_reverse() const { return std::ranges::reverse_view(MapValuesView{bundles_}); }
 
     [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 

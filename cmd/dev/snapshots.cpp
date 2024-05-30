@@ -407,15 +407,15 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     std::optional<BlockHeader> matching_header;
     SnapshotRepository snapshot_repository{settings};
     snapshot_repository.reopen_folder();
-    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
         auto snapshot = bundle.snapshot_and_index(SnapshotType::headers);
         const auto header = HeaderFindByHashQuery{snapshot.snapshot, snapshot.index}.exec(*hash);
         if (header) {
             matching_header = header;
             matching_snapshot = snapshot.snapshot.path();
+            break;
         }
-        return header.has_value();
-    });
+    }
     if (matching_snapshot) {
         SILK_INFO << "Lookup header hash: " << hash->to_hex() << " found in: " << matching_snapshot->filename();
         if (matching_header && settings.print) {
@@ -606,7 +606,7 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
         auto snapshot = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByHashQuery{snapshot.snapshot, snapshot.index}.exec(hash);
         if (transaction) {
@@ -614,9 +614,9 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
             if (settings.print) {
                 print_txn(*transaction, matching_snapshot->path().filename());
             }
+            break;
         }
-        return transaction.has_value();
-    });
+    }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
     if (matching_snapshot) {
@@ -670,7 +670,7 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
         auto snapshot = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByIdQuery{snapshot.snapshot, snapshot.index}.exec(txn_id);
         if (transaction) {
@@ -678,9 +678,9 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
             if (settings.print) {
                 print_txn(*transaction, matching_snapshot->path().filename());
             }
+            break;
         }
-        return transaction.has_value();
-    });
+    }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
     if (matching_snapshot) {

@@ -1251,11 +1251,11 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    repository_->view_bundles([&](const SnapshotBundle& bundle) -> bool {
+    for (const SnapshotBundle& bundle : repository_->view_bundles_reverse()) {
         auto snapshot = bundle.snapshot_and_index(SnapshotType::headers);
         block_header = HeaderFindByHashQuery{snapshot.snapshot, snapshot.index}.exec(hash);
-        return block_header.has_value();
-    });
+        if (block_header) break;
+    }
     return block_header;
 }
 

@@ -150,8 +150,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
-    snapshot_repository.view_bundles(
-        [&](const SnapshotBundle& bundle) {
+    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles()) {
+        {
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
@@ -202,8 +202,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
                 };
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
             }
-            return true;
-        });
+        }
+    }
 
     ensure(headers_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid header snapshot count");
     ensure(bodies_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid body snapshot count");

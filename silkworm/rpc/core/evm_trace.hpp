@@ -494,8 +494,6 @@ class TraceCallExecutor {
         std::int32_t index,
         const TraceConfig& config);
 
-    bool run_previous_transactions(EVMExecutor& executor, const silkworm::Block& block, uint64_t tx_id);
-
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;
     const ChainStorage& chain_storage_;

@@ -178,6 +178,13 @@ uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& tx
     return gas_left;
 }
 
+void EVMExecutor::call_first_n(const silkworm::Block& block, const uint64_t n, const Tracers& tracers, bool refund, bool gas_bailout) {
+    for (size_t idx = 0; idx < block.transactions.size() && idx < n; idx++) {
+        const auto& txn = block.transactions.at(idx);
+        call(block, txn, tracers, refund, gas_bailout);
+    }
+}
+
 void EVMExecutor::reset() {
     ibs_state_.clear_journal_and_substate();
 }

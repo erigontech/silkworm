@@ -126,6 +126,8 @@ class EVMExecutor {
 
     void reset();
 
+    void call_first_n(const silkworm::Block& block, const uint64_t n, const Tracers& tracers = {}, bool refund = true, bool gas_bailout = false);
+
     const IntraBlockState& get_ibs_state() { return ibs_state_; }
 
   private:

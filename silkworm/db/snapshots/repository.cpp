@@ -23,7 +23,6 @@
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -104,20 +103,6 @@ std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType ty
         return bundle->snapshot_and_index(type);
     }
     return std::nullopt;
-}
-
-std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (const auto& bundle : this->view_bundles_reverse()) {
-        const auto& snapshot = bundle.txn_snapshot;
-
-        const Index& idx_txn_hash = bundle.idx_txn_hash;
-        const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
-        auto block = TransactionBlockNumByTxnHashQuery{idx_txn_hash_2_block, TransactionFindByHashQuery{snapshot, idx_txn_hash}}.exec(txn_hash);
-        if (block) {
-            return block;
-        }
-    }
-    return {};
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {

@@ -26,7 +26,6 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/path.hpp>
@@ -73,8 +72,6 @@ class SnapshotRepository {
     auto view_bundles_reverse() const { return std::ranges::reverse_view(MapValuesView{bundles_}); }
 
     [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
-
-    [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
 
   private:
     const SnapshotBundle* find_bundle(BlockNum number) const;

@@ -26,6 +26,7 @@
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
+#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -236,18 +237,20 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
+    TransactionBlockNumByTxnHashRepoQuery query{repository.view_bundles_reverse()};
+
     // known block 1'500'012 txn hash
-    auto block_number = repository.find_block_number(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});
+    auto block_number = query.exec(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'012);
 
     // known block 1'500'012 txn hash
-    block_number = repository.find_block_number(silkworm::Hash{from_hex("0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f").value()});
+    block_number = query.exec(silkworm::Hash{from_hex("0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f").value()});
     CHECK(block_number.has_value());
     CHECK(block_number.value() == 1'500'013);
 
     // unknown txn hash
-    block_number = repository.find_block_number(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
+    block_number = query.exec(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
     // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
 }
 

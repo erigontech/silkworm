@@ -1367,7 +1367,8 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::byte
         return {};
     }
 
-    return repository_->find_block_number(tx_hash);
+    TransactionBlockNumByTxnHashRepoQuery query{repository_->view_bundles_reverse()};
+    return query.exec(tx_hash);
 }
 
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {

@@ -1474,7 +1474,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-        executor.run_transactions_n(block, transaction_with_block.transaction.transaction_index);
+        executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
         const auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
         Tracers tracers{entry_tracer};
@@ -1502,7 +1502,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-        executor.run_transactions_n(block, transaction_with_block.transaction.transaction_index);
+        executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
         const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
         auto execution_result = executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
@@ -1532,7 +1532,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
         auto curr_state = tx_.create_state(current_executor, database_reader_, chain_storage_, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
-        executor.run_transactions_n(block, transaction_with_block.transaction.transaction_index);
+        executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
         auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
         Tracers tracers{entry_tracer};

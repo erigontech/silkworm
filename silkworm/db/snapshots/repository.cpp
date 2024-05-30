@@ -158,10 +158,6 @@ std::size_t SnapshotRepository::view_header_segments(const SnapshotWalker& walke
     return view_segments(SnapshotType::headers, walker);
 }
 
-std::size_t SnapshotRepository::view_body_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::bodies, walker);
-}
-
 std::size_t SnapshotRepository::view_tx_segments(const SnapshotWalker& walker) {
     return view_segments(SnapshotType::transactions, walker);
 }

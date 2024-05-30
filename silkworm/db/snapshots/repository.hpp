@@ -77,7 +77,6 @@ class SnapshotRepository {
     std::size_t view_bundles(const SnapshotBundleWalker& walker);
 
     std::size_t view_header_segments(const SnapshotWalker& walker);
-    std::size_t view_body_segments(const SnapshotWalker& walker);
     std::size_t view_tx_segments(const SnapshotWalker& walker);
 
     [[nodiscard]] std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;

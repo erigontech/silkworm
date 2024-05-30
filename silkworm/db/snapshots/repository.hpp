@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <array>
-#include <cassert>
 #include <filesystem>
 #include <functional>
 #include <optional>
@@ -30,83 +28,12 @@
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 
 namespace silkworm::snapshots {
 
 struct IndexBuilder;
-
-struct SnapshotBundle {
-    Snapshot header_snapshot;
-    //! Index header_hash -> block_num -> headers_segment_offset
-    Index idx_header_hash;
-
-    Snapshot body_snapshot;
-    //! Index block_num -> bodies_segment_offset
-    Index idx_body_number;
-
-    Snapshot txn_snapshot;
-    //! Index transaction_hash -> txn_id -> transactions_segment_offset
-    Index idx_txn_hash;
-    //! Index transaction_hash -> block_num
-    Index idx_txn_hash_2_block;
-
-    static constexpr size_t kSnapshotsCount = 3;
-    static constexpr size_t kIndexesCount = 4;
-
-    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
-        return {
-            header_snapshot,
-            body_snapshot,
-            txn_snapshot,
-        };
-    }
-
-    std::array<std::reference_wrapper<Index>, kIndexesCount> indexes() {
-        return {
-            idx_header_hash,
-            idx_body_number,
-            idx_txn_hash,
-            idx_txn_hash_2_block,
-        };
-    }
-
-    const Snapshot& snapshot(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return header_snapshot;
-            case bodies:
-                return body_snapshot;
-            case transactions:
-            case transactions_to_block:
-                return txn_snapshot;
-        }
-        assert(false);
-        return header_snapshot;
-    }
-
-    const Index& index(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return idx_header_hash;
-            case bodies:
-                return idx_body_number;
-            case transactions:
-                return idx_txn_hash;
-            case transactions_to_block:
-                return idx_txn_hash_2_block;
-        }
-        assert(false);
-        return idx_header_hash;
-    }
-
-    // assume that all snapshots have the same block range, and use one of them
-    BlockNum block_from() const { return header_snapshot.block_from(); }
-    BlockNum block_to() const { return header_snapshot.block_to(); }
-
-    void reopen();
-    void close();
-};
 
 //! Read-only repository for all snapshot files.
 //! @details Some simplifications are currently in place:

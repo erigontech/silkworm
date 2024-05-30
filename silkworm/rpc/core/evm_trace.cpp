@@ -1785,6 +1785,8 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
     auto str_input = "0x" + silkworm::to_hex(input);
 
+    current_depth_ = msg.depth;
+
     // Ignore precompiles in the returned trace (maybe we shouldn't?)
     if (precompile::is_precompile(msg.code_address, rev)) {
         // writes special value for index
@@ -1817,7 +1819,6 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         }
     }
     traces_stack_idx_.emplace(result_.size() - 1);
-    current_depth_ = msg.depth;
 
     SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
                << ", msg.depth: " << msg.depth

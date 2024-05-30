@@ -33,6 +33,11 @@ elseif((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MAT
   add_compile_options(-Wtype-limits -Wformat=2)
   add_compile_options(-Wno-missing-field-initializers)
 
+  if(SILKWORM_ALLOW_UNUSED_VAR_WARNINGS)
+    add_compile_options(-Wno-error=unused-parameter)
+    add_compile_options(-Wno-error=unused-variable)
+  endif()
+
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wduplicated-cond -Wduplicated-branches -Wlogical-op)
     add_compile_options(-Wno-attributes)

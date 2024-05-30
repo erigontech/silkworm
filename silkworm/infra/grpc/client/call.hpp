@@ -118,14 +118,15 @@ Task<Response> unary_rpc_with_retries(
     Request request,
     agrpc::GrpcContext& grpc_context,
     std::function<Task<void>()>& on_disconnect,
-    grpc::Channel& channel) {
+    grpc::Channel& channel,
+    std::string log_prefix) {
     // loop until a successful return or cancellation
     while (true) {
         try {
             co_return (co_await unary_rpc(rpc, stub, request, grpc_context));
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning() << "GRPC call failed: " << ex.what();
+                log::Warning(log_prefix) << "GRPC call failed: " << ex.what();
             } else {
                 throw;
             }
@@ -133,7 +134,7 @@ Task<Response> unary_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await reconnect_channel(channel);
+            co_await reconnect_channel(channel, log_prefix);
         }
     }
 }
@@ -146,6 +147,7 @@ Task<void> streaming_rpc_with_retries(
     agrpc::GrpcContext& grpc_context,
     std::function<Task<void>()>& on_disconnect,
     grpc::Channel& channel,
+    std::string log_prefix,
     std::function<Task<void>(Response)> consumer) {
     // loop until a successful return or cancellation
     while (true) {
@@ -154,7 +156,7 @@ Task<void> streaming_rpc_with_retries(
             break;
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning() << "GRPC streaming call failed: " << ex.what();
+                log::Warning(log_prefix) << "GRPC streaming call failed: " << ex.what();
             } else {
                 throw;
             }
@@ -162,7 +164,7 @@ Task<void> streaming_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await reconnect_channel(channel);
+            co_await reconnect_channel(channel, log_prefix);
         }
     }
 }

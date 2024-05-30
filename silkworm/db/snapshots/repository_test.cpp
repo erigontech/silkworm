@@ -244,8 +244,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     // CHECK_FALSE(block_number.has_value());  // needs correct key check in index
 }
 
-template <class Rep, class Period>
-static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
+static auto move_last_write_time(const std::filesystem::path& p, const std::filesystem::file_time_type::duration& d) {
     const auto ftime = std::filesystem::last_write_time(p);
     std::filesystem::last_write_time(p, ftime + d);
     return std::filesystem::last_write_time(p) - ftime;
@@ -274,7 +273,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
 
     // move the snapshot last write time 1 hour to the future to make its index "stale"
     const auto last_write_time_diff = move_last_write_time(header_snapshot_path.path(), 1h);
-    CHECK(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
+    CHECK(last_write_time_diff.count() > 0);
 
     // the index is stale
     repository.remove_stale_indexes();

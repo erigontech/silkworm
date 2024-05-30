@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,22 +12,21 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-if(NOT SILKWORM_CORE_ONLY)
-  find_package(CLI11 REQUIRED)
+#pragma once
 
-  set(COMMON_SRC
-      common.cpp
-      common.hpp
-      human_size_option.cpp
-      human_size_option.hpp
-      ip_endpoint_option.cpp
-      ip_endpoint_option.hpp
-      shutdown_signal.cpp
-      shutdown_signal.hpp
-  )
-  add_library(cmd_common "${COMMON_SRC}")
-  target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
+#include <string>
 
-endif()
+#include <CLI/CLI.hpp>
+
+namespace silkworm::cmd::common {
+
+struct HumanSizeParserValidator : public CLI::Validator {
+    HumanSizeParserValidator(size_t min_size, size_t max_size);
+};
+
+//! \brief Set up parsing of a human readable bytes size
+void add_option_human_size(CLI::App& cli, const std::string& name, size_t& value, size_t min_size, size_t max_size, const std::string& description);
+
+}  // namespace silkworm::cmd::common

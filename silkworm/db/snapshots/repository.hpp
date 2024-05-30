@@ -68,8 +68,8 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    MapValuesView<BlockNum, SnapshotBundle> view_bundles() const { return MapValuesView{bundles_}; }
-    auto view_bundles_reverse() const { return std::ranges::reverse_view(MapValuesView{bundles_}); }
+    auto view_bundles() const { return make_map_values_view(bundles_); }
+    auto view_bundles_reverse() const { return std::ranges::reverse_view(view_bundles()); }
 
     [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 

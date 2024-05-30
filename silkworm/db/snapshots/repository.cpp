@@ -148,24 +148,10 @@ bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
     return true;
 }
 
-std::size_t SnapshotRepository::view_segments(SnapshotType type, const SnapshotWalker& walker) {
-    return view_bundles([&](const SnapshotBundle& bundle) {
-        return walker({bundle.snapshot(type), bundle.index(type)});
-    });
-}
-
-std::size_t SnapshotRepository::view_header_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::headers, walker);
-}
-
-std::size_t SnapshotRepository::view_tx_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::transactions, walker);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
+std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {
-        return SnapshotAndIndex{bundle->snapshot(type), bundle->index(type)};
+        return bundle->snapshot_and_index(type);
     }
     return std::nullopt;
 }

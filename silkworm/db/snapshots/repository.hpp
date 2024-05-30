@@ -66,20 +66,10 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    struct SnapshotAndIndex {
-        const Snapshot& snapshot;
-        const Index& index;
-    };
-
-    using SnapshotWalker = std::function<bool(SnapshotAndIndex result)>;
-
     using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
     std::size_t view_bundles(const SnapshotBundleWalker& walker);
 
-    std::size_t view_header_segments(const SnapshotWalker& walker);
-    std::size_t view_tx_segments(const SnapshotWalker& walker);
-
-    [[nodiscard]] std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
+    [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
     using HeaderWalker = std::function<bool(const BlockHeader& header)>;
     bool for_each_header(const HeaderWalker& fn);
@@ -90,7 +80,6 @@ class SnapshotRepository {
     [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
 
   private:
-    std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
     const SnapshotBundle* find_bundle(BlockNum number) const;
 
     [[nodiscard]] SnapshotPathList get_segment_files() const {

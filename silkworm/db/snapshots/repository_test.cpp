@@ -71,8 +71,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
-        CHECK(repository.view_header_segments(successful_walk) == 0);
-        CHECK(repository.view_tx_segments(successful_walk) == 0);
+        CHECK(repository.view_bundles(successful_walk) == 0);
 
         CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -89,8 +88,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
-        CHECK(repository.view_header_segments(successful_walk) == 0);  // empty snapshots are ignored by repository
-        CHECK(repository.view_tx_segments(successful_walk) == 0);      // empty snapshots are ignored by repository
+        CHECK(repository.view_bundles(successful_walk) == 0);  // empty snapshots are ignored by repository
 
         CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -108,15 +106,13 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         repository.reopen_folder();
 
-        CHECK(repository.view_header_segments(failing_walk) == 1);
-        CHECK(repository.view_tx_segments(failing_walk) == 1);
+        CHECK(repository.view_bundles(failing_walk) == 1);
 
         CHECK(repository.find_segment(SnapshotType::headers, 1'500'000).has_value());
         CHECK(repository.find_segment(SnapshotType::bodies, 1'500'000).has_value());
         CHECK(repository.find_segment(SnapshotType::transactions, 1'500'000).has_value());
 
-        CHECK(repository.view_header_segments(successful_walk) == 1);
-        CHECK(repository.view_tx_segments(successful_walk) == 1);
+        CHECK(repository.view_bundles(successful_walk) == 1);
     }
 }
 

@@ -407,7 +407,8 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     std::optional<BlockHeader> matching_header;
     SnapshotRepository snapshot_repository{settings};
     snapshot_repository.reopen_folder();
-    snapshot_repository.view_header_segments([&](SnapshotRepository::SnapshotAndIndex snapshot) -> bool {
+    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+        auto snapshot = bundle.snapshot_and_index(SnapshotType::headers);
         const auto header = HeaderFindByHashQuery{snapshot.snapshot, snapshot.index}.exec(*hash);
         if (header) {
             matching_header = header;
@@ -605,7 +606,8 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_tx_segments([&](SnapshotRepository::SnapshotAndIndex snapshot) -> bool {
+    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+        auto snapshot = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByHashQuery{snapshot.snapshot, snapshot.index}.exec(hash);
         if (transaction) {
             matching_snapshot = snapshot.snapshot.path();
@@ -668,7 +670,8 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    snapshot_repository.view_tx_segments([&](SnapshotRepository::SnapshotAndIndex snapshot) -> bool {
+    snapshot_repository.view_bundles([&](const SnapshotBundle& bundle) -> bool {
+        auto snapshot = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByIdQuery{snapshot.snapshot, snapshot.index}.exec(txn_id);
         if (transaction) {
             matching_snapshot = snapshot.snapshot.path();

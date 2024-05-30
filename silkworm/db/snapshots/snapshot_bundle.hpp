@@ -23,6 +23,7 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "index.hpp"
+#include "snapshot_and_index.hpp"
 #include "snapshot_reader.hpp"
 
 namespace silkworm::snapshots {
@@ -89,6 +90,10 @@ struct SnapshotBundle {
         }
         assert(false);
         return idx_header_hash;
+    }
+
+    SnapshotAndIndex snapshot_and_index(SnapshotType type) const {
+        return {snapshot(type), index(type)};
     }
 
     // assume that all snapshots have the same block range, and use one of them

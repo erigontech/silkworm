@@ -174,18 +174,6 @@ std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_seg
     return std::nullopt;
 }
 
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_header_segment(BlockNum number) const {
-    return find_segment(SnapshotType::headers, number);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_body_segment(BlockNum number) const {
-    return find_segment(SnapshotType::bodies, number);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_tx_segment(BlockNum number) const {
-    return find_segment(SnapshotType::transactions, number);
-}
-
 std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
     for (const auto& entry : std::ranges::reverse_view(bundles_)) {
         const auto& bundle = entry.second;

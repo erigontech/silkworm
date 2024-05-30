@@ -80,9 +80,7 @@ class SnapshotRepository {
     std::size_t view_body_segments(const SnapshotWalker& walker);
     std::size_t view_tx_segments(const SnapshotWalker& walker);
 
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_header_segment(BlockNum number) const;
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_body_segment(BlockNum number) const;
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_tx_segment(BlockNum number) const;
+    [[nodiscard]] std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
     using HeaderWalker = std::function<bool(const BlockHeader& header)>;
     bool for_each_header(const HeaderWalker& fn);
@@ -95,7 +93,6 @@ class SnapshotRepository {
   private:
     std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
     const SnapshotBundle* find_bundle(BlockNum number) const;
-    std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
     [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);

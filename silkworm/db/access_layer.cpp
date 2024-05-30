@@ -1237,7 +1237,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height)
 
     std::optional<BlockHeader> block_header;
     // We know the header snapshot in advance: find it based on target block number
-    const auto header_snapshot = repository_->find_header_segment(height);
+    const auto header_snapshot = repository_->find_segment(SnapshotType::headers, height);
     if (header_snapshot) {
         block_header = HeaderFindByBlockNumQuery{header_snapshot->snapshot, header_snapshot->index}.exec(height);
     }
@@ -1264,7 +1264,7 @@ bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto body_snapshot = repository_->find_body_segment(height);
+    const auto body_snapshot = repository_->find_segment(SnapshotType::bodies, height);
     if (!body_snapshot) return false;
 
     auto stored_body = BodyFindByBlockNumQuery{body_snapshot->snapshot, body_snapshot->index}.exec(height);
@@ -1290,7 +1290,7 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto body_snapshot = repository_->find_body_segment(height);
+    const auto body_snapshot = repository_->find_segment(SnapshotType::bodies, height);
     if (body_snapshot) {
         const auto stored_body = BodyFindByBlockNumQuery{body_snapshot->snapshot, body_snapshot->index}.exec(height);
         return stored_body.has_value();
@@ -1305,7 +1305,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
         return true;
     }
 
-    const auto tx_snapshot = repository_->find_tx_segment(height);
+    const auto tx_snapshot = repository_->find_segment(SnapshotType::transactions, height);
     if (!tx_snapshot) return false;
 
     txs = TransactionRangeFromIdQuery{tx_snapshot->snapshot, tx_snapshot->index}.exec_into_vector(base_txn_id, txn_count);
@@ -1314,7 +1314,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
 }
 
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
-    const auto body_snapshot = repository_->find_body_segment(height);
+    const auto body_snapshot = repository_->find_segment(SnapshotType::bodies, height);
     if (body_snapshot) {
         auto stored_body = BodyFindByBlockNumQuery{body_snapshot->snapshot, body_snapshot->index}.exec(height);
         if (!stored_body) return false;
@@ -1325,7 +1325,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
 
         if (txn_count == 0) return true;
 
-        const auto tx_snapshot = repository_->find_tx_segment(height);
+        const auto tx_snapshot = repository_->find_segment(SnapshotType::transactions, height);
         if (!tx_snapshot) return false;
 
         rlp_txs = TransactionPayloadRlpRangeFromIdQuery{tx_snapshot->snapshot, tx_snapshot->index}.exec_into_vector(base_txn_id, txn_count);

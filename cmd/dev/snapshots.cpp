@@ -435,7 +435,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
 
     SnapshotRepository snapshot_repository{settings};
     snapshot_repository.reopen_folder();
-    const auto header_snapshot{snapshot_repository.find_header_segment(block_number)};
+    const auto header_snapshot = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (header_snapshot) {
         const auto header = HeaderFindByBlockNumQuery{header_snapshot->snapshot, header_snapshot->index}.exec(block_number);
         ensure(header.has_value(),
@@ -497,7 +497,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto body_snapshot{snapshot_repository.find_body_segment(block_number)};
+    const auto body_snapshot = snapshot_repository.find_segment(SnapshotType::bodies, block_number);
     if (body_snapshot) {
         const auto body = BodyFindByBlockNumQuery{body_snapshot->snapshot, body_snapshot->index}.exec(block_number);
         ensure(body.has_value(),

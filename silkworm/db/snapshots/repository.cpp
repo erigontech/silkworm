@@ -37,17 +37,14 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-std::size_t SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
+void SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    std::size_t visited_views{0};
     bool walk_done{false};
     for (auto& entry : std::ranges::reverse_view(bundles_)) {
         const auto& bundle = entry.second;
         walk_done = walker(bundle);
-        ++visited_views;
         if (walk_done) break;
     }
-    return visited_views;
 }
 
 // NOLINTNEXTLINE(modernize-pass-by-value)

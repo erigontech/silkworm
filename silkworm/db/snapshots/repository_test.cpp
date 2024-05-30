@@ -61,8 +61,6 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
     SnapshotSettings settings{tmp_dir.path()};
     SnapshotRepository repository{settings};
-    auto failing_walk = [](const auto&) { return false; };
-    auto successful_walk = [](const auto&) { return true; };
 
     SECTION("no snapshots") {
         repository.reopen_folder();
@@ -71,7 +69,12 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
-        CHECK(repository.view_bundles(successful_walk) == 0);
+        size_t bundles_count = 0;
+        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+            bundles_count++;
+            return true;
+        });
+        CHECK(bundles_count == 0);
 
         CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -88,7 +91,13 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
-        CHECK(repository.view_bundles(successful_walk) == 0);  // empty snapshots are ignored by repository
+        size_t bundles_count = 0;
+        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+            bundles_count++;
+            return true;
+        });
+        // empty snapshots are ignored by repository
+        CHECK(bundles_count == 0);
 
         CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -106,13 +115,23 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         repository.reopen_folder();
 
-        CHECK(repository.view_bundles(failing_walk) == 1);
+        size_t bundles_count = 0;
+        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+            bundles_count++;
+            return false;
+        });
+        CHECK(bundles_count == 1);
 
         CHECK(repository.find_segment(SnapshotType::headers, 1'500'000).has_value());
         CHECK(repository.find_segment(SnapshotType::bodies, 1'500'000).has_value());
         CHECK(repository.find_segment(SnapshotType::transactions, 1'500'000).has_value());
 
-        CHECK(repository.view_bundles(successful_walk) == 1);
+        bundles_count = 0;
+        repository.view_bundles([&](const SnapshotBundle&) -> bool {
+            bundles_count++;
+            return true;
+        });
+        CHECK(bundles_count == 1);
     }
 }
 

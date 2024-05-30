@@ -67,7 +67,7 @@ class SnapshotRepository {
     void remove_stale_indexes() const;
 
     using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
-    std::size_t view_bundles(const SnapshotBundleWalker& walker);
+    void view_bundles(const SnapshotBundleWalker& walker);
 
     [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 

@@ -234,17 +234,17 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const BlockBodyForStorage& b) -> bool {
-            // If *system transactions* should not be counted, skip first and last tx in block body
-            const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
-            const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
-            SILK_DEBUG << "Body number: " << number << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
-                       << " #ommers: " << b.ommers.size();
-            num_bodies++;
-            num_txns += txn_count;
-            return true;
-        });
-        ensure(success, "count_bodies: for_each_body failed");
+        for (const SnapshotBundle& bundle : snapshot_repo.view_bundles()) {
+            for (const BlockBodyForStorage& b : BodySnapshotReader{bundle.body_snapshot}) {
+                // If *system transactions* should not be counted, skip first and last tx in block body
+                const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
+                const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
+                SILK_TRACE << "Body number: " << num_bodies << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
+                           << " #ommers: " << b.ommers.size();
+                num_bodies++;
+                num_txns += txn_count;
+            }
+        }
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto duration = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
@@ -257,14 +257,14 @@ void count_headers(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
-        const bool success = snapshot_repo.for_each_header([&count](const BlockHeader& h) -> bool {
-            ++count;
-            if (h.number % 50'000 == 0) {
-                SILK_INFO << "Header number: " << h.number << " hash: " << to_hex(h.hash());
+        for (const SnapshotBundle& bundle : snapshot_repo.view_bundles()) {
+            for (const BlockHeader& h : HeaderSnapshotReader{bundle.header_snapshot}) {
+                ++count;
+                if (h.number % 50'000 == 0) {
+                    SILK_INFO << "Header number: " << h.number << " hash: " << to_hex(h.hash());
+                }
             }
-            return true;
-        });
-        ensure(success, "count_headers: for_each_header failed");
+        }
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "How many headers: " << count << " duration: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";

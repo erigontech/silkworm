@@ -20,12 +20,8 @@
 #include <cassert>
 #include <iterator>
 
-#include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/body_snapshot.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/header_snapshot.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/snapshots/txn_to_block_index.hpp>
@@ -102,36 +98,6 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     return missing_ranges;
 }
 
-bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
-    for (const auto& bundle : this->view_bundles()) {
-        const Snapshot& header_snapshot = bundle.header_snapshot;
-        SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot.fs_path().string();
-
-        HeaderSnapshotReader reader{header_snapshot};
-        for (auto& header : reader) {
-            const bool keep_going = fn(header);
-            if (!keep_going) return false;
-        }
-    }
-    return true;
-}
-
-bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
-    for (const auto& bundle : this->view_bundles()) {
-        const Snapshot& body_snapshot = bundle.body_snapshot;
-        SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot.fs_path().string();
-
-        BlockNum number = body_snapshot.block_from();
-        BodySnapshotReader reader{body_snapshot};
-        for (auto& body : reader) {
-            const bool keep_going = fn(number, body);
-            if (!keep_going) return false;
-            number++;
-        }
-    }
-    return true;
-}
-
 std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {
@@ -190,7 +156,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
                 break;
             }
             default: {
-                SILKWORM_ASSERT(false);
+                assert(false);
             }
         }
     }

@@ -18,20 +18,21 @@
 
 #include <filesystem>
 #include <functional>
+#include <map>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <string>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_and_index.hpp>
 #include <silkworm/db/snapshots/snapshot_bundle.hpp>
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
 
 namespace silkworm::snapshots {
 
@@ -72,12 +73,6 @@ class SnapshotRepository {
     auto view_bundles_reverse() const { return std::ranges::reverse_view(MapValuesView{bundles_}); }
 
     [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
-
-    using HeaderWalker = std::function<bool(const BlockHeader& header)>;
-    bool for_each_header(const HeaderWalker& fn);
-
-    using BodyWalker = std::function<bool(BlockNum number, const BlockBodyForStorage& body)>;
-    bool for_each_body(const BodyWalker& fn);
 
     [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
 

@@ -98,7 +98,6 @@ inline constexpr const char* k_debug_traceBlockByNumber{"debug_traceBlockByNumbe
 inline constexpr const char* k_debug_traceBlockByHash{"debug_traceBlockByHash"};
 inline constexpr const char* k_debug_getRawBlock{"debug_getRawBlock"};
 inline constexpr const char* k_debug_getRawHeader{"debug_getRawHeader"};
-inline constexpr const char* k_debug_getRawReceipts{"debug_getRawReceipts"};
 inline constexpr const char* k_debug_getRawTransaction{"debug_getRawTransaction"};
 
 inline constexpr const char* k_trace_call{"trace_call"};
@@ -148,7 +147,6 @@ inline constexpr const char* k_txpool_content{"txpool_content"};
 
 inline constexpr const char* k_ots_getApiLevel{"ots_getApiLevel"};
 inline constexpr const char* k_ots_hasCode{"ots_hasCode"};
-
 inline constexpr const char* k_ots_getBlockDetails{"ots_getBlockDetails"};
 inline constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 inline constexpr const char* k_ots_getBlockTransactions{"ots_getBlockTransactions"};

@@ -34,6 +34,7 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
+#include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
@@ -280,6 +281,8 @@ void Daemon::add_shared_services() {
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
     // Create the unique filter storage to be shared among the execution contexts
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
+    // Create the unique Execution remote client to be shared among the execution contexts
+    auto remote_execution_engine = std::make_shared<engine::RemoteExecutionEngine>();
 
     // Add the shared state to the execution contexts
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
@@ -288,8 +291,7 @@ void Daemon::add_shared_services() {
         add_shared_service(io_context, block_cache);
         add_shared_service<ethdb::kv::StateCache>(io_context, state_cache);
         add_shared_service(io_context, filter_storage);
-        // TODO(canepat) replace w/ proper Execution remote client
-        add_shared_service<engine::ExecutionEngine>(io_context, nullptr);
+        add_shared_service<engine::ExecutionEngine>(io_context, remote_execution_engine);
     }
 }
 

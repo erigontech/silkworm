@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 3 REQUIRED)
+find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
 
 # Silkworm Core Tests

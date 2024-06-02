@@ -210,9 +210,9 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
             }
         }
     } else {
-       if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
-           return PreCheckResult{"eip-1559 transactions require london", PreCheckErrorCode::kIsNotLondon};
-       }
+        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+            return PreCheckResult{"eip-1559 transactions require london", PreCheckErrorCode::kIsNotLondon};
+        }
     }
 
     if (rev >= EVMC_CANCUN) {

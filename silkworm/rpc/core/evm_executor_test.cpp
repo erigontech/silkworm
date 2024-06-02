@@ -182,7 +182,7 @@ TEST_CASE("EVMExecutor") {
         my_pool.stop();
         my_pool.join();
         CHECK(result.error_code == std::nullopt);
-        CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 60000");
+        CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 120000");
     }
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {

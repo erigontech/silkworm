@@ -1301,7 +1301,6 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
 }
 
 bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) {
-    txs.reserve(txn_count);
     if (txn_count == 0) {
         return true;
     }

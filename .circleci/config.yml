@@ -363,7 +363,7 @@ jobs:
 
   linux-wasm-build:
     environment:
-      WASI_SDK_VERSION: 20
+      WASI_SDK_VERSION: 22
     machine:
       image: ubuntu-2204:2023.04.2
     steps:

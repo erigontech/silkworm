@@ -17,7 +17,8 @@
 set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
 set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
 
-set(CMAKE_BUILD_RPATH "")
+set(CMAKE_INSTALL_RPATH "")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH False)
 set(CMAKE_EXE_LINKER_FLAGS "-Xlinker -v -v")
 
 add_compile_definitions(CATCH_CONFIG_NO_POSIX_SIGNALS JSON_HAS_FILESYSTEM=0)

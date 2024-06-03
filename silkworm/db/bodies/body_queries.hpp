@@ -16,14 +16,12 @@
 
 #pragma once
 
-#include "snapshot_reader.hpp"
-#include "txn_snapshot_word_serializer.hpp"
+#include <silkworm/db/snapshots/basic_queries.hpp>
+
+#include "body_snapshot.hpp"
 
 namespace silkworm::snapshots {
 
-using TransactionSnapshotReader = SnapshotReader<TransactionSnapshotWordDeserializer>;
-
-template <BytesOrByteView TBytes>
-using TransactionSnapshotPayloadRlpReader = SnapshotReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
+using BodyFindByBlockNumQuery = FindByIdQuery<BodySnapshotReader>;
 
 }  // namespace silkworm::snapshots

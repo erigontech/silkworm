@@ -21,14 +21,13 @@
 #include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
-
-#include "index_builder.hpp"
-#include "path.hpp"
 
 namespace silkworm::snapshots {
 
-class HeaderIndex {
+class BodyIndex {
   public:
     static IndexBuilder make(SnapshotPath segment_path, std::optional<MemoryMappedRegion> segment_region = std::nullopt) {
         auto descriptor = make_descriptor(segment_path);

@@ -19,13 +19,13 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/headers/header_index.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/test_util/common.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/test_util/temp_snapshots.hpp>
+#include <silkworm/db/transactions/txn_index.hpp>
+#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>

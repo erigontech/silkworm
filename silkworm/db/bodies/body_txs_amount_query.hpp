@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include "snapshot_reader.hpp"
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
 
 namespace silkworm::snapshots {
 

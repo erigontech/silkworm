@@ -24,13 +24,13 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/bodies/body_queries.hpp>
+#include <silkworm/db/headers/header_queries.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
-#include <silkworm/db/snapshots/body_queries.hpp>
-#include <silkworm/db/snapshots/header_queries.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
-#include <silkworm/db/snapshots/txn_queries.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 

@@ -28,11 +28,10 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/snapshots/test_util/common.hpp>
+#include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-
-#include "seg/decompressor.hpp"
 
 namespace silkworm::snapshots {
 

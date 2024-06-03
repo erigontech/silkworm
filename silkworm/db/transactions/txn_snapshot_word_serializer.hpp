@@ -22,8 +22,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/transaction.hpp>
-
-#include "snapshot_word_serializer.hpp"
+#include <silkworm/db/snapshots/snapshot_word_serializer.hpp>
 
 namespace silkworm::snapshots {
 

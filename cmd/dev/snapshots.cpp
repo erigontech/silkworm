@@ -31,6 +31,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
@@ -227,8 +228,12 @@ void decode_segment(const SnapSettings& settings, int repetitions) {
     SILK_INFO << "Decode snapshot elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
+static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
+    return std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+}
+
 void count_bodies(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings};
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int num_bodies{0};
@@ -252,7 +257,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
 }
 
 void count_headers(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings};
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
@@ -405,7 +410,7 @@ void lookup_header_by_hash(const SnapSettings& settings) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::optional<BlockHeader> matching_header;
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
     for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::headers);
@@ -434,7 +439,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
     SILK_INFO << "Lookup header number: " << block_number;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
     const auto snapshot_and_index = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (snapshot_and_index) {
@@ -494,7 +499,7 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
 }
 
 void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -601,7 +606,7 @@ void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, c
 }
 
 void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -665,7 +670,7 @@ void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, cons
 }
 
 void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -711,7 +716,7 @@ void lookup_transaction(const SnapSettings& settings) {
 
 void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SnapshotRepository snapshot_repository{settings};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
     std::vector<std::string> snapshot_file_names;
     if (settings.snapshot_file_name) {

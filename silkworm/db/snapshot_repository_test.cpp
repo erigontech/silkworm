@@ -14,16 +14,16 @@
    limitations under the License.
 */
 
-#include "repository.hpp"
-
 #include <chrono>
 #include <filesystem>
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/test_util/common.hpp>
 #include <silkworm/db/snapshots/txn_index.hpp>
 #include <silkworm/db/snapshots/txn_queries.hpp>
@@ -37,9 +37,13 @@ namespace silkworm::snapshots {
 namespace test = test_util;
 using silkworm::test_util::SetLogVerbosityGuard;
 
+static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
+    return std::make_unique<db::SnapshotBundleFactoryImpl>();
+}
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
+    CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}, bundle_factory()});
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {
@@ -50,7 +54,7 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
     repository.reopen_folder();
     CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
@@ -61,7 +65,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     TemporaryDirectory tmp_dir;
 
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
 
     SECTION("no snapshots") {
         repository.reopen_folder();
@@ -136,7 +140,7 @@ TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][node][snapshot
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
 
     test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
     test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
@@ -151,7 +155,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -217,7 +221,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -266,7 +270,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
 
     // create a snapshot file
     test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};

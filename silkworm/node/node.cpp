@@ -20,6 +20,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -95,7 +96,7 @@ static auto make_execution_server_settings() {
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
     : settings_{settings},
       chaindata_db_{std::move(chaindata_db)},
-      snapshot_repository_{settings_.snapshot_settings},
+      snapshot_repository_{settings_.snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()},
       execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_db_}},
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},

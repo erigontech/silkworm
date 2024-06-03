@@ -34,6 +34,7 @@
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/body_index.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/index.hpp>
@@ -206,7 +207,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::init(log_settings);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
-    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>();
+    auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
+    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(snapshots::SnapshotSettings{}, std::move(snapshot_bundle_factory));
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)

@@ -25,6 +25,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -109,7 +110,8 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        snapshots::SnapshotRepository repository;
+        auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
+        snapshots::SnapshotRepository repository{snapshots::SnapshotSettings{}, std::move(snapshot_bundle_factory)};
         repository.reopen_folder();
         db::DataModel::set_snapshot_repository(&repository);
         db::DataModel access_layer{txn};

@@ -32,6 +32,7 @@
 #include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/db/snapshots/snapshot_and_index.hpp>
 #include <silkworm/db/snapshots/snapshot_bundle.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
 
 namespace silkworm::snapshots {
 
@@ -45,7 +46,9 @@ struct IndexBuilder;
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(const SnapshotSettings& settings = {});
+    explicit SnapshotRepository(
+        SnapshotSettings settings,
+        std::unique_ptr<SnapshotBundleFactory> bundle_factory);
     ~SnapshotRepository();
 
     [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
@@ -90,6 +93,9 @@ class SnapshotRepository {
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;
+
+    //! SnapshotBundle factory
+    std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
 
     //! Full snapshot bundles ordered by block_from
     std::map<BlockNum, SnapshotBundle> bundles_;

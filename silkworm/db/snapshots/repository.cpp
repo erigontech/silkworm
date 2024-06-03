@@ -17,13 +17,8 @@
 #include "repository.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <iterator>
 
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -31,8 +26,11 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-// NOLINTNEXTLINE(modernize-pass-by-value)
-SnapshotRepository::SnapshotRepository(const SnapshotSettings& settings) : settings_(settings) {}
+SnapshotRepository::SnapshotRepository(
+    SnapshotSettings settings,
+    std::unique_ptr<SnapshotBundleFactory> bundle_factory)
+    : settings_(std::move(settings)),
+      bundle_factory_(std::move(bundle_factory)) {}
 
 SnapshotRepository::~SnapshotRepository() {
     close();
@@ -110,38 +108,10 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     std::vector<std::shared_ptr<IndexBuilder>> missing_index_list;
 
     for (const auto& seg_file : segment_files) {
-        switch (seg_file.type()) {
-            case SnapshotType::headers: {
-                if (!fs::exists(seg_file.index_file().path())) {
-                    auto index = std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            case SnapshotType::bodies: {
-                if (!fs::exists(seg_file.index_file().path())) {
-                    auto index = std::make_shared<IndexBuilder>(BodyIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            case SnapshotType::transactions: {
-                auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
-                bool has_bodies_segment = (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end());
-
-                if (!fs::exists(seg_file.index_file().path()) && has_bodies_segment) {
-                    auto index = std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file));
-                    missing_index_list.push_back(index);
-                }
-
-                if (!fs::exists(seg_file.index_file_for_type(SnapshotType::transactions_to_block).path()) && has_bodies_segment) {
-                    auto index = std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            default: {
-                assert(false);
+        auto builders = bundle_factory_->index_builders(seg_file);
+        for (auto& builder : builders) {
+            if (!builder->path().exists()) {
+                missing_index_list.push_back(builder);
             }
         }
     }
@@ -183,19 +153,7 @@ void SnapshotRepository::reopen_folder() {
             auto index_path = [&](SnapshotType type) {
                 return all_index_paths[groups[num][true][type]];
             };
-
-            SnapshotBundle bundle{
-                .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
-                .idx_header_hash = Index(index_path(SnapshotType::headers)),
-
-                .body_snapshot = Snapshot(snapshot_path(SnapshotType::bodies)),
-                .idx_body_number = Index(index_path(SnapshotType::bodies)),
-
-                .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
-                .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
-                .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
-            };
-
+            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
             bundle.reopen();
 
             bundles_.emplace(num, std::move(bundle));

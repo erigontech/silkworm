@@ -93,16 +93,16 @@ class TxsAndBodiesQuery {
         uint64_t first_tx_id,
         uint64_t expected_tx_count)
         : txs_segment_path_(std::move(txs_segment_path)),
-          txs_segment_region_(std::move(txs_segment_region)),
+          txs_segment_region_(txs_segment_region),
           bodies_segment_path_(std::move(bodies_segment_path)),
-          bodies_segment_region_(std::move(bodies_segment_region)),
+          bodies_segment_region_(bodies_segment_region),
           first_tx_id_(first_tx_id),
           expected_tx_count_(expected_tx_count) {}
 
     Iterator begin();
     Iterator end();
 
-    uint64_t expected_tx_count() { return expected_tx_count_; }
+    uint64_t expected_tx_count() const { return expected_tx_count_; }
 
   private:
     SnapshotPath txs_segment_path_;

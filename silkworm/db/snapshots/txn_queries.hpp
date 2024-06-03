@@ -63,7 +63,7 @@ class TransactionBlockNumByTxnHashRepoQuery {
             const Index& idx_txn_hash = bundle.idx_txn_hash;
             const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
 
-            TransactionFindByHashQuery cross_check_query{snapshot, idx_txn_hash};
+            TransactionFindByHashQuery cross_check_query{{snapshot, idx_txn_hash}};
             TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};
             auto block_num = query.exec(hash);
             if (block_num) {

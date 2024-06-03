@@ -81,13 +81,17 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
 
     grpc::Status status{grpc::Status::OK};
     try {
+        // Assign a monotonically increasing unique ID to remote transaction
+        const auto tx_id = ++next_tx_id_;
+
         // Create a new read-only transaction.
         read_only_txn_ = db::ROTxnManaged{*chaindata_env};
-        SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << read_only_txn_->id();
+        SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << tx_id << " view: " << read_only_txn_->id();
 
-        // Send an unsolicited message containing the transaction ID.
+        // Send an unsolicited message containing the transaction ID and view ID (i.e. MDBX txn ID)
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(read_only_txn_->id());
+        tx_id_pair.set_tx_id(tx_id);
+        tx_id_pair.set_view_id(read_only_txn_->id());
         if (!co_await agrpc::write(responder_, tx_id_pair)) {
             SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
             co_await agrpc::finish(responder_, grpc::Status::OK);
@@ -107,6 +111,7 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
         remote::Cursor request;
         read_stream.initiate(agrpc::read, responder_, request);
 
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto read = [&]() -> Task<void> {
             try {
                 while (co_await read_stream.next()) {
@@ -135,10 +140,12 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
                 status = grpc::Status{grpc::StatusCode::INTERNAL, exc.what()};
             }
         };
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto write = [&]() -> Task<void> {
             while (co_await write_stream.next()) {
             }
         };
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto max_idle_timer = [&]() -> Task<void> {
             while (true) {
                 const auto [ec] = co_await max_idle_alarm.async_wait(as_tuple(use_awaitable));
@@ -150,6 +157,7 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
                 }
             }
         };
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto max_ttl_timer = [&]() -> Task<void> {
             while (true) {
                 const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));
@@ -404,7 +412,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             }
         } else {
             /* single-value table */
-            const auto result = (key.length() == 0) ? cursor->to_first(/*throw_notfound=*/false) : cursor->lower_bound(key, /*throw_notfound=*/false);
+            const auto result = (key.empty()) ? cursor->to_first(/*throw_notfound=*/false) : cursor->lower_bound(key, /*throw_notfound=*/false);
             SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << db::detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
@@ -447,7 +455,7 @@ void TxCall::handle_seek(const remote::Cursor* request, db::ROCursorDupSort& cur
     SILK_TRACE << "TxCall::handle_seek " << this << " START";
     mdbx::slice key{request->k()};
 
-    const auto result = (key.length() == 0) ? cursor.to_first(/*throw_notfound=*/false) : cursor.lower_bound(key, /*throw_notfound=*/false);
+    const auto result = (key.empty()) ? cursor.to_first(/*throw_notfound=*/false) : cursor.lower_bound(key, /*throw_notfound=*/false);
     SILK_DEBUG << "Tx SEEK result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
@@ -714,6 +722,56 @@ Task<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
 
     SILK_TRACE << "StateChangesCall END";
     co_return;
+}
+
+Task<void> SnapshotsCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "SnapshotsCall START";
+    remote::SnapshotsReply response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "SnapshotsCall END #blocks_files: " << response.blocks_files_size() << " #history_files: " << response.history_files_size();
+}
+
+Task<void> HistoryGetCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "HistoryGetCall START";
+    remote::HistoryGetReply response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "HistoryGetCall END ok: " << response.ok() << " value: " << response.v();
+}
+
+Task<void> DomainGetCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "DomainGetCall START";
+    remote::DomainGetReply response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();
+}
+
+Task<void> IndexRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "IndexRangeCall START";
+    remote::IndexRangeReply response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "IndexRangeCall END #timestamps: " << response.timestamps_size() << " next_page_token: " << response.next_page_token();
+}
+
+Task<void> HistoryRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "HistoryRangeCall START";
+    remote::Pairs response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "HistoryRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
+               << " next_page_token: " << response.next_page_token();
+}
+
+Task<void> DomainRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+    SILK_TRACE << "DomainRangeCall START";
+    remote::Pairs response;
+    // TODO(canepat) implement properly
+    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    SILK_TRACE << "DomainRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
+               << " next_page_token: " << response.next_page_token();
 }
 
 }  // namespace silkworm::rpc

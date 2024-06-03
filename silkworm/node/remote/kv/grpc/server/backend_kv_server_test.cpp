@@ -40,6 +40,7 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/interfaces/remote/kv.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
@@ -150,6 +151,36 @@ class KvClient {
 
     auto statechanges_start(grpc::ClientContext* context, const remote::StateChangeRequest& request) {
         return stub_->StateChanges(context, request);
+    }
+
+    grpc::Status snapshots(const remote::SnapshotsRequest& request, remote::SnapshotsReply* response) {
+        grpc::ClientContext context;
+        return stub_->Snapshots(&context, request, response);
+    }
+
+    grpc::Status history_get(const remote::HistoryGetReq& request, remote::HistoryGetReply* response) {
+        grpc::ClientContext context;
+        return stub_->HistoryGet(&context, request, response);
+    }
+
+    grpc::Status domain_get(const remote::DomainGetReq& request, remote::DomainGetReply* response) {
+        grpc::ClientContext context;
+        return stub_->DomainGet(&context, request, response);
+    }
+
+    grpc::Status index_range(const remote::IndexRangeReq& request, remote::IndexRangeReply* response) {
+        grpc::ClientContext context;
+        return stub_->IndexRange(&context, request, response);
+    }
+
+    grpc::Status history_range(const remote::HistoryRangeReq& request, remote::Pairs* response) {
+        grpc::ClientContext context;
+        return stub_->HistoryRange(&context, request, response);
+    }
+
+    grpc::Status domain_range(const remote::DomainRangeReq& request, remote::Pairs* response) {
+        grpc::ClientContext context;
+        return stub_->DomainRange(&context, request, response);
     }
 
   private:
@@ -828,6 +859,48 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
 
         const auto status1 = subscribe_reply_reader1->Finish();
         CHECK(status1.ok());
+    }
+
+    SECTION("Snapshots: return snapshot files") {
+        remote::SnapshotsRequest request;
+        remote::SnapshotsReply response;
+        const auto status = kv_client.snapshots(request, &response);
+        CHECK(status.ok());
+    }
+
+    SECTION("HistoryGet: return value in target history") {
+        remote::HistoryGetReq request;
+        remote::HistoryGetReply response;
+        const auto status = kv_client.history_get(request, &response);
+        CHECK(status.ok());
+    }
+
+    SECTION("DomainGet: return value in target domain") {
+        remote::DomainGetReq request;
+        remote::DomainGetReply response;
+        const auto status = kv_client.domain_get(request, &response);
+        CHECK(status.ok());
+    }
+
+    SECTION("IndexRange: return value in target index range") {
+        remote::IndexRangeReq request;
+        remote::IndexRangeReply response;
+        const auto status = kv_client.index_range(request, &response);
+        CHECK(status.ok());
+    }
+
+    SECTION("HistoryRange: return value in target history range") {
+        remote::HistoryRangeReq request;
+        remote::Pairs response;
+        const auto status = kv_client.history_range(request, &response);
+        CHECK(status.ok());
+    }
+
+    SECTION("DomainRange: return value in target domain range") {
+        remote::DomainRangeReq request;
+        remote::Pairs response;
+        const auto status = kv_client.domain_range(request, &response);
+        CHECK(status.ok());
     }
 }
 

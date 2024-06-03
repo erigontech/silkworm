@@ -39,6 +39,7 @@ class LocalTransaction : public Transaction {
 
     ~LocalTransaction() override = default;
 
+    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
     [[nodiscard]] uint64_t view_id() const override { return txn_.id(); }
 
     Task<void> open() override;
@@ -56,12 +57,15 @@ class LocalTransaction : public Transaction {
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
+    static inline uint64_t next_tx_id_{0};
+
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
     mdbx::env chaindata_env_;
     uint32_t last_cursor_id_;
     db::ROTxnManaged txn_;
+    uint64_t tx_id_{++next_tx_id_};
 };
 
 }  // namespace silkworm::rpc::ethdb::file

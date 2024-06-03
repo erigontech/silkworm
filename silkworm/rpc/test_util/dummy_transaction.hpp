@@ -35,6 +35,7 @@ class DummyTransaction : public ethdb::Transaction {
     explicit DummyTransaction(uint64_t view_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
         : view_id_(view_id), cursor_(std::move(cursor)) {}
 
+    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
     [[nodiscard]] uint64_t view_id() const override { return view_id_; }
 
     Task<void> open() override { co_return; }
@@ -59,6 +60,7 @@ class DummyTransaction : public ethdb::Transaction {
     Task<void> close() override { co_return; }
 
   private:
+    uint64_t tx_id_{1};
     uint64_t view_id_;
     std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };

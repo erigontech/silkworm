@@ -52,35 +52,35 @@ void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_co
 
     // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await EtherbaseCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await NetVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await NetPeerCountCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestVersion,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await BackEndVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await ProtocolVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await ClientVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await SubscribeCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await NodeInfoCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     SILK_TRACE << "BackEndService::register_backend_request_calls END";
@@ -97,16 +97,40 @@ void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context
 
     // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await KvVersionCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
-                       [&backend, grpc_context](auto&&... args) -> Task<void> {
+                       [&backend, grpc_context](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(backend);
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
-                       [&backend](auto&&... args) -> Task<void> {
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                            co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestSnapshots,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await SnapshotsCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestDomainGet,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await DomainGetCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistoryGet,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await HistoryGetCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestIndexRange,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await IndexRangeCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistoryRange,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await HistoryRangeCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestDomainRange,
+                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                           co_await DomainRangeCall{std::forward<decltype(args)>(args)...}(backend);
                        });
     SILK_TRACE << "BackEndKvServer::register_kv_request_calls END";
 }

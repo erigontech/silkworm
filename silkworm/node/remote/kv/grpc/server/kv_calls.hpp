@@ -58,6 +58,7 @@ constexpr std::chrono::milliseconds kMaxTxDuration{60'000};
 constexpr std::size_t kMaxTxCursors{100};
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
+//! rpc Version(google.protobuf.Empty) returns (types.VersionReply);
 class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
   public:
     using Base::UnaryCall;
@@ -71,6 +72,7 @@ class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::V
 };
 
 //! Bidirectional-streaming RPC for Tx method of 'kv' gRPC protocol.
+//! rpc Tx(stream Cursor) returns (stream Pair);
 class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
   public:
     using Base::BidiStreamingCall;
@@ -143,6 +145,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
     void throw_with_error(grpc::Status&& status);
 
     static std::chrono::milliseconds max_ttl_duration_;
+    static inline uint64_t next_tx_id_{0};
 
     db::ROTxnManaged read_only_txn_;
     std::map<uint32_t, TxCursor> cursors_;
@@ -150,9 +153,64 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 };
 
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
+//! rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
 class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeRequest, remote::StateChangeBatch> {
   public:
     using Base::ServerStreamingCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for Snapshots method of 'kv' gRPC protocol.
+//! rpc Snapshots(SnapshotsRequest) returns (SnapshotsReply);
+class SnapshotsCall : public server::UnaryCall<remote::SnapshotsRequest, remote::SnapshotsReply> {
+  public:
+    using Base::UnaryCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for HistoryGet method of 'kv' gRPC protocol.
+//! rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
+class HistoryGetCall : public server::UnaryCall<remote::HistoryGetReq, remote::HistoryGetReply> {
+  public:
+    using Base::UnaryCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for DomainGet method of 'kv' gRPC protocol.
+//! rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+class DomainGetCall : public server::UnaryCall<remote::DomainGetReq, remote::DomainGetReply> {
+  public:
+    using Base::UnaryCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for IndexRange method of 'kv' gRPC protocol.
+//! rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
+class IndexRangeCall : public server::UnaryCall<remote::IndexRangeReq, remote::IndexRangeReply> {
+  public:
+    using Base::UnaryCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for IndexRange method of 'kv' gRPC protocol.
+//! rpc HistoryRange(HistoryRangeReq) returns (Pairs);
+class HistoryRangeCall : public server::UnaryCall<remote::HistoryRangeReq, remote::Pairs> {
+  public:
+    using Base::UnaryCall;
+
+    Task<void> operator()(const EthereumBackEnd& backend);
+};
+
+//! Unary RPC for IndexRange method of 'kv' gRPC protocol.
+//! rpc DomainRange(DomainRangeReq) returns (Pairs);
+class DomainRangeCall : public server::UnaryCall<remote::DomainRangeReq, remote::Pairs> {
+  public:
+    using Base::UnaryCall;
 
     Task<void> operator()(const EthereumBackEnd& backend);
 };

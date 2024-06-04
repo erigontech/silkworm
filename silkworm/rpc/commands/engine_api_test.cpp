@@ -50,6 +50,7 @@ namespace {
       public:
         explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
 
+        [[nodiscard]] uint64_t tx_id() const override { return 0; }
         [[nodiscard]] uint64_t view_id() const override { return 0; }
 
         Task<void> open() override { co_return; }

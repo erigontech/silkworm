@@ -32,6 +32,7 @@ namespace silkworm::rpc::test {
 
 class MockTransaction : public ethdb::Transaction {
   public:
+    MOCK_METHOD(uint64_t, tx_id, (), (const));
     MOCK_METHOD(uint64_t, view_id, (), (const));
     MOCK_METHOD((Task<void>), open, ());
     MOCK_METHOD((Task<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));

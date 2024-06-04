@@ -160,10 +160,14 @@ class DummyCursor : public ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-static uint64_t next_view_id{0};
 class DummyTransaction : public ethdb::Transaction {
   public:
-    explicit DummyTransaction(const nlohmann::json& json) : json_{json}, view_id_{next_view_id++} {};
+    explicit DummyTransaction(const nlohmann::json& json)
+        : json_{json}, tx_id_{next_tx_id++}, view_id_{next_view_id++} {};
+
+    [[nodiscard]] uint64_t tx_id() const override {
+        return tx_id_;
+    }
 
     [[nodiscard]] uint64_t view_id() const override {
         return view_id_;
@@ -200,7 +204,11 @@ class DummyTransaction : public ethdb::Transaction {
     }
 
   private:
+    inline static uint64_t next_tx_id{0};
+    inline static uint64_t next_view_id{0};
+
     const nlohmann::json& json_;
+    const uint64_t tx_id_;
     const uint64_t view_id_;
 };
 

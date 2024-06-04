@@ -24,7 +24,9 @@
 namespace silkworm::rpc::ethdb::kv {
 
 Task<void> RemoteTransaction::open() {
-    view_id_ = (co_await tx_rpc_.request_and_read()).view_id();
+    const auto tx_result = co_await tx_rpc_.request_and_read();
+    tx_id_ = tx_result.tx_id();
+    view_id_ = tx_result.view_id();
 }
 
 Task<std::shared_ptr<Cursor>> RemoteTransaction::cursor(const std::string& table) {
@@ -38,6 +40,7 @@ Task<std::shared_ptr<CursorDupSort>> RemoteTransaction::cursor_dup_sort(const st
 Task<void> RemoteTransaction::close() {
     co_await tx_rpc_.writes_done_and_finish();
     cursors_.clear();
+    tx_id_ = 0;
     view_id_ = 0;
 }
 

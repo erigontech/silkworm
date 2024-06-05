@@ -232,7 +232,7 @@ static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
 }
 
 void count_bodies(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{SnapshotSettings{settings}, bundle_factory()};
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int num_bodies{0};

@@ -20,26 +20,32 @@
 #include <memory>
 #include <optional>
 
-#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/etl/collector.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
+#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "index_builder.hpp"
-#include "path.hpp"
+#include "txn_index.hpp"
+#include "txs_and_bodies_query.hpp"
 
 namespace silkworm::snapshots {
 
-struct TransactionKeyFactory : IndexKeyFactory {
-    TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
-    ~TransactionKeyFactory() override = default;
+class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
+  public:
+    TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
+        : query_(std::move(query)) {}
 
-    Bytes make(ByteView key_data, uint64_t i) override;
+    Iterator begin() override;
+    Iterator end() override;
+    std::size_t keys_count() override;
+    std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) override;
+    bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const override;
 
   private:
-    uint64_t first_tx_id_;
+    TxsAndBodiesQuery query_;
 };
 
-class TransactionIndex {
+class TransactionToBlockIndex {
   public:
     static IndexBuilder make(
         SnapshotPath bodies_segment_path,
@@ -53,25 +59,15 @@ class TransactionIndex {
         SnapshotPath bodies_segment_path,
         std::optional<MemoryMappedRegion> bodies_segment_region,
         SnapshotPath segment_path,
-        std::optional<MemoryMappedRegion> segment_region) {
-        auto txs_amount = compute_txs_amount(std::move(bodies_segment_path), bodies_segment_region);
-        auto descriptor = make_descriptor(segment_path, txs_amount.first);
-        auto query = std::make_unique<DecompressorIndexInputDataQuery>(std::move(segment_path), segment_region);
-        return IndexBuilder{std::move(descriptor), std::move(query)};
-    }
-
-    static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
-    static std::pair<uint64_t, uint64_t> compute_txs_amount(
-        SnapshotPath bodies_segment_path,
-        std::optional<MemoryMappedRegion> bodies_segment_region);
+        std::optional<MemoryMappedRegion> segment_region);
 
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {
         return {
-            .index_file = segment_path.index_file(),
+            .index_file = segment_path.index_file_for_type(SnapshotType::transactions_to_block),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
-            .base_data_id = first_tx_id,
-            .less_false_positives = true,
+            .base_data_id = segment_path.block_from(),
+            .double_enum_index = false,
             .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
         };
     }

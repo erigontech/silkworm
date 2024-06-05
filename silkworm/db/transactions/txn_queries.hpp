@@ -20,8 +20,8 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/snapshots/basic_queries.hpp>
 
-#include "basic_queries.hpp"
 #include "txn_snapshot.hpp"
 
 namespace silkworm::snapshots {

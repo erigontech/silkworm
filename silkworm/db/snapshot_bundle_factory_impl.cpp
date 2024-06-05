@@ -18,10 +18,10 @@
 
 #include <cassert>
 
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/transactions/txn_index.hpp>
+#include <silkworm/db/transactions/txn_to_block_index.hpp>
 
 namespace silkworm::db {
 

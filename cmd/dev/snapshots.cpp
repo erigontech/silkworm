@@ -31,19 +31,19 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/bodies/body_queries.hpp>
+#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/headers/header_queries.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/body_queries.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/header_queries.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_queries.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/db/transactions/txn_index.hpp>
+#include <silkworm/db/transactions/txn_queries.hpp>
+#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 

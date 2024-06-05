@@ -19,21 +19,20 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/body_queries.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/header_queries.hpp>
+#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/bodies/body_queries.hpp>
+#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/headers/header_queries.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/test_util/common.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_queries.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/db/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/test_util/temp_snapshots.hpp>
+#include <silkworm/db/transactions/txn_index.hpp>
+#include <silkworm/db/transactions/txn_queries.hpp>
+#include <silkworm/db/transactions/txn_snapshot_word_serializer.hpp>
+#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-
-#include "snapshot_reader.hpp"
-#include "txn_snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
 

@@ -38,7 +38,6 @@
 #include <silkworm/db/snapshots/body_queries.hpp>
 #include <silkworm/db/snapshots/header_index.hpp>
 #include <silkworm/db/snapshots/header_queries.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
@@ -233,7 +232,7 @@ static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
 }
 
 void count_bodies(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings, bundle_factory()};
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int num_bodies{0};
@@ -257,7 +256,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
 }
 
 void count_headers(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings, bundle_factory()};
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
@@ -410,7 +409,7 @@ void lookup_header_by_hash(const SnapSettings& settings) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::optional<BlockHeader> matching_header;
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
     for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::headers);
@@ -439,7 +438,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
     SILK_INFO << "Lookup header number: " << block_number;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
     const auto snapshot_and_index = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (snapshot_and_index) {
@@ -499,7 +498,7 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
 }
 
 void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -606,7 +605,7 @@ void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, c
 }
 
 void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -670,7 +669,7 @@ void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, cons
 }
 
 void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -716,7 +715,7 @@ void lookup_transaction(const SnapSettings& settings) {
 
 void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
     std::vector<std::string> snapshot_file_names;
     if (settings.snapshot_file_name) {

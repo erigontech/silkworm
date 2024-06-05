@@ -135,7 +135,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
 
     Index idx_header_hash{header_snapshot_path.index_file()};
     idx_header_hash.reopen_index();
-    HeaderFindByBlockNumQuery header_by_number{header_snapshot, idx_header_hash};
+    HeaderFindByBlockNumQuery header_by_number{{header_snapshot, idx_header_hash}};
 
     CHECK(!header_by_number.exec(1'500'011));
     CHECK(header_by_number.exec(1'500'012));
@@ -177,7 +177,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
 
     Index idx_body_number{body_snapshot_path.index_file()};
     idx_body_number.reopen_index();
-    BodyFindByBlockNumQuery body_by_number{body_snapshot, idx_body_number};
+    BodyFindByBlockNumQuery body_by_number{{body_snapshot, idx_body_number}};
 
     CHECK(!body_by_number.exec(1'500'011));
     CHECK(body_by_number.exec(1'500'012));
@@ -206,7 +206,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 
     Index idx_txn_hash{tx_snapshot_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionFindByIdQuery txn_by_id{tx_snapshot, idx_txn_hash};
+    TransactionFindByIdQuery txn_by_id{{tx_snapshot, idx_txn_hash}};
 
     const auto transaction = txn_by_id.exec(7'341'272);
     CHECK(transaction.has_value());
@@ -235,11 +235,11 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 
     Index idx_txn_hash{tx_snapshot_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionFindByIdQuery txn_by_id{tx_snapshot, idx_txn_hash};
+    TransactionFindByIdQuery txn_by_id{{tx_snapshot, idx_txn_hash}};
 
     Index idx_txn_hash_2_block{tx_snapshot_path.index_file_for_type(SnapshotType::transactions_to_block)};
     idx_txn_hash_2_block.reopen_index();
-    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{tx_snapshot, idx_txn_hash}};
+    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{tx_snapshot, idx_txn_hash}}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     auto transaction = txn_by_id.exec(7'341'269);  // known txn id in block 1'500'012
@@ -277,7 +277,7 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 
     Index idx_txn_hash{tx_snapshot_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionRangeFromIdQuery query{tx_snapshot, idx_txn_hash};
+    TransactionRangeFromIdQuery query{{tx_snapshot, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     CHECK(query.exec_into_vector(7'341'263, 0).empty());
@@ -309,7 +309,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
 
     Index idx_txn_hash{tx_snapshot_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionPayloadRlpRangeFromIdQuery query{tx_snapshot, idx_txn_hash};
+    TransactionPayloadRlpRangeFromIdQuery query{{tx_snapshot, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     CHECK(query.exec_into_vector(7'341'263, 0).empty());

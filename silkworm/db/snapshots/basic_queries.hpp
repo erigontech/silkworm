@@ -22,6 +22,7 @@
 #include <silkworm/core/types/hash.hpp>
 
 #include "index.hpp"
+#include "snapshot_and_index.hpp"
 #include "snapshot_reader.hpp"
 
 namespace silkworm::snapshots {
@@ -30,10 +31,9 @@ template <SnapshotReaderConcept TSnapshotReader>
 class BasicQuery {
   public:
     BasicQuery(
-        const Snapshot& snapshot,
-        const Index& index)
-        : reader_{snapshot},
-          index_{index} {}
+        const SnapshotAndIndex snapshot_and_index)
+        : reader_{snapshot_and_index.snapshot},
+          index_{snapshot_and_index.index} {}
 
   protected:
     TSnapshotReader reader_;

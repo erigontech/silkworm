@@ -29,6 +29,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -137,7 +138,8 @@ int Daemon::run(const DaemonSettings& settings) {
             snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings));
+            auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings), std::move(snapshot_bundle_factory));
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());

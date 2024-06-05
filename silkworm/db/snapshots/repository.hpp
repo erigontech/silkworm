@@ -16,97 +16,27 @@
 
 #pragma once
 
-#include <array>
-#include <cassert>
 #include <filesystem>
 #include <functional>
+#include <map>
+#include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/block_body_for_storage.hpp>
-#include <silkworm/db/snapshots/index.hpp>
+#include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
+#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/settings.hpp>
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/snapshots/snapshot_and_index.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
 
 namespace silkworm::snapshots {
 
 struct IndexBuilder;
-
-struct SnapshotBundle {
-    Snapshot header_snapshot;
-    //! Index header_hash -> block_num -> headers_segment_offset
-    Index idx_header_hash;
-
-    Snapshot body_snapshot;
-    //! Index block_num -> bodies_segment_offset
-    Index idx_body_number;
-
-    Snapshot txn_snapshot;
-    //! Index transaction_hash -> txn_id -> transactions_segment_offset
-    Index idx_txn_hash;
-    //! Index transaction_hash -> block_num
-    Index idx_txn_hash_2_block;
-
-    static constexpr size_t kSnapshotsCount = 3;
-    static constexpr size_t kIndexesCount = 4;
-
-    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
-        return {
-            header_snapshot,
-            body_snapshot,
-            txn_snapshot,
-        };
-    }
-
-    std::array<std::reference_wrapper<Index>, kIndexesCount> indexes() {
-        return {
-            idx_header_hash,
-            idx_body_number,
-            idx_txn_hash,
-            idx_txn_hash_2_block,
-        };
-    }
-
-    const Snapshot& snapshot(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return header_snapshot;
-            case bodies:
-                return body_snapshot;
-            case transactions:
-            case transactions_to_block:
-                return txn_snapshot;
-        }
-        assert(false);
-        return header_snapshot;
-    }
-
-    const Index& index(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return idx_header_hash;
-            case bodies:
-                return idx_body_number;
-            case transactions:
-                return idx_txn_hash;
-            case transactions_to_block:
-                return idx_txn_hash_2_block;
-        }
-        assert(false);
-        return idx_header_hash;
-    }
-
-    // assume that all snapshots have the same block range, and use one of them
-    BlockNum block_from() const { return header_snapshot.block_from(); }
-    BlockNum block_to() const { return header_snapshot.block_to(); }
-
-    void reopen();
-    void close();
-};
 
 //! Read-only repository for all snapshot files.
 //! @details Some simplifications are currently in place:
@@ -116,7 +46,9 @@ struct SnapshotBundle {
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(const SnapshotSettings& settings = {});
+    explicit SnapshotRepository(
+        SnapshotSettings settings,
+        std::unique_ptr<SnapshotBundleFactory> bundle_factory);
     ~SnapshotRepository();
 
     [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
@@ -139,36 +71,13 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    struct SnapshotAndIndex {
-        const Snapshot& snapshot;
-        const Index& index;
-    };
+    auto view_bundles() const { return make_map_values_view(bundles_); }
+    auto view_bundles_reverse() const { return std::ranges::reverse_view(view_bundles()); }
 
-    using SnapshotWalker = std::function<bool(SnapshotAndIndex result)>;
-
-    using SnapshotBundleWalker = std::function<bool(const SnapshotBundle& bundle)>;
-    std::size_t view_bundles(const SnapshotBundleWalker& walker);
-
-    std::size_t view_header_segments(const SnapshotWalker& walker);
-    std::size_t view_body_segments(const SnapshotWalker& walker);
-    std::size_t view_tx_segments(const SnapshotWalker& walker);
-
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_header_segment(BlockNum number) const;
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_body_segment(BlockNum number) const;
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_tx_segment(BlockNum number) const;
-
-    using HeaderWalker = std::function<bool(const BlockHeader& header)>;
-    bool for_each_header(const HeaderWalker& fn);
-
-    using BodyWalker = std::function<bool(BlockNum number, const BlockBodyForStorage& body)>;
-    bool for_each_body(const BodyWalker& fn);
-
-    [[nodiscard]] std::optional<BlockNum> find_block_number(Hash txn_hash) const;
+    [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
   private:
-    std::size_t view_segments(SnapshotType type, const SnapshotWalker& walker);
     const SnapshotBundle* find_bundle(BlockNum number) const;
-    std::optional<SnapshotRepository::SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
 
     [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
@@ -184,6 +93,9 @@ class SnapshotRepository {
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;
+
+    //! SnapshotBundle factory
+    std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
 
     //! Full snapshot bundles ordered by block_from
     std::map<BlockNum, SnapshotBundle> bundles_;

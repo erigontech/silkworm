@@ -78,7 +78,7 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
 template <typename TMapKey, typename TMapValue>
 auto make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
     // std::views::values is not present on clang 15
-#if defined(__clang__) && (__clang_major__ <= 15) && !defined(__apple_build_version__)
+#if defined(__clang__) && (__clang_major__ <= 15)
     return MapValuesView<TMapKey, TMapValue>{map};
 #else
     return std::views::values(map);

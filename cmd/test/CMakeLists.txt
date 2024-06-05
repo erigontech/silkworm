@@ -28,6 +28,13 @@ else()
   target_compile_options(core_test PRIVATE -fno-exceptions)
 endif()
 
+if(SILKWORM_WASM_API)
+  # Strip off RPATH linker option added after building Catch2 v3.6.0 from sources
+  get_target_property(CORE_TEST_LINK_OPTIONS core_test LINK_OPTIONS)
+  list(REMOVE_ITEM CORE_TEST_LINK_OPTIONS "-rpath /home/circleci/.conan/data/catch2/3.6.0/_/_/package/9cc54baf4502227e8ffc50d3825f455b77620489/lib")
+  set_target_properties(core_test PROPERTIES LINK_OPTIONS "${CORE_TEST_LINK_OPTIONS}")
+endif()
+
 if(NOT SILKWORM_CORE_ONLY)
   # Enable fuzzing tests for Clang sanitizer builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)

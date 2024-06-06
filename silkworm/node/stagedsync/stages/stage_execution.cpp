@@ -205,17 +205,12 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
 
         std::vector<Receipt> receipts;
 
-        // Transform batch_size limit into Ggas
-        size_t gas_max_history_size{batch_size_ * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
-        size_t gas_max_batch_size{gas_max_history_size * 20};   // 256Ggas -> 5Tgas roughly
-        size_t gas_batch_size{0};
-
         {
             std::unique_lock progress_lock(progress_mtx_);
             lap_time_ = std::chrono::steady_clock::now();
         }
 
-        while (true) {
+        while (block_num_ <= max_block_num) {
             if (prefetched_blocks_.empty()) {
                 throw_if_stopping();
                 prefetch_blocks(txn, block_num_, max_block_num);
@@ -258,7 +253,12 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 return Stage::Result::kInvalidBlock;
             }
 
-            processor.flush_state();
+            try {
+                processor.flush_state();
+            } catch (const db::Buffer::MemoryLimitError&) {
+                // batch done
+                break;
+            }
 
             if (block_num_ >= prune_receipts_threshold) {
                 buffer.insert_receipts(block_num_, receipts);
@@ -274,20 +274,17 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             ++processed_blocks_;
             processed_transactions_ += block.transactions.size();
             processed_gas_ += block.header.gas_used;
-            gas_batch_size += block.header.gas_used;
             progress_lock.unlock();
 
             prefetched_blocks_.pop_front();
-
-            // Flush whole buffer if time to
-            if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
-                log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_to_db();
-                break;
-            }
-
             ++block_num_;
         }
+
+        // update block_num_ to point to the last successfully executed block
+        block_num_--;
+
+        log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
+        buffer.write_to_db();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

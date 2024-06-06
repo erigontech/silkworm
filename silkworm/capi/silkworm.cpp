@@ -535,7 +535,6 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
     try {
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
-        const auto db_path{txn.db().get_path()};
 
         db::Buffer state_buffer{txn};
         state_buffer.set_memory_limit(batch_size);
@@ -551,7 +550,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         while (block_number <= max_block) {
-            while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
+            while (block_number <= max_block) {
                 if (prefetched_blocks.empty()) {
                     const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
                     SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
@@ -566,7 +565,12 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                 }
                 const Block& block{prefetched_blocks.front()};
 
-                last_exec_result = block_executor.execute_single(block, state_buffer);
+                try {
+                    last_exec_result = block_executor.execute_single(block, state_buffer);
+                } catch (const db::Buffer::MemoryLimitError&) {
+                    // batch done
+                    break;
+                }
                 if (last_exec_result != ValidationResult::kOk) {
                     // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
                     break;
@@ -656,14 +660,19 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         ValidationResult last_exec_result = ValidationResult::kOk;
 
         while (block_number <= max_block) {
-            while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
+            while (block_number <= max_block) {
                 block_buffer.pop_back(&block);
                 if (!block) {
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
                 SILKWORM_ASSERT(block->header.number == block_number);
 
-                last_exec_result = block_executor.execute_single(*block, state_buffer);
+                try {
+                    last_exec_result = block_executor.execute_single(*block, state_buffer);
+                } catch (const db::Buffer::MemoryLimitError&) {
+                    // batch done
+                    break;
+                }
                 if (last_exec_result != ValidationResult::kOk) {
                     // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
                     break;

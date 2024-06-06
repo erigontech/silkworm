@@ -18,6 +18,7 @@
 
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 #include <absl/container/btree_map.h>
@@ -146,6 +147,11 @@ class Buffer : public State {
 
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
+
+    class MemoryLimitError : public std::runtime_error {
+      public:
+        MemoryLimitError() : std::runtime_error("db::Buffer::MemoryLimitError") {}
+    };
 
   private:
     RWTxn& txn_;

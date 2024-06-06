@@ -52,8 +52,11 @@ size_t flat_hash_map_memory_size_after_inserts(const TFlatHashMap& map, size_t i
 }
 
 void Buffer::begin_block(uint64_t block_number, size_t updated_accounts_count) {
+    if (current_batch_state_size() > memory_limit_) {
+        throw MemoryLimitError();
+    }
     if (flat_hash_map_memory_size_after_inserts(accounts_, updated_accounts_count) > memory_limit_) {
-        // TODO: error
+        throw MemoryLimitError();
     }
 
     block_number_ = block_number;

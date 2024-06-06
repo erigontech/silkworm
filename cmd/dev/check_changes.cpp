@@ -128,7 +128,8 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
+            db::Buffer buffer{txn};
+            buffer.set_historical_block(block_num);
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;

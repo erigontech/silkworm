@@ -536,7 +536,8 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
         const auto db_path{txn.db().get_path()};
 
-        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
+        db::Buffer state_buffer{txn};
+        state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
         auto signal_check_time{std::chrono::steady_clock::now()};
@@ -629,7 +630,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = db::RWTxnManaged{unmanaged_env};
         const auto db_path{unmanaged_env.get_path()};
 
-        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
+        db::Buffer state_buffer{txn};
+        state_buffer.set_memory_limit(batch_size);
+
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         BlockProvider block_provider{&block_buffer, unmanaged_env, start_block, max_block};
         boost::strict_scoped_thread<boost::interrupt_and_join_if_joinable> block_provider_thread(block_provider);

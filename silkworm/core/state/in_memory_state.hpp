@@ -70,7 +70,7 @@ class InMemoryState : public State {
 
     void insert_call_traces(BlockNum block_number, const CallTraces& traces) override;
 
-    void begin_block(BlockNum block_number) override;
+    void begin_block(BlockNum block_number, size_t updated_accounts_count) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,
                         std::optional<Account> current) override;

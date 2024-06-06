@@ -75,8 +75,8 @@ class OverrideState : public silkworm::State {
         return inner_state_.insert_call_traces(block_number, traces);
     }
 
-    void begin_block(BlockNum block_number) override {
-        return inner_state_.begin_block(block_number);
+    void begin_block(BlockNum block_number, size_t updated_accounts_count) override {
+        return inner_state_.begin_block(block_number, updated_accounts_count);
     }
 
     void update_account(

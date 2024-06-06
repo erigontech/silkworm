@@ -32,7 +32,7 @@ BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_h
       data_model_(tx_),
       chain_config_{chain_config},
       rule_set_{protocol::rule_set_factory(chain_config)},
-      chain_state_{tx, /*prune_history_threshold=*/0, /*historical_block=null*/} {
+      chain_state_{tx} {
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
 }

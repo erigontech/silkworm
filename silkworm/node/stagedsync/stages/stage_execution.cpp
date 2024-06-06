@@ -199,7 +199,10 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
     auto log_time{std::chrono::steady_clock::now()};
 
     try {
-        db::Buffer buffer(txn, prune_history_threshold);
+        db::Buffer buffer{txn};
+        buffer.set_prune_history_threshold(prune_history_threshold);
+        buffer.set_memory_limit(batch_size_);
+
         std::vector<Receipt> receipts;
 
         // Transform batch_size limit into Ggas

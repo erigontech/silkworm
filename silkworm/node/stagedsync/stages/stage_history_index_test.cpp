@@ -86,7 +86,7 @@ TEST_CASE("Stage History Index") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].set_sender(sender);
 
-        db::Buffer buffer{txn, 0};
+        db::Buffer buffer{txn};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -446,7 +446,7 @@ TEST_CASE("HistoryIndex + Account access_layer") {
     db::test_util::TempChainData context;
     db::RWTxn& txn{context.rw_txn()};
 
-    db::Buffer buffer{txn, 0};
+    db::Buffer buffer{txn};
 
     const auto miner_a{0x00000000000000000000000000000000000000aa_address};
     const auto miner_b{0x00000000000000000000000000000000000000bb_address};

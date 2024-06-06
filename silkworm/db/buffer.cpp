@@ -31,7 +31,31 @@
 
 namespace silkworm::db {
 
-void Buffer::begin_block(uint64_t block_number) {
+template <class TFlatHashMap>
+size_t flat_hash_map_memory_size(size_t capacity) {
+    return sizeof(std::pair<const typename TFlatHashMap::key_type, typename TFlatHashMap::mapped_type>) * capacity;
+}
+
+static size_t flat_hash_map_capacity_for_size(size_t size, size_t current_capacity) {
+    // if the desired size is less than the growth threshold, the current capacity is enough
+    if (size * uint64_t{32} <= current_capacity * uint64_t{25}) {
+        return current_capacity;
+    }
+    // otherwise the capacity needs to double up
+    return current_capacity * 2;
+}
+
+template <class TFlatHashMap>
+size_t flat_hash_map_memory_size_after_inserts(const TFlatHashMap& map, size_t inserts_count) {
+    size_t capacity_after_inserts = flat_hash_map_capacity_for_size(map.size() + inserts_count, map.capacity());
+    return flat_hash_map_memory_size<TFlatHashMap>(capacity_after_inserts);
+}
+
+void Buffer::begin_block(uint64_t block_number, size_t updated_accounts_count) {
+    if (flat_hash_map_memory_size_after_inserts(accounts_, updated_accounts_count) > memory_limit_) {
+        // TODO: error
+    }
+
     block_number_ = block_number;
     changed_storage_.clear();
 }

@@ -80,6 +80,8 @@ auto make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
     // std::views::values is not present on clang 15
 #if defined(__clang__) && (__clang_major__ <= 15) && !defined(__apple_build_version__)
     return MapValuesView<TMapKey, TMapValue>{map};
+#elif defined(__clang__) && (__clang_major__ <= 14) && defined(__apple_build_version__)  // clang 15 == Apple clang 14
+    return MapValuesView<TMapKey, TMapValue>{map};
 #else
     return std::views::values(map);
 #endif

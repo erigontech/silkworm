@@ -27,6 +27,7 @@
 
 #include <absl/strings/str_split.h>
 #include <boost/thread/scoped_thread.hpp>
+#include <gsl/util>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
@@ -634,6 +635,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
+        [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
         BlockProvider block_provider{&block_buffer, unmanaged_env, start_block, max_block};
         boost::strict_scoped_thread<boost::interrupt_and_join_if_joinable> block_provider_thread(block_provider);
 
@@ -648,7 +650,6 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
                 block_buffer.pop_back(&block);
                 if (!block) {
-                    block_buffer.terminate_and_release_all();
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
                 SILKWORM_ASSERT(block->header.number == block_number);
@@ -656,11 +657,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                 const auto result{block_executor.execute_single(*block, state_buffer)};
 
                 if (result != ValidationResult::kOk) {
-                    block_buffer.terminate_and_release_all();
                     return SILKWORM_INVALID_BLOCK;
                 }
                 if (signal_check(signal_check_time)) {
-                    block_buffer.terminate_and_release_all();
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
 
@@ -675,9 +674,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block->header.number);
             // Commit and renew only in case of internally managed transaction
             txn.commit_and_renew();
-            const auto [elapsed, _]{sw.stop()};
+            const auto elapsed_time_and_duration = sw.stop();
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(sw.since_start(elapsed), db_path));
+                      log_args_for_exec_commit(elapsed_time_and_duration.second, db_path));
 
             if (last_executed_block) {
                 *last_executed_block = block->header.number;

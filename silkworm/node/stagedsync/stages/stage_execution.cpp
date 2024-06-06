@@ -208,7 +208,6 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
         // Transform batch_size limit into Ggas
         size_t gas_max_history_size{batch_size_ * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
         size_t gas_max_batch_size{gas_max_history_size * 20};   // 256Ggas -> 5Tgas roughly
-        size_t gas_history_size{0};
         size_t gas_batch_size{0};
 
         {
@@ -268,13 +267,14 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 buffer.insert_call_traces(block_num_, traces);
             }
 
+            buffer.write_history_to_db();
+
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
             ++processed_blocks_;
             processed_transactions_ += block.transactions.size();
             processed_gas_ += block.header.gas_used;
             gas_batch_size += block.header.gas_used;
-            gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
             prefetched_blocks_.pop_front();
@@ -284,11 +284,6 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
                 buffer.write_to_db();
                 break;
-            } else if (gas_history_size >= gas_max_history_size) {
-                // or flush history only if needed
-                log::Trace(log_prefix_, {"buffer", "history", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_history_to_db();
-                gas_history_size = 0;
             }
 
             ++block_num_;

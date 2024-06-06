@@ -239,7 +239,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             CallTracer tracer{traces};
             processor.evm().add_tracer(tracer);
 
-            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 // Persist work done so far
                 if (block_num_ >= prune_receipts_threshold) {
                     buffer.insert_receipts(block_num_, receipts);
@@ -258,6 +258,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                               "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
                 return Stage::Result::kInvalidBlock;
             }
+
+            processor.flush_state();
 
             if (block_num_ >= prune_receipts_threshold) {
                 buffer.insert_receipts(block_num_, receipts);

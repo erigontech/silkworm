@@ -456,11 +456,11 @@ class BlockExecutor {
         }
 
         std::vector<Receipt> receipts;
-        const auto result{processor.execute_and_write_block(receipts)};
-
-        if (result != ValidationResult::kOk) {
-            return result;
+        if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
+            return res;
         }
+
+        processor.flush_state();
 
         if (write_receipts_) {
             state_buffer.insert_receipts(block.header.number, receipts);
@@ -484,7 +484,7 @@ class BlockExecutor {
             log_time_ = now + 20s;
         }
 
-        return result;
+        return ValidationResult::kOk;
     }
 
   private:

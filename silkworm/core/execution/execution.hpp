@@ -45,7 +45,14 @@ namespace silkworm {
         return ValidationResult::kUnknownProtocolRuleSet;
     }
     ExecutionProcessor processor{block, *rule_set, state, chain_config};
-    return processor.execute_and_write_block(receipts);
+
+    if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
+        return res;
+    }
+
+    processor.flush_state();
+
+    return ValidationResult::kOk;
 }
 
 /**

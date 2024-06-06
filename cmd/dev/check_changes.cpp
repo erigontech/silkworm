@@ -135,10 +135,12 @@ int main(int argc, char* argv[]) {
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 log::Error() << "Failed execution for block " << block_num << " result " << magic_enum::enum_name<>(res);
                 continue;
             }
+
+            processor.flush_state();
 
             db::AccountChanges db_account_changes{db::read_account_changes(txn, block_num)};
 

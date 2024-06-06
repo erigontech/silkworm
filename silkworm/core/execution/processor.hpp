@@ -41,10 +41,13 @@ class ExecutionProcessor {
      */
     void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
 
-    //! \brief Execute the block and write the result to the DB.
+    //! \brief Execute the block.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
     //! \pre RuleSet's validate_block_header & pre_validate_block_body must return kOk.
-    [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
+    [[nodiscard]] ValidationResult execute_block(std::vector<Receipt>& receipts) noexcept;
+
+    //! \brief Flush IntraBlockState into cumulative State.
+    void flush_state();
 
     uint64_t available_gas() const noexcept;
 

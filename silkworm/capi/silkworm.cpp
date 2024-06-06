@@ -544,8 +544,10 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         auto signal_check_time{std::chrono::steady_clock::now()};
 
         BlockNum block_number{start_block};
+        BlockNum last_block_number = 0;
         db::DataModel da_layer{txn};
         BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        ValidationResult last_exec_result = ValidationResult::kOk;
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
         while (block_number <= max_block) {
@@ -564,20 +566,21 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                 }
                 const Block& block{prefetched_blocks.front()};
 
-                const auto result{block_executor.execute_single(block, state_buffer)};
-
-                if (result != ValidationResult::kOk) {
-                    return SILKWORM_INVALID_BLOCK;
+                last_exec_result = block_executor.execute_single(block, state_buffer);
+                if (last_exec_result != ValidationResult::kOk) {
+                    // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
+                    break;
                 }
+
                 if (signal_check(signal_check_time)) {
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
 
+                last_block_number = block_number;
                 ++block_number;
                 prefetched_blocks.pop_front();
             }
 
-            auto last_block_number = block_number - 1;
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
                       log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
             state_buffer.write_state_to_db();
@@ -586,6 +589,10 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
             if (last_executed_block) {
                 *last_executed_block = last_block_number;
+            }
+
+            if (last_exec_result != ValidationResult::kOk) {
+                return SILKWORM_INVALID_BLOCK;
             }
         }
         return SILKWORM_OK;
@@ -644,7 +651,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         std::optional<Block> block;
         BlockNum block_number{start_block};
+        BlockNum last_block_number = 0;
         BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        ValidationResult last_exec_result = ValidationResult::kOk;
 
         while (block_number <= max_block) {
             while (state_buffer.current_batch_state_size() < max_batch_size && block_number <= max_block) {
@@ -654,24 +663,26 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                 }
                 SILKWORM_ASSERT(block->header.number == block_number);
 
-                const auto result{block_executor.execute_single(*block, state_buffer)};
-
-                if (result != ValidationResult::kOk) {
-                    return SILKWORM_INVALID_BLOCK;
+                last_exec_result = block_executor.execute_single(*block, state_buffer);
+                if (last_exec_result != ValidationResult::kOk) {
+                    // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
+                    break;
                 }
+
                 if (signal_check(signal_check_time)) {
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
 
+                last_block_number = block_number;
                 ++block_number;
             }
 
             StopWatch sw{/*auto_start=*/true};
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_flush(state_buffer, max_batch_size, block->header.number)};
+                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
             state_buffer.write_state_to_db();
             // Always save the Execution stage progress when state batch is flushed
-            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block->header.number);
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
             // Commit and renew only in case of internally managed transaction
             txn.commit_and_renew();
             const auto elapsed_time_and_duration = sw.stop();
@@ -679,7 +690,11 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                       log_args_for_exec_commit(elapsed_time_and_duration.second, db_path));
 
             if (last_executed_block) {
-                *last_executed_block = block->header.number;
+                *last_executed_block = last_block_number;
+            }
+
+            if (last_exec_result != ValidationResult::kOk) {
+                return SILKWORM_INVALID_BLOCK;
             }
         }
         return SILKWORM_OK;

@@ -463,7 +463,6 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
                 break;
             }
-
         }
 
         uint64_t cardinality = bitmap.cardinality();

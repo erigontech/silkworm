@@ -135,9 +135,6 @@ class Buffer : public State {
     //! \brief Approximate size of accrued state in bytes.
     [[nodiscard]] size_t current_batch_state_size() const noexcept { return batch_state_size_; }
 
-    //! \brief Approximate size of accrued history in bytes.
-    [[nodiscard]] size_t current_batch_history_size() const noexcept { return batch_history_size_; }
-
     //! \brief Persists *all* accrued contents into db
     //! \remarks write_history_to_db is implicitly called
     //! @param write_change_sets flag indicating if state changes should be written or not (default: true)
@@ -186,8 +183,8 @@ class Buffer : public State {
     absl::btree_map<Bytes, Bytes> logs_;
     absl::btree_map<BlockNum, absl::btree_set<Bytes>> call_traces_;
 
-    mutable size_t batch_state_size_{0};    // Accounts in memory data for state
-    mutable size_t batch_history_size_{0};  // Accounts in memory data for history
+    // Accounts in memory data for state
+    mutable size_t batch_state_size_{0};
 
     // Current block stuff
     uint64_t block_number_{0};

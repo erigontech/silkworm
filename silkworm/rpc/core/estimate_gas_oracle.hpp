@@ -87,7 +87,8 @@ class EstimateGasOracle {
           account_reader_{account_reader},
           config_{config},
           workers_{workers},
-          transaction_{tx}, storage_{chain_storage} {}
+          transaction_{tx},
+          storage_{chain_storage} {}
     virtual ~EstimateGasOracle() = default;
 
     EstimateGasOracle(const EstimateGasOracle&) = delete;

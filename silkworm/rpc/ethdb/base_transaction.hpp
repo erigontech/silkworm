@@ -25,7 +25,7 @@ namespace silkworm::rpc::ethdb {
 
 class BaseTransaction : public Transaction {
   public:
-    explicit BaseTransaction(kv::StateCache* state_cache) :  state_cache_{state_cache} {}
+    explicit BaseTransaction(kv::StateCache* state_cache) : state_cache_{state_cache} {}
 
     void set_state_cache_enabled(bool cache_enabled) override;
 
@@ -43,7 +43,7 @@ class BaseTransaction : public Transaction {
     Task<silkworm::Bytes> get_one_impl_no_cache(const std::string& table, ByteView key);
     Task<silkworm::Bytes> get_one_impl_with_cache(const std::string& table, ByteView key);
 
-    using GetOneImpl = Task<silkworm::Bytes>(BaseTransaction::*)(const std::string&, ByteView);
+    using GetOneImpl = Task<silkworm::Bytes> (BaseTransaction::*)(const std::string&, ByteView);
     GetOneImpl get_one_impl_no_cache_{&BaseTransaction::get_one_impl_no_cache};
     GetOneImpl get_one_impl_with_cache_{&BaseTransaction::get_one_impl_with_cache};
     GetOneImpl get_one_impl_{get_one_impl_no_cache_};

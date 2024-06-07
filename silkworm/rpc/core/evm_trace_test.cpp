@@ -39,9 +39,9 @@
 
 namespace silkworm::rpc::trace {
 
+using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
-using testing::_;
 
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
@@ -78,10 +78,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
     static Bytes kPlainStateKey3{*silkworm::from_hex("000000000000000000000000000000000000000")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     SECTION("precompiled contract failure") {
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -263,10 +262,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     static Bytes kPlainStateKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -1061,10 +1059,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
     static Bytes kPlainStateKey{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     SECTION("Call: TO present") {
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -1120,7 +1117,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue3};
             }));
         EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
-                                              silkworm::ByteView{kAccountChangeSetSubkey2}))
+                                                silkworm::ByteView{kAccountChangeSetSubkey2}))
             .WillRepeatedly(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
                     SILK_DEBUG << "EXPECT_CALL::get_both_range "
@@ -1292,10 +1289,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     static Bytes kAccountChangeSetValue2{*silkworm::from_hex("020944ed67f28fd50bb8e9")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1576,10 +1572,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     static Bytes kPlainStateKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -1880,10 +1875,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     static Bytes kAccountChangeSetValue3{*silkworm::from_hex("030127080334e1d62a9e3440")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2423,10 +2417,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     static Bytes kAccountChangeSetValue3{*silkworm::from_hex("030127080334e1d62a9e3440")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2623,10 +2616,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     static Bytes kAccountChangeSetValue3{*silkworm::from_hex("030127080334e1d62a9e3440")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3570,10 +3562,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     static Bytes kAccountChangeSetValue3{*silkworm::from_hex("030127080334e1d62a9e3440")};
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3709,10 +3700,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     json::Stream stream(string_writer);
 
     auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2)
-        .WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
-        }));
+    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
+        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+    }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -4169,8 +4159,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey2{*silkworm::from_hex("560f0b51eca3f4c6e5873de9091c8f4c200e8ac1")};
     static Bytes kAccountChangeSetValue2{*silkworm::from_hex("03010607733498fc7960b0")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey2},
-                                          silkworm::ByteView{kAccountChangeSetSubkey2}))
+                                            silkworm::ByteView{kAccountChangeSetKey2},
+                                            silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue2;
         }));
@@ -4180,8 +4170,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes kAccountChangeSetValue3{*silkworm::from_hex("020949aaae4f54eea7ac03")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey3},
-                                          silkworm::ByteView{kAccountChangeSetSubkey3}))
+                                            silkworm::ByteView{kAccountChangeSetKey3},
+                                            silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue3;
         }));
@@ -4191,8 +4181,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey4{*silkworm::from_hex("2031832e54a2200bf678286f560f49a950db2ad5")};
     static Bytes kAccountChangeSetValue4{*silkworm::from_hex("030273620a017d326f5579b49dd278")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey4},
-                                          silkworm::ByteView{kAccountChangeSetSubkey4}))
+                                            silkworm::ByteView{kAccountChangeSetKey4},
+                                            silkworm::ByteView{kAccountChangeSetSubkey4}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue4;
         }));
@@ -4202,8 +4192,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey5{*silkworm::from_hex("259c334871a9d75d3364e17316299e72bd97b049")};
     static Bytes kAccountChangeSetValue5{*silkworm::from_hex("0301100806c817f6b3d517ea")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey5},
-                                          silkworm::ByteView{kAccountChangeSetSubkey5}))
+                                            silkworm::ByteView{kAccountChangeSetKey5},
+                                            silkworm::ByteView{kAccountChangeSetSubkey5}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue5;
         }));
@@ -4213,8 +4203,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey6{*silkworm::from_hex("5aa6b79a8ea7c240c8de59a83765ac984912a8f3")};
     static Bytes kAccountChangeSetValue6{*silkworm::from_hex("0501720101")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey6},
-                                          silkworm::ByteView{kAccountChangeSetSubkey6}))
+                                            silkworm::ByteView{kAccountChangeSetKey6},
+                                            silkworm::ByteView{kAccountChangeSetSubkey6}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue6;
         }));
@@ -4224,8 +4214,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey7{*silkworm::from_hex("1e8ab45d1519aa26cee0c24476689e215db7955b")};
     static Bytes kAccountChangeSetValue7{*silkworm::from_hex("0501010101")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey7},
-                                          silkworm::ByteView{kAccountChangeSetSubkey7}))
+                                            silkworm::ByteView{kAccountChangeSetKey7},
+                                            silkworm::ByteView{kAccountChangeSetSubkey7}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue7;
         }));
@@ -4235,8 +4225,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey8{*silkworm::from_hex("0000000000000000000000000000000000000007")};
     static Bytes kAccountChangeSetValue8{*silkworm::from_hex("020101")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey8},
-                                          silkworm::ByteView{kAccountChangeSetSubkey8}))
+                                            silkworm::ByteView{kAccountChangeSetKey8},
+                                            silkworm::ByteView{kAccountChangeSetSubkey8}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue8;
         }));
@@ -4246,8 +4236,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey9{*silkworm::from_hex("8aa50579a254382ddbca33b0729f84090d9dcb74")};
     static Bytes kAccountChangeSetValue9{*silkworm::from_hex("030119080de7343b9e519164")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey9},
-                                          silkworm::ByteView{kAccountChangeSetSubkey9}))
+                                            silkworm::ByteView{kAccountChangeSetKey9},
+                                            silkworm::ByteView{kAccountChangeSetSubkey9}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue9;
         }));
@@ -4257,8 +4247,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey10{*silkworm::from_hex("cbebcd41ceabbc85da9bb67527f58d69ad4dfff5")};
     static Bytes kAccountChangeSetValue10{*silkworm::from_hex("0701010a01ca5b1969fd8b69924a0101")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey10},
-                                          silkworm::ByteView{kAccountChangeSetSubkey10}))
+                                            silkworm::ByteView{kAccountChangeSetKey10},
+                                            silkworm::ByteView{kAccountChangeSetSubkey10}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue10;
         }));
@@ -4268,8 +4258,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static Bytes kAccountChangeSetSubkey11{*silkworm::from_hex("a0f968eba6bbd08f28dc061c7856c15725983395")};
     static Bytes kAccountChangeSetValue11{*silkworm::from_hex("0701010301d4c00101")};
     EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName,
-                                          silkworm::ByteView{kAccountChangeSetKey11},
-                                          silkworm::ByteView{kAccountChangeSetSubkey11}))
+                                            silkworm::ByteView{kAccountChangeSetKey11},
+                                            silkworm::ByteView{kAccountChangeSetSubkey11}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue11;
         }));

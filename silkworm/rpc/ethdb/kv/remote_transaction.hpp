@@ -26,11 +26,11 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/rpc.hpp>
-#include <silkworm/rpc/ethdb/base_transaction.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 

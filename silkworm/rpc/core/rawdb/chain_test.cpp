@@ -548,23 +548,23 @@ TEST_CASE("read_receipts") {
 
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a00016e5b8400f6011a0002dc76"); }));
         EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(DoAll(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
-                                                                                       silkworm::Bytes key{*silkworm::from_hex("000000000007281300000000")};
-                                                                                       silkworm::Bytes value{*silkworm::from_hex(
-                                                                                           "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
-                                                                                           "4d5820000000000000000000000000000000000000000000000000000000000000002a58200000000000000000000000000000000000000000"
-                                                                                           "000000000000000000a4e093582062c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")};
-                                                                                       w(key, value);
-                                                                                       co_return;
-                                                                                   }),
-                                                                                   Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
-                                                                                       silkworm::Bytes key{*silkworm::from_hex("000000000007281300000001")};
-                                                                                       silkworm::Bytes value{*silkworm::from_hex(
-                                                                                           "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
-                                                                                           "4d5820000000000000000000000000000000000000000000000000000000000000000458200000000000000000000000000000000000000000"
-                                                                                           "0000000000000000004100fa58203ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")};
-                                                                                       w(key, value);
-                                                                                       co_return;
-                                                                                   })));
+                                                                                         silkworm::Bytes key{*silkworm::from_hex("000000000007281300000000")};
+                                                                                         silkworm::Bytes value{*silkworm::from_hex(
+                                                                                             "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
+                                                                                             "4d5820000000000000000000000000000000000000000000000000000000000000002a58200000000000000000000000000000000000000000"
+                                                                                             "000000000000000000a4e093582062c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")};
+                                                                                         w(key, value);
+                                                                                         co_return;
+                                                                                     }),
+                                                                                     Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+                                                                                         silkworm::Bytes key{*silkworm::from_hex("000000000007281300000001")};
+                                                                                         silkworm::Bytes value{*silkworm::from_hex(
+                                                                                             "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
+                                                                                             "4d5820000000000000000000000000000000000000000000000000000000000000000458200000000000000000000000000000000000000000"
+                                                                                             "0000000000000000004100fa58203ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")};
+                                                                                         w(key, value);
+                                                                                         co_return;
+                                                                                     })));
         auto result1 = boost::asio::co_spawn(pool, read_receipts(transaction, *bwh), boost::asio::use_future);
         // CHECK(result1.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result1.get().size() == Receipts{Receipt{}, Receipt{}}.size());

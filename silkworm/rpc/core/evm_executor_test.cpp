@@ -38,8 +38,8 @@
 
 namespace silkworm::rpc {
 
-using testing::InvokeWithoutArgs;
 using testing::_;
+using testing::InvokeWithoutArgs;
 
 struct EVMExecutorTest : public test::ContextTestBase {
     EVMExecutorTest() {

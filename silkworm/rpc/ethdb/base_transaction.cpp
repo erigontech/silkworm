@@ -16,8 +16,8 @@
 
 #include "base_transaction.hpp"
 
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb {
 

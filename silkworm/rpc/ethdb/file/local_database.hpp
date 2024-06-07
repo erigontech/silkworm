@@ -22,8 +22,8 @@
 
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 

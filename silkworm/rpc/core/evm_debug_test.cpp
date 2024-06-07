@@ -35,9 +35,9 @@
 
 namespace silkworm::rpc::debug {
 
+using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
-using testing::_;
 
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
@@ -1032,13 +1032,13 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
         EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
-                                              silkworm::ByteView{kAccountChangeSetSubkey2}))
+                                                silkworm::ByteView{kAccountChangeSetSubkey2}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue2;
                 }));
         EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey3},
-                                              silkworm::ByteView{kAccountChangeSetSubkey3}))
+                                                silkworm::ByteView{kAccountChangeSetSubkey3}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue3;

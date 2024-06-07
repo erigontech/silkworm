@@ -25,10 +25,10 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/file/local_cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/base_transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 

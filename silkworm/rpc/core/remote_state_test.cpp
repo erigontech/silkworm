@@ -36,10 +36,10 @@
 
 namespace silkworm::rpc::state {
 
-using testing::InvokeWithoutArgs;
-using testing::Invoke;
-using testing::Unused;
 using testing::_;
+using testing::Invoke;
+using testing::InvokeWithoutArgs;
+using testing::Unused;
 
 struct RemoteStateTest : public test::ContextTestBase {
     test::MockTransaction transaction;

@@ -27,9 +27,9 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/base_transaction.hpp>
 
 namespace silkworm::rpc {
 

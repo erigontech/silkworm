@@ -21,14 +21,14 @@
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(const core::rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash) {
-    const auto cached_receipts = co_await core::rawdb::read_receipts(db_reader, block_with_hash);
+Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
+    const auto cached_receipts = co_await core::rawdb::read_receipts(tx, block_with_hash);
     if (cached_receipts) {
         co_return *cached_receipts;
     }
 
     // If not already present, retrieve receipts by executing transactions
-    // auto block = co_await core::rawdb::read_block(db_reader, hash, number);
+    // auto block = co_await core::rawdb::read_block(tx, hash, number);
     // TODO(canepat): implement
     SILK_WARN << "retrieve receipts by executing transactions NOT YET IMPLEMENTED";
     co_return Receipts{};

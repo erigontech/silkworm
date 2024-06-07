@@ -29,7 +29,6 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -49,14 +48,13 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        const auto chain_storage{tx->create_storage(backend_)};
 
         const auto bnoh = BlockNumberOrHash{block_id};
-        const auto block_number = co_await core::get_block_number(bnoh, tx_database);
+        const auto block_number = co_await core::get_block_number(bnoh, *tx);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number.first);
         if (block_with_hash) {
-            auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+            auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
             SILK_TRACE << "#receipts: " << receipts.size();
 
             const auto block{block_with_hash->block};
@@ -82,7 +80,6 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     co_return;
 }
 
-// TODO(canepat) will raise error until Silkrpc implements Erigon2u1 https://github.com/ledgerwatch/erigon-lib/pull/559
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() < 2) {
@@ -109,10 +106,9 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        StateReader state_reader{tx_database};
+        StateReader state_reader{*tx};
 
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_number;
         std::optional<silkworm::Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};

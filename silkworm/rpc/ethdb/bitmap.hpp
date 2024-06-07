@@ -28,27 +28,27 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 
 namespace silkworm::rpc::ethdb::bitmap {
 
 Task<roaring::Roaring> get(
-    core::rawdb::DatabaseReader& db_reader,
+    Transaction& tx,
     const std::string& table,
     silkworm::Bytes& key,
     uint32_t from_block,
     uint32_t to_block);
 
 Task<roaring::Roaring> from_topics(
-    core::rawdb::DatabaseReader& db_reader,
+    Transaction& tx,
     const std::string& table,
     const FilterTopics& topics,
     uint64_t start,
     uint64_t end);
 
 Task<roaring::Roaring> from_addresses(
-    core::rawdb::DatabaseReader& db_reader,
+    Transaction& tx,
     const std::string& table,
     const FilterAddresses& addresses,
     uint64_t start,

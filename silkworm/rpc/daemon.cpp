@@ -235,9 +235,9 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
         chaindata_env_ = std::move(chaindata_env);
     }
 
-    // Create private and shared state in execution contexts
-    add_private_services();
+    // Create shared and private state in execution contexts: order *matters* (e.g. for state cache)
     add_shared_services();
+    add_private_services();
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
@@ -259,11 +259,13 @@ void Daemon::add_private_services() {
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
 
+        auto* state_cache{must_use_shared_service<ethdb::kv::StateCache>(io_context)};
+
         std::unique_ptr<ethdb::Database> database;
         if (chaindata_env_) {
-            database = std::make_unique<ethdb::file::LocalDatabase>(*chaindata_env_);
+            database = std::make_unique<ethdb::file::LocalDatabase>(state_cache, *chaindata_env_);
         } else {
-            database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel);
+            database = std::make_unique<ethdb::kv::RemoteDatabase>(state_cache, grpc_context, grpc_channel);
         }
         auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
         auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
@@ -291,7 +293,7 @@ void Daemon::add_shared_services() {
         auto& io_context = context_pool_.next_io_context();
 
         add_shared_service(io_context, block_cache);
-        add_shared_service<ethdb::kv::StateCache>(io_context, state_cache);
+        add_shared_service<ethdb::kv::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
         add_shared_service<engine::ExecutionEngine>(io_context, remote_execution_engine);
     }

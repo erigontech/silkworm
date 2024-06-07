@@ -28,7 +28,7 @@
 #include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -81,6 +81,6 @@ class DebugRpcApi {
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
-Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, BlockNum start_block_number, BlockNum end_block_number);
+Task<std::set<evmc::address>> get_modified_accounts(ethdb::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number);
 
 }  // namespace silkworm::rpc::commands

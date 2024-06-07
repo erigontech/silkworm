@@ -17,7 +17,6 @@
 #include "cached_chain.hpp"
 
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc::core {
 
@@ -67,13 +66,13 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     co_return block_with_hash;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, ethdb::Transaction& tx, const BlockNumberOrHash& bnoh) {
     if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, storage, bnoh.number());
     } else if (bnoh.is_hash()) {
         co_return co_await read_block_by_hash(cache, storage, bnoh.hash());
     } else if (bnoh.is_tag()) {
-        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), reader, /*latest_required=*/false);
+        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), tx, /*latest_required=*/false);
         co_return co_await read_block_by_number(cache, storage, block_number);
     }
     throw std::runtime_error{"invalid block_number_or_hash value"};

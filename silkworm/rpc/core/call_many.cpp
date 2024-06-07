@@ -38,7 +38,6 @@ namespace silkworm::rpc::call {
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const ChainStorage& storage,
                                                   const std::shared_ptr<BlockWithHash>& block_with_hash,
-                                                  ethdb::TransactionDatabase& tx_database,
                                                   const Bundles& bundles,
                                                   std::optional<std::uint64_t> opt_timeout,
                                                   const AccountsOverrides& accounts_overrides,
@@ -47,7 +46,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     CallManyResult result;
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
-    auto state = transaction_.create_state(this_executor, tx_database, storage, block.header.number);
+    auto state = transaction_.create_state(this_executor, storage, block.header.number);
     EVMExecutor executor{config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
@@ -142,8 +141,7 @@ Task<CallManyResult> CallExecutor::execute(
     const SimulationContext& context,
     const AccountsOverrides& accounts_overrides,
     std::optional<std::uint64_t> timeout) {
-    ethdb::TransactionDatabase tx_database{transaction_};
-    const auto chain_storage{transaction_.create_storage(tx_database, backend_)};
+    const auto chain_storage{transaction_.create_storage(backend_)};
 
     std::uint16_t count{0};
     bool empty = true;
@@ -162,7 +160,7 @@ Task<CallManyResult> CallExecutor::execute(
     const auto chain_config_ptr = co_await chain_storage->read_chain_config();
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
 
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, tx_database, context.block_number);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, transaction_, context.block_number);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_number_or_hash: block not found");
     }
@@ -176,7 +174,6 @@ Task<CallManyResult> CallExecutor::execute(
         return executes_all_bundles(*chain_config_ptr,
                                     *chain_storage,
                                     block_with_hash,
-                                    tx_database,
                                     bundles,
                                     timeout,
                                     accounts_overrides,

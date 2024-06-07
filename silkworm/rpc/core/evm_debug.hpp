@@ -119,12 +119,11 @@ class AccountTracer : public EvmTracer {
 class DebugExecutor {
   public:
     explicit DebugExecutor(
-        const core::rawdb::DatabaseReader& database_reader,
         BlockCache& block_cache,
         boost::asio::thread_pool& workers,
         ethdb::Transaction& tx,
         DebugConfig config = {})
-        : database_reader_(database_reader), block_cache_(block_cache), workers_{workers}, tx_{tx}, config_{config} {}
+        : block_cache_(block_cache), workers_{workers}, tx_{tx}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -157,7 +156,6 @@ class DebugExecutor {
         const Bundles& bundles,
         int32_t transaction_index);
 
-    const core::rawdb::DatabaseReader& database_reader_;
     BlockCache& block_cache_;
     boost::asio::thread_pool& workers_;
     ethdb::Transaction& tx_;

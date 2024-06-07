@@ -21,7 +21,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc::core {
@@ -35,28 +35,30 @@ constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 constexpr BlockNum kEarliestBlockNumber{0ul};
 
-Task<bool> is_latest_block_number(BlockNum block_number, const rawdb::DatabaseReader& db_reader);
+// TODO(canepat) migrate to ChainStorage?
 
-Task<BlockNum> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader);
+Task<bool> is_latest_block_number(BlockNum block_number, ethdb::Transaction& tx);
 
-Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_required);
+Task<BlockNum> get_block_number_by_tag(const std::string& block_id, ethdb::Transaction& tx);
 
-Task<BlockNum> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
+Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, ethdb::Transaction& tx, bool latest_required);
 
-Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_block_number(const std::string& block_id, ethdb::Transaction& tx);
 
-Task<BlockNum> get_current_block_number(const rawdb::DatabaseReader& reader);
+Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, ethdb::Transaction& tx);
 
-Task<BlockNum> get_highest_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_current_block_number(ethdb::Transaction& tx);
 
-Task<BlockNum> get_latest_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_highest_block_number(ethdb::Transaction& tx);
 
-Task<BlockNum> get_latest_executed_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_latest_block_number(ethdb::Transaction& tx);
 
-Task<BlockNum> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_latest_executed_block_number(ethdb::Transaction& tx);
 
-Task<BlockNum> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_forkchoice_finalized_block_number(ethdb::Transaction& tx);
 
-Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
+Task<BlockNum> get_forkchoice_safe_block_number(ethdb::Transaction& tx);
+
+Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, ethdb::Transaction& tx);
 
 }  // namespace silkworm::rpc::core

@@ -29,7 +29,8 @@ namespace silkworm::rpc::ethdb::kv {
 using testing::_;
 
 struct RemoteTransactionTest : test::KVTestBase {
-    RemoteTransaction remote_tx_{*stub_, grpc_context_};
+    CoherentStateCache state_cache_;
+    RemoteTransaction remote_tx_{*stub_, grpc_context_, &state_cache_};
 };
 
 #ifndef SILKWORM_SANITIZE

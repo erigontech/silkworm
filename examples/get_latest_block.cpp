@@ -25,11 +25,9 @@
 #include <absl/strings/match.h>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -48,8 +46,7 @@ Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
 
     const auto db_transaction = co_await db.begin();
     try {
-        ethdb::TransactionDatabase tx_db_reader{*db_transaction};
-        block_height = co_await core::get_latest_block_number(tx_db_reader);
+        block_height = co_await core::get_latest_block_number(*db_transaction);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     } catch (...) {
@@ -95,8 +92,9 @@ int main(int argc, char* argv[]) {
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
 
+        ethdb::kv::CoherentStateCache state_cache;
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), channel);
+        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(&state_cache, *context.grpc_context(), channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 

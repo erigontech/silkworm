@@ -32,6 +32,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #if !defined(__clang__)
 #include <silkworm/rpc/stagedsync/stages.hpp>
@@ -160,10 +161,10 @@ class DummyCursor : public ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-class DummyTransaction : public ethdb::Transaction {
+class DummyTransaction : public ethdb::BaseTransaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json)
-        : json_{json}, tx_id_{next_tx_id++}, view_id_{next_view_id++} {};
+        : BaseTransaction(nullptr), json_{json}, tx_id_{next_tx_id++}, view_id_{next_view_id++} {};
 
     [[nodiscard]] uint64_t tx_id() const override {
         return tx_id_;
@@ -191,11 +192,11 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum) override {
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const ChainStorage&, BlockNum) override {
         return nullptr;
     }
 
-    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
         return nullptr;
     }
 

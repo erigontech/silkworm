@@ -33,7 +33,6 @@
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::core {
@@ -47,10 +46,9 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     bool exclude_code,
     bool exclude_storage) {
     DumpAccounts dump_accounts;
-    ethdb::TransactionDatabase tx_database{transaction_};
-    const auto chain_storage = transaction_.create_storage(tx_database, backend);
+    const auto chain_storage = transaction_.create_storage(backend);
 
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, tx_database, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, transaction_, bnoh);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }
@@ -80,7 +78,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     AccountWalker walker{transaction_};
     co_await walker.walk_of_accounts(block_number + 1, start_address, collector);
 
-    co_await load_accounts(tx_database, collected_data, dump_accounts, exclude_code);
+    co_await load_accounts(collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
         co_await load_storage(block_number, dump_accounts);
     }
@@ -88,9 +86,8 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
-                                        const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{tx_database};
+Task<void> AccountDumper::load_accounts(const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
+    StateReader state_reader{transaction_};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 
@@ -105,7 +102,7 @@ Task<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
 
         if (account->incarnation > 0 && account->code_hash == silkworm::kEmptyHash) {
             const auto storage_key{silkworm::db::storage_prefix(full_view(address), account->incarnation)};
-            auto code_hash{co_await tx_database.get_one(db::table::kPlainCodeHashName, storage_key)};
+            auto code_hash{co_await transaction_.get_one(db::table::kPlainCodeHashName, storage_key)};
             if (code_hash.length() == silkworm::kHashLength) {
                 std::memcpy(dump_account.code_hash.bytes, code_hash.data(), silkworm::kHashLength);
             }

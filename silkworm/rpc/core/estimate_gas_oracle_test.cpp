@@ -42,7 +42,8 @@ struct RemoteDatabaseTest : test::KVTestBase {
   public:
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    ethdb::kv::CoherentStateCache state_cache_;
+    ethdb::kv::RemoteDatabase remote_db_{&state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 using testing::_;
@@ -95,11 +96,10 @@ TEST_CASE("estimate gas") {
     const silkworm::Block block;
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
-    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_);
-    ethdb::TransactionDatabase tx_database{*tx};
+    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_, &remote_db_test.state_cache_);
     const auto backend = std::make_unique<test::BackEndMock>();
-    const RemoteChainStorage storage{tx_database, backend.get()};
-    MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, tx_database, storage};
+    const RemoteChainStorage storage{*tx, backend.get()};
+    MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage};
 
     SECTION("Call empty, always fails but success in last step") {
         ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};

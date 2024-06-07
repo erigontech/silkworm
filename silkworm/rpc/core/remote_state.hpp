@@ -36,8 +36,8 @@ namespace silkworm::rpc::state {
 
 class AsyncRemoteState {
   public:
-    explicit AsyncRemoteState(const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number)
-        : storage_(storage), block_number_(block_number), state_reader_{db_reader} {}
+    explicit AsyncRemoteState(ethdb::Transaction& tx, const ChainStorage& storage, BlockNum block_number)
+        : storage_(storage), block_number_(block_number), state_reader_{tx} {}
 
     Task<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -69,8 +69,8 @@ class AsyncRemoteState {
 
 class RemoteState : public silkworm::State {
   public:
-    explicit RemoteState(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number)
-        : executor_(executor), async_state_{db_reader, storage, block_number} {}
+    explicit RemoteState(boost::asio::any_io_executor& executor, ethdb::Transaction& tx, const ChainStorage& storage, BlockNum block_number)
+        : executor_(executor), async_state_{tx, storage, block_number} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 

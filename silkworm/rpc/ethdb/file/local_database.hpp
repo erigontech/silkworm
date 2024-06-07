@@ -23,12 +23,13 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
+#include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
 class LocalDatabase : public Database {
   public:
-    explicit LocalDatabase(mdbx::env chaindata_env);
+    explicit LocalDatabase(kv::StateCache* state_cache, mdbx::env chaindata_env);
 
     ~LocalDatabase() override;
 
@@ -38,6 +39,7 @@ class LocalDatabase : public Database {
     Task<std::unique_ptr<Transaction>> begin() override;
 
   private:
+    kv::StateCache* state_cache_;
     mdbx::env chaindata_env_;
 };
 

@@ -61,7 +61,7 @@ struct DebugExecutorTest : public test::ContextTestBase {
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     json::Stream stream{io_executor, writer};
     std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    RemoteChainStorage storage{transaction, backend.get()};
+    RemoteChainStorage chain_storage{transaction, backend.get()};
 };
 
 class TestDebugExecutor : DebugExecutor {
@@ -149,7 +149,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         TestDebugExecutor executor{cache, workers, transaction};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -295,7 +295,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -354,7 +354,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -461,7 +461,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction, config};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -559,7 +559,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction, config};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -662,7 +662,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction, config};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -766,7 +766,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction, config};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -857,7 +857,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         TestDebugExecutor executor{cache, workers, transaction, config};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -1059,7 +1059,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         TestDebugExecutor executor{cache, workers, transaction};
 
         stream.open_object();
-        spawn_and_wait(executor.exec(stream, storage, block, call));
+        spawn_and_wait(executor.exec(stream, chain_storage, block, call));
         stream.close_object();
         spawn_and_wait(stream.close());
 
@@ -1211,7 +1211,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     TestDebugExecutor executor{cache, workers, transaction};
 
     stream.open_object();
-    spawn_and_wait(executor.exec(stream, storage, block, call));
+    spawn_and_wait(executor.exec(stream, chain_storage, block, call));
     stream.close_object();
     spawn_and_wait(stream.close());
 

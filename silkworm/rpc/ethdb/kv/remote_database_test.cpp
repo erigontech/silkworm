@@ -31,7 +31,8 @@ namespace silkworm::rpc::ethdb::kv {
 struct RemoteDatabaseTest : test::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    CoherentStateCache state_cache_;
+    RemoteDatabase remote_db_{&state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 #ifndef SILKWORM_SANITIZE

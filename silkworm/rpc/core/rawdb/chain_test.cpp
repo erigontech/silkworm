@@ -31,7 +31,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/test_util/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 
@@ -88,20 +88,20 @@ static silkworm::Bytes kChainConfig{*silkworm::from_hex(
 TEST_CASE("read_header_number") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("existent hash") {
-        EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        auto result = boost::asio::co_spawn(pool, read_header_number(db_reader, block_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_header_number(transaction, block_hash), boost::asio::use_future);
         const auto header_number = result.get();
         CHECK(header_number == 4'000'000);
     }
 
     SECTION("non-existent hash") {
-        EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         const auto block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
-        auto result = boost::asio::co_spawn(pool, read_header_number(db_reader, block_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_header_number(transaction, block_hash), boost::asio::use_future);
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
 #else
@@ -113,12 +113,12 @@ TEST_CASE("read_header_number") {
 TEST_CASE("read_chain_config") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("empty chain data") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
 #else
@@ -127,16 +127,16 @@ TEST_CASE("read_chain_config") {
     }
 
     SECTION("invalid JSON chain data") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidJsonChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidJsonChainConfig; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), nlohmann::json::parse_error);
     }
 
     SECTION("valid JSON chain data") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
         const auto chain_config = result.get();
         CHECK(chain_config.genesis_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
         CHECK(chain_config.config == R"({
@@ -160,26 +160,26 @@ TEST_CASE("read_chain_config") {
 TEST_CASE("read_chain_id") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("missing chain identifier") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kMissingChainIdConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kMissingChainIdConfig; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::runtime_error);
     }
 
     SECTION("invalid chain identifier") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidChainIdConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidChainIdConfig; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), nlohmann::json::type_error);
     }
 
     SECTION("valid chain identifier") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(db_reader), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
+        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
         const auto chain_id = result.get();
         CHECK(chain_id == 1);
     }
@@ -188,35 +188,35 @@ TEST_CASE("read_chain_id") {
 TEST_CASE("read_canonical_block_hash") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("empty hash bytes") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(transaction, block_number), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
     }
 
     SECTION("shorter hash bytes") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(transaction, block_number), boost::asio::use_future);
         const auto block_hash = result.get();
         CHECK(block_hash == 0x009816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
     }
 
     SECTION("longer hash bytes") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dffabcdef"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dffabcdef"); }));
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(transaction, block_number), boost::asio::use_future);
         const auto block_hash = result.get();
         CHECK(block_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
     }
 
     SECTION("valid canonical hash") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_canonical_block_hash(transaction, block_number), boost::asio::use_future);
         const auto block_hash = result.get();
         CHECK(block_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
     }
@@ -225,29 +225,29 @@ TEST_CASE("read_canonical_block_hash") {
 TEST_CASE("read_total_difficulty") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("empty RLP buffer") {
-        EXPECT_CALL(db_reader, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_total_difficulty(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_total_difficulty(transaction, block_hash, block_number), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
     }
 
     SECTION("invalid RLP buffer") {
-        EXPECT_CALL(db_reader, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("000102"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("000102"); }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
         uint64_t block_number{4'000'000};
-        auto result = boost::asio::co_spawn(pool, read_total_difficulty(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_total_difficulty(transaction, block_hash, block_number), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::runtime_error);
     }
 
     SECTION("valid total difficulty") {
-        EXPECT_CALL(db_reader, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("8360c7cc"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("8360c7cc"); }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
         uint64_t block_number{4'306'300};
-        auto result = boost::asio::co_spawn(pool, read_total_difficulty(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_total_difficulty(transaction, block_hash, block_number), boost::asio::use_future);
         const auto total_difficulty = result.get();
         CHECK(total_difficulty == 6'342'604 /*0x60c7cc*/);
     }
@@ -256,19 +256,19 @@ TEST_CASE("read_total_difficulty") {
 TEST_CASE("read_raw_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("null receipts") {
         const uint64_t block_number{0};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         CHECK(!result.get().has_value());
     }
 
     SECTION("zero receipts") {
         const uint64_t block_number{0};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {
@@ -278,8 +278,8 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -307,15 +307,15 @@ TEST_CASE("read_raw_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
     }
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'604};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a"); }));
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key1{*silkworm::from_hex("000000000035db8400000000")};
             silkworm::Bytes value1{*silkworm::from_hex(
                 "8383547977d4f555fbee46303682b17e72e3d94339b4418258206155cfd0fd028b0ca77e8495a6"
@@ -357,15 +357,15 @@ TEST_CASE("read_raw_receipts") {
             w(key2, value2);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
 
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -393,7 +393,7 @@ TEST_CASE("read_raw_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
         const Receipts receipts = result.get().value();
         CHECK(receipts.size() == 1);
@@ -404,20 +404,20 @@ TEST_CASE("read_raw_receipts") {
 TEST_CASE("read_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_with_hash), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(!receipts.has_value());
     }
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_with_hash), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {
@@ -428,10 +428,10 @@ TEST_CASE("read_receipts") {
 #ifdef TEST_DELETED
     SECTION("zero receipts w/ non-zero transactions") {
         const auto block_hash{silkworm::kEmptyHash};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
-        EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
+        EXPECT_CALL(transaction, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
                 "f8ac8301942e8477359400834c4b40945f62669ba0c6cf41cc162d8157ed71a0b9d6dbaf80b844f2"
@@ -441,14 +441,14 @@ TEST_CASE("read_receipts") {
             w(key, value);
             co_return;
         }));
-        EXPECT_CALL(db_reader, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+        EXPECT_CALL(transaction, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
-        auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_block_by_hash(transaction, block_hash), boost::asio::use_future);
         const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(transaction, *bwh), boost::asio::use_future);
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result1.get(), std::runtime_error);
 #else
@@ -458,10 +458,10 @@ TEST_CASE("read_receipts") {
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
         const auto block_hash{silkworm::kEmptyHash};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
-        EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
+        EXPECT_CALL(transaction, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
                 "f8ac8301942e8477359400834c4b40945f62669ba0c6cf41cc162d8157ed71a0b9d6dbaf80b844f2"
@@ -471,14 +471,14 @@ TEST_CASE("read_receipts") {
             w(key, value);
             co_return;
         }));
-        EXPECT_CALL(db_reader, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+        EXPECT_CALL(transaction, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
-        auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_block_by_hash(transaction, block_hash), boost::asio::use_future);
         const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -506,7 +506,7 @@ TEST_CASE("read_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(transaction, *bwh), boost::asio::use_future);
         // CHECK(result1.get() == Receipts{...}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result1.get().size() == 1);
     }
@@ -517,11 +517,11 @@ TEST_CASE("read_receipts") {
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/469011
         const auto block_hash{0x608e7102f689c99c027c9f49860212348000eb2e13bff37aa4453605a0a2b9e7_bytes32};
-        EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
+        EXPECT_CALL(transaction, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
 
-        EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
             silkworm::Bytes key1{};
             silkworm::Bytes value1{*silkworm::from_hex(
                 "f8cb823392843b9aca008303d090947ef66b77759e12caf3ddb3e4aff524e577c59d8d80b864e9c6c1760000000000000000000000000000"
@@ -538,34 +538,34 @@ TEST_CASE("read_receipts") {
             w(key2, value2);
             co_return;
         }));
-        EXPECT_CALL(db_reader, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+        EXPECT_CALL(transaction, get_one(db::table::kSendersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex(
                 "be188D6641E8b680743A4815dFA0f6208038960F"
                 "Dd74564BC9ff247C23f02cFbA1083c805829D981");
         }));
-        auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_block_by_hash(transaction, block_hash), boost::asio::use_future);
         const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a00016e5b8400f6011a0002dc76"); }));
-        EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(DoAll(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
-                                                                                       silkworm::Bytes key{*silkworm::from_hex("000000000007281300000000")};
-                                                                                       silkworm::Bytes value{*silkworm::from_hex(
-                                                                                           "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
-                                                                                           "4d5820000000000000000000000000000000000000000000000000000000000000002a58200000000000000000000000000000000000000000"
-                                                                                           "000000000000000000a4e093582062c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")};
-                                                                                       w(key, value);
-                                                                                       co_return;
-                                                                                   }),
-                                                                                   Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
-                                                                                       silkworm::Bytes key{*silkworm::from_hex("000000000007281300000001")};
-                                                                                       silkworm::Bytes value{*silkworm::from_hex(
-                                                                                           "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
-                                                                                           "4d5820000000000000000000000000000000000000000000000000000000000000000458200000000000000000000000000000000000000000"
-                                                                                           "0000000000000000004100fa58203ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")};
-                                                                                       w(key, value);
-                                                                                       co_return;
-                                                                                   })));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a00016e5b8400f6011a0002dc76"); }));
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(DoAll(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+                                                                                         silkworm::Bytes key{*silkworm::from_hex("000000000007281300000000")};
+                                                                                         silkworm::Bytes value{*silkworm::from_hex(
+                                                                                             "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
+                                                                                             "4d5820000000000000000000000000000000000000000000000000000000000000002a58200000000000000000000000000000000000000000"
+                                                                                             "000000000000000000a4e093582062c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")};
+                                                                                         w(key, value);
+                                                                                         co_return;
+                                                                                     }),
+                                                                                     Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+                                                                                         silkworm::Bytes key{*silkworm::from_hex("000000000007281300000001")};
+                                                                                         silkworm::Bytes value{*silkworm::from_hex(
+                                                                                             "8183547ef66b77759e12caf3ddb3e4aff524e577c59d8d8358208a22ee899102a366ac8ad0495127319cb1ff2403cfae855f83a89cda126667"
+                                                                                             "4d5820000000000000000000000000000000000000000000000000000000000000000458200000000000000000000000000000000000000000"
+                                                                                             "0000000000000000004100fa58203ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")};
+                                                                                         w(key, value);
+                                                                                         co_return;
+                                                                                     })));
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(transaction, *bwh), boost::asio::use_future);
         // CHECK(result1.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result1.get().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
@@ -576,21 +576,21 @@ TEST_CASE("read_cumulative_transaction_count") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("block found and matching") {
         boost::asio::thread_pool pool{1};
-        test::MockDatabaseReader db_reader;
+        test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
-        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));
+        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(transaction, block_number), boost::asio::use_future);
         CHECK(result.get() == 6939740);
     }
 
     SECTION("block found empty") {
         boost::asio::thread_pool pool{1};
-        test::MockDatabaseReader db_reader;
+        test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(transaction, block_number), boost::asio::use_future);
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result.get(), std::runtime_error);
 #else
@@ -600,11 +600,11 @@ TEST_CASE("read_cumulative_transaction_count") {
 
     SECTION("block invalid") {
         boost::asio::thread_pool pool{1};
-        test::MockDatabaseReader db_reader;
+        test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
-        EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
-        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
+        EXPECT_CALL(transaction, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
+        auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(transaction, block_number), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::runtime_error);
     }
 }
@@ -612,22 +612,22 @@ TEST_CASE("read_cumulative_transaction_count") {
 TEST_CASE("read_total_issued") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     const uint64_t block_number{20'000};
-    EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalIssued; }));
-    auto result = boost::asio::co_spawn(pool, read_total_issued(db_reader, block_number), boost::asio::use_future);
+    EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalIssued; }));
+    auto result = boost::asio::co_spawn(pool, read_total_issued(transaction, block_number), boost::asio::use_future);
     CHECK(result.get() == 7);
 }
 
 TEST_CASE("read_total_burnt") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     const uint64_t block_number{20'000};
-    EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalBurnt; }));
-    auto result = boost::asio::co_spawn(pool, read_total_burnt(db_reader, block_number), boost::asio::use_future);
+    EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalBurnt; }));
+    auto result = boost::asio::co_spawn(pool, read_total_burnt(transaction, block_number), boost::asio::use_future);
     CHECK(result.get() == 5);
 }
 
@@ -635,21 +635,21 @@ TEST_CASE("read_cumulative_gas_used") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("read_cumulative_gas_used") {
         boost::asio::thread_pool pool{1};
-        test::MockDatabaseReader db_reader;
+        test::MockTransaction transaction;
 
         const uint64_t block_number{20'000};
-        EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kCumulativeGasUsed; }));
-        auto result = boost::asio::co_spawn(pool, read_cumulative_gas_used(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kCumulativeGasUsed; }));
+        auto result = boost::asio::co_spawn(pool, read_cumulative_gas_used(transaction, block_number), boost::asio::use_future);
         CHECK(result.get() == 0x236);
     }
 
     SECTION("read_cumulative_gas_used get_one return empty") {
         boost::asio::thread_pool pool{1};
-        test::MockDatabaseReader db_reader;
+        test::MockTransaction transaction;
 
         const uint64_t block_number{20'000};
-        EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_cumulative_gas_used(db_reader, block_number), boost::asio::use_future);
+        EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        auto result = boost::asio::co_spawn(pool, read_cumulative_gas_used(transaction, block_number), boost::asio::use_future);
         CHECK(result.get() == 0);
     }
 }

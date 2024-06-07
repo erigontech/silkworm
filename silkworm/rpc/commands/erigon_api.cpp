@@ -16,7 +16,6 @@
 
 #include "erigon_api.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -35,7 +34,6 @@
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -45,8 +43,6 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -77,12 +73,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         auto start = std::chrono::system_clock::now();
 
-        rpc::BlockReader block_reader{tx_database, *chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
         rpc::BalanceChanges balance_changes;
         co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
 
@@ -128,12 +123,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(core::kEarliestBlockNumber);
-        const auto head_header_hash = co_await core::rawdb::read_head_header_hash(tx_database);
+        const auto head_header_hash = co_await core::rawdb::read_head_header_hash(*tx);
         const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
         const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
         const BlockNum current_block_number = current_header->number;
@@ -191,7 +185,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockReceiptsByBlockHash
 Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getBlockReceiptsByBlockHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -204,8 +198,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        const auto chain_storage{tx->create_storage(backend_)};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -215,7 +208,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+        auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
         SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
@@ -254,8 +247,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto header{co_await chain_storage->read_header(block_hash)};
         if (!header) {
@@ -299,10 +291,9 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto header{co_await chain_storage->read_canonical_header(block_number)};
 
         if (!header) {
@@ -368,9 +359,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        LogsWalker logs_walker(backend_, *block_cache_, tx_database);
+        LogsWalker logs_walker(backend_, *block_cache_, *tx);
         const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
@@ -418,8 +407,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -428,7 +416,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+        const auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
         SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
@@ -456,9 +444,7 @@ Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nloh
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(*tx)};
         SILK_DEBUG << "chain config: " << chain_config;
 
         Forks forks{chain_config};
@@ -491,15 +477,14 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(*tx)};
         SILK_DEBUG << "chain config: " << chain_config;
 
         Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
-            const auto block_number = co_await core::get_block_number(block_id, tx_database);
+            const auto block_number = co_await core::get_block_number(block_id, *tx);
             const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number)};
             if (!block_with_hash) {
                 const std::string error_msg = "block not found ";
@@ -530,14 +515,14 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
             }
             issuance.burnt = "0x" + intx::hex(burnt);
 
-            const auto total_issued = co_await core::rawdb::read_total_issued(tx_database, block_number);
-            const auto total_burnt = co_await core::rawdb::read_total_burnt(tx_database, block_number);
+            const auto total_issued = co_await core::rawdb::read_total_issued(*tx, block_number);
+            const auto total_burnt = co_await core::rawdb::read_total_burnt(*tx, block_number);
 
             issuance.total_issued = "0x" + intx::hex(total_issued);
             issuance.total_burnt = "0x" + intx::hex(total_burnt);
             intx::uint256 tips = 0;
             if (block_with_hash->block.header.base_fee_per_gas) {
-                const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+                const auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
                 const auto block{block_with_hash->block};
                 for (size_t i{0}; i < block.transactions.size(); i++) {
                     auto tip = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
@@ -578,8 +563,7 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto block_number{co_await core::get_block_number_by_tag(block_id, tx_database)};
+        const auto block_number{co_await core::get_block_number_by_tag(block_id, *tx)};
         reply = make_json_content(request, to_quantity(block_number));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -611,11 +595,9 @@ Task<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohmann::
     ChainTraffic chain_traffic;
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        chain_traffic.cumulative_transactions_count = co_await core::rawdb::read_cumulative_transaction_count(tx_database, block_number);
-        chain_traffic.cumulative_gas_used = co_await core::rawdb::read_cumulative_gas_used(tx_database, block_number);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        chain_traffic.cumulative_transactions_count = co_await core::rawdb::read_cumulative_transaction_count(*tx, block_number);
+        chain_traffic.cumulative_gas_used = co_await core::rawdb::read_cumulative_gas_used(*tx, block_number);
 
         reply = make_json_content(request, chain_traffic);
     } catch (const std::exception& e) {

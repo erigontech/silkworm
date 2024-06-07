@@ -24,16 +24,16 @@
 
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/remote_state.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::test {
 
 //! This dummy transaction just gives you the same cursor over and over again.
-class DummyTransaction : public ethdb::Transaction {
+class DummyTransaction : public ethdb::BaseTransaction {
   public:
     explicit DummyTransaction(uint64_t view_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
-        : view_id_(view_id), cursor_(std::move(cursor)) {}
+        : BaseTransaction(nullptr), view_id_(view_id), cursor_(std::move(cursor)) {}
 
     [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
     [[nodiscard]] uint64_t view_id() const override { return view_id_; }
@@ -48,12 +48,11 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor_;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, const ChainStorage& storage,
-                                                  BlockNum block_number) override {
-        return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, storage, block_number);
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) override {
+        return std::make_shared<silkworm::rpc::state::RemoteState>(executor, *this, storage, block_number);
     }
 
-    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
         return nullptr;
     }
 

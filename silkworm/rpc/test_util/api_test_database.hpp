@@ -79,8 +79,8 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
 
 class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
   public:
-    explicit LocalContextTestBase(mdbx::env& chaindata_env) : ContextTestBase() {
-        add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(chaindata_env));
+    explicit LocalContextTestBase(ethdb::kv::StateCache* state_cache, mdbx::env& chaindata_env) : ContextTestBase() {
+        add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(state_cache, chaindata_env));
     }
 };
 
@@ -88,7 +88,7 @@ template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
     explicit RpcApiTestBase(mdbx::env& chaindata_env)
-        : LocalContextTestBase(chaindata_env),
+        : LocalContextTestBase(&state_cache_, chaindata_env),
           workers_{1},
           socket_{io_context_},
           rpc_api_{io_context_, workers_},
@@ -106,6 +106,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     boost::asio::ip::tcp::socket socket_;
     commands::RpcApi rpc_api_;
     commands::RpcApiTable rpc_api_table_;
+    ethdb::kv::CoherentStateCache state_cache_;
 };
 
 class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {

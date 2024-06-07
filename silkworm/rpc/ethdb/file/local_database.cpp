@@ -23,7 +23,8 @@
 
 namespace silkworm::rpc::ethdb::file {
 
-LocalDatabase::LocalDatabase(mdbx::env chaindata_env) : chaindata_env_{std::move(chaindata_env)} {
+LocalDatabase::LocalDatabase(kv::StateCache* state_cache, mdbx::env chaindata_env)
+    : state_cache_{state_cache}, chaindata_env_{std::move(chaindata_env)} {
     SILK_TRACE << "LocalDatabase::ctor " << this;
 }
 
@@ -33,7 +34,7 @@ LocalDatabase::~LocalDatabase() {
 
 Task<std::unique_ptr<Transaction>> LocalDatabase::begin() {
     SILK_TRACE << "LocalDatabase::begin " << this << " start";
-    auto txn = std::make_unique<LocalTransaction>(chaindata_env_);
+    auto txn = std::make_unique<LocalTransaction>(chaindata_env_, state_cache_);
     co_await txn->open();
     SILK_TRACE << "LocalDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;

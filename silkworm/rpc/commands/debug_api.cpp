@@ -17,7 +17,6 @@
 #include "debug_api.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <ostream>
 #include <set>
 #include <stdexcept>
@@ -44,8 +43,6 @@
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
@@ -126,11 +123,10 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto start_block_number = co_await core::get_block_number(start_block_id, tx_database);
-        const auto end_block_number = co_await core::get_block_number(end_block_id, tx_database);
+        const auto start_block_number = co_await core::get_block_number(start_block_id, *tx);
+        const auto end_block_number = co_await core::get_block_number(end_block_id, *tx);
 
-        const auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -167,11 +163,9 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto start_block_number = co_await core::rawdb::read_header_number(tx_database, start_hash);
-        const auto end_block_number = co_await core::rawdb::read_header_number(tx_database, end_hash);
-        auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
+        const auto start_block_number = co_await core::rawdb::read_header_number(*tx, start_hash);
+        const auto end_block_number = co_await core::rawdb::read_header_number(*tx, end_hash);
+        auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -213,8 +207,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -292,8 +285,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -315,7 +307,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         auto this_executor = co_await boost::asio::this_coro::executor;
         auto result = co_await async_task(workers_.executor(), [&]() -> nlohmann::json {
-            auto state = tx->create_state(this_executor, tx_database, *chain_storage, block_number - 1);
+            auto state = tx->create_state(this_executor, *chain_storage, block_number - 1);
             auto account_opt = state->read_account(address);
             account_opt.value_or(silkworm::Account{});
 
@@ -389,9 +381,8 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        const auto chain_storage = tx->create_storage(backend_);
         co_await executor.trace_transaction(stream, *chain_storage, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -436,15 +427,12 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
-        const core::rawdb::DatabaseReader& db_reader =
-            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, *tx);
+        tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        debug::DebugExecutor executor{db_reader, *block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_call(stream, block_number_or_hash, *chain_storage, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -511,9 +499,8 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        const auto chain_storage = tx->create_storage(backend_);
         co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -558,10 +545,9 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_number);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -611,10 +597,9 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_hash);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -638,8 +623,8 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_return;
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, BlockNum start_block_number, BlockNum end_block_number) {
-    const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
+Task<std::set<evmc::address>> get_modified_accounts(ethdb::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number) {
+    const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx);
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
 
@@ -649,7 +634,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& 
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
     } else if (start_block_number <= end_block_number) {
-        core::rawdb::Walker walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
+        auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
             auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {
                 auto address = bytes_to_address(value.substr(0, kAddressLength));
@@ -663,7 +648,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& 
         const auto key = silkworm::db::block_key(start_block_number);
         SILK_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key);
 
-        co_await tx_database.walk(db::table::kAccountChangeSetName, key, 0, walker);
+        co_await tx.walk(db::table::kAccountChangeSetName, key, 0, walker);
     }
 
     co_return addresses;
@@ -684,9 +669,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, nullptr);
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto chain_storage = tx->create_storage(backend_);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
         silkworm::Block block;
         if (!(co_await chain_storage->read_canonical_block(block_number, block))) {
             throw std::invalid_argument("block not found");
@@ -723,9 +707,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, nullptr);
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto chain_storage = tx->create_storage(backend_);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
         auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
         if (!header) {
@@ -763,8 +746,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, nullptr)};
+        const auto chain_storage{tx->create_storage(backend_)};
 
         Bytes rlp{};
         auto success = co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);

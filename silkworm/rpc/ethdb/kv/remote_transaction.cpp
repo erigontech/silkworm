@@ -18,6 +18,7 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/core/remote_state.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 
@@ -66,12 +67,12 @@ Task<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::st
     co_return cursor;
 }
 
-std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number) {
-    return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, storage, block_number);
+std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) {
+    return std::make_shared<silkworm::rpc::state::RemoteState>(executor, *this, storage, block_number);
 }
 
-std::shared_ptr<ChainStorage> RemoteTransaction::create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) {
-    return std::make_shared<RemoteChainStorage>(db_reader, backend);
+std::shared_ptr<ChainStorage> RemoteTransaction::create_storage(ethbackend::BackEnd* backend) {
+    return std::make_shared<RemoteChainStorage>(*this, backend);
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

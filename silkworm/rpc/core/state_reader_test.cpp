@@ -25,7 +25,7 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
-#include <silkworm/rpc/test_util/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc {
 
@@ -55,17 +55,17 @@ static const silkworm::Bytes kBinaryCode{*silkworm::from_hex("0x60045e005c600160
 static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba79cd792e7199d615be88284d_bytes32};
 
 struct StateReaderTest : public test::ContextTestBase {
-    test::MockDatabaseReader database_reader_;
-    StateReader state_reader_{database_reader_};
+    test::MockTransaction transaction_;
+    StateReader state_reader_{transaction_};
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_account should return no account
         std::optional<silkworm::Account> account;
@@ -76,9 +76,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kEncodedAccount; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kEncodedAccount; }));
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
@@ -95,11 +95,11 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+        EXPECT_CALL(transaction_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{full_view(kZeroAddress)}, kEncodedAccountHistory};
         }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet returns the account data
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kAccountChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kEncodedAccount; }));
+        EXPECT_CALL(transaction_, get_both_range(db::table::kAccountChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kEncodedAccount; }));
 
         // Execute the test: calling read_account should return expected account
         std::optional<silkworm::Account> account;
@@ -116,11 +116,11 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account w/o code hash found current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kEncodedAccountWithoutCodeHash; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kEncodedAccountWithoutCodeHash; }));
         // 3. DatabaseReader::get_one call on kPlainContractCode returns account code hash
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainCodeHashName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{kCodeHash.bytes, silkworm::kHashLength}; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainCodeHashName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{kCodeHash.bytes, silkworm::kHashLength}; }));
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
@@ -139,9 +139,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("empty storage for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction_, get_both_range(db::table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_storage should return empty storage value
         evmc::bytes32 location;
@@ -152,9 +152,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
+        EXPECT_CALL(transaction_, get_both_range(db::table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
@@ -165,13 +165,13 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+        EXPECT_CALL(transaction_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{
                 silkworm::db::storage_history_key(kZeroAddress, kLocationHash, core::kEarliestBlockNumber),
                 kEncodedStorageHistory};
         }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet the storage location value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kStorageChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
+        EXPECT_CALL(transaction_, get_both_range(db::table::kStorageChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
@@ -191,7 +191,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(database_reader_, get_one(db::table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_code should return an empty code
         std::optional<silkworm::Bytes> code;
@@ -205,7 +205,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("non-empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(database_reader_, get_one(db::table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBinaryCode; }));
+        EXPECT_CALL(transaction_, get_one(db::table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBinaryCode; }));
 
         // Execute the test: calling read_code should return a non-empty code
         std::optional<silkworm::Bytes> code;

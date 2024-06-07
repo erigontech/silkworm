@@ -32,11 +32,8 @@
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -64,13 +61,13 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, tx_database);
-        StateReader state_reader{is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database)};
+        const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, *tx);
+        tx->set_state_cache_enabled(is_latest_block);
 
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        StateReader state_reader{*tx};
+
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
 
         if (account) {
@@ -106,10 +103,8 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto chain_storage = tx->create_storage(backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
@@ -119,7 +114,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
@@ -159,8 +154,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
             const auto block_number = block_with_hash->block.header.number;
@@ -171,7 +165,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
             const auto chain_config = co_await chain_storage->read_chain_config();
             ensure(chain_config.has_value(), "cannot read chain config");
             const IssuanceDetails issuance = get_issuance(*chain_config, *block_with_hash);
@@ -214,17 +208,15 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, false};
-            auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+            auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
@@ -357,8 +349,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             nonce_block = account_block_numbers[idx - 1];
         }
 
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        const auto chain_storage{tx->create_storage(backend_)};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, nonce_block);
         if (block_with_hash) {
             for (const auto& transaction : block_with_hash->block.transactions) {
@@ -498,12 +489,11 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             block_found = account_block_numbers[idx - 1];
         }
 
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        const auto chain_storage{tx->create_storage(backend_)};
 
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_found);
         if (block_with_hash) {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
             reply = make_json_content(request, result);
         } else {
@@ -540,9 +530,8 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        const auto chain_storage{tx->create_storage(backend_)};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
@@ -588,9 +577,8 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        const auto chain_storage{tx->create_storage(backend_)};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
@@ -636,9 +624,8 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage{tx->create_storage(tx_database, backend_)};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        const auto chain_storage{tx->create_storage(backend_)};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
@@ -869,8 +856,7 @@ Task<bool> OtsRpcApi::trace_blocks(
 }
 
 Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
-    ethdb::TransactionDatabase tx_database{tx};
-    const auto chain_storage = tx.create_storage(tx_database, backend_);
+    const auto chain_storage = tx.create_storage(backend_);
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
     if (!block_with_hash) {
         co_return;
@@ -878,10 +864,10 @@ Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number,
 
     const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
     ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
-    const auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+    const auto receipts = co_await core::get_receipts(tx, *block_with_hash);
     const Block extended_block{block_with_hash, *total_difficulty, false};
 
-    trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, tx};
+    trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, tx};
     co_await executor.trace_touch_block(*block_with_hash, search_addr, extended_block.get_block_size(), *total_difficulty, receipts, results);
     co_return;
 }

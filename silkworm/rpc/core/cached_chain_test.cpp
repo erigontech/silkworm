@@ -33,8 +33,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
-#include <silkworm/rpc/test_util/mock_database_reader.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 

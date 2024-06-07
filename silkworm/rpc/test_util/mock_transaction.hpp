@@ -32,16 +32,22 @@ namespace silkworm::rpc::test {
 
 class MockTransaction : public ethdb::Transaction {
   public:
-    MOCK_METHOD(uint64_t, tx_id, (), (const));
-    MOCK_METHOD(uint64_t, view_id, (), (const));
-    MOCK_METHOD((Task<void>), open, ());
-    MOCK_METHOD((Task<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));
-    MOCK_METHOD((Task<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&));
+    MOCK_METHOD(uint64_t, tx_id, (), (const, override));
+    MOCK_METHOD(uint64_t, view_id, (), (const, override));
+    MOCK_METHOD(void, set_state_cache_enabled, (bool), (override));
+    MOCK_METHOD((Task<void>), open, (), (override));
+    MOCK_METHOD((Task<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&), (override));
+    MOCK_METHOD((Task<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));
     MOCK_METHOD((std::shared_ptr<silkworm::State>), create_state,
-                (boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum));
-    MOCK_METHOD((std::shared_ptr<ChainStorage>), create_storage,
-                (const core::rawdb::DatabaseReader&, ethbackend::BackEnd*));
-    MOCK_METHOD((Task<void>), close, ());
+                (boost::asio::any_io_executor&, const ChainStorage&, BlockNum), (override));
+    MOCK_METHOD((std::shared_ptr<ChainStorage>), create_storage, (ethbackend::BackEnd*), (override));
+    MOCK_METHOD((Task<void>), close, (), (override));
+    MOCK_METHOD((Task<KeyValue>), get, (const std::string&, silkworm::ByteView), (override));
+    MOCK_METHOD((Task<silkworm::Bytes>), get_one, (const std::string&, silkworm::ByteView), (override));
+    MOCK_METHOD((Task<std::optional<silkworm::Bytes>>), get_both_range,
+                (const std::string&, silkworm::ByteView, silkworm::ByteView), (override));
+    MOCK_METHOD((Task<void>), walk, (const std::string&, silkworm::ByteView, uint32_t, Walker), (override));
+    MOCK_METHOD((Task<void>), for_prefix, (const std::string&, silkworm::ByteView, Walker), (override));
 };
 
 }  // namespace silkworm::rpc::test

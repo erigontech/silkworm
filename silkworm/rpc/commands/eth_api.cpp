@@ -1094,7 +1094,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
 // https://eth.wiki/json-rpc/API#eth_getstorageat
 Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
-    if (params.size() != 3 || !is_valid_address(params[0].get<std::string>()) ) {
+    if (params.size() != 3 || !is_valid_address(params[0].get<std::string>())) {
         auto error_msg = "invalid eth_getStorageAt params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);

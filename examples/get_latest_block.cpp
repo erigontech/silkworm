@@ -33,7 +33,6 @@
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;

@@ -37,7 +37,6 @@
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/types/block.hpp>

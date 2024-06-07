@@ -22,7 +22,7 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/log.hpp>
 

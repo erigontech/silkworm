@@ -16,7 +16,6 @@
 
 #include "erigon_api.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -35,7 +34,6 @@
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -45,8 +43,6 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -363,8 +359,6 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         LogsWalker logs_walker(backend_, *block_cache_, *tx);
         const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
@@ -569,7 +563,6 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
         const auto block_number{co_await core::get_block_number_by_tag(block_id, *tx)};
         reply = make_json_content(request, to_quantity(block_number));
     } catch (const std::exception& e) {

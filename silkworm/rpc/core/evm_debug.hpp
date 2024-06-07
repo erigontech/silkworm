@@ -33,9 +33,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>

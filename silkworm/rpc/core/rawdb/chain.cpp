@@ -189,7 +189,7 @@ Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum
 
     auto log_key = silkworm::db::log_key(block_number, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
-    Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+    auto walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
         if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
             return false;
         }

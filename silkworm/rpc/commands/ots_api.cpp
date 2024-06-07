@@ -34,8 +34,6 @@
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {

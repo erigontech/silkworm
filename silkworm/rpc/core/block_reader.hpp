@@ -29,8 +29,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
+#include <silkworm/rpc/storage/chain_storage.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {

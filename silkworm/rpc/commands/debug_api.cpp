@@ -634,7 +634,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::Transaction& tx, Bloc
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
     } else if (start_block_number <= end_block_number) {
-        core::rawdb::Walker walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
+        auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
             auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {
                 auto address = bytes_to_address(value.substr(0, kAddressLength));

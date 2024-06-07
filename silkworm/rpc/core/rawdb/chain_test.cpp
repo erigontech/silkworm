@@ -279,7 +279,7 @@ TEST_CASE("read_raw_receipts") {
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -315,7 +315,7 @@ TEST_CASE("read_raw_receipts") {
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'604};
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key1{*silkworm::from_hex("000000000035db8400000000")};
             silkworm::Bytes value1{*silkworm::from_hex(
                 "8383547977d4f555fbee46303682b17e72e3d94339b4418258206155cfd0fd028b0ca77e8495a6"
@@ -365,7 +365,7 @@ TEST_CASE("read_raw_receipts") {
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> Task<void> {
+        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"

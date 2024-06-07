@@ -27,7 +27,6 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>

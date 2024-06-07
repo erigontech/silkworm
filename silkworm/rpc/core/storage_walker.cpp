@@ -28,7 +28,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 
 namespace silkworm::rpc {
 
@@ -181,8 +180,7 @@ Task<void> StorageWalker::storage_range_at(
     const evmc::bytes32& start_location,
     size_t max_result,
     StorageCollector& collector) {
-    ethdb::TransactionDatabase tx_database{transaction_};
-    auto account_data = co_await tx_database.get_one(db::table::kPlainStateName, full_view(address));
+    auto account_data = co_await transaction_.get_one(db::table::kPlainStateName, full_view(address));
 
     auto account = silkworm::Account::from_encoded_storage(account_data);
     silkworm::success_or_throw(account);

@@ -58,7 +58,7 @@ Task<Roaring> get(
     endian::store_big_u32(&from_key[key.size()], from_block);
     SILK_DEBUG << "table: " << table << " key: " << key << " from_key: " << from_key;
 
-    core::rawdb::Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+    auto walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
         SILK_TRACE << "k: " << k << " v: " << v;
         auto chunk = std::make_unique<Roaring>(Roaring::readSafe(reinterpret_cast<const char*>(v.data()), v.size()));
         SILK_TRACE << "chunk: " << chunk->toString();

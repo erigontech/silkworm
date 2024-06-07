@@ -28,7 +28,6 @@
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/call.hpp>
 
@@ -53,7 +52,6 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
         const auto chain_storage = tx->create_storage(backend_);
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
@@ -102,7 +100,6 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
         const auto chain_storage = tx->create_storage(backend_);
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {

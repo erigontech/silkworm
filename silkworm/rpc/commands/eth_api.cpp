@@ -1813,8 +1813,6 @@ Task<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1833,8 +1831,6 @@ Task<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1853,8 +1849,6 @@ Task<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& request, n
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -2019,8 +2013,6 @@ Task<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, n
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -2039,8 +2031,6 @@ Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request,
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();

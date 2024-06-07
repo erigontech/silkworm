@@ -49,7 +49,7 @@ Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& ta
     co_return value.substr(subkey.length());
 }
 
-Task<void> BaseTransaction::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) {
+Task<void> BaseTransaction::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
     SILK_TRACE << "BaseTransaction::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
     const auto shift_bits = fixed_bits & 7;
@@ -79,7 +79,7 @@ Task<void> BaseTransaction::walk(const std::string& table, ByteView start_key, u
     }
 }
 
-Task<void> BaseTransaction::for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) {
+Task<void> BaseTransaction::for_prefix(const std::string& table, ByteView prefix, Walker w) {
     const auto new_cursor = co_await cursor(table);
     SILK_TRACE << "BaseTransaction::for_prefix cursor_id: " << new_cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
     auto kv_pair = co_await new_cursor->seek(prefix);

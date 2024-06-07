@@ -24,17 +24,16 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb {
 
-using core::rawdb::DatabaseReader;
-
 class Transaction {
   public:
+    using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
+
     Transaction() = default;
 
     Transaction(const Transaction&) = delete;
@@ -65,9 +64,9 @@ class Transaction {
 
     virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
 
-    virtual Task<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) = 0;
+    virtual Task<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) = 0;
 
-    virtual Task<void> for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) = 0;
+    virtual Task<void> for_prefix(const std::string& table, ByteView prefix, Walker w) = 0;
 };
 
 }  // namespace silkworm::rpc::ethdb

@@ -28,7 +28,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/storage/chain_storage.hpp>
 

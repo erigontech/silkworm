@@ -46,10 +46,8 @@ class MockTransaction : public ethdb::Transaction {
     MOCK_METHOD((Task<silkworm::Bytes>), get_one, (const std::string&, silkworm::ByteView), (override));
     MOCK_METHOD((Task<std::optional<silkworm::Bytes>>), get_both_range,
                 (const std::string&, silkworm::ByteView, silkworm::ByteView), (override));
-    MOCK_METHOD((Task<void>), walk, (const std::string&, silkworm::ByteView, uint32_t, core::rawdb::Walker),
-                (override));
-    MOCK_METHOD((Task<void>), for_prefix, (const std::string&, silkworm::ByteView, core::rawdb::Walker),
-                (override));
+    MOCK_METHOD((Task<void>), walk, (const std::string&, silkworm::ByteView, uint32_t, Walker), (override));
+    MOCK_METHOD((Task<void>), for_prefix, (const std::string&, silkworm::ByteView, Walker), (override));
 };
 
 }  // namespace silkworm::rpc::test

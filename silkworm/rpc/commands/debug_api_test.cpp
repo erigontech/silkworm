@@ -327,10 +327,9 @@ TEST_CASE("get_modified_accounts") {
     auto database = DummyDatabase{json};
     auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
     auto tx = begin_result.get();
-    ethdb::TransactionDatabase tx_database{*tx};
 
     SECTION("end == start") {
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a010, 0x52a010), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a010, 0x52a010), boost::asio::use_future);
         auto accounts = result.get();
 
         CHECK(accounts.size() == 1);
@@ -342,7 +341,7 @@ TEST_CASE("get_modified_accounts") {
     }
 
     SECTION("end == start + 1") {
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a010, 0x52a011), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a010, 0x52a011), boost::asio::use_future);
         auto accounts = result.get();
 
         CHECK(accounts.size() == 2);
@@ -355,7 +354,7 @@ TEST_CASE("get_modified_accounts") {
     }
 
     SECTION("end >> start") {
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a010, 0x52a058), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a010, 0x52a058), boost::asio::use_future);
         auto accounts = result.get();
 
         CHECK(accounts.size() == 70);
@@ -436,14 +435,14 @@ TEST_CASE("get_modified_accounts") {
     }
 
     SECTION("start > end") {
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a011, 0x52a010), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a011, 0x52a010), boost::asio::use_future);
         auto accounts = result.get();
 
         CHECK(accounts.empty());
     }
 
     SECTION("start > last block") {
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a061, 0x52a061), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a061, 0x52a061), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
     }
 }

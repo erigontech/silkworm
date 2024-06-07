@@ -30,7 +30,6 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::call {

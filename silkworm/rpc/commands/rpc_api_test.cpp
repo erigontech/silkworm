@@ -74,7 +74,7 @@ static const std::vector<std::string> tests_to_ignore = {
 };
 
 static const std::vector<std::string> subtests_to_ignore = {
-    "get-storage-invalid-key.io" // location is no more HASH but QUANTITY
+    "get-storage-invalid-key.io"  // location is no more HASH but QUANTITY
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library

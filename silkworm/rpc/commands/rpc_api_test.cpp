@@ -73,6 +73,10 @@ static const std::vector<std::string> tests_to_ignore = {
     "eth_createAccessList",    // expected value doesn't contain gas optimization
 };
 
+static const std::vector<std::string> subtests_to_ignore = {
+    "get-storage-invalid-key.io" // location is no more HASH but QUANTITY
+};
+
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
@@ -84,6 +88,10 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             auto group_name = test_file.path().parent_path().filename().string();
 
             if (std::find(tests_to_ignore.begin(), tests_to_ignore.end(), group_name) != tests_to_ignore.end()) {
+                continue;
+            }
+
+            if (std::find(subtests_to_ignore.begin(), subtests_to_ignore.end(), test_name) != tests_to_ignore.end()) {
                 continue;
             }
 

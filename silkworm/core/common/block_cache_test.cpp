@@ -20,6 +20,7 @@
 
 namespace silkworm {
 
+#ifndef _WIN32  // https://github.com/erigontech/silkworm/issues/2083
 TEST_CASE("check get cache key not present(lock)", "[rpc][commands][block_cache]") {
     BlockCache block_cache(1, true);
     evmc::bytes32 bh1{0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32};
@@ -61,5 +62,6 @@ TEST_CASE("insert entry in cache(no-lock)", "[rpc][commands][block_cache]") {
     ret_block_option = block_cache.get(bh1);
     CHECK((*ret_block_option)->hash == block1->hash);
 }
+#endif  // _WIN32
 
 }  // namespace silkworm

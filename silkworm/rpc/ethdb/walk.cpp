@@ -52,11 +52,11 @@ Task<void> walk(Transaction& tx, const std::string& table, ByteView start_key, u
 
 Task<void> for_prefix(Transaction& tx, const std::string& table, ByteView prefix, Walker w) {
     const auto new_cursor = co_await tx.cursor(table);
-    SILK_TRACE << "BaseTransaction::for_prefix cursor_id: " << new_cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
+    SILK_TRACE << "rpc::ethdb::for_prefix cursor_id: " << new_cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
     auto kv_pair = co_await new_cursor->seek(prefix);
     auto k = kv_pair.key;
     auto v = kv_pair.value;
-    SILK_TRACE << "BaseTransaction::for_prefix k: " << k << " v: " << v;
+    SILK_TRACE << "rpc::ethdb::for_prefix k: " << k << " v: " << v;
     while (k.substr(0, prefix.size()) == prefix) {
         const auto go_on = w(k, v);
         if (!go_on) {
@@ -65,7 +65,7 @@ Task<void> for_prefix(Transaction& tx, const std::string& table, ByteView prefix
         kv_pair = co_await new_cursor->next();
         k = kv_pair.key;
         v = kv_pair.value;
-        SILK_TRACE << "BaseTransaction::for_prefix k: " << k << " v: " << v;
+        SILK_TRACE << "rpc::ethdb::for_prefix k: " << k << " v: " << v;
     }
 }
 

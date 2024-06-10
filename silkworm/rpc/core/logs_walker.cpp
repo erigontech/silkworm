@@ -29,6 +29,7 @@
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
+#include <silkworm/rpc/ethdb/walk.hpp>
 
 namespace silkworm::rpc {
 
@@ -121,7 +122,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);
         SILK_DEBUG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
-        co_await tx_.for_prefix(db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+        co_await for_prefix(tx_, db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
             chunk_logs.clear();
             const bool decoding_ok{cbor_decode(v, chunk_logs)};
             if (!decoding_ok) {

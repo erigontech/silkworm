@@ -41,8 +41,8 @@
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
-#include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
+#include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
@@ -648,7 +648,7 @@ Task<std::set<evmc::address>> get_modified_accounts(ethdb::Transaction& tx, Bloc
         const auto key = silkworm::db::block_key(start_block_number);
         SILK_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key);
 
-        co_await tx.walk(db::table::kAccountChangeSetName, key, 0, walker);
+        co_await walk(tx, db::table::kAccountChangeSetName, key, 0, walker);
     }
 
     co_return addresses;

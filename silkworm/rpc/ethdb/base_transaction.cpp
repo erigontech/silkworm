@@ -49,56 +49,6 @@ Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& ta
     co_return value.substr(subkey.length());
 }
 
-Task<void> BaseTransaction::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) {
-    const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
-    SILK_TRACE << "BaseTransaction::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
-    const auto shift_bits = fixed_bits & 7;
-    uint8_t mask{0xff};
-    if (shift_bits != 0) {
-        mask = static_cast<uint8_t>(0xff << (CHAR_BIT - shift_bits));
-    }
-    SILK_TRACE << "mask: " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(mask) << std::dec;
-
-    const auto new_cursor = co_await cursor(table);
-    SILK_TRACE << "BaseTransaction::walk cursor_id: " << new_cursor->cursor_id();
-    auto kv_pair = co_await new_cursor->seek(start_key);
-    auto k = kv_pair.key;
-    auto v = kv_pair.value;
-    SILK_TRACE << "k: " << k << " v: " << v;
-    while (
-        !k.empty() &&
-        k.size() >= fixed_bytes &&
-        (fixed_bits == 0 || (k.compare(0, fixed_bytes - 1, start_key, 0, fixed_bytes - 1) == 0 && (k[fixed_bytes - 1] & mask) == (start_key[fixed_bytes - 1] & mask)))) {
-        const auto go_on = w(k, v);
-        if (!go_on) {
-            break;
-        }
-        kv_pair = co_await new_cursor->next();
-        k = kv_pair.key;
-        v = kv_pair.value;
-    }
-}
-
-Task<void> BaseTransaction::for_prefix(const std::string& table, ByteView prefix, Walker w) {
-    const auto new_cursor = co_await cursor(table);
-    SILK_TRACE << "BaseTransaction::for_prefix cursor_id: " << new_cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
-    auto kv_pair = co_await new_cursor->seek(prefix);
-    auto k = kv_pair.key;
-    auto v = kv_pair.value;
-    SILK_TRACE << "BaseTransaction::for_prefix k: " << k << " v: " << v;
-    while (k.substr(0, prefix.size()) == prefix) {
-        const auto go_on = w(k, v);
-        if (!go_on) {
-            break;
-        }
-        kv_pair = co_await new_cursor->next();
-        k = kv_pair.key;
-        v = kv_pair.value;
-        SILK_TRACE << "BaseTransaction::for_prefix k: " << k << " v: " << v;
-    }
-    co_return;
-}
-
 Task<silkworm::Bytes> BaseTransaction::get_one_impl_with_cache(const std::string& table, ByteView key) {
     if (state_cache_) {
         // Just PlainState and Code tables are present in state cache

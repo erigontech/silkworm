@@ -25,6 +25,7 @@
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/ethdb/walk.hpp>
 
 namespace silkworm::rpc::ethdb::bitmap {
 
@@ -66,7 +67,7 @@ Task<Roaring> get(
         auto block = endian::load_big_u32(&k[k.size() - sizeof(uint32_t)]);
         return block < to_block;
     };
-    co_await tx.walk(table, from_key, gsl::narrow<uint32_t>(key.size() * CHAR_BIT), walker);
+    co_await walk(tx, table, from_key, gsl::narrow<uint32_t>(key.size() * CHAR_BIT), walker);
 
     auto result{fast_or(chunks.size(), chunks)};
     SILK_DEBUG << "result: " << result.toString();

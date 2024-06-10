@@ -71,10 +71,12 @@ jobs:
 
     # Disabled after https://github.com/erigontech/silkworm/issues/2083
     - name: Unit tests
-      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_unit_tests.cmake
       if: false
+      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_unit_tests.cmake
 
+    # Disabled after https://github.com/erigontech/silkworm/issues/2083
     - name: Ethereum EL tests
+      if: false
       working-directory: C:\build
       run: |
         cmd/test/${{ matrix.config.build_type }}/ethereum --threads 4

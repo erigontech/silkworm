@@ -1093,15 +1093,22 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
 
 // https://eth.wiki/json-rpc/API#eth_getstorageat
 Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 3 || !is_valid_address(params[0].get<std::string>())) {
-        auto error_msg = "invalid eth_getStorageAt params: " + params.dump();
+        const auto error_msg = "invalid eth_getStorageAt params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
-    const auto location = bytes32_from_hex(params[1].get<std::string>());
+    const auto position = params[1].get<std::string>();
+    if (!is_valid_hex(position) || position.length() > 2 + kHashLength * 2) {
+        const auto error_msg = "invalid position in eth_getStorageAt params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, 100, error_msg);
+        co_return;
+    }
+    const auto location = bytes32_from_hex(position);
     const auto block_id = params[2].get<std::string>();
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 

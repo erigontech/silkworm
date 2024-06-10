@@ -38,8 +38,9 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/node/remote/kv/grpc/server/kv_calls.hpp>
-#include <silkworm/node/remote/kv/grpc/server/state_change_collection.hpp>
+
+#include "kv_calls.hpp"
+#include "state_change_collection.hpp"
 
 using namespace std::chrono_literals;
 

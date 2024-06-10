@@ -20,8 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/node/test_util/fixture.hpp>
+#include <silkworm/infra/test_util/fixture.hpp>
 #include <silkworm/node/test_util/sample_blocks.hpp>
 
 #include "../test_util/sample_protos.hpp"

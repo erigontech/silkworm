@@ -38,9 +38,9 @@ namespace silkworm::rpc::core::rawdb {
 
 using Catch::Matchers::Message;
 using testing::_;
+using testing::InSequence;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
-using testing::InSequence;
 using testing::Unused;
 
 static silkworm::Bytes kNumber{*silkworm::from_hex("00000000003D0900")};

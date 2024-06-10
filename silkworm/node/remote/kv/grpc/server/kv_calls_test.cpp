@@ -20,6 +20,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/common/directories.hpp>
+
 namespace silkworm::rpc {
 
 TEST_CASE("higher_version_ignoring_patch", "[silkworm][rpc][kv_calls]") {

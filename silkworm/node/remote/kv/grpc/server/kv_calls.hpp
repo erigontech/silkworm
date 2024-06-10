@@ -33,7 +33,6 @@
 #include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/backend/ethereum_backend.hpp>
 
 #include "state_change_collection.hpp"
 

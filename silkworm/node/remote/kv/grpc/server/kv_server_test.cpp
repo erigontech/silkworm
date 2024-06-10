@@ -202,9 +202,7 @@ struct TestableStateChangeCollection : public StateChangeCollection {
 };
 
 struct KvEnd2EndTest {
-    explicit KvEnd2EndTest(
-        silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
-        NodeSettings&& options = {})
+    explicit KvEnd2EndTest(silkworm::log::Level log_verbosity = silkworm::log::Level::kNone)
         : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
@@ -217,7 +215,6 @@ struct KvEnd2EndTest {
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());
         db_config = std::make_unique<db::EnvConfig>();
-        db_config->max_readers = options.chaindata_env_config.max_readers;
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
         db_config->in_memory = true;
@@ -290,7 +287,6 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     db_config.create = true;
     db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
-    NodeSettings node_settings;
     auto state_change_source{std::make_unique<TestableStateChangeCollection>()};
 
     SECTION("KvServer::KvServer OK: create/destroy server") {

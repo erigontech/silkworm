@@ -14,30 +14,27 @@
    limitations under the License.
 */
 
-#include "backend_kv_server.hpp"
+#include "backend_server.hpp"
 
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
-#include <silkworm/node/remote/kv/grpc/server/kv_calls.hpp>
 
 namespace silkworm::rpc {
 
-BackEndKvServer::BackEndKvServer(const ServerSettings& settings, const EthereumBackEnd& backend)
+BackEndServer::BackEndServer(const ServerSettings& settings, const EthereumBackEnd& backend)
     : Server(settings), backend_(backend) {
     setup_backend_calls(backend);
-    setup_kv_calls();
-    SILK_INFO << "BackEndKvServer created listening on: " << settings.address_uri;
+    SILK_INFO << "BackEndServer created listening on: " << settings.address_uri;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
-void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
+void BackEndServer::register_async_services(grpc::ServerBuilder& builder) {
     builder.RegisterService(&backend_async_service_);
-    builder.RegisterService(&kv_async_service_);
 }
 
-void BackEndKvServer::setup_backend_calls(const EthereumBackEnd& backend) {
+void BackEndServer::setup_backend_calls(const EthereumBackEnd& backend) {
     EtherbaseCall::fill_predefined_reply(backend);
     NetVersionCall::fill_predefined_reply(backend);
     BackEndVersionCall::fill_predefined_reply();
@@ -45,7 +42,7 @@ void BackEndKvServer::setup_backend_calls(const EthereumBackEnd& backend) {
     ClientVersionCall::fill_predefined_reply(backend);
 }
 
-void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_context) {
+void BackEndServer::register_backend_request_calls(agrpc::GrpcContext* grpc_context) {
     SILK_TRACE << "BackEndService::register_backend_request_calls START";
     auto service = &backend_async_service_;
     auto& backend = backend_;
@@ -86,57 +83,8 @@ void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_co
     SILK_TRACE << "BackEndService::register_backend_request_calls END";
 }
 
-void BackEndKvServer::setup_kv_calls() {
-    KvVersionCall::fill_predefined_reply();
-}
-
-void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
-    SILK_TRACE << "BackEndKvServer::register_kv_request_calls START";
-    auto service = &kv_async_service_;
-    auto& backend = backend_;
-
-    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await KvVersionCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
-                       [&backend, grpc_context](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestSnapshots,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await SnapshotsCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestDomainGet,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await DomainGetCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistoryGet,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await HistoryGetCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestIndexRange,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await IndexRangeCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistoryRange,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await HistoryRangeCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestDomainRange,
-                       [&backend](auto&&... args) -> Task<void> {  // NOLINT(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-                           co_await DomainRangeCall{std::forward<decltype(args)>(args)...}(backend);
-                       });
-    SILK_TRACE << "BackEndKvServer::register_kv_request_calls END";
-}
-
 //! Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
-void BackEndKvServer::register_request_calls() {
+void BackEndServer::register_request_calls() {
     // Start all server-side RPC requests for each available server context
     for (std::size_t i = 0; i < num_contexts(); i++) {
         const auto& context = next_context();
@@ -144,7 +92,6 @@ void BackEndKvServer::register_request_calls() {
 
         // Register initial requested calls for ETHBACKEND and KV services
         register_backend_request_calls(grpc_context);
-        register_kv_request_calls(grpc_context);
     }
 }
 

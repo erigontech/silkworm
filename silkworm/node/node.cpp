@@ -30,7 +30,7 @@
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/execution/api/active_direct_service.hpp>
 #include <silkworm/node/execution/grpc/server/server.hpp>
-#include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
+#include <silkworm/node/remote/ethbackend/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 

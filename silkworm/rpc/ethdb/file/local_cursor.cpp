@@ -38,7 +38,7 @@ Task<KeyValue> LocalCursor::seek(ByteView key) {
     SILK_DEBUG << "LocalCursor::seek cursor: " << cursor_id_ << " key: " << key;
     mdbx::slice mdbx_key{key};
 
-    const auto result = (key.length() == 0) ? db_cursor_.to_first(/*throw_notfound=*/false) : db_cursor_.lower_bound(mdbx_key, /*throw_notfound=*/false);
+    const auto result = (key.empty()) ? db_cursor_.to_first(/*throw_notfound=*/false) : db_cursor_.lower_bound(mdbx_key, /*throw_notfound=*/false);
     SILK_DEBUG << "LocalCursor::seek result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {

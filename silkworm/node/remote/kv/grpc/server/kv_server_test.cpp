@@ -14,98 +14,36 @@
    limitations under the License.
 */
 
-#include "backend_kv_server.hpp"
+#include "kv_server.hpp"
 
 #include <chrono>
-#include <condition_variable>  // DO NOT remove: used for std::condition_variable, CLion suggestion is buggy
-#include <functional>          // DO NOT remove: used for std::function, CLion suggestion is buggy
+#include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include <silkworm/infra/concurrency/task.hpp>
-
 #include <absl/strings/match.h>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
-#include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/state_change_collection.hpp>
-#include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
 #include <silkworm/node/remote/kv/grpc/server/kv_calls.hpp>
-#include <silkworm/sentry/api/common/sentry_client.hpp>
+#include <silkworm/node/remote/kv/grpc/server/state_change_collection.hpp>
 
 using namespace std::chrono_literals;
 
 namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple test modules
-
-class BackEndClient {
-  public:
-    explicit BackEndClient(remote::ETHBACKEND::StubInterface* stub) : stub_(stub) {}
-
-    grpc::Status etherbase(remote::EtherbaseReply* response) {
-        grpc::ClientContext context;
-        return stub_->Etherbase(&context, remote::EtherbaseRequest{}, response);
-    }
-
-    grpc::Status net_version(remote::NetVersionReply* response) {
-        grpc::ClientContext context;
-        return stub_->NetVersion(&context, remote::NetVersionRequest{}, response);
-    }
-
-    grpc::Status net_peer_count(remote::NetPeerCountReply* response) {
-        grpc::ClientContext context;
-        return stub_->NetPeerCount(&context, remote::NetPeerCountRequest{}, response);
-    }
-
-    grpc::Status version(types::VersionReply* response) {
-        grpc::ClientContext context;
-        return stub_->Version(&context, google::protobuf::Empty{}, response);
-    }
-
-    grpc::Status protocol_version(remote::ProtocolVersionReply* response) {
-        grpc::ClientContext context;
-        return stub_->ProtocolVersion(&context, remote::ProtocolVersionRequest{}, response);
-    }
-
-    grpc::Status client_version(remote::ClientVersionReply* response) {
-        grpc::ClientContext context;
-        return stub_->ClientVersion(&context, remote::ClientVersionRequest{}, response);
-    }
-
-    grpc::Status subscribe_and_consume(const remote::SubscribeRequest& request,
-                                       std::vector<remote::SubscribeReply>& responses) {
-        grpc::ClientContext context;
-        auto subscribe_reply_reader = stub_->Subscribe(&context, request);
-        bool has_more{true};
-        do {
-            has_more = subscribe_reply_reader->Read(&responses.emplace_back());
-        } while (has_more);
-        responses.pop_back();
-        return subscribe_reply_reader->Finish();
-    }
-
-    grpc::Status node_info(const remote::NodesInfoRequest& request, remote::NodesInfoReply* response) {
-        grpc::ClientContext context;
-        return stub_->NodeInfo(&context, request, response);
-    }
-
-  private:
-    remote::ETHBACKEND::StubInterface* stub_;
-};
 
 using TxStreamPtr = std::unique_ptr<grpc::ClientReaderWriterInterface<remote::Cursor, remote::Pair>>;
 
@@ -237,82 +175,6 @@ class ThreadedKvClient {
     std::vector<remote::StateChangeBatch> responses_;
 };
 
-const uint64_t kTestSentryPeerCount{10};
-constexpr const char* kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
-constexpr const char* kTestSentryNodeClientId{"MockSentryClient"};
-
-class MockSentryClient
-    : public std::enable_shared_from_this<MockSentryClient>,
-      public silkworm::sentry::api::SentryClient,
-      public silkworm::sentry::api::Service {
-    template <typename T>
-    using Task = silkworm::Task<T>;
-
-    Task<std::shared_ptr<silkworm::sentry::api::Service>> service() override {
-        co_return shared_from_this();
-    }
-    [[nodiscard]] bool is_ready() override { return true; }
-    void on_disconnect(std::function<Task<void>()> /*callback*/) override {}
-    Task<void> reconnect() override { co_return; }
-
-    Task<void> set_status(silkworm::sentry::eth::StatusData /*status_data*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<uint8_t> handshake() override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<NodeInfos> node_infos() override {
-        const std::string ip_str = "1.2.3.4";
-        const uint16_t port = 50555;
-        const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
-
-        silkworm::sentry::api::NodeInfo info = {
-            silkworm::sentry::EnodeUrl{node_url_str},
-            kTestSentryNodeClientId,
-            boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
-            port,
-        };
-        co_return NodeInfos{info};
-    }
-
-    Task<PeerKeys> send_message_by_id(silkworm::sentry::Message /*message*/, silkworm::sentry::EccPublicKey /*public_key*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<PeerKeys> send_message_to_random_peers(silkworm::sentry::Message /*message*/, size_t /*max_peers*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<PeerKeys> send_message_to_all(silkworm::sentry::Message /*message*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<PeerKeys> send_message_by_min_block(silkworm::sentry::Message /*message*/, size_t /*max_peers*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<void> peer_min_block(silkworm::sentry::EccPublicKey /*public_key*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<void> messages(
-        silkworm::sentry::api::MessageIdSet /*message_id_filter*/,
-        std::function<Task<void>(silkworm::sentry::api::MessageFromPeer)> /*consumer*/) override {
-        throw std::runtime_error("not implemented");
-    }
-
-    Task<silkworm::sentry::api::PeerInfos> peers() override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<size_t> peer_count() override {
-        co_return kTestSentryPeerCount;
-    }
-    Task<std::optional<silkworm::sentry::api::PeerInfo>> peer_by_id(silkworm::sentry::EccPublicKey /*public_key*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<void> penalize_peer(silkworm::sentry::EccPublicKey /*public_key*/) override {
-        throw std::runtime_error("not implemented");
-    }
-    Task<void> peer_events(std::function<Task<void>(silkworm::sentry::api::PeerEvent)> /*consumer*/) override {
-        throw std::runtime_error("not implemented");
-    }
-};
-
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 const std::string kTestAddressUri{"localhost:12345"};
 
@@ -339,30 +201,13 @@ struct TestableStateChangeCollection : public StateChangeCollection {
     StateChangeTokenObserver token_observer_;
 };
 
-class TestableEthereumBackEnd : public EthereumBackEnd {
-  public:
-    TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-        : EthereumBackEnd{
-              node_settings,
-              chaindata_env,
-              std::make_shared<MockSentryClient>(),
-              std::make_unique<TestableStateChangeCollection>(),
-          } {}
-
-    [[nodiscard]] TestableStateChangeCollection* state_change_source_for_test() const noexcept {
-        return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
-    }
-};
-
-struct BackEndKvE2eTest {
-    explicit BackEndKvE2eTest(
+struct KvEnd2EndTest {
+    explicit KvEnd2EndTest(
         silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
         NodeSettings&& options = {})
         : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-        ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
-        backend_client = std::make_unique<BackEndClient>(ethbackend_stub.get());
         kv_stub = remote::KV::NewStub(channel);
         kv_client = std::make_unique<KvClient>(kv_stub.get());
 
@@ -382,8 +227,8 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
-        backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
-        server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
+        state_change_collection = std::make_unique<TestableStateChangeCollection>();
+        server = std::make_unique<rpc::KvServer>(srv_config, &database_env, state_change_collection.get());
         server->build_and_start();
     }
 
@@ -410,23 +255,21 @@ struct BackEndKvE2eTest {
         rw_txn.commit();
     }
 
-    ~BackEndKvE2eTest() {
+    ~KvEnd2EndTest() {
         server->shutdown();
         server->join();
     }
 
     test_util::SetLogVerbosityGuard set_verbosity_log_guard;
     rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
-    std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
-    std::unique_ptr<BackEndClient> backend_client;
     std::unique_ptr<remote::KV::Stub> kv_stub;
     std::unique_ptr<KvClient> kv_client;
     rpc::ServerSettings srv_config;
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
-    std::unique_ptr<TestableEthereumBackEnd> backend;
-    std::unique_ptr<rpc::BackEndKvServer> server;
+    std::unique_ptr<TestableStateChangeCollection> state_change_collection;
+    std::unique_ptr<rpc::KvServer> server;
 };
 
 }  // namespace
@@ -435,7 +278,7 @@ namespace silkworm::rpc {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
+TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
     ServerSettings srv_config;
@@ -448,75 +291,75 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
-    TestableEthereumBackEnd backend{node_settings, &database_env};
+    auto state_change_source{std::make_unique<TestableStateChangeCollection>()};
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::KvServer OK: create/destroy server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
     }
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::KvServer OK: create/shutdown/destroy server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::build_and_start OK: run server in separate thread") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
         server_thread.join();
     }
 
-    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::build_and_start OK: create/shutdown/run/destroy server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.shutdown();
         server.build_and_start();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown server not running") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::shutdown OK: shutdown server not running") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::shutdown OK: shutdown twice server not running") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.shutdown();
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::shutdown OK: shutdown running server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.build_and_start();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("KvServer::shutdown OK: shutdown twice running server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
+        server.build_and_start();
+        server.shutdown();
         server.shutdown();
         server.join();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.shutdown();
-        server.join();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::shutdown OK: shutdown running server again after join") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.build_and_start();
         server.shutdown();
         server.join();
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::join OK: shutdown joined server") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::join OK: shutdown joined server") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
         server_thread.join();
     }
 
-    SECTION("BackEndKvServer::join OK: shutdown joined server and join again") {
-        BackEndKvServer server{srv_config, backend};
+    SECTION("KvServer::join OK: shutdown joined server and join again") {
+        KvServer server{srv_config, &database_env, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
@@ -525,66 +368,10 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
-    auto backend_client = *test.backend_client;
-
-    SECTION("Etherbase: return missing coinbase error") {
-        remote::EtherbaseReply response;
-        const auto status = backend_client.etherbase(&response);
-        CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message() == "etherbase must be explicitly specified");
-        CHECK(!response.has_address());
-    }
-
-    SECTION("NetVersion: return out-of-range network ID") {
-        remote::NetVersionReply response;
-        const auto status = backend_client.net_version(&response);
-        CHECK(status.ok());
-        CHECK(response.id() == 0);
-    }
-
-    SECTION("Version: return ETHBACKEND version") {
-        types::VersionReply response;
-        const auto status = backend_client.version(&response);
-        CHECK(status.ok());
-        CHECK(response.major() == 2);
-        CHECK(response.minor() == 3);
-        CHECK(response.patch() == 0);
-    }
-
-    SECTION("ProtocolVersion: return ETH protocol version") {
-        remote::ProtocolVersionReply response;
-        const auto status = backend_client.protocol_version(&response);
-        CHECK(status.ok());
-        CHECK(response.id() == kEthDevp2pProtocolVersion);
-    }
-
-    SECTION("ClientVersion: return Silkworm client version") {
-        remote::ClientVersionReply response;
-        const auto status = backend_client.client_version(&response);
-        CHECK(status.ok());
-        CHECK(absl::StrContains(response.node_name(), "silkworm"));
-    }
-
-    // TODO(canepat): change using something meaningful when really implemented
-    SECTION("Subscribe: return streamed subscriptions") {
-        remote::SubscribeRequest request;
-        std::vector<remote::SubscribeReply> responses;
-        const auto status = backend_client.subscribe_and_consume(request, responses);
-        CHECK(status.ok());
-        CHECK(responses.size() == 2);
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
-    auto kv_client = *test.kv_client;
-
+TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
     SECTION("Version: return KV version") {
         types::VersionReply response;
-        const auto status = kv_client.version(&response);
+        const auto status = kv_client->version(&response);
         CHECK(status.ok());
         CHECK(response.major() == 5);
         CHECK(response.minor() == 1);
@@ -596,7 +383,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         open.set_op(remote::Op::OPEN);
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
@@ -610,7 +397,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         open.set_bucket_name("NonexistentTable");
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
@@ -623,7 +410,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         open.set_bucket_name(kTestMap.name);
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
@@ -634,7 +421,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     SECTION("Tx OK: just start then finish") {
         std::vector<remote::Cursor> requests{};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
@@ -646,7 +433,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         open.set_bucket_name(kTestMap.name);
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -659,7 +446,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         open_dup_sort.set_bucket_name(kTestMultiMap.name);
         std::vector<remote::Cursor> requests{open_dup_sort};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -675,7 +462,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         close.set_cursor(0);
         std::vector<remote::Cursor> requests{open, close};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -692,7 +479,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         close.set_cursor(0);
         std::vector<remote::Cursor> requests{open, close};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -709,7 +496,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         close.set_cursor(12345);
         std::vector<remote::Cursor> requests{open, close};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
@@ -727,7 +514,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         first.set_cursor(0);
         std::vector<remote::Cursor> requests{open, first};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -745,7 +532,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         next.set_cursor(0);
         std::vector<remote::Cursor> requests{open, next};
         std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
+        const auto status = kv_client->tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -757,12 +544,12 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     SECTION("StateChanges OK: receive streamed state changes") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
-        auto* state_change_source = test.backend->state_change_source();
+        auto* state_change_source = state_change_collection.get();
 
         ThreadedKvClient threaded_kv_client;
 
         // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
-        threaded_kv_client.start_and_consume_statechanges(kv_client);
+        threaded_kv_client.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
         BlockNum block_number{0};
@@ -786,13 +573,13 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     SECTION("StateChanges OK: multiple concurrent subscriptions") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
-        auto* state_change_source = test.backend->state_change_source();
+        auto* state_change_source = state_change_collection.get();
 
         ThreadedKvClient threaded_kv_client1, threaded_kv_client2;
 
         // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
-        threaded_kv_client1.start_and_consume_statechanges(kv_client);
-        threaded_kv_client2.start_and_consume_statechanges(kv_client);
+        threaded_kv_client1.start_and_consume_statechanges(*kv_client);
+        threaded_kv_client2.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
         BlockNum block_number{0};
@@ -818,7 +605,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     }
 
     SECTION("StateChanges KO: token already in use") {
-        auto* state_change_source = test.backend->state_change_source_for_test();
+        auto* state_change_source = state_change_collection.get();
 
         std::mutex token_reset_mutex;
         std::condition_variable token_reset_condition;
@@ -838,7 +625,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         // Start a StateChanges server-streaming call
         grpc::ClientContext context1;
         remote::StateChangeRequest request1;
-        auto subscribe_reply_reader1 = kv_client.statechanges_start(&context1, request1);
+        auto subscribe_reply_reader1 = kv_client->statechanges_start(&context1, request1);
 
         // Wait for token reset condition to happen
         std::unique_lock token_reset_lock{token_reset_mutex};
@@ -847,7 +634,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         // Start another StateChanges server-streaming call and check it fails
         grpc::ClientContext context2;
         remote::StateChangeRequest request2;
-        auto subscribe_reply_reader2 = kv_client.statechanges_start(&context2, request2);
+        auto subscribe_reply_reader2 = kv_client->statechanges_start(&context2, request2);
 
         const auto status2 = subscribe_reply_reader2->Finish();
         CHECK(!status2.ok());
@@ -864,97 +651,51 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     SECTION("Snapshots: return snapshot files") {
         remote::SnapshotsRequest request;
         remote::SnapshotsReply response;
-        const auto status = kv_client.snapshots(request, &response);
+        const auto status = kv_client->snapshots(request, &response);
         CHECK(status.ok());
     }
 
     SECTION("HistoryGet: return value in target history") {
         remote::HistoryGetReq request;
         remote::HistoryGetReply response;
-        const auto status = kv_client.history_get(request, &response);
+        const auto status = kv_client->history_get(request, &response);
         CHECK(status.ok());
     }
 
     SECTION("DomainGet: return value in target domain") {
         remote::DomainGetReq request;
         remote::DomainGetReply response;
-        const auto status = kv_client.domain_get(request, &response);
+        const auto status = kv_client->domain_get(request, &response);
         CHECK(status.ok());
     }
 
     SECTION("IndexRange: return value in target index range") {
         remote::IndexRangeReq request;
         remote::IndexRangeReply response;
-        const auto status = kv_client.index_range(request, &response);
+        const auto status = kv_client->index_range(request, &response);
         CHECK(status.ok());
     }
 
     SECTION("HistoryRange: return value in target history range") {
         remote::HistoryRangeReq request;
         remote::Pairs response;
-        const auto status = kv_client.history_range(request, &response);
+        const auto status = kv_client->history_range(request, &response);
         CHECK(status.ok());
     }
 
     SECTION("DomainRange: return value in target domain range") {
         remote::DomainRangeReq request;
         remote::Pairs response;
-        const auto status = kv_client.domain_range(request, &response);
+        const auto status = kv_client->domain_range(request, &response);
         CHECK(status.ok());
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.chain_config = kMainnetConfig;
-    node_settings.etherbase = evmc::address{};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
-    auto backend_client = *test.backend_client;
-
-    SECTION("Etherbase: return coinbase address") {
-        remote::EtherbaseReply response;
-        const auto status = backend_client.etherbase(&response);
-        CHECK(status.ok());
-        CHECK(response.has_address());
-        CHECK(response.address() == types::H160());
-    }
-
-    SECTION("NetVersion: return network ID") {
-        remote::NetVersionReply response;
-        const auto status = backend_client.net_version(&response);
-        CHECK(status.ok());
-        CHECK(response.id() == kMainnetConfig.chain_id);
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
-    auto backend_client = *test.backend_client;
-
-    SECTION("NetPeerCount: return peer count") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK(status.ok());
-        CHECK(response.count() == kTestSentryPeerCount);
-    }
-
-    SECTION("NodeInfo: return information about nodes") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK(status.ok());
-        CHECK(response.nodes_info_size() == 1);
-        CHECK(response.nodes_info(0).id() == kTestSentryNodeId);
-        CHECK(response.nodes_info(0).name() == kTestSentryNodeClientId);
     }
 }
 
 #ifndef _WIN32
-TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
+TEST_CASE("KvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
-        BackEndKvE2eTest test{silkworm::log::Level::kError};
+        KvEnd2EndTest test{silkworm::log::Level::kError};
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
@@ -975,7 +716,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
 }
 #endif  // _WIN32
 
-TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
+TEST_CASE("KvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     // This check can be improved in Catch2 version 3.3.0 where SKIP is available
     if (os::max_file_descriptors() < 1024) {
         bool ok = os::set_max_file_descriptors(1024);
@@ -984,7 +725,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
         }
     }
 
-    BackEndKvE2eTest test;
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1019,8 +760,8 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
+TEST_CASE("KvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1063,9 +804,9 @@ class TxIdleTimeoutGuard {
     ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(server::kDefaultMaxIdleDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
+TEST_CASE("KvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
     TxIdleTimeoutGuard timeout_guard{100};
-    BackEndKvE2eTest test;
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1114,8 +855,8 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
+TEST_CASE("KvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -2046,8 +1787,8 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
+TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -2207,8 +1948,8 @@ class TxMaxTimeToLiveGuard {
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test;
+TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
+    KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
     constexpr auto kCustomMaxTimeToLive{1000ms};

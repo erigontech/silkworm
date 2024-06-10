@@ -23,8 +23,8 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/common/node_settings.hpp>
+#include <silkworm/node/remote/kv/grpc/server/state_change_collection.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 
 namespace silkworm {

@@ -31,12 +31,14 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 
 using Catch::Matchers::Message;
 using testing::_;
+using testing::InSequence;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
@@ -278,8 +280,14 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+            co_return *silkworm::from_hex("818400f6011a0004a0c8");
+        }));
+        auto cursor{std::make_shared<test::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -304,9 +312,9 @@ TEST_CASE("read_raw_receipts") {
                 "1898bd2ef0835820efaf768237c22e140a862d5d375ad5c153479fac3f8bcf8b580a1651fd62c3"
                 "ef5820000000000000000000000000f13c666056048634109c1ecca6893da293c70da458200000"
                 "000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c363318f6")};
-            w(key, value);
-            co_return;
+            co_return KeyValue{std::move(key), std::move(value)};
         }));
+        EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
@@ -314,8 +322,14 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'604};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+            co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a");
+        }));
+        auto cursor{std::make_shared<test::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key1{*silkworm::from_hex("000000000035db8400000000")};
             silkworm::Bytes value1{*silkworm::from_hex(
                 "8383547977d4f555fbee46303682b17e72e3d94339b4418258206155cfd0fd028b0ca77e8495a6"
@@ -331,7 +345,10 @@ TEST_CASE("read_raw_receipts") {
                 "eed6e23cead48c8cec7a58b6e7195820d76aaac3ecd5ced13bbab3b240a426352f76a6fffd583c"
                 "3b15f4ddae2b754e4e5840000000000000000000000000000000000000000000000000015c2a7b"
                 "13fd0000000000000000000000000000000000000000000000000000000000005f7cd33d")};
-            w(key1, value1);
+            co_return KeyValue{std::move(key1), std::move(value1)};
+        }));
+        InSequence following_calls_in_specific_order;
+        EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> {
             silkworm::Bytes key2{*silkworm::from_hex("000000000035db8400000001")};
             silkworm::Bytes value2{*silkworm::from_hex(
                 "82835407b39f4fde4a38bace212b546dac87c58dfe3fdc815820649bbc62d0e31342afea4e5cd8"
@@ -354,9 +371,9 @@ TEST_CASE("read_raw_receipts") {
                 "725881c2a4290b02cd153d6599fd484f0d4e6062c361e740fbbe39e7ad61425820000000000000"
                 "000000000000000000000000000000000000000000000000000258200000000000000000000000"
                 "00000000000000000000000000000000005f7cd33d")};
-            w(key2, value2);
-            co_return;
+            co_return KeyValue{std::move(key2), std::move(value2)};
         }));
+        EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
@@ -364,8 +381,14 @@ TEST_CASE("read_raw_receipts") {
 
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
         const uint64_t block_number{3'529'600};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
-        EXPECT_CALL(transaction, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, auto w) -> Task<void> {
+        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
+            co_return *silkworm::from_hex("818400f6011a0004a0c8");
+        }));
+        auto cursor{std::make_shared<test::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
                 "8683547753cfad258efbc52a9a1452e42ffbce9be486cb835820ddf252ad1be2c89b69c2b068fc"
@@ -390,8 +413,7 @@ TEST_CASE("read_raw_receipts") {
                 "1898bd2ef0835820efaf768237c22e140a862d5d375ad5c153479fac3f8bcf8b580a1651fd62c3"
                 "ef5820000000000000000000000000f13c666056048634109c1ecca6893da293c70da458200000"
                 "000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c363318f6")};
-            w(key, value);
-            co_return;
+            co_return KeyValue{std::move(key), std::move(value)};
         }));
         auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs

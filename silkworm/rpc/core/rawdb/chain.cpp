@@ -32,6 +32,7 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
+#include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
@@ -203,7 +204,7 @@ Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum
         SILK_DEBUG << "#receipts[" << tx_id << "].logs: " << receipts[tx_id].logs.size();
         return true;
     };
-    co_await tx.walk(db::table::kLogsName, log_key, 8 * CHAR_BIT, walker);
+    co_await walk(tx, db::table::kLogsName, log_key, 8 * CHAR_BIT, walker);
 
     co_return receipts;
 }

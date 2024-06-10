@@ -63,10 +63,6 @@ class Transaction {
     virtual Task<silkworm::Bytes> get_one(const std::string& table, ByteView key) = 0;
 
     virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
-
-    virtual Task<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) = 0;
-
-    virtual Task<void> for_prefix(const std::string& table, ByteView prefix, Walker w) = 0;
 };
 
 }  // namespace silkworm::rpc::ethdb

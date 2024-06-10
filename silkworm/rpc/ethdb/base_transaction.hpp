@@ -35,10 +35,6 @@ class BaseTransaction : public Transaction {
 
     Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) override;
 
-    Task<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) override;
-
-    Task<void> for_prefix(const std::string& table, ByteView prefix, Walker w) override;
-
   private:
     Task<silkworm::Bytes> get_one_impl_no_cache(const std::string& table, ByteView key);
     Task<silkworm::Bytes> get_one_impl_with_cache(const std::string& table, ByteView key);

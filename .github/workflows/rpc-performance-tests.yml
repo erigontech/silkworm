@@ -162,6 +162,12 @@ jobs:
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
+      - name: Run change point analysis
+        if: steps.test_step.outputs.TEST_RESULT == 'success'
+        working-directory: ${{runner.workspace}}/rpc-tests/perf/reports/mainnet
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py 
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

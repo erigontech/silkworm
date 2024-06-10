@@ -63,7 +63,7 @@ void KvVersionCall::fill_predefined_reply() {
     KvVersionCall::response_.set_patch(std::get<2>(max_version));
 }
 
-Task<void> KvVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> KvVersionCall::operator()() {
     SILK_TRACE << "KvVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
     SILK_TRACE << "KvVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
@@ -75,8 +75,7 @@ void TxCall::set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_durat
     TxCall::max_ttl_duration_ = max_ttl_duration;
 }
 
-Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
-    auto chaindata_env = backend.chaindata_env();
+Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
     SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env->get_info().mi_numreaders;
 
     grpc::Status status{grpc::Status::OK};
@@ -162,7 +161,7 @@ Task<void> TxCall::operator()(const EthereumBackEnd& backend) {
             while (true) {
                 const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));
                 if (!ec) {
-                    handle_max_ttl_timer_expired(backend);
+                    handle_max_ttl_timer_expired(chaindata_env);
                     max_ttl_deadline += max_ttl_duration_;
                 }
             }
@@ -330,9 +329,7 @@ void TxCall::handle_operation(const remote::Cursor* request, db::ROCursorDupSort
     SILK_TRACE << "TxCall::handle_operation " << this << " op=" << remote::Op_Name(request->op()) << " END";
 }
 
-void TxCall::handle_max_ttl_timer_expired(const EthereumBackEnd& backend) {
-    auto chaindata_env = backend.chaindata_env();
-
+void TxCall::handle_max_ttl_timer_expired(mdbx::env* chaindata_env) {
     // Save the whole state of the transaction (i.e. all cursor positions)
     std::vector<CursorPosition> positions;
     const bool save_success = save_cursors(positions);
@@ -661,9 +658,8 @@ void TxCall::throw_with_error(grpc::Status&& status) {
     throw server::CallException{std::move(status)};
 }
 
-Task<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
+Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
     SILK_TRACE << "StateChangesCall w/ storage: " << request_.with_storage() << " w/ txs: " << request_.with_transactions() << " START";
-    auto source = backend.state_change_source();
 
     // Create a never-expiring timer whose cancellation will notify our async waiting is completed
     auto coroutine_executor = co_await boost::asio::this_coro::executor;
@@ -724,7 +720,7 @@ Task<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
     co_return;
 }
 
-Task<void> SnapshotsCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> SnapshotsCall::operator()() {
     SILK_TRACE << "SnapshotsCall START";
     remote::SnapshotsReply response;
     // TODO(canepat) implement properly
@@ -732,7 +728,7 @@ Task<void> SnapshotsCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "SnapshotsCall END #blocks_files: " << response.blocks_files_size() << " #history_files: " << response.history_files_size();
 }
 
-Task<void> HistoryGetCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> HistoryGetCall::operator()() {
     SILK_TRACE << "HistoryGetCall START";
     remote::HistoryGetReply response;
     // TODO(canepat) implement properly
@@ -740,7 +736,7 @@ Task<void> HistoryGetCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "HistoryGetCall END ok: " << response.ok() << " value: " << response.v();
 }
 
-Task<void> DomainGetCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> DomainGetCall::operator()() {
     SILK_TRACE << "DomainGetCall START";
     remote::DomainGetReply response;
     // TODO(canepat) implement properly
@@ -748,7 +744,7 @@ Task<void> DomainGetCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();
 }
 
-Task<void> IndexRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> IndexRangeCall::operator()() {
     SILK_TRACE << "IndexRangeCall START";
     remote::IndexRangeReply response;
     // TODO(canepat) implement properly
@@ -756,7 +752,7 @@ Task<void> IndexRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "IndexRangeCall END #timestamps: " << response.timestamps_size() << " next_page_token: " << response.next_page_token();
 }
 
-Task<void> HistoryRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> HistoryRangeCall::operator()() {
     SILK_TRACE << "HistoryRangeCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly
@@ -765,7 +761,7 @@ Task<void> HistoryRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
                << " next_page_token: " << response.next_page_token();
 }
 
-Task<void> DomainRangeCall::operator()(const EthereumBackEnd& /*backend*/) {
+Task<void> DomainRangeCall::operator()() {
     SILK_TRACE << "DomainRangeCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly

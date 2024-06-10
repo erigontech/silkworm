@@ -33,8 +33,8 @@
 #include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/state_change_collection.hpp>
+
+#include "state_change_collection.hpp"
 
 // KV API protocol versions
 // 5.1.0 - first issue
@@ -65,7 +65,7 @@ class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::V
 
     static void fill_predefined_reply();
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 
   private:
     static types::VersionReply response_;
@@ -79,7 +79,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     static void set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_duration);
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()(mdbx::env* chaindata_env);
 
   private:
     struct TxCursor {
@@ -102,7 +102,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     void handle_operation(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_max_ttl_timer_expired(const EthereumBackEnd& backend);
+    void handle_max_ttl_timer_expired(mdbx::env* chaindata_env);
 
     bool save_cursors(std::vector<CursorPosition>& positions);
 
@@ -158,7 +158,7 @@ class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeR
   public:
     using Base::ServerStreamingCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()(StateChangeCollection* source);
 };
 
 //! Unary RPC for Snapshots method of 'kv' gRPC protocol.
@@ -167,7 +167,7 @@ class SnapshotsCall : public server::UnaryCall<remote::SnapshotsRequest, remote:
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 //! Unary RPC for HistoryGet method of 'kv' gRPC protocol.
@@ -176,7 +176,7 @@ class HistoryGetCall : public server::UnaryCall<remote::HistoryGetReq, remote::H
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 //! Unary RPC for DomainGet method of 'kv' gRPC protocol.
@@ -185,7 +185,7 @@ class DomainGetCall : public server::UnaryCall<remote::DomainGetReq, remote::Dom
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
@@ -194,7 +194,7 @@ class IndexRangeCall : public server::UnaryCall<remote::IndexRangeReq, remote::I
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
@@ -203,7 +203,7 @@ class HistoryRangeCall : public server::UnaryCall<remote::HistoryRangeReq, remot
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
@@ -212,7 +212,7 @@ class DomainRangeCall : public server::UnaryCall<remote::DomainRangeReq, remote:
   public:
     using Base::UnaryCall;
 
-    Task<void> operator()(const EthereumBackEnd& backend);
+    Task<void> operator()();
 };
 
 }  // namespace silkworm::rpc

@@ -45,8 +45,9 @@ enum PreCheckErrorCode {
     kInsufficientFunds,
     kInternalError,
     kIntrinsicGasTooLow,
+    kIsNotLondon,
     kMaxFeePerBlobGasTooLowError,
-    kTipHigherThanFeeCap
+    kTipHigherThanFeeCap,
 };
 
 struct ExecutionResult {

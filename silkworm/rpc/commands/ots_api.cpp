@@ -421,13 +421,12 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         BlockNum max_block_prev_chunk = 0;
         roaring::Roaring64Map bitmap;
 
+        if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
+            co_await tx->close();
+            co_return;
+        }
         while (true) {
-            if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
-            }
-
             bitmap = db::bitmap::parse(key_value.value);
             auto const max_block = bitmap.maximum();
             auto block_key{db::block_key(max_block)};
@@ -451,6 +450,10 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             }
             max_block_prev_chunk = max_block;
             key_value = co_await account_history_cursor->next();
+
+            if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
+                break;
+            }
         }
 
         uint64_t cardinality = bitmap.cardinality();

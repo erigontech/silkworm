@@ -117,7 +117,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         EVMExecutor executor{*chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
         CHECK(result.error_code == std::nullopt);
-        CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 60000");
+        CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 120000");
     }
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {

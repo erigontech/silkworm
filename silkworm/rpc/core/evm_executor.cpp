@@ -209,11 +209,15 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
                 return PreCheckResult{error, PreCheckErrorCode::kTipHigherThanFeeCap};
             }
         }
+    } else {
+        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+            return PreCheckResult{"eip-1559 transactions require london", PreCheckErrorCode::kIsNotLondon};
+        }
     }
 
     if (rev >= EVMC_CANCUN) {
         if (!evm.block().header.excess_blob_gas) {
-            std::string error = "internal Error Cancun is active but ExcessBlobGas is nil";
+            std::string error = "internal failure: Cancun is active but ExcessBlobGas is nil";
             return PreCheckResult{error, PreCheckErrorCode::kInternalError};
         }
     }
@@ -264,7 +268,7 @@ ExecutionResult EVMExecutor::call(
     intx::uint256 want;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
-        const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+        const intx::uint256 effective_gas_price{txn.max_fee_per_gas};
         want = txn.gas_limit * effective_gas_price;
     } else {
         want = 0;

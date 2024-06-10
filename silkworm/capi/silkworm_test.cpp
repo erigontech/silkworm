@@ -845,10 +845,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
     }
 #endif  // _WIN32
 
+#ifndef _WIN32  // https://github.com/erigontech/silkworm/issues/2083
     SECTION("test settings: valid port") {
         CHECK(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
         REQUIRE(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
+#endif  // _WIN32
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {

@@ -268,7 +268,8 @@ ExecutionResult EVMExecutor::call(
     intx::uint256 want;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
-        const intx::uint256 effective_gas_price{txn.max_fee_per_gas};
+        const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                        : txn.max_priority_fee_per_gas};
         want = txn.gas_limit * effective_gas_price;
     } else {
         want = 0;

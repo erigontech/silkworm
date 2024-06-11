@@ -16,11 +16,8 @@
 
 #include "backend_kv_server.hpp"
 
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <silkworm/infra/common/log.hpp>
+#include <silkworm/db/remote/kv/grpc/server/kv_calls.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
-#include <silkworm/node/remote/kv/grpc/server/kv_calls.hpp>
 
 namespace silkworm::rpc {
 

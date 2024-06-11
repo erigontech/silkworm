@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/test_util/fixture.hpp>
+#include <silkworm/infra/test_util/fixture.hpp>
 
 #include "../../test_util/sample_protos.hpp"
 

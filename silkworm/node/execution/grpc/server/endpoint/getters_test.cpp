@@ -22,8 +22,8 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/test_util/fixture.hpp>
 #include <silkworm/interfaces/execution/execution.pb.h>
-#include <silkworm/node/test_util/fixture.hpp>
 #include <silkworm/node/test_util/sample_blocks.hpp>
 
 #include "../../test_util/sample_protos.hpp"

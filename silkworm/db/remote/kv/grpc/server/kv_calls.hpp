@@ -34,8 +34,8 @@
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
-#include "state_change_collection.hpp"
 #include "../../api/direct_service.hpp"
+#include "state_change_collection.hpp"
 
 // KV API protocol versions
 // 5.1.0 - first issue

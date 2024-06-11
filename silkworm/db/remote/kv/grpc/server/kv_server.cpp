@@ -22,16 +22,18 @@
 
 #include "kv_calls.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm::kv::grpc::server {
 
-KvServer::KvServer(const ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source)
+using rpc::request_repeatedly;
+
+KvServer::KvServer(const rpc::ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source)
     : Server(settings), chaindata_env_{chaindata_env}, state_change_source_{state_change_source} {
     setup_kv_calls();
     SILK_INFO << "KvServer created listening on: " << settings.address_uri;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
-void KvServer::register_async_services(grpc::ServerBuilder& builder) {
+void KvServer::register_async_services(::grpc::ServerBuilder& builder) {
     builder.RegisterService(&kv_async_service_);
 }
 
@@ -95,4 +97,4 @@ void KvServer::register_request_calls() {
     }
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::kv::grpc::server

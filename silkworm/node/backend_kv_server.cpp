@@ -19,16 +19,16 @@
 #include <silkworm/db/remote/kv/grpc/server/kv_calls.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm::node {
 
-BackEndKvServer::BackEndKvServer(const ServerSettings& settings, const EthereumBackEnd& backend)
+BackEndKvServer::BackEndKvServer(const rpc::ServerSettings& settings, const EthereumBackEnd& backend)
     : Server(settings),
       BackEndServer(settings, backend),
       KvServer(settings, backend.chaindata_env(), backend.state_change_source()) {
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
-void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
+void BackEndKvServer::register_async_services(::grpc::ServerBuilder& builder) {
     BackEndServer::register_async_services(builder);
     KvServer::register_async_services(builder);
 }
@@ -39,4 +39,4 @@ void BackEndKvServer::register_request_calls() {
     KvServer::register_request_calls();
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::node

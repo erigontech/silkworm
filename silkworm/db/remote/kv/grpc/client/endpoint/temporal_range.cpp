@@ -19,7 +19,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/bytes.hpp>
 
-namespace silkworm::remote::kv::grpc::client {
+namespace silkworm::kv::grpc::client {
 
 namespace proto = ::remote;
 
@@ -96,4 +96,4 @@ api::DomainRangeResult domain_range_result_from_response(const ::remote::Pairs& 
     return result;
 }
 
-}  // namespace silkworm::remote::kv::grpc::client
+}  // namespace silkworm::kv::grpc::client

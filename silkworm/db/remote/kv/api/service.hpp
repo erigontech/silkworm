@@ -20,11 +20,15 @@
 
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
+#include "endpoint/version.hpp"
 
-namespace silkworm::remote::kv::api {
+namespace silkworm::kv::api {
 
 struct Service {
     virtual ~Service() = default;
+
+    // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
+    virtual Task<Version> version() = 0;
 
     /** Temporal Point Queries **/
 
@@ -46,4 +50,4 @@ struct Service {
     virtual Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) = 0;
 };
 
-}  // namespace silkworm::remote::kv::api
+}  // namespace silkworm::kv::api

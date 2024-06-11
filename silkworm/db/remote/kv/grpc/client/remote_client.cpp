@@ -24,7 +24,7 @@
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
-namespace silkworm::remote::kv::grpc::client {
+namespace silkworm::kv::grpc::client {
 
 namespace proto = ::remote;
 using Stub = proto::KV::StubInterface;
@@ -47,6 +47,11 @@ class RemoteClientImpl final : public api::Service {
 
     RemoteClientImpl(const RemoteClientImpl&) = delete;
     RemoteClientImpl& operator=(const RemoteClientImpl&) = delete;
+
+    // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
+    Task<api::Version> version() override {
+        co_return api::kCurrentVersion;
+    }
 
     /** Temporal Point Queries **/
 
@@ -106,4 +111,4 @@ std::shared_ptr<api::Service> RemoteClient::service() {
     return p_impl_;
 }
 
-}  // namespace silkworm::remote::kv::grpc::client
+}  // namespace silkworm::kv::grpc::client

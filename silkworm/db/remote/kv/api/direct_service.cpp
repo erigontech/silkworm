@@ -16,9 +16,14 @@
 
 #include "direct_service.hpp"
 
-namespace silkworm::remote::kv::api {
+namespace silkworm::kv::api {
 
 DirectService::DirectService() = default;
+
+// rpc Version(google.protobuf.Empty) returns (types.VersionReply);
+Task<Version> DirectService::version() {
+    co_return kCurrentVersion;
+}
 
 /** Temporal Point Queries **/
 
@@ -54,4 +59,4 @@ Task<DomainRangeResult> DirectService::get_domain_range(const DomainRangeQuery&)
     co_return DomainRangeResult{};
 }
 
-}  // namespace silkworm::remote::kv::api
+}  // namespace silkworm::kv::api

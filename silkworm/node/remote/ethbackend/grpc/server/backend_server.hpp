@@ -24,17 +24,17 @@
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm::ethbackend::grpc::server {
 
-class BackEndServer : public virtual Server {
+class BackEndServer : public virtual rpc::Server {
   public:
-    BackEndServer(const ServerSettings& settings, const EthereumBackEnd& backend);
+    BackEndServer(const rpc::ServerSettings& settings, const EthereumBackEnd& backend);
 
     BackEndServer(const BackEndServer&) = delete;
     BackEndServer& operator=(const BackEndServer&) = delete;
 
   protected:
-    void register_async_services(grpc::ServerBuilder& builder) override;
+    void register_async_services(::grpc::ServerBuilder& builder) override;
     void register_request_calls() override;
 
   private:
@@ -48,4 +48,4 @@ class BackEndServer : public virtual Server {
     remote::ETHBACKEND::AsyncService backend_async_service_;
 };
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::ethbackend::grpc::server

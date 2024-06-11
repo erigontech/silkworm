@@ -21,16 +21,18 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm::ethbackend::grpc::server {
 
-BackEndServer::BackEndServer(const ServerSettings& settings, const EthereumBackEnd& backend)
+using rpc::request_repeatedly;
+
+BackEndServer::BackEndServer(const rpc::ServerSettings& settings, const EthereumBackEnd& backend)
     : Server(settings), backend_(backend) {
     setup_backend_calls(backend);
     SILK_INFO << "BackEndServer created listening on: " << settings.address_uri;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
-void BackEndServer::register_async_services(grpc::ServerBuilder& builder) {
+void BackEndServer::register_async_services(::grpc::ServerBuilder& builder) {
     builder.RegisterService(&backend_async_service_);
 }
 
@@ -95,4 +97,4 @@ void BackEndServer::register_request_calls() {
     }
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::ethbackend::grpc::server

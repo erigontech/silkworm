@@ -28,10 +28,10 @@
 
 #include "../test_util/sample_protos.hpp"
 
-namespace silkworm::remote::kv::grpc::client {
+namespace silkworm::kv::grpc::client {
 
 using namespace silkworm::grpc::test_util;
-using namespace silkworm::remote::kv::test_util;
+using namespace silkworm::kv::test_util;
 namespace proto = ::remote;
 
 using StrictMockKVStub = testing::StrictMock<proto::FixIssue24351_MockKVStub>;
@@ -181,4 +181,4 @@ TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainRange", "[node][remote][kv][
     }
 }
 
-}  // namespace silkworm::remote::kv::grpc::client
+}  // namespace silkworm::kv::grpc::client

@@ -37,7 +37,7 @@
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
 
-namespace silkworm::rpc {
+namespace silkworm::ethbackend::grpc::server {
 
 //! Current devp2p 'eth' protocol version in use.
 constexpr uint64_t kEthDevp2pProtocolVersion = 66;
@@ -46,7 +46,7 @@ constexpr uint64_t kEthDevp2pProtocolVersion = 66;
 constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 3, 0);
 
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
-class EtherbaseCall : public server::UnaryCall<remote::EtherbaseRequest, remote::EtherbaseReply> {
+class EtherbaseCall : public rpc::server::UnaryCall<remote::EtherbaseRequest, remote::EtherbaseReply> {
   public:
     using Base::UnaryCall;
 
@@ -59,7 +59,7 @@ class EtherbaseCall : public server::UnaryCall<remote::EtherbaseRequest, remote:
 };
 
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
-class NetVersionCall : public server::UnaryCall<remote::NetVersionRequest, remote::NetVersionReply> {
+class NetVersionCall : public rpc::server::UnaryCall<remote::NetVersionRequest, remote::NetVersionReply> {
   public:
     using Base::UnaryCall;
 
@@ -72,7 +72,7 @@ class NetVersionCall : public server::UnaryCall<remote::NetVersionRequest, remot
 };
 
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.
-class NetPeerCountCall : public server::UnaryCall<remote::NetPeerCountRequest, remote::NetPeerCountReply> {
+class NetPeerCountCall : public rpc::server::UnaryCall<remote::NetPeerCountRequest, remote::NetPeerCountReply> {
   public:
     using Base::UnaryCall;
 
@@ -80,7 +80,7 @@ class NetPeerCountCall : public server::UnaryCall<remote::NetPeerCountRequest, r
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-class BackEndVersionCall : public server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
+class BackEndVersionCall : public rpc::server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
   public:
     using Base::UnaryCall;
 
@@ -93,7 +93,7 @@ class BackEndVersionCall : public server::UnaryCall<google::protobuf::Empty, typ
 };
 
 //! Unary RPC for ProtocolVersion method of 'ethbackend' gRPC protocol.
-class ProtocolVersionCall : public server::UnaryCall<remote::ProtocolVersionRequest, remote::ProtocolVersionReply> {
+class ProtocolVersionCall : public rpc::server::UnaryCall<remote::ProtocolVersionRequest, remote::ProtocolVersionReply> {
   public:
     using Base::UnaryCall;
 
@@ -106,7 +106,7 @@ class ProtocolVersionCall : public server::UnaryCall<remote::ProtocolVersionRequ
 };
 
 //! Unary RPC for ClientVersion method of 'ethbackend' gRPC protocol.
-class ClientVersionCall : public server::UnaryCall<remote::ClientVersionRequest, remote::ClientVersionReply> {
+class ClientVersionCall : public rpc::server::UnaryCall<remote::ClientVersionRequest, remote::ClientVersionReply> {
   public:
     using Base::UnaryCall;
 
@@ -119,7 +119,7 @@ class ClientVersionCall : public server::UnaryCall<remote::ClientVersionRequest,
 };
 
 //! Server-streaming RPC for Subscribe method of 'ethbackend' gRPC protocol.
-class SubscribeCall : public server::ServerStreamingCall<remote::SubscribeRequest, remote::SubscribeReply> {
+class SubscribeCall : public rpc::server::ServerStreamingCall<remote::SubscribeRequest, remote::SubscribeReply> {
   public:
     using Base::ServerStreamingCall;
 
@@ -127,11 +127,11 @@ class SubscribeCall : public server::ServerStreamingCall<remote::SubscribeReques
 };
 
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
-class NodeInfoCall : public server::UnaryCall<remote::NodesInfoRequest, remote::NodesInfoReply> {
+class NodeInfoCall : public rpc::server::UnaryCall<remote::NodesInfoRequest, remote::NodesInfoReply> {
   public:
     using Base::UnaryCall;
 
     Task<void> operator()(const EthereumBackEnd& backend);
 };
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::ethbackend::grpc::server

@@ -22,10 +22,10 @@
 
 #include "../../test_util/sample_protos.hpp"
 
-namespace silkworm::remote::kv::grpc::client {
+namespace silkworm::kv::grpc::client {
 
 using namespace evmc::literals;
-using namespace silkworm::remote::kv::test_util;
+using namespace silkworm::kv::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::remote;
 
@@ -95,4 +95,4 @@ TEST_CASE("domain_get_result_from_response", "[node][remote][kv][grpc]") {
     }
 }
 
-}  // namespace silkworm::remote::kv::grpc::client
+}  // namespace silkworm::kv::grpc::client

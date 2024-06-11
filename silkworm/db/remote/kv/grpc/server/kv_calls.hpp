@@ -34,22 +34,18 @@
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
+#include "../../api/direct_service.hpp"
 #include "state_change_collection.hpp"
 
 // KV API protocol versions
 // 5.1.0 - first issue
 
-namespace silkworm::rpc {
+namespace silkworm::kv::grpc::server {
 
-using KvVersion = std::tuple<uint32_t, uint32_t, uint32_t>;
-
-KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs);
+api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs);
 
 //! Current DB schema version.
-constexpr auto kDbSchemaVersion = KvVersion{3, 0, 0};
-
-//! Current KV API protocol version.
-constexpr auto kKvApiVersion = KvVersion{5, 1, 0};
+constexpr auto kDbSchemaVersion = api::Version{3, 0, 0};
 
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
 constexpr std::chrono::milliseconds kMaxTxDuration{60'000};
@@ -59,7 +55,7 @@ constexpr std::size_t kMaxTxCursors{100};
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 //! rpc Version(google.protobuf.Empty) returns (types.VersionReply);
-class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
+class KvVersionCall : public rpc::server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
   public:
     using Base::UnaryCall;
 
@@ -73,7 +69,7 @@ class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::V
 
 //! Bidirectional-streaming RPC for Tx method of 'kv' gRPC protocol.
 //! rpc Tx(stream Cursor) returns (stream Pair);
-class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
+class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pair> {
   public:
     using Base::BidiStreamingCall;
 
@@ -142,7 +138,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     void throw_with_internal_error(const std::string& message);
 
-    void throw_with_error(grpc::Status&& status);
+    void throw_with_error(::grpc::Status&& status);
 
     static std::chrono::milliseconds max_ttl_duration_;
     static inline uint64_t next_tx_id_{0};
@@ -154,7 +150,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
 //! rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
-class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeRequest, remote::StateChangeBatch> {
+class StateChangesCall : public rpc::server::ServerStreamingCall<remote::StateChangeRequest, remote::StateChangeBatch> {
   public:
     using Base::ServerStreamingCall;
 
@@ -163,7 +159,7 @@ class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeR
 
 //! Unary RPC for Snapshots method of 'kv' gRPC protocol.
 //! rpc Snapshots(SnapshotsRequest) returns (SnapshotsReply);
-class SnapshotsCall : public server::UnaryCall<remote::SnapshotsRequest, remote::SnapshotsReply> {
+class SnapshotsCall : public rpc::server::UnaryCall<remote::SnapshotsRequest, remote::SnapshotsReply> {
   public:
     using Base::UnaryCall;
 
@@ -172,7 +168,7 @@ class SnapshotsCall : public server::UnaryCall<remote::SnapshotsRequest, remote:
 
 //! Unary RPC for HistoryGet method of 'kv' gRPC protocol.
 //! rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-class HistoryGetCall : public server::UnaryCall<remote::HistoryGetReq, remote::HistoryGetReply> {
+class HistoryGetCall : public rpc::server::UnaryCall<remote::HistoryGetReq, remote::HistoryGetReply> {
   public:
     using Base::UnaryCall;
 
@@ -181,7 +177,7 @@ class HistoryGetCall : public server::UnaryCall<remote::HistoryGetReq, remote::H
 
 //! Unary RPC for DomainGet method of 'kv' gRPC protocol.
 //! rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-class DomainGetCall : public server::UnaryCall<remote::DomainGetReq, remote::DomainGetReply> {
+class DomainGetCall : public rpc::server::UnaryCall<remote::DomainGetReq, remote::DomainGetReply> {
   public:
     using Base::UnaryCall;
 
@@ -190,7 +186,7 @@ class DomainGetCall : public server::UnaryCall<remote::DomainGetReq, remote::Dom
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
 //! rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-class IndexRangeCall : public server::UnaryCall<remote::IndexRangeReq, remote::IndexRangeReply> {
+class IndexRangeCall : public rpc::server::UnaryCall<remote::IndexRangeReq, remote::IndexRangeReply> {
   public:
     using Base::UnaryCall;
 
@@ -199,7 +195,7 @@ class IndexRangeCall : public server::UnaryCall<remote::IndexRangeReq, remote::I
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
 //! rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-class HistoryRangeCall : public server::UnaryCall<remote::HistoryRangeReq, remote::Pairs> {
+class HistoryRangeCall : public rpc::server::UnaryCall<remote::HistoryRangeReq, remote::Pairs> {
   public:
     using Base::UnaryCall;
 
@@ -208,11 +204,11 @@ class HistoryRangeCall : public server::UnaryCall<remote::HistoryRangeReq, remot
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
 //! rpc DomainRange(DomainRangeReq) returns (Pairs);
-class DomainRangeCall : public server::UnaryCall<remote::DomainRangeReq, remote::Pairs> {
+class DomainRangeCall : public rpc::server::UnaryCall<remote::DomainRangeReq, remote::Pairs> {
   public:
     using Base::UnaryCall;
 
     Task<void> operator()();
 };
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::kv::grpc::server

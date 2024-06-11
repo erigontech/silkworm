@@ -16,7 +16,6 @@
 
 #include "execution_engine.hpp"
 
-#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -27,13 +26,13 @@
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
 
-namespace asio = boost::asio;
 using namespace silkworm::test_util;
 using namespace stagedsync;
 
@@ -47,8 +46,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 TEST_CASE("ExecutionEngine") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    asio::io_context io;
-    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+    test_util::TaskRunner runner;
 
     db::test_util::TempChainData context;
     context.add_genesis_data();
@@ -59,7 +57,7 @@ TEST_CASE("ExecutionEngine") {
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    ExecutionEngine_ForTest exec_engine{io, node_settings, db_access};
+    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -110,7 +108,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(progress == 1);
 
         // verifying the chain
-        auto verification = exec_engine.verify_chain(header1_hash).get();
+        auto verification = runner.run(exec_engine.verify_chain(header1_hash));
 
         CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
         CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
@@ -177,7 +175,7 @@ TEST_CASE("ExecutionEngine") {
 
         // inserting & verifying the block
         exec_engine.insert_block(block1);
-        auto verification = exec_engine.verify_chain(block1_hash).get();
+        auto verification = runner.run(exec_engine.verify_chain(block1_hash));
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
@@ -221,7 +219,7 @@ TEST_CASE("ExecutionEngine") {
         exec_engine.insert_block(block1);
         exec_engine.insert_block(block2);
         exec_engine.insert_block(block3);
-        auto verification = exec_engine.verify_chain(block3_hash).get();
+        auto verification = runner.run(exec_engine.verify_chain(block3_hash));
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
@@ -249,7 +247,7 @@ TEST_CASE("ExecutionEngine") {
         {
             // inserting & verifying the block
             exec_engine.insert_block(block4);
-            verification = exec_engine.verify_chain(block4_hash).get();
+            verification = runner.run(exec_engine.verify_chain(block4_hash));
 
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);
@@ -281,7 +279,7 @@ TEST_CASE("ExecutionEngine") {
         {
             // inserting & verifying the block
             exec_engine.insert_block(block2b);
-            verification = exec_engine.verify_chain(block2b_hash).get();
+            verification = runner.run(exec_engine.verify_chain(block2b_hash));
 
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);

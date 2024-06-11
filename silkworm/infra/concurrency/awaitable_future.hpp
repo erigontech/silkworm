@@ -44,7 +44,7 @@ class AwaitableFuture {
     AwaitableFuture(AwaitableFuture&&) noexcept = default;
     AwaitableFuture& operator=(AwaitableFuture&&) noexcept = default;
 
-    Task<T> get_async() {
+    Task<T> get() {
         try {
             std::optional<T> result = co_await channel_->async_receive(boost::asio::use_awaitable);
             co_return std::move(result.value());
@@ -54,14 +54,8 @@ class AwaitableFuture {
         }
     }
 
-    T get() {
-        try {
-            std::optional<T> result = channel_->async_receive(boost::asio::use_future).get();
-            return std::move(result.value());
-        } catch (const boost::system::system_error& ex) {
-            close_and_throw_if_cancelled(ex);
-            throw ex;
-        }
+    Task<T> get_async() {
+        return get();
     }
 
   private:

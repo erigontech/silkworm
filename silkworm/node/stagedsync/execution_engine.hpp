@@ -62,7 +62,7 @@ class ExecutionEngine : public Stoppable {
     virtual void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
     bool insert_block(const std::shared_ptr<Block>& block);
 
-    virtual VerificationResultFuture verify_chain(Hash head_block_hash);
+    virtual Task<VerificationResult> verify_chain(Hash head_block_hash);
 
     virtual bool notify_fork_choice_update(Hash head_block_hash,
                                            std::optional<Hash> finalized_block_hash,

@@ -16,7 +16,6 @@
 
 #include <algorithm>
 
-#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -26,6 +25,7 @@
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
@@ -35,7 +35,6 @@
 namespace silkworm {
 
 using namespace stagedsync;
-namespace asio = boost::asio;
 
 class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
@@ -75,8 +74,7 @@ class DummyRuleSet : public protocol::RuleSet {
 TEST_CASE("Headers receiving and saving") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    asio::io_context io;
-    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+    test_util::TaskRunner runner;
 
     db::test_util::TempChainData context;
     context.add_genesis_data();
@@ -88,7 +86,7 @@ TEST_CASE("Headers receiving and saving") {
     db::RWAccess db_access{context.env()};
 
     // creating the ExecutionEngine
-    ExecutionEngine_ForTest exec_engine{io, node_settings, db_access};
+    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -202,7 +200,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db == header1b);
 
         // verify the inserted chain
-        auto verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();
+        auto verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
@@ -279,7 +277,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header2_in_db == header2);
 
         // verify the inserted chain
-        auto verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();
+        auto verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
@@ -320,7 +318,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db == header1b);
 
         // verify the inserted chain
-        verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();
+        verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
@@ -397,7 +395,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header2_in_db == header2);
 
         // verify the inserted chain
-        auto verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();
+        auto verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
@@ -441,7 +439,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db == header1b);
 
         // verify the inserted chain
-        verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();  // this will trigger unwind
+        // this will trigger unwind
+        verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{1, header1b_hash});
@@ -512,7 +511,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db == header1b);
 
         // verify the inserted chain
-        auto verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();
+        auto verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{1, header1b_hash});
@@ -568,7 +567,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db == header1b);
 
         // verify the inserted chain
-        verification = exec_engine.verify_chain(chain_fork_view.head_hash()).get();  // this will trigger unwind
+        // this will trigger unwind
+        verification = runner.run(exec_engine.verify_chain(chain_fork_view.head_hash()));
         REQUIRE(std::holds_alternative<ValidChain>(verification));
         valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});

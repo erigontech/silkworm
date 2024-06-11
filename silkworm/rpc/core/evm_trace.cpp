@@ -975,7 +975,7 @@ silkworm::ByteView StateAddresses::get_code(const evmc::address& address) const 
     if (it != codes_.end()) {
         return it->second;
     }
-    return initial_ibs_.get_code(address);
+    return initial_ibs_.get_code(address).executable_code;
 }
 
 void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1060,7 +1060,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
                         "0x" + intx::to_string(initial_balance, 16),
                         "0x" + intx::to_string(final_balance, 16)};
                 }
-                auto final_code = intra_block_state.get_code(address);
+                auto final_code = intra_block_state.get_code(address).executable_code;
                 if (initial_code != final_code) {
                     all_equals = false;
                     entry.code = DiffValue{
@@ -1108,7 +1108,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
             entry.balance = DiffValue{
                 {},
                 "0x" + intx::to_string(balance, 16)};
-            const auto code = intra_block_state.get_code(address);
+            const auto code = intra_block_state.get_code(address).executable_code;
             entry.code = DiffValue{
                 {},
                 "0x" + silkworm::to_hex(code)};
@@ -1149,7 +1149,7 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
         auto nonce = intra_block_state.get_nonce(address);
         state_addresses_.set_nonce(address, nonce);
 
-        auto code = intra_block_state.get_code(address);
+        auto code = intra_block_state.get_code(address).executable_code;
         state_addresses_.set_code(address, code);
     }
 }

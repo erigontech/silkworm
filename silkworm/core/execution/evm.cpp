@@ -250,8 +250,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             tracer.get().on_execution_end(res.raw(), state_);
         }
     } else {
-        const ByteView raw_code{state_.get_code(message.code_address)};
-        const auto code = evmone::baseline::analyze(EVMC_FRONTIER, raw_code);
+        const auto& code{state_.get_code(message.code_address)};
         if (code.executable_code.empty() && tracers_.empty()) {  // Do not skip execution if there are any tracers
             return res;
         }
@@ -406,7 +405,7 @@ evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcep
 }
 
 size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
-    return evm_.state().get_code(address).size();
+    return evm_.state().get_code(address).executable_code.size();
 }
 
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
@@ -419,7 +418,7 @@ evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcep
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                           size_t buffer_size) const noexcept {
-    ByteView code{evm_.state().get_code(address)};
+    ByteView code{evm_.state().get_code(address).executable_code};
 
     if (code_offset >= code.size()) {
         return 0;

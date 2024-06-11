@@ -243,7 +243,7 @@ void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkwo
     nonce = intra_block_state.get_nonce(address_);
     balance = intra_block_state.get_balance(address_);
     code_hash = intra_block_state.get_code_hash(address_);
-    code = intra_block_state.get_code(address_);
+    code = intra_block_state.get_code(address_).executable_code;
 }
 
 void DebugTracer::write_log(const DebugLog& log) {

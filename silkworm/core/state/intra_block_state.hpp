@@ -19,6 +19,8 @@
 #include <memory>
 #include <vector>
 
+#include <absl/container/node_hash_map.h>
+#include <evmone/baseline.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -81,7 +83,7 @@ class IntraBlockState {
     uint64_t get_nonce(const evmc::address& address) const noexcept;
     void set_nonce(const evmc::address& address, uint64_t nonce) noexcept;
 
-    ByteView get_code(const evmc::address& address) const noexcept;
+    const evmone::baseline::CodeAnalysis& get_code(const evmc::address& address) const noexcept;
     evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, ByteView code) noexcept;
 
@@ -144,8 +146,10 @@ class IntraBlockState {
     mutable FlatHashMap<evmc::address, state::Object> objects_;
     mutable FlatHashMap<evmc::address, state::Storage> storage_;
 
-    mutable FlatHashMap<evmc::bytes32, ByteView> existing_code_;
-    FlatHashMap<evmc::bytes32, std::vector<uint8_t>> new_code_;
+    mutable absl::node_hash_map<evmc::bytes32, evmone::baseline::CodeAnalysis> existing_code_;
+
+    // FIXME: This probably should be a node map too, but not exercised by tests.
+    FlatHashMap<evmc::bytes32, evmone::baseline::CodeAnalysis> new_code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

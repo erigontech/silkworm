@@ -328,7 +328,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                 json_result["nonce"] = "0x" + oss.str();
                 json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
                 json_result["codeHash"] = ibs.get_code_hash(address);
-                json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
+                json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address).executable_code);
             } else {
                 json_result["balance"] = "0x0";
                 json_result["code"] = "0x";

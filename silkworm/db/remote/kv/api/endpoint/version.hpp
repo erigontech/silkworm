@@ -16,21 +16,13 @@
 
 #pragma once
 
-#include <memory>
-
-#include "../api/client.hpp"
-#include "../api/direct_service.hpp"
+#include <tuple>
 
 namespace silkworm::kv::api {
 
-struct DirectClient : public api::Client {
-    explicit DirectClient(std::shared_ptr<DirectService> direct_service);
-    ~DirectClient() override = default;
+using Version = std::tuple<uint32_t, uint32_t, uint32_t>;
 
-    std::shared_ptr<api::Service> service() override;
-
-  private:
-    std::shared_ptr<DirectService> direct_service_;
-};
+//! Current KV API protocol version.
+constexpr auto kCurrentVersion = Version{5, 1, 0};
 
 }  // namespace silkworm::kv::api

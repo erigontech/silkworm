@@ -27,14 +27,14 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm::kv::grpc::server {
 
 using boost::asio::as_tuple;
 using namespace boost::asio::experimental::awaitable_operators;
 using boost::asio::steady_timer;
 using boost::asio::use_awaitable;
 
-KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs) {
+api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs) {
     uint32_t lhs_major = std::get<0>(lhs);
     uint32_t lhs_minor = std::get<1>(lhs);
     uint32_t rhs_major = std::get<0>(rhs);
@@ -57,7 +57,7 @@ KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs) {
 types::VersionReply KvVersionCall::response_;
 
 void KvVersionCall::fill_predefined_reply() {
-    const auto max_version = higher_version_ignoring_patch(kDbSchemaVersion, kKvApiVersion);
+    const auto max_version = higher_version_ignoring_patch(kDbSchemaVersion, api::kCurrentVersion);
     KvVersionCall::response_.set_major(std::get<0>(max_version));
     KvVersionCall::response_.set_minor(std::get<1>(max_version));
     KvVersionCall::response_.set_patch(std::get<2>(max_version));
@@ -65,7 +65,7 @@ void KvVersionCall::fill_predefined_reply() {
 
 Task<void> KvVersionCall::operator()() {
     SILK_TRACE << "KvVersionCall START";
-    co_await agrpc::finish(responder_, response_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
     SILK_TRACE << "KvVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
 }
 
@@ -78,7 +78,7 @@ void TxCall::set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_durat
 Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
     SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env->get_info().mi_numreaders;
 
-    grpc::Status status{grpc::Status::OK};
+    ::grpc::Status status{::grpc::Status::OK};
     try {
         // Assign a monotonically increasing unique ID to remote transaction
         const auto tx_id = ++next_tx_id_;
@@ -93,7 +93,7 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
         tx_id_pair.set_view_id(read_only_txn_->id());
         if (!co_await agrpc::write(responder_, tx_id_pair)) {
             SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
-            co_await agrpc::finish(responder_, grpc::Status::OK);
+            co_await agrpc::finish(responder_, ::grpc::Status::OK);
             co_return;
         }
         SILK_DEBUG << "TxCall announcement with txid=" << read_only_txn_->id() << " sent";
@@ -128,15 +128,15 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
             } catch (const mdbx::exception& e) {
                 const auto error_message = "start tx failed: " + std::string{e.what()};
                 SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
-                status = grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, error_message};
-            } catch (const server::CallException& ce) {
+                status = ::grpc::Status{::grpc::StatusCode::RESOURCE_EXHAUSTED, error_message};
+            } catch (const rpc::server::CallException& ce) {
                 status = ce.status();
             } catch (const boost::system::system_error& se) {
                 if (se.code() != boost::asio::error::operation_aborted) {
-                    status = grpc::Status{grpc::StatusCode::INTERNAL, se.what()};
+                    status = ::grpc::Status{::grpc::StatusCode::INTERNAL, se.what()};
                 }
             } catch (const std::exception& exc) {
-                status = grpc::Status{grpc::StatusCode::INTERNAL, exc.what()};
+                status = ::grpc::Status{::grpc::StatusCode::INTERNAL, exc.what()};
             }
         };
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
@@ -151,7 +151,7 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
                 if (!ec) {
                     const auto error_msg{"no incoming request in " + std::to_string(max_idle_duration_.count()) + " ms"};
                     SILK_WARN << "Tx idle peer: " << server_context_.peer() << " error: " << error_msg;
-                    status = grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_msg};
+                    status = ::grpc::Status{::grpc::StatusCode::DEADLINE_EXCEEDED, error_msg};
                     break;
                 }
             }
@@ -173,11 +173,11 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
     } catch (const mdbx::exception& e) {
         const auto error_message = "start tx failed: " + std::string{e.what()};
         SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
-        status = grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, error_message};
-    } catch (const server::CallException& ce) {
+        status = ::grpc::Status{::grpc::StatusCode::RESOURCE_EXHAUSTED, error_message};
+    } catch (const rpc::server::CallException& ce) {
         status = ce.status();
     } catch (const std::exception& exc) {
-        status = grpc::Status{grpc::StatusCode::INTERNAL, exc.what()};
+        status = ::grpc::Status{::grpc::StatusCode::INTERNAL, exc.what()};
     }
 
     co_await agrpc::finish(responder_, status);
@@ -208,14 +208,14 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     if (!db::has_map(read_only_txn_, bucket_name.c_str())) {
         const auto err = "unknown bucket: " + request->bucket_name();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
-        throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, err});
+        throw_with_error(::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, err});
     }
 
     // The number of opened cursors shall not exceed the maximum threshold.
     if (cursors_.size() == kMaxTxCursors) {
         const auto err = "maximum cursors per txn reached: " + std::to_string(cursors_.size());
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
-        throw_with_error(grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, err});
+        throw_with_error(::grpc::Status{::grpc::StatusCode::RESOURCE_EXHAUSTED, err});
     }
 
     // Create a new database cursor tracking also bucket name (needed for reopening). We create a read-only dup-sort
@@ -233,7 +233,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     if (!inserted) {
         const auto error_message = "assigned cursor ID already in use: " + std::to_string(last_cursor_id_);
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        throw_with_error(grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
+        throw_with_error(::grpc::Status{::grpc::StatusCode::ALREADY_EXISTS, error_message});
     }
 
     // Send the assigned cursor ID back to the client.
@@ -246,7 +246,7 @@ void TxCall::handle_cursor_operation(const remote::Cursor* request, remote::Pair
     if (cursor_it == cursors_.end()) {
         const auto error_message = "unknown cursor: " + std::to_string(request->cursor());
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
+        throw_with_error(::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, error_message});
     }
     auto& cursor = cursor_it->second.cursor;
     try {
@@ -262,7 +262,7 @@ void TxCall::handle_cursor_close(const remote::Cursor* request) {
     if (cursor_it == cursors_.end()) {
         const auto error_message = "unknown cursor: " + std::to_string(request->cursor());
         SILK_ERROR << "Tx peer: " << peer() << " op: " << remote::Op_Name(request->op()) << " " << error_message;
-        throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
+        throw_with_error(::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, error_message});
     }
     cursors_.erase(cursor_it);
     SILK_DEBUG << "Tx peer: " << peer() << " closed cursor: " << request->cursor();
@@ -646,16 +646,16 @@ void TxCall::throw_with_internal_error(const remote::Cursor* request, const std:
     error_message.append(remote::Op_Name(request->op()));
     error_message.append(" on cursor: ");
     error_message.append(std::to_string(request->cursor()));
-    throw_with_error(grpc::Status{grpc::StatusCode::INTERNAL, error_message});
+    throw_with_error(::grpc::Status{::grpc::StatusCode::INTERNAL, error_message});
 }
 
 void TxCall::throw_with_internal_error(const std::string& message) {
-    throw_with_error(grpc::Status{grpc::StatusCode::INTERNAL, message});
+    throw_with_error(::grpc::Status{::grpc::StatusCode::INTERNAL, message});
 }
 
-void TxCall::throw_with_error(grpc::Status&& status) {
+void TxCall::throw_with_error(::grpc::Status&& status) {
     SILK_ERROR << "Tx peer: " << peer() << " " << status.error_message();
-    throw server::CallException{std::move(status)};
+    throw rpc::server::CallException{std::move(status)};
 }
 
 Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
@@ -682,7 +682,7 @@ Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
     if (!token) {
         const auto error_message = "assigned consumer token already in use: " + std::to_string(source->last_token());
         SILK_ERROR << "StateChanges peer: " << peer() << " subscription failed " << error_message;
-        co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
+        co_await agrpc::finish(responder_, ::grpc::Status{::grpc::StatusCode::ALREADY_EXISTS, error_message});
         co_return;
     }
 
@@ -713,7 +713,7 @@ Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
     }
 
     SILK_DEBUG << "Closing state change stream server-side";
-    co_await agrpc::finish(responder_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, ::grpc::Status::OK);
     SILK_DEBUG << "State change stream closed server-side";
 
     SILK_TRACE << "StateChangesCall END";
@@ -724,7 +724,7 @@ Task<void> SnapshotsCall::operator()() {
     SILK_TRACE << "SnapshotsCall START";
     remote::SnapshotsReply response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "SnapshotsCall END #blocks_files: " << response.blocks_files_size() << " #history_files: " << response.history_files_size();
 }
 
@@ -732,7 +732,7 @@ Task<void> HistoryGetCall::operator()() {
     SILK_TRACE << "HistoryGetCall START";
     remote::HistoryGetReply response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "HistoryGetCall END ok: " << response.ok() << " value: " << response.v();
 }
 
@@ -740,7 +740,7 @@ Task<void> DomainGetCall::operator()() {
     SILK_TRACE << "DomainGetCall START";
     remote::DomainGetReply response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();
 }
 
@@ -748,7 +748,7 @@ Task<void> IndexRangeCall::operator()() {
     SILK_TRACE << "IndexRangeCall START";
     remote::IndexRangeReply response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "IndexRangeCall END #timestamps: " << response.timestamps_size() << " next_page_token: " << response.next_page_token();
 }
 
@@ -756,7 +756,7 @@ Task<void> HistoryRangeCall::operator()() {
     SILK_TRACE << "HistoryRangeCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "HistoryRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
                << " next_page_token: " << response.next_page_token();
 }
@@ -765,9 +765,9 @@ Task<void> DomainRangeCall::operator()() {
     SILK_TRACE << "DomainRangeCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly
-    co_await agrpc::finish(responder_, response, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "DomainRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
                << " next_page_token: " << response.next_page_token();
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::kv::grpc::server

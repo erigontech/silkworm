@@ -39,7 +39,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/remote/ethbackend/grpc/server/backend_kv_server.hpp>
+#include <silkworm/node/backend_kv_server.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
@@ -68,7 +68,7 @@ struct StandaloneBackEndKVSettings : public SilkwormSettings {
 };
 
 //! Parse the command-line arguments into the BackEnd and KV server settings
-int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
+void parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
     auto& server_settings = settings.node_settings.server_settings;
@@ -106,8 +106,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
                                                        /*create=*/false,
                                                        /*readonly=*/true};
     node_settings.chaindata_env_config.max_readers = max_readers;
-
-    return 0;
 }
 
 std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
@@ -160,10 +158,7 @@ int main(int argc, char* argv[]) {
 
     try {
         StandaloneBackEndKVSettings settings;
-        int result_code = parse_command_line(argc, argv, cli, settings);
-        if (result_code != 0) {
-            return result_code;
-        }
+        parse_command_line(argc, argv, cli, settings);
 
         const auto pid = boost::this_process::get_id();
         const auto tid = std::this_thread::get_id();
@@ -215,7 +210,7 @@ int main(int argc, char* argv[]) {
         };
         backend.set_node_name(node_name);
 
-        rpc::BackEndKvServer server{server_settings, backend};
+        node::BackEndKvServer server{server_settings, backend};
 
         // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
         Task<void> tasks;

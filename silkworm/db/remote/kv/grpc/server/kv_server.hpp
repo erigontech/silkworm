@@ -26,17 +26,17 @@
 
 #include "state_change_collection.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm::kv::grpc::server {
 
-class KvServer : public virtual Server {
+class KvServer : public virtual rpc::Server {
   public:
-    KvServer(const ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source);
+    KvServer(const rpc::ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source);
 
     KvServer(const KvServer&) = delete;
     KvServer& operator=(const KvServer&) = delete;
 
   protected:
-    void register_async_services(grpc::ServerBuilder& builder) override;
+    void register_async_services(::grpc::ServerBuilder& builder) override;
     void register_request_calls() override;
 
   private:
@@ -53,4 +53,4 @@ class KvServer : public virtual Server {
     StateChangeCollection* state_change_source_;
 };
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::kv::grpc::server

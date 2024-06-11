@@ -25,7 +25,7 @@
 #include "../../api/endpoint/temporal_point.hpp"
 #include "../../api/endpoint/temporal_range.hpp"
 
-namespace silkworm::remote::kv::test_util {
+namespace silkworm::kv::test_util {
 
 namespace proto = ::remote;
 
@@ -226,4 +226,4 @@ inline api::DomainRangeResult sample_domain_range_result() {
     };
 }
 
-}  // namespace silkworm::remote::kv::test_util
+}  // namespace silkworm::kv::test_util

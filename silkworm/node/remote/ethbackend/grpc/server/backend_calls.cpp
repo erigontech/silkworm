@@ -24,14 +24,14 @@
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/sentry/grpc/interfaces/node_info.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm::ethbackend::grpc::server {
 
 remote::EtherbaseReply EtherbaseCall::response_;
 
 void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     const auto etherbase = backend.etherbase();
     if (etherbase.has_value()) {
-        const auto h160 = H160_from_address(etherbase.value()).release();
+        const auto h160 = rpc::H160_from_address(etherbase.value()).release();
         EtherbaseCall::response_.set_allocated_address(h160);
     }
 }
@@ -39,10 +39,10 @@ void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
 Task<void> EtherbaseCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
-        co_await agrpc::finish(responder_, response_, grpc::Status::OK);
-        SILK_TRACE << "EtherbaseCall END etherbase: " << address_from_H160(response_.address());
+        co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
+        SILK_TRACE << "EtherbaseCall END etherbase: " << rpc::address_from_H160(response_.address());
     } else {
-        const grpc::Status error{grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
+        const ::grpc::Status error{::grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
         co_await agrpc::finish_with_error(responder_, error);
         SILK_TRACE << "EtherbaseCall END error: " << error;
     }
@@ -60,7 +60,7 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
 
 Task<void> NetVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "NetVersionCall START";
-    co_await agrpc::finish(responder_, response_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
     SILK_TRACE << "NetVersionCall END chain_id: " << response_.id();
 }
 
@@ -71,18 +71,18 @@ Task<void> NetPeerCountCall::operator()(const EthereumBackEnd& backend) {
     auto sentry = co_await sentry_client->service();
 
     remote::NetPeerCountReply response;
-    grpc::Status result_status{grpc::Status::OK};
+    ::grpc::Status result_status{::grpc::Status::OK};
     try {
         auto peer_count = co_await sentry->peer_count();
         response.set_count(peer_count);
         SILK_DEBUG << "Reply OK peer count = " << peer_count;
-    } catch (const GrpcStatusError& status_error) {
+    } catch (const rpc::GrpcStatusError& status_error) {
         result_status = status_error.status();
         SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {
-        co_await agrpc::finish(responder_, response, grpc::Status::OK);
+        co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
         SILK_TRACE << "NetPeerCountCall END count: " << response.count();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
@@ -100,7 +100,7 @@ void BackEndVersionCall::fill_predefined_reply() {
 
 Task<void> BackEndVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "BackEndVersionCall START";
-    co_await agrpc::finish(responder_, response_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
     SILK_TRACE << "BackEndVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
 }
 
@@ -112,7 +112,7 @@ void ProtocolVersionCall::fill_predefined_reply() {
 
 Task<void> ProtocolVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "ProtocolVersionCall START";
-    co_await agrpc::finish(responder_, response_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
     SILK_TRACE << "ProtocolVersionCall END id: " << response_.id();
 }
 
@@ -124,7 +124,7 @@ void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
 
 Task<void> ClientVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "ClientVersionCall START";
-    co_await agrpc::finish(responder_, response_, grpc::Status::OK);
+    co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
     SILK_TRACE << "ClientVersionCall END node name: " << response_.node_name();
 }
 
@@ -139,7 +139,7 @@ Task<void> SubscribeCall::operator()(const EthereumBackEnd& /*backend*/) {
     remote::SubscribeReply response2;
     response2.set_type(remote::Event::PENDING_LOGS);
     response2.set_data("334455");
-    co_await agrpc::write_and_finish(responder_, response2, grpc::WriteOptions{}, grpc::Status::OK);
+    co_await agrpc::write_and_finish(responder_, response2, ::grpc::WriteOptions{}, ::grpc::Status::OK);
 
     SILK_TRACE << "SubscribeCall END";
 }
@@ -151,20 +151,20 @@ Task<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
     auto sentry = co_await sentry_client->service();
 
     remote::NodesInfoReply response;
-    grpc::Status result_status{grpc::Status::OK};
+    ::grpc::Status result_status{::grpc::Status::OK};
     try {
         auto node_infos = co_await sentry->node_infos();
         for (auto& node_info : node_infos) {
             SILK_DEBUG << "Reply OK node info: client_id=" << node_info.client_id;
             response.add_nodes_info()->CopyFrom(sentry::grpc::interfaces::proto_node_info_from_node_info(node_info));
         }
-    } catch (const GrpcStatusError& status_error) {
+    } catch (const rpc::GrpcStatusError& status_error) {
         result_status = status_error.status();
         SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {
-        co_await agrpc::finish(responder_, response, grpc::Status::OK);
+        co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
         SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodes_info_size();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
@@ -172,4 +172,4 @@ Task<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
     }
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::ethbackend::grpc::server

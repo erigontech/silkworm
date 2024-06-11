@@ -18,7 +18,7 @@
 
 #include "service.hpp"
 
-namespace silkworm::remote::kv::api {
+namespace silkworm::kv::api {
 
 //! Straightforward asynchronous implementation of KV API service relying on \code Domains.
 //! This is used both client-side by 'direct' (i.e. no-gRPC) implementation and server-side by gRPC server.
@@ -32,6 +32,9 @@ class DirectService : public Service {
 
     DirectService(DirectService&&) = delete;
     DirectService& operator=(DirectService&&) = delete;
+
+    // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
+    Task<Version> version() override;
 
     /** Temporal Point Queries **/
 
@@ -53,4 +56,4 @@ class DirectService : public Service {
     Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) override;
 };
 
-}  // namespace silkworm::remote::kv::api
+}  // namespace silkworm::kv::api

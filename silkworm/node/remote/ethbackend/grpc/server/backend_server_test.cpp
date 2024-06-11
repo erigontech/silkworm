@@ -219,6 +219,8 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
     }
 };
 
+using BackEndServer = ethbackend::grpc::server::BackEndServer;
+
 struct BackEndE2ETest {
     explicit BackEndE2ETest(
         silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
@@ -246,7 +248,7 @@ struct BackEndE2ETest {
         rw_txn.commit();
 
         backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
-        server = std::make_unique<rpc::BackEndServer>(srv_config, *backend);
+        server = std::make_unique<BackEndServer>(srv_config, *backend);
         server->build_and_start();
     }
 
@@ -287,19 +289,19 @@ struct BackEndE2ETest {
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
     std::unique_ptr<TestableEthereumBackEnd> backend;
-    std::unique_ptr<rpc::BackEndServer> server;
+    std::unique_ptr<BackEndServer> server;
 };
 
 }  // namespace
 
-namespace silkworm::rpc {
+namespace silkworm::ethbackend::grpc::server {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    Grpc2SilkwormLogGuard log_guard;
-    ServerSettings srv_config;
+    rpc::Grpc2SilkwormLogGuard log_guard;
+    rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
@@ -394,7 +396,7 @@ TEST_CASE("BackEndServer E2E: empty node settings", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(status.error_message() == "etherbase must be explicitly specified");
         CHECK(!response.has_address());
     }
@@ -486,4 +488,4 @@ TEST_CASE("BackEndServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::ethbackend::grpc::server

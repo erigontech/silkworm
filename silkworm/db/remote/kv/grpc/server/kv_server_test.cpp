@@ -202,6 +202,8 @@ struct TestableStateChangeCollection : public StateChangeCollection {
     StateChangeTokenObserver token_observer_;
 };
 
+using KvServer = kv::grpc::server::KvServer;
+
 struct KvEnd2EndTest {
     explicit KvEnd2EndTest(silkworm::log::Level log_verbosity = silkworm::log::Level::kNone)
         : set_verbosity_log_guard{log_verbosity} {
@@ -226,7 +228,7 @@ struct KvEnd2EndTest {
         rw_txn.commit();
 
         state_change_collection = std::make_unique<TestableStateChangeCollection>();
-        server = std::make_unique<rpc::KvServer>(srv_config, &database_env, state_change_collection.get());
+        server = std::make_unique<KvServer>(srv_config, &database_env, state_change_collection.get());
         server->build_and_start();
     }
 
@@ -267,19 +269,19 @@ struct KvEnd2EndTest {
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
     std::unique_ptr<TestableStateChangeCollection> state_change_collection;
-    std::unique_ptr<rpc::KvServer> server;
+    std::unique_ptr<KvServer> server;
 };
 
 }  // namespace
 
-namespace silkworm::rpc {
+namespace silkworm::kv::grpc::server {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    Grpc2SilkwormLogGuard log_guard;
-    ServerSettings srv_config;
+    rpc::Grpc2SilkwormLogGuard log_guard;
+    rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
@@ -382,7 +384,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         std::vector<remote::Pair> responses;
         const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_code() == ::grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
@@ -396,7 +398,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         std::vector<remote::Pair> responses;
         const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_code() == ::grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown bucket"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
@@ -409,7 +411,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         std::vector<remote::Pair> responses;
         const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_code() == ::grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
         CHECK(responses.size() == 1);
         CHECK(responses[0].tx_id() != 0);
@@ -495,7 +497,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         std::vector<remote::Pair> responses;
         const auto status = kv_client->tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_code() == ::grpc::StatusCode::INVALID_ARGUMENT);
         CHECK(absl::StrContains(status.error_message(), "unknown cursor"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -620,7 +622,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         });
 
         // Start a StateChanges server-streaming call
-        grpc::ClientContext context1;
+        ::grpc::ClientContext context1;
         remote::StateChangeRequest request1;
         auto subscribe_reply_reader1 = kv_client->statechanges_start(&context1, request1);
 
@@ -629,13 +631,13 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         token_reset_condition.wait(token_reset_lock, [&] { return token_reset; });
 
         // Start another StateChanges server-streaming call and check it fails
-        grpc::ClientContext context2;
+        ::grpc::ClientContext context2;
         remote::StateChangeRequest request2;
         auto subscribe_reply_reader2 = kv_client->statechanges_start(&context2, request2);
 
         const auto status2 = subscribe_reply_reader2->Finish();
         CHECK(!status2.ok());
-        CHECK(status2.error_code() == grpc::StatusCode::ALREADY_EXISTS);
+        CHECK(status2.error_code() == ::grpc::StatusCode::ALREADY_EXISTS);
         CHECK(absl::StrContains(status2.error_message(), "assigned consumer token already in use"));
 
         // Close the server-side RPC stream and check first call completes successfully
@@ -698,7 +700,7 @@ TEST_CASE("KvServer E2E: trigger server-side write error", "[silkworm][node][rpc
 
         // Start many Tx calls w/o reading responses after writing requests.
         for (uint32_t i{0}; i < kNumTxs; i++) {
-            grpc::ClientContext context;
+            ::grpc::ClientContext context;
             auto tx_stream = kv_client.tx_start(&context);
             remote::Pair response;
             CHECK(tx_stream->Read(&response));
@@ -727,10 +729,10 @@ TEST_CASE("KvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node
     auto kv_client = *test.kv_client;
 
     // Start and keep open as many Tx calls as the maximum number of readers.
-    std::vector<std::unique_ptr<grpc::ClientContext>> client_contexts;
+    std::vector<std::unique_ptr<::grpc::ClientContext>> client_contexts;
     std::vector<TxStreamPtr> tx_streams;
     for (uint32_t i{0}; i < test.database_env.max_readers(); i++) {
-        auto& context = client_contexts.emplace_back(std::make_unique<grpc::ClientContext>());
+        auto& context = client_contexts.emplace_back(std::make_unique<::grpc::ClientContext>());
         auto tx_stream = kv_client.tx_start(context.get());
         // You must read at least the first unsolicited incoming message (TxID announcement).
         remote::Pair response;
@@ -740,13 +742,13 @@ TEST_CASE("KvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node
     }
 
     // Now trying to start another Tx call will exceed the maximum number of readers.
-    grpc::ClientContext context;
+    ::grpc::ClientContext context;
     const auto failing_tx_stream = kv_client.tx_start(&context);
     remote::Pair response;
     REQUIRE(!failing_tx_stream->Read(&response));  // Tx RPC immediately fails for exhaustion, no TxID announcement
     auto failing_tx_status = failing_tx_stream->Finish();
     CHECK(!failing_tx_status.ok());
-    CHECK(failing_tx_status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
+    CHECK(failing_tx_status.error_code() == ::grpc::StatusCode::RESOURCE_EXHAUSTED);
     CHECK(absl::StrContains(failing_tx_status.error_message(), "start tx failed"));
 
     // Dispose all the opened Tx calls.
@@ -762,7 +764,7 @@ TEST_CASE("KvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
-    grpc::ClientContext context;
+    ::grpc::ClientContext context;
     const auto tx_stream = kv_client.tx_start(&context);
     // You must read at least the first unsolicited incoming message (TxID announcement).
     remote::Pair response;
@@ -791,14 +793,14 @@ TEST_CASE("KvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]
     REQUIRE(tx_stream->WritesDone());
     auto status = tx_stream->Finish();
     CHECK(!status.ok());
-    CHECK(status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
+    CHECK(status.error_code() == ::grpc::StatusCode::RESOURCE_EXHAUSTED);
     CHECK(absl::StrContains(status.error_message(), "maximum cursors per txn"));
 }
 
 class TxIdleTimeoutGuard {
   public:
     explicit TxIdleTimeoutGuard(uint8_t t) { TxCall::set_max_idle_duration(std::chrono::milliseconds{t}); }
-    ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(server::kDefaultMaxIdleDuration); }
+    ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(rpc::server::kDefaultMaxIdleDuration); }
 };
 
 TEST_CASE("KvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
@@ -812,28 +814,28 @@ TEST_CASE("KvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
     // *appropriate* to call Finish only after all incoming messages have been read (not the
     // case here, missing tx ID announcement read) *and* no outgoing messages need to be sent.
     /*SECTION("Tx KO: immediate finish", "[.]") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_code() == ::grpc::StatusCode::DEADLINE_EXCEEDED);
         CHECK(absl::StrContains(status.error_message(), "call idle, no incoming request"));
     }*/
 
     SECTION("Tx KO: finish after first read (w/o WritesDone)") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
         CHECK(tx_reader_writer->Read(&response));
         CHECK(response.tx_id() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_code() == ::grpc::StatusCode::DEADLINE_EXCEEDED);
         CHECK(absl::StrContains(status.error_message(), "no incoming request"));
     }
 
     SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
         CHECK(tx_reader_writer->Read(&response));
@@ -847,7 +849,7 @@ TEST_CASE("KvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
         CHECK(response.cursor_id() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_code() == ::grpc::StatusCode::DEADLINE_EXCEEDED);
         CHECK(absl::StrContains(status.error_message(), "no incoming request"));
     }
 }
@@ -1803,7 +1805,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -1827,7 +1829,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -1851,7 +1853,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 3);
         CHECK(responses[0].tx_id() != 0);
@@ -1872,7 +1874,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -1892,7 +1894,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -1912,7 +1914,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -1932,7 +1934,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
-        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
         CHECK(absl::StrContains(status.error_message(), "MDBX_INCOMPATIBLE"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
@@ -1953,7 +1955,7 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
 
     SECTION("Tx: cursor NEXT ops across renew are consecutive") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
         CHECK(tx_reader_writer->Read(&response));
@@ -1989,7 +1991,7 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
     }
 
     SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
         CHECK(tx_reader_writer->Read(&response));
@@ -2026,7 +2028,7 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
 
 #ifndef _WIN32
     SECTION("Tx: cursor NEXT op after renew sees changes") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMap table
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -2095,7 +2097,7 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
     }
 
     SECTION("Tx: cursor NEXT_DUP op after renew sees changes") {
-        grpc::ClientContext context;
+        ::grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMultiMap table
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -2182,4 +2184,4 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::kv::grpc::server

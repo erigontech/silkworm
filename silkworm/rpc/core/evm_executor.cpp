@@ -269,7 +269,10 @@ ExecutionResult EVMExecutor::call(
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
         const intx::uint256 effective_gas_price{txn.max_fee_per_gas};
+        std::cout << "effective: " << effective_gas_price << "\n";
+        std::cout << "gas_limit: " << txn.gas_limit << "\n";
         want = txn.gas_limit * effective_gas_price;
+        std::cout << "want: " << want << "\n";
     } else {
         want = 0;
     }
@@ -282,6 +285,8 @@ ExecutionResult EVMExecutor::call(
     }
 
     const auto have = ibs_state_.get_balance(*txn.sender());
+    std::cout << "sender: " << *txn.sender() << "\n";
+    std::cout << "have: " << have << "\n";
     if (have < want + txn.value) {
         if (!gas_bailout) {
             Bytes data{};

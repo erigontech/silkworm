@@ -45,7 +45,8 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
-    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& override_gas_price = std::nullopt,
+    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& base_fee_per_gas,
+                                                       const std::optional<intx::uint256>& override_gas_price = std::nullopt,
                                                        const std::optional<AccessList>& override_access_list = std::nullopt,
                                                        const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
@@ -75,8 +76,9 @@ struct Call {
             txn.max_fee_per_gas = gas_price.value();
         } else {
             txn.max_priority_fee_per_gas = max_priority_fee_per_gas.value_or(intx::uint256{0});
-            txn.max_fee_per_gas = max_fee_per_gas.value_or(intx::uint256{0});
+            txn.max_fee_per_gas = max_fee_per_gas.value_or(base_fee_per_gas.value_or(intx::uint256{0}));
         }
+
         txn.value = value.value_or(intx::uint256{0});
         txn.data = data.value_or(silkworm::Bytes{});
         return txn;

@@ -111,10 +111,9 @@ class EVM {
 
     evmc::Result call(const evmc_message& message) noexcept;
 
-    evmc_result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
+    evmc_result execute(const evmc_message& message, const evmone::baseline::CodeAnalysis& code) noexcept;
 
-    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                  const evmc::bytes32* code_hash) noexcept;
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, const evmone::baseline::CodeAnalysis& code) noexcept;
 
     gsl::owner<evmone::ExecutionState*> acquire_state() const noexcept;
     void release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept;

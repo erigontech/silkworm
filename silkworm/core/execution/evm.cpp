@@ -162,7 +162,8 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         .create2_salt = message.create2_salt,
     };
 
-    auto evm_res{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};
+    const auto code = evmone::baseline::analyze(EVMC_FRONTIER, {message.input_data, message.input_size});
+    auto evm_res{execute(deploy_message, code)};
 
     if (evm_res.status_code == EVMC_SUCCESS) {
         const size_t code_len{evm_res.output_size};
@@ -249,13 +250,13 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             tracer.get().on_execution_end(res.raw(), state_);
         }
     } else {
-        const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty() && tracers_.empty()) {  // Do not skip execution if there are any tracers
+        const ByteView raw_code{state_.get_code(message.code_address)};
+        const auto code = evmone::baseline::analyze(EVMC_FRONTIER, raw_code);
+        if (code.executable_code.empty() && tracers_.empty()) {  // Do not skip execution if there are any tracers
             return res;
         }
 
-        const evmc::bytes32 code_hash{state_.get_code_hash(message.code_address)};
-        res = evmc::Result{execute(message, code, &code_hash)};
+        res = evmc::Result{execute(message, code)};
     }
 
     if (res.status_code != EVMC_SUCCESS) {
@@ -269,15 +270,15 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
+evmc_result EVM::execute(const evmc_message& message, const evmone::baseline::CodeAnalysis& code) noexcept {
     const evmc_revision rev{revision()};
 
     if (exo_evm) {
         EvmHost host{*this};
         return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &message,
-                                code.data(), code.size());
+                                code.executable_code.data(), code.executable_code.size());
     } else {
-        return execute_with_baseline_interpreter(rev, message, code, code_hash);
+        return execute_with_baseline_interpreter(rev, message, code);
     }
 }
 
@@ -300,28 +301,12 @@ void EVM::release_state(gsl::owner<evmone::ExecutionState*> state) const noexcep
     }
 }
 
-evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                   const evmc::bytes32* code_hash) noexcept {
-    std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
-    const bool use_cache{code_hash && analysis_cache};
-    if (use_cache) {
-        const auto optional_analysis{analysis_cache->get_as_copy(*code_hash)};
-        if (optional_analysis) {
-            analysis = *optional_analysis;
-        }
-    }
-    if (!analysis) {
-        analysis = std::make_shared<evmone::baseline::CodeAnalysis>(evmone::baseline::analyze(rev, code));
-        if (use_cache) {
-            analysis_cache->put(*code_hash, analysis);
-        }
-    }
-
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, const evmone::baseline::CodeAnalysis& code) noexcept {
     EvmHost host{*this};
     gsl::owner<evmone::ExecutionState*> state{acquire_state()};
-    state->reset(message, rev, host.get_interface(), host.to_context(), code, {});
+    state->reset(message, rev, host.get_interface(), host.to_context(), code.executable_code, {});
 
-    evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, *analysis)};
+    evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, code)};
 
     release_state(state);
     return res;

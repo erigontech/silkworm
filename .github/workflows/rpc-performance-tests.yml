@@ -107,10 +107,12 @@ jobs:
                   cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin ${{runner.workspace}}/last_execution_test/
 
                   echo "Save test result on DB"
-                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
+                  cd ${{runner.workspace}}/silkworm
+                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --branch ${{ github.ref_name }} --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --chain mainnet --outcome success --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
                else
                   failed_test=1
-                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --outcome failure
+                  cd ${{runner.workspace}}/silkworm
+                  python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --branch ${{ github.ref_name }} --commit $(git rev-parse HEAD) --test_name rpc-performance-test-${servers[i-1]}-$method --chain mainnet --outcome failure
 
                fi
             done

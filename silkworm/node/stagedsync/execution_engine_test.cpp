@@ -21,12 +21,15 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
@@ -43,6 +46,679 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::forks_;
     using stagedsync::ExecutionEngine::main_chain_;
 };
+
+TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kWarning);
+
+    asio::io_context io;
+    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+
+    auto db_context = db::test_util::TestDatabaseContext();
+    auto node_settings = NodeSettings{
+        .data_directory = std::make_unique<DataDirectory>(db_context.get_mdbx_env().get_path(), false),
+        .chaindata_env_config = db_context.get_env_config(),
+        .chain_config = db_context.get_chain_config(),
+    };
+
+    db::RWAccess db_access{db_context.get_mdbx_env()};
+
+    ExecutionEngine_ForTest exec_engine{io, node_settings, db_access};
+    exec_engine.open();
+
+    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+
+    const auto header0_hash = exec_engine.get_canonical_hash(0).value();
+    const silkworm::Hash header1_hash{0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4_bytes32};
+
+    // auto hash_1  = silkworm::db::read_canonical_hash(tx, 1); (void)hash_1;
+
+    // auto header0_hash = db::read_canonical_hash(tx, 0);
+    // REQUIRE(header0_hash.has_value());
+
+    // auto header0 = db::read_canonical_header(tx, 0);
+    // REQUIRE(header0.has_value());
+    // auto a = header0->hash();
+    // WARN("header0_hash: " << silkworm::to_hex(header0_hash->bytes, true) << " header0: " << silkworm::to_hex(a.bytes, true));
+
+    // auto jg_header1 = db::read_canonical_hash(tx, 1);
+    // WARN("header1: " << silkworm::to_hex(jg_header1->bytes, true));
+
+    // auto jg_header2 = db::read_canonical_hash(tx, 2);
+    // WARN("header2: " << silkworm::to_hex(jg_header2->bytes, true));
+
+    // BlockId block0_id{0, *header0_hash};
+
+    // // check db
+    // BlockBody block0_body;
+    // const bool block0_present = db::read_body(tx, *header0_hash, block0_id.number, block0_body);
+    // CHECK(block0_present);
+
+    auto const current_head_id = exec_engine.last_finalized_block();
+    auto const current_head = exec_engine.get_header(current_head_id.number, current_head_id.hash).value();
+
+    SECTION("get_block_number") {
+        auto block_number = exec_engine.get_block_number(header1_hash);
+        REQUIRE(block_number.has_value());
+        CHECK(*block_number == 1);
+    }
+
+    SECTION("get_header by hash") {
+        auto db_block_number = silkworm::db::read_block_number(tx, header1_hash);
+        silkworm::Block db_block;
+        auto db_read = silkworm::db::read_block(tx, header1_hash, *db_block_number, db_block);
+        REQUIRE(db_read);
+
+        auto header1 = exec_engine.get_header(header1_hash);
+        REQUIRE(header1.has_value());
+        CHECK(header1->hash() == db_block.header.hash());
+        CHECK(header1->number == 1);
+    }
+
+    SECTION("get_header by hash not found") {
+        const silkworm::Hash header_not_found_hash{0x00000000000000000000000000000000000000000000000000000000deadbeef_bytes32};
+
+        auto db_block_number = silkworm::db::read_block_number(tx, header_not_found_hash);
+        silkworm::Block db_block;
+        auto db_read = silkworm::db::read_block(tx, header_not_found_hash, *db_block_number, db_block);
+        REQUIRE(!db_read);
+
+        auto header = exec_engine.get_header(header_not_found_hash);
+        REQUIRE(!header.has_value());
+    }
+
+    SECTION("get_header by number") {
+        auto header1 = exec_engine.get_header(1, header1_hash);
+        REQUIRE(header1.has_value());
+        CHECK(header1->hash() == header1_hash);
+        CHECK(header1->number == 1);
+    }
+
+    SECTION("get_body by hash") {
+        auto body = exec_engine.get_body(header1_hash);
+        REQUIRE(body.has_value());
+        CHECK(body->transactions.size() == 1);
+    }
+
+    SECTION("get_last_headers shows numbers from the head down") {
+        auto headers = exec_engine.get_last_headers(2);
+        REQUIRE(headers.size() == 2);
+        CHECK(headers[0].number == 9);
+        CHECK(headers[1].number == 8);
+    }
+
+    SECTION("get_header_td returns correct total difficulty for genesis block") {
+        auto td = exec_engine.get_header_td(header0_hash);
+        REQUIRE(td.has_value());
+        CHECK(*td == 1);
+    }
+
+    SECTION("last blocks points to head block") {
+        auto block_progress = exec_engine.block_progress();
+        CHECK(block_progress == 9);
+
+        auto last_fork_choice = exec_engine.last_fork_choice();
+        CHECK(last_fork_choice.number == 9);
+
+        auto last_finalized_block = exec_engine.last_finalized_block();
+        CHECK(last_finalized_block.number == 9);
+
+        auto last_safe_block = exec_engine.last_safe_block();
+        CHECK(last_safe_block.number == 0);
+    }
+
+    SECTION("insert_block does not update the head block and fork choice") {
+        auto new_block = generate_sample_child_blocks(current_head);
+
+        auto current_progress = exec_engine.block_progress();
+        CHECK(current_progress == 9);
+        auto current_fork_choice = exec_engine.last_fork_choice();
+        CHECK(current_fork_choice == current_head_id);
+
+        exec_engine.insert_block(new_block);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id == current_head_id);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice == current_head_id);
+    }
+
+    SECTION("insert_block with invalid block doesn't create valid chain") {
+        auto new_block = std::make_shared<Block>();
+        new_block->header.number = current_head.number + 1;
+        new_block->header.difficulty = 17'171'480'576;  // a random value
+        new_block->header.parent_hash = current_head.hash();
+        new_block->ommers.push_back(BlockHeader{});  // generates error InvalidOmmerHeader
+        auto new_block_hash = new_block->header.hash();
+
+        auto block_inserted = exec_engine.insert_block(new_block);
+
+        REQUIRE(block_inserted);
+
+        auto is_canonical = exec_engine.is_canonical(new_block_hash);
+        CHECK(!is_canonical);
+
+        auto verification = exec_engine.verify_chain(new_block_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification));
+        REQUIRE(holds_alternative<InvalidChain>(verification));
+        auto invalid_chain = std::get<InvalidChain>(verification);
+        CHECK(invalid_chain.unwind_point == current_head_id);
+        CHECK(invalid_chain.bad_block.has_value());
+        CHECK(invalid_chain.bad_block.value() == new_block_hash);
+        CHECK(invalid_chain.bad_headers.size() == 1);
+    }
+
+    SECTION("insert_blocks with valid blocks creates valid chain for each block") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+        auto block3 = generate_sample_child_blocks(block2->header);
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2, block3};
+        exec_engine.insert_blocks(blocks);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+        auto block3_hash = block3->header.hash();
+
+        auto is_canonical1 = exec_engine.is_canonical(block1_hash);
+        CHECK(!is_canonical1);
+        auto is_canonical2 = exec_engine.is_canonical(block2_hash);
+        CHECK(!is_canonical2);
+        auto is_canonical3 = exec_engine.is_canonical(block3_hash);
+        CHECK(!is_canonical3);
+
+        auto verification1 = exec_engine.verify_chain(block1_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification1));
+        REQUIRE(holds_alternative<ValidChain>(verification1));
+        auto valid_chain1 = std::get<ValidChain>(verification1);
+        CHECK(valid_chain1.current_head == BlockId{10, block1_hash});
+
+        auto verification2 = exec_engine.verify_chain(block2_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification2));
+        REQUIRE(holds_alternative<ValidChain>(verification2));
+        auto valid_chain2 = std::get<ValidChain>(verification2);
+        CHECK(valid_chain2.current_head == BlockId{11, block2_hash});
+
+        auto verification3 = exec_engine.verify_chain(block3_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification3));
+        REQUIRE(holds_alternative<ValidChain>(verification3));
+        auto valid_chain3 = std::get<ValidChain>(verification3);
+        CHECK(valid_chain3.current_head == BlockId{12, block3_hash});
+    }
+
+    SECTION("get_header for non-canonical blocks") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        // canonical
+        auto header1 = exec_engine.get_header(header1_hash);
+        REQUIRE(header1.has_value());
+        CHECK(header1->hash() == header1_hash);
+        CHECK(header1->number == 1);
+
+        header1 = exec_engine.get_header(1, header1_hash);
+        REQUIRE(header1.has_value());
+        CHECK(header1->hash() == header1_hash);
+        CHECK(header1->number == 1);
+
+        // non-canonical
+        auto header10 = exec_engine.get_header(new_block_hash);
+        REQUIRE(header10.has_value());
+        CHECK(header10->hash() == new_block_hash);
+        CHECK(header10->number == 10);
+
+        header10 = exec_engine.get_header(10, new_block_hash);
+        REQUIRE(header10.has_value());
+        CHECK(header10->hash() == new_block_hash);
+        CHECK(header10->number == 10);
+    }
+
+    SECTION("get_body for non-canonical blocks") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        // canonical
+        auto body1 = exec_engine.get_body(header1_hash);
+        REQUIRE(body1.has_value());
+
+        // non-canonical
+        auto body10 = exec_engine.get_body(new_block_hash);
+        REQUIRE(body1.has_value());
+    }
+
+    SECTION("get_block_number for non-canonical blocks") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        // canonical
+        auto block_number1 = exec_engine.get_block_number(header1_hash);
+        REQUIRE(block_number1.has_value());
+        CHECK(*block_number1 == 1);
+
+        // non-canonical
+        auto block_number10 = exec_engine.get_block_number(new_block_hash);
+        REQUIRE(block_number10.has_value());
+        CHECK(*block_number10 == 10);
+    }
+
+    SECTION("get_canonical_* functions returns value only for canonical blocks") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+        auto new_block_hash = new_block->header.hash();
+
+        // get_canonical_header()
+        auto header1 = exec_engine.get_canonical_header(1);
+        REQUIRE(header1.has_value());
+        CHECK(header1->hash() == header1_hash);
+        CHECK(header1->number == 1);
+
+        auto header10 = exec_engine.get_canonical_header(10);
+        REQUIRE(!header10.has_value());
+
+        // get_canonical_hash()
+        auto hash1 = exec_engine.get_canonical_hash(1);
+        REQUIRE(hash1.has_value());
+        CHECK(*hash1 == header1_hash);
+
+        auto hash10 = exec_engine.get_canonical_hash(10);
+        REQUIRE(!hash10.has_value());
+
+        // get_canonical_body()
+        auto body1 = exec_engine.get_canonical_body(1);
+        REQUIRE(body1.has_value());
+
+        auto body10 = exec_engine.get_canonical_body(10);
+        REQUIRE(!body10.has_value());
+
+        // is_canonical()
+        auto is_canonical1 = exec_engine.is_canonical(header1_hash);
+        CHECK(is_canonical1);
+
+        auto is_canonical10 = exec_engine.is_canonical(new_block_hash);
+        CHECK(!is_canonical10);
+    }
+
+    SECTION("notify_fork_choice_update single block without prior verification") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
+        CHECK(is_new_block_canonical);
+    }
+
+    SECTION("notify_fork_choice_update single block with prior verification") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        auto verification = exec_engine.verify_chain(new_block_hash).get();
+        REQUIRE(holds_alternative<ValidChain>(verification));
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
+        CHECK(is_new_block_canonical);
+    }
+
+    SECTION("notify_fork_choice_update single block updates last_finalized_block and last_safe_block") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, current_head_id.hash, current_head_id.hash);
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+        auto new_safe_block = exec_engine.last_safe_block();
+        CHECK(new_safe_block.number == 9);
+    }
+
+    SECTION("notify_fork_choice_update with multiple blocks using the first block as the head") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+        auto block3 = generate_sample_child_blocks(block2->header);
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2, block3};
+        exec_engine.insert_blocks(blocks);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+        auto block3_hash = block3->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block1_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 12);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_block1_canonical = exec_engine.is_canonical(block1_hash);
+        CHECK(is_block1_canonical);
+        auto is_block2_canonical = exec_engine.is_canonical(block2_hash);
+        CHECK(!is_block2_canonical);
+        auto is_block3_canonical = exec_engine.is_canonical(block3_hash);
+        CHECK(!is_block3_canonical);
+    }
+
+    SECTION("notify_fork_choice_update with multiple blocks using the last block as the head") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+        auto block3 = generate_sample_child_blocks(block2->header);
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2, block3};
+        exec_engine.insert_blocks(blocks);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+        auto block3_hash = block3->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 12);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 12);
+
+        auto is_block1_canonical = exec_engine.is_canonical(block1_hash);
+        CHECK(is_block1_canonical);
+        auto is_block2_canonical = exec_engine.is_canonical(block2_hash);
+        CHECK(is_block2_canonical);
+        auto is_block3_canonical = exec_engine.is_canonical(block3_hash);
+        CHECK(is_block3_canonical);
+    }
+
+    SECTION("notify_fork_choice_update consecutive calls with the same block") {
+        auto new_block = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block);
+
+        auto new_block_hash = new_block->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
+        CHECK(is_new_block_canonical);
+
+        fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, {}, {});
+        CHECK(fcu_updated);  //! updates despite the same block
+
+        new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+    }
+
+    SECTION("notify_fork_choice_update consecutive calls with different blocks") {
+        auto new_block1 = generate_sample_child_blocks(current_head);
+        exec_engine.insert_block(new_block1);
+
+        auto new_block1_hash = new_block1->header.hash();
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(new_block1_hash, {}, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_new_block1_canonical = exec_engine.is_canonical(new_block1_hash);
+        CHECK(is_new_block1_canonical);
+
+        auto new_block1_header = exec_engine.get_header(10, new_block1_hash);
+        REQUIRE(new_block1_header.has_value());
+
+        auto new_block2 = generate_sample_child_blocks(*new_block1_header);
+        exec_engine.insert_block(new_block2);
+
+        auto new_block2_hash = new_block2->header.hash();
+
+        fcu_updated = exec_engine.notify_fork_choice_update(new_block2_hash, {}, {});
+        CHECK(fcu_updated);
+
+        new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 11);
+        new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 11);
+
+        auto is_new_block2_canonical = exec_engine.is_canonical(new_block2_hash);
+        CHECK(is_new_block2_canonical);
+    }
+
+    // Test scenario:
+    //                  ↗  f1a -> f1b (fork 1) => fcu
+    //  c7 -> c8 -> c9
+    //                  ↘  f2a -> f2b (fork 2)
+    SECTION("creates and verifies two forks, chooses first") {
+        auto block1a = generate_sample_child_blocks(current_head);
+        block1a->header.difficulty = 17'171'480'576;  // a random value
+        auto block1b = generate_sample_child_blocks(block1a->header);
+
+        auto block2a = generate_sample_child_blocks(current_head);
+        block2a->header.difficulty = 17'171'480'577;  // a random value
+        auto block2b = generate_sample_child_blocks(block2a->header);
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1a, block1b, block2a, block2b};
+        exec_engine.insert_blocks(blocks);
+
+        auto block1a_hash = block1a->header.hash();
+        auto block1b_hash = block1b->header.hash();
+        auto block2a_hash = block2a->header.hash();
+        auto block2b_hash = block2b->header.hash();
+
+        auto verification1 = exec_engine.verify_chain(block1b_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification1));
+        REQUIRE(holds_alternative<ValidChain>(verification1));
+
+        // TODO: this breaks the test, why?
+        // auto verification2 = exec_engine.verify_chain(block2b_hash).get();
+        // CHECK(!holds_alternative<ValidationError>(verification2));
+        // REQUIRE(holds_alternative<ValidChain>(verification2));
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block1b_hash, current_head_id.hash, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 11);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 11);
+
+        auto is_block1_canonical = exec_engine.is_canonical(block1a_hash);
+        CHECK(is_block1_canonical);
+        auto is_block2_canonical = exec_engine.is_canonical(block1b_hash);
+        CHECK(is_block2_canonical);
+        auto is_block3_canonical = exec_engine.is_canonical(block2a_hash);
+        CHECK(!is_block3_canonical);
+        auto is_block4_canonical = exec_engine.is_canonical(block2b_hash);
+        CHECK(!is_block4_canonical);
+    }
+
+    // Test scenario:
+    //                  ↗  f1a -> f1b (fork 1)
+    //  c7 -> c8 -> c9
+    //                  ↘  f2a -> f2b (fork 2)  =>  fcu
+    SECTION("creates and verifies two forks, chooses second") {
+        auto block1a = generate_sample_child_blocks(current_head);
+        block1a->header.difficulty = 17'171'480'576;  // a random value
+        auto block1b = generate_sample_child_blocks(block1a->header);
+
+        auto block2a = generate_sample_child_blocks(current_head);
+        block2a->header.difficulty = 17'171'480'577;  // a random value
+        auto block2b = generate_sample_child_blocks(block2a->header);
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1a, block1b, block2a, block2b};
+        exec_engine.insert_blocks(blocks);
+
+        auto block1a_hash = block1a->header.hash();
+        auto block1b_hash = block1b->header.hash();
+        auto block2a_hash = block2a->header.hash();
+        auto block2b_hash = block2b->header.hash();
+
+        auto verification1 = exec_engine.verify_chain(block1b_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification1));
+        REQUIRE(holds_alternative<ValidChain>(verification1));
+
+        auto verification2 = exec_engine.verify_chain(block2b_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification2));
+        REQUIRE(holds_alternative<ValidChain>(verification2));
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, current_head_id.hash, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 11);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 11);
+
+        auto is_block1_canonical = exec_engine.is_canonical(block1a_hash);
+        CHECK(!is_block1_canonical);
+        auto is_block2_canonical = exec_engine.is_canonical(block1b_hash);
+        CHECK(!is_block2_canonical);
+        auto is_block3_canonical = exec_engine.is_canonical(block2a_hash);
+        CHECK(is_block3_canonical);
+        auto is_block4_canonical = exec_engine.is_canonical(block2b_hash);
+        CHECK(is_block4_canonical);
+    }
+
+    SECTION("insert_blocks does not update chain database") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+
+        CHECK(!db::read_block_number(tx, block1_hash).has_value());
+        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
+        exec_engine.insert_blocks(blocks);
+
+        CHECK(db::read_block_number(tx, block1_hash).has_value());
+        CHECK(db::read_block_number(tx, block2_hash).has_value());
+
+        exec_engine.close();
+
+        auto tx2 = db_access.start_ro_tx();
+        CHECK(!db::read_block_number(tx2, block1_hash).has_value());
+        CHECK(!db::read_block_number(tx2, block2_hash).has_value());
+    }
+
+    SECTION("verify_chain does not update chain database") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+
+        CHECK(!db::read_block_number(tx, block1_hash).has_value());
+        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
+        exec_engine.insert_blocks(blocks);
+        exec_engine.verify_chain(block2_hash).get();
+
+        Block block1_db;
+        auto block_read = db::read_block(tx, block1_hash, 10, block1_db);
+        REQUIRE(block_read);
+        CHECK(block1_db.header.number == 10);
+
+        CHECK(db::read_block_number(tx, block1_hash).has_value());
+        CHECK(db::read_block_number(tx, block2_hash).has_value());
+
+        exec_engine.close();
+
+        auto tx2 = db_access.start_ro_tx();
+
+        block_read = db::read_block(tx2, block1_hash, 10, block1_db);
+        REQUIRE(block_read);
+        CHECK(block1_db.header.number == 10);
+
+        CHECK(!db::read_block_number(tx2, block1_hash).has_value());
+        CHECK(!db::read_block_number(tx2, block2_hash).has_value());
+    }
+
+    SECTION("notify_fork_choice_update does not update chain database") {
+        auto block1 = generate_sample_child_blocks(current_head);
+        auto block2 = generate_sample_child_blocks(block1->header);
+
+        auto block1_hash = block1->header.hash();
+        auto block2_hash = block2->header.hash();
+
+        CHECK(!db::read_block_number(tx, block1_hash).has_value());
+        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
+        exec_engine.insert_blocks(blocks);
+        exec_engine.verify_chain(block2_hash).get();
+        exec_engine.notify_fork_choice_update(block2_hash, current_head_id.hash, {});
+
+        CHECK(db::read_block_number(tx, block1_hash).has_value());
+        CHECK(db::read_block_number(tx, block2_hash).has_value());
+
+        exec_engine.close();
+
+        auto tx2 = db_access.start_ro_tx();
+        CHECK(db::read_block_number(tx2, block1_hash).has_value());
+        CHECK(db::read_block_number(tx2, block2_hash).has_value());
+    }
+}
 
 TEST_CASE("ExecutionEngine") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);

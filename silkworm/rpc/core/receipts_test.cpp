@@ -24,13 +24,10 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.h>
 #include <gmock/gmock.h>
-#include <nlohmann/json.hpp>
 
-#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 

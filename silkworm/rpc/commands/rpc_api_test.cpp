@@ -65,12 +65,15 @@ bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
 }
 
 static const std::vector<std::string> tests_to_ignore = {
-    "eth_estimateGas",         // call to oracle fails, needs fixing
-    "debug_getRawReceipts",    // not implemented
     "eth_getProof",            // not implemented
-    "eth_feeHistory",          // history not stored, needs fixing
-    "eth_sendRawTransaction",  // call to oracle fails, needs fixing or mocking
-    "eth_createAccessList",    // expected value doesn't contain gas optimization
+    "debug_getRawReceipts",    // not implemented
+    "eth_sendRawTransaction",  // call to txpool fails, needs mocking
+};
+
+static const std::vector<std::string> subtests_to_ignore = {
+    "create-al-multiple-reads.io",  // eth_createAccessList: expected value doesn't contain gas optimization
+    "estimate-simple-transfer.io",  // eth_estimateGas doesn't expect baseFeeGas without GasPrice
+    "estimate-simple-contract.io",  // eth_estimateGas doesn't expect baseFeeGas without GasPrice
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
@@ -84,6 +87,10 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             auto group_name = test_file.path().parent_path().filename().string();
 
             if (std::find(tests_to_ignore.begin(), tests_to_ignore.end(), group_name) != tests_to_ignore.end()) {
+                continue;
+            }
+
+            if (std::find(subtests_to_ignore.begin(), subtests_to_ignore.end(), test_name) != subtests_to_ignore.end()) {
                 continue;
             }
 

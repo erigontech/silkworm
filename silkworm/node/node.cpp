@@ -30,9 +30,10 @@
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/execution/api/active_direct_service.hpp>
 #include <silkworm/node/execution/grpc/server/server.hpp>
-#include <silkworm/node/remote/kv/grpc/server/backend_kv_server.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+
+#include "backend_kv_server.hpp"
 
 namespace silkworm::node {
 
@@ -81,7 +82,7 @@ class NodeImpl final {
     execution::api::DirectClient execution_direct_client_;
     SentryClientPtr sentry_client_;
     std::unique_ptr<EthereumBackEnd> backend_;
-    std::unique_ptr<rpc::BackEndKvServer> backend_kv_rpc_server_;
+    std::unique_ptr<BackEndKvServer> backend_kv_rpc_server_;
     ResourceUsageLog resource_usage_log_;
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
@@ -105,7 +106,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.build_info.node_name);
-    backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings_.server_settings, *backend_);
+    backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
 
@@ -210,7 +211,7 @@ execution::api::DirectClient& Node::execution_direct_client() {
 }
 
 void Node::setup() {
-    return p_impl_->setup();
+    p_impl_->setup();
 }
 
 Task<void> Node::run() {

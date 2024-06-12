@@ -54,7 +54,7 @@ class Transaction {
 
     virtual std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) = 0;
 
-    virtual std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) = 0;
+    virtual std::shared_ptr<ChainStorage> create_storage() = 0;
 
     virtual Task<void> close() = 0;
 

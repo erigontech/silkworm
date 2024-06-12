@@ -40,7 +40,7 @@ class MockTransaction : public ethdb::Transaction {
     MOCK_METHOD((Task<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));
     MOCK_METHOD((std::shared_ptr<silkworm::State>), create_state,
                 (boost::asio::any_io_executor&, const ChainStorage&, BlockNum), (override));
-    MOCK_METHOD((std::shared_ptr<ChainStorage>), create_storage, (ethbackend::BackEnd*), (override));
+    MOCK_METHOD((std::shared_ptr<ChainStorage>), create_storage, (), (override));
     MOCK_METHOD((Task<void>), close, (), (override));
     MOCK_METHOD((Task<KeyValue>), get, (const std::string&, silkworm::ByteView), (override));
     MOCK_METHOD((Task<silkworm::Bytes>), get_one, (const std::string&, silkworm::ByteView), (override));

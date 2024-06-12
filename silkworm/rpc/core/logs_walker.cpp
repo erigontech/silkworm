@@ -68,7 +68,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                 const FilterAddresses& addresses, const FilterTopics& topics, const LogFilterOptions& options, bool desc_order, std::vector<Log>& logs) {
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
-    const auto chain_storage{tx_.create_storage(backend_)};
+    const auto chain_storage{tx_.create_storage()};
     roaring::Roaring block_numbers;
     block_numbers.addRange(start, end + 1);  // [min, max)
 

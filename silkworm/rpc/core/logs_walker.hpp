@@ -32,8 +32,8 @@ using boost::asio::awaitable;
 
 class LogsWalker {
   public:
-    explicit LogsWalker(ethbackend::BackEnd* backend, BlockCache& block_cache, ethdb::Transaction& tx)
-        : backend_(backend), block_cache_(block_cache), tx_(tx) {}
+    explicit LogsWalker(BlockCache& block_cache, ethdb::Transaction& tx)
+        : block_cache_(block_cache), tx_(tx) {}
 
     LogsWalker(const LogsWalker&) = delete;
     LogsWalker& operator=(const LogsWalker&) = delete;
@@ -52,7 +52,6 @@ class LogsWalker {
   private:
     void filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs, size_t max_logs);
 
-    ethbackend::BackEnd* backend_;
     BlockCache& block_cache_;
     ethdb::Transaction& tx_;
 };

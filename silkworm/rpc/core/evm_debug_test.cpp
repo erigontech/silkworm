@@ -26,6 +26,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/remote_state.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
@@ -60,8 +61,8 @@ struct DebugExecutorTest : public test::ContextTestBase {
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     json::Stream stream{io_executor, writer};
-    std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    RemoteChainStorage chain_storage{transaction, backend.get()};
+    test::BackEndMock backend;
+    RemoteChainStorage chain_storage{transaction, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend)};
 };
 
 class TestDebugExecutor : DebugExecutor {

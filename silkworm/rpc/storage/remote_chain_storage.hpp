@@ -16,20 +16,26 @@
 
 #pragma once
 
+#include <functional>
+
 #include <agrpc/grpc_context.hpp>
 
-#include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 
 #include "chain_storage.hpp"
 
 namespace silkworm::rpc {
 
+using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, silkworm::Block&)>;
+using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
+
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)
 class RemoteChainStorage : public ChainStorage {
   public:
-    RemoteChainStorage(ethdb::Transaction& tx, ethbackend::BackEnd* backend);
+    RemoteChainStorage(ethdb::Transaction& tx,
+                       BlockProvider block_provider,
+                       BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider);
     ~RemoteChainStorage() override = default;
 
     [[nodiscard]] Task<std::optional<silkworm::ChainConfig>> read_chain_config() const override;
@@ -73,7 +79,8 @@ class RemoteChainStorage : public ChainStorage {
 
   private:
     ethdb::Transaction& tx_;
-    ethbackend::BackEnd* backend_;
+    BlockProvider block_provider_;
+    BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
 };
 
 }  // namespace silkworm::rpc

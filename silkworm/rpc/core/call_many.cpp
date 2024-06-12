@@ -140,7 +140,7 @@ Task<CallManyResult> CallExecutor::execute(
     const SimulationContext& context,
     const AccountsOverrides& accounts_overrides,
     std::optional<std::uint64_t> timeout) {
-    const auto chain_storage{transaction_.create_storage(backend_)};
+    const auto chain_storage{transaction_.create_storage()};
 
     std::uint16_t count{0};
     bool empty = true;

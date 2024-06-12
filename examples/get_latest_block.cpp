@@ -32,6 +32,7 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 
 using namespace silkworm;
@@ -89,26 +90,28 @@ int main(int argc, char* argv[]) {
         // TODO(canepat): handle also local (shared-memory) database
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
-        auto io_context = context.io_context();
+        auto* io_context = context.io_context();
+        auto* grpc_context = context.grpc_context();
 
         ethdb::kv::CoherentStateCache state_cache;
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(&state_cache, *context.grpc_context(), channel);
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(*io_context, channel, *grpc_context)};
+        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), &state_cache, *grpc_context, channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 
         const auto latest_block_number = get_latest_block(*io_context, *database);
         if (latest_block_number) {
-            std::cout << "latest_block_number: " << latest_block_number.value() << std::endl;
+            std::cout << "latest_block_number: " << latest_block_number.value() << "\n";
         }
 
         if (context_pool_thread.joinable()) {
             context_pool_thread.join();
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        std::cerr << "Exception: " << e.what() << "\n";
     } catch (...) {
-        std::cerr << "Unexpected exception" << std::endl;
+        std::cerr << "Unexpected exception\n";
     }
 
     return 0;

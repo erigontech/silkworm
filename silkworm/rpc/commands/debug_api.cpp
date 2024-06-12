@@ -85,7 +85,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     try {
         auto start = std::chrono::system_clock::now();
         core::AccountDumper dumper{*tx};
-        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, backend_, start_address, max_result, exclude_code, exclude_storage);
+        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";
@@ -207,7 +207,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -285,7 +285,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -382,7 +382,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
 
     try {
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         co_await executor.trace_transaction(stream, *chain_storage, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -427,7 +427,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, *tx);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
@@ -500,7 +500,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
 
     try {
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -545,7 +545,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_number);
@@ -597,7 +597,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_hash);
@@ -669,7 +669,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         silkworm::Block block;
         if (!(co_await chain_storage->read_canonical_block(block_number, block))) {
@@ -707,7 +707,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
         auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
@@ -746,7 +746,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
 
         Bytes rlp{};
         auto success = co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);

@@ -52,7 +52,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
@@ -100,7 +100,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
@@ -191,7 +191,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
         tx->set_state_cache_enabled(/*cache_enabled=*/true);
 
         const auto block_number = co_await core::get_latest_block_number(*tx);
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
@@ -236,7 +236,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (block_with_hash) {
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -274,7 +274,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
@@ -318,7 +318,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
@@ -364,7 +364,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
@@ -414,7 +414,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
@@ -460,7 +460,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);

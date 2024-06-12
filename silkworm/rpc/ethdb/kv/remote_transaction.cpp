@@ -30,8 +30,8 @@ RemoteTransaction::RemoteTransaction(
     BlockProvider block_provider,
     BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider)
     : BaseTransaction(state_cache),
-      block_provider_{block_provider},
-      block_number_from_txn_hash_provider_{block_number_from_txn_hash_provider},
+      block_provider_{std::move(block_provider)},
+      block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
       tx_rpc_{stub, grpc_context} {}
 
 Task<void> RemoteTransaction::open() {

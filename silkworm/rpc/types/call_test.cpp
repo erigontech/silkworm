@@ -105,7 +105,7 @@ TEST_CASE("create call without gas price, max_fee_per_gas & max_priority_fee_per
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call without gas price and use gas_overrides", "[rpc][types][call]") {
+TEST_CASE("create call without gas price with base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -118,14 +118,14 @@ TEST_CASE("create call without gas price and use gas_overrides", "[rpc][types][c
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction(std::nullopt, 22000);
+    silkworm::Transaction txn = call.to_transaction(23500);
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 22000);
-    CHECK(txn.max_priority_fee_per_gas == 22000);
+    CHECK(txn.max_fee_per_gas == 23500);
+    CHECK(txn.max_priority_fee_per_gas == 0);
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call with gas price and use gas_overrides", "[rpc][types][call]") {
+TEST_CASE("create call with gas price and base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -138,10 +138,10 @@ TEST_CASE("create call with gas price and use gas_overrides", "[rpc][types][call
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction(std::nullopt, 22000);
+    silkworm::Transaction txn = call.to_transaction(23500);
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 22000);
-    CHECK(txn.max_priority_fee_per_gas == 22000);
+    CHECK(txn.max_fee_per_gas == 21000);
+    CHECK(txn.max_priority_fee_per_gas == 21000);
     CHECK(txn.nonce == 1);
 }
 
@@ -233,7 +233,7 @@ TEST_CASE("create call with no AccessList and pass it to_transaction", "[rpc][ty
         31337,         // value
         {},            // data
         1};            // nonce
-    silkworm::Transaction txn = call.to_transaction(std::nullopt, std::nullopt, access_list);
+    silkworm::Transaction txn = call.to_transaction(std::nullopt, access_list);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 21000);
     CHECK(txn.max_priority_fee_per_gas == 21000);
@@ -254,7 +254,7 @@ TEST_CASE("create call with no nonce and pass it to_transaction", "[rpc][types][
         31337,          // value
         {},             // data
         std::nullopt};  // nonce
-    silkworm::Transaction txn = call.to_transaction(std::nullopt, std::nullopt, std::nullopt, nonce);
+    silkworm::Transaction txn = call.to_transaction(std::nullopt, std::nullopt, nonce);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 21000);
     CHECK(txn.max_priority_fee_per_gas == 21000);

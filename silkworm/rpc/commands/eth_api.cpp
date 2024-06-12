@@ -1131,7 +1131,6 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     const auto call = params[0].get<Call>();
     const auto block_id = params[1].get<std::string>();
     SILK_DEBUG << "call: " << call << " block_id: " << block_id;
-    std::cout << "call: " << call << "\n";
 
     auto tx = co_await database_->begin();
 
@@ -1149,9 +1148,6 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
             co_return;
         }
         silkworm::Transaction txn{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
-        std::cout << "txn:" << txn << "\n";
-        std::cout << "base_fee:" << block_with_hash->block.header.base_fee_per_gas.value_or(0x0) << "\n";
-        std::cout << "block_number:" << block_number << "\n";
 
         const auto execution_result = co_await EVMExecutor::call(
             *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
@@ -1339,7 +1335,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         auto tracer = std::make_shared<AccessListTracer>();
 
         Tracers tracers{tracer};
-        auto txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, std::nullopt, std::nullopt, nonce);
+        auto txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, std::nullopt, nonce);
         AccessList saved_access_list = call.access_list;
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
@@ -1366,7 +1362,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 reply = make_json_content(request, access_list_result);
                 break;
             }
-            txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, std::nullopt, current_access_list, nonce);
+            txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, current_access_list, nonce);
             saved_access_list = current_access_list;
         }
     } catch (const std::invalid_argument& iv) {

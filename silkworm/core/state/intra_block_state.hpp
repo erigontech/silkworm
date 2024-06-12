@@ -147,9 +147,7 @@ class IntraBlockState {
     mutable FlatHashMap<evmc::address, state::Storage> storage_;
 
     mutable absl::node_hash_map<evmc::bytes32, evmone::baseline::CodeAnalysis> existing_code_;
-
-    // FIXME: This probably should be a node map too, but not exercised by tests.
-    FlatHashMap<evmc::bytes32, evmone::baseline::CodeAnalysis> new_code_;
+    absl::node_hash_map<evmc::bytes32, evmone::baseline::CodeAnalysis> new_code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

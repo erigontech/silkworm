@@ -104,7 +104,6 @@ void RpcApiTable::add_debug_handlers() {
     method_handlers_[json_rpc::method::k_debug_accountAt] = &commands::RpcApi::handle_debug_account_at;
     method_handlers_[json_rpc::method::k_debug_getRawBlock] = &commands::RpcApi::handle_debug_get_raw_block;
     method_handlers_[json_rpc::method::k_debug_getRawHeader] = &commands::RpcApi::handle_debug_get_raw_header;
-    //    method_handlers_[json_rpc::method::k_debug_getRawReceipts] = &commands::RpcApi::;
     method_handlers_[json_rpc::method::k_debug_getRawTransaction] = &commands::RpcApi::handle_debug_get_raw_transaction;
 
     stream_handlers_[json_rpc::method::k_debug_traceCall] = &commands::RpcApi::handle_debug_trace_call;

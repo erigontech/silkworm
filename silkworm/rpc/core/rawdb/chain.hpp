@@ -26,40 +26,41 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/chain_config.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 
-using Addresses = std::vector<evmc::address>;
+// TODO(canepat) BlockReader or migrate to ChainStorage?
+
 using Transactions = std::vector<silkworm::Transaction>;
 
-Task<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+Task<uint64_t> read_header_number(ethdb::Transaction& tx, const evmc::bytes32& block_hash);
 
-Task<ChainConfig> read_chain_config(const DatabaseReader& reader);
+Task<ChainConfig> read_chain_config(ethdb::Transaction& tx);
 
-Task<uint64_t> read_chain_id(const DatabaseReader& reader);
+Task<uint64_t> read_chain_id(ethdb::Transaction& tx);
 
-Task<evmc::bytes32> read_canonical_block_hash(const DatabaseReader& reader, BlockNum block_number);
+Task<evmc::bytes32> read_canonical_block_hash(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<intx::uint256> read_total_difficulty(const DatabaseReader& reader, const evmc::bytes32& block_hash, BlockNum block_number);
+Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
 
-Task<silkworm::BlockHeader> read_current_header(const DatabaseReader& reader);
+Task<silkworm::BlockHeader> read_current_header(ethdb::Transaction& tx);
 
-Task<evmc::bytes32> read_head_header_hash(const DatabaseReader& reader);
+Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx);
 
-Task<uint64_t> read_cumulative_transaction_count(const DatabaseReader& reader, BlockNum block_number);
+Task<uint64_t> read_cumulative_transaction_count(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_raw_receipts(const DatabaseReader& reader, BlockNum block_number);
+Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash);
+Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
 
-Task<intx::uint256> read_total_issued(const core::rawdb::DatabaseReader& reader, BlockNum block_number);
+Task<intx::uint256> read_total_issued(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<intx::uint256> read_total_burnt(const core::rawdb::DatabaseReader& reader, BlockNum block_number);
+Task<intx::uint256> read_total_burnt(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, BlockNum block_number);
+Task<intx::uint256> read_cumulative_gas_used(ethdb::Transaction& tx, BlockNum block_number);
 
 }  // namespace silkworm::rpc::core::rawdb

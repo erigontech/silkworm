@@ -19,12 +19,13 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/test_util/common.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
+#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/db/test_util/temp_snapshots.hpp>
+#include <silkworm/db/transactions/txn_index.hpp>
+#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
@@ -34,9 +35,13 @@ namespace silkworm::db {
 using namespace snapshots;
 using namespace silkworm::test_util;
 
+static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
+    return std::make_unique<db::SnapshotBundleFactoryImpl>();
+}
+
 TEST_CASE("SnapshotSync::SnapshotSync", "[db][snapshot][sync]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    SnapshotRepository repository{SnapshotSettings{}};
+    SnapshotRepository repository{SnapshotSettings{}, bundle_factory()};
     CHECK_NOTHROW(SnapshotSync{&repository, kMainnetConfig});
 }
 
@@ -54,7 +59,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
             .enabled = false,
             .bittorrent_settings = bittorrent_settings,
         };
-        SnapshotRepository repository{settings};
+        SnapshotRepository repository{settings, bundle_factory()};
         SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
@@ -65,7 +70,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
             .no_downloader = true,
             .bittorrent_settings = bittorrent_settings,
         };
-        SnapshotRepository repository{settings};
+        SnapshotRepository repository{settings, bundle_factory()};
         SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
@@ -77,7 +82,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
             .bittorrent_settings = bittorrent_settings,
         };
         settings.bittorrent_settings.verify_on_startup = true;
-        SnapshotRepository repository{settings};
+        SnapshotRepository repository{settings, bundle_factory()};
         SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
@@ -97,7 +102,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings};
+    SnapshotRepository repository{settings, bundle_factory()};
     db::test_util::TempChainData tmp_db;
 
     // Create a sample Header snapshot+index

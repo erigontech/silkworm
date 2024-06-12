@@ -69,8 +69,6 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
                       << ", allowance " << allowance;
             hi = uint64_t(allowance);
         }
-    } else {
-        gas_price = block.header.base_fee_per_gas;
     }
 
     if (hi > kGasCap) {
@@ -83,10 +81,10 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = transaction_.create_state(this_executor, tx_database_, storage_, block_number);
+        auto state = transaction_.create_state(this_executor, storage_, block_number);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-        silkworm::Transaction transaction{call.to_transaction(gas_price)};
+        silkworm::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
         while (lo + 1 < hi) {
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;

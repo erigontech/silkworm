@@ -25,20 +25,20 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/file/local_cursor.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
-class LocalTransaction : public Transaction {
+class LocalTransaction : public BaseTransaction {
   public:
-    explicit LocalTransaction(mdbx::env chaindata_env)
-        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0}, txn_{chaindata_env_} {}
+    explicit LocalTransaction(mdbx::env chaindata_env, kv::StateCache* state_cache)
+        : BaseTransaction(state_cache), chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0}, txn_{chaindata_env_} {}
 
     ~LocalTransaction() override = default;
 
+    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
     [[nodiscard]] uint64_t view_id() const override { return txn_.id(); }
 
     Task<void> open() override;
@@ -47,14 +47,16 @@ class LocalTransaction : public Transaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) override;
 
-    std::shared_ptr<ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) override;
+    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override;
 
     Task<void> close() override;
 
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
+
+    static inline uint64_t next_tx_id_{0};
 
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
@@ -62,6 +64,7 @@ class LocalTransaction : public Transaction {
     mdbx::env chaindata_env_;
     uint32_t last_cursor_id_;
     db::ROTxnManaged txn_;
+    uint64_t tx_id_{++next_tx_id_};
 };
 
 }  // namespace silkworm::rpc::ethdb::file

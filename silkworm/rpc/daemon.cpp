@@ -29,11 +29,13 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
+#include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
@@ -136,7 +138,8 @@ int Daemon::run(const DaemonSettings& settings) {
             snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings));
+            auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings), std::move(snapshot_bundle_factory));
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());
@@ -232,9 +235,9 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
         chaindata_env_ = std::move(chaindata_env);
     }
 
-    // Create private and shared state in execution contexts
-    add_private_services();
+    // Create shared and private state in execution contexts: order *matters* (e.g. for state cache)
     add_shared_services();
+    add_private_services();
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
@@ -256,11 +259,13 @@ void Daemon::add_private_services() {
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
 
+        auto* state_cache{must_use_shared_service<ethdb::kv::StateCache>(io_context)};
+
         std::unique_ptr<ethdb::Database> database;
         if (chaindata_env_) {
-            database = std::make_unique<ethdb::file::LocalDatabase>(*chaindata_env_);
+            database = std::make_unique<ethdb::file::LocalDatabase>(state_cache, *chaindata_env_);
         } else {
-            database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel);
+            database = std::make_unique<ethdb::kv::RemoteDatabase>(state_cache, grpc_context, grpc_channel);
         }
         auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
         auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
@@ -280,16 +285,17 @@ void Daemon::add_shared_services() {
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
     // Create the unique filter storage to be shared among the execution contexts
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
+    // Create the unique Execution remote client to be shared among the execution contexts
+    auto remote_execution_engine = std::make_shared<engine::RemoteExecutionEngine>();
 
     // Add the shared state to the execution contexts
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
 
         add_shared_service(io_context, block_cache);
-        add_shared_service<ethdb::kv::StateCache>(io_context, state_cache);
+        add_shared_service<ethdb::kv::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
-        // TODO(canepat) replace w/ proper Execution remote client
-        add_shared_service<engine::ExecutionEngine>(io_context, nullptr);
+        add_shared_service<engine::ExecutionEngine>(io_context, remote_execution_engine);
     }
 }
 

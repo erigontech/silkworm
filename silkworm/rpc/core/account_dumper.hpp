@@ -29,10 +29,8 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
 
@@ -55,7 +53,7 @@ class AccountDumper {
         bool exclude_storage);
 
   private:
-    Task<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
+    Task<void> load_accounts(const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
     Task<void> load_storage(BlockNum block_number, DumpAccounts& dump_accounts);
 
     ethdb::Transaction& transaction_;

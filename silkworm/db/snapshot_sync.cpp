@@ -23,6 +23,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/headers/header_snapshot.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
@@ -245,33 +246,35 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     db::etl_mdbx::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
-    repository_->for_each_header([&](const BlockHeader& header) -> bool {
-        SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
-        const auto block_number = header.number;
-        if (block_number > max_block_available) return true;
 
-        const auto block_hash = header.hash();
+    for (const SnapshotBundle& bundle : repository_->view_bundles()) {
+        for (const BlockHeader& header : HeaderSnapshotReader{bundle.header_snapshot}) {
+            SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
+            const auto block_number = header.number;
+            if (block_number > max_block_available) continue;
 
-        // Write block header into kDifficulty table
-        total_difficulty += header.difficulty;
-        db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
+            const auto block_hash = header.hash();
 
-        // Write block header into kCanonicalHashes table
-        db::write_canonical_hash(txn, block_number, block_hash);
+            // Write block header into kDifficulty table
+            total_difficulty += header.difficulty;
+            db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
-        // Collect entries for later loading kHeaderNumbers table
-        Bytes block_hash_bytes{block_hash.bytes, kHashLength};
-        Bytes encoded_block_number(sizeof(BlockNum), '\0');
-        endian::store_big_u64(encoded_block_number.data(), block_number);
-        hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_number)});
+            // Write block header into kCanonicalHashes table
+            db::write_canonical_hash(txn, block_number, block_hash);
 
-        if (++block_count % 1'000'000 == 0) {
-            SILK_INFO << "SnapshotSync: processing block header=" << block_number << " count=" << block_count;
-            if (is_stopping()) return false;
+            // Collect entries for later loading kHeaderNumbers table
+            Bytes block_hash_bytes{block_hash.bytes, kHashLength};
+            Bytes encoded_block_number(sizeof(BlockNum), '\0');
+            endian::store_big_u64(encoded_block_number.data(), block_number);
+            hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_number)});
+
+            if (++block_count % 1'000'000 == 0) {
+                SILK_INFO << "SnapshotSync: processing block header=" << block_number << " count=" << block_count;
+                if (is_stopping()) return;
+            }
         }
+    }
 
-        return true;
-    });
     db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
     hash2bn_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
@@ -298,7 +301,7 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto tx_snapshot = repository_->find_tx_segment(max_block_available);
+    const auto tx_snapshot = repository_->find_segment(SnapshotType::transactions, max_block_available);
     ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);

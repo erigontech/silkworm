@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <concepts>
 #include <cstdint>
 #include <filesystem>
@@ -24,10 +23,12 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/snapshots/common/iterator/iterator_read_into_vector.hpp>
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
@@ -197,18 +198,5 @@ class SnapshotReader {
 template <class TSnapshotReader>
 concept SnapshotReaderConcept = std::same_as<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>> ||
                                 std::derived_from<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>>;
-
-template <std::input_iterator It>
-void iterator_read_into(It it, size_t count, std::vector<typename It::value_type>& out) {
-    std::copy_n(std::make_move_iterator(std::move(it)), count, std::back_inserter(out));
-}
-
-template <std::input_iterator It>
-std::vector<typename It::value_type> iterator_read_into_vector(It it, size_t count) {
-    std::vector<typename It::value_type> out;
-    out.reserve(count);
-    iterator_read_into(std::move(it), count, out);
-    return out;
-}
 
 }  // namespace silkworm::snapshots

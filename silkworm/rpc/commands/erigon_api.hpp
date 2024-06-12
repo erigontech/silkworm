@@ -24,7 +24,6 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>

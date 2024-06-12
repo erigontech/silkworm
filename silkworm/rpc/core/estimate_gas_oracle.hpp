@@ -29,9 +29,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
@@ -77,9 +75,18 @@ struct EstimateGasException : public std::exception {
 
 class EstimateGasOracle {
   public:
-    explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider, const AccountReader& account_reader,
-                               const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, ethdb::Transaction& tx, ethdb::TransactionDatabase& tx_database, const ChainStorage& chain_storage)
-        : block_header_provider_(block_header_provider), account_reader_{account_reader}, config_{config}, workers_{workers}, transaction_{tx}, tx_database_{tx_database}, storage_{chain_storage} {}
+    explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider,
+                               const AccountReader& account_reader,
+                               const silkworm::ChainConfig& config,
+                               boost::asio::thread_pool& workers,
+                               ethdb::Transaction& tx,
+                               const ChainStorage& chain_storage)
+        : block_header_provider_(block_header_provider),
+          account_reader_{account_reader},
+          config_{config},
+          workers_{workers},
+          transaction_{tx},
+          storage_{chain_storage} {}
     virtual ~EstimateGasOracle() = default;
 
     EstimateGasOracle(const EstimateGasOracle&) = delete;
@@ -98,7 +105,6 @@ class EstimateGasOracle {
     const silkworm::ChainConfig& config_;
     boost::asio::thread_pool& workers_;
     ethdb::Transaction& transaction_;
-    ethdb::TransactionDatabase& tx_database_;
     const ChainStorage& storage_;
 };
 

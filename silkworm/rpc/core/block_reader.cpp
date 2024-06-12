@@ -16,20 +16,15 @@
 
 #include "block_reader.hpp"
 
-#include <set>
-
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/rawdb/util.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -43,9 +38,7 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
 }
 
 Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const {
-    ethdb::TransactionDatabase tx_database{transaction_};
-
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, tx_database, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, transaction_, bnoh);
     if (!block_with_hash) {
         throw std::invalid_argument("read_balance_changes: block not found");
     }
@@ -53,7 +46,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
-    StateReader state_reader(database_reader_);
+    StateReader state_reader{transaction_};
 
     co_await load_addresses(block_number, balance_changes);
     BalanceChanges::iterator it;

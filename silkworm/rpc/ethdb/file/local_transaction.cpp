@@ -60,11 +60,11 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
     co_return cursor;
 }
 
-std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum block_number) {
+std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any_io_executor&, const ChainStorage&, BlockNum block_number) {
     return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
 }
 
-std::shared_ptr<ChainStorage> LocalTransaction::create_storage(const DatabaseReader&, ethbackend::BackEnd*) {
+std::shared_ptr<ChainStorage> LocalTransaction::create_storage(ethbackend::BackEnd*) {
     return std::make_shared<LocalChainStorage>(txn_);
 }
 

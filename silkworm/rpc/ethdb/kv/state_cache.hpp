@@ -48,7 +48,7 @@ class StateCache {
   public:
     virtual ~StateCache() = default;
 
-    virtual std::unique_ptr<StateView> get_view(Transaction& txn) = 0;
+    virtual std::unique_ptr<StateView> get_view(Transaction& tx) = 0;
 
     virtual void on_new_block(const remote::StateChangeBatch& state_changes) = 0;
 
@@ -110,7 +110,7 @@ class CoherentStateCache : public StateCache {
     CoherentStateCache(const CoherentStateCache&) = delete;
     CoherentStateCache& operator=(const CoherentStateCache&) = delete;
 
-    std::unique_ptr<StateView> get_view(Transaction& txn) override;
+    std::unique_ptr<StateView> get_view(Transaction& tx) override;
 
     void on_new_block(const remote::StateChangeBatch& state_changes) override;
 

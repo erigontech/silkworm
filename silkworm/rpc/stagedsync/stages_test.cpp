@@ -25,7 +25,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/test_util/mock_database_reader.hpp>
+#include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::stages {
 
@@ -34,23 +34,29 @@ using testing::InvokeWithoutArgs;
 
 TEST_CASE("get_sync_stage_progress", "[rpc][stagedsync]") {
     boost::asio::thread_pool pool{1};
-    test::MockDatabaseReader db_reader;
+    test::MockTransaction transaction;
 
     SECTION("empty stage key") {
-        EXPECT_CALL(db_reader, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}}; }));
-        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(db_reader, kFinish), boost::asio::use_future);
+        EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+            co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
+        }));
+        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(transaction, kFinish), boost::asio::use_future);
         CHECK(result.get() == 0);
     }
 
     SECTION("invalid stage progress value") {
-        EXPECT_CALL(db_reader, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("FF")}; }));
-        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(db_reader, kFinish), boost::asio::use_future);
+        EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+            co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("FF")};
+        }));
+        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(transaction, kFinish), boost::asio::use_future);
         CHECK_THROWS_AS(result.get(), std::runtime_error);
     }
 
     SECTION("valid stage progress value") {
-        EXPECT_CALL(db_reader, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("00000000000000FF")}; }));
-        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(db_reader, kFinish), boost::asio::use_future);
+        EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+            co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("00000000000000FF")};
+        }));
+        auto result = boost::asio::co_spawn(pool, get_sync_stage_progress(transaction, kFinish), boost::asio::use_future);
         CHECK(result.get() == 255);
     }
 }

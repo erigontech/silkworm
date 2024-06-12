@@ -33,7 +33,7 @@
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
@@ -46,10 +46,12 @@ namespace silkworm::rpc::commands {
 
 namespace {
     //! This dummy transaction just gives you the same cursor over and over again.
-    class DummyTransaction : public ethdb::Transaction {
+    class DummyTransaction : public ethdb::BaseTransaction {
       public:
-        explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
+        explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor)
+            : ethdb::BaseTransaction(nullptr), cursor_(std::move(cursor)) {}
 
+        [[nodiscard]] uint64_t tx_id() const override { return 0; }
         [[nodiscard]] uint64_t view_id() const override { return 0; }
 
         Task<void> open() override { co_return; }
@@ -62,12 +64,12 @@ namespace {
             co_return nullptr;
         }
 
-        std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, const ChainStorage&, BlockNum) override {
+        std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const ChainStorage&, BlockNum) override {
             return nullptr;
         }
 
-        std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader& db_reader, ethbackend::BackEnd* backend) override {
-            return std::make_shared<RemoteChainStorage>(db_reader, backend);
+        std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override {
+            return std::make_shared<RemoteChainStorage>(*this, backend);
         }
 
         Task<void> close() override { co_return; }

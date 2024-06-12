@@ -16,7 +16,6 @@
 
 #include "engine_api.hpp"
 
-#include <chrono>
 #include <string>
 #include <vector>
 
@@ -25,8 +24,6 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/client_version.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
@@ -319,8 +316,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto storage{tx->create_storage(backend_)};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.has_value(), "execution layer has invalid configuration");
         ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
@@ -384,8 +380,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto storage{tx->create_storage(backend_)};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.has_value(), "execution layer has invalid configuration");
         ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
@@ -584,8 +579,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto storage{tx->create_storage(tx_database, backend_)};
+        const auto storage{tx->create_storage(backend_)};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.has_value(), "execution layer has invalid configuration");
         ensure(config->terminal_total_difficulty.has_value(), "execution layer does not have terminal total difficulty");
@@ -689,8 +683,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
 
 Task<std::optional<silkworm::ChainConfig>> EngineRpcApi::read_chain_config() {
     auto tx = co_await database_->begin();
-    ethdb::TransactionDatabase tx_database{*tx};
-    const auto storage{tx->create_storage(tx_database, backend_)};
+    const auto storage{tx->create_storage(backend_)};
     auto config{co_await storage->read_chain_config()};
     co_await tx->close();
     co_return config;

@@ -25,13 +25,13 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc {
 
 class StateReader {
   public:
-    explicit StateReader(const core::rawdb::DatabaseReader& db_reader) : db_reader_(db_reader) {}
+    explicit StateReader(ethdb::Transaction& tx) : tx_(tx) {}
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -52,7 +52,7 @@ class StateReader {
                                                                                const evmc::bytes32& location_hash, BlockNum block_number) const;
 
   private:
-    const core::rawdb::DatabaseReader& db_reader_;
+    ethdb::Transaction& tx_;
 };
 
 }  // namespace silkworm::rpc

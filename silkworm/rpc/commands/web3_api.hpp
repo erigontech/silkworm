@@ -22,7 +22,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/types.hpp>

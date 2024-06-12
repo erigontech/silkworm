@@ -27,7 +27,6 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 
 namespace silkworm {
 

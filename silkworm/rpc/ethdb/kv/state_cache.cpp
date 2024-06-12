@@ -28,7 +28,6 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/rawdb/util.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -218,10 +217,10 @@ bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, S
     return inserted;
 }
 
-Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& txn) {
+Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = txn.view_id();
+    const auto view_id = tx.view_id();
     const auto root_it = state_view_roots_.find(view_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;
@@ -245,8 +244,7 @@ Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Byt
 
     ++state_miss_count_;
 
-    TransactionDatabase tx_database{txn};
-    const auto value = co_await tx_database.get_one(db::table::kPlainStateName, key);
+    const auto value = co_await tx.get_one(db::table::kPlainStateName, key);
     SILK_DEBUG << "Miss in state cache: lookup in PlainState key=" << key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
@@ -260,10 +258,10 @@ Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Byt
     co_return value;
 }
 
-Task<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& txn) {
+Task<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = txn.view_id();
+    const auto view_id = tx.view_id();
     const auto root_it = state_view_roots_.find(view_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;
@@ -287,8 +285,7 @@ Task<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm
 
     ++code_miss_count_;
 
-    TransactionDatabase tx_database{txn};
-    const auto value = co_await tx_database.get_one(db::table::kCodeName, key);
+    const auto value = co_await tx.get_one(db::table::kCodeName, key);
     SILK_DEBUG << "Miss in code cache: lookup in Code key=" << key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;

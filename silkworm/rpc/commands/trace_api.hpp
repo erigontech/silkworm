@@ -25,10 +25,8 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/json/types.hpp>
 

@@ -28,9 +28,6 @@
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
-#include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/call.hpp>
 
@@ -55,20 +52,18 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
-        const core::rawdb::DatabaseReader& db_reader =
-            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*block_cache_, db_reader, *chain_storage, workers_, *tx};
+        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, *tx);
+        tx->set_state_cache_enabled(is_latest_block);
+
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
 
         if (result.pre_check_error) {
@@ -105,20 +100,17 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, *tx);
+        tx->set_state_cache_enabled(is_latest_block);
 
-        const core::rawdb::DatabaseReader& db_reader =
-            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*block_cache_, db_reader, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
 
         if (result.pre_check_error) {
@@ -196,10 +188,10 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
+        tx->set_state_cache_enabled(/*cache_enabled=*/true);
 
-        const auto block_number = co_await core::get_latest_block_number(tx_database);
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_number = co_await core::get_latest_block_number(*tx);
+        const auto chain_storage = tx->create_storage(backend_);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
@@ -207,7 +199,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
             co_return;
         }
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
@@ -244,11 +236,10 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (block_with_hash) {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
             reply = make_json_content(request, result);
         } else {
@@ -283,15 +274,14 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction " << silkworm::to_hex(transaction_hash, true) << " not found";
             reply = make_json_error(request, -32000, oss.str());
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash->block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
@@ -328,16 +318,15 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter);
         reply = make_json_content(request, result);
@@ -375,10 +364,9 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         co_await executor.trace_filter(trace_filter, *chain_storage, stream);
     } catch (const std::exception& e) {
@@ -426,14 +414,13 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
 
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
 
             uint16_t index = indices[0];
@@ -473,13 +460,12 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(backend_);
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, tx_database, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
             reply = make_json_content(request, result);
         }

@@ -26,21 +26,21 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
-#include <silkworm/rpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/rpc.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
-class RemoteTransaction : public Transaction {
+class RemoteTransaction : public BaseTransaction {
   public:
-    RemoteTransaction(::remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context)
-        : tx_rpc_{stub, grpc_context} {}
+    RemoteTransaction(::remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context, StateCache* state_cache)
+        : BaseTransaction(state_cache), tx_rpc_{stub, grpc_context} {}
 
     ~RemoteTransaction() override = default;
 
+    uint64_t tx_id() const override { return tx_id_; }
     uint64_t view_id() const override { return view_id_; }
 
     Task<void> open() override;
@@ -49,9 +49,9 @@ class RemoteTransaction : public Transaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, const ChainStorage& storage, BlockNum block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) override;
 
-    std::shared_ptr<ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) override;
+    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override;
 
     Task<void> close() override;
 
@@ -61,6 +61,7 @@ class RemoteTransaction : public Transaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
     TxRpc tx_rpc_;
+    uint64_t tx_id_{0};
     uint64_t view_id_{0};
 };
 

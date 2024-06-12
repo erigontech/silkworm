@@ -319,11 +319,11 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, bnoh);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, tx_, bnoh);
     if (!block_with_hash) {
         co_return;
     }
-    rpc::Transaction transaction{call.to_transaction()};
+    rpc::Transaction transaction{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
 
     const auto& block = block_with_hash->block;
     const auto number = block.header.number;
@@ -359,7 +359,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 }
 
 Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, context.block_number);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, tx_, context.block_number);
     if (!block_with_hash) {
         co_return;
     }
@@ -386,7 +386,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = tx_.create_state(current_executor, database_reader_, storage, block_number - 1);
+        auto state = tx_.create_state(current_executor, storage, block_number - 1);
         EVMExecutor executor{*chain_config_ptr, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
@@ -423,7 +423,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 }
 
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
-    rpc::Transaction transaction{call.to_transaction()};
+    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
     co_await execute(stream, storage, block.header.number, block, transaction, -1);
     co_return;
 }
@@ -445,7 +445,7 @@ Task<void> DebugExecutor::execute(
     ensure(chain_config_ptr.has_value(), "cannot read chain config");
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, database_reader_, storage, block_number);
+        auto state = tx_.create_state(current_executor, storage, block_number);
         EVMExecutor executor{*chain_config_ptr, workers_, state};
 
         for (auto idx{0}; idx < index; idx++) {
@@ -498,7 +498,7 @@ Task<void> DebugExecutor::execute(
 
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, database_reader_, storage, block.header.number);
+        auto state = tx_.create_state(current_executor, storage, block.header.number);
         EVMExecutor executor{*chain_config_ptr, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; idx++) {
@@ -533,7 +533,7 @@ Task<void> DebugExecutor::execute(
             stream.open_array();
 
             for (const auto& call : bundle.transactions) {
-                silkworm::Transaction txn{call.to_transaction()};
+                silkworm::Transaction txn{call.to_transaction(block.header.base_fee_per_gas)};
 
                 stream.open_object();
                 stream.write_field("structLogs");

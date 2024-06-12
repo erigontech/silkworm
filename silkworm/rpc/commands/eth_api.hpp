@@ -28,12 +28,10 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/ethdb/transaction_database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/txpool/miner.hpp>
 #include <silkworm/rpc/txpool/transaction_pool.hpp>

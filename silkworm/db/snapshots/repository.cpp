@@ -17,19 +17,8 @@
 #include "repository.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <iterator>
-#include <ranges>
 
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/db/snapshots/body_index.hpp>
-#include <silkworm/db/snapshots/body_snapshot.hpp>
-#include <silkworm/db/snapshots/header_index.hpp>
-#include <silkworm/db/snapshots/header_snapshot.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/txn_index.hpp>
-#include <silkworm/db/snapshots/txn_queries.hpp>
-#include <silkworm/db/snapshots/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -37,21 +26,11 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-std::size_t SnapshotRepository::view_bundles(const SnapshotBundleWalker& walker) {
-    // Search for target segment in reverse order (from the newest segment to the oldest one)
-    std::size_t visited_views{0};
-    bool walk_done{false};
-    for (auto& entry : std::ranges::reverse_view(bundles_)) {
-        const auto& bundle = entry.second;
-        walk_done = walker(bundle);
-        ++visited_views;
-        if (walk_done) break;
-    }
-    return visited_views;
-}
-
-// NOLINTNEXTLINE(modernize-pass-by-value)
-SnapshotRepository::SnapshotRepository(const SnapshotSettings& settings) : settings_(settings) {}
+SnapshotRepository::SnapshotRepository(
+    SnapshotSettings settings,
+    std::unique_ptr<SnapshotBundleFactory> bundle_factory)
+    : settings_(std::move(settings)),
+      bundle_factory_(std::move(bundle_factory)) {}
 
 SnapshotRepository::~SnapshotRepository() {
     close();
@@ -116,89 +95,12 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     return missing_ranges;
 }
 
-bool SnapshotRepository::for_each_header(const HeaderWalker& fn) {
-    for (auto& entry : bundles_) {
-        auto& bundle = entry.second;
-        const Snapshot& header_snapshot = bundle.header_snapshot;
-        SILK_TRACE << "for_each_header header_snapshot: " << header_snapshot.fs_path().string();
-
-        HeaderSnapshotReader reader{header_snapshot};
-        for (auto& header : reader) {
-            const bool keep_going = fn(header);
-            if (!keep_going) return false;
-        }
-    }
-    return true;
-}
-
-bool SnapshotRepository::for_each_body(const BodyWalker& fn) {
-    for (auto& entry : bundles_) {
-        auto& bundle = entry.second;
-        const Snapshot& body_snapshot = bundle.body_snapshot;
-        SILK_TRACE << "for_each_body body_snapshot: " << body_snapshot.fs_path().string();
-
-        BlockNum number = body_snapshot.block_from();
-        BodySnapshotReader reader{body_snapshot};
-        for (auto& body : reader) {
-            const bool keep_going = fn(number, body);
-            if (!keep_going) return false;
-            number++;
-        }
-    }
-    return true;
-}
-
-std::size_t SnapshotRepository::view_segments(SnapshotType type, const SnapshotWalker& walker) {
-    return view_bundles([&](const SnapshotBundle& bundle) {
-        return walker({bundle.snapshot(type), bundle.index(type)});
-    });
-}
-
-std::size_t SnapshotRepository::view_header_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::headers, walker);
-}
-
-std::size_t SnapshotRepository::view_body_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::bodies, walker);
-}
-
-std::size_t SnapshotRepository::view_tx_segments(const SnapshotWalker& walker) {
-    return view_segments(SnapshotType::transactions, walker);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
+std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {
-        return SnapshotAndIndex{bundle->snapshot(type), bundle->index(type)};
+        return bundle->snapshot_and_index(type);
     }
     return std::nullopt;
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_header_segment(BlockNum number) const {
-    return find_segment(SnapshotType::headers, number);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_body_segment(BlockNum number) const {
-    return find_segment(SnapshotType::bodies, number);
-}
-
-std::optional<SnapshotRepository::SnapshotAndIndex> SnapshotRepository::find_tx_segment(BlockNum number) const {
-    return find_segment(SnapshotType::transactions, number);
-}
-
-std::optional<BlockNum> SnapshotRepository::find_block_number(Hash txn_hash) const {
-    for (const auto& entry : std::ranges::reverse_view(bundles_)) {
-        const auto& bundle = entry.second;
-        const auto& snapshot = bundle.txn_snapshot;
-
-        const Index& idx_txn_hash = bundle.idx_txn_hash;
-        const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
-        auto block = TransactionBlockNumByTxnHashQuery{idx_txn_hash_2_block, TransactionFindByHashQuery{snapshot, idx_txn_hash}}.exec(txn_hash);
-        if (block) {
-            return block;
-        }
-    }
-    return {};
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
@@ -206,38 +108,10 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     std::vector<std::shared_ptr<IndexBuilder>> missing_index_list;
 
     for (const auto& seg_file : segment_files) {
-        switch (seg_file.type()) {
-            case SnapshotType::headers: {
-                if (!fs::exists(seg_file.index_file().path())) {
-                    auto index = std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            case SnapshotType::bodies: {
-                if (!fs::exists(seg_file.index_file().path())) {
-                    auto index = std::make_shared<IndexBuilder>(BodyIndex::make(seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            case SnapshotType::transactions: {
-                auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
-                bool has_bodies_segment = (std::find(segment_files.begin(), segment_files.end(), bodies_segment_path) != segment_files.end());
-
-                if (!fs::exists(seg_file.index_file().path()) && has_bodies_segment) {
-                    auto index = std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file));
-                    missing_index_list.push_back(index);
-                }
-
-                if (!fs::exists(seg_file.index_file_for_type(SnapshotType::transactions_to_block).path()) && has_bodies_segment) {
-                    auto index = std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file));
-                    missing_index_list.push_back(index);
-                }
-                break;
-            }
-            default: {
-                SILKWORM_ASSERT(false);
+        auto builders = bundle_factory_->index_builders(seg_file);
+        for (auto& builder : builders) {
+            if (!builder->path().exists()) {
+                missing_index_list.push_back(builder);
             }
         }
     }
@@ -279,19 +153,7 @@ void SnapshotRepository::reopen_folder() {
             auto index_path = [&](SnapshotType type) {
                 return all_index_paths[groups[num][true][type]];
             };
-
-            SnapshotBundle bundle{
-                .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
-                .idx_header_hash = Index(index_path(SnapshotType::headers)),
-
-                .body_snapshot = Snapshot(snapshot_path(SnapshotType::bodies)),
-                .idx_body_number = Index(index_path(SnapshotType::bodies)),
-
-                .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
-                .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
-                .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
-            };
-
+            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
             bundle.reopen();
 
             bundles_.emplace(num, std::move(bundle));
@@ -313,8 +175,7 @@ void SnapshotRepository::reopen_folder() {
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (const auto& entry : std::ranges::reverse_view(bundles_)) {
-        const auto& bundle = entry.second;
+    for (const auto& bundle : this->view_bundles_reverse()) {
         // We're looking for the segment containing the target block number in its block range
         if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
             ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {

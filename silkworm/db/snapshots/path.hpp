@@ -28,6 +28,8 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 
+#include "snapshot_type.hpp"
+
 namespace silkworm::snapshots {
 
 //! The scale factor to convert the block numbers to/from the values in snapshot file names
@@ -43,16 +45,6 @@ inline constexpr const char* kTorrentExtension{".torrent"};
 inline constexpr const char* kSegmentExtension{".seg"};
 inline constexpr const char* kIdxExtension{".idx"};
 inline constexpr const char* kTmpExtension{".tmp"};
-
-//! The snapshot category corresponding to the snapshot file type
-//! @remark item names do NOT follow Google style to obtain the tag used in file names from magic_enum::enum_name
-//! @see SnapshotPath#build_filename
-enum SnapshotType : uint8_t {
-    headers = 0,
-    bodies = 1,
-    transactions = 2,
-    transactions_to_block = 3,
-};
 
 //! The snapshot version 1 aka v1
 inline constexpr uint8_t kSnapshotV1{1};

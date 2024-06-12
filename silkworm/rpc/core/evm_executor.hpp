@@ -35,7 +35,6 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/storage/chain_storage.hpp>
 
@@ -46,9 +45,9 @@ enum PreCheckErrorCode {
     kInsufficientFunds,
     kInternalError,
     kIntrinsicGasTooLow,
+    kIsNotLondon,
     kMaxFeePerBlobGasTooLowError,
-    kTipHigherThanFeeCap,
-    kIsNotLondon
+    kTipHigherThanFeeCap
 };
 
 struct ExecutionResult {

@@ -33,6 +33,7 @@
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -150,8 +151,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
-    snapshot_repository.view_bundles(
-        [&](const SnapshotBundle& bundle) {
+    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles()) {
+        {
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
@@ -202,8 +203,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
                 };
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);
             }
-            return true;
-        });
+        }
+    }
 
     ensure(headers_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid header snapshot count");
     ensure(bodies_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid body snapshot count");
@@ -436,7 +437,7 @@ int main(int argc, char* argv[]) {
         int status_code = -1;
         if (settings.execute_blocks_settings) {
             // Execute specified block range using Silkworm API library
-            SnapshotRepository repository{snapshot_settings};
+            SnapshotRepository repository{snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()};
             repository.reopen_folder();
             status_code = execute_blocks(handle, *settings.execute_blocks_settings, repository, data_dir);
         } else if (settings.build_indexes_settings) {

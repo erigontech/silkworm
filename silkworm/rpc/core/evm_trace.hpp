@@ -37,7 +37,6 @@
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/types/block.hpp>
@@ -459,11 +458,10 @@ struct Filter {
 class TraceCallExecutor {
   public:
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
-                               const core::rawdb::DatabaseReader& database_reader,
                                const ChainStorage& chain_storage,
                                boost::asio::thread_pool& workers,
                                ethdb::Transaction& tx)
-        : block_cache_(block_cache), database_reader_(database_reader), chain_storage_{chain_storage}, workers_{workers}, tx_{tx} {}
+        : block_cache_(block_cache), chain_storage_{chain_storage}, workers_{workers}, tx_{tx} {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -495,7 +493,6 @@ class TraceCallExecutor {
         const TraceConfig& config);
 
     silkworm::BlockCache& block_cache_;
-    const core::rawdb::DatabaseReader& database_reader_;
     const ChainStorage& chain_storage_;
     boost::asio::thread_pool& workers_;
     ethdb::Transaction& tx_;

@@ -21,11 +21,11 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/rpc/core/rawdb/accessors.hpp>
+#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
 
 }  // namespace silkworm::rpc::core

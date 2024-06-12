@@ -30,14 +30,17 @@
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_cursor.hpp>
 #include <silkworm/rpc/ethdb/kv/rpc.hpp>
+#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
 class RemoteTransaction : public BaseTransaction {
   public:
-    RemoteTransaction(::remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context, StateCache* state_cache)
-        : BaseTransaction(state_cache), tx_rpc_{stub, grpc_context} {}
-
+    RemoteTransaction(::remote::KV::StubInterface& stub,
+                      agrpc::GrpcContext& grpc_context,
+                      StateCache* state_cache,
+                      BlockProvider block_provider,
+                      BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider);
     ~RemoteTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }
@@ -51,13 +54,15 @@ class RemoteTransaction : public BaseTransaction {
 
     std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) override;
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override;
+    std::shared_ptr<ChainStorage> create_storage() override;
 
     Task<void> close() override;
 
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
+    BlockProvider block_provider_;
+    BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
     TxRpc tx_rpc_;

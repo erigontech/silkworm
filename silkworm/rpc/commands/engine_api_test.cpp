@@ -34,6 +34,7 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/ethdb/base_transaction.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
@@ -68,14 +69,15 @@ namespace {
             return nullptr;
         }
 
-        std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override {
-            return std::make_shared<RemoteChainStorage>(*this, backend);
+        std::shared_ptr<ChainStorage> create_storage() override {
+            return std::make_shared<RemoteChainStorage>(*this, ethdb::kv::block_provider(&backend_), ethdb::kv::block_number_from_txn_hash_provider(&backend_));
         }
 
         Task<void> close() override { co_return; }
 
       private:
         std::shared_ptr<ethdb::Cursor> cursor_;
+        test::BackEndMock backend_;
     };
 
     //! This dummy database acts as a factory for dummy transactions using the same cursor.

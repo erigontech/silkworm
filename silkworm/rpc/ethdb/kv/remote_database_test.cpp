@@ -25,6 +25,7 @@
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
 #include <silkworm/rpc/test_util/kv_test_base.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -32,7 +33,8 @@ struct RemoteDatabaseTest : test::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
     CoherentStateCache state_cache_;
-    RemoteDatabase remote_db_{&state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    test::BackEndMock backend;
+    RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 #ifndef SILKWORM_SANITIZE

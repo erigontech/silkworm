@@ -40,13 +40,12 @@ namespace silkworm::rpc::core {
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
     const BlockNumberOrHash& bnoh,
-    ethbackend::BackEnd* backend,
     const evmc::address& start_address,
     int16_t max_result,
     bool exclude_code,
     bool exclude_storage) {
     DumpAccounts dump_accounts;
-    const auto chain_storage = transaction_.create_storage(backend);
+    const auto chain_storage = transaction_.create_storage();
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, transaction_, bnoh);
     if (!block_with_hash) {

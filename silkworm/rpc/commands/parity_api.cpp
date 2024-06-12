@@ -48,7 +48,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
 
         const auto bnoh = BlockNumberOrHash{block_id};
         const auto block_number = co_await core::get_block_number(bnoh, *tx);

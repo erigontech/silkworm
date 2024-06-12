@@ -33,8 +33,14 @@ namespace silkworm::rpc::ethdb::kv {
 
 class RemoteDatabase : public Database {
   public:
-    RemoteDatabase(StateCache* state_cache, agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
-    RemoteDatabase(StateCache* state_cache, agrpc::GrpcContext& grpc_context, std::unique_ptr<remote::KV::StubInterface>&& stub);
+    RemoteDatabase(ethbackend::BackEnd* backend,
+                   StateCache* state_cache,
+                   agrpc::GrpcContext& grpc_context,
+                   const std::shared_ptr<grpc::Channel>& channel);
+    RemoteDatabase(ethbackend::BackEnd* backend,
+                   StateCache* state_cache,
+                   agrpc::GrpcContext& grpc_context,
+                   std::unique_ptr<remote::KV::StubInterface>&& stub);
     ~RemoteDatabase() override;
 
     RemoteDatabase(const RemoteDatabase&) = delete;
@@ -43,6 +49,7 @@ class RemoteDatabase : public Database {
     Task<std::unique_ptr<Transaction>> begin() override;
 
   private:
+    ethbackend::BackEnd* backend_;
     StateCache* state_cache_;
     agrpc::GrpcContext& grpc_context_;
     std::unique_ptr<remote::KV::StubInterface> stub_;

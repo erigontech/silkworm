@@ -46,7 +46,6 @@ class AccountDumper {
     Task<DumpAccounts> dump_accounts(
         BlockCache& cache,
         const BlockNumberOrHash& bnoh,
-        ethbackend::BackEnd* backend,
         const evmc::address& start_address,
         int16_t max_result,
         bool exclude_code,

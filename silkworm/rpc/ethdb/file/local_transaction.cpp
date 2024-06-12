@@ -64,7 +64,7 @@ std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any
     return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
 }
 
-std::shared_ptr<ChainStorage> LocalTransaction::create_storage(ethbackend::BackEnd*) {
+std::shared_ptr<ChainStorage> LocalTransaction::create_storage() {
     return std::make_shared<LocalChainStorage>(txn_);
 }
 

@@ -44,8 +44,9 @@ ContextTestBase::ContextTestBase()
     add_shared_service<engine::ExecutionEngine>(io_context_, std::make_shared<ExecutionEngineMock>());
     auto* state_cache{must_use_shared_service<ethdb::kv::StateCache>(io_context_)};
     auto grpc_channel{::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials())};
-    add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::kv::RemoteDatabase>(state_cache, grpc_context_, grpc_channel));
-    add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<ethbackend::RemoteBackEnd>(io_context_, grpc_channel, grpc_context_));
+    auto backend{std::make_unique<ethbackend::RemoteBackEnd>(io_context_, grpc_channel, grpc_context_)};
+    add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context_, grpc_channel));
+    add_private_service<ethbackend::BackEnd>(io_context_, std::move(backend));
     add_private_service<txpool::Miner>(io_context_, std::make_unique<txpool::Miner>(io_context_, grpc_channel, grpc_context_));
     add_private_service<txpool::TransactionPool>(io_context_, std::make_unique<txpool::TransactionPool>(io_context_, grpc_channel, grpc_context_));
 }

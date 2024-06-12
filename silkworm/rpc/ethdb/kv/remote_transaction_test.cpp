@@ -22,7 +22,9 @@
 
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/kv_test_base.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -30,7 +32,12 @@ using testing::_;
 
 struct RemoteTransactionTest : test::KVTestBase {
     CoherentStateCache state_cache_;
-    RemoteTransaction remote_tx_{*stub_, grpc_context_, &state_cache_};
+    test::BackEndMock backend;
+    RemoteTransaction remote_tx_{*stub_,
+                                 grpc_context_,
+                                 &state_cache_,
+                                 ethdb::kv::block_provider(&backend),
+                                 ethdb::kv::block_number_from_txn_hash_provider(&backend)};
 };
 
 #ifndef SILKWORM_SANITIZE

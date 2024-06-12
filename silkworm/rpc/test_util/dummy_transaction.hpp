@@ -52,7 +52,7 @@ class DummyTransaction : public ethdb::BaseTransaction {
         return std::make_shared<silkworm::rpc::state::RemoteState>(executor, *this, storage, block_number);
     }
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }
 

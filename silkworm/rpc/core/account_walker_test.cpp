@@ -183,7 +183,7 @@ class DummyTransaction : public ethdb::BaseTransaction {
         return nullptr;
     }
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }
 

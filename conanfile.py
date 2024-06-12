@@ -63,6 +63,10 @@ class SilkwormRecipe(ConanFile):
             self.options['mimalloc'].override = True
 
         self.options['boost'].asio_no_deprecated = True
+        if self.settings.os == 'Macos':
+            CMAKE_OSX_DEPLOYMENT_TARGET = '10.13'
+            os_version_min_flag = f'-mmacosx-version-min={CMAKE_OSX_DEPLOYMENT_TARGET}'
+            self.options['boost'].extra_b2_flags = f'cxxflags="{os_version_min_flag}" linkflags="{os_version_min_flag}"'
 
         # Disable building unused boost components
         # note: changing default options above forces a boost rebuild anyway

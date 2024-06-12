@@ -58,7 +58,7 @@ TEST_CASE("create call with gas price", "[rpc][types][call]") {
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 21000);
     CHECK(txn.max_priority_fee_per_gas == 21000);
@@ -78,7 +78,7 @@ TEST_CASE("create call without gas price and max_fee_per_gas & max_priority_fee_
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(18000);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 18000);
     CHECK(txn.max_priority_fee_per_gas == 18000);
@@ -98,14 +98,14 @@ TEST_CASE("create call without gas price, max_fee_per_gas & max_priority_fee_per
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 0);
     CHECK(txn.max_priority_fee_per_gas == 0);
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call without gas price and use gas_overrides", "[rpc][types][call]") {
+TEST_CASE("create call without gas price with base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -118,14 +118,14 @@ TEST_CASE("create call without gas price and use gas_overrides", "[rpc][types][c
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction(22000);
+    silkworm::Transaction txn = call.to_transaction(23500);
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 22000);
-    CHECK(txn.max_priority_fee_per_gas == 22000);
+    CHECK(txn.max_fee_per_gas == 23500);
+    CHECK(txn.max_priority_fee_per_gas == 0);
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call with gas price and use gas_overrides", "[rpc][types][call]") {
+TEST_CASE("create call with gas price and base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -138,10 +138,10 @@ TEST_CASE("create call with gas price and use gas_overrides", "[rpc][types][call
         1,             // nonce
         {},
     };
-    silkworm::Transaction txn = call.to_transaction(22000);
+    silkworm::Transaction txn = call.to_transaction(23500);
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 22000);
-    CHECK(txn.max_priority_fee_per_gas == 22000);
+    CHECK(txn.max_fee_per_gas == 21000);
+    CHECK(txn.max_priority_fee_per_gas == 21000);
     CHECK(txn.nonce == 1);
 }
 
@@ -166,7 +166,7 @@ TEST_CASE("create call with no gas price and no max_fee_per_gas and max_priority
         std::nullopt,
         23,
     };
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 0);
     CHECK(txn.nonce == 23);
@@ -178,24 +178,24 @@ TEST_CASE("create call with no gas price and valid max_fee_per_gas and max_prior
         0x99f9b87991262f6ba471f09758cde1c0fc1de734_address,  // from
         0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,  // to
         235,                                                 // gas
-        0,                                                   // gas_price
+        std::nullopt,                                        // gas_price
         10000,                                               // max_fee_per_gas
         10000,                                               // max_priority_fee_per_gas
         31337,                                               // value
         *silkworm::from_hex("001122aabbcc")};
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(10000);
     CHECK(txn.sender() == 0x99f9b87991262f6ba471f09758cde1c0fc1de734_address);
     CHECK(txn.to == 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address);
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 0);
-    CHECK(txn.max_priority_fee_per_gas == 0);
+    CHECK(txn.max_fee_per_gas == 10000);
+    CHECK(txn.max_priority_fee_per_gas == 10000);
     CHECK(txn.value == 31337);
     CHECK(txn.data == *silkworm::from_hex("001122aabbcc"));
 }
 
 TEST_CASE("create call with no gas", "[rpc][types][call]") {
     Call call;
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 50000000);
     CHECK(txn.value == 0);
     CHECK(txn.data.empty());
@@ -213,7 +213,7 @@ TEST_CASE("create call with AccessList", "[rpc][types][call]") {
         {},            // data
         1,             // nonce
         access_list};
-    silkworm::Transaction txn = call.to_transaction();
+    silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 235);
     CHECK(txn.max_fee_per_gas == 21000);
     CHECK(txn.max_priority_fee_per_gas == 21000);

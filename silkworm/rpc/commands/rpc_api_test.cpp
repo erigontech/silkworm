@@ -72,8 +72,10 @@ static const std::vector<std::string> tests_to_ignore = {
 
 static const std::vector<std::string> subtests_to_ignore = {
     "create-al-multiple-reads.io",  // eth_createAccessList: expected value doesn't contain gas optimization
-    "estimate-simple-transfer.io",  // eth_estimateGas doesn't expect baseFeeGas without GasPrice
-    "estimate-simple-contract.io",  // eth_estimateGas doesn't expect baseFeeGas without GasPrice
+    "estimate-simple-transfer.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
+    "estimate-simple-contract.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
+    "call-simple-transfer.io",      // eth_call: without gas paramters doesn't support base_fee_gas of block as default gas
+    "call-simple-contract.io",      // eth_call: without gas paramters doesn't support base_fee_gas of block as default gas
 };
 
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library

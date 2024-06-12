@@ -53,10 +53,6 @@ Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx);
 
 Task<uint64_t> read_cumulative_transaction_count(ethdb::Transaction& tx, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum block_number);
-
-Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
-
 Task<intx::uint256> read_total_issued(ethdb::Transaction& tx, BlockNum block_number);
 
 Task<intx::uint256> read_total_burnt(ethdb::Transaction& tx, BlockNum block_number);

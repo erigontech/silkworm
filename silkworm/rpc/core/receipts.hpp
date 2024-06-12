@@ -28,4 +28,8 @@ namespace silkworm::rpc::core {
 
 Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
 
+Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
+
+Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum block_number);
+
 }  // namespace silkworm::rpc::core

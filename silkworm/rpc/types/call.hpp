@@ -68,10 +68,12 @@ struct Call {
         }
 
         if (gas_price) {
+            SILKWORM_ASSERT(!max_priority_fee_per_gas && !max_fee_per_gas);
             txn.type = TransactionType::kLegacy;
             txn.max_priority_fee_per_gas = gas_price.value();
             txn.max_fee_per_gas = gas_price.value();
         } else {
+            SILKWORM_ASSERT(!gas_price);
             txn.type = TransactionType::kDynamicFee;
             txn.max_priority_fee_per_gas = max_priority_fee_per_gas.value_or(intx::uint256{0});
             txn.max_fee_per_gas = max_fee_per_gas.value_or(base_fee_per_gas.value_or(intx::uint256{0}));

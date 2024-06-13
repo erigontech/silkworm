@@ -57,9 +57,16 @@ void from_json(const nlohmann::json& json, Call& call) {
     if (json.count("gasPrice") != 0) {
         call.gas_price = json.at("gasPrice").get<intx::uint256>();
     }
+    if (json.count("maxFeePerGas") != 0) {
+        call.max_fee_per_gas = json.at("maxFeePerGas").get<intx::uint256>();
+    }
+    if (json.count("maxPriorityFeePerGas") != 0) {
+        call.max_priority_fee_per_gas = json.at("maxPriorityFeePerGas").get<intx::uint256>();
+    }
     if (json.count("value") != 0) {
         call.value = json.at("value").get<intx::uint256>();
     }
+
 
     // backward compatibility: both `data` and `input` fields are accepted as input
     if (json.count("data") != 0) {

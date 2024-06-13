@@ -190,18 +190,11 @@ void EVMExecutor::reset() {
 }
 
 std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn,
-                                                                  const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
+                                                                  const intx::uint256& , const intx::uint128& g0) {
     const evmc_revision rev{evm.revision()};
 
     if (rev >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
-            if (txn.max_fee_per_gas < base_fee_per_gas) {
-                const std::string from = address_to_hex(*txn.sender());
-                std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
-                                    intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
-                return PreCheckResult{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
-            }
-
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
                 std::string from = address_to_hex(*txn.sender());
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
@@ -268,9 +261,13 @@ ExecutionResult EVMExecutor::call(
     intx::uint256 want;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
+        std::cout << "txn: " << txn << "\n";
+        std::cout << "basefee: " << base_fee_per_gas << "\n";
         const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                         : txn.max_priority_fee_per_gas};
+        std::cout << "effective: " << effective_gas_price << "\n";
         want = txn.gas_limit * effective_gas_price;
+        std::cout << "want: " << want << "\n";
     } else {
         want = 0;
     }

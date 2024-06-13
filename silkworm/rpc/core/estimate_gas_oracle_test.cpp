@@ -76,8 +76,8 @@ TEST_CASE("EstimateGasException") {
 
 TEST_CASE("estimate gas") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
-    boost::asio::thread_pool workers{1};
+    WorkerPool pool{1};
+    WorkerPool workers{1};
 
     intx::uint256 kBalance{1'000'000'000};
 

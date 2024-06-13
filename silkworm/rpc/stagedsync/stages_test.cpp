@@ -19,12 +19,12 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/db/tables.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::stages {
@@ -33,7 +33,7 @@ using testing::_;
 using testing::InvokeWithoutArgs;
 
 TEST_CASE("get_sync_stage_progress", "[rpc][stagedsync]") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("empty stage key") {

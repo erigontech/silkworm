@@ -28,7 +28,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 
-namespace silkworm {
+namespace silkworm::rpc {
 
 const intx::uint256 kWei = 1;
 const intx::uint256 kGWei = 1E9;
@@ -60,4 +60,4 @@ class GasPriceOracle {
     const BlockProvider& block_provider_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::rpc

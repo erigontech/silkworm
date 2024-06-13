@@ -28,7 +28,7 @@ TEST_CASE("TraceRpcApi") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     boost::asio::io_context ioc;
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
 
     SECTION("CTOR") {
         CHECK_THROWS_AS(TraceRpcApi(ioc, workers), std::logic_error);

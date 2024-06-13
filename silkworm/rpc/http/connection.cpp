@@ -58,7 +58,7 @@ Connection::Connection(boost::asio::ip::tcp::socket socket,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
                        bool http_compression,
-                       boost::asio::thread_pool& workers)
+                       WorkerPool& workers)
     : socket_{std::move(socket)},
       handler_factory_{handler_factory},
       handler_{handler_factory_(this)},

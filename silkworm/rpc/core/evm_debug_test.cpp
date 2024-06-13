@@ -57,7 +57,7 @@ static Bytes kConfigValue{*silkworm::from_hex(
 struct DebugExecutorTest : public test::ContextTestBase {
     test::MockBlockCache cache;
     test::MockTransaction transaction;
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     json::Stream stream{io_executor, writer};
@@ -69,7 +69,7 @@ class TestDebugExecutor : DebugExecutor {
   public:
     explicit TestDebugExecutor(
         BlockCache& block_cache,
-        boost::asio::thread_pool& workers,
+        WorkerPool& workers,
         ethdb::Transaction& tx,
         DebugConfig config = {})
         : DebugExecutor(block_cache, workers, tx, config) {}

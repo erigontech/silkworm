@@ -60,7 +60,7 @@ static Bytes kConfigValue{*silkworm::from_hex(
 
 struct TraceCallExecutorTest : public test::ContextTestBase {
     test::MockTransaction transaction;
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
     test::MockBlockCache block_cache;
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};

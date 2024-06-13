@@ -19,7 +19,6 @@
 #include <memory>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/rpc/commands/admin_api.hpp>
@@ -33,6 +32,7 @@
 #include <silkworm/rpc/commands/trace_api.hpp>
 #include <silkworm/rpc/commands/txpool_api.hpp>
 #include <silkworm/rpc/commands/web3_api.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;
@@ -54,7 +54,7 @@ class RpcApi : protected EthereumRpcApi,
                TxPoolRpcApi,
                OtsRpcApi {
   public:
-    explicit RpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers, ApplicationInfo build_info = {})
+    explicit RpcApi(boost::asio::io_context& io_context, WorkerPool& workers, ApplicationInfo build_info = {})
         : EthereumRpcApi{io_context, workers},
           NetRpcApi{io_context},
           AdminRpcApi{io_context},

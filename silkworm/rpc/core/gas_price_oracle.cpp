@@ -18,14 +18,11 @@
 
 #include <algorithm>
 
-#include <boost/asio/post.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 
-namespace silkworm {
+namespace silkworm::rpc {
 
 struct PriceComparator {
     bool operator()(const intx::uint256& p1, const intx::uint256& p2) const {
@@ -55,9 +52,9 @@ Task<intx::uint256> GasPriceOracle::suggested_price(BlockNum block_number) {
         }
     }
 
-    if (price > silkworm::kDefaultMaxPrice) {
+    if (price > kDefaultMaxPrice) {
         SILK_TRACE << "GasPriceOracle::suggested_price price to high: set to 0x" << intx::hex(kDefaultMaxPrice);
-        price = silkworm::kDefaultMaxPrice;
+        price = kDefaultMaxPrice;
     }
 
     SILK_TRACE << "GasPriceOracle::suggested_price price: 0x" << intx::hex(price);
@@ -110,4 +107,5 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
         }
     }
 }
-}  // namespace silkworm
+
+}  // namespace silkworm::rpc

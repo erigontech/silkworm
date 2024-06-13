@@ -18,10 +18,10 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 
 namespace silkworm::rpc::json {
@@ -343,7 +343,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
     }
 
     SECTION("using worker thread") {
-        boost::asio::thread_pool workers;
+        WorkerPool workers;
         boost::asio::post(workers, [&]() {
             for (int i{0}; i < 1'000; ++i) {
                 stream.write_json(json);

@@ -19,15 +19,15 @@
 #include <iostream>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
-namespace silkworm {
+namespace silkworm::rpc {
 
 static const evmc::address kBeneficiary = 0xe5ef458d37212a06e3f59d40c454e76150ae7c31_address;
 static const evmc::address kFromTnx1 = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
@@ -101,7 +101,7 @@ static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks, con
 }
 
 TEST_CASE("suggested price") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     std::vector<silkworm::BlockWithHash> blocks;
 
@@ -464,4 +464,4 @@ TEST_CASE("suggested price") {
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::rpc

@@ -19,12 +19,12 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/mock_cursor.hpp>
 
 namespace silkworm::rpc::ethdb {
@@ -44,7 +44,7 @@ static const silkworm::Bytes correct_key{*silkworm::from_hex("0x79a4d35bd00b1843
 static const silkworm::Bytes location{(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes, kHashLength};
 
 TEST_CASE("split cursor dup sort") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockCursorDupSort csdp;
 
     SECTION("0 maching bits: seek_both, key not exists") {
@@ -184,7 +184,7 @@ TEST_CASE("split cursor dup sort") {
 }
 
 TEST_CASE("split cursor") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockCursor csdp;
 
     SECTION("0 maching bits: seek, key not exists") {

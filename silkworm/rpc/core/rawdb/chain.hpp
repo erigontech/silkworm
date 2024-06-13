@@ -24,12 +24,8 @@
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/chain_config.hpp>
-#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 
@@ -46,8 +42,6 @@ Task<uint64_t> read_chain_id(ethdb::Transaction& tx);
 Task<evmc::bytes32> read_canonical_block_hash(ethdb::Transaction& tx, BlockNum block_number);
 
 Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
-
-Task<silkworm::BlockHeader> read_current_header(ethdb::Transaction& tx);
 
 Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx);
 

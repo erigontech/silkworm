@@ -34,9 +34,6 @@
 namespace silkworm::rpc::core::rawdb {
 
 /* Local Routines */
-static Task<silkworm::BlockHeader> read_header_by_hash(ethdb::Transaction& tx, const evmc::bytes32& block_hash);
-static Task<silkworm::BlockHeader> read_header(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
-static Task<silkworm::Bytes> read_header_rlp(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
 static Task<silkworm::Bytes> read_body_rlp(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
 
 Task<uint64_t> read_header_number(ethdb::Transaction& tx, const evmc::bytes32& block_hash) {
@@ -99,31 +96,6 @@ Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::by
     co_return total_difficulty;
 }
 
-Task<silkworm::BlockHeader> read_header_by_hash(ethdb::Transaction& tx, const evmc::bytes32& block_hash) {
-    const auto block_number = co_await read_header_number(tx, block_hash);
-    co_return co_await read_header(tx, block_hash, block_number);
-}
-
-Task<silkworm::BlockHeader> read_header(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number) {
-    auto data = co_await read_header_rlp(tx, block_hash, block_number);
-    if (data.empty()) {
-        throw std::runtime_error{"empty block header RLP in read_header"};
-    }
-    SILK_TRACE << "data: " << silkworm::to_hex(data);
-    silkworm::ByteView data_view{data};
-    silkworm::BlockHeader header{};
-    const auto error = silkworm::rlp::decode(data_view, header);
-    if (!error) {
-        throw std::runtime_error{"invalid RLP decoding for block header"};
-    }
-    co_return header;
-}
-
-Task<silkworm::BlockHeader> read_current_header(ethdb::Transaction& tx) {
-    const auto head_header_hash = co_await read_head_header_hash(tx);
-    co_return co_await read_header_by_hash(tx, head_header_hash);
-}
-
 Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx) {
     const silkworm::Bytes kHeadHeaderKey = silkworm::bytes_of_string(db::table::kHeadHeaderName);
     const auto value = co_await tx.get_one(db::table::kHeadHeaderName, kHeadHeaderKey);
@@ -153,11 +125,6 @@ Task<uint64_t> read_cumulative_transaction_count(ethdb::Transaction& tx, uint64_
         SILK_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]";
         throw std::runtime_error{"RLP decoding error for block body [" + std::string(error.what()) + "]"};
     }
-}
-
-Task<silkworm::Bytes> read_header_rlp(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number) {
-    const auto block_key = silkworm::db::block_key(block_number, block_hash.bytes);
-    co_return co_await tx.get_one(db::table::kHeadersName, block_key);
 }
 
 Task<silkworm::Bytes> read_body_rlp(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number) {

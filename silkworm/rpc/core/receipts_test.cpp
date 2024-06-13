@@ -19,7 +19,6 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.h>
@@ -28,6 +27,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
@@ -58,7 +58,7 @@ static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
 
 TEST_CASE("read_raw_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("null receipts") {
@@ -226,7 +226,7 @@ TEST_CASE("read_raw_receipts") {
 
 TEST_CASE("read_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("null receipts without data") {

@@ -24,11 +24,11 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 
 namespace silkworm::rpc::http {
@@ -43,7 +43,7 @@ class Server {
     Server(const std::string& end_point,
            RequestHandlerFactory&& handler_factory,
            boost::asio::io_context& io_context,
-           boost::asio::thread_pool& workers,
+           WorkerPool& workers,
            std::vector<std::string> allowed_origins,
            std::optional<std::string> jwt_secret,
            bool use_websocket,
@@ -81,7 +81,7 @@ class Server {
     bool http_compression_;
 
     //! The configured workers
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
 };
 
 }  // namespace silkworm::rpc::http

@@ -18,7 +18,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
@@ -183,7 +183,7 @@ inline constexpr int kMaxPageSize = 25;
 
 class OtsRpcApi {
   public:
-    OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+    OtsRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
         : io_context_(io_context),
           workers_{workers},
           database_(must_use_private_service<ethdb::Database>(io_context_)),
@@ -212,7 +212,7 @@ class OtsRpcApi {
     Task<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
 
     boost::asio::io_context& io_context_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
     ethdb::Database* database_;
     ethdb::kv::StateCache* state_cache_;
     BlockCache* block_cache_;

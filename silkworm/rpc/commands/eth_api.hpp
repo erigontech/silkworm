@@ -19,7 +19,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
@@ -27,6 +26,7 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
@@ -47,7 +47,7 @@ namespace silkworm::rpc::commands {
 
 class EthereumRpcApi {
   public:
-    EthereumRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+    EthereumRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
         : io_context_{io_context},
           block_cache_{must_use_shared_service<BlockCache>(io_context_)},
           state_cache_{must_use_shared_service<ethdb::kv::StateCache>(io_context_)},
@@ -126,7 +126,7 @@ class EthereumRpcApi {
     txpool::Miner* miner_;
     txpool::TransactionPool* tx_pool_;
     FilterStorage* filter_storage_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };

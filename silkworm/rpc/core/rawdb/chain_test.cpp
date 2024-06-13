@@ -19,7 +19,6 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.h>
@@ -30,7 +29,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::core::rawdb {
@@ -88,7 +87,7 @@ static silkworm::Bytes kChainConfig{*silkworm::from_hex(
 
 TEST_CASE("read_header_number") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("existent hash") {
@@ -113,7 +112,7 @@ TEST_CASE("read_header_number") {
 
 TEST_CASE("read_chain_config") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("empty chain data") {
@@ -160,7 +159,7 @@ TEST_CASE("read_chain_config") {
 
 TEST_CASE("read_chain_id") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("missing chain identifier") {
@@ -188,7 +187,7 @@ TEST_CASE("read_chain_id") {
 
 TEST_CASE("read_canonical_block_hash") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("empty hash bytes") {
@@ -225,7 +224,7 @@ TEST_CASE("read_canonical_block_hash") {
 
 TEST_CASE("read_total_difficulty") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     SECTION("empty RLP buffer") {
@@ -257,7 +256,7 @@ TEST_CASE("read_total_difficulty") {
 TEST_CASE("read_cumulative_transaction_count") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("block found and matching") {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
@@ -267,7 +266,7 @@ TEST_CASE("read_cumulative_transaction_count") {
     }
 
     SECTION("block found empty") {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
@@ -281,7 +280,7 @@ TEST_CASE("read_cumulative_transaction_count") {
     }
 
     SECTION("block invalid") {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         test::MockTransaction transaction;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
@@ -293,7 +292,7 @@ TEST_CASE("read_cumulative_transaction_count") {
 
 TEST_CASE("read_total_issued") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     const uint64_t block_number{20'000};
@@ -304,7 +303,7 @@ TEST_CASE("read_total_issued") {
 
 TEST_CASE("read_total_burnt") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     test::MockTransaction transaction;
 
     const uint64_t block_number{20'000};
@@ -316,7 +315,7 @@ TEST_CASE("read_total_burnt") {
 TEST_CASE("read_cumulative_gas_used") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("read_cumulative_gas_used") {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         test::MockTransaction transaction;
 
         const uint64_t block_number{20'000};
@@ -326,7 +325,7 @@ TEST_CASE("read_cumulative_gas_used") {
     }
 
     SECTION("read_cumulative_gas_used get_one return empty") {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         test::MockTransaction transaction;
 
         const uint64_t block_number{20'000};

@@ -48,7 +48,7 @@ struct EVMExecutorTest : public test::ContextTestBase {
     }
 
     test::MockTransaction transaction;
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
     ClientContextPool pool{1};
     boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
     test::BackEndMock backend;

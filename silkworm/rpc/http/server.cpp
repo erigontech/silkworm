@@ -44,7 +44,7 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
 Server::Server(const std::string& end_point,
                RequestHandlerFactory&& handler_factory,
                boost::asio::io_context& io_context,
-               boost::asio::thread_pool& workers,
+               WorkerPool& workers,
                std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret,
                bool use_websocket,

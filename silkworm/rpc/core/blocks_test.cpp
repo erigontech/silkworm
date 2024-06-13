@@ -19,15 +19,13 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
@@ -56,7 +54,7 @@ TEST_CASE("get_block_number latest_required", "[rpc][core][blocks]") {
     // SILK_LOG_STREAMS(test_util::null_stream(), test_util::null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
         const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
@@ -172,7 +170,7 @@ TEST_CASE("get_block_number latest_required", "[rpc][core][blocks]") {
 TEST_CASE("get_block_number ", "[rpc][core][blocks]") {
     // SILK_LOG_STREAMS(null_stream(), null_stream());
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
         const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
@@ -186,7 +184,7 @@ TEST_CASE("get_block_number_by_tag", "[rpc][core][blocks]") {
     // SILK_LOG_STREAMS(null_stream(), null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
         const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
@@ -267,7 +265,7 @@ TEST_CASE("get_block_number_by_tag", "[rpc][core][blocks]") {
 TEST_CASE("get_current_block_number", "[rpc][core][blocks]") {
     const silkworm::ByteView kFinishStage{stages::kFinish};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, kFinishStage))
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
@@ -280,7 +278,7 @@ TEST_CASE("get_current_block_number", "[rpc][core][blocks]") {
 TEST_CASE("get_highest_block_number", "[rpc][core][blocks]") {
     const silkworm::ByteView kHeadersStage{stages::kHeaders};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, kHeadersStage))
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
@@ -293,7 +291,7 @@ TEST_CASE("get_highest_block_number", "[rpc][core][blocks]") {
 TEST_CASE("get_latest_block_number", "[rpc][core][blocks]") {
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
@@ -309,7 +307,7 @@ TEST_CASE("get_latest_block_number", "[rpc][core][blocks]") {
 TEST_CASE("get_latest_executed_block_number", "[rpc][core][blocks]") {
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000ddff12345678")};
@@ -320,7 +318,7 @@ TEST_CASE("get_latest_executed_block_number", "[rpc][core][blocks]") {
 
 TEST_CASE("get_latest_block_number with head forkchoice number", "[rpc][core][blocks]") {
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, block_hash};
@@ -336,7 +334,7 @@ TEST_CASE("get_latest_block_number with head forkchoice number", "[rpc][core][bl
 
 TEST_CASE("get_finalized_forkchoice_number with no finalized block we return genesis number", "[rpc][core][blocks]") {
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
@@ -348,7 +346,7 @@ TEST_CASE("get_finalized_forkchoice_number with no finalized block we return gen
 
 TEST_CASE("get_safe_forkchoice_number with no safe block we return genesis number", "[rpc][core][blocks]") {
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
@@ -361,7 +359,7 @@ TEST_CASE("get_safe_forkchoice_number with no safe block we return genesis numbe
 TEST_CASE("is_latest_block_number", "[rpc][core][blocks]") {
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockTransaction transaction;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("tag: latest") {
         BlockNumberOrHash bnoh{"latest"};

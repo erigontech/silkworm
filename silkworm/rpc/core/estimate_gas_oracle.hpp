@@ -27,6 +27,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
@@ -78,7 +79,7 @@ class EstimateGasOracle {
     explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider,
                                const AccountReader& account_reader,
                                const silkworm::ChainConfig& config,
-                               boost::asio::thread_pool& workers,
+                               WorkerPool& workers,
                                ethdb::Transaction& tx,
                                const ChainStorage& chain_storage)
         : block_header_provider_(block_header_provider),
@@ -103,7 +104,7 @@ class EstimateGasOracle {
     const BlockHeaderProvider& block_header_provider_;
     const AccountReader& account_reader_;
     const silkworm::ChainConfig& config_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
     ethdb::Transaction& transaction_;
     const ChainStorage& storage_;
 };

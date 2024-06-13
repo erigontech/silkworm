@@ -19,9 +19,9 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 
 namespace silkworm::rpc {
@@ -46,7 +46,7 @@ Task<std::size_t> async_factorial(Executor runner, std::size_t number) {
 }
 
 TEST_CASE_METHOD(AsyncTaskTest, "async_task: factorial", "[rpc][common][async_task]") {
-    boost::asio::thread_pool workers;
+    WorkerPool workers;
     for (std::size_t i{0}; i < kTestData.size(); ++i) {
         const auto [n, r] = kTestData[i];
         SECTION("factorial " + std::to_string(n)) {
@@ -92,7 +92,7 @@ Task<void> async_lambda_raise_exception_with_args(Executor runner, int i) {
 }
 
 TEST_CASE_METHOD(AsyncTaskTest, "async_task: exception", "[rpc][common][async_task]") {
-    boost::asio::thread_pool workers;
+    WorkerPool workers;
     CHECK_THROWS_AS(spawn_and_wait(async_task(workers.get_executor(), raise_exception)), std::runtime_error);
     CHECK_THROWS_AS(spawn_and_wait(async_raise_exception(workers.get_executor())), std::runtime_error);
     CHECK_THROWS_AS(spawn_and_wait(async_lambda_raise_exception(workers.get_executor())), std::runtime_error);

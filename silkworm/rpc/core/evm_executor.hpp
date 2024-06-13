@@ -25,7 +25,6 @@
 
 #include <boost/asio/impl/execution_context.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/assert.hpp>
@@ -35,6 +34,7 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/storage/chain_storage.hpp>
 
@@ -92,7 +92,7 @@ class EVMExecutor {
     static Task<ExecutionResult> call(
         const silkworm::ChainConfig& config,
         const ChainStorage& storage,
-        boost::asio::thread_pool& workers,
+        WorkerPool& workers,
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
         StateFactory state_factory,
@@ -101,7 +101,7 @@ class EVMExecutor {
         bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, std::shared_ptr<State> state)
+    EVMExecutor(const silkworm::ChainConfig& config, WorkerPool& workers, std::shared_ptr<State> state)
         : config_(config),
           workers_{workers},
           state_{std::move(state)},
@@ -140,7 +140,7 @@ class EVMExecutor {
     uint64_t refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
 
     const silkworm::ChainConfig& config_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
     std::shared_ptr<State> state_;
     IntraBlockState ibs_state_;
     protocol::RuleSetPtr rule_set_;

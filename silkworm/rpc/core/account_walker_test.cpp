@@ -21,12 +21,12 @@
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
@@ -209,7 +209,7 @@ class DummyDatabase : public ethdb::Database {
 };
 
 TEST_CASE("AccountWalker::walk_of_accounts") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     nlohmann::json json;
 
     json["PlainState"] = {

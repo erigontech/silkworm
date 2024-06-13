@@ -15,8 +15,8 @@
 */
 
 #include <benchmark/benchmark.h>
-#include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 
 #include "async_task.hpp"
@@ -55,7 +55,7 @@ Task<std::size_t> async_compose_factorial(const Executor runner, const std::size
 static void benchmark_async_compose(benchmark::State& state) {
     const auto n = static_cast<std::size_t>(state.range(0));
 
-    boost::asio::thread_pool workers{};
+    WorkerPool workers{};
     AsyncTaskBenchTest test;
     for ([[maybe_unused]] auto _ : state) {
         const auto result = test.spawn_and_wait(async_compose_factorial(workers.get_executor(), n));
@@ -76,7 +76,7 @@ Task<std::size_t> async_task_factorial(Executor runner, std::size_t number) {
 static void benchmark_async_task(benchmark::State& state) {
     const auto n = static_cast<std::size_t>(state.range(0));
 
-    boost::asio::thread_pool workers{};
+    WorkerPool workers{};
     AsyncTaskBenchTest test;
     for ([[maybe_unused]] auto _ : state) {
         const auto result = test.spawn_and_wait(async_task_factorial(workers.get_executor(), n));

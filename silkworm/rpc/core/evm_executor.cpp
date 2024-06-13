@@ -190,7 +190,7 @@ void EVMExecutor::reset() {
 }
 
 std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn,
-                                                                  const intx::uint256& , const intx::uint128& g0) {
+                                                                  const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
     const evmc_revision rev{evm.revision()};
 
     if (rev >= EVMC_LONDON) {
@@ -200,6 +200,13 @@ std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm
                 std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
                 return PreCheckResult{error, PreCheckErrorCode::kTipHigherThanFeeCap};
+            }
+
+            if (txn.max_fee_per_gas < base_fee_per_gas) {
+                const std::string from = address_to_hex(*txn.sender());
+                std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
+                                    intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
+                return PreCheckResult{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
             }
         }
     } else {
@@ -261,13 +268,9 @@ ExecutionResult EVMExecutor::call(
     intx::uint256 want;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
-        std::cout << "txn: " << txn << "\n";
-        std::cout << "basefee: " << base_fee_per_gas << "\n";
         const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                         : txn.max_priority_fee_per_gas};
-        std::cout << "effective: " << effective_gas_price << "\n";
         want = txn.gas_limit * effective_gas_price;
-        std::cout << "want: " << want << "\n";
     } else {
         want = 0;
     }
@@ -279,12 +282,17 @@ ExecutionResult EVMExecutor::call(
         want += txn.total_blob_gas() * blob_gas_price;
     }
 
+    intx::uint512 max_want = want;
+    if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+        max_want = txn.maximum_gas_cost();
+    } 
+
     const auto have = ibs_state_.get_balance(*txn.sender());
-    if (have < want + txn.value) {
+    if (have < max_want + txn.value) {
         if (!gas_bailout) {
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());
-            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
+            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(max_want + txn.value);
             return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
         }
     } else {

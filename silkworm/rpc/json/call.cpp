@@ -67,7 +67,6 @@ void from_json(const nlohmann::json& json, Call& call) {
         call.value = json.at("value").get<intx::uint256>();
     }
 
-
     // backward compatibility: both `data` and `input` fields are accepted as input
     if (json.count("data") != 0) {
         const auto json_data = json.at("data").get<std::string>();

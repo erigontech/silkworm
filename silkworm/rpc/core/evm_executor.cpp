@@ -285,7 +285,7 @@ ExecutionResult EVMExecutor::call(
     intx::uint512 max_want = want;
     if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
         max_want = txn.maximum_gas_cost();
-    } 
+    }
 
     const auto have = ibs_state_.get_balance(*txn.sender());
     if (have < max_want + txn.value) {

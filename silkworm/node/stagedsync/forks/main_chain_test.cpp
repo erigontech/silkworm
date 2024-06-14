@@ -40,8 +40,8 @@ using namespace intx;  // just for literals
 
 class MainChain_ForTest : public stagedsync::MainChain {
   public:
-    using stagedsync::MainChain::canonical_chain_;
-    using stagedsync::MainChain::canonical_head_status_;
+    using stagedsync::MainChain::interim_canonical_chain_;
+    using stagedsync::MainChain::interim_head_status_;
     using stagedsync::MainChain::current_head;
     using stagedsync::MainChain::insert_block;
     using stagedsync::MainChain::MainChain;
@@ -85,7 +85,7 @@ TEST_CASE("MainChain") {
     REQUIRE(initial_canonical_head == block0_id);
     REQUIRE(main_chain.last_chosen_head() == block0_id);
     REQUIRE(initial_canonical_head.number == initial_progress);
-    REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+    REQUIRE(main_chain.interim_canonical_chain_.current_head() == initial_canonical_head);
 
     /* status:
      *         h0
@@ -141,10 +141,10 @@ TEST_CASE("MainChain") {
 
         auto final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == block1_id);
-        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
+        REQUIRE(main_chain.interim_canonical_chain_.current_head() == block1_id);
         REQUIRE(main_chain.last_chosen_head() == block0_id);  // not changed
 
-        auto current_status = main_chain.canonical_head_status_;
+        auto current_status = main_chain.interim_head_status_;
         REQUIRE(holds_alternative<InvalidChain>(current_status));
 
         // check canonical
@@ -163,7 +163,7 @@ TEST_CASE("MainChain") {
         CHECK(final_canonical_head == block1_id);           // still block1 even if invalid
         CHECK(main_chain.last_chosen_head() == block0_id);  // not changed
 
-        current_status = main_chain.canonical_head_status_;
+        current_status = main_chain.interim_head_status_;
         CHECK(holds_alternative<InvalidChain>(current_status));
         CHECK(std::get<InvalidChain>(current_status).unwind_point == block0_id);
     }
@@ -207,9 +207,9 @@ TEST_CASE("MainChain") {
         REQUIRE(final_canonical_head == block1_id);
         REQUIRE(main_chain.last_chosen_head() == block0_id);  // not changed
 
-        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
+        REQUIRE(main_chain.interim_canonical_chain_.current_head() == block1_id);
 
-        auto current_status = main_chain.canonical_head_status_;
+        auto current_status = main_chain.interim_head_status_;
         REQUIRE(holds_alternative<ValidChain>(current_status));
         REQUIRE(std::get<ValidChain>(current_status).current_head == block1_id);
 
@@ -301,7 +301,7 @@ TEST_CASE("MainChain") {
 
         auto final_canonical_head = main_chain.current_head();
         CHECK(final_canonical_head == block3_id);
-        CHECK(main_chain.canonical_chain_.current_head() == block3_id);
+        CHECK(main_chain.interim_canonical_chain_.current_head() == block3_id);
         REQUIRE(main_chain.last_chosen_head() == block3_id);  // not changed
 
         // Creating a fork and changing the head (trigger unwind)
@@ -325,7 +325,7 @@ TEST_CASE("MainChain") {
 
             final_canonical_head = main_chain.current_head();
             CHECK(final_canonical_head == block2b_id);
-            CHECK(main_chain.canonical_chain_.current_head() == block2b_id);
+            CHECK(main_chain.interim_canonical_chain_.current_head() == block2b_id);
             REQUIRE(main_chain.last_chosen_head() == block2b_id);  // not changed
         }
     }
@@ -357,7 +357,7 @@ TEST_CASE("MainChain") {
         CHECK(main_chain2.last_chosen_head() == block1_id);
         CHECK(main_chain2.last_finalized_head() == block0_id);
 
-        CHECK(holds_alternative<ValidChain>(main_chain2.canonical_head_status_));
+        CHECK(holds_alternative<ValidChain>(main_chain2.interim_head_status_));
     }
 }
 

@@ -22,7 +22,9 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
@@ -58,6 +60,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         .data_directory = std::make_unique<DataDirectory>(db_context.get_mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
         .chain_config = db_context.get_chain_config(),
+        .parallel_fork_tracking_enabled = false,
     };
 
     db::RWAccess db_access{db_context.get_mdbx_env()};
@@ -186,6 +189,8 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(invalid_chain.bad_headers.size() == 1);
     }
 
+    // Test scenario:
+    // c7 -> c8 -> c9 -> f1 -> f2 -> f3
     SECTION("insert_blocks with valid blocks creates valid chain for each block") {
         auto block1 = generate_sample_child_blocks(current_head);
         auto block2 = generate_sample_child_blocks(block1->header);
@@ -396,6 +401,10 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block2_hash = block2->header.hash();
         auto block3_hash = block3->header.hash();
 
+        exec_engine.verify_chain(block1_hash).get();
+        exec_engine.verify_chain(block2_hash).get();
+        exec_engine.verify_chain(block3_hash).get();
+
         auto fcu_updated = exec_engine.notify_fork_choice_update(block1_hash, {}, {});
         CHECK(fcu_updated);
 
@@ -425,6 +434,10 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
         auto block3_hash = block3->header.hash();
+
+        exec_engine.verify_chain(block1_hash).get();
+        exec_engine.verify_chain(block2_hash).get();
+        exec_engine.verify_chain(block3_hash).get();
 
         auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, {}, {});
         CHECK(fcu_updated);
@@ -540,10 +553,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(!holds_alternative<ValidationError>(verification1));
         REQUIRE(holds_alternative<ValidChain>(verification1));
 
-        // TODO: this breaks the test, why?
-        // auto verification2 = exec_engine.verify_chain(block2b_hash).get();
-        // CHECK(!holds_alternative<ValidationError>(verification2));
-        // REQUIRE(holds_alternative<ValidChain>(verification2));
+        auto verification2 = exec_engine.verify_chain(block2b_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification2));
+        REQUIRE(holds_alternative<ValidChain>(verification2));
 
         auto fcu_updated = exec_engine.notify_fork_choice_update(block1b_hash, current_head_id.hash, {});
         CHECK(fcu_updated);
@@ -566,9 +578,52 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     }
 
     // Test scenario:
-    //                  ↗  f1a -> f1b (fork 1)
+    //                  ↗  f1 (10) => fcu
     //  c7 -> c8 -> c9
-    //                  ↘  f2a -> f2b (fork 2)  =>  fcu
+    //                  ↘  f2 (10)
+    SECTION("creates and verifies two single-block forks, chooses first") {
+        auto block_f1 = generate_sample_child_blocks(current_head);
+        block_f1->header.difficulty = 17'171'480'576;  // a random value
+
+        auto block_f2 = generate_sample_child_blocks(current_head);
+        block_f2->header.difficulty = 17'171'480'577;  // a random value
+
+        auto blocks = std::vector<std::shared_ptr<Block>>{block_f1, block_f2};
+        exec_engine.insert_blocks(blocks);
+
+        auto block_f1_hash = block_f1->header.hash();
+        auto block_f2_hash = block_f2->header.hash();
+
+        INFO(to_hex(block_f1_hash.bytes));
+
+        auto verification1 = exec_engine.verify_chain(block_f1_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification1));
+        REQUIRE(holds_alternative<ValidChain>(verification1));
+
+        auto verification2 = exec_engine.verify_chain(block_f2_hash).get();
+        CHECK(!holds_alternative<ValidationError>(verification2));
+        REQUIRE(holds_alternative<ValidChain>(verification2));
+
+        auto fcu_updated = exec_engine.notify_fork_choice_update(block_f1_hash, current_head_id.hash, {});
+        CHECK(fcu_updated);
+
+        auto new_head_id = exec_engine.last_finalized_block();
+        CHECK(new_head_id.number == 9);
+        auto new_progress = exec_engine.block_progress();
+        CHECK(new_progress == 10);
+        auto new_fork_choice = exec_engine.last_fork_choice();
+        CHECK(new_fork_choice.number == 10);
+
+        auto is_block1_canonical = exec_engine.is_canonical(block_f1_hash);
+        CHECK(is_block1_canonical);
+        auto is_block3_canonical = exec_engine.is_canonical(block_f2_hash);
+        CHECK(!is_block3_canonical);
+    }
+
+    // Test scenario:
+    //                  ↗  f1a (10) -> f1b (11) (fork 1)
+    //  c7 -> c8 -> c9
+    //                  ↘  f2a (10) -> f2b (11) (fork 2)  =>  fcu
     SECTION("creates and verifies two forks, chooses second") {
         auto block1a = generate_sample_child_blocks(current_head);
         block1a->header.difficulty = 17'171'480'576;  // a random value
@@ -614,7 +669,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(is_block4_canonical);
     }
 
-    SECTION("insert_blocks does not update chain database") {
+    // Test scenario:
+    // c7 -> c8 -> c9 -> f1 -> f2
+    SECTION("insert_blocks updates chain database") {
         auto block1 = generate_sample_child_blocks(current_head);
         auto block2 = generate_sample_child_blocks(block1->header);
 
@@ -630,14 +687,15 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(db::read_block_number(tx, block1_hash).has_value());
         CHECK(db::read_block_number(tx, block2_hash).has_value());
 
+        tx.commit_and_renew();  // exec_engine.insert_blocks() automatically commits every 1000 blocks
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        CHECK(!db::read_block_number(tx2, block1_hash).has_value());
-        CHECK(!db::read_block_number(tx2, block2_hash).has_value());
+        CHECK(db::read_block_number(tx2, block1_hash).has_value());
+        CHECK(db::read_block_number(tx2, block2_hash).has_value());
     }
 
-    SECTION("verify_chain does not update chain database") {
+    SECTION("verify_chain updates chain database") {
         auto block1 = generate_sample_child_blocks(current_head);
         auto block2 = generate_sample_child_blocks(block1->header);
 
@@ -651,11 +709,6 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         exec_engine.insert_blocks(blocks);
         exec_engine.verify_chain(block2_hash).get();
 
-        Block block1_db;
-        auto block_read = db::read_block(tx, block1_hash, 10, block1_db);
-        REQUIRE(block_read);
-        CHECK(block1_db.header.number == 10);
-
         CHECK(db::read_block_number(tx, block1_hash).has_value());
         CHECK(db::read_block_number(tx, block2_hash).has_value());
 
@@ -663,13 +716,8 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         auto tx2 = db_access.start_ro_tx();
 
-        block_read = db::read_block(tx2, block1_hash, 10, block1_db);
-        REQUIRE(block_read);
-        CHECK(block1_db.header.number == 10);
-
-        // TODO: this breaks the test, why?
-        // CHECK(!db::read_block_number(tx2, block1_hash).has_value());
-        // CHECK(!db::read_block_number(tx2, block2_hash).has_value());
+        CHECK(db::read_block_number(tx2, block1_hash).has_value());
+        CHECK(db::read_block_number(tx2, block2_hash).has_value());
     }
 
     SECTION("notify_fork_choice_update does not update chain database") {
@@ -696,6 +744,52 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(db::read_block_number(tx2, block1_hash).has_value());
         CHECK(db::read_block_number(tx2, block2_hash).has_value());
     }
+
+    // TODO: temoporarily disabled, to be fixed (JG)
+    // SECTION("updates storage") {
+    //     static constexpr auto kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    //     auto block1 = generate_sample_child_blocks(current_head);
+
+    //     // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
+    //     // When called, it updates its 0th storage to the input provided.
+    //     Bytes contract_code{*from_hex("600035600055")};
+    //     Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
+    //     block1->transactions.resize(1);
+    //     block1->transactions[0].chain_id = node_settings.chain_config->chain_id;
+    //     block1->transactions[0].data = deployment_code;
+    //     block1->transactions[0].gas_limit = block1->header.gas_limit;
+    //     block1->transactions[0].type = TransactionType::kDynamicFee;
+    //     block1->transactions[0].max_priority_fee_per_gas = 0;
+    //     block1->transactions[0].max_fee_per_gas = 20 * kGiga;
+    //     block1->transactions[0].r = 1;  // dummy
+    //     block1->transactions[0].s = 1;  // dummy
+    //     block1->transactions[0].set_sender(kSender);
+    //     // block1->transactions[0].
+
+    //     auto block1_hash = block1->header.hash();
+
+    //     auto block_inserted = exec_engine.insert_block(block1);
+    //     REQUIRE(block_inserted);
+
+    //     auto verification1 = exec_engine.verify_chain(block1_hash).get();
+    //     REQUIRE(holds_alternative<ValidChain>(verification1));
+
+    //     auto fcu_successful = exec_engine.notify_fork_choice_update(block1_hash, current_head_id.hash, {});
+    //     REQUIRE(fcu_successful);
+
+    //     auto contract_address{silkworm::create_address(kSender, /*nonce=*/0)};
+
+    //     auto contract = db::read_account(tx, contract_address);
+    //     REQUIRE(contract.has_value());
+
+    //     evmc::bytes32 storage_key0{};
+    //     auto storage_value0 = db::read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key0);
+    //     CHECK(silkworm::to_hex(storage_value0) == "000000000000000000000000000000000000000000000000000000000000002a");
+
+    //     evmc::bytes32 storage_key1{to_bytes32(*from_hex("01"))};
+    //     auto storage_value1 = db::read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key1);
+    //     CHECK(silkworm::to_hex(storage_value1) == "00000000000000000000000000000000000000000000000000000000000001c9");
+    // }
 }
 
 TEST_CASE("ExecutionEngine") {

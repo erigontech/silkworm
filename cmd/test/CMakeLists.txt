@@ -19,23 +19,19 @@ find_package(magic_enum REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
-add_executable(core_test ${SILKWORM_CORE_TESTS})
+if(SILKWORM_WASM_API)
+  add_executable(core_test "${SILKWORM_MAIN_SRC_DIR}/wasm/exception_handling_stub.cpp" ${SILKWORM_CORE_TESTS})
+  # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
+  set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)
+else()
+  add_executable(core_test ${SILKWORM_CORE_TESTS})
+endif()
 target_link_libraries(core_test silkworm_core Catch2::Catch2WithMain)
 
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)
 else()
   target_compile_options(core_test PRIVATE -fno-exceptions)
-endif()
-
-if(SILKWORM_WASM_API)
-  # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
-  set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)
-  add_custom_command(
-    TARGET core_test
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "target path = $<TARGET_FILE:core_test>"
-  )
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)

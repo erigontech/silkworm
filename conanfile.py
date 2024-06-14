@@ -63,7 +63,7 @@ class SilkwormRecipe(ConanFile):
             self.options['mimalloc'].override = True
 
         # Disable Catch2 version 3.x.x signaling handling on WASM
-        if self.settings.os == 'Emscripten':
+        if self.settings.arch == 'wasm':
             self.options['catch2'].no_posix_signals = True
 
         self.options['boost'].asio_no_deprecated = True

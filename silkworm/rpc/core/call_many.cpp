@@ -93,7 +93,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
         std::vector<nlohmann::json> results;
         result.results.reserve(bundle.transactions.size());
         for (const auto& call : bundle.transactions) {
-            silkworm::Transaction txn{call.to_transaction()};
+            silkworm::Transaction txn{call.to_transaction(block.header.base_fee_per_gas)};
 
             auto call_execution_result = executor.call(blockContext.block_with_hash->block, txn);
 
@@ -140,7 +140,7 @@ Task<CallManyResult> CallExecutor::execute(
     const SimulationContext& context,
     const AccountsOverrides& accounts_overrides,
     std::optional<std::uint64_t> timeout) {
-    const auto chain_storage{transaction_.create_storage(backend_)};
+    const auto chain_storage{transaction_.create_storage()};
 
     std::uint16_t count{0};
     bool empty = true;

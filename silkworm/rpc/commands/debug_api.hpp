@@ -19,12 +19,12 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
@@ -39,7 +39,7 @@ namespace silkworm::rpc::commands {
 
 class DebugRpcApi {
   public:
-    DebugRpcApi(boost::asio::io_context& context, boost::asio::thread_pool& workers)
+    DebugRpcApi(boost::asio::io_context& context, WorkerPool& workers)
         : io_context_{context},
           block_cache_{must_use_shared_service<BlockCache>(io_context_)},
           state_cache_{must_use_shared_service<ethdb::kv::StateCache>(io_context_)},
@@ -74,7 +74,7 @@ class DebugRpcApi {
     BlockCache* block_cache_;
     ethdb::kv::StateCache* state_cache_;
     ethdb::Database* database_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
     ethbackend::BackEnd* backend_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;

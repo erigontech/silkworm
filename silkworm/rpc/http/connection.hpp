@@ -24,7 +24,6 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
@@ -33,6 +32,7 @@
 #include <silkworm/rpc/commands/rpc_api_table.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
@@ -59,7 +59,7 @@ class Connection : public StreamWriter {
                bool ws_upgrade_enabled,
                bool ws_compression,
                bool http_compression,
-               boost::asio::thread_pool& workers);
+               WorkerPool& workers);
     ~Connection() override;
 
     /* StreamWriter Interface */
@@ -120,7 +120,7 @@ class Connection : public StreamWriter {
 
     bool http_compression_;
 
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
 
     std::string vary_;
     std::string origin_;

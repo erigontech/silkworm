@@ -29,13 +29,13 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/thread_pool.hpp>
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/json/stream.hpp>
@@ -459,7 +459,7 @@ class TraceCallExecutor {
   public:
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const ChainStorage& chain_storage,
-                               boost::asio::thread_pool& workers,
+                               WorkerPool& workers,
                                ethdb::Transaction& tx)
         : block_cache_(block_cache), chain_storage_{chain_storage}, workers_{workers}, tx_{tx} {}
     virtual ~TraceCallExecutor() = default;
@@ -494,7 +494,7 @@ class TraceCallExecutor {
 
     silkworm::BlockCache& block_cache_;
     const ChainStorage& chain_storage_;
-    boost::asio::thread_pool& workers_;
+    WorkerPool& workers_;
     ethdb::Transaction& tx_;
 };
 

@@ -18,20 +18,25 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_transaction.hpp>
+#include <silkworm/rpc/storage/remote_chain_storage.hpp>
+
+#include "backend_providers.hpp"
 
 namespace silkworm::rpc::ethdb::kv {
 
-RemoteDatabase::RemoteDatabase(StateCache* state_cache,
+RemoteDatabase::RemoteDatabase(ethbackend::BackEnd* backend,
+                               StateCache* state_cache,
                                agrpc::GrpcContext& grpc_context,
                                const std::shared_ptr<grpc::Channel>& channel)
-    : state_cache_{state_cache}, grpc_context_{grpc_context}, stub_{remote::KV::NewStub(channel)} {
+    : backend_{backend}, state_cache_{state_cache}, grpc_context_{grpc_context}, stub_{remote::KV::NewStub(channel)} {
     SILK_TRACE << "RemoteDatabase::ctor " << this;
 }
 
-RemoteDatabase::RemoteDatabase(StateCache* state_cache,
+RemoteDatabase::RemoteDatabase(ethbackend::BackEnd* backend,
+                               StateCache* state_cache,
                                agrpc::GrpcContext& grpc_context,
                                std::unique_ptr<remote::KV::StubInterface>&& stub)
-    : state_cache_{state_cache}, grpc_context_{grpc_context}, stub_(std::move(stub)) {
+    : backend_{backend}, state_cache_{state_cache}, grpc_context_{grpc_context}, stub_(std::move(stub)) {
     SILK_TRACE << "RemoteDatabase::ctor " << this;
 }
 
@@ -41,7 +46,11 @@ RemoteDatabase::~RemoteDatabase() {
 
 Task<std::unique_ptr<Transaction>> RemoteDatabase::begin() {
     SILK_TRACE << "RemoteDatabase::begin " << this << " start";
-    auto txn = std::make_unique<RemoteTransaction>(*stub_, grpc_context_, state_cache_);
+    auto txn = std::make_unique<RemoteTransaction>(*stub_,
+                                                   grpc_context_,
+                                                   state_cache_,
+                                                   block_provider(backend_),
+                                                   block_number_from_txn_hash_provider(backend_));
     co_await txn->open();
     SILK_TRACE << "RemoteDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;

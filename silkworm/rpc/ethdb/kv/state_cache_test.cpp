@@ -22,7 +22,6 @@
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
@@ -35,6 +34,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/rawdb/util.hpp>
 #include <silkworm/rpc/test_util/dummy_transaction.hpp>
 #include <silkworm/rpc/test_util/mock_cursor.hpp>
@@ -203,7 +203,7 @@ void get_and_check_upsert(CoherentStateCache& cache, Transaction& txn, const evm
     std::unique_ptr<StateView> view = cache.get_view(txn);
     CHECK(view != nullptr);
     if (view) {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
         auto result = boost::asio::co_spawn(pool, view->get(address_key), boost::asio::use_future);
         const auto value = result.get();
@@ -218,7 +218,7 @@ void get_and_check_code(CoherentStateCache& cache, Transaction& txn, silkworm::B
     std::unique_ptr<StateView> view = cache.get_view(txn);
     CHECK(view != nullptr);
     if (view) {
-        boost::asio::thread_pool pool{1};
+        WorkerPool pool{1};
         const ethash::hash256 code_hash{silkworm::keccak256(code)};
         const silkworm::Bytes code_hash_key{code_hash.bytes, silkworm::kHashLength};
         auto result = boost::asio::co_spawn(pool, view->get_code(code_hash_key), boost::asio::use_future);
@@ -249,7 +249,7 @@ TEST_CASE("CoherentStateCache::CoherentStateCache", "[rpc][ethdb][kv][state_cach
 
 TEST_CASE("CoherentStateCache::get_view returns no view", "[rpc][ethdb][kv][state_cache]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("no batch") {
         CoherentStateCache cache;
@@ -281,7 +281,7 @@ TEST_CASE("CoherentStateCache::get_view returns no view", "[rpc][ethdb][kv][stat
 TEST_CASE("CoherentStateCache::get_view one view", "[rpc][ethdb][kv][state_cache]") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     CoherentStateCache cache;
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
 
     SECTION("single upsert change batch => search hit") {
         cache.on_new_block(

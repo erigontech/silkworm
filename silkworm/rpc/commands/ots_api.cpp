@@ -104,7 +104,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
 
     try {
         const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
@@ -154,7 +154,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
             const auto block_number = block_with_hash->block.header.number;
@@ -209,7 +209,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
     try {
         const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
@@ -349,7 +349,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             nonce_block = account_block_numbers[idx - 1];
         }
 
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, nonce_block);
         if (block_with_hash) {
             for (const auto& transaction : block_with_hash->block.transactions) {
@@ -492,7 +492,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             block_found = account_block_numbers[idx - 1];
         }
 
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
 
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_found);
         if (block_with_hash) {
@@ -533,7 +533,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -580,7 +580,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -627,7 +627,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -859,7 +859,7 @@ Task<bool> OtsRpcApi::trace_blocks(
 }
 
 Task<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
-    const auto chain_storage = tx.create_storage(backend_);
+    const auto chain_storage = tx.create_storage();
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
     if (!block_with_hash) {
         co_return;

@@ -20,13 +20,13 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
@@ -183,7 +183,7 @@ class DummyTransaction : public ethdb::BaseTransaction {
         return nullptr;
     }
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }
 
@@ -209,7 +209,7 @@ class DummyDatabase : public ethdb::Database {
 };
 
 TEST_CASE("StorageWalker::walk_of_storages") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     nlohmann::json json;
 
     json["PlainState"] = {
@@ -321,7 +321,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
 }
 
 TEST_CASE("StorageWalker::storage_range_at") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     nlohmann::json json;
 
     json["PlainState"] = {

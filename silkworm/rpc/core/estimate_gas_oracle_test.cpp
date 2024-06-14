@@ -28,6 +28,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_transaction.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
@@ -43,7 +44,8 @@ struct RemoteDatabaseTest : test::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
     ethdb::kv::CoherentStateCache state_cache_;
-    ethdb::kv::RemoteDatabase remote_db_{&state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    test::BackEndMock backend;
+    ethdb::kv::RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 using testing::_;
@@ -74,8 +76,8 @@ TEST_CASE("EstimateGasException") {
 
 TEST_CASE("estimate gas") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
-    boost::asio::thread_pool workers{1};
+    WorkerPool pool{1};
+    WorkerPool workers{1};
 
     intx::uint256 kBalance{1'000'000'000};
 
@@ -96,9 +98,13 @@ TEST_CASE("estimate gas") {
     const silkworm::Block block;
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
-    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_, &remote_db_test.state_cache_);
-    const auto backend = std::make_unique<test::BackEndMock>();
-    const RemoteChainStorage storage{*tx, backend.get()};
+    test::BackEndMock backend;
+    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_,
+                                                             remote_db_test.grpc_context_,
+                                                             &remote_db_test.state_cache_,
+                                                             ethdb::kv::block_provider(&backend),
+                                                             ethdb::kv::block_number_from_txn_hash_provider(&backend));
+    const RemoteChainStorage storage{*tx, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend)};
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage};
 
     SECTION("Call empty, always fails but success in last step") {

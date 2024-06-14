@@ -21,14 +21,13 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/thread_pool.hpp>
-
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/version.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/rpc/http/server.hpp>
 
@@ -79,7 +78,7 @@ class Daemon {
     ClientContextPool context_pool_;
 
     //! The pool of workers for long-running tasks.
-    boost::asio::thread_pool worker_pool_;
+    WorkerPool worker_pool_;
 
     //! The chaindata MDBX environment or \code std::nullopt if working remotely
     std::optional<mdbx::env> chaindata_env_;

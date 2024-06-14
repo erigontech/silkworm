@@ -48,7 +48,7 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
         RequestHandlerFactory handler_factory = [](auto*) -> RequestHandlerPtr { return nullptr; };
         std::vector<std::string> allowed_origins;
         std::optional<std::string> jwt_secret;
-        boost::asio::thread_pool workers;
+        WorkerPool workers;
         CHECK_NOTHROW(Connection_ForTest{std::move(socket),
                                          handler_factory,
                                          allowed_origins,
@@ -90,7 +90,7 @@ TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
     boost::asio::io_context ioc;
     RequestHandlerFactory handler_factory = [](auto*) -> RequestHandlerPtr { return nullptr; };
     std::vector<std::string> allowed_origins;
-    boost::asio::thread_pool workers;
+    WorkerPool workers;
     auto make_connection = [&](auto&& j) -> Connection_ForTest {
         boost::asio::ip::tcp::socket socket{ioc};
         socket.open(boost::asio::ip::tcp::v4());

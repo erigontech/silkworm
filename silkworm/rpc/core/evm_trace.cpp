@@ -1332,7 +1332,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
-    rpc::Transaction transaction{call.to_transaction()};
+    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
     auto result = co_await execute(block.header.number, block, transaction, -1, config);
     co_return result;
 }
@@ -1361,7 +1361,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         for (size_t index{0}; index < calls.size(); index++) {
             const auto& config = calls[index].trace_config;
 
-            silkworm::Transaction transaction{calls[index].call.to_transaction()};
+            silkworm::Transaction transaction{calls[index].call.to_transaction(block.header.base_fee_per_gas)};
 
             Tracers tracers;
             TraceCallTraces traces;

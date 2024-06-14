@@ -27,27 +27,18 @@
 
 namespace silkworm::rpc {
 
-struct ChainConfig {
-    evmc::bytes32 genesis_hash;
-    nlohmann::json config;
-};
-
 struct Forks {
-    const evmc::bytes32& genesis_hash;
+    evmc::bytes32 genesis_hash;
     std::vector<BlockNum> block_numbers;
     std::vector<uint64_t> block_times;
 
-    explicit Forks(const ChainConfig& chain_config) : genesis_hash(chain_config.genesis_hash) {
-        const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
-        if (!cc) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Chain config missing"};
-        }
-        for (auto& fork_block_number : cc->distinct_fork_numbers()) {
+    explicit Forks(const ChainConfig& cc) : genesis_hash(cc.genesis_hash.value_or(evmc::bytes32{})) {
+        for (auto& fork_block_number : cc.distinct_fork_numbers()) {
             if (fork_block_number) {  // Skip any forks in block 0, that's the genesis ruleset
                 block_numbers.push_back(fork_block_number);
             }
         }
-        for (auto& fork_block_time : cc->distinct_fork_times()) {
+        for (auto& fork_block_time : cc.distinct_fork_times()) {
             if (fork_block_time) {  // Skip any forks in block 0, that's the genesis ruleset
                 block_times.push_back(fork_block_time);
             }

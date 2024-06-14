@@ -49,7 +49,7 @@ class LocalTransaction : public BaseTransaction {
 
     std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const ChainStorage& storage, BlockNum block_number) override;
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd* backend) override;
+    std::shared_ptr<ChainStorage> create_storage() override;
 
     Task<void> close() override;
 

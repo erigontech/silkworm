@@ -24,12 +24,12 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
@@ -49,9 +49,8 @@ class CallExecutor {
     explicit CallExecutor(
         ethdb::Transaction& transaction,
         BlockCache& block_cache,
-        boost::asio::thread_pool& workers,
-        ethbackend::BackEnd* backend)
-        : transaction_(transaction), block_cache_(block_cache), workers_{workers}, backend_{backend} {}
+        WorkerPool& workers)
+        : transaction_(transaction), block_cache_(block_cache), workers_{workers} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -75,7 +74,6 @@ class CallExecutor {
   private:
     ethdb::Transaction& transaction_;
     BlockCache& block_cache_;
-    boost::asio::thread_pool& workers_;
-    ethbackend::BackEnd* backend_;
+    WorkerPool& workers_;
 };
 }  // namespace silkworm::rpc::call

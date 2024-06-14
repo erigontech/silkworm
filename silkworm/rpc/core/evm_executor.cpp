@@ -348,7 +348,7 @@ ExecutionResult EVMExecutor::call(
 Task<ExecutionResult> EVMExecutor::call(
     const silkworm::ChainConfig& config,
     const ChainStorage& chain_storage,
-    boost::asio::thread_pool& workers,
+    WorkerPool& workers,
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
     StateFactory state_factory,

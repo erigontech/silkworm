@@ -20,9 +20,19 @@
 
 #include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/core/remote_state.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
+
+RemoteTransaction::RemoteTransaction(
+    ::remote::KV::StubInterface& stub,
+    agrpc::GrpcContext& grpc_context,
+    StateCache* state_cache,
+    BlockProvider block_provider,
+    BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider)
+    : BaseTransaction(state_cache),
+      block_provider_{std::move(block_provider)},
+      block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
+      tx_rpc_{stub, grpc_context} {}
 
 Task<void> RemoteTransaction::open() {
     const auto tx_result = co_await tx_rpc_.request_and_read();
@@ -71,8 +81,8 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
     return std::make_shared<silkworm::rpc::state::RemoteState>(executor, *this, storage, block_number);
 }
 
-std::shared_ptr<ChainStorage> RemoteTransaction::create_storage(ethbackend::BackEnd* backend) {
-    return std::make_shared<RemoteChainStorage>(*this, backend);
+std::shared_ptr<ChainStorage> RemoteTransaction::create_storage() {
+    return std::make_shared<RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_);
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

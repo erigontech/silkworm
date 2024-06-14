@@ -24,7 +24,6 @@
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
@@ -40,6 +39,7 @@
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
@@ -102,7 +102,7 @@ class RpcApiTestBase : public LocalContextTestBase {
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 
-    boost::asio::thread_pool workers_;
+    WorkerPool workers_;
     boost::asio::ip::tcp::socket socket_;
     commands::RpcApi rpc_api_;
     commands::RpcApiTable rpc_api_table_;

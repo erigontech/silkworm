@@ -29,10 +29,6 @@ Task<std::optional<ChainConfig>> LocalChainStorage::read_chain_config() const {
     co_return data_model_.read_chain_config();
 }
 
-Task<std::optional<ChainId>> LocalChainStorage::read_chain_id() const {
-    co_return data_model_.read_chain_id();
-}
-
 Task<BlockNum> LocalChainStorage::highest_block_number() const {
     co_return data_model_.highest_block_number();
 }

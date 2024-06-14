@@ -96,8 +96,8 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][a
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "result":"0x"
-    })"_json);
+        "error":{"code":-32000,"message":"insufficient funds for gas * price + value: address 0x0000000000000000000000000000000000000000 have 0 want 15240199550000000"}
+   })"_json);
 }
 
 TEST_CASE_METHOD(test::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invalid input", "[rpc][api]") {

@@ -19,8 +19,7 @@
 #include <memory>
 #include <utility>
 
-#include <boost/asio/thread_pool.hpp>
-
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 
 namespace silkworm::rpc::test {
@@ -46,7 +45,7 @@ class JsonApiWithWorkersTestBase : public ContextTestBase {
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
-    boost::asio::thread_pool workers_;
+    WorkerPool workers_;
 };
 
 template <typename GrpcApi, typename Stub>

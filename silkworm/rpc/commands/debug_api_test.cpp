@@ -20,7 +20,6 @@
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
 #if !defined(__clang__)
 #include <boost/asio/use_future.hpp>
 #endif  // !defined(__clang__)
@@ -196,7 +195,7 @@ class DummyTransaction : public ethdb::BaseTransaction {
         return nullptr;
     }
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }
 
@@ -233,7 +232,7 @@ TEST_CASE("DebugRpcApi") {
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());
     add_shared_service<ethdb::kv::StateCache>(ioc, std::make_shared<ethdb::kv::CoherentStateCache>());
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
 
     SECTION("CTOR") {
         CHECK_THROWS_AS(DebugRpcApi(ioc, workers), std::logic_error);
@@ -242,7 +241,7 @@ TEST_CASE("DebugRpcApi") {
 
 #if !defined(__clang__)
 TEST_CASE("get_modified_accounts") {
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     nlohmann::json json;
 
     json["SyncStage"] = {

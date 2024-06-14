@@ -261,15 +261,15 @@ void Daemon::add_private_services() {
 
         auto* state_cache{must_use_shared_service<ethdb::kv::StateCache>(io_context)};
 
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
+        auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
+        auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
         std::unique_ptr<ethdb::Database> database;
         if (chaindata_env_) {
             database = std::make_unique<ethdb::file::LocalDatabase>(state_cache, *chaindata_env_);
         } else {
-            database = std::make_unique<ethdb::kv::RemoteDatabase>(state_cache, grpc_context, grpc_channel);
+            database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context, grpc_channel);
         }
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
-        auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
-        auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
 
         add_private_service<ethdb::Database>(io_context, std::move(database));
         add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));

@@ -29,6 +29,7 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/dummy_transaction.hpp>
@@ -47,11 +48,13 @@ struct EVMExecutorTest : public test::ContextTestBase {
     }
 
     test::MockTransaction transaction;
-    boost::asio::thread_pool workers{1};
+    WorkerPool workers{1};
     ClientContextPool pool{1};
     boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
-    std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    RemoteChainStorage storage{transaction, backend.get()};
+    test::BackEndMock backend;
+    RemoteChainStorage storage{transaction,
+                               ethdb::kv::block_provider(&backend),
+                               ethdb::kv::block_number_from_txn_hash_provider(&backend)};
     const uint64_t chain_id{5};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};

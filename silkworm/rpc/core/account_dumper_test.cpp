@@ -183,7 +183,7 @@ class DummyTransaction : public ethdb::BaseTransaction {
         return nullptr;
     }
 
-    std::shared_ptr<ChainStorage> create_storage(ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }
 
@@ -213,7 +213,7 @@ class DummyDatabase : public ethdb::Database {
 #ifdef TEST_DISABLED
 TEST_CASE("account dumper") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    boost::asio::thread_pool pool{1};
+    WorkerPool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);
 

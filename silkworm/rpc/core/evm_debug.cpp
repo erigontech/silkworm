@@ -323,7 +323,7 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHa
     if (!block_with_hash) {
         co_return;
     }
-    rpc::Transaction transaction{call.to_transaction()};
+    rpc::Transaction transaction{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
 
     const auto& block = block_with_hash->block;
     const auto number = block.header.number;
@@ -423,7 +423,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 }
 
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
-    rpc::Transaction transaction{call.to_transaction()};
+    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
     co_await execute(stream, storage, block.header.number, block, transaction, -1);
     co_return;
 }
@@ -533,7 +533,7 @@ Task<void> DebugExecutor::execute(
             stream.open_array();
 
             for (const auto& call : bundle.transactions) {
-                silkworm::Transaction txn{call.to_transaction()};
+                silkworm::Transaction txn{call.to_transaction(block.header.base_fee_per_gas)};
 
                 stream.open_object();
                 stream.write_field("structLogs");

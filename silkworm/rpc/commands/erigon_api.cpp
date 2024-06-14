@@ -25,6 +25,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/binary_search.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -73,7 +74,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         auto start = std::chrono::system_clock::now();
 
@@ -123,7 +124,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(core::kEarliestBlockNumber);
@@ -198,7 +199,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage{tx->create_storage(backend_)};
+        const auto chain_storage{tx->create_storage()};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -247,7 +248,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto header{co_await chain_storage->read_header(block_hash)};
         if (!header) {
@@ -291,7 +292,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto header{co_await chain_storage->read_canonical_header(block_number)};
@@ -359,7 +360,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker(backend_, *block_cache_, *tx);
+        LogsWalker logs_walker(*block_cache_, *tx);
         const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
@@ -407,7 +408,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -444,10 +445,14 @@ Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nloh
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_config{co_await core::rawdb::read_chain_config(*tx)};
-        SILK_DEBUG << "chain config: " << chain_config;
+        const auto chain_storage = tx->create_storage();
 
-        Forks forks{chain_config};
+        const auto chain_config{co_await chain_storage->read_chain_config()};
+        if (!chain_config) {
+            throw std::runtime_error("Chain config missing");
+        }
+        SILK_DEBUG << "chain config: " << *chain_config;
+        Forks forks{*chain_config};
 
         reply = make_json_content(request, forks);
     } catch (const std::exception& e) {
@@ -477,13 +482,14 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        const auto chain_storage = tx->create_storage(backend_);
+        const auto chain_storage = tx->create_storage();
 
-        const auto chain_config{co_await core::rawdb::read_chain_config(*tx)};
-        SILK_DEBUG << "chain config: " << chain_config;
+        const auto chain_config{co_await chain_storage->read_chain_config()};
+        ensure(chain_config.has_value(), "cannot read chain config");
+        SILK_DEBUG << "chain config: " << *chain_config;
 
         Issuance issuance{};  // default is empty: no PoW => no issuance
-        if (chain_config.config.count("ethash") != 0) {
+        if (std::holds_alternative<protocol::EthashConfig>(chain_config->rule_set_config)) {
             const auto block_number = co_await core::get_block_number(block_id, *tx);
             const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number)};
             if (!block_with_hash) {
@@ -493,11 +499,7 @@ Task<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& requ
                 co_await tx->close();  // RAII not (yet) available with coroutines
                 co_return;
             }
-            const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
-            if (!cc) {
-                throw std::runtime_error("Invalid chain config");
-            }
-            const auto rule_set_factory = protocol::rule_set_factory(*cc);
+            const auto rule_set_factory = protocol::rule_set_factory(*chain_config);
             const auto block_reward{rule_set_factory->compute_reward(block_with_hash->block)};
             intx::uint256 total_ommer_reward = 0;
             for (const auto ommer_reward : block_reward.ommers) {

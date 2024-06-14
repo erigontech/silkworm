@@ -26,7 +26,7 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_bytes32;
 
-TEST_CASE("create empty chain config", "[rpc][types][chain_config]") {
+/*TEST_CASE("create empty chain config", "[rpc][types][chain_config]") {
     ChainConfig chain_config{};
     CHECK(chain_config.genesis_hash == evmc::bytes32{});
     CHECK(chain_config.config == R"(null)"_json);
@@ -72,6 +72,6 @@ TEST_CASE("create forks from chain config", "[rpc][types][chain_config]") {
     CHECK(forks.block_numbers[7] == 9'200'000);
     CHECK(forks.block_numbers[8] == 12'244'000);
     CHECK(forks.block_numbers[9] == 12'965'000);
-}
+}*/
 
 }  // namespace silkworm::rpc

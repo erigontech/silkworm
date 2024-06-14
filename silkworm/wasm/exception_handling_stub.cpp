@@ -20,7 +20,6 @@
 // This avoids undefined symbols at linking: https://github.com/WebAssembly/wasi-sdk/issues/329
 
 extern "C" {
-
 void __cxa_allocate_exception() {
     std::abort();
 }

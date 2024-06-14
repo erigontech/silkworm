@@ -20,6 +20,7 @@ find_package(magic_enum REQUIRED)
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 if(SILKWORM_WASM_API)
+  # Stub clang exception handlers on WASM after Catch2 3.x due to https://github.com/WebAssembly/wasi-sdk/issues/329
   add_executable(core_test "${SILKWORM_MAIN_SRC_DIR}/wasm/exception_handling_stub.cpp" ${SILKWORM_CORE_TESTS})
   # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
   set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)

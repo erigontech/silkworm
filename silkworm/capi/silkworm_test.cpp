@@ -41,6 +41,7 @@ namespace snapshot_test = snapshots::test_util;
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
+    mdbx::env_managed& db {get_mdbx_env()};
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array

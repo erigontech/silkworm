@@ -249,6 +249,7 @@ TEST_CASE("Smart contract with storage", "[core][execution]") {
     CHECK(state.get_current_storage(contract_address, key0) == new_val);
 }
 
+#if !(defined(SILKWORM_SANITIZE) && defined(__APPLE__))
 TEST_CASE("Maximum call depth", "[core][execution]") {
     Block block{};
     block.header.number = 1'431'916;
@@ -317,6 +318,7 @@ TEST_CASE("Maximum call depth", "[core][execution]") {
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
     CHECK(res.data.empty());
 }
+#endif  // SILKWORM_SANITIZE
 
 TEST_CASE("DELEGATECALL", "[core][execution]") {
     Block block{};

@@ -32,7 +32,10 @@ if(SILKWORM_WASM_API)
   # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
   set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)
   add_custom_command(
-          TARGET core_test POST_BUILD COMMAND ${CMAKE_COMMAND} -E echo "target path = $<TARGET_FILE:core_test>")
+    TARGET core_test
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "target path = $<TARGET_FILE:core_test>"
+  )
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)

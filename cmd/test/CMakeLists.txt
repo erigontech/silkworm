@@ -29,17 +29,10 @@ else()
 endif()
 
 if(SILKWORM_WASM_API)
-  # Strip off RPATH linker option added after building Catch2 v3.6.0 from sources
-  get_target_property(CORE_TEST_LINK_OPTIONS core_test LINK_OPTIONS)
-  message(WARNING "CORE_TEST_LINK_OPTIONS: ${CORE_TEST_LINK_OPTIONS}")
-  list(REMOVE_ITEM CORE_TEST_LINK_OPTIONS
-       "-rpath /home/circleci/.conan/data/catch2/3.6.0/_/_/package/9cc54baf4502227e8ffc50d3825f455b77620489/lib"
-  )
-  set_target_properties(core_test PROPERTIES LINK_OPTIONS "${CORE_TEST_LINK_OPTIONS}")
-  message(WARNING "CORE_TEST_LINK_OPTIONS: ${CORE_TEST_LINK_OPTIONS}")
+  # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
   set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)
-  get_target_property(CORE_TEST_LINK_OPTIONS2 core_test LINK_OPTIONS)
-  message(WARNING "CORE_TEST_LINK_OPTIONS2: ${CORE_TEST_LINK_OPTIONS2}")
+  add_custom_command(
+          TARGET core_test POST_BUILD COMMAND ${CMAKE_COMMAND} -E echo "target path = $<TARGET_FILE:core_test>")
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)

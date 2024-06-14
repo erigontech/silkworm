@@ -17,11 +17,11 @@
 #include <cstdlib>
 
 extern "C" {
-    void __cxa_allocate_exception() {
-        std::abort();
-    }
+void __cxa_allocate_exception() {
+    std::abort();
+}
 
-    void __cxa_throw() {
-        std::abort();
-    }
+void __cxa_throw() {
+    std::abort();
+}
 }

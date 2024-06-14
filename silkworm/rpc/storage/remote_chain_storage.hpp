@@ -39,7 +39,6 @@ class RemoteChainStorage : public ChainStorage {
     ~RemoteChainStorage() override = default;
 
     [[nodiscard]] Task<std::optional<silkworm::ChainConfig>> read_chain_config() const override;
-    [[nodiscard]] Task<std::optional<ChainId>> read_chain_id() const override;
 
     [[nodiscard]] Task<BlockNum> highest_block_number() const override;
 

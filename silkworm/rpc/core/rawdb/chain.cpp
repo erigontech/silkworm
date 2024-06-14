@@ -45,28 +45,6 @@ Task<uint64_t> read_header_number(ethdb::Transaction& tx, const evmc::bytes32& b
     co_return endian::load_big_u64(value.data());
 }
 
-Task<ChainConfig> read_chain_config(ethdb::Transaction& tx) {
-    const auto genesis_block_hash{co_await read_canonical_block_hash(tx, kEarliestBlockNumber)};
-    SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << silkworm::to_hex(genesis_block_hash);
-    const silkworm::ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, silkworm::kHashLength};
-    const auto data{co_await tx.get_one(db::table::kConfigName, genesis_block_hash_bytes)};
-    if (data.empty()) {
-        throw std::invalid_argument{"empty chain config data in read_chain_config"};
-    }
-    SILK_DEBUG << "rawdb::read_chain_config chain config data: " << data.c_str();
-    const auto json_config = nlohmann::json::parse(data.c_str());
-    SILK_TRACE << "rawdb::read_chain_config chain config JSON: " << json_config.dump();
-    co_return ChainConfig{genesis_block_hash, json_config};
-}
-
-Task<uint64_t> read_chain_id(ethdb::Transaction& tx) {
-    const auto chain_info = co_await read_chain_config(tx);
-    if (chain_info.config.count("chainId") == 0) {
-        throw std::runtime_error{"missing chainId in chain config"};
-    }
-    co_return chain_info.config["chainId"].get<uint64_t>();
-}
-
 Task<evmc::bytes32> read_canonical_block_hash(ethdb::Transaction& tx, uint64_t block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     SILK_TRACE << "rawdb::read_canonical_block_hash block_key: " << silkworm::to_hex(block_key);

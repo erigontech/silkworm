@@ -621,10 +621,10 @@ TEST_CASE("deserialize block_number_or_hash", "[silkworm::json][from_json]") {
 }
 
 TEST_CASE("serialize zero forks", "[silkworm::json][to_json]") {
-    silkworm::rpc::ChainConfig cc{
-        0x0000000000000000000000000000000000000000000000000000000000000000_bytes32,
-        R"({"chainId":1,"ethash":{}})"_json};
-    silkworm::rpc::Forks f{cc};
+    auto cc = ChainConfig::from_json(R"({"chainId":1,"ethash":{}})"_json);
+    REQUIRE(cc.has_value());
+    cc->genesis_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+    Forks f{*cc};
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -634,25 +634,25 @@ TEST_CASE("serialize zero forks", "[silkworm::json][to_json]") {
 }
 
 TEST_CASE("serialize forks", "[silkworm::json][to_json]") {
-    silkworm::rpc::ChainConfig cc{
-        0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
-        R"({
-            "berlinBlock":12244000,
-            "byzantiumBlock":4370000,
-            "chainId":1,
-            "constantinopleBlock":7280000,
-            "daoForkBlock":1920000,
-            "eip150Block":2463000,
-            "eip155Block":2675000,
-            "ethash":{},
-            "homesteadBlock":1150000,
-            "istanbulBlock":9069000,
-            "londonBlock":12965000,
-            "muirGlacierBlock":9200000,
-            "petersburgBlock":7280000,
-            "shanghaiTime":1678832736
-        })"_json};
-    silkworm::rpc::Forks f{cc};
+    auto cc = ChainConfig::from_json(R"({
+        "berlinBlock":12244000,
+        "byzantiumBlock":4370000,
+        "chainId":1,
+        "constantinopleBlock":7280000,
+        "daoForkBlock":1920000,
+        "eip150Block":2463000,
+        "eip155Block":2675000,
+        "ethash":{},
+        "homesteadBlock":1150000,
+        "istanbulBlock":9069000,
+        "londonBlock":12965000,
+        "muirGlacierBlock":9200000,
+        "petersburgBlock":7280000,
+        "shanghaiTime":1678832736
+    })"_json);
+    REQUIRE(cc.has_value());
+    cc->genesis_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32;
+    Forks f{*cc};
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c",

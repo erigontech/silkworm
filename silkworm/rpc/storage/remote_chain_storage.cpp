@@ -18,7 +18,10 @@
 
 #include <utility>
 
+#include <silkworm/db/tables.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc {
@@ -30,13 +33,20 @@ RemoteChainStorage::RemoteChainStorage(ethdb::Transaction& tx,
       block_provider_{std::move(block_provider)},
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)} {}
 
-Task<std::optional<silkworm::ChainConfig>> RemoteChainStorage::read_chain_config() const {
-    const auto rpc_chain_config{co_await core::rawdb::read_chain_config(tx_)};
-    co_return silkworm::ChainConfig::from_json(rpc_chain_config.config);
-}
-
-Task<std::optional<ChainId>> RemoteChainStorage::read_chain_id() const {
-    co_return co_await core::rawdb::read_chain_id(tx_);
+Task<std::optional<ChainConfig>> RemoteChainStorage::read_chain_config() const {
+    const auto genesis_block_hash{co_await core::rawdb::read_canonical_block_hash(tx_, core::kEarliestBlockNumber)};
+    SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << to_hex(genesis_block_hash);
+    const ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, kHashLength};
+    const auto data{co_await tx_.get_one(db::table::kConfigName, genesis_block_hash_bytes)};
+    if (data.empty()) {
+        throw std::invalid_argument{"empty chain config data in read_chain_config"};
+    }
+    SILK_DEBUG << "rawdb::read_chain_config chain config data: " << data.c_str();
+    const auto json_config = nlohmann::json::parse(data.begin(), data.end());
+    SILK_TRACE << "rawdb::read_chain_config chain config JSON: " << json_config.dump();
+    std::optional<ChainConfig> chain_config = ChainConfig::from_json(json_config);
+    chain_config->genesis_hash = genesis_block_hash;
+    co_return chain_config;
 }
 
 Task<BlockNum> RemoteChainStorage::highest_block_number() const {

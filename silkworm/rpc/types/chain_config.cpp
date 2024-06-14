@@ -22,8 +22,8 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config) {
-    out << "genesis: " << to_hex(chain_config.genesis_hash) << " "
-        << "config: " << chain_config.config.dump();
+    out << "genesis: " << to_hex(chain_config.genesis_hash.value_or(evmc::bytes32{})) << " "
+        << "config: " << chain_config.to_json().dump();
     return out;
 }
 

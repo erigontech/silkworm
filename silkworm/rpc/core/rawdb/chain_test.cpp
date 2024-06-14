@@ -23,7 +23,6 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.h>
 #include <gmock/gmock.h>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -60,30 +59,6 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01a000000000000000000000"
     "00000000000000000000000000000000000000000000880000000000000000")};
 static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
-static silkworm::Bytes kNotEmptyBody{*silkworm::from_hex("c683897f2e04c0")};
-static silkworm::Bytes kInvalidJsonChainConfig{*silkworm::from_hex("000102")};
-static silkworm::Bytes kMissingChainIdConfig{*silkworm::from_hex(
-    "7b226265726c696e426c6f636b223a31323234343030302c"
-    "2262797a616e7469756d426c6f636b223a343337303030302c22636f6e7374616e74696e6f706c65426c6f636b223a373238303030302"
-    "c2264616f466f726b426c6f636b223a313932303030302c22656970313530426c6f636b223a323436333030302c22656970313535426c"
-    "6f636b223a323637353030302c22657468617368223a7b7d2c22686f6d657374656164426c6f636b223a313135303030302c226973746"
-    "16e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d756972476c6163696572"
-    "426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
-static silkworm::Bytes kInvalidChainIdConfig{*silkworm::from_hex(
-    "7b226265726c696e426c6f636b223a31323234343030302c"
-    "2262797a616e7469756d426c6f636b223a343337303030302c22636861696e4964223a22666f6f222c22636f6e7374616e74696e6f706"
-    "c65426c6f636b223a373238303030302c2264616f466f726b426c6f636b223a313932303030302c22656970313530426c6f636b223a32"
-    "3436333030302c22656970313535426c6f636b223a323637353030302c22657468617368223a7b7d2c22686f6d657374656164426c6f6"
-    "36b223a313135303030302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a3132393635"
-    "3030302c226d756972476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a37323830303"
-    "0307d")};
-static silkworm::Bytes kChainConfig{*silkworm::from_hex(
-    "7b226265726c696e426c6f636b223a31323234343030302c2262797a6"
-    "16e7469756d426c6f636b223a343337303030302c22636861696e4964223a312c22636f6e7374616e74696e6f706c65426c6f636b223a"
-    "373238303030302c2264616f466f726b426c6f636b223a313932303030302c22656970313530426c6f636b223a323436333030302c226"
-    "56970313535426c6f636b223a323637353030302c22657468617368223a7b7d2c22686f6d657374656164426c6f636b223a3131353030"
-    "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
-    "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
 TEST_CASE("read_header_number") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
@@ -107,81 +82,6 @@ TEST_CASE("read_header_number") {
 #else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_header_number"));
 #endif  // SILKWORM_SANITIZE
-    }
-}
-
-TEST_CASE("read_chain_config") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    WorkerPool pool{1};
-    test::MockTransaction transaction;
-
-    SECTION("empty chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
-        CHECK_THROWS_AS(result.get(), std::invalid_argument);
-#else
-        CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty chain config data in read_chain_config"));
-#endif  // SILKWORM_SANITIZE
-    }
-
-    SECTION("invalid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidJsonChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
-        CHECK_THROWS_AS(result.get(), nlohmann::json::parse_error);
-    }
-
-    SECTION("valid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_config(transaction), boost::asio::use_future);
-        const auto chain_config = result.get();
-        CHECK(chain_config.genesis_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-        CHECK(chain_config.config == R"({
-            "berlinBlock":12244000,
-            "byzantiumBlock":4370000,
-            "chainId":1,
-            "constantinopleBlock":7280000,
-            "daoForkBlock":1920000,
-            "eip150Block":2463000,
-            "eip155Block":2675000,
-            "ethash":{},
-            "homesteadBlock":1150000,
-            "istanbulBlock":9069000,
-            "londonBlock":12965000,
-            "muirGlacierBlock":9200000,
-            "petersburgBlock":7280000
-        })"_json);
-    }
-}
-
-TEST_CASE("read_chain_id") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    WorkerPool pool{1};
-    test::MockTransaction transaction;
-
-    SECTION("missing chain identifier") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kMissingChainIdConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
-        CHECK_THROWS_AS(result.get(), std::runtime_error);
-    }
-
-    SECTION("invalid chain identifier") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kInvalidChainIdConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
-        CHECK_THROWS_AS(result.get(), nlohmann::json::type_error);
-    }
-
-    SECTION("valid chain identifier") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBlockHash; }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kChainConfig; }));
-        auto result = boost::asio::co_spawn(pool, read_chain_id(transaction), boost::asio::use_future);
-        const auto chain_id = result.get();
-        CHECK(chain_id == 1);
     }
 }
 

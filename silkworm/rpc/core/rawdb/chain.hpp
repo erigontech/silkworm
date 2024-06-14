@@ -35,10 +35,6 @@ using Transactions = std::vector<silkworm::Transaction>;
 
 Task<uint64_t> read_header_number(ethdb::Transaction& tx, const evmc::bytes32& block_hash);
 
-Task<ChainConfig> read_chain_config(ethdb::Transaction& tx);
-
-Task<uint64_t> read_chain_id(ethdb::Transaction& tx);
-
 Task<evmc::bytes32> read_canonical_block_hash(ethdb::Transaction& tx, BlockNum block_number);
 
 Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);

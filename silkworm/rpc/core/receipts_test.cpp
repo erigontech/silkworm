@@ -34,7 +34,6 @@
 
 namespace silkworm::rpc::core {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InSequence;
 using testing::Invoke;

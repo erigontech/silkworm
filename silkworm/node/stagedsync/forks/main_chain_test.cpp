@@ -40,10 +40,10 @@ using namespace intx;  // just for literals
 
 class MainChain_ForTest : public stagedsync::MainChain {
   public:
-    using stagedsync::MainChain::interim_canonical_chain_;
-    using stagedsync::MainChain::interim_head_status_;
     using stagedsync::MainChain::current_head;
     using stagedsync::MainChain::insert_block;
+    using stagedsync::MainChain::interim_canonical_chain_;
+    using stagedsync::MainChain::interim_head_status_;
     using stagedsync::MainChain::MainChain;
     using stagedsync::MainChain::pipeline_;
     using stagedsync::MainChain::tx_;

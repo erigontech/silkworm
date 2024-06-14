@@ -31,7 +31,34 @@
 
 namespace silkworm::db {
 
-void Buffer::begin_block(uint64_t block_number) {
+template <class TFlatHashMap>
+size_t flat_hash_map_memory_size(size_t capacity) {
+    return sizeof(std::pair<const typename TFlatHashMap::key_type, typename TFlatHashMap::mapped_type>) * capacity;
+}
+
+static size_t flat_hash_map_capacity_for_size(size_t size, size_t current_capacity) {
+    // if the desired size is less than the growth threshold, the current capacity is enough
+    if (size * uint64_t{32} <= current_capacity * uint64_t{25}) {
+        return current_capacity;
+    }
+    // otherwise the capacity needs to double up
+    return current_capacity * 2;
+}
+
+template <class TFlatHashMap>
+size_t flat_hash_map_memory_size_after_inserts(const TFlatHashMap& map, size_t inserts_count) {
+    size_t capacity_after_inserts = flat_hash_map_capacity_for_size(map.size() + inserts_count, map.capacity());
+    return flat_hash_map_memory_size<TFlatHashMap>(capacity_after_inserts);
+}
+
+void Buffer::begin_block(uint64_t block_number, size_t updated_accounts_count) {
+    if (current_batch_state_size() > memory_limit_) {
+        throw MemoryLimitError();
+    }
+    if (flat_hash_map_memory_size_after_inserts(accounts_, updated_accounts_count) > memory_limit_) {
+        throw MemoryLimitError();
+    }
+
     block_number_ = block_number;
     changed_storage_.clear();
 }
@@ -61,11 +88,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
 
-        size_t payload_size{block_account_changes_.contains(block_number_) ? 0 : sizeof(BlockNum)};
-        if (block_account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-            payload_size += kAddressLength + encoded_initial.length();
-        }
-        batch_history_size_ += payload_size;
+        block_account_changes_[block_number_].insert_or_assign(address, encoded_initial);
     }
 
     if (equal) {
@@ -114,11 +137,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (block_number_ >= prune_history_threshold_) {
         changed_storage_.insert(address);
         ByteView initial_val{zeroless_view(initial.bytes)};
-        if (block_storage_changes_[block_number_][address][incarnation]
-                .insert_or_assign(location, initial_val)
-                .second) {
-            batch_history_size_ += kPlainStoragePrefixLength + kHashLength + initial_val.size();
-        }
+        block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, initial_val);
     }
 
     // Iterator in insert_or_assign return value "is pointing at the element that was inserted or updated"
@@ -256,7 +275,6 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         }
     }
 
-    batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
     if (should_trace) [[unlikely]] {
         log::Trace("Flushed history",
@@ -402,15 +420,12 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
         Bytes key{log_key(block_number, i)};
         Bytes value{cbor_encode(receipts[i].logs)};
 
-        if (logs_.insert_or_assign(key, value).second) {
-            batch_history_size_ += key.size() + value.size();
-        }
+        logs_.insert_or_assign(key, value);
     }
 
     Bytes key{block_key(block_number)};
     Bytes value{cbor_encode(receipts)};
     receipts_[key] = value;
-    batch_history_size_ += key.size() + value.size();
 }
 
 void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces) {
@@ -424,8 +439,6 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
     }
 
     if (!touched_accounts.empty()) {
-        batch_history_size_ += sizeof(BlockNum);
-
         absl::btree_set<Bytes> values;
         for (const auto& account : touched_accounts) {
             Bytes value(kAddressLength + 1, '\0');
@@ -436,7 +449,6 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
             if (traces.recipients.contains(account)) {
                 value[kAddressLength] |= 2;
             }
-            batch_history_size_ += value.size();
             values.insert(std::move(value));
         }
         call_traces_.emplace(block_number, values);

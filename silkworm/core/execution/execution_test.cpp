@@ -173,7 +173,7 @@ TEST_CASE("Execute block with tracing") {
     CallTracer call_tracer{call_traces};
     processor.evm().add_tracer(call_tracer);
 
-    REQUIRE(processor.execute_and_write_block(receipts) == ValidationResult::kOk);
+    REQUIRE(processor.execute_block(receipts) == ValidationResult::kOk);
 
     CHECK((block_tracer.block_start_called() && block_tracer.block_end_called()));
     CHECK(call_traces.senders.empty());

@@ -89,16 +89,19 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
+            db::Buffer buffer{txn};
+            buffer.set_historical_block(block_num);
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             // Execute the block and retrieve the receipts
-            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(res) << " at block " << block_num << "\n";
             }
+
+            processor.flush_state();
 
             // There is one receipt per transaction
             assert(block.transactions.size() == receipts.size());

@@ -118,6 +118,7 @@ jobs:
                     --commit $(git rev-parse HEAD) \
                     --test_name rpc-performance-test-${servers[i-1]}-$method \
                     --chain mainnet \
+                    --runner ${{ runner.name }} \
                     --db_version $db_version \
                     --outcome success \ 
                     --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
@@ -130,6 +131,7 @@ jobs:
                      --commit $(git rev-parse HEAD) \
                      --test_name rpc-performance-test-${servers[i-1]}-$method \
                      --chain mainnet \
+                     --runner ${{ runner.name }} \
                      --db_version $db_version \
                      --outcome failure
                fi

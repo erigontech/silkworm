@@ -41,12 +41,8 @@ Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::by
 
 Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx);
 
-Task<uint64_t> read_cumulative_transaction_count(ethdb::Transaction& tx, BlockNum block_number);
-
 Task<intx::uint256> read_total_issued(ethdb::Transaction& tx, BlockNum block_number);
 
 Task<intx::uint256> read_total_burnt(ethdb::Transaction& tx, BlockNum block_number);
-
-Task<intx::uint256> read_cumulative_gas_used(ethdb::Transaction& tx, BlockNum block_number);
 
 }  // namespace silkworm::rpc::core::rawdb

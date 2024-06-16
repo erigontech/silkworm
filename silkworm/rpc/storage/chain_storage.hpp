@@ -116,7 +116,6 @@ class ChainStorage {
 
     // Task<intx::uint256> read_total_burnt(BlockNum block_number);
 
-    // Task<intx::uint256> read_cumulative_gas_used(BlockNum block_number);
 };
 
 }  // namespace silkworm::rpc

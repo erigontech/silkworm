@@ -190,28 +190,6 @@ TEST_CASE("read_cumulative_transaction_count") {
     }
 }
 
-TEST_CASE("read_total_issued") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    WorkerPool pool{1};
-    test::MockTransaction transaction;
-
-    const uint64_t block_number{20'000};
-    EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalIssued; }));
-    auto result = boost::asio::co_spawn(pool, read_total_issued(transaction, block_number), boost::asio::use_future);
-    CHECK(result.get() == 7);
-}
-
-TEST_CASE("read_total_burnt") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    WorkerPool pool{1};
-    test::MockTransaction transaction;
-
-    const uint64_t block_number{20'000};
-    EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kTotalBurnt; }));
-    auto result = boost::asio::co_spawn(pool, read_total_burnt(transaction, block_number), boost::asio::use_future);
-    CHECK(result.get() == 5);
-}
-
 TEST_CASE("read_cumulative_gas_used") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("read_cumulative_gas_used") {

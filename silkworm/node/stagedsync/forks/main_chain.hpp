@@ -75,6 +75,7 @@ class MainChain {
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     bool extends_last_fork_choice(BlockNum, Hash) const;
     bool extends(BlockId block, BlockId supposed_parent) const;
+    bool is_ancestor(BlockId supposed_parent, BlockId block) const;
     bool is_finalized_canonical(Hash) const;
     // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
     std::optional<BlockHeader> get_header(Hash) const;

@@ -49,7 +49,6 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
-    asio::io_context io;
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
     test_util::TaskRunner runner;
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
@@ -715,6 +714,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
+        
         CHECK(db::read_block_number(tx2, block1_hash).has_value());
         CHECK(db::read_block_number(tx2, block2_hash).has_value());
         tx2.abort();

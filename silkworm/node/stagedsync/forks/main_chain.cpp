@@ -28,6 +28,8 @@
 #include "extending_fork.hpp"
 
 namespace {
+
+//! @brief Handles the transaction lifecycle for long-standing and per-request transactions
 class TransactionHandler {
   public:
     TransactionHandler(silkworm::db::RWTxnManaged& txn, silkworm::db::RWAccess& db_access, bool keep_db_txn_open = true)
@@ -153,9 +155,7 @@ std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header, 
 std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     auto header = get_header(header_hash);
-    if (!header) {
-        return std::nullopt;
-    }
+    if (!header) return std::nullopt;
     return find_forking_point(*header, header_hash);
 }
 
@@ -436,12 +436,8 @@ std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const 
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     std::optional<TotalDifficulty> td;
     auto header = get_header(header_hash);
-
-    if (header) {
-        td = db::read_total_difficulty(tx_, header->number, header_hash);
-    }
-
-    return td;
+    if (!header) return {};
+    return db::read_total_difficulty(tx_, header->number, header_hash);
 }
 
 std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
@@ -473,13 +469,18 @@ std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
     return data_model_.read_block_number(header_hash);
 }
 
-// delete?
+bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {
+    TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
+    return extends(block, supposed_parent);
+}
+
 bool MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const {
+    TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     return extends({height, hash}, last_fork_choice_);
 }
 
-// delete?
 bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
+    TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     while (block.number > supposed_parent.number) {
         auto header = get_header(block.number, block.hash);
         if (!header) return false;

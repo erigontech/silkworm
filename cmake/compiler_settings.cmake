@@ -14,6 +14,8 @@
    limitations under the License.
 ]]
 
+include(${CMAKE_CURRENT_LIST_DIR}/compiler_settings_sanitize.cmake)
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   message("MSVC_VERSION = ${MSVC_VERSION}")
@@ -91,10 +93,7 @@ else()
   message(WARNING "${CMAKE_CXX_COMPILER_ID} is not a supported compiler. Use at your own risk.")
 endif()
 
-if(SILKWORM_SANITIZE)
-  set(SILKWORM_SANITIZE_COMPILER_OPTIONS -fno-omit-frame-pointer -fno-sanitize-recover=all
-                                         -fsanitize=${SILKWORM_SANITIZE}
-  )
+if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
   add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_compile_definitions(SILKWORM_SANITIZE)

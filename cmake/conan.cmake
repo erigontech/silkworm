@@ -14,6 +14,8 @@
    limitations under the License.
 ]]
 
+include(${CMAKE_CURRENT_LIST_DIR}/compiler_settings_sanitize.cmake)
+
 function(guess_conan_profile)
   if("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "")
     set(ARCH_NAME "")
@@ -64,9 +66,39 @@ if(NOT DEFINED CONAN_PROFILE)
 endif()
 message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
 
+set(CONAN_BUILD "missing")
+set(CONAN_CXXFLAGS_ARG)
+set(CONAN_OPTIONS)
+
+if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
+  set(CONAN_CXXFLAGS ${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+
+  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    list(APPEND CONAN_CXXFLAGS "-mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endif()
+
+  list(JOIN CONAN_CXXFLAGS "\", \"" CONAN_CXXFLAGS_STR)
+  set(CONAN_CXXFLAGS_STR "[\"${CONAN_CXXFLAGS_STR}\"]")
+  set(CONAN_CXXFLAGS_ARG "tools.build:cxxflags=${CONAN_CXXFLAGS_STR}")
+
+  list(APPEND CONAN_OPTIONS "boost:zlib=False")
+
+  # libraries that needs to be rebuilt with sanitize flags
+  # cmake-format: off
+  set(CONAN_BUILD
+      abseil
+      boost
+      grpc
+      protobuf
+  )
+  # cmake-format: on
+endif()
+
 conan_cmake_install(
   PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
   INSTALL_FOLDER "${CONAN_BINARY_DIR}"
-  BUILD missing
-  PROFILE "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}" OPTIONS "${CMAKE_CONAN_OPTIONS}"
+  BUILD ${CONAN_BUILD}
+  OPTIONS ${CONAN_OPTIONS}
+  PROFILE "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}"
+  CONF "${CONAN_CXXFLAGS_ARG}"
 )

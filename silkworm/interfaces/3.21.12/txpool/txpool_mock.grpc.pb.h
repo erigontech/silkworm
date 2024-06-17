@@ -2,11 +2,14 @@
 // If you make any local change, they will be lost.
 // source: txpool/txpool.proto
 
+#ifndef GRPC_MOCK_txpool_2ftxpool_2eproto__INCLUDED
+#define GRPC_MOCK_txpool_2ftxpool_2eproto__INCLUDED
+
 #include "txpool/txpool.pb.h"
 #include "txpool/txpool.grpc.pb.h"
 
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/sync_stream.h>
 #include <gmock/gmock.h>
 namespace txpool {
 
@@ -41,5 +44,7 @@ class MockTxpoolStub : public Txpool::StubInterface {
   MOCK_METHOD3(PrepareAsyncNonceRaw, ::grpc::ClientAsyncResponseReaderInterface< ::txpool::NonceReply>*(::grpc::ClientContext* context, const ::txpool::NonceRequest& request, ::grpc::CompletionQueue* cq));
 };
 
-} // namespace txpool
+}  // namespace txpool
 
+
+#endif  // GRPC_MOCK_txpool_2ftxpool_2eproto__INCLUDED

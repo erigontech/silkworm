@@ -159,7 +159,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     return ValidationResult::kOk;
 }
 
-ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt>& receipts) noexcept {
+ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipts) noexcept {
     if (const ValidationResult res{execute_block_no_post_validation(receipts)}; res != ValidationResult::kOk) {
         return res;
     }
@@ -188,9 +188,11 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
         return ValidationResult::kWrongLogsBloom;
     }
 
-    state_.write_to_db(header.number);
-
     return ValidationResult::kOk;
+}
+
+void ExecutionProcessor::flush_state() {
+    state_.write_to_db(evm_.block().header.number);
 }
 
 //! \brief Notify the registered tracers at the start of block execution.

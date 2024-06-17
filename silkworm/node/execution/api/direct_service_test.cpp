@@ -95,10 +95,8 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execu
     for (const auto& [stagedsync_result, api_result] : test_vectors) {
         SECTION("result: " + std::to_string(stagedsync_result.index())) {
             EXPECT_CALL(*mock_execution_engine, verify_chain(new_head.hash))
-                .WillOnce(InvokeWithoutArgs([&, result = stagedsync_result]() -> stagedsync::VerificationResultFuture {
-                    stagedsync::VerificationResultPromise promise{context().get_executor()};
-                    promise.set_value(result);
-                    return promise.get_future();
+                .WillOnce(InvokeWithoutArgs([result = stagedsync_result]() -> Task<stagedsync::VerificationResult> {
+                    co_return result;
                 }));
             auto future = spawn_future(direct_service->validate_chain(new_head));
             context().run();

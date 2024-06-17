@@ -324,7 +324,7 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].set_sender(sender);
 
-        db::Buffer buffer{txn, 0};
+        db::Buffer buffer{txn};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -387,7 +387,7 @@ TEST_CASE("Sync Stages") {
             stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
-            db::Buffer buffer2{txn, 0};
+            db::Buffer buffer2{txn};
 
             std::optional<Account> contract_account{buffer2.read_account(contract_address)};
             REQUIRE(contract_account.has_value());

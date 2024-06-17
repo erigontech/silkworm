@@ -199,21 +199,18 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
     auto log_time{std::chrono::steady_clock::now()};
 
     try {
-        db::Buffer buffer(txn, prune_history_threshold);
-        std::vector<Receipt> receipts;
+        db::Buffer buffer{txn};
+        buffer.set_prune_history_threshold(prune_history_threshold);
+        buffer.set_memory_limit(batch_size_);
 
-        // Transform batch_size limit into Ggas
-        size_t gas_max_history_size{batch_size_ * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
-        size_t gas_max_batch_size{gas_max_history_size * 20};   // 256Ggas -> 5Tgas roughly
-        size_t gas_history_size{0};
-        size_t gas_batch_size{0};
+        std::vector<Receipt> receipts;
 
         {
             std::unique_lock progress_lock(progress_mtx_);
             lap_time_ = std::chrono::steady_clock::now();
         }
 
-        while (true) {
+        while (block_num_ <= max_block_num) {
             if (prefetched_blocks_.empty()) {
                 throw_if_stopping();
                 prefetch_blocks(txn, block_num_, max_block_num);
@@ -236,7 +233,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             CallTracer tracer{traces};
             processor.evm().add_tracer(tracer);
 
-            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 // Persist work done so far
                 if (block_num_ >= prune_receipts_threshold) {
                     buffer.insert_receipts(block_num_, receipts);
@@ -256,6 +253,13 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 return Stage::Result::kInvalidBlock;
             }
 
+            try {
+                processor.flush_state();
+            } catch (const db::Buffer::MemoryLimitError&) {
+                // batch done
+                break;
+            }
+
             if (block_num_ >= prune_receipts_threshold) {
                 buffer.insert_receipts(block_num_, receipts);
             }
@@ -263,31 +267,24 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 buffer.insert_call_traces(block_num_, traces);
             }
 
+            buffer.write_history_to_db();
+
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
             ++processed_blocks_;
             processed_transactions_ += block.transactions.size();
             processed_gas_ += block.header.gas_used;
-            gas_batch_size += block.header.gas_used;
-            gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
             prefetched_blocks_.pop_front();
-
-            // Flush whole buffer if time to
-            if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
-                log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_to_db();
-                break;
-            } else if (gas_history_size >= gas_max_history_size) {
-                // or flush history only if needed
-                log::Trace(log_prefix_, {"buffer", "history", "size", human_size(buffer.current_batch_state_size())});
-                buffer.write_history_to_db();
-                gas_history_size = 0;
-            }
-
             ++block_num_;
         }
+
+        // update block_num_ to point to the last successfully executed block
+        block_num_--;
+
+        log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
+        buffer.write_to_db();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

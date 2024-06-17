@@ -26,6 +26,8 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/test_util/task_runner.hpp>
+
 #include "active_component.hpp"
 
 namespace silkworm {
@@ -46,15 +48,14 @@ class TestException : public std::runtime_error {
 };
 
 TEST_CASE("awaitable future") {
-    asio::io_context io;
-    asio::executor_work_guard<asio::io_context::executor_type> work_guard{io.get_executor()};
-    AwaitablePromise<int> promise{io.get_executor()};
+    test_util::TaskRunner runner;
+    AwaitablePromise<int> promise{runner.context().get_executor()};
 
     SECTION("trivial use") {
         auto future = promise.get_future();
 
         promise.set_value(42);
-        auto value = future.get();
+        auto value = runner.run(future.get());
 
         CHECK(value == 42);
     }
@@ -63,7 +64,7 @@ TEST_CASE("awaitable future") {
         promise.set_value(42);
 
         auto future = promise.get_future();
-        auto value = future.get();
+        auto value = runner.run(future.get());
 
         CHECK(value == 42);
     }
@@ -73,7 +74,7 @@ TEST_CASE("awaitable future") {
 
         promise.set_exception(std::make_exception_ptr(TestException()));
 
-        CHECK_THROWS_AS(future.get(), TestException);
+        CHECK_THROWS_AS(runner.run(future.get()), TestException);
     }
 
     SECTION("variation of setting exception instead of value") {
@@ -85,7 +86,7 @@ TEST_CASE("awaitable future") {
             promise.set_exception(std::current_exception());
         }
 
-        CHECK_THROWS_AS(future.get(), TestException);
+        CHECK_THROWS_AS(runner.run(future.get()), TestException);
     }
 
     SECTION("setting value two times fails") {
@@ -101,14 +102,16 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("returning the future from a function") {
+        asio::io_context& io = runner.context();
         auto future = create_promise_and_set_value(io.get_executor(), 42);
 
-        auto value = future.get();
+        auto value = runner.run(future.get());
 
         CHECK(value == 42);
     }
 
     SECTION("returning the future from a function (variation)") {
+        asio::io_context& io = runner.context();
         auto returned_future = [executor = io.get_executor()]() {
             concurrency::AwaitablePromise<int> promise1{executor};
             auto future = promise1.get_future();
@@ -116,50 +119,40 @@ TEST_CASE("awaitable future") {
             return future;
         }();
 
-        auto value = returned_future.get();
+        auto value = runner.run(returned_future.get());
 
         CHECK(value == 42);
     }
 
     SECTION("writing and reading from different threads") {
-        auto future = promise.get_future();
-
         int value{0};
         std::thread concurrent(
-            [&](AwaitableFuture<int>&& moved_future) {
-                value = moved_future.get();
-                io.stop();
+            [&](AwaitableFuture<int> moved_future) {
+                value = runner.run(moved_future.get());
             },
-            std::move(future));
+            promise.get_future());
 
         promise.set_value(42);
 
-        io.run();
         concurrent.join();
 
         CHECK(value == 42);
     }
 
     SECTION("writing and reading from different threads") {
-        auto future = promise.get_future();
-
         int value{0};
         std::thread concurrent(
-            [&](AwaitableFuture<int>&& moved_future) {
-                value = moved_future.get();
-                io.stop();
+            [&](AwaitableFuture<int> moved_future) {
+                value = runner.run(moved_future.get());
             },
-            std::move(future));
+            promise.get_future());
 
-        asio::co_spawn(
-            io,
+        runner.run(
             [&]() -> Task<void> {
                 promise.set_value(42);
                 co_return;
-            },
-            asio::detached);
+            }());
 
-        io.run();
         concurrent.join();
 
         CHECK(value == 42);
@@ -168,17 +161,13 @@ TEST_CASE("awaitable future") {
     SECTION("using coroutines in read in the same io_context, write before read") {
         int value{0};
 
-        asio::co_spawn(
-            io,
+        promise.set_value(42);
+
+        runner.run(
             [&]() -> Task<void> {
                 auto future = promise.get_future();
-                value = co_await future.get_async();
-                io.stop();
-            },
-            asio::detached);
-
-        promise.set_value(42);
-        io.run();
+                value = co_await future.get();
+            }());
 
         CHECK(value == 42);
     }
@@ -186,17 +175,13 @@ TEST_CASE("awaitable future") {
     SECTION("variation of using coroutines in the same io_context, write before read") {
         auto future = promise.get_future();
 
-        int value{0};
-        asio::co_spawn(
-            io,
-            [&]() -> Task<void> {
-                value = co_await future.get_async();
-                io.stop();
-            },
-            asio::detached);
-
         promise.set_value(42);
-        io.run();
+
+        int value{0};
+        runner.run(
+            [&]() -> Task<void> {
+                value = co_await future.get();
+            }());
 
         CHECK(value == 42);
     }
@@ -205,27 +190,25 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value{0};
-        auto lambda = [&](AwaitableFuture<int>&& moved_future) -> Task<void> {
-            value = co_await moved_future.get_async();
-            io.stop();
+        auto lambda = [&](AwaitableFuture<int> moved_future) -> Task<void> {
+            value = co_await moved_future.get();
         };
 
-        asio::co_spawn(io, lambda(std::move(future)), asio::detached);
-
         promise.set_value(42);
-        io.run();
+        runner.run(lambda(std::move(future)));
 
         CHECK(value == 42);
     }
 
     SECTION("using coroutine for both read and write, read before write") {
+        asio::io_context& io = runner.context();
         int value{0};
 
         asio::co_spawn(
             io,
             [&]() -> Task<void> {
                 auto future = promise.get_future();
-                value = co_await future.get_async();
+                value = co_await future.get();
                 io.stop();
             },
             asio::detached);
@@ -244,6 +227,7 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("cancellation after read") {
+        asio::io_context& io = runner.context();
         int value{0};
         boost::system::error_code code;
 
@@ -253,7 +237,7 @@ TEST_CASE("awaitable future") {
             [&]() -> Task<void> {
                 auto future = promise.get_future();
                 try {
-                    value = co_await future.get_async();
+                    value = co_await future.get();
                 } catch (const boost::system::system_error& se) {
                     code = se.code();
                 }

@@ -18,7 +18,11 @@
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf REQUIRED)
 
-set(PROTOBUF_PROTOC "${Protobuf_PROTOC_EXECUTABLE}")
+find_program(
+  PROTOBUF_PROTOC protoc
+  PATHS "${protobuf_INCLUDE_DIR}/../bin" NO_CACHE REQUIRED
+  NO_DEFAULT_PATH
+)
 if(NOT EXISTS "${PROTOBUF_PROTOC}")
   message(FATAL_ERROR "PROTOBUF_PROTOC not found at '${PROTOBUF_PROTOC}'")
 endif()
@@ -78,6 +82,7 @@ create_symlink_target(generate_types_proto_symlink "${OUT_PATH_SYMLINK}/types" "
 
 add_custom_command(
   OUTPUT ${TYPES_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
   DEPENDS ${TYPES_PROTO} generate_types_proto_symlink
   COMMENT "Running C++ gRPC compiler on ${TYPES_PROTO}"
@@ -99,6 +104,7 @@ create_symlink_target(generate_execution_grpc_symlink "${OUT_PATH_SYMLINK}/execu
 
 add_custom_command(
   OUTPUT ${EXECUTION_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${EXECUTION_PROTO}"
   DEPENDS ${EXECUTION_PROTO} generate_execution_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${EXECUTION_PROTO}"
@@ -124,6 +130,7 @@ create_symlink_target(generate_sentry_grpc_symlink "${OUT_PATH_SYMLINK}/p2psentr
 
 add_custom_command(
   OUTPUT ${SENTRY_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
   DEPENDS ${SENTRY_PROTO} generate_sentry_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${SENTRY_PROTO}"
@@ -149,6 +156,7 @@ create_symlink_target(generate_remote_grpc_symlink "${OUT_PATH_SYMLINK}/remote" 
 
 add_custom_command(
   OUTPUT ${KV_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${KV_PROTO}"
   DEPENDS ${KV_PROTO} generate_remote_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
@@ -172,6 +180,7 @@ set(ETHBACKEND_SOURCES_SYMLINK
 
 add_custom_command(
   OUTPUT ${ETHBACKEND_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${ETHBACKEND_PROTO}"
   DEPENDS ${ETHBACKEND_PROTO} generate_remote_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
@@ -197,6 +206,7 @@ create_symlink_target(generate_txpool_grpc_symlink "${OUT_PATH_SYMLINK}/txpool" 
 
 add_custom_command(
   OUTPUT ${MINING_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${MINING_PROTO}"
   DEPENDS ${MINING_PROTO} generate_txpool_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
@@ -220,6 +230,7 @@ set(TXPOOL_SOURCES_SYMLINK
 
 add_custom_command(
   OUTPUT ${TXPOOL_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${TXPOOL_PROTO}"
   DEPENDS ${TXPOOL_PROTO} generate_txpool_grpc_symlink
   COMMENT "Running C++ gRPC compiler on ${TXPOOL_PROTO}"

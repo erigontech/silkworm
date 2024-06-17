@@ -161,9 +161,7 @@ std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) co
 
 bool MainChain::is_finalized_canonical(BlockId block) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    if (block.number > last_fork_choice_.number) {
-        return false;
-    }
+    if (block.number > last_fork_choice_.number) return false;
     return (interim_canonical_chain_.get_hash(block.number) == block.hash);
 }
 
@@ -497,12 +495,8 @@ bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
 bool MainChain::is_finalized_canonical(Hash block_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     auto header = get_header(block_hash);
-    if (!header) {
-        return false;
-    }
-    if (header->number > last_fork_choice_.number) {
-        return false;
-    }
+    if (!header) return false;
+    if (header->number > last_fork_choice_.number) return false;
     auto canonical_hash_at_same_height = interim_canonical_chain_.get_hash(header->number);
     return canonical_hash_at_same_height == block_hash;
 }

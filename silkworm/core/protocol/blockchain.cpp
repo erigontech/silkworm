@@ -93,9 +93,11 @@ ValidationResult Blockchain::execute_block(const Block& block, bool check_state_
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 
-    if (const auto res{processor.execute_and_write_block(receipts_)}; res != ValidationResult::kOk) {
+    if (const ValidationResult res = processor.execute_block(receipts_); res != ValidationResult::kOk) {
         return res;
     }
+
+    processor.flush_state();
 
     if (check_state_root) {
         evmc::bytes32 state_root{state_.state_root_hash()};

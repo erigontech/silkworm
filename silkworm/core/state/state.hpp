@@ -72,7 +72,7 @@ class State : public BlockState {
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    virtual void begin_block(BlockNum block_number) = 0;
+    virtual void begin_block(BlockNum block_number, size_t updated_accounts_count) = 0;
 
     virtual void update_account(const evmc::address& address, std::optional<Account> initial,
                                 std::optional<Account> current) = 0;

@@ -51,7 +51,7 @@ TEST_CASE("Storage update") {
     upsert_storage_value(*state, key, location_a.bytes, value_a1.bytes);
     upsert_storage_value(*state, key, location_b.bytes, value_b.bytes);
 
-    Buffer buffer{txn, 0};
+    Buffer buffer{txn};
 
     CHECK(buffer.read_storage(address, kDefaultIncarnation, location_a) == value_a1);
 
@@ -60,7 +60,6 @@ TEST_CASE("Storage update") {
                           /*initial=*/value_a1, /*current=*/value_a2);
 
     REQUIRE(buffer.storage_changes().empty() == false);
-    REQUIRE(buffer.current_batch_history_size() != 0);
 
     buffer.write_to_db();
 
@@ -79,7 +78,6 @@ TEST_CASE("Storage update") {
                           /*initial=*/value_a2, /*current=*/value_a3);
 
     REQUIRE(buffer.storage_changes().empty() == false);
-    REQUIRE(buffer.current_batch_history_size() != 0);
 
     // Ask state buffer to not write change sets
     buffer.write_to_db(/*write_change_sets=*/false);
@@ -108,14 +106,12 @@ TEST_CASE("Account update") {
         Account current_account;
         current_account.balance = kEther;
 
-        Buffer buffer{txn, 0};
-        buffer.begin_block(1);
+        Buffer buffer{txn};
+        buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/std::nullopt, current_account);
         REQUIRE(!buffer.account_changes().empty());
         // Current state batch: current account address + current account encoding
         CHECK(buffer.current_batch_state_size() == kAddressLength + current_account.encoding_length_for_storage());
-        // State history batch: current block + initial account address + initial account encoding (empty)
-        CHECK(buffer.current_batch_history_size() == sizeof(uint64_t) + kAddressLength);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
@@ -143,14 +139,12 @@ TEST_CASE("Account update") {
         current_account.nonce = 2;
         current_account.balance = kEther;
 
-        Buffer buffer{txn, 0};
-        buffer.begin_block(1);
+        Buffer buffer{txn};
+        buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
         REQUIRE(!buffer.account_changes().empty());
         // Current state batch: current account address + current account encoding
         CHECK(buffer.current_batch_state_size() == kAddressLength + current_account.encoding_length_for_storage());
-        // State history batch: current block + initial account address + initial account encoding
-        CHECK(buffer.current_batch_history_size() == sizeof(uint64_t) + kAddressLength + initial_account.encoding_length_for_storage());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
@@ -177,14 +171,12 @@ TEST_CASE("Account update") {
         account.incarnation = kDefaultIncarnation;
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
 
-        Buffer buffer{txn, 0};
-        buffer.begin_block(1);
+        Buffer buffer{txn};
+        buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/account, /*current=*/std::nullopt);
         REQUIRE(!buffer.account_changes().empty());
         // Current state batch: initial account for delete + (initial account + incarnation) for incarnation
         CHECK(buffer.current_batch_state_size() == kAddressLength + (kAddressLength + kIncarnationLength));
-        // State history batch: current block + initial account address + initial account encoding
-        CHECK(buffer.current_batch_history_size() == sizeof(uint64_t) + kAddressLength + account.encoding_length_for_storage());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
@@ -201,14 +193,14 @@ TEST_CASE("Account update") {
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
 
         // Block 1: create contract account
-        Buffer buffer{txn, 0};
-        buffer.begin_block(1);
+        Buffer buffer{txn};
+        buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/std::nullopt, /*current=*/account);
         REQUIRE(!buffer.account_changes().empty());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         // Block 2 : destroy contract and recreate account as EOA
-        buffer.begin_block(2);
+        buffer.begin_block(2, 1);
         Account eoa;
         eoa.balance = kEther;
         buffer.update_account(address, /*initial=*/account, /*current=*/eoa);
@@ -232,12 +224,12 @@ TEST_CASE("Account update") {
         current_account.nonce = 2;
         current_account.balance = kEther;
 
-        Buffer buffer{txn, 0};
-        buffer.begin_block(1);
+        Buffer buffer{txn};
+        buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
         REQUIRE(buffer.account_changes().empty());
-        CHECK(buffer.current_batch_state_size() == 0);    // No change in current state batch
-        CHECK(buffer.current_batch_history_size() == 0);  // No change in state history batch
+        // No change in current state batch
+        CHECK(buffer.current_batch_state_size() == 0);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};

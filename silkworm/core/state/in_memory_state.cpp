@@ -142,7 +142,7 @@ void InMemoryState::insert_receipts(BlockNum, const std::vector<Receipt>&) {}
 
 void InMemoryState::insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) {}
 
-void InMemoryState::begin_block(BlockNum block_number) {
+void InMemoryState::begin_block(BlockNum block_number, size_t /*updated_accounts_count*/) {
     block_number_ = block_number;
     account_changes_.erase(block_number);
     storage_changes_.erase(block_number);

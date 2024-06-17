@@ -378,7 +378,7 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
         CHECK_NOTHROW(remote_state.canonize_block(0, evmc::bytes32{}));
         CHECK_NOTHROW(remote_state.decanonize_block(0));
         CHECK_NOTHROW(remote_state.insert_receipts(0, std::vector<silkworm::Receipt>{}));
-        CHECK_NOTHROW(remote_state.begin_block(0));
+        CHECK_NOTHROW(remote_state.begin_block(0, 0));
         CHECK_NOTHROW(remote_state.update_account(evmc::address{}, std::nullopt, std::nullopt));
         CHECK_NOTHROW(remote_state.update_account_code(evmc::address{}, 0, evmc::bytes32{}, silkworm::ByteView{}));
         CHECK_NOTHROW(remote_state.update_storage(evmc::address{}, 0, evmc::bytes32{}, evmc::bytes32{}, evmc::bytes32{}));

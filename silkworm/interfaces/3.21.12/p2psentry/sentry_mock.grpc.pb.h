@@ -2,11 +2,14 @@
 // If you make any local change, they will be lost.
 // source: p2psentry/sentry.proto
 
+#ifndef GRPC_MOCK_p2psentry_2fsentry_2eproto__INCLUDED
+#define GRPC_MOCK_p2psentry_2fsentry_2eproto__INCLUDED
+
 #include "p2psentry/sentry.pb.h"
 #include "p2psentry/sentry.grpc.pb.h"
 
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/sync_stream.h>
 #include <gmock/gmock.h>
 namespace sentry {
 
@@ -59,5 +62,7 @@ class MockSentryStub : public Sentry::StubInterface {
   MOCK_METHOD3(PrepareAsyncNodeInfoRaw, ::grpc::ClientAsyncResponseReaderInterface< ::types::NodeInfoReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
 };
 
-} // namespace sentry
+}  // namespace sentry
 
+
+#endif  // GRPC_MOCK_p2psentry_2fsentry_2eproto__INCLUDED

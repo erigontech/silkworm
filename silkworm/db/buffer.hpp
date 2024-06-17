@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <limits>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 #include <absl/container/btree_map.h>
@@ -37,10 +39,26 @@ namespace silkworm::db {
 
 class Buffer : public State {
   public:
-    // txn must be valid (its handle != nullptr)
-    explicit Buffer(RWTxn& txn, BlockNum prune_history_threshold,
-                    std::optional<BlockNum> historical_block = std::nullopt)
-        : txn_{txn}, access_layer_{txn_}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
+    explicit Buffer(RWTxn& txn)
+        : txn_{txn},
+          access_layer_{txn_} {}
+
+    /** @name Settings */
+    //!@{
+
+    void set_prune_history_threshold(BlockNum prune_history_threshold) {
+        prune_history_threshold_ = prune_history_threshold;
+    }
+
+    void set_historical_block(BlockNum historical_block) {
+        historical_block_ = historical_block;
+    }
+
+    void set_memory_limit(size_t memory_limit) {
+        memory_limit_ = memory_limit;
+    }
+
+    //!@}
 
     /** @name Readers */
     //!@{
@@ -90,7 +108,7 @@ class Buffer : public State {
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    void begin_block(uint64_t block_number) override;
+    void begin_block(uint64_t block_number, size_t updated_accounts_count) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,
                         std::optional<Account> current) override;
@@ -118,9 +136,6 @@ class Buffer : public State {
     //! \brief Approximate size of accrued state in bytes.
     [[nodiscard]] size_t current_batch_state_size() const noexcept { return batch_state_size_; }
 
-    //! \brief Approximate size of accrued history in bytes.
-    [[nodiscard]] size_t current_batch_history_size() const noexcept { return batch_history_size_; }
-
     //! \brief Persists *all* accrued contents into db
     //! \remarks write_history_to_db is implicitly called
     //! @param write_change_sets flag indicating if state changes should be written or not (default: true)
@@ -133,15 +148,25 @@ class Buffer : public State {
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
 
+    class MemoryLimitError : public std::runtime_error {
+      public:
+        MemoryLimitError() : std::runtime_error("db::Buffer::MemoryLimitError") {}
+    };
+
   private:
     RWTxn& txn_;
     db::DataModel access_layer_;
-    uint64_t prune_history_threshold_;
-    std::optional<uint64_t> historical_block_{};
 
-    absl::btree_map<Bytes, BlockHeader> headers_{};
-    absl::btree_map<Bytes, BlockBody> bodies_{};
-    absl::btree_map<Bytes, intx::uint256> difficulty_{};
+    // Settings
+
+    uint64_t prune_history_threshold_{0};
+    std::optional<uint64_t> historical_block_;
+
+    size_t memory_limit_{std::numeric_limits<size_t>::max()};
+
+    absl::btree_map<Bytes, BlockHeader> headers_;
+    absl::btree_map<Bytes, BlockBody> bodies_;
+    absl::btree_map<Bytes, intx::uint256> difficulty_;
 
     // State
 
@@ -164,8 +189,8 @@ class Buffer : public State {
     absl::btree_map<Bytes, Bytes> logs_;
     absl::btree_map<BlockNum, absl::btree_set<Bytes>> call_traces_;
 
-    mutable size_t batch_state_size_{0};    // Accounts in memory data for state
-    mutable size_t batch_history_size_{0};  // Accounts in memory data for history
+    // Accounts in memory data for state
+    mutable size_t batch_state_size_{0};
 
     // Current block stuff
     uint64_t block_number_{0};

@@ -23,6 +23,9 @@
 
 namespace silkworm::sentry::rlpx::crypto {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
     assert(key.size() == 32);
 
@@ -42,5 +45,7 @@ Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
 
     return hash;
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace silkworm::sentry::rlpx::crypto

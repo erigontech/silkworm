@@ -82,7 +82,6 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
   set(CONAN_CXXFLAGS_ARG "tools.build:cxxflags=${CONAN_CXXFLAGS_STR}")
 
   list(APPEND CONAN_OPTIONS "boost:zlib=False")
-  list(APPEND CONAN_OPTIONS "mimalloc:override=False")
 
   # libraries that needs to be rebuilt with sanitize flags
   # cmake-format: off

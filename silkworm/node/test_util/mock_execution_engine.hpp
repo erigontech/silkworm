@@ -41,7 +41,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
     MOCK_METHOD((void), close, ());
 
     MOCK_METHOD((void), insert_blocks, (const std::vector<std::shared_ptr<Block>>&), (override));
-    MOCK_METHOD((stagedsync::VerificationResultFuture), verify_chain, (Hash), (override));
+    MOCK_METHOD((Task<stagedsync::VerificationResult>), verify_chain, (Hash), (override));
     MOCK_METHOD((bool), notify_fork_choice_update1, (Hash));
     MOCK_METHOD((bool), notify_fork_choice_update2, (Hash, Hash));
     MOCK_METHOD((bool), notify_fork_choice_update3, (Hash, Hash, Hash));

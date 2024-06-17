@@ -579,41 +579,6 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
     co_return;
 }
 
-// https://eth.wiki/json-rpc/API#erigon_cumulativeChainTraffic
-Task<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto& params = request["params"];
-    if (params.size() != 1) {
-        auto error_msg = "invalid erigon_cumulativeChainTraffic params: " + params.dump();
-        SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
-        co_return;
-    }
-    const auto block_id = params[0].get<std::string>();
-
-    SILK_DEBUG << "block_id: " << block_id;
-
-    auto tx = co_await database_->begin();
-
-    ChainTraffic chain_traffic;
-
-    try {
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
-        chain_traffic.cumulative_transactions_count = co_await core::rawdb::read_cumulative_transaction_count(*tx, block_number);
-        chain_traffic.cumulative_gas_used = co_await core::rawdb::read_cumulative_gas_used(*tx, block_number);
-
-        reply = make_json_content(request, chain_traffic);
-    } catch (const std::exception& e) {
-        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_content(request, chain_traffic);
-    } catch (...) {
-        SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
-    }
-
-    co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
-}
-
 // https://eth.wiki/json-rpc/API#erigon_nodeInfo
 Task<void> ErigonRpcApi::handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
     try {

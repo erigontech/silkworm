@@ -104,8 +104,8 @@ class MainChain {
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;
-    CanonicalChain canonical_chain_;
-    VerificationResult canonical_head_status_;
+    CanonicalChain interim_canonical_chain_;
+    VerificationResult interim_head_status_;
     BlockId last_fork_choice_;
     BlockId last_finalized_head_;
 };

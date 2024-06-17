@@ -434,7 +434,6 @@ std::optional<TotalDifficulty> MainChain::get_header_td(BlockNum header_height, 
 
 std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    std::optional<TotalDifficulty> td;
     auto header = get_header(header_hash);
     if (!header) return {};
     return db::read_total_difficulty(tx_, header->number, header_hash);

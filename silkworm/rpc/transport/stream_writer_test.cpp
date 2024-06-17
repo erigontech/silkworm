@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/test_util/context_test_base.hpp>

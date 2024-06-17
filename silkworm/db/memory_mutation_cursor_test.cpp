@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/mdbx/memory_mutation_cursor.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>

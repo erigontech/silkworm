@@ -20,7 +20,7 @@
 #include <fstream>
 #include <stdexcept>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
 
@@ -93,7 +93,7 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
         // Move file write time 1 hour to the future
         std::filesystem::last_write_time(tmp_path, ftime + 1h);
         const auto new_ftime = mm_file.last_write_time();
-        CHECK(new_ftime > ftime);
+        CHECK((new_ftime > ftime));
         std::filesystem::remove(tmp_path);
     }
 }
@@ -162,7 +162,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         // Move file write time 1 hour to the future
         std::filesystem::last_write_time(tmp_path, ftime + 1h);
         const auto new_ftime = mmf_from_memory.last_write_time();
-        CHECK(new_ftime > ftime);
+        CHECK((new_ftime > ftime));
         std::filesystem::remove(tmp_path);
     }
 }

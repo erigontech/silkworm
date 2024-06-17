@@ -17,13 +17,14 @@
 #pragma once
 
 #include <boost/system/system_error.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_predicate.hpp>
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc::test {
 
 inline auto exception_has_grpc_status_code(::grpc::StatusCode status_code) {
-    return Catch::Predicate<const boost::system::system_error&>(
+    return Catch::Matchers::Predicate<const boost::system::system_error&>(
         [status_code](auto& e) { return std::error_code(e.code()).value() == status_code; });
 }
 

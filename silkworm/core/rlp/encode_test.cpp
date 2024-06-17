@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>

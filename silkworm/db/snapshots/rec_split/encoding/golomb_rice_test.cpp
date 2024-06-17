@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/db/snapshots/rec_split/encoding/sequence.hpp>

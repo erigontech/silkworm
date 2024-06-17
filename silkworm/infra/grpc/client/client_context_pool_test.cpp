@@ -24,7 +24,8 @@
 #include <thread>
 
 #include <boost/asio/post.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <silkworm/infra/test_util/log.hpp>
 

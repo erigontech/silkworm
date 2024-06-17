@@ -24,7 +24,8 @@
 #include <vector>
 
 #include <absl/strings/str_split.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,5 +14,17 @@
    limitations under the License.
 */
 
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <cstdlib>
+
+// Stubs for clang exception handlers on WASM after upgrading Catch2 to version 3.x
+// This avoids undefined symbols at linking: https://github.com/WebAssembly/wasi-sdk/issues/329
+
+extern "C" {
+void __cxa_allocate_exception() {
+    std::abort();
+}
+
+void __cxa_throw() {
+    std::abort();
+}
+}

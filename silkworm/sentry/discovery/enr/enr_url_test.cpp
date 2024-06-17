@@ -18,7 +18,7 @@
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>

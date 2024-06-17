@@ -20,7 +20,8 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <evmc/evmc.h>
 #include <gmock/gmock.h>
 
@@ -33,7 +34,6 @@
 
 namespace silkworm::rpc::core {
 
-using Catch::Matchers::Message;
 using testing::_;
 using testing::InSequence;
 using testing::Invoke;

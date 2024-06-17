@@ -18,7 +18,8 @@
 
 #include <string>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 

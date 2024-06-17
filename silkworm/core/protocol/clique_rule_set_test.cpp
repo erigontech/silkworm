@@ -16,7 +16,7 @@
 
 #include "clique_rule_set.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>

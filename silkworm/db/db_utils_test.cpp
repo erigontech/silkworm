@@ -16,7 +16,7 @@
 
 #include "db_utils.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>

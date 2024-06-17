@@ -21,7 +21,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/system/system_error.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/test_util/task_runner.hpp>
 

@@ -20,7 +20,7 @@
 #include <future>
 #include <system_error>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/test_util/log.hpp>

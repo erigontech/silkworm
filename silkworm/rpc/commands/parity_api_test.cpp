@@ -14,17 +14,23 @@
    limitations under the License.
 */
 
-#include "parity_api.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <nlohmann/json.hpp>
 
-#include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
+#include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("ParityRpcApi::ParityRpcApi", "[rpc][erigon_api]") {
-    boost::asio::io_context ioc;
-    CHECK_THROWS_AS(ParityRpcApi(ioc), std::logic_error);
+TEST_CASE_METHOD(test::RpcApiE2ETest, "parity_getBlockReceipts: misnamed 'params' field", "[rpc][api]") {
+    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"parity_getBlockReceipts","pirams":["0x0"]})";
+    std::string reply;
+    run<&test::RequestHandler_ForTest::handle_request>(request, reply);
+    CHECK(nlohmann::json::parse(reply) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":-32600,"message":"Invalid field: pirams"}
+    })"_json);
 }
 #endif  // SILKWORM_SANITIZE
 

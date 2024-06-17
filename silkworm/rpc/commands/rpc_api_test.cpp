@@ -20,7 +20,7 @@
 #include <vector>
 
 #include <absl/strings/match.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/db/test_util/test_database_context.hpp>
@@ -119,9 +119,9 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 
                     std::string response;
                     test_base.run<&test::RequestHandler_ForTest::request_and_create_reply>(request, response);
-                    INFO("Request:           " << request.dump())
-                    INFO("Actual response:   " << response)
-                    INFO("Expected response: " << expected.dump())
+                    INFO("Request:           " << request.dump());
+                    INFO("Actual response:   " << response);
+                    INFO("Expected response: " << expected.dump());
 
                     if (absl::StrContains(test_name, "invalid")) {
                         CHECK(nlohmann::json::parse(response).contains("error"));

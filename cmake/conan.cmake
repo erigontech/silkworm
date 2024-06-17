@@ -95,9 +95,9 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
 endif()
 
 if(SILKWORM_USE_MIMALLOC)
-  # Do not use mimalloc override on sanitizer builds
-  # (https://github.com/microsoft/mimalloc/issues/317#issuecomment-708506405) Moreover, mimalloc override causes a crash
-  # on macOS at startup in rpcdaemon, so we just enable it on Linux
+  # mimalloc should not be used in sanitizer builds or at least its override option must be disabled
+  # (https://github.com/microsoft/mimalloc/issues/317#issuecomment-708506405)
+  # override option causes a crash on macOS at startup in rpcdaemon, so we enable it just on Linux
   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND NOT SILKWORM_SANITIZE)
     list(APPEND CONAN_OPTIONS "mimalloc:override=True")
   endif()

@@ -16,10 +16,14 @@
 
 #include "execution_engine.hpp"
 
+#include <future>
 #include <set>
+
+#include <boost/asio/use_future.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -134,39 +138,32 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     return {std::move(path)};
 }
 
-VerificationResultFuture ExecutionEngine::verify_chain(Hash head_block_hash) {
+Task<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {
     log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
 
     if (last_fork_choice_.hash == head_block_hash) {
         SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
-        VerificationResultPromise promise{io_context_.get_executor()};
-        promise.set_value(ValidChain{last_fork_choice_});
-        return promise.get_future();
+        co_return ValidChain{last_fork_choice_};
     }
 
     if (!fork_tracking_active_) {
         auto verification = main_chain_.verify_chain(head_block_hash);  // BLOCKING
-        VerificationResultPromise promise{io_context_.get_executor()};
-        promise.set_value(std::move(verification));
-        return promise.get_future();
+        co_return verification;
     }
 
     auto fork = find_fork_by_head(forks_, head_block_hash);
     if (fork == forks_.end()) {
         if (main_chain_.is_finalized_canonical(head_block_hash)) {
             SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
-            VerificationResultPromise promise{io_context_.get_executor()};
-            promise.set_value(ValidChain{last_fork_choice_});
-            return promise.get_future();
+            co_return ValidChain{last_fork_choice_};
         } else {
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
-            VerificationResultPromise promise{io_context_.get_executor()};
-            promise.set_value(ValidationError{});
-            return promise.get_future();
+            co_return ValidationError{};
         }
     }
 
-    return (*fork)->verify_chain();
+    auto verify_chain_future = (*fork)->verify_chain();
+    co_return (co_await verify_chain_future.get());
 }
 
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
@@ -198,7 +195,9 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
         }
 
         // notify the fork of the update - we need to block here to restore the invariant
-        auto updated = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash).get();  // BLOCKING
+        auto fork_choice_aw_future = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);
+        std::future<bool> fork_choice_future = concurrency::co_spawn_sw(io_context_, fork_choice_aw_future.get(), use_future);
+        bool updated = fork_choice_future.get();  // BLOCKING
         if (!updated) return false;
 
         std::unique_ptr<ExtendingFork> fork = std::move(*f);

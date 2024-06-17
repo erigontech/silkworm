@@ -2,11 +2,14 @@
 // If you make any local change, they will be lost.
 // source: remote/ethbackend.proto
 
+#ifndef GRPC_MOCK_remote_2fethbackend_2eproto__INCLUDED
+#define GRPC_MOCK_remote_2fethbackend_2eproto__INCLUDED
+
 #include "remote/ethbackend.pb.h"
 #include "remote/ethbackend.grpc.pb.h"
 
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/sync_stream.h>
 #include <gmock/gmock.h>
 namespace remote {
 
@@ -59,5 +62,7 @@ class MockETHBACKENDStub : public ETHBACKEND::StubInterface {
   MOCK_METHOD3(PrepareAsyncBorEventRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorEventReply>*(::grpc::ClientContext* context, const ::remote::BorEventRequest& request, ::grpc::CompletionQueue* cq));
 };
 
-} // namespace remote
+}  // namespace remote
 
+
+#endif  // GRPC_MOCK_remote_2fethbackend_2eproto__INCLUDED

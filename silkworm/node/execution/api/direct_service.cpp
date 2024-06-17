@@ -38,8 +38,7 @@ Task<InsertionResult> DirectService::insert_blocks(const Blocks& blocks) {
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
 Task<ValidationResult> DirectService::validate_chain(BlockNumAndHash number_and_hash) {
-    auto future_result = exec_engine_.verify_chain(number_and_hash.hash);
-    const auto verification = co_await future_result.get_async();
+    const auto verification = co_await exec_engine_.verify_chain(number_and_hash.hash);
 
     ValidationResult validation;
     if (std::holds_alternative<stagedsync::ValidChain>(verification)) {

@@ -2,11 +2,14 @@
 // If you make any local change, they will be lost.
 // source: txpool/mining.proto
 
+#ifndef GRPC_MOCK_txpool_2fmining_2eproto__INCLUDED
+#define GRPC_MOCK_txpool_2fmining_2eproto__INCLUDED
+
 #include "txpool/mining.pb.h"
 #include "txpool/mining.grpc.pb.h"
 
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/sync_stream.h>
 #include <gmock/gmock.h>
 namespace txpool {
 
@@ -41,5 +44,7 @@ class MockMiningStub : public Mining::StubInterface {
   MOCK_METHOD3(PrepareAsyncMiningRaw, ::grpc::ClientAsyncResponseReaderInterface< ::txpool::MiningReply>*(::grpc::ClientContext* context, const ::txpool::MiningRequest& request, ::grpc::CompletionQueue* cq));
 };
 
-} // namespace txpool
+}  // namespace txpool
 
+
+#endif  // GRPC_MOCK_txpool_2fmining_2eproto__INCLUDED

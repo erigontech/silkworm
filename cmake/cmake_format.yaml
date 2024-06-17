@@ -5,7 +5,9 @@ parse:
         PATH_OR_REFERENCE: '*'
         INSTALL_FOLDER: '*'
         BUILD: '*'
+        OPTIONS: '*'
         PROFILE: '*'
+        CONF: '*'
     silkworm_library:
       flags:
         - NO_TEST

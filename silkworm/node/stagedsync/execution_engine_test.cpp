@@ -50,7 +50,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kWarning);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies

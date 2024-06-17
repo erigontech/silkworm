@@ -108,10 +108,6 @@ class MainChain {
     VerificationResult interim_head_status_;
     BlockId last_fork_choice_;
     BlockId last_finalized_head_;
-
-    inline static thread_local int request_count_;
-    void begin_request() const;
-    void end_request() const;
 };
 
 }  // namespace silkworm::stagedsync

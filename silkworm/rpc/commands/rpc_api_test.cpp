@@ -104,7 +104,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 auto context = db::test_util::TestDatabaseContext();
-                test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
+                test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.get_mdbx_env()};
 
                 std::string line_out;
                 std::string line_in;
@@ -137,7 +137,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     auto context = db::test_util::TestDatabaseContext();
-    test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.db};
+    test::RpcApiTestBase<test::RequestHandler_ForTest> test_base{context.get_mdbx_env()};
 
     SECTION("sample test") {
         auto request = R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawTransaction","params":["0x74e41d593675913d6d5521f46523f1bd396dff1891bdb35f59be47c7e5e0b34b"]})"_json;

@@ -111,7 +111,7 @@ class RpcApiTestBase : public LocalContextTestBase {
 
 class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
   public:
-    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(db) {
+    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(get_mdbx_env()) {
         // Ensure JSON RPC spec has been loaded into the validator
         if (!jsonrpc_spec_loaded) {
             json_rpc::JsonRpcValidator::load_specification();

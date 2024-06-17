@@ -90,17 +90,6 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
 }
 
 Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
-    /*
-     * Unwinds HeaderNumber index by
-     *      select CanonicalHashes->HeaderHash
-     *        from CanonicalHashes
-     *       where CanonicalHashes->BlockNumber > to
-     *        into vector;
-     *    for-each vector
-     *      delete HeaderNumber
-     *       where HeaderNumber->HeaderHash == vector.item
-     */
-
     Stage::Result ret{Stage::Result::kSuccess};
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
@@ -124,8 +113,6 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<Collector>(etl_settings_);
-        collect_and_load(txn, to, previous_progress);
         update_progress(txn, to);
         txn.commit_and_renew();
 
@@ -148,7 +135,6 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
     }
 
     operation_ = OperationType::None;
-    collector_.reset();
     return ret;
 }
 

@@ -20,7 +20,7 @@
 #include <string_view>
 #include <thread>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <grpc/grpc.h>
 #include <grpcpp/alarm.h>
 #include <grpcpp/impl/codegen/service_type.h>

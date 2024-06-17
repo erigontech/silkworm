@@ -17,7 +17,7 @@
 #include "ip_classify.hpp"
 
 #include <boost/asio/ip/address.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::common {
 

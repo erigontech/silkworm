@@ -18,7 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
@@ -49,7 +49,8 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        CHECK((string_writer.get_content() == "{\"test\":\"test\"}"));
     }
     SECTION("write_json in 1 chunk") {
         Stream stream(io_executor, string_writer);
@@ -61,7 +62,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
+        CHECK((string_writer.get_content() == "{\"test\":\"test\"}"));
     }
     SECTION("write_json in 2 chunks") {
         Stream stream(io_executor, string_writer);
@@ -74,7 +75,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"check\":\"check\",\"test\":\"test\"}");
+        CHECK((string_writer.get_content() == "{\"check\":\"check\",\"test\":\"test\"}"));
     }
 }
 
@@ -92,33 +93,33 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.write_json(json);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"test\":\"test\"}");
+        CHECK((string_writer.get_content() == "{\"test\":\"test\"}"));
     }
     SECTION("empty object 1") {
         stream.open_object();
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{}");
+        CHECK((string_writer.get_content() == "{}"));
     }
     SECTION("empty object 2") {
         stream.write_json(kJsonEmptyObject);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{}");
+        CHECK((string_writer.get_content() == "{}"));
     }
     SECTION("empty array 1") {
         stream.open_array();
         stream.close_array();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "[]");
+        CHECK((string_writer.get_content() == "[]"));
     }
     SECTION("empty array 2") {
         stream.write_json(kJsonEmptyArray);
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "[]");
+        CHECK((string_writer.get_content() == "[]"));
     }
     SECTION("simple object 1") {
         stream.open_object();
@@ -126,7 +127,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"null\":null}");
+        CHECK((string_writer.get_content() == "{\"null\":null}"));
     }
     SECTION("simple object 2") {
         stream.open_object();
@@ -134,7 +135,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"array\":[]}");
+        CHECK((string_writer.get_content() == "{\"array\":[]}"));
     }
     SECTION("simple object 3") {
         stream.open_object();
@@ -142,7 +143,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name\":\"value\"}");
+        CHECK((string_writer.get_content() == "{\"name\":\"value\"}"));
     }
     SECTION("simple object 4") {
         stream.open_object();
@@ -151,7 +152,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":\"value2\"}");
+        CHECK((string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":\"value2\"}"));
     }
     SECTION("complex object 1") {
         nlohmann::json json = R"({
@@ -164,7 +165,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":{\"test\":\"test\"}}");
+        CHECK((string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":{\"test\":\"test\"}}"));
     }
     SECTION("complex object 2") {
         nlohmann::json json = R"([
@@ -177,7 +178,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[\"one\",\"two\"]}");
+        CHECK((string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[\"one\",\"two\"]}"));
     }
     SECTION("complex object 3") {
         nlohmann::json json = R"({
@@ -193,7 +194,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[{\"test\":\"test\"}]}");
+        CHECK((string_writer.get_content() == "{\"name1\":\"value1\",\"name2\":[{\"test\":\"test\"}]}"));
     }
     SECTION("complex object 4") {
         nlohmann::json json_obj = R"({
@@ -209,7 +210,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":{\"test\":\"test\"},\"name2\":[\"one\",\"two\"]}");
+        CHECK((string_writer.get_content() == "{\"name1\":{\"test\":\"test\"},\"name2\":[\"one\",\"two\"]}"));
     }
     SECTION("complex object 5") {
         nlohmann::json json_obj = R"({
@@ -226,7 +227,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":{\"boolean\":true,\"numeric\":1},\"name2\":[\"1.2\",\"3.4\"]}");
+        CHECK((string_writer.get_content() == "{\"name1\":{\"boolean\":true,\"numeric\":1},\"name2\":[\"1.2\",\"3.4\"]}"));
     }
     SECTION("complex object 6") {
         nlohmann::json json_obj = R"({
@@ -245,7 +246,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"name1\":\"name1\",\"name2\":[{\"boolean\":true,\"numeric\":1},{\"boolean\":true,\"numeric\":1}],\"name3\":\"name3\"}");
+        CHECK((string_writer.get_content() == "{\"name1\":\"name1\",\"name2\":[{\"boolean\":true,\"numeric\":1},{\"boolean\":true,\"numeric\":1}],\"name3\":\"name3\"}"));
     }
     SECTION("complex object 7") {
         stream.open_object();
@@ -255,7 +256,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "{\"numeric\":10,\"double\":10.3,\"boolean\":true}");
+        CHECK((string_writer.get_content() == "{\"numeric\":10,\"double\":10.3,\"boolean\":true}"));
     }
     SECTION("complex object 8") {
         stream.open_object();
@@ -287,8 +288,8 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_object();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() ==
-              "{\"result\":[{\"item\":1,\"logs\":[{\"item\":1.1}]},{\"item\":2,\"logs\":[{\"item\":2.1}]}]}");
+        CHECK((string_writer.get_content() ==
+               "{\"result\":[{\"item\":1,\"logs\":[{\"item\":1.1}]},{\"item\":2,\"logs\":[{\"item\":2.1}]}]}"));
     }
     SECTION("simple array 1") {
         nlohmann::json json = R"({
@@ -300,7 +301,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_array();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "[{\"test\":\"test\"}]");
+        CHECK((string_writer.get_content() == "[{\"test\":\"test\"}]"));
     }
     SECTION("simple array 2") {
         nlohmann::json json = R"({
@@ -313,7 +314,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_array();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "[{\"test\":\"test\"},{\"test\":\"test\"}]");
+        CHECK((string_writer.get_content() == "[{\"test\":\"test\"},{\"test\":\"test\"}]"));
     }
     SECTION("simple array 3") {
         stream.open_array();
@@ -323,7 +324,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
         stream.close_array();
         spawn_and_wait(stream.close());
 
-        CHECK(string_writer.get_content() == "[10,10.3,true]");
+        CHECK((string_writer.get_content() == "[10,10.3,true]"));
     }
 }
 
@@ -339,7 +340,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
     SECTION("using I/O context thread") {
         stream.write_json(json);
         CHECK_NOTHROW(spawn_and_wait(stream.close()));
-        CHECK(string_writer.get_content() == kData);
+        CHECK((string_writer.get_content() == kData));
     }
 
     SECTION("using worker thread") {

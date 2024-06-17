@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/concurrency/stoppable.hpp>
 

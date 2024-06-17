@@ -22,7 +22,7 @@
 
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/rpc/test_util/context_test_base.hpp>

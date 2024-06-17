@@ -16,7 +16,7 @@
 
 #include <string>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>

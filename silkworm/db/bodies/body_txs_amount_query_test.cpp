@@ -16,7 +16,7 @@
 
 #include "body_txs_amount_query.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/infra/common/directories.hpp>

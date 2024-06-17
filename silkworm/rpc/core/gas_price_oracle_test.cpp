@@ -21,7 +21,7 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/endian/conversion.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/rpc/common/worker_pool.hpp>

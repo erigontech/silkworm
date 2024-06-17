@@ -18,7 +18,7 @@
 
 #include <string_view>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/test_util/fixture.hpp>
 #include <silkworm/node/test_util/sample_blocks.hpp>

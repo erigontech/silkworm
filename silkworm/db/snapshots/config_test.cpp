@@ -18,7 +18,7 @@
 
 #include <string_view>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/db/snapshots/path.hpp>

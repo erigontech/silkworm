@@ -18,7 +18,7 @@
 #include <vector>
 
 #include <absl/container/btree_map.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>

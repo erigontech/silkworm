@@ -17,7 +17,7 @@
 #include "net_api.hpp"
 
 #include <agrpc/test.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>

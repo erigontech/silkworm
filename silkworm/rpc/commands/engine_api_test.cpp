@@ -22,17 +22,13 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -150,7 +146,7 @@ static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
     .london_block = 5062605,
     .rule_set_config = protocol::CliqueConfig{}};
 
-TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabilities", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
 
     SECTION("request params is empty: return error") {
@@ -199,7 +195,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
     }
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_client_version_v1", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_getClientVersionV1", "[silkworm][rpc][commands][engine_api]") {
     std::string reply;
 
     SECTION("request params is empty: return error") {
@@ -231,7 +227,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_client_version_v1", "[silk
     }
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_getPayloadV1 OK: request is expected payload", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, get_payload(1, _)).WillOnce(InvokeWithoutArgs([]() -> Task<ExecutionPayloadAndValue> {
         co_return ExecutionPayloadAndValue{ExecutionPayload{.number = 1}, 0};
     }));
@@ -268,7 +264,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_payload_v1 succeeds if req
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_payload_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_getPayloadV1 KO: invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -289,7 +285,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_get_payload_v1 fails with inva
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 succeeds if request is expected payload status", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 OK: request is expected payload status", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, new_payload(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<PayloadStatus> {
         co_return PayloadStatus{
             .status = "INVALID",
@@ -333,7 +329,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 succeeds if req
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_newPayloadV1 KO: invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -354,7 +350,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 fails with inva
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: only forkchoiceState", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, fork_choice_updated(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -393,7 +389,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: both params", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, fork_choice_updated(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -437,7 +433,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: both params and null second", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, fork_choice_updated(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -477,7 +473,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 succeeds
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 KO: invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -498,7 +494,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails wi
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 KO: empty finalized block hash", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -525,7 +521,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails wi
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedv1 KO: empty safe block hash", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -552,7 +548,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_forkchoice_updated_v1 fails wi
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL config has the same CL config", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -590,7 +586,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 su
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: terminal block number zero if not sent", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -628,7 +624,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 su
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorrect terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -665,7 +661,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fa
         })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does not have TTD", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -702,7 +698,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fa
         })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL sends wrong TTD", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -739,7 +735,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fa
         })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal block hash", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL sends wrong terminal block hash", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -776,7 +772,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fa
         })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 succeeds w/o matching terminal block number", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matching terminal block number", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
     EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -814,7 +810,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 su
     })"_json);
 }
 
-TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_transition_configuration_v1 fails if incorrect params", "[silkworm][rpc][commands][engine_api]") {
+TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorrect params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",

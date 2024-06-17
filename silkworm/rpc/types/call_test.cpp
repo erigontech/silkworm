@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
@@ -31,7 +31,7 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-TEST_CASE("create empty call", "[rpc][types][call]") {
+TEST_CASE("empty call", "[rpc][types][call]") {
     Call call{};
     CHECK(call.from == std::nullopt);
     CHECK(call.to == std::nullopt);
@@ -45,7 +45,7 @@ TEST_CASE("create empty call", "[rpc][types][call]") {
     CHECK(call.access_list.empty());
 }
 
-TEST_CASE("create call with gas price", "[rpc][types][call]") {
+TEST_CASE("call with gas price", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -65,7 +65,7 @@ TEST_CASE("create call with gas price", "[rpc][types][call]") {
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call without gas price and max_fee_per_gas & max_priority_fee_per_gas not zero", "[rpc][types][call]") {
+TEST_CASE("call w/o gas price and max_fee_per_gas & max_priority_fee_per_gas not zero", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -85,7 +85,7 @@ TEST_CASE("create call without gas price and max_fee_per_gas & max_priority_fee_
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call without gas price, max_fee_per_gas & max_priority_fee_per_gas", "[rpc][types][call]") {
+TEST_CASE("call w/o gas price, max_fee_per_gas & max_priority_fee_per_gas", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -105,7 +105,7 @@ TEST_CASE("create call without gas price, max_fee_per_gas & max_priority_fee_per
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call without gas price with base_fee", "[rpc][types][call]") {
+TEST_CASE("call w/o gas price with base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -125,7 +125,7 @@ TEST_CASE("create call without gas price with base_fee", "[rpc][types][call]") {
     CHECK(txn.nonce == 1);
 }
 
-TEST_CASE("create call with gas price and base_fee", "[rpc][types][call]") {
+TEST_CASE("call with gas price and base_fee", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -154,7 +154,7 @@ AccessList access_list{
     {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
 };
 
-TEST_CASE("create call with no gas price and no max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
+TEST_CASE("call with no gas price and no max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -173,7 +173,7 @@ TEST_CASE("create call with no gas price and no max_fee_per_gas and max_priority
     CHECK(txn.max_priority_fee_per_gas == 0);
 }
 
-TEST_CASE("create call with no gas price and valid max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
+TEST_CASE("call with no gas price and valid max_fee_per_gas and max_priority_fee_per_gas", "[rpc][types][call]") {
     Call call{
         0x99f9b87991262f6ba471f09758cde1c0fc1de734_address,  // from
         0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,  // to
@@ -193,7 +193,7 @@ TEST_CASE("create call with no gas price and valid max_fee_per_gas and max_prior
     CHECK(txn.data == *silkworm::from_hex("001122aabbcc"));
 }
 
-TEST_CASE("create call with no gas", "[rpc][types][call]") {
+TEST_CASE("call with no gas", "[rpc][types][call]") {
     Call call;
     silkworm::Transaction txn = call.to_transaction(std::nullopt);
     CHECK(txn.gas_limit == 50000000);
@@ -201,7 +201,7 @@ TEST_CASE("create call with no gas", "[rpc][types][call]") {
     CHECK(txn.data.empty());
 }
 
-TEST_CASE("create call with AccessList", "[rpc][types][call]") {
+TEST_CASE("call with AccessList", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -222,7 +222,7 @@ TEST_CASE("create call with AccessList", "[rpc][types][call]") {
     CHECK(txn.access_list == access_list);
 }
 
-TEST_CASE("create call with no AccessList and pass it to_transaction", "[rpc][types][call]") {
+TEST_CASE("call with no AccessList and pass it to_transaction", "[rpc][types][call]") {
     Call call{
         std::nullopt,
         std::nullopt,
@@ -242,7 +242,7 @@ TEST_CASE("create call with no AccessList and pass it to_transaction", "[rpc][ty
     CHECK(txn.access_list == access_list);
 }
 
-TEST_CASE("create call with no nonce and pass it to_transaction", "[rpc][types][call]") {
+TEST_CASE("call with no nonce and pass it to_transaction", "[rpc][types][call]") {
     uint64_t nonce = 5;
     Call call{
         std::nullopt,

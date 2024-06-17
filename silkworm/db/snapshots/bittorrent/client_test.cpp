@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <thread>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <libtorrent/alert_types.hpp>

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
@@ -289,6 +289,9 @@ TEST_CASE("Sync Stages") {
     }
 
     SECTION("Execution and HashState") {
+        using namespace magic_enum;
+        using StageResult = stagedsync::Stage::Result;
+
         // ---------------------------------------
         // Prepare
         // ---------------------------------------
@@ -332,10 +335,9 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
         // Execute first block
         // ---------------------------------------
-        auto expected_validation_result{magic_enum::enum_name(ValidationResult::kOk)};
-        auto actual_validation_result{
-            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()))};
-        REQUIRE(expected_validation_result == actual_validation_result);
+        auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         auto contract_address{create_address(sender, /*nonce=*/0)};
 
         // ---------------------------------------
@@ -354,9 +356,9 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView(new_val);
 
-        actual_validation_result =
-            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
-        REQUIRE(expected_validation_result == actual_validation_result);
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
 
         // ---------------------------------------
         // Execute third block
@@ -371,9 +373,9 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView{new_val};
 
-        actual_validation_result =
-            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
-        REQUIRE(expected_validation_result == actual_validation_result);
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         REQUIRE_NOTHROW(buffer.write_to_db());
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit_and_renew());
@@ -391,7 +393,7 @@ TEST_CASE("Sync Stages") {
 
             std::optional<Account> contract_account{buffer2.read_account(contract_address)};
             REQUIRE(contract_account.has_value());
-            CHECK(intx::to_string(contract_account.value().balance) == "1000");  // 2000 - 1000
+            CHECK(contract_account.value().balance == intx::uint256{1000});  // 2000 - 1000
 
             std::optional<Account> current_sender{buffer2.read_account(sender)};
             REQUIRE(current_sender.has_value());
@@ -455,10 +457,9 @@ TEST_CASE("Sync Stages") {
         SECTION("HashState") {
             stagedsync::SyncContext sync_context{};
             stagedsync::HashState stage{&sync_context, node_settings.etl()};
-            auto expected_stage_result{
-                magic_enum::enum_name<stagedsync::Stage::Result>(stagedsync::Stage::Result::kSuccess)};
-            auto actual_stage_result = magic_enum::enum_name<stagedsync::Stage::Result>(stage.forward(txn));
-            REQUIRE(expected_stage_result == actual_stage_result);
+            auto actual_stage_result = stage.forward(txn);
+            // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+            REQUIRE((enum_name(actual_stage_result) == enum_name(StageResult::kSuccess)));
             REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == 3);
 
             // ---------------------------------------
@@ -497,13 +498,15 @@ TEST_CASE("Sync Stages") {
             db_val = hashed_storage_table.current().value;
             CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));
             value = db::from_slice(db_val).substr(kHashLength);
-            CHECK(to_hex(value) == "01c9");
+            // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+            CHECK((to_hex(value) == "01c9"));
 
             // Unwind the stage to block 1 (i.e. block 1 *is* applied)
             BlockNum unwind_to{1};
             sync_context.unwind_point.emplace(unwind_to);
-            actual_stage_result = magic_enum::enum_name<stagedsync::Stage::Result>(stage.unwind(txn));
-            REQUIRE(expected_stage_result == actual_stage_result);
+            actual_stage_result = stage.unwind(txn);
+            // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+            REQUIRE((enum_name(actual_stage_result) == enum_name(StageResult::kSuccess)));
             hashed_accounts_table.bind(txn, db::table::kHashedAccounts);
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
@@ -574,7 +577,8 @@ TEST_CASE("Sync Stages") {
                 CHECK(block_number == 1);
                 const ByteView value{static_cast<const uint8_t*>(record.value.data()), record.value.length()};
                 REQUIRE(value.size() == kAddressLength + 1);
-                CHECK(value.substr(0, kAddressLength) == address);
+                // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+                CHECK((value.substr(0, kAddressLength) == address));
                 CHECK(bool(value[kAddressLength] & 1) == is_sender);
                 CHECK(bool(value[kAddressLength] & 2) == is_receiver);
             };
@@ -586,7 +590,8 @@ TEST_CASE("Sync Stages") {
         stagedsync::CallTraceIndex stage_call_traces = make_call_traces_stage(&sync_context, node_settings);
         REQUIRE(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 0);
         const auto forward_result{stage_call_traces.forward(txn)};
-        CHECK(enum_name(forward_result) == enum_name(StageResult::kSuccess));
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        CHECK((enum_name(forward_result) == enum_name(StageResult::kSuccess)));
         CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 1);
 
         // Post-condition: CallFromIndex table
@@ -621,7 +626,8 @@ TEST_CASE("Sync Stages") {
         const BlockNum unwind_to{0};
         sync_context.unwind_point.emplace(unwind_to);
         const auto unwind_result{stage_call_traces.unwind(txn)};
-        CHECK(enum_name(unwind_result) == enum_name(StageResult::kSuccess));
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        CHECK((enum_name(unwind_result) == enum_name(StageResult::kSuccess)));
         CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == unwind_to);
         auto call_from_cursor{txn.ro_cursor(db::table::kCallFromIndex)};
         CHECK(call_from_cursor->empty());

@@ -21,7 +21,7 @@
 #include <thread>
 
 #include <absl/strings/match.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>

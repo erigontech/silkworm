@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/bodies/body_index.hpp>
 #include <silkworm/db/bodies/body_queries.hpp>

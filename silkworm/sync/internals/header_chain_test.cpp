@@ -18,7 +18,7 @@
 
 #include <algorithm>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -46,7 +46,7 @@ class HeaderChainForTest : public HeaderChain {
 // TESTs related to HeaderList::split_into_segments
 // ----------------------------------------------------------------------------
 
-TEST_CASE("HeaderList - split_into_segments - No headers") {
+TEST_CASE("HeaderList::split_into_segments no headers") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
@@ -58,7 +58,7 @@ TEST_CASE("HeaderList - split_into_segments - No headers") {
     REQUIRE(penalty == Penalty::NoPenalty);
 }
 
-TEST_CASE("HeaderList - split_into_segments - Single header") {
+TEST_CASE("HeaderList::split_into_segments single header") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
@@ -74,7 +74,7 @@ TEST_CASE("HeaderList - split_into_segments - Single header") {
     REQUIRE(penalty == Penalty::NoPenalty);
 }
 
-TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
+TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
@@ -91,7 +91,7 @@ TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
     REQUIRE(penalty == Penalty::DuplicateHeaderPenalty);
 }
 
-TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
+TEST_CASE("HeaderList::split_into_segments two connected headers") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -117,7 +117,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
     REQUIRE(segments[0][1]->number == header1.number);
 }
 
-TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong numbers") {
+TEST_CASE("HeaderList::split_into_segments two connected headers with wrong numbers") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -146,7 +146,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong n
  * output:
  *         3 segments: {h3}, {h2}, {h1}   (in this order)
  */
-TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third header") {
+TEST_CASE("HeaderList::split_into_segments two headers connected to the third header") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -183,7 +183,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third
     REQUIRE(segments[0][0]->number == header3.number);
 }
 
-TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a reverse order") {
+TEST_CASE("HeaderList::split_into_segments same three headers, but in a reverse order") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -225,7 +225,7 @@ TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a rever
  * output:
  *         2 segments: {h3?}, {h2?}
  */
-TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each other") {
+TEST_CASE("HeaderList::split_into_segments two headers not connected to each other") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -264,7 +264,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each 
  * output:
  *        1 segment: {h3, h2, h1}   (with header in this order)
  */
-TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
+TEST_CASE("HeaderList::split_into_segments three headers connected") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -304,7 +304,7 @@ TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
  * output:
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
-TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
+TEST_CASE("HeaderList::split_into_segments four headers connected") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
@@ -349,7 +349,7 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
 // TESTs related to HeaderChain::accept_headers (segment manipulation: connect, extend_down, extend_up, new_anchor)
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
+TEST_CASE("HeaderChain: (1) simple chain") {
     using namespace std;
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
@@ -378,7 +378,8 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
      * output:
      *         1 anchor, 2 links
      */
-    INFO("new_anchor") {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1], headers[2]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -410,7 +411,8 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
      * output:
      *         1 anchor, 4 links
      */
-    INFO("extend_up") {
+    INFO("extend_up");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -446,7 +448,8 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
      * output:
      *         2 anchor, 6 links
      */
-    INFO("new_anchor") {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -495,7 +498,8 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
      * output:
      *         2 anchor, 8 links
      */
-    INFO("extend_down") {
+    INFO("extend_down");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[6], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -538,7 +542,8 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
      * output:
      *         1 anchor, 9 links
      */
-    INFO("connect") {
+    INFO("connect");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -578,7 +583,7 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
  *         2nd iteration: receive {h1} -> extend_down(h2/h2b) => one anchor(h1) with a link to h1 with 2 links
  *                                                                                                (h2 and h2b)
  */
-TEST_CASE("HeaderChain - process_segment - (2) extending down with 2 siblings") {
+TEST_CASE("HeaderChain: (2) extending down with 2 siblings") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -637,7 +642,7 @@ TEST_CASE("HeaderChain - process_segment - (2) extending down with 2 siblings") 
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
+TEST_CASE("HeaderChain: (3) chain with branches") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -695,7 +700,8 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
      * output:
      *         1 anchor, 1 links -> triggering new_anchor
      */
-    INFO("creating first anchor") {
+    INFO("creating first anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -726,7 +732,8 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
      * output:
      *         1 anchor, 5 links
      */
-    INFO("adding 3 segments") {
+    INFO("adding 3 segments");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[2], h3a, h4a, headers[3]}, request_id, peer_id);
 
@@ -767,7 +774,8 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
      * output:
      *         2 anchor, 8 links
      */
-    INFO("adding a disconnected segment") {
+    INFO("adding a disconnected segment");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[8], headers[9], headers[7]}, request_id, peer_id);
 
@@ -803,7 +811,7 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
      * output:
      *         1 anchor, 14 links
      */
-    INFO("adding 4 segments connecting chain") {
+    SECTION("adding 4 segments connecting chain") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], headers[6], h6a, h6b, headers[4], h7b}, request_id, peer_id);
 
@@ -853,7 +861,7 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical chain") {
+TEST_CASE("HeaderChain: (4) pre-verified hashes on canonical chain") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -944,7 +952,7 @@ TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical 
  *       h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
  *
  */
-TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
+TEST_CASE("HeaderChain: (5) pre-verified hashes") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -976,7 +984,8 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     /*
      *    h1 <-----                                  <----- h6 (pre-verified)
      */
-    INFO("new anchor") {
+    INFO("new anchor");
+    {
         // adding the last chain segment
         chain.accept_headers({headers[6]}, request_id, peer_id);
 
@@ -987,7 +996,8 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     /*
      *    h1 <-----              <----- h4 <----- h5 <----- h6 (pre-verified)
      */
-    INFO("extend down") {
+    INFO("extend down");
+    {
         // adding two headers to extend down the anchor
         chain.accept_headers({headers[5], headers[4]}, request_id, peer_id);
 
@@ -1001,7 +1011,8 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     /*
      *    h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
      */
-    INFO("connect") {
+    INFO("connect");
+    {
         // adding two headers to extend down the anchor
         chain.accept_headers({headers[2], headers[3]}, request_id, peer_id);
 
@@ -1022,7 +1033,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
  *
  *
  */
-TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonical chain change") {
+TEST_CASE("HeaderChain: (5') pre-verified hashes with canonical chain change") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1082,7 +1093,7 @@ TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonic
 // Corner cases
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
+TEST_CASE("HeaderChain: (6) (malicious) siblings") {
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1106,7 +1117,8 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     /* chain:
      *         h5
      */
-    INFO("new_anchor") {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -1129,7 +1141,8 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     /* chain:
      *         h3 <-- h4 <-- h5
      */
-    INFO("extend_down overlapping") {
+    INFO("extend_down overlapping");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
@@ -1157,7 +1170,8 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
      *     (h2) <--- h3 <--- h4 <--- h5
      *      |----------------------- h5'
      */
-    INFO("extend up with wrong header") {
+    INFO("extend up with wrong header");
+    {
         BlockHeader h5p;
         h5p.number = 5;
         h5p.parent_hash = headers[2].hash();  // wrong, it should have number = 3
@@ -1193,7 +1207,8 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
      *      |----------------------- h5'
      *                         X---- h5"
      */
-    INFO("new anchor with unknown parent") {
+    INFO("new anchor with unknown parent");
+    {
         BlockHeader h5s;
         h5s.number = 5;
         h5s.parent_hash = h5s.hash();  // a wrong hash
@@ -1220,7 +1235,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     }
 }
 
-TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
+TEST_CASE("HeaderChain: (7) invalidating anchor") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
@@ -1245,7 +1260,8 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
     h5p.difficulty = 5;
     h5p.extra_data = string_view_to_byte_view("I'm different");
     h5p.parent_hash = headers[4].hash();
-    INFO("new_anchor") {
+    INFO("new_anchor");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
@@ -1268,7 +1284,8 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         REQUIRE(child1->next[0]->hash == headers[6].hash());
     }
 
-    INFO("invalidating") {
+    INFO("invalidating");
+    {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
@@ -1293,7 +1310,8 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         CHECK(chain.links_.empty());
     }
 
-    INFO("new_anchor again") {
+    INFO("new_anchor again");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
@@ -1318,7 +1336,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
     }
 }
 
-TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
+TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
@@ -1343,7 +1361,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
     h5p.difficulty = 5;
     h5p.parent_hash = h5p.hash();  // a wrong hash, h5p hash will also be different
 
-    INFO("a wrong anchor") {
+    INFO("a wrong anchor");
+    {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -1364,7 +1383,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(anchor->links[0]->next.empty());
     }
 
-    INFO("a segment with a sibling") {
+    INFO("a segment with a sibling");
+    {
         // ad a segment terminating with the header[5] that is a sibling of the anchor h5p
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
@@ -1406,7 +1426,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("failed extending anchor") {
+    INFO("failed extending anchor");
+    {
         // trying extending h5p get the correct chain, headers[3], headers[4], headers[5], so extending fails
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
@@ -1451,7 +1472,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("requesting again an anchor") {
+    INFO("requesting again an anchor");
+    {
         using namespace std::literals::chrono_literals;
 
         // affected anchor
@@ -1489,7 +1511,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         CHECK(anchor->timestamp == prev_timestamp);
     }
 
-    INFO("invalidating") {
+    INFO("invalidating");
+    {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
@@ -1544,7 +1567,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
-    INFO("reducing links") {
+    INFO("reducing links");
+    {
         // add a new anchor + link
         chain.accept_headers({headers[7], headers[8]}, request_id, peer_id);
 
@@ -1579,7 +1603,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(deepest_link != nullptr);
     }
 
-    INFO("connect to evicted link") {
+    INFO("connect to evicted link");
+    {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], headers[6], headers[7]}, request_id, peer_id);
 

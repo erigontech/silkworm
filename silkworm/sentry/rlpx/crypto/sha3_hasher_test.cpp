@@ -16,7 +16,7 @@
 
 #include "sha3_hasher.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 

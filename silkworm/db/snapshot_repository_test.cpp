@@ -17,7 +17,7 @@
 #include <chrono>
 #include <filesystem>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/bodies/body_index.hpp>
 #include <silkworm/db/headers/header_index.hpp>
@@ -287,7 +287,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
 
     // move the snapshot last write time 1 hour to the future to make its index "stale"
     const auto last_write_time_diff = move_last_write_time(header_snapshot_path.path(), 1h);
-    CHECK(last_write_time_diff.count() > 0);
+    CHECK((last_write_time_diff.count() > 0));
 
     // the index is stale
     repository.remove_stale_indexes();

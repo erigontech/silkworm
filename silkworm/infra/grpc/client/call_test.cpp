@@ -18,7 +18,7 @@
 
 #include <ostream>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <grpc/grpc.h>
 
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>

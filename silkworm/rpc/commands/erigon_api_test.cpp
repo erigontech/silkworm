@@ -16,7 +16,7 @@
 
 #include "erigon_api.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/test_util/api_test_base.hpp>

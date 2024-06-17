@@ -19,7 +19,7 @@
 #include <fstream>
 #include <string>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <gsl/util>
 
 #include <silkworm/infra/common/directories.hpp>
@@ -43,7 +43,8 @@ TEST_CASE("NodeKeyConfig::load") {
         file << expected_key_hex;
         file.close();
 
-        REQUIRE(NodeKeyConfig(file_path).load().private_key_hex() == expected_key_hex);
+        // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+        REQUIRE((NodeKeyConfig(file_path).load().private_key_hex() == expected_key_hex));
     }
 
     SECTION("not exists") {

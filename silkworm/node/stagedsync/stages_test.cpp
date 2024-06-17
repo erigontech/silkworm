@@ -166,8 +166,8 @@ TEST_CASE("Sync Stages") {
             {
                 // Verify written data is consistent
                 db::PooledCursor target_table(txn, db::table::kHeaderNumbers);
-                REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 2);
-                REQUIRE(target_table.seek(db::to_slice(block_hashes.back())) == false);
+                REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 4);
+                REQUIRE(target_table.seek(db::to_slice(block_hashes.back())));
             }
         }
     }

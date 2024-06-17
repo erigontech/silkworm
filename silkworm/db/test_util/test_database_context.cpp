@@ -188,6 +188,12 @@ namespace {
 
 }  // namespace
 
-TestDatabaseContext::TestDatabaseContext() : db{initialize_test_database()} {}
+TestDatabaseContext::TestDatabaseContext() : db_{initialize_test_database()} {}
+
+silkworm::ChainConfig TestDatabaseContext::get_chain_config() {
+    db::ROTxnManaged txn{db_};
+    auto chain_config = db::read_chain_config(txn);
+    return chain_config ? *chain_config : silkworm::ChainConfig{};
+}
 
 }  // namespace silkworm::db::test_util

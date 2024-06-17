@@ -58,10 +58,6 @@ class SilkwormRecipe(ConanFile):
         if self.settings.os == 'Windows':
             return
 
-        # mimalloc override=True causes a crash on macOS at startup in rpcdaemon, so we just enable it on Linux
-        if self.settings.os == 'Linux':
-            self.options['mimalloc'].override = True
-
         # Disable Catch2 version 3.x.x signaling handling on WASM
         if self.settings.arch == 'wasm':
             self.options['catch2'].no_posix_signals = True

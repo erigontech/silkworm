@@ -186,6 +186,12 @@ void to_json(nlohmann::json& json, const RewardAction& action) {
     json["value"] = to_quantity(action.value);
 }
 
+void to_json(nlohmann::json& json, const SuicideAction& action) {
+    json["address"] = action.address;
+    json["balance"] = to_quantity(action.balance);
+    json["refundAddress"] = action.refund_address;
+}
+
 void to_json(nlohmann::json& json, const TraceResult& trace_result) {
     if (trace_result.address) {
         json["address"] = trace_result.address.value();
@@ -206,6 +212,8 @@ void to_json(nlohmann::json& json, const Trace& trace) {
         json["action"] = std::get<TraceAction>(trace.action);
     } else if (std::holds_alternative<RewardAction>(trace.action)) {
         json["action"] = std::get<RewardAction>(trace.action);
+    } else if (std::holds_alternative<SuicideAction>(trace.action)) {
+        json["action"] = std::get<SuicideAction>(trace.action);
     }
     if (trace.trace_result) {
         json["result"] = trace.trace_result.value();
@@ -460,6 +468,19 @@ int get_stack_count(std::uint8_t op_code) {
     }
 
     return count;
+}
+
+void copy_address(const evmone::uint256* stack, std::string& address) {
+    std::string addr{"0000000000000000000000000000000000000000"};
+    auto hex = intx::hex(stack[0]);
+    auto pos = static_cast<int>(addr.size()) - static_cast<int>(hex.size());
+
+    if (pos > 0) {
+        std::copy(hex.begin(), hex.end(), addr.begin() + pos);
+    } else {
+        addr = hex;
+    }
+    address = "0x" + addr;
 }
 
 void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<std::string>& trace_stack) {
@@ -797,12 +818,41 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                << ", code: " << silkworm::to_hex(code);
 }
 
-void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, const int /*stack_height*/, const int64_t gas,
+void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
-
     current_opcode_ = opcode;
+
+    if (opcode == OP_SELFDESTRUCT) {
+        std::size_t idx = traces_.size();
+        traces_.resize(traces_.size() + 1);
+        Trace& trace = traces_[idx];
+        trace.type = "suicide";
+        trace.action = SuicideAction{};
+
+        auto index = index_stack_.top();
+        Trace& calling_trace = traces_[index];
+        auto& calling_action = std::get<TraceAction>(calling_trace.action);
+
+        auto& suicide_action = std::get<SuicideAction>(trace.action);
+        if (calling_trace.trace_result && calling_trace.trace_result->address) {
+            suicide_action.address = calling_trace.trace_result->address.value();
+        } else if (calling_action.to) {
+            suicide_action.address = calling_action.to.value();
+        }
+        suicide_action.balance = 0;
+        copy_address(stack_top, suicide_action.refund_address);
+
+        trace.trace_address = calling_trace.trace_address;
+        trace.trace_address.push_back(calling_trace.sub_traces);
+
+        calling_trace.sub_traces++;
+
+        nlohmann::json trace_json = trace;
+        nlohmann::json calling_trace_json = calling_trace;
+    }
+
+    auto opcode_name = get_opcode_name(opcode_names_, opcode);
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(opcode)
@@ -822,6 +872,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
         is_precompile_ = false;
         return;
     }
+
     auto index = index_stack_.top();
     auto start_gas = start_gas_.top();
 
@@ -1172,8 +1223,8 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
 
         for (const auto& call_trace : call_traces) {
             Trace trace{call_trace};
-            nlohmann::json json = trace;
             bool skip = !(filter.from_addresses.empty() && filter.to_addresses.empty());
+
             if (std::holds_alternative<TraceAction>(trace.action)) {
                 const auto& action = std::get<TraceAction>(trace.action);
                 if (skip && !filter.from_addresses.empty()) {
@@ -1602,6 +1653,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
         stream.write_json_field("error", error);
+        stream.write_json_field("result", nlohmann::json::value_t::null);
         co_return;
     }
 

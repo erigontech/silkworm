@@ -51,7 +51,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kWarning);
 
-    asio::io_context io;
+    test_util::TaskRunner runner;
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     auto db_context = db::test_util::TestDatabaseContext();
@@ -64,7 +64,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     db::RWAccess db_access{db_context.get_mdbx_env()};
 
-    ExecutionEngine_ForTest exec_engine{io, node_settings, db_access};
+    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -178,7 +178,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto is_canonical = exec_engine.is_canonical(new_block_hash);
         CHECK(!is_canonical);
 
-        auto verification = exec_engine.verify_chain(new_block_hash).get();
+        auto verification = runner.run(exec_engine.verify_chain(new_block_hash));
         CHECK(!holds_alternative<ValidationError>(verification));
         REQUIRE(holds_alternative<InvalidChain>(verification));
         auto invalid_chain = std::get<InvalidChain>(verification);
@@ -209,19 +209,19 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto is_canonical3 = exec_engine.is_canonical(block3_hash);
         CHECK(!is_canonical3);
 
-        auto verification1 = exec_engine.verify_chain(block1_hash).get();
+        auto verification1 = runner.run(exec_engine.verify_chain(block1_hash));
         CHECK(!holds_alternative<ValidationError>(verification1));
         REQUIRE(holds_alternative<ValidChain>(verification1));
         auto valid_chain1 = std::get<ValidChain>(verification1);
         CHECK(valid_chain1.current_head == BlockId{10, block1_hash});
 
-        auto verification2 = exec_engine.verify_chain(block2_hash).get();
+        auto verification2 = runner.run(exec_engine.verify_chain(block2_hash));
         CHECK(!holds_alternative<ValidationError>(verification2));
         REQUIRE(holds_alternative<ValidChain>(verification2));
         auto valid_chain2 = std::get<ValidChain>(verification2);
         CHECK(valid_chain2.current_head == BlockId{11, block2_hash});
 
-        auto verification3 = exec_engine.verify_chain(block3_hash).get();
+        auto verification3 = runner.run(exec_engine.verify_chain(block3_hash));
         CHECK(!holds_alternative<ValidationError>(verification3));
         REQUIRE(holds_alternative<ValidChain>(verification3));
         auto valid_chain3 = std::get<ValidChain>(verification3);
@@ -352,7 +352,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         auto new_block_hash = new_block->header.hash();
 
-        auto verification = exec_engine.verify_chain(new_block_hash).get();
+        auto verification = runner.run(exec_engine.verify_chain(new_block_hash));
         REQUIRE(holds_alternative<ValidChain>(verification));
 
         auto fcu_updated = exec_engine.notify_fork_choice_update(new_block_hash, {}, {});
@@ -400,9 +400,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block2_hash = block2->header.hash();
         auto block3_hash = block3->header.hash();
 
-        exec_engine.verify_chain(block1_hash).get();
-        exec_engine.verify_chain(block2_hash).get();
-        exec_engine.verify_chain(block3_hash).get();
+        runner.run(exec_engine.verify_chain(block1_hash));
+        runner.run(exec_engine.verify_chain(block2_hash));
+        runner.run(exec_engine.verify_chain(block3_hash));
 
         auto fcu_updated = exec_engine.notify_fork_choice_update(block1_hash, {}, {});
         CHECK(fcu_updated);
@@ -434,9 +434,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block2_hash = block2->header.hash();
         auto block3_hash = block3->header.hash();
 
-        exec_engine.verify_chain(block1_hash).get();
-        exec_engine.verify_chain(block2_hash).get();
-        exec_engine.verify_chain(block3_hash).get();
+        runner.run(exec_engine.verify_chain(block1_hash));
+        runner.run(exec_engine.verify_chain(block2_hash));
+        runner.run(exec_engine.verify_chain(block3_hash));
 
         auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, {}, {});
         CHECK(fcu_updated);
@@ -548,11 +548,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block2a_hash = block2a->header.hash();
         auto block2b_hash = block2b->header.hash();
 
-        auto verification1 = exec_engine.verify_chain(block1b_hash).get();
+        auto verification1 = runner.run(exec_engine.verify_chain(block1b_hash));
         CHECK(!holds_alternative<ValidationError>(verification1));
         REQUIRE(holds_alternative<ValidChain>(verification1));
 
-        auto verification2 = exec_engine.verify_chain(block2b_hash).get();
+        auto verification2 = runner.run(exec_engine.verify_chain(block2b_hash));
         CHECK(!holds_alternative<ValidationError>(verification2));
         REQUIRE(holds_alternative<ValidChain>(verification2));
 
@@ -595,11 +595,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         INFO(to_hex(block_f1_hash.bytes));
 
-        auto verification1 = exec_engine.verify_chain(block_f1_hash).get();
+        auto verification1 = runner.run(exec_engine.verify_chain(block_f1_hash));
         CHECK(!holds_alternative<ValidationError>(verification1));
         REQUIRE(holds_alternative<ValidChain>(verification1));
 
-        auto verification2 = exec_engine.verify_chain(block_f2_hash).get();
+        auto verification2 = runner.run(exec_engine.verify_chain(block_f2_hash));
         CHECK(!holds_alternative<ValidationError>(verification2));
         REQUIRE(holds_alternative<ValidChain>(verification2));
 
@@ -640,11 +640,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block2a_hash = block2a->header.hash();
         auto block2b_hash = block2b->header.hash();
 
-        auto verification1 = exec_engine.verify_chain(block1b_hash).get();
+        auto verification1 = runner.run(exec_engine.verify_chain(block1b_hash));
         CHECK(!holds_alternative<ValidationError>(verification1));
         REQUIRE(holds_alternative<ValidChain>(verification1));
 
-        auto verification2 = exec_engine.verify_chain(block2b_hash).get();
+        auto verification2 = runner.run(exec_engine.verify_chain(block2b_hash));
         CHECK(!holds_alternative<ValidationError>(verification2));
         REQUIRE(holds_alternative<ValidChain>(verification2));
 
@@ -706,7 +706,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
-        exec_engine.verify_chain(block2_hash).get();
+        runner.run(exec_engine.verify_chain(block2_hash));
 
         CHECK(db::read_block_number(tx, block1_hash).has_value());
         CHECK(db::read_block_number(tx, block2_hash).has_value());
@@ -731,7 +731,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
-        exec_engine.verify_chain(block2_hash).get();
+        runner.run(exec_engine.verify_chain(block2_hash));
         exec_engine.notify_fork_choice_update(block2_hash, current_head_id.hash, {});
 
         CHECK(db::read_block_number(tx, block1_hash).has_value());

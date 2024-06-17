@@ -77,24 +77,24 @@ TEST_CASE("MainChain transaction handling") {
             SECTION("multiple reads") {
                 auto hash0 = main_chain.get_finalized_canonical_hash(0);
                 REQUIRE(hash0.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto header0 = main_chain.get_header(0, *hash0);
                 REQUIRE(header0.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto body0 = main_chain.get_body(*hash0);
                 REQUIRE(body0.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto td0 = main_chain.get_header_td(0, *hash0);
                 REQUIRE(td0.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto bn0 = main_chain.get_block_number(*hash0);
                 REQUIRE(bn0.has_value());
                 CHECK(bn0 == 0);
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
             }
 
             SECTION("multiple inserts") {
@@ -104,20 +104,20 @@ TEST_CASE("MainChain transaction handling") {
                 auto block1 = generate_sample_child_blocks(*header0);
                 auto block1_hash = block1->header.hash();
                 main_chain.insert_block(*block1);
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto header1 = main_chain.get_header(1, block1_hash);
                 REQUIRE(header1.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto block2 = generate_sample_child_blocks(*header1);
                 auto block2_hash = block2->header.hash();
                 main_chain.insert_block(*block2);
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto header2 = main_chain.get_header(2, block2_hash);
                 REQUIRE(header2.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
             }
 
             SECTION("completes fork choice update") {
@@ -127,19 +127,19 @@ TEST_CASE("MainChain transaction handling") {
                 auto block1 = generate_sample_child_blocks(*header0);
                 auto block1_hash = block1->header.hash();
                 main_chain.insert_block(*block1);
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto verification1 = main_chain.verify_chain(block1_hash);
                 REQUIRE(holds_alternative<ValidChain>(verification1));
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto fcu_updated = main_chain.notify_fork_choice_update(block1_hash);
                 CHECK(fcu_updated);
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
 
                 auto hash1 = main_chain.get_finalized_canonical_hash(1);
                 REQUIRE(hash1.has_value());
-                CHECK(tx.is_open() == keep_db_txn_open);                
+                CHECK(tx.is_open() == keep_db_txn_open);
             }
         }
     }

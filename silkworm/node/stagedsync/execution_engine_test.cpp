@@ -714,7 +714,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        
+
         CHECK(db::read_block_number(tx2, block1_hash).has_value());
         CHECK(db::read_block_number(tx2, block2_hash).has_value());
         tx2.abort();

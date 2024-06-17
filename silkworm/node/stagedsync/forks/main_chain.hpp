@@ -44,6 +44,7 @@ class MainChain {
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
+    void abort();
 
     // extension
     void insert_block(const Block&);
@@ -74,7 +75,6 @@ class MainChain {
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     bool extends_last_fork_choice(BlockNum, Hash) const;
     bool extends(BlockId block, BlockId supposed_parent) const;
-    bool is_ancestor(BlockId supposed_parent, BlockId block) const;
     bool is_finalized_canonical(Hash) const;
     // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
     std::optional<BlockHeader> get_header(Hash) const;
@@ -98,7 +98,7 @@ class MainChain {
 
     boost::asio::io_context& io_context_;
     NodeSettings& node_settings_;
-    db::RWAccess db_access_;
+    mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;
     bool is_first_sync_{true};
@@ -108,6 +108,10 @@ class MainChain {
     VerificationResult interim_head_status_;
     BlockId last_fork_choice_;
     BlockId last_finalized_head_;
+
+    inline static thread_local int request_count_;
+    void begin_request() const;
+    void end_request() const;
 };
 
 }  // namespace silkworm::stagedsync

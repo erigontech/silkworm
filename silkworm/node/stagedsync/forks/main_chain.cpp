@@ -45,7 +45,11 @@ MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, db::RWAcces
 }
 
 void MainChain::open() {
-    tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
+    if (node_settings_.keep_db_txn_open) {
+        tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
+    } else {
+        begin_request();
+    }
 
     // Load last finalized and last chosen blocks from persistence
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
@@ -80,9 +84,16 @@ void MainChain::open() {
         ensure_invariant(unwind_point.has_value(), "unwind point from pipeline requested when forward fails");
         unwind(*unwind_point);
     }
+    end_request();
 }
 
 void MainChain::close() {
+    if (node_settings_.keep_db_txn_open) {
+        tx_.commit_and_stop();
+    }
+}
+
+void MainChain::abort() {
     tx_.abort();
 }
 
@@ -107,20 +118,36 @@ BlockId MainChain::last_finalized_head() const {
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header, const Hash& header_hash) const {
-    return interim_canonical_chain_.find_forking_point(header, header_hash);
+    begin_request();
+    auto forking_point = interim_canonical_chain_.find_forking_point(header, header_hash);
+    end_request();
+    return forking_point;
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) const {
+    begin_request();
     auto header = get_header(header_hash);
-    if (!header) return std::nullopt;
-    return find_forking_point(*header, header_hash);
+    if (!header) {
+        end_request();
+        return std::nullopt;
+    }
+    auto forking_point = find_forking_point(*header, header_hash);
+    end_request();
+    return forking_point;
 }
 
 bool MainChain::is_finalized_canonical(BlockId block) const {
-    if (block.number > last_fork_choice_.number) return false;
-    return (interim_canonical_chain_.get_hash(block.number) == block.hash);
+    begin_request();
+    if (block.number > last_fork_choice_.number) {
+        end_request();
+        return false;
+    }
+    auto is_finalized = (interim_canonical_chain_.get_hash(block.number) == block.hash);
+    end_request();
+    return is_finalized;
 }
 
+// protected, no txn handling required
 Hash MainChain::insert_header(const BlockHeader& header) {
     return db::write_header_ex(tx_, header, /*with_header_numbers=*/true);
     // with_header_numbers=true is necessary at the moment because many getters here rely on kHeaderNumbers table;
@@ -128,6 +155,7 @@ Hash MainChain::insert_header(const BlockHeader& header) {
     // todo: remove getters that take only an hash as input and use with_header_numbers=false here
 }
 
+// protected, no txn handling required
 void MainChain::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
@@ -138,6 +166,7 @@ void MainChain::insert_body(const Block& block, const Hash& block_hash) {
 }
 
 void MainChain::insert_block(const Block& block) {
+    begin_request();
     Hash header_hash = insert_header(block.header);
     insert_body(block, header_hash);
 
@@ -154,9 +183,11 @@ void MainChain::insert_block(const Block& block) {
         SILK_INFO << "MainChain::insert_block commit " << kInsertedBlockBatch << " blocks up to " << block.header.number
                   << " took " << StopWatch::format(timing.since_start());
     }
+    end_request();
 }
 
 VerificationResult MainChain::verify_chain(Hash block_hash) {
+    begin_request();
     SILK_TRACE << "MainChain: verifying chain block=" << block_hash.to_hex();
 
     // Retrieve the block header to validate
@@ -167,18 +198,22 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     if (is_canonical(block_header->number, block_hash)) {
         // The incoming block matches a block already on the canonical chain, verification is not always needed
         if (block_header->number <= last_fork_choice_.number) {
+            end_request();
             // Last FCU block is greater than or equal to incoming canonical block, chain is valid up to last FCU block
             return ValidChain{last_fork_choice_.number, last_fork_choice_.hash};
         } else if (std::holds_alternative<ValidChain>(interim_head_status_)) {
+            end_request();
             // Chain is valid up to canonical head
             return ValidChain{interim_canonical_chain_.current_head().number, interim_canonical_chain_.current_head().hash};
         } else if (std::holds_alternative<InvalidChain>(interim_head_status_)) {
             // Chain is valid up to unwind point
             const auto& invalid_chain{std::get<InvalidChain>(interim_head_status_)};
             if (block_header->number <= invalid_chain.unwind_point.number) {
+                end_request();
                 // Unwind point is greater than or equal incoming canonical block, chain is valid up to unwind point
                 return ValidChain{invalid_chain.unwind_point.number, invalid_chain.unwind_point.hash};
             } else {
+                end_request();
                 // Incoming canonical block is greater than unwind point, so chain is invalid
                 return invalid_chain;
             }
@@ -239,11 +274,14 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     }
     interim_head_status_ = verify_result;
 
+    end_request();
     return verify_result;
 }
 
 bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    begin_request();
     if (finalized_block_hash && !interim_canonical_chain_.has(*finalized_block_hash)) {
+        end_request();
         return false;  // finalized block not found
     }
 
@@ -251,6 +289,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     ensure_invariant(head_block_number.has_value(), "unknown block number for head block hash");
     if (is_canonical_head_ancestor(head_block_hash) && head_block_number <= last_fork_choice_.number) {
         // FCU selects an old canonical block already targeted by a previous FCU
+        end_request();
         return true;
     }
 
@@ -266,6 +305,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     }
 
     if (!std::holds_alternative<ValidChain>(interim_head_status_)) {
+        end_request();
         return false;  // canonical head is not valid
     }
 
@@ -289,9 +329,11 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
 
     is_first_sync_ = false;
 
+    end_request();
     return true;
 }
 
+// protected, no txn handling required
 std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
 
@@ -330,12 +372,34 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
+void MainChain::begin_request() const {
+    if (!node_settings_.keep_db_txn_open) {
+        if (request_count_ == 0 && !tx_.is_open()) {
+            tx_.reopen(*db_access_);
+        }
+        request_count_++;
+    }
+
+    if (!tx_.is_open()) {
+        throw std::runtime_error("MainChain::begin_request: failed to maintain open transaction");
+    }
+}
+
+void MainChain::end_request() const {
+    if (!node_settings_.keep_db_txn_open) {
+        if (--request_count_ == 0) {
+            tx_.commit_and_stop();
+        }
+    }
+}
+
 std::unique_ptr<ExtendingFork> MainChain::fork(BlockId forking_point) {
     ensure(std::holds_alternative<ValidChain>(interim_head_status_), "forking is allowed from a valid state");
     return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
 }
 
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
+    begin_request();
     Fork* fork = extending_fork.fork_.get();
 
     ensure(fork->head_status() && std::holds_alternative<ValidChain>(*fork->head_status()),
@@ -349,74 +413,99 @@ void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
     interim_head_status_ = *fork->head_status();
     last_fork_choice_ = fork->current_head();
     last_finalized_head_ = fork->finalized_head();
+    end_request();
 }
 
 std::optional<BlockHeader> MainChain::get_header(Hash header_hash) const {
+    begin_request();
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
     // }
     std::optional<BlockHeader> header = data_model_.read_header(header_hash);
+    end_request();
     return header;
 }
 
 std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash header_hash) const {
+    begin_request();
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
     // }
     std::optional<BlockHeader> header = data_model_.read_header(header_height, header_hash);
+    end_request();
     return header;
 }
 
 std::optional<Hash> MainChain::get_finalized_canonical_hash(BlockNum height) const {
     if (height > last_fork_choice_.number) return {};
-    return interim_canonical_chain_.get_hash(height);
+    begin_request();
+    auto canonical_hash = interim_canonical_chain_.get_hash(height);
+    end_request();
+    return canonical_hash;
 }
 
 std::optional<TotalDifficulty> MainChain::get_header_td(BlockNum header_height, Hash header_hash) const {
-    return db::read_total_difficulty(tx_, header_height, header_hash);
+    begin_request();
+    auto td = db::read_total_difficulty(tx_, header_height, header_hash);
+    end_request();
+    return td;
 }
 
 std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const {
+    begin_request();
+    std::optional<TotalDifficulty> td;
     auto header = get_header(header_hash);
-    if (!header) return {};
-    return db::read_total_difficulty(tx_, header->number, header_hash);
+
+    if (header) {
+        td = db::read_total_difficulty(tx_, header->number, header_hash);
+    }
+    end_request();
+    return td;
 }
 
 std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
+    begin_request();
     BlockBody body;
     bool found = data_model_.read_body(header_hash, body);
+    end_request();
     if (!found) return {};
     return body;
 }
 
 BlockNum MainChain::get_block_progress() const {
-    return data_model_.highest_block_number();
+    begin_request();
+    auto block_progress = data_model_.highest_block_number();
+    end_request();
+    return block_progress;
 }
 
 std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
+    begin_request();
     std::vector<BlockHeader> headers;
 
     data_model_.for_last_n_headers(limit, [&headers](BlockHeader&& header) {
         headers.emplace_back(std::move(header));
     });
+    end_request();
 
     return headers;
 }
 
 std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
-    return data_model_.read_block_number(header_hash);
+    begin_request();
+    auto block_number = data_model_.read_block_number(header_hash);
+    end_request();
+    return block_number;
 }
 
-bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {
-    return extends(block, supposed_parent);
-}
-
+// delete?
 bool MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const {
     return extends({height, hash}, last_fork_choice_);
 }
 
+// delete?
 bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
     while (block.number > supposed_parent.number) {
         auto header = get_header(block.number, block.hash);
@@ -431,22 +520,33 @@ bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
 }
 
 bool MainChain::is_finalized_canonical(Hash block_hash) const {
+    begin_request();
     auto header = get_header(block_hash);
-    if (!header) return false;
-    if (header->number > last_fork_choice_.number) return false;
+    if (!header) {
+        end_request();
+        return false;
+    }
+    if (header->number > last_fork_choice_.number) {
+        end_request();
+        return false;
+    }
     auto canonical_hash_at_same_height = interim_canonical_chain_.get_hash(header->number);
+    end_request();
     return canonical_hash_at_same_height == block_hash;
 }
 
+// protected, no txn handling required
 bool MainChain::is_canonical(BlockNum block_height, const Hash& block_hash) const {
     // Check if specified block already exists as canonical block
     return interim_canonical_chain_.get_hash(block_height) == block_hash;
 }
 
+// protected, no txn handling required
 bool MainChain::is_canonical_head_ancestor(const Hash& block_hash) const {
     return interim_canonical_chain_.has(block_hash) && interim_canonical_chain_.current_head().hash != block_hash;
 }
 
+// protected, no txn handling required
 void MainChain::forward(BlockNum head_height, const Hash& head_hash) {
     // update canonical up to header_hash
     interim_canonical_chain_.update_up_to(head_height, head_hash);
@@ -488,6 +588,7 @@ void MainChain::forward(BlockNum head_height, const Hash& head_hash) {
     interim_head_status_ = verify_result;
 }
 
+// protected, no txn handling required
 void MainChain::unwind(BlockNum unwind_point) {
     const auto unwind_result = pipeline_.unwind(tx_, unwind_point);
     success_or_throw(unwind_result);  // unwind must complete with success

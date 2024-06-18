@@ -49,8 +49,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kWarning);
-
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
     test_util::TaskRunner runner;
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
@@ -60,6 +59,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         .chaindata_env_config = db_context.get_env_config(),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
+        .keep_db_txn_open = true,
     };
 
     db::RWAccess db_access{db_context.get_mdbx_env()};
@@ -717,6 +717,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
         CHECK(db::read_block_number(tx2, block1_hash).has_value());
         CHECK(db::read_block_number(tx2, block2_hash).has_value());
+        tx2.abort();
     }
 
     SECTION("notify_fork_choice_update does not update chain database") {
@@ -742,6 +743,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto tx2 = db_access.start_ro_tx();
         CHECK(db::read_block_number(tx2, block1_hash).has_value());
         CHECK(db::read_block_number(tx2, block2_hash).has_value());
+        tx2.abort();
     }
 
     // TODO: temoporarily disabled, to be fixed (JG)

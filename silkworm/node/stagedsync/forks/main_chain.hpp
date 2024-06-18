@@ -44,6 +44,7 @@ class MainChain {
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
+    void abort();
 
     // extension
     void insert_block(const Block&);
@@ -98,7 +99,7 @@ class MainChain {
 
     boost::asio::io_context& io_context_;
     NodeSettings& node_settings_;
-    db::RWAccess db_access_;
+    mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;
     bool is_first_sync_{true};

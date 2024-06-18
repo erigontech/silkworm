@@ -55,7 +55,7 @@ class RequestHandler : public rpc::RequestHandler {
 
   private:
     nlohmann::json prevalidate_and_parse(const std::string& request);
-    JsonRpcValidationResult is_valid_jsonrpc(const nlohmann::json& request_json);
+    ValidationResult is_valid_jsonrpc(const nlohmann::json& request_json);
 
     Task<void> handle_request(
         commands::RpcApiTable::HandleMethod handler,
@@ -73,7 +73,7 @@ class RequestHandler : public rpc::RequestHandler {
 
     const commands::RpcApiTable& rpc_api_table_;
 
-    JsonRpcValidator json_rpc_validator_;
+    Validator json_rpc_validator_;
 
     std::shared_ptr<InterfaceLog> ifc_log_;
 };

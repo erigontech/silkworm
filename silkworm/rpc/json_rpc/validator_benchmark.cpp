@@ -21,7 +21,7 @@
 
 #include "validator.hpp"
 
-static silkworm::rpc::json_rpc::JsonRpcValidator validator{};
+static silkworm::rpc::json_rpc::Validator validator{};
 
 const nlohmann::json requests[2] = {
     {

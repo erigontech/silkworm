@@ -25,26 +25,26 @@
 
 namespace silkworm::rpc::json_rpc {
 
-using JsonRpcValidationResult = tl::expected<void, std::string>;
+using ValidationResult = tl::expected<void, std::string>;
 
-class JsonRpcValidator {
+class Validator {
   public:
     static void load_specification();
     static const std::string& openrpc_version() { return openrpc_version_; }
 
-    JsonRpcValidationResult validate(const nlohmann::json& request);
+    ValidationResult validate(const nlohmann::json& request);
 
   private:
-    JsonRpcValidationResult check_request_fields(const nlohmann::json& request);
-    JsonRpcValidationResult validate_params(const nlohmann::json& request);
-    JsonRpcValidationResult validate_schema(const nlohmann::json& value, const nlohmann::json& schema);
-    JsonRpcValidationResult validate_type(const nlohmann::json& value, const nlohmann::json& schema);
-    JsonRpcValidationResult validate_string(const nlohmann::json& string, const nlohmann::json& schema);
-    JsonRpcValidationResult validate_array(const nlohmann::json& array, const nlohmann::json& schema);
-    JsonRpcValidationResult validate_object(const nlohmann::json& object, const nlohmann::json& schema);
-    JsonRpcValidationResult validate_boolean(const nlohmann::json& boolean);
-    JsonRpcValidationResult validate_number(const nlohmann::json& number);
-    JsonRpcValidationResult validate_null(const nlohmann::json& value);
+    ValidationResult check_request_fields(const nlohmann::json& request);
+    ValidationResult validate_params(const nlohmann::json& request);
+    ValidationResult validate_schema(const nlohmann::json& value, const nlohmann::json& schema);
+    ValidationResult validate_type(const nlohmann::json& value, const nlohmann::json& schema);
+    ValidationResult validate_string(const nlohmann::json& string, const nlohmann::json& schema);
+    ValidationResult validate_array(const nlohmann::json& array, const nlohmann::json& schema);
+    ValidationResult validate_object(const nlohmann::json& object, const nlohmann::json& schema);
+    ValidationResult validate_boolean(const nlohmann::json& boolean);
+    ValidationResult validate_number(const nlohmann::json& number);
+    ValidationResult validate_null(const nlohmann::json& value);
 
     inline static std::string openrpc_version_;
     inline static std::map<std::string, nlohmann::json> method_specs_;

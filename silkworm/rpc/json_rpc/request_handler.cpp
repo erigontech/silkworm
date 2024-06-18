@@ -119,7 +119,7 @@ nlohmann::json RequestHandler::prevalidate_and_parse(const std::string& request)
     return nlohmann::json::parse(request);
 }
 
-JsonRpcValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
+ValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_json) {
     return json_rpc_validator_.validate(request_json);
 }
 

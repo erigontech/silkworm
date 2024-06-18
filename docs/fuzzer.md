@@ -36,7 +36,7 @@ To help with analysing a single request you can run the diagnostic tool:
 ```
 
 ## Trophies
-1.	Various validation errors which led to the introduction of `JsonRpcValidator`
+1.	Various validation errors which led to the introduction of `rpc::json_rpc::Validator`
 2.	BlockNum accepting ill-formatted numbers, e.g. `5x5`
 3.	`{"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1A","0x2",[95,99]]}` - triggers ASAN error
 

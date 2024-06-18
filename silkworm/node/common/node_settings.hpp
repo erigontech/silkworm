@@ -53,6 +53,7 @@ struct NodeSettings {
     uint32_t sync_loop_throttle_seconds{0};                // Minimum interval amongst sync cycle
     uint32_t sync_loop_log_interval_seconds{30};           // Interval for sync loop to emit logs
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
+    bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
 
     inline db::etl::CollectorSettings etl() const {
         return {data_directory->etl().path(), etl_buffer_size};

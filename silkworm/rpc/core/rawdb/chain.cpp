@@ -82,4 +82,4 @@ Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx) {
     SILK_DEBUG << "head header hash: " << silkworm::to_hex(head_header_hash);
     co_return head_header_hash;
 }
-  // namespace silkworm::rpc::core::rawdb
+// namespace silkworm::rpc::core::rawdb

@@ -277,7 +277,10 @@ JsonRpcValidationResult JsonRpcValidator::validate_number(const nlohmann::json& 
 }
 
 JsonRpcValidationResult JsonRpcValidator::validate_null(const nlohmann::json& value) {
-    if (value.is_null() || value.get<std::string>().empty() || value.get<std::string>() == "null") {
+    if (value.is_null()) {
+        return {};
+    }
+    if (value.is_string() && (value.get<std::string>().empty() || value.get<std::string>() == "null")) {
         return {};
     }
     return tl::make_unexpected("Invalid null: " + value.dump());

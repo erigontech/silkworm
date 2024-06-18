@@ -189,15 +189,12 @@ bool sort_by_reward(std::pair<intx::uint256, uint64_t>& p1, const std::pair<intx
 
 Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles) {
     auto& header = block_fees.block->block.header;
+    auto next_block_number = header.number + 1;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
 
     block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
 
-    const auto parent_block = co_await block_provider_(header.number + 1);
-    if (!parent_block) {
-        co_return;
-    }
-    const auto evmc_revision = config_.revision(parent_block->block.header.number, parent_block->block.header.timestamp);
+    const auto evmc_revision = config_.revision(next_block_number, header.timestamp); /* TBD XXX */
     block_fees.next_base_fee = 0;
     if (evmc_revision >= EVMC_LONDON) {
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(header);

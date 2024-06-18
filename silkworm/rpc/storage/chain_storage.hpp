@@ -111,10 +111,6 @@ class ChainStorage {
     // Task<Transactions> read_canonical_transactions(uint64_t base_txn_id, uint64_t txn_count);
 
     // Task<Transactions> read_noncanonical_transactions(uint64_t base_txn_id, uint64_t txn_count);
-
-    // Task<intx::uint256> read_total_issued(BlockNum block_number);
-
-    // Task<intx::uint256> read_total_burnt(BlockNum block_number);
 };
 
 }  // namespace silkworm::rpc

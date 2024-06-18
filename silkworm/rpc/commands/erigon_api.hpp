@@ -57,7 +57,6 @@ class ErigonRpcApi {
     Task<void> handle_erigon_get_latest_logs(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
 
     // GLAZE

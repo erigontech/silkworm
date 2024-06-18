@@ -44,9 +44,6 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
     Task<void> erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_forks(request, reply);
     }
-    Task<void> erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
-        co_return co_await ErigonRpcApi::handle_erigon_watch_the_burn(request, reply);
-    }
     Task<void> erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_block_number(request, reply);
     }
@@ -201,26 +198,6 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_forks", "[rpc][e
                             })"_json,
                             reply),
                         std::exception);
-    }
-}
-
-TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_watch_the_burn", "[rpc][erigon_api]") {
-    nlohmann::json reply;
-
-    SECTION("request invalid params number") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_watch_the_burn>(
-            R"({
-                "jsonrpc":"2.0",
-                "id":1,
-                "method":"erigon_watchTheBurn",
-                "params":["0x49BDEF", "0x2"]
-            })"_json,
-            reply));
-        CHECK(reply == R"({
-            "jsonrpc":"2.0",
-            "id":1,
-            "error":{"code":100,"message":"invalid erigon_watchTheBurn params: [\"0x49BDEF\",\"0x2\"]"}
-        })"_json);
     }
 }
 

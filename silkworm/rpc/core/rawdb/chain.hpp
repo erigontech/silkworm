@@ -41,8 +41,4 @@ Task<intx::uint256> read_total_difficulty(ethdb::Transaction& tx, const evmc::by
 
 Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx);
 
-Task<intx::uint256> read_total_issued(ethdb::Transaction& tx, BlockNum block_number);
-
-Task<intx::uint256> read_total_burnt(ethdb::Transaction& tx, BlockNum block_number);
-
 }  // namespace silkworm::rpc::core::rawdb

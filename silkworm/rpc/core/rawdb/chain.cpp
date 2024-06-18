@@ -82,30 +82,4 @@ Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx) {
     SILK_DEBUG << "head header hash: " << silkworm::to_hex(head_header_hash);
     co_return head_header_hash;
 }
-
-Task<intx::uint256> read_total_issued(ethdb::Transaction& tx, BlockNum block_number) {
-    const auto block_key = silkworm::db::block_key(block_number);
-    const auto value = co_await tx.get_one(db::table::kIssuanceName, block_key);
-    intx::uint256 total_issued = 0;
-    if (!value.empty()) {
-        total_issued = std::stoul(silkworm::to_hex(value), nullptr, 16);
-    }
-    SILK_DEBUG << "rawdb::read_total_issued: " << total_issued;
-    co_return total_issued;
-}
-
-Task<intx::uint256> read_total_burnt(ethdb::Transaction& tx, BlockNum block_number) {
-    const auto block_key = silkworm::db::block_key(block_number);
-    const std::string kBurnt{"burnt"};
-    silkworm::Bytes key{kBurnt.begin(), kBurnt.end()};
-    key.append(block_key.begin(), block_key.end());
-    const auto value = co_await tx.get_one(db::table::kIssuanceName, key);
-    intx::uint256 total_burnt = 0;
-    if (!value.empty()) {
-        total_burnt = std::stoul(silkworm::to_hex(value), nullptr, 16);
-    }
-    SILK_DEBUG << "rawdb::read_total_burnt: " << total_burnt;
-    co_return total_burnt;
-}
-
 }  // namespace silkworm::rpc::core::rawdb

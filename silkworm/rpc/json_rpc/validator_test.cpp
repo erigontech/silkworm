@@ -17,7 +17,6 @@
 #include "validator.hpp"
 
 #include <absl/strings/match.h>
-#include <boost/regex.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/test_database_context.hpp>
@@ -150,6 +149,7 @@ TEST_CASE("JsonRpcValidator rejects missing params field if required", "[rpc][ht
 
     JsonRpcValidationResult result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Missing required parameter: Block");
 }
 
 TEST_CASE("JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_validator]") {
@@ -164,17 +164,26 @@ TEST_CASE("JsonRpcValidator detects unknown fields", "[rpc][http][json_rpc_valid
 
     JsonRpcValidationResult result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid field: unknown");
 }
 
 TEST_CASE("JsonRpcValidator accepts missing optional parameter", "[rpc][http][json_rpc_validator]") {
     JsonRpcValidator validator{create_validator_for_test()};
 
-    nlohmann::json request = {
-        {"jsonrpc", "2.0"},
-        {"method", "eth_getBalance"},
-        {"params", {"0xaa00000000000000000000000000000000000000"}},
-        {"id", 1},
-    };
+    const auto request = R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"eth_call",
+        "params":[
+            {
+                "from":"0xEF04bc7821433f080461BBAE815182E3d7bBb61A",
+                "to":"0x4debB0dF4da8D1f51EF67B727c3F1c0eCC7ed009",
+                "gas":"0x5208",
+                "gasPrice":"0x2CB417800",
+                "value": "0x229322"
+            }
+        ]
+    })"_json;
 
     JsonRpcValidationResult result = validator.validate(request);
     CHECK(result);
@@ -186,56 +195,62 @@ TEST_CASE("JsonRpcValidator validates string parameter", "[rpc][http][json_rpc_v
     nlohmann::json request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {"0xaa0"}},
+        {"params", nlohmann::json::array({"0xaa0", "latest"})},
         {"id", 1},
     };
     JsonRpcValidationResult result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string pattern: 0xaa0 in spec: Address");
 
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {"0xga00000000000000000000000000000000000000"}},
+        {"params", nlohmann::json::array({"0xga00000000000000000000000000000000000000", "latest"})},
         {"id", 1},
     };
     result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string pattern: 0xga00000000000000000000000000000000000000 in spec: Address");
 
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {"1xaa00000000000000000000000000000000000000"}},
+        {"params", nlohmann::json::array({"1xaa00000000000000000000000000000000000000", "latest"})},
         {"id", 1},
     };
     result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string pattern: 1xaa00000000000000000000000000000000000000 in spec: Address");
 
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {"aa00000000000000000000000000000000000000"}},
+        {"params", nlohmann::json::array({"aa00000000000000000000000000000000000000", "latest"})},
         {"id", 1},
     };
     result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string pattern: aa00000000000000000000000000000000000000 in spec: Address");
 
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {"account"}},
+        {"params", nlohmann::json::array({"account", "latest"})},
         {"id", 1},
     };
     result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string pattern: account in spec: Address");
 
     request = {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBalance"},
-        {"params", {123}},
+        {"params", nlohmann::json::array({123, "latest"})},
         {"id", 1},
     };
     result = validator.validate(request);
     CHECK(!result);
+    CHECK(result.error() == "Invalid string: 123 in spec: Address");
 }
 
 TEST_CASE("JsonRpcValidator validates optional parameter if provided", "[rpc][http][json_rpc_validator]") {

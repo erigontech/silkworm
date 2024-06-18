@@ -120,6 +120,7 @@ void to_json(nlohmann::json& json, const TraceEx& trace_ex);
 void to_json(nlohmann::json& json, const TraceMemory& trace_memory);
 void to_json(nlohmann::json& json, const TraceStorage& trace_storage);
 
+void copy_address(const evmone::uint256* stack, std::string& address);
 void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<std::string>& trace_stack);
 void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace_memory);
 void copy_store(std::uint8_t op_code, const evmone::uint256* stack, std::optional<TraceStorage>& trace_storage);
@@ -168,7 +169,13 @@ struct RewardAction {
     intx::uint256 value{0};
 };
 
-using Action = std::variant<TraceAction, RewardAction>;
+struct SuicideAction {
+    evmc::address address;
+    std::string refund_address;
+    intx::uint256 balance{0};
+};
+
+using Action = std::variant<TraceAction, RewardAction, SuicideAction>;
 
 struct TraceResult {
     std::optional<evmc::address> address;
@@ -192,6 +199,7 @@ struct Trace {
 
 void to_json(nlohmann::json& json, const TraceAction& action);
 void to_json(nlohmann::json& json, const RewardAction& action);
+void to_json(nlohmann::json& json, const SuicideAction& action);
 void to_json(nlohmann::json& json, const TraceResult& trace_result);
 void to_json(nlohmann::json& json, const Trace& trace);
 

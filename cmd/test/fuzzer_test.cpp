@@ -23,7 +23,7 @@
 #include "address_sanitizer_fix.hpp"
 
 using namespace silkworm::rpc::json_rpc;
-using namespace silkworm::rpc::test;
+using namespace silkworm::rpc::test_util;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     const auto request = std::string(reinterpret_cast<const char*>(Data), Size);

@@ -39,9 +39,9 @@ class StateView {
   public:
     virtual ~StateView() = default;
 
-    virtual Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) = 0;
+    virtual Task<std::optional<Bytes>> get(const Bytes& key) = 0;
 
-    virtual Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) = 0;
+    virtual Task<std::optional<Bytes>> get_code(const Bytes& key) = 0;
 };
 
 class StateCache {
@@ -94,9 +94,9 @@ class CoherentStateView : public StateView {
     CoherentStateView(const CoherentStateView&) = delete;
     CoherentStateView& operator=(const CoherentStateView&) = delete;
 
-    Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) override;
+    Task<std::optional<Bytes>> get(const Bytes& key) override;
 
-    Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) override;
+    Task<std::optional<Bytes>> get_code(const Bytes& key) override;
 
   private:
     Transaction& txn_;
@@ -135,8 +135,8 @@ class CoherentStateCache : public StateCache {
     void process_storage_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
     bool add(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id);
     bool add_code(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id);
-    Task<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key, Transaction& txn);
-    Task<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key, Transaction& txn);
+    Task<std::optional<Bytes>> get(const Bytes& key, Transaction& txn);
+    Task<std::optional<Bytes>> get_code(const Bytes& key, Transaction& txn);
     CoherentStateRoot* get_root(StateViewId view_id);
     CoherentStateRoot* advance_root(StateViewId view_id);
     void evict_roots(StateViewId next_view_id);

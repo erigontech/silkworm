@@ -35,10 +35,11 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/core/rawdb/util.hpp>
 #include <silkworm/rpc/test_util/dummy_transaction.hpp>
 #include <silkworm/rpc/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
+
+#include "util.hpp"
 
 namespace silkworm::rpc::ethdb::kv {
 

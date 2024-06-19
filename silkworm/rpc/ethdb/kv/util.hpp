@@ -20,12 +20,11 @@
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/types/hash.hpp>
 
-namespace silkworm {
+namespace silkworm::rpc::ethdb::kv {
 
-silkworm::Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, const uint8_t (&hash)[silkworm::kHashLength]);
+Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, HashAsArray hash);
 
-silkworm::Bytes composite_storage_key_without_hash_lookup(const evmc::address& address, uint64_t incarnation);
-
-}  // namespace silkworm
+}  // namespace silkworm::rpc::ethdb::kv

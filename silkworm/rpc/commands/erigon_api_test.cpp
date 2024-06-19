@@ -52,7 +52,7 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
     }
 };
 
-using ErigonRpcApiTest = test::JsonApiTestBase<ErigonRpcApi_ForTest>;
+using ErigonRpcApiTest = test_util::JsonApiTestBase<ErigonRpcApi_ForTest>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_timestamp", "[rpc][erigon_api]") {

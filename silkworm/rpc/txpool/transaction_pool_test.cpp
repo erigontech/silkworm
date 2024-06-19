@@ -70,7 +70,7 @@ namespace silkworm::rpc::txpool {
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;
 
-using TransactionPoolTest = test::GrpcApiTestBase<TransactionPool, StrictMockTxpoolStub>;
+using TransactionPoolTest = test_util::GrpcApiTestBase<TransactionPool, StrictMockTxpoolStub>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::add_transaction", "[rpc][txpool][transaction_pool]") {

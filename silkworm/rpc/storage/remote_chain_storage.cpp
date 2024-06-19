@@ -18,10 +18,10 @@
 
 #include <utility>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc {
@@ -34,7 +34,7 @@ RemoteChainStorage::RemoteChainStorage(ethdb::Transaction& tx,
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)} {}
 
 Task<std::optional<ChainConfig>> RemoteChainStorage::read_chain_config() const {
-    const auto genesis_block_hash{co_await core::rawdb::read_canonical_block_hash(tx_, core::kEarliestBlockNumber)};
+    const auto genesis_block_hash{co_await core::rawdb::read_canonical_block_hash(tx_, kEarliestBlockNumber)};
     SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << to_hex(genesis_block_hash);
     const ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, kHashLength};
     const auto data{co_await tx_.get_one(db::table::kConfigName, genesis_block_hash_bytes)};

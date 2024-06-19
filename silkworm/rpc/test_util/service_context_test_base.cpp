@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "context_test_base.hpp"
+#include "service_context_test_base.hpp"
 
 #include <memory>
 
@@ -30,14 +30,10 @@
 
 #include "mock_execution_engine.hpp"
 
-namespace silkworm::rpc::test {
+namespace silkworm::rpc::test_util {
 
-ContextTestBase::ContextTestBase()
-    : log_guard_{log::Level::kNone},
-      context_{0},
-      io_context_{*context_.io_context()},
-      grpc_context_{*context_.grpc_context()},
-      context_thread_{[&]() { context_.execute_loop(); }} {
+ServiceContextTestBase::ServiceContextTestBase()
+    : ContextTestBase() {
     add_shared_service(io_context_, std::make_shared<BlockCache>());
     add_shared_service(io_context_, std::make_shared<FilterStorage>(1024));
     add_shared_service<ethdb::kv::StateCache>(io_context_, std::make_shared<ethdb::kv::CoherentStateCache>());
@@ -51,11 +47,4 @@ ContextTestBase::ContextTestBase()
     add_private_service<txpool::TransactionPool>(io_context_, std::make_unique<txpool::TransactionPool>(io_context_, grpc_channel, grpc_context_));
 }
 
-ContextTestBase::~ContextTestBase() {
-    context_.stop();
-    if (context_thread_.joinable()) {
-        context_thread_.join();
-    }
-}
-
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::rpc::test_util

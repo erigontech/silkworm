@@ -43,10 +43,10 @@
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 
-namespace silkworm::rpc::test {
+namespace silkworm::rpc::test_util {
 
 class ChannelForTest : public StreamWriter {
   public:
@@ -77,9 +77,9 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
     inline static const std::vector<std::string> allowed_origins;
 };
 
-class LocalContextTestBase : public silkworm::rpc::test::ContextTestBase {
+class LocalContextTestBase : public ServiceContextTestBase {
   public:
-    explicit LocalContextTestBase(ethdb::kv::StateCache* state_cache, mdbx::env& chaindata_env) : ContextTestBase() {
+    explicit LocalContextTestBase(ethdb::kv::StateCache* state_cache, mdbx::env& chaindata_env) : ServiceContextTestBase() {
         add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(state_cache, chaindata_env));
     }
 };
@@ -121,8 +121,8 @@ class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<
     using RpcApiTestBase<RequestHandler_ForTest>::run;
 
   private:
-    static inline test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
+    static inline silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
     static inline bool jsonrpc_spec_loaded{false};
 };
 
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::rpc::test_util

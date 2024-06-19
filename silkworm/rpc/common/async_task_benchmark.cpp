@@ -17,7 +17,7 @@
 #include <benchmark/benchmark.h>
 
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
 #include "async_task.hpp"
 
@@ -27,7 +27,7 @@ std::size_t recursive_factorial(std::size_t n) {
     return n == 0 ? 1 : n * recursive_factorial(n - 1);
 }
 
-struct AsyncTaskBenchTest : test::ContextTestBase {
+struct AsyncTaskBenchTest : test_util::ServiceContextTestBase {
 };
 
 template <typename Executor>

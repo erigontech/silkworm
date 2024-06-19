@@ -27,7 +27,7 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/engine/execution_engine.hpp>
 
-namespace silkworm::rpc::test {
+namespace silkworm::rpc::test_util {
 
 class ExecutionEngineMock : public engine::ExecutionEngine {  // NOLINT
   public:
@@ -38,4 +38,4 @@ class ExecutionEngineMock : public engine::ExecutionEngine {  // NOLINT
     MOCK_METHOD((Task<ExecutionPayloadBodies>), get_payload_bodies_by_range, (BlockNum start, uint64_t count, Msec));
 };
 
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::rpc::test_util

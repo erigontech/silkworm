@@ -37,7 +37,7 @@ namespace silkworm::rpc::txpool {
 using evmc::literals::operator""_bytes32;
 using StrictMockMiningStub = testing::StrictMock<::txpool::MockMiningStub>;
 
-using MinerTest = test::GrpcApiTestBase<Miner, StrictMockMiningStub>;
+using MinerTest = test_util::GrpcApiTestBase<Miner, StrictMockMiningStub>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {

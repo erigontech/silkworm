@@ -22,11 +22,11 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
 namespace silkworm::rpc {
 
-struct AsyncTaskTest : test::ContextTestBase {
+struct AsyncTaskTest : test_util::ServiceContextTestBase {
 };
 
 const static std::vector<std::pair<std::size_t, std::size_t>> kTestData = {

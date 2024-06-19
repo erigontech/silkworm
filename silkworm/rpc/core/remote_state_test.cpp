@@ -27,7 +27,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_chain_storage.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
@@ -38,7 +38,7 @@ using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
 
-struct RemoteStateTest : public test::ContextTestBase {
+struct RemoteStateTest : public test_util::ContextTestBase {
     test::MockTransaction transaction;
     boost::asio::any_io_executor current_executor{io_context_.get_executor()};
     test::MockChainStorage chain_storage;

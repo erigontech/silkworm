@@ -39,7 +39,7 @@
 
 namespace silkworm::rpc {
 
-struct RemoteDatabaseTest : test::KVTestBase {
+struct RemoteDatabaseTest : test_util::KVTestBase {
   public:
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;

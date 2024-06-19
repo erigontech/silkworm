@@ -31,7 +31,7 @@ namespace silkworm::rpc::ethdb::kv {
 
 using testing::_;
 
-struct RemoteTransactionTest : test::KVTestBase {
+struct RemoteTransactionTest : test_util::KVTestBase {
     CoherentStateCache state_cache_;
     test::BackEndMock backend;
     RemoteTransaction remote_tx_{*stub_,

@@ -21,10 +21,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc {
@@ -54,7 +54,7 @@ static const silkworm::Bytes kEncodedStorageHistory{*silkworm::from_hex(
 static const silkworm::Bytes kBinaryCode{*silkworm::from_hex("0x60045e005c60016000555d")};
 static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba79cd792e7199d615be88284d_bytes32};
 
-struct StateReaderTest : public test::ContextTestBase {
+struct StateReaderTest : public test_util::ContextTestBase {
     test::MockTransaction transaction_;
     StateReader state_reader_{transaction_};
 };
@@ -69,7 +69,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return no account
         std::optional<silkworm::Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
         CHECK(!account);
     }
 
@@ -82,7 +82,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 2);
@@ -103,7 +103,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return expected account
         std::optional<silkworm::Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 2);
@@ -124,7 +124,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 12345);
@@ -145,7 +145,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return empty storage value
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
         CHECK(location == evmc::bytes32{});
     }
 
@@ -158,7 +158,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
         CHECK(location == silkworm::to_bytes32(kStorageLocation));
     }
 
@@ -167,7 +167,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
         EXPECT_CALL(transaction_, get(db::table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{
-                silkworm::db::storage_history_key(kZeroAddress, kLocationHash, core::kEarliestBlockNumber),
+                silkworm::db::storage_history_key(kZeroAddress, kLocationHash, kEarliestBlockNumber),
                 kEncodedStorageHistory};
         }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet the storage location value
@@ -175,7 +175,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, core::kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
         CHECK(location == silkworm::to_bytes32(kStorageLocation));
     }
 }

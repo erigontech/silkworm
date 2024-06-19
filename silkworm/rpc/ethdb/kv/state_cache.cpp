@@ -27,7 +27,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/util.hpp>
+
+#include "util.hpp"
 
 namespace silkworm::rpc::ethdb::kv {
 

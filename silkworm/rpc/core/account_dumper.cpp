@@ -100,7 +100,7 @@ Task<void> AccountDumper::load_accounts(const std::vector<silkworm::KeyValue>& c
         dump_account.incarnation = account->incarnation;
 
         if (account->incarnation > 0 && account->code_hash == silkworm::kEmptyHash) {
-            const auto storage_key{silkworm::db::storage_prefix(full_view(address), account->incarnation)};
+            const auto storage_key{db::storage_prefix(full_view(address), account->incarnation)};
             auto code_hash{co_await transaction_.get_one(db::table::kPlainCodeHashName, storage_key)};
             if (code_hash.length() == silkworm::kHashLength) {
                 std::memcpy(dump_account.code_hash.bytes, code_hash.data(), silkworm::kHashLength);

@@ -29,7 +29,6 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 

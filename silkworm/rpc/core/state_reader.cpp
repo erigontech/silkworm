@@ -25,7 +25,6 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/rawdb/util.hpp>
 
 namespace silkworm::rpc {
 
@@ -61,7 +60,7 @@ Task<evmc::bytes32> StateReader::read_storage(
     BlockNum block_number) const {
     std::optional<silkworm::Bytes> value{co_await read_historical_storage(address, incarnation, location_hash, block_number)};
     if (!value) {
-        auto composite_key{silkworm::composite_storage_key_without_hash_lookup(address, incarnation)};
+        const auto composite_key{db::storage_prefix(address, incarnation)};
         SILK_DEBUG << "StateReader::read_storage composite_key: " << composite_key;
         value = co_await tx_.get_both_range(db::table::kPlainStateName, composite_key, location_hash.bytes);
         SILK_DEBUG << "StateReader::read_storage value: " << (value ? *value : silkworm::Bytes{});

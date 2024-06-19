@@ -25,7 +25,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/types/chain_config.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 

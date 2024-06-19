@@ -90,9 +90,9 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     }
     const auto address = params[0].get<evmc::address>();
     const auto quantity = params[1].get<uint64_t>();
-    std::optional<silkworm::Bytes> offset = std::nullopt;
+    std::optional<Bytes> offset = std::nullopt;
     if (params.size() >= 3 && !params[2].is_null()) {
-        offset = std::make_optional(params[2].get<silkworm::Bytes>());
+        offset = std::make_optional(params[2].get<Bytes>());
     }
     std::string block_id = core::kLatestBlockId;
     if (params.size() >= 4) {
@@ -110,19 +110,19 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
 
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_number;
-        std::optional<silkworm::Account> account = co_await state_reader.read_account(address, block_number);
+        std::optional<Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};
 
-        silkworm::Bytes seek_bytes = silkworm::db::storage_prefix(full_view(address), account->incarnation);
+        Bytes seek_bytes = db::storage_prefix(full_view(address), account->incarnation);
         const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainStateName);
         SILK_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id();
-        silkworm::Bytes seek_val = offset ? offset.value() : silkworm::Bytes{};
+        Bytes seek_val = offset ? offset.value() : Bytes{};
 
         std::vector<evmc::bytes32> keys;
         auto v = co_await cursor->seek_both(seek_bytes, seek_val);
         // We look for keys until we have the quantity we want or the key is invalid/empty
-        while (v.size() >= silkworm::kHashLength && keys.size() != quantity) {
-            auto value = silkworm::bytes32_from_hex(silkworm::to_hex(v));
+        while (v.size() >= kHashLength && keys.size() != quantity) {
+            auto value = bytes32_from_hex(silkworm::to_hex(v));
             keys.push_back(value);
             const auto kv_pair = co_await cursor->next_dup();
 

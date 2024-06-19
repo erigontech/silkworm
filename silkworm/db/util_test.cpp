@@ -29,10 +29,17 @@ constexpr auto kZeroHash = 0x000000000000000000000000000000000000000000000000000
 
 TEST_CASE("all-zero storage prefix", "[core][util]") {
     const auto address_composite_key{storage_prefix(kZeroAddress, 0)};
-    CHECK(address_composite_key == silkworm::Bytes(28, '\0'));
+    CHECK(address_composite_key == Bytes(28, '\0'));
 
     const auto location_composite_key{storage_prefix(kZeroHash.bytes, 0)};
-    CHECK(location_composite_key == silkworm::Bytes(40, '\0'));
+    CHECK(location_composite_key == Bytes(40, '\0'));
+}
+
+TEST_CASE("non-zero storage prefix for address and incarnation", "[core][util]") {
+    const evmc::address address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
+    const uint64_t incarnation{1};
+    const auto address_composite_key{storage_prefix(address, incarnation)};
+    CHECK(to_hex(address_composite_key) == "79a4d418f7887dd4d5123a41b6c8c186686ae8cb0000000000000001");
 }
 
 }  // namespace silkworm::db

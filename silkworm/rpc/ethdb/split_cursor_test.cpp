@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "cursor.hpp"
+#include "split_cursor.hpp"
 
 #include <string>
 

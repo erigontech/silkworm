@@ -27,7 +27,7 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
+#include <silkworm/rpc/ethdb/split_cursor.hpp>
 
 namespace silkworm::rpc {
 
@@ -35,13 +35,6 @@ silkworm::Bytes make_key(const evmc::address& address, const evmc::bytes32& loca
     silkworm::Bytes res(silkworm::kAddressLength + silkworm::kHashLength, '\0');
     std::memcpy(&res[0], address.bytes, silkworm::kAddressLength);
     std::memcpy(&res[silkworm::kAddressLength], location.bytes, silkworm::kHashLength);
-    return res;
-}
-
-silkworm::Bytes make_key(const evmc::address& address, uint64_t incarnation) {
-    silkworm::Bytes res(silkworm::kAddressLength + 8, '\0');
-    std::memcpy(&res[0], address.bytes, silkworm::kAddressLength);
-    endian::store_big_u64(&res[silkworm::kAddressLength], incarnation);
     return res;
 }
 
@@ -95,7 +88,7 @@ Task<void> StorageWalker::walk_of_storages(
     SILK_TRACE << "block_number=" << block_number << " address=" << address << " START";
 
     auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStateName);
-    auto ps_key{make_key(address, incarnation)};
+    auto ps_key{db::storage_prefix(address, incarnation)};
     ethdb::SplitCursorDupSort ps_split_cursor{*ps_cursor,
                                               ps_key,
                                               start_location.bytes,     /* subkey */

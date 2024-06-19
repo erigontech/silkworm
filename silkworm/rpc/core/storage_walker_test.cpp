@@ -434,12 +434,4 @@ TEST_CASE("make key for address and location") {
     CHECK(silkworm::to_hex(key) == "79a4d418f7887dd4d5123a41b6c8c186686ae8cb56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
 }
 
-TEST_CASE("make key for address, incarnation ") {
-    evmc::address address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
-    uint64_t incarnation = 1;
-
-    auto key = make_key(address, incarnation);
-    CHECK(silkworm::to_hex(key) == "79a4d418f7887dd4d5123a41b6c8c186686ae8cb0000000000000001");
-}
-
 }  // namespace silkworm::rpc

@@ -120,7 +120,7 @@ jobs:
                     --chain mainnet \
                     --runner ${{ runner.name }} \
                     --db_version $db_version \
-                    --outcome success \ 
+                    --outcome success \
                     --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
                else
                   failed_test=1

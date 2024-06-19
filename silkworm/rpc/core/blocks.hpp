@@ -33,8 +33,6 @@ constexpr const char* kFinalizedBlockId{"finalized"};
 constexpr const char* kSafeBlockId{"safe"};
 constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
-constexpr BlockNum kEarliestBlockNumber{0ul};
-
 // TODO(canepat) migrate to ChainStorage?
 
 Task<bool> is_latest_block_number(BlockNum block_number, ethdb::Transaction& tx);

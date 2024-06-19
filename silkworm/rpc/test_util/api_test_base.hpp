@@ -20,12 +20,12 @@
 #include <utility>
 
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
-namespace silkworm::rpc::test {
+namespace silkworm::rpc::test_util {
 
 template <typename JsonApi>
-class JsonApiTestBase : public ContextTestBase {
+class JsonApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
@@ -35,9 +35,9 @@ class JsonApiTestBase : public ContextTestBase {
 };
 
 template <typename JsonApi>
-class JsonApiWithWorkersTestBase : public ContextTestBase {
+class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
   public:
-    explicit JsonApiWithWorkersTestBase() : ContextTestBase(), workers_{1} {}
+    explicit JsonApiWithWorkersTestBase() : ServiceContextTestBase(), workers_{1} {}
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
@@ -49,7 +49,7 @@ class JsonApiWithWorkersTestBase : public ContextTestBase {
 };
 
 template <typename GrpcApi, typename Stub>
-class GrpcApiTestBase : public ContextTestBase {
+class GrpcApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
@@ -60,4 +60,4 @@ class GrpcApiTestBase : public ContextTestBase {
     std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 };
 
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::rpc::test_util

@@ -31,10 +31,10 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/dummy_transaction.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -42,7 +42,7 @@ namespace silkworm::rpc {
 using testing::_;
 using testing::InvokeWithoutArgs;
 
-struct EVMExecutorTest : public test::ContextTestBase {
+struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     EVMExecutorTest() {
         pool.start();
     }

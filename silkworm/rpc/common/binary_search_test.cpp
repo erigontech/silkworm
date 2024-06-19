@@ -21,11 +21,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
 namespace silkworm::rpc {
 
-struct BinarySearchTest : test::ContextTestBase {
+struct BinarySearchTest : test_util::ServiceContextTestBase {
 };
 
 struct BinaryTestData {

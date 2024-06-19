@@ -21,6 +21,7 @@
 #include <absl/strings/match.h>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -86,7 +87,7 @@ std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& bnoh) {
 void BlockNumberOrHash::build(const std::string& bnoh) {
     value_ = uint64_t{0};
     if (bnoh == core::kEarliestBlockId) {
-        value_ = core::kEarliestBlockNumber;
+        value_ = kEarliestBlockNumber;
     } else if (bnoh == core::kLatestBlockId ||
                bnoh == core::kPendingBlockId ||
                bnoh == core::kFinalizedBlockId ||

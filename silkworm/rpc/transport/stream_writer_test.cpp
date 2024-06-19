@@ -21,11 +21,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
 namespace silkworm::rpc {
 
-struct WriterTest : test::ContextTestBase {
+struct WriterTest : test_util::ServiceContextTestBase {
 };
 
 class JsonChunkWriter : public StreamWriter {

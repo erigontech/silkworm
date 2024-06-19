@@ -22,6 +22,7 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -127,7 +128,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto chain_storage = tx->create_storage();
 
         // Lookup the first and last block headers
-        const auto first_header = co_await chain_storage->read_canonical_header(core::kEarliestBlockNumber);
+        const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNumber);
         const auto head_header_hash = co_await core::rawdb::read_head_header_hash(*tx);
         const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
         const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
@@ -138,7 +139,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         if (current_header->timestamp <= timestamp) {
             block_number = current_block_number;
         } else if (first_header->timestamp >= timestamp) {
-            block_number = core::kEarliestBlockNumber;
+            block_number = kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
             auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {

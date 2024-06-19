@@ -25,7 +25,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
@@ -34,7 +34,7 @@
 
 namespace silkworm::chainsync {
 
-struct PoSSyncTest : public rpc::test::ContextTestBase {
+struct PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
     SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     mdbx::env_managed chaindata_env{};
     db::ROAccess db_access{chaindata_env};

@@ -50,6 +50,8 @@ using BlockNum = uint64_t;
 using BlockNumRange = std::pair<BlockNum, BlockNum>;
 using BlockTime = uint64_t;
 
+inline constexpr BlockNum kEarliestBlockNumber{0ul};
+
 inline constexpr size_t kAddressLength{20};
 
 inline constexpr size_t kHashLength{32};

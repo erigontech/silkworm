@@ -22,7 +22,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 
 namespace silkworm::rpc::json {
 
@@ -31,7 +31,7 @@ static const nlohmann::json kJsonNull = nlohmann::json::value_t::null;
 static const nlohmann::json kJsonEmptyObject = nlohmann::json::value_t::object;
 static const nlohmann::json kJsonEmptyArray = nlohmann::json::value_t::array;
 
-struct StreamTest : test::ContextTestBase {
+struct StreamTest : test_util::ServiceContextTestBase {
 };
 
 TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {

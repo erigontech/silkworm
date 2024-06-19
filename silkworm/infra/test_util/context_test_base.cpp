@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,18 +12,24 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-find_package(benchmark REQUIRED)
+#include "context_test_base.hpp"
 
-file(GLOB_RECURSE SILKWORM_BENCHMARK_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/*_benchmark.cpp")
-add_executable(benchmark_test benchmark_test.cpp ${SILKWORM_BENCHMARK_TESTS})
-target_link_libraries(
-  benchmark_test
-  silkworm_infra
-  silkworm_infra_test_util
-  silkworm_node
-  silkworm_rpcdaemon
-  silkworm_rpcdaemon_test_util
-  benchmark::benchmark
-)
+namespace silkworm::test_util {
+
+ContextTestBase::ContextTestBase()
+    : log_guard_{log::Level::kNone},
+      context_{0},
+      io_context_{*context_.io_context()},
+      grpc_context_{*context_.grpc_context()},
+      context_thread_{[&]() { context_.execute_loop(); }} {}
+
+ContextTestBase::~ContextTestBase() {
+    context_.stop();
+    if (context_thread_.joinable()) {
+        context_thread_.join();
+    }
+}
+
+}  // namespace silkworm::test_util

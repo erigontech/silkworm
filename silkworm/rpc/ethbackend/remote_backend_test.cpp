@@ -60,7 +60,7 @@ using evmc::literals::operator""_bytes32;
 
 using StrictMockEthBackendStub = testing::StrictMock<::remote::MockETHBACKENDStub>;
 
-using EthBackendTest = test::GrpcApiTestBase<ethbackend::RemoteBackEnd, StrictMockEthBackendStub>;
+using EthBackendTest = test_util::GrpcApiTestBase<ethbackend::RemoteBackEnd, StrictMockEthBackendStub>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::etherbase", "[silkworm][rpc][ethbackend][backend]") {

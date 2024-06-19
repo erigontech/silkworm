@@ -58,7 +58,7 @@ TEST_CASE("StateChangesStream::set_registration_interval", "[rpc][ethdb][kv][sta
     CHECK(StateChangesStream::registration_interval() == kDefaultRegistrationInterval);
 }
 
-struct StateChangesStreamTest : test::KVTestBase {
+struct StateChangesStreamTest : test_util::KVTestBase {
     StateChangesStream stream_{context_, stub_.get()};
 };
 

@@ -106,14 +106,14 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
 using testing::_;
 using testing::InvokeWithoutArgs;
 
-struct EngineRpcApiTest : public test::JsonApiTestBase<EngineRpcApi_ForTest> {
-    EngineRpcApiTest() : test::JsonApiTestBase<EngineRpcApi_ForTest>() {
+struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest> {
+    EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApi_ForTest>() {
         add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor));
         add_shared_service<engine::ExecutionEngine>(io_context_, mock_engine);
         add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<test::BackEndMock>());
     }
 
-    std::shared_ptr<test::ExecutionEngineMock> mock_engine{std::make_shared<test::ExecutionEngineMock>()};
+    std::shared_ptr<test_util::ExecutionEngineMock> mock_engine{std::make_shared<test_util::ExecutionEngineMock>()};
     std::shared_ptr<test::MockCursor> mock_cursor{std::make_shared<test::MockCursor>()};
 };
 

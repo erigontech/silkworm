@@ -28,10 +28,10 @@
 #include <silkworm/rpc/core/remote_state.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test_util/context_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_block_cache.hpp>
 #include <silkworm/rpc/test_util/mock_transaction.hpp>
+#include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc::debug {
@@ -54,7 +54,7 @@ static Bytes kConfigValue{*silkworm::from_hex(
     "223a302c22697374616e62756c426c6f636b223a313536313635312c226265726c696e426c6f636b223a343436303634342c226c6f6e646f6e"
     "426c6f636b223a353036323630352c22636c69717565223a7b22706572696f64223a31352c2265706f6368223a33303030307d7d")};
 
-struct DebugExecutorTest : public test::ContextTestBase {
+struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     test::MockBlockCache cache;
     test::MockTransaction transaction;
     WorkerPool workers{1};

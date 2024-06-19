@@ -23,10 +23,10 @@
 namespace silkworm::rpc::json_rpc {
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
     const auto request = R"({"jsonrpc":"2.0","id":1})"_json;
     std::string reply;
-    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -37,10 +37,10 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request no method", "[rpc][h
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request invalid method", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request invalid method", "[rpc][handle_request]") {
     const auto request = R"({"jsonrpc":"2.0","id":1, "method":"eth_AAA"})"_json;
     std::string reply;
-    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -51,10 +51,10 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request invalid method", "[r
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request method return failed", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request method return failed", "[rpc][handle_request]") {
     const auto request = R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"_json;
     std::string reply;
-    run<&test::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":3,
@@ -65,13 +65,13 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request method return failed
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow nil characters after json object", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request does not allow nil characters after json object", "[rpc][handle_request]") {
     // request: {"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1A","0x2",[95,99]]}\0x0H
     constexpr char binary_input_internal[] = {0x7b, 0x22, 0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x22, 0x3a, 0x22, 0x32, 0x2e, 0x30, 0x22, 0x2c, 0x22, 0x69, 0x64, 0x22, 0x3a, 0x31, 0x2c, 0x22, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x22, 0x3a, 0x22, 0x65, 0x74, 0x68, 0x5f, 0x66, 0x65, 0x65, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x22, 0x2c, 0x22, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x3a, 0x5b, 0x22, 0x30, 0x78, 0x31, 0x41, 0x22, 0x2c, 0x22, 0x30, 0x78, 0x32, 0x22, 0x2c, 0x5b, 0x39, 0x35, 0x2c, 0x39, 0x39, 0x5d, 0x5d, 0x7d, 0x0, 0x48};
     const std::string_view request_view{&binary_input_internal[0], sizeof(binary_input_internal)};
     const std::string request{request_view};
     std::string reply;
-    run<&test::RequestHandler_ForTest::handle_request>(request, reply);
+    run<&test_util::RequestHandler_ForTest::handle_request>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "error": {
             "code": -32601,
@@ -82,13 +82,13 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow nil c
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow nil characters inside json object", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request does not allow nil characters inside json object", "[rpc][handle_request]") {
     // request: {"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1A","0x2",[95,99]]\0x0}
     constexpr char binary_input_internal[] = {0x7b, 0x22, 0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x22, 0x3a, 0x22, 0x32, 0x2e, 0x30, 0x22, 0x2c, 0x22, 0x69, 0x64, 0x22, 0x3a, 0x31, 0x2c, 0x22, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x22, 0x3a, 0x22, 0x65, 0x74, 0x68, 0x5f, 0x66, 0x65, 0x65, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x22, 0x2c, 0x22, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x3a, 0x5b, 0x22, 0x30, 0x78, 0x31, 0x41, 0x22, 0x2c, 0x22, 0x30, 0x78, 0x32, 0x22, 0x2c, 0x5b, 0x39, 0x35, 0x2c, 0x39, 0x39, 0x5d, 0x5d, 0x0, 0x7d};
     const std::string_view request_view{&binary_input_internal[0], sizeof(binary_input_internal)};
     const std::string request{request_view};
     std::string reply;
-    run<&test::RequestHandler_ForTest::handle_request>(request, reply);
+    run<&test_util::RequestHandler_ForTest::handle_request>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "error": {
             "code": -32601,
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow nil c
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does allow nil characters inside quoted string", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request does allow nil characters inside quoted string", "[rpc][handle_request]") {
     // request: {"jsonrpc":"2.0","id":1,"method":"eth_feeHistory\0x0","params":["0x1A","0x2",[95,99]]}
     constexpr char binary_input_internal[] = {
         0x7b, 0x22, 0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x22, 0x3a, 0x22, 0x32, 0x2e, 0x30, 0x22, 0x2c, 0x22, 0x69, 0x64, 0x22,
@@ -109,7 +109,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does allow nil chara
     const std::string_view request_view{&binary_input_internal[0], sizeof(binary_input_internal)};
     const std::string request{request_view};
     std::string reply;
-    run<&test::RequestHandler_ForTest::handle_request>(request, reply);
+    run<&test_util::RequestHandler_ForTest::handle_request>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "error": {
             "code": -32600,
@@ -120,7 +120,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does allow nil chara
     })"_json);
 }
 
-TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow missing params if required", "[rpc][handle_request]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request does not allow missing params if required", "[rpc][handle_request]") {
     // request: {"jsonrpc":"2.0","id":1,"method":"eth_getBlockReceipts"}\012
     constexpr char binary_input_internal[] = {
         0x7b, 0x22, 0x6a, 0x73, 0x6f, 0x6e, 0x72, 0x70, 0x63, 0x22, 0x3a, 0x22, 0x32, 0x2e, 0x30, 0x22, 0x2c, 0x22, 0x69, 0x64, 0x22,
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(test::RpcApiE2ETest, "check handle_request does not allow missi
     const std::string_view request_view{&binary_input_internal[0], sizeof(binary_input_internal)};
     const std::string request{request_view};
     std::string reply;
-    run<&test::RequestHandler_ForTest::handle_request>(request, reply);
+    run<&test_util::RequestHandler_ForTest::handle_request>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "error": {
             "code": -32600,

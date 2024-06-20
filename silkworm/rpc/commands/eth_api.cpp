@@ -2086,7 +2086,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
     try {
         const auto chain_storage{tx->create_storage()};
 
-        rpc::fee_history::BlockHeaderProvider block_header_provider = [this, &chain_storage](BlockNum block_number) {
+        rpc::fee_history::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_number) {
             return chain_storage->read_canonical_header(block_number);
         };
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {

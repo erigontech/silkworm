@@ -164,7 +164,7 @@ std::string to_quantity(uint64_t number) {
     return "0x" + to_hex_no_leading_zeros(number);
 }
 
-std::string to_quantity(intx::uint256 number) {
+std::string to_quantity(const intx::uint256& number) {
     if (number == 0) {
         return "0x0";
     }

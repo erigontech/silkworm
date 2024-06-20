@@ -1268,9 +1268,8 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         co_return traces;
     }
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-    const auto rule_set_factory = protocol::rule_set_factory(*chain_config_ptr);
+    const auto chain_config = co_await chain_storage_.read_chain_config();
+    const auto rule_set_factory = protocol::rule_set_factory(chain_config);
     const auto block_rewards = rule_set_factory->compute_reward(block_with_hash.block);
 
     if (filter.count > 0 && filter.after == 0) {
@@ -1327,9 +1326,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
     SILK_TRACE << "trace_block_transactions: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
@@ -1339,7 +1336,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
         for (size_t index = 0; index < transactions.size(); index++) {
@@ -1394,9 +1391,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
                << " block_number: " << block_number
                << " #trace_calls: " << calls.size();
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto trace_calls_result = co_await async_task(workers_.executor(), [&]() -> TraceManyCallResult {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number);
@@ -1404,7 +1399,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         StateAddresses state_addresses(initial_ibs);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{*chain_config_ptr, workers_, state};
+        EVMExecutor executor{chain_config, workers_, state};
 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
@@ -1457,16 +1452,14 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 
     SILK_TRACE << "trace_deploy_transaction: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto deploy_result = co_await async_task(workers_.executor(), [&]() -> TraceDeployResult {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         TraceDeployResult result;
 
@@ -1515,15 +1508,13 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     const auto& block = transaction_with_block.block_with_hash->block;
     const auto block_number = block.header.number;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1542,16 +1533,14 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     const auto& block = transaction_with_block.block_with_hash->block;
     const auto block_number = block.header.number;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1572,16 +1561,14 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     const auto& block = transaction_with_block.block_with_hash->block;
     auto block_number = block.header.number;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1604,16 +1591,14 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
     auto block_number = block.header.number;
     auto& hash = block_with_hash.hash;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
 
         for (size_t i = 0; i < block.transactions.size(); i++) {
             auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
@@ -1706,9 +1691,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
                << " index: " << std::dec << index
                << " config: " << config;
 
-    const auto chain_config_ptr = co_await chain_storage_.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
         auto state = tx_.create_state(current_executor, chain_storage_, block_number);
@@ -1720,7 +1703,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         tracers.push_back(tracer);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+        EVMExecutor executor{chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
             silkworm::Transaction txn{block.transactions[idx]};
             const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);

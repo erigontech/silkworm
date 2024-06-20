@@ -302,16 +302,14 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
 
-        auto chain_config_ptr = co_await chain_storage->read_chain_config();
-        ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+        const auto chain_config = co_await chain_storage->read_chain_config();
         auto this_executor = co_await boost::asio::this_coro::executor;
         auto result = co_await async_task(workers_.executor(), [&]() -> nlohmann::json {
             auto state = tx->create_state(this_executor, *chain_storage, block_number - 1);
             auto account_opt = state->read_account(address);
             account_opt.value_or(silkworm::Account{});
 
-            EVMExecutor executor{*chain_config_ptr, workers_, state};
+            EVMExecutor executor{chain_config, workers_, state};
 
             uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
             for (uint64_t idx{0}; idx < index; idx++) {
@@ -710,9 +708,9 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
         const auto chain_storage = tx->create_storage();
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
-        auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
+        const auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
         if (!header) {
-            throw std::invalid_argument("header not found");
+            throw std::invalid_argument("header " + std::to_string(block_number) + " not found");
         }
         Bytes encoded_header;
         rlp::encode(encoded_header, *header);

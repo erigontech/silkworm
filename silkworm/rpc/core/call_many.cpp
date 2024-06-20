@@ -156,9 +156,7 @@ Task<CallManyResult> CallExecutor::execute(
         co_return result;
     }
 
-    const auto chain_config_ptr = co_await chain_storage->read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await chain_storage->read_chain_config();
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, transaction_, context.block_number);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_number_or_hash: block not found");
@@ -170,7 +168,7 @@ Task<CallManyResult> CallExecutor::execute(
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {
-        return executes_all_bundles(*chain_config_ptr,
+        return executes_all_bundles(chain_config,
                                     *chain_storage,
                                     block_with_hash,
                                     bundles,

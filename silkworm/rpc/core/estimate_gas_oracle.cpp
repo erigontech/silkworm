@@ -39,7 +39,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     } else {
         const auto header = co_await block_header_provider_(block_number);
         if (!header) {
-            throw EstimateGasException{-1, "invalid header"};
+            throw EstimateGasException{-1, "header " + std::to_string(block_number) + " not found"};
         }
 
         hi = header->gas_limit;

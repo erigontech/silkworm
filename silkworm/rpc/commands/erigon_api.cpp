@@ -129,9 +129,12 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
 
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNumber);
+        ensure(first_header.has_value(), "cannot find earliest header");
         const auto head_header_hash = co_await core::rawdb::read_head_header_hash(*tx);
-        const auto header_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
-        const auto current_header = co_await chain_storage->read_header(*header_header_block_number, head_header_hash);
+        const auto head_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
+        ensure(head_header_block_number.has_value(), "cannot find head header hash");
+        const auto current_header = co_await chain_storage->read_header(*head_header_block_number, head_header_hash);
+        ensure(current_header.has_value(), "cannot find head header");
         const BlockNum current_block_number = current_header->number;
 
         // Find the lowest block header w/ timestamp greater or equal to provided timestamp
@@ -142,13 +145,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             block_number = kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
                 const auto header = co_await chain_storage->read_canonical_header(bn);
-                co_return header->timestamp >= timestamp;
+                co_return header && header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
             auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
-            while (matching_header->timestamp > timestamp) {
+            while (matching_header && matching_header->timestamp > timestamp) {
                 const auto header = co_await chain_storage->read_canonical_header(matching_block_number - 1);
                 if (!header || header->timestamp < timestamp) {
                     break;
@@ -161,14 +165,9 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
 
         // Lookup and return the matching block
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_ERROR << "erigon_get_block_by_timestamp: core::read_block_by_number: " << error_msg << request.dump();
-            make_glaze_json_error(request, 100, error_msg, reply);
-            co_await tx->close();  // RAII not (yet) available with coroutines
-            co_return;
-        }
+        ensure(block_with_hash != nullptr, [&]() { return "block " + std::to_string(block_number) + " not found"; });
         const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
+        ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block " + std::to_string(block_number); });
         const Block extended_block{block_with_hash, *total_difficulty, full_tx};
 
         make_glaze_json_content(request, extended_block, reply);
@@ -449,11 +448,7 @@ Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nloh
         const auto chain_storage = tx->create_storage();
 
         const auto chain_config{co_await chain_storage->read_chain_config()};
-        if (!chain_config) {
-            throw std::runtime_error("Chain config missing");
-        }
-        SILK_DEBUG << "chain config: " << *chain_config;
-        Forks forks{*chain_config};
+        Forks forks{chain_config};
 
         reply = make_json_content(request, forks);
     } catch (const std::exception& e) {

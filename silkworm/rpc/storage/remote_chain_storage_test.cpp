@@ -86,10 +86,8 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
             co_return kChainConfig;
         }));
         const auto chain_config = spawn_and_wait(storage.read_chain_config());
-        CHECK(chain_config.has_value());
-        if (chain_config) {
-            CHECK(chain_config->genesis_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-            CHECK(chain_config->to_json() == R"({
+        CHECK(chain_config.genesis_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
+        CHECK(chain_config.to_json() == R"({
                 "berlinBlock":12244000,
                 "byzantiumBlock":4370000,
                 "chainId":1,
@@ -105,7 +103,6 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
                 "muirGlacierBlock":9200000,
                 "petersburgBlock":7280000
             })"_json);
-        }
     }
 }
 

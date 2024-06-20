@@ -25,8 +25,12 @@ namespace silkworm::rpc {
 
 LocalChainStorage::LocalChainStorage(db::ROTxn& txn) : data_model_{txn} {}
 
-Task<std::optional<ChainConfig>> LocalChainStorage::read_chain_config() const {
-    co_return data_model_.read_chain_config();
+Task<ChainConfig> LocalChainStorage::read_chain_config() const {
+    const auto chain_config{data_model_.read_chain_config()};
+    if (!chain_config) {
+        throw std::runtime_error{"empty chain config data in storage"};
+    }
+    co_return *chain_config;
 }
 
 Task<BlockNum> LocalChainStorage::highest_block_number() const {

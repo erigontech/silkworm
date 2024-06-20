@@ -38,7 +38,7 @@ class RemoteChainStorage : public ChainStorage {
                        BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider);
     ~RemoteChainStorage() override = default;
 
-    [[nodiscard]] Task<std::optional<silkworm::ChainConfig>> read_chain_config() const override;
+    [[nodiscard]] Task<silkworm::ChainConfig> read_chain_config() const override;
 
     [[nodiscard]] Task<BlockNum> highest_block_number() const override;
 

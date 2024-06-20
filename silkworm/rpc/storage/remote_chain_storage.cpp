@@ -33,7 +33,7 @@ RemoteChainStorage::RemoteChainStorage(ethdb::Transaction& tx,
       block_provider_{std::move(block_provider)},
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)} {}
 
-Task<std::optional<ChainConfig>> RemoteChainStorage::read_chain_config() const {
+Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
     const auto genesis_block_hash{co_await core::rawdb::read_canonical_block_hash(tx_, kEarliestBlockNumber)};
     SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << to_hex(genesis_block_hash);
     const ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, kHashLength};
@@ -45,8 +45,11 @@ Task<std::optional<ChainConfig>> RemoteChainStorage::read_chain_config() const {
     const auto json_config = nlohmann::json::parse(data.begin(), data.end());
     SILK_TRACE << "rawdb::read_chain_config chain config JSON: " << json_config.dump();
     std::optional<ChainConfig> chain_config = ChainConfig::from_json(json_config);
+    if (!chain_config) {
+        throw std::runtime_error{"invalid chain config JSON in read_chain_config"};
+    }
     chain_config->genesis_hash = genesis_block_hash;
-    co_return chain_config;
+    co_return *chain_config;
 }
 
 Task<BlockNum> RemoteChainStorage::highest_block_number() const {

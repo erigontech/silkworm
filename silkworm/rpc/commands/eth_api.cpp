@@ -2086,6 +2086,9 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
     try {
         const auto chain_storage{tx->create_storage()};
 
+        rpc::fee_history::BlockHeaderProvider block_header_provider = [this, &chain_storage](BlockNum block_number) {
+            return chain_storage->read_canonical_header(block_number);
+        };
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
@@ -2100,7 +2103,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         auto chain_config = co_await chain_storage->read_chain_config();
         ensure(chain_config.has_value(), "cannot read chain config");
 
-        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider, latest_block_provider};
+        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_header_provider, block_provider, receipts_provider, latest_block_provider};
 
         const auto block_number = co_await core::get_block_number(newest_block, *tx);
         const auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentiles);

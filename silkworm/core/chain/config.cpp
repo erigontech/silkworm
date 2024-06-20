@@ -181,8 +181,11 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     return config;
 }
 
-[[nodiscard]] bool ChainConfig::withdrawals_activated(uint64_t block_time) const noexcept {
+[[nodiscard]] bool ChainConfig::withdrawals_activated(BlockTime block_time) const noexcept {
     return shanghai_time && block_time >= shanghai_time;
+}
+[[nodiscard]] bool ChainConfig::is_london(BlockNum block_number) const noexcept {
+    return (london_block && block_number >= london_block);
 }
 
 evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {

@@ -95,7 +95,8 @@ struct ChainConfig {
     protocol::PreMergeRuleSetConfig rule_set_config{protocol::NoPreMergeConfig{}};
 
     // The Shanghai hard fork has withdrawals, but Agra does not
-    [[nodiscard]] bool withdrawals_activated(uint64_t block_time) const noexcept;
+    [[nodiscard]] bool withdrawals_activated(BlockTime block_time) const noexcept;
+    [[nodiscard]] bool is_london(BlockNum block_number) const noexcept;
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data

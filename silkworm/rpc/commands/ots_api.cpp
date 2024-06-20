@@ -33,8 +33,8 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#include <silkworm/rpc/state/state_reader.hpp>
 
 namespace silkworm::rpc::commands {
 

@@ -21,21 +21,55 @@
 #include <string>
 #include <vector>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/rpc/core/state_reader.hpp>
+#include <silkworm/rpc/state/state_reader.hpp>
+#include <silkworm/rpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc::state {
 
-class LocalState : public silkworm::State {
+class AsyncRemoteState {
   public:
-    explicit LocalState(BlockNum block_number, mdbx::env chaindata_env)
-        : block_number_{block_number}, txn_{std::move(chaindata_env)} {}
+    explicit AsyncRemoteState(ethdb::Transaction& tx, const ChainStorage& storage, BlockNum block_number)
+        : storage_(storage), block_number_(block_number), state_reader_{tx} {}
+
+    Task<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
+
+    Task<silkworm::ByteView> read_code(const evmc::bytes32& code_hash) const noexcept;
+
+    Task<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept;
+
+    Task<uint64_t> previous_incarnation(const evmc::address& address) const noexcept;
+
+    Task<std::optional<silkworm::BlockHeader>> read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept;
+
+    Task<bool> read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept;
+
+    Task<std::optional<intx::uint256>> total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept;
+
+    Task<evmc::bytes32> state_root_hash() const;
+
+    Task<BlockNum> current_canonical_block() const;
+
+    Task<std::optional<evmc::bytes32>> canonical_hash(BlockNum block_number) const;
+
+  private:
+    static std::unordered_map<evmc::bytes32, silkworm::Bytes> code_;
+
+    const ChainStorage& storage_;
+    BlockNum block_number_;
+    StateReader state_reader_;
+};
+
+class RemoteState : public silkworm::State {
+  public:
+    explicit RemoteState(boost::asio::any_io_executor& executor, ethdb::Transaction& tx, const ChainStorage& storage, BlockNum block_number)
+        : executor_(executor), async_state_{tx, storage, block_number} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -90,8 +124,10 @@ class LocalState : public silkworm::State {
     void unwind_state_changes(BlockNum /*block_number*/) override {}
 
   private:
-    BlockNum block_number_;
-    mutable db::ROTxnManaged txn_;
+    boost::asio::any_io_executor executor_;
+    AsyncRemoteState async_state_;
 };
+
+std::ostream& operator<<(std::ostream& out, const RemoteState& s);
 
 }  // namespace silkworm::rpc::state

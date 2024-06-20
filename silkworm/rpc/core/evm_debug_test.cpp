@@ -25,8 +25,8 @@
 
 #include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/remote_state.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
+#include <silkworm/rpc/state/remote_state.hpp>
 #include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_block_cache.hpp>

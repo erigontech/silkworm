@@ -19,7 +19,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/core/remote_state.hpp>
+#include <silkworm/rpc/state/remote_state.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 

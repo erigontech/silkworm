@@ -23,9 +23,9 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/remote_state.hpp>
 #include <silkworm/rpc/ethdb/base_transaction.hpp>
 #include <silkworm/rpc/ethdb/cursor.hpp>
+#include <silkworm/rpc/state/remote_state.hpp>
 
 namespace silkworm::rpc::test {
 

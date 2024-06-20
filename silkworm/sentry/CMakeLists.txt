@@ -39,11 +39,11 @@ add_subdirectory(discovery/enr)
 add_subdirectory(discovery/disc_v4)
 
 set(LIBS_PRIVATE
+    absl::crc32c
     gRPC::grpc++
     protobuf::libprotobuf
     OpenSSL::Crypto
     Snappy::snappy
-    stbrumme_crc32
     stbrumme_keccak
     stun_msg
     silkworm_core

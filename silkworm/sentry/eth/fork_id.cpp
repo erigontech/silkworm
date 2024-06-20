@@ -16,11 +16,13 @@
 
 #include "fork_id.hpp"
 
-#include <Crc32.h>
-
+#include <array>
 #include <optional>
 #include <vector>
 
+#include <absl/crc/crc32c.h>
+
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
@@ -50,8 +52,8 @@ ForkId::ForkId(
     const std::vector<BlockNum>& fork_block_numbers,
     const std::vector<BlockTime>& fork_block_times,
     BlockNum head_block_num) : ForkId() {
-    uint32_t hash = crc32_fast(genesis_hash.data(), genesis_hash.size());
-    endian::store_big_u32(hash_bytes_.data(), hash);
+    absl::crc32c_t hash = absl::ComputeCrc32c({byte_ptr_cast(genesis_hash.data()), genesis_hash.size()});
+    endian::store_big_u32(hash_bytes_.data(), static_cast<uint32_t>(hash));
 
     // Both fork_block_numbers and fork_block_times are sorted in ascending order
     // First fork block time (Shanghai) is greater than last fork block number
@@ -68,11 +70,12 @@ ForkId::ForkId(
 }
 
 void ForkId::add_fork_point(uint64_t fork_point) {
-    Bytes fork_bytes(sizeof(uint64_t), 0);
+    std::array<std::uint8_t, sizeof(uint64_t)> fork_bytes{};
     endian::store_big_u64(fork_bytes.data(), fork_point);
 
-    uint32_t hash = crc32_fast(fork_bytes.data(), fork_bytes.size(), this->hash());
-    endian::store_big_u32(hash_bytes_.data(), hash);
+    absl::crc32c_t hash = absl::ExtendCrc32c(absl::crc32c_t{this->hash()},
+                                             {byte_ptr_cast(fork_bytes.data()), fork_bytes.size()});
+    endian::store_big_u32(hash_bytes_.data(), static_cast<uint32_t>(hash));
 }
 
 uint32_t ForkId::hash() const {

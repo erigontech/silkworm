@@ -11,9 +11,6 @@
 	path = third_party/erigon-interfaces
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
-[submodule "stbrumme-crc32"]
-	path = third_party/stbrumme-crc32/stbrumme-crc32
-	url = https://github.com/battlmonstr/stbrumme-crc32.git
 [submodule "erigon-mdbx-go"]
 	path = third_party/erigon-mdbx-go/mdbx-go
 	url = https://github.com/erigontech/mdbx-go.git

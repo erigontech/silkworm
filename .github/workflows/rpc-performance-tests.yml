@@ -122,6 +122,12 @@ jobs:
                     --db_version $db_version \
                     --outcome success \
                     --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
+          
+                  echo "Execute Latency Percentile HDR Analysis"                                             
+                  python3 $ERIGON_QA_PATH/test_system/qa-tests/rpc-tests/perf_hdr_analysis.py \
+                    --test_name ${servers[i-1]}-$method \
+                    --input_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json \
+                    --output_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/${servers[i-1]}_$method_latency_hdr_analysis.pdf
                else
                   failed_test=1
                   cd ${{runner.workspace}}/silkworm

@@ -56,7 +56,7 @@ void print_stack_trace() {
 }
 
 using namespace silkworm::rpc::json_rpc;
-using namespace silkworm::rpc::test;
+using namespace silkworm::rpc::test_util;
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Debug or rerun a single fuzzer test"};

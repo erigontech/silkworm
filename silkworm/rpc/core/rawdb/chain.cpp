@@ -75,10 +75,11 @@ Task<evmc::bytes32> read_head_header_hash(ethdb::Transaction& tx) {
     const silkworm::Bytes kHeadHeaderKey = silkworm::bytes_of_string(db::table::kHeadHeaderName);
     const auto value = co_await tx.get_one(db::table::kHeadHeaderName, kHeadHeaderKey);
     if (value.empty()) {
-        throw std::invalid_argument{"empty head header hash value in read_head_header_hash"};
+        throw std::runtime_error{"empty head header hash value in read_head_header_hash"};
     }
     const auto head_header_hash{silkworm::to_bytes32(value)};
     SILK_DEBUG << "head header hash: " << silkworm::to_hex(head_header_hash);
     co_return head_header_hash;
 }
+
 }  // namespace silkworm::rpc::core::rawdb

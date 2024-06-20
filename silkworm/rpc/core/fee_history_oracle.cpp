@@ -109,24 +109,34 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         }
 
         BlockFees block_fees{block_number};
-        if (block_number >= block_range.last_block->block.header.number) {
-            block_fees.block = block_range.last_block;
-            block_fees.receipts = co_await receipts_provider_(*block_fees.block);
+
+        if (!reward_percentiles.empty()) {
+            if (block_number >= block_range.last_block->block.header.number) {
+                block_fees.block = block_range.last_block;
+                block_fees.receipts = co_await receipts_provider_(*block_fees.block);
+            } else {
+                const auto block_with_hash = co_await block_provider_(block_number);
+                if (!block_with_hash) {
+                    continue;
+                }
+                block_fees.block = block_with_hash;
+                if (!reward_percentiles.empty()) {
+                    block_fees.receipts = co_await receipts_provider_(*block_fees.block);
+                }
+            }
+            block_fees.block_header = block_fees.block->block.header;
         } else {
-            const auto block_with_hash = co_await block_provider_(block_number);
-            if (!block_with_hash) {
+            const auto block_header = co_await block_header_provider_(block_number);
+            if (!block_header) {
                 continue;
             }
-            block_fees.block = block_with_hash;
-            if (!reward_percentiles.empty()) {
-                block_fees.receipts = co_await receipts_provider_(*block_fees.block);
-            }
+            block_fees.block_header = block_header;
         }
         co_await process_block(block_fees, reward_percentiles);
 
         ensure(block_fees.block_number >= oldest_block_number, "fee_history: block_number lower than oldest");
         const auto index = block_fees.block_number - oldest_block_number;
-        if (block_fees.block) {
+        if (block_fees.block_header) {
             fee_history.rewards[index] = block_fees.rewards;
             fee_history.base_fees_per_gas[index] = block_fees.base_fee;
             fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
@@ -188,23 +198,20 @@ bool sort_by_reward(std::pair<intx::uint256, uint64_t>& p1, const std::pair<intx
 }
 
 Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles) {
-    auto& header = block_fees.block->block.header;
+    auto& header = *(block_fees.block_header);
+    auto next_block_number = header.number + 1;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
 
     block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
 
-    const auto parent_block = co_await block_provider_(header.number + 1);
-    if (!parent_block) {
-        co_return;
-    }
-    const auto evmc_revision = config_.revision(parent_block->block.header.number, parent_block->block.header.timestamp);
-    block_fees.next_base_fee = 0;
-    if (evmc_revision >= EVMC_LONDON) {
+    if (config_.is_london(next_block_number)) {
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(header);
+    } else {
+        block_fees.next_base_fee = 0;
     }
 
     if (reward_percentiles.empty()) {
-        co_return;
+        co_return;  // rewards were not requested, return
     }
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
         co_return;

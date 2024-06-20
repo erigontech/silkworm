@@ -382,12 +382,11 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
     SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
 
-    const auto chain_config_ptr = co_await storage.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
+    const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
         auto state = tx_.create_state(current_executor, storage, block_number - 1);
-        EVMExecutor executor{*chain_config_ptr, workers_, state};
+        EVMExecutor executor{chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
             rpc::Transaction txn{block.transactions[idx]};
@@ -441,12 +440,11 @@ Task<void> DebugExecutor::execute(
                << " index: " << std::dec << index
                << " config: " << config_;
 
-    const auto chain_config_ptr = co_await storage.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
+    const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
         auto state = tx_.create_state(current_executor, storage, block_number);
-        EVMExecutor executor{*chain_config_ptr, workers_, state};
+        EVMExecutor executor{chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; idx++) {
             silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
@@ -493,13 +491,11 @@ Task<void> DebugExecutor::execute(
                << " transaction_index: " << std::dec << transaction_index
                << " config: " << config_;
 
-    const auto chain_config_ptr = co_await storage.read_chain_config();
-    ensure(chain_config_ptr.has_value(), "cannot read chain config");
-
+    const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
         auto state = tx_.create_state(current_executor, storage, block.header.number);
-        EVMExecutor executor{*chain_config_ptr, workers_, state};
+        EVMExecutor executor{chain_config, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; idx++) {
             silkworm::Transaction txn{block_transactions[std::size_t(idx)]};

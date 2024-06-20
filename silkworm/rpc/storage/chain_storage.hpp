@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <optional>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -33,7 +31,7 @@ class ChainStorage {
     virtual ~ChainStorage() = default;
 
     //! Read the current chain configuration parameters
-    [[nodiscard]] virtual Task<std::optional<ChainConfig>> read_chain_config() const = 0;
+    [[nodiscard]] virtual Task<ChainConfig> read_chain_config() const = 0;
 
     //! Get the highest block number
     [[nodiscard]] virtual Task<BlockNum> highest_block_number() const = 0;

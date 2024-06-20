@@ -75,9 +75,8 @@ Task<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& request, nl
 
     try {
         const auto chain_storage{tx->create_storage()};
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
-        reply = make_json_content(request, to_quantity((*chain_config).chain_id));
+        const auto chain_config = co_await chain_storage->read_chain_config();
+        reply = make_json_content(request, to_quantity(chain_config.chain_id));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, 100, e.what());
@@ -199,7 +198,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         if (block_with_hash) {
             BlockNum block_number = block_with_hash->block.header.number;
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
+            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, full_tx};
             make_glaze_json_content(request, extended_block, reply);
         } else {
@@ -240,7 +239,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure_post_condition(total_difficulty.has_value(), [&]() { return "no difficulty for block number=" + std::to_string(block_number); });
+            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, full_tx};
 
             make_glaze_json_content(request, extended_block, reply);
@@ -365,6 +364,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
             } else {
                 const auto block_number = block_with_hash->block.header.number;
                 const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_hash, block_number);
+                ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
@@ -420,6 +420,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
                 make_glaze_json_null_content(request, reply);
             } else {
                 const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
+                ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
@@ -900,11 +901,9 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         const BlockNumberOrHash block_number_or_hash{core::kLatestBlockId};
 
         const auto chain_storage{tx->create_storage()};
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
-
+        const auto chain_config = co_await chain_storage->read_chain_config();
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, *tx);
-        SILK_DEBUG << "chain_id: " << (*chain_config).chain_id << ", latest_block_number: " << latest_block_number;
+        SILK_DEBUG << "chain_id: " << chain_config.chain_id << ", latest_block_number: " << latest_block_number;
 
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_number);
         if (!latest_block_with_hash) {
@@ -923,9 +922,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             return state_reader.read_account(address, block_number + 1);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, *chain_config, workers_, *tx, *chain_storage};
-
-        auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block);
+        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
+        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
     } catch (const rpc::EstimateGasException& e) {
@@ -1136,8 +1134,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
 
     try {
         const auto chain_storage{tx->create_storage()};
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
+        const auto chain_config = co_await chain_storage->read_chain_config();
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
@@ -1150,7 +1147,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         silkworm::Transaction txn{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
 
         const auto execution_result = co_await EVMExecutor::call(
-            *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
+            chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
                 return tx->create_state(io_executor, storage, block_num);
             });
 
@@ -1302,9 +1299,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
             co_return;
         }
 
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
-
+        const auto chain_config = co_await chain_storage->read_chain_config();
         const bool is_latest_block = co_await core::get_latest_executed_block_number(*tx) == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
@@ -1339,7 +1334,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         AccessList saved_access_list = call.access_list;
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
-                *chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
+                chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
                     return tx->create_state(io_executor, storage, block_num);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
@@ -1413,9 +1408,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
-
+        const auto chain_config = co_await chain_storage->read_chain_config();
         const bool is_latest_block = co_await core::get_latest_executed_block_number(*tx) == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
@@ -1437,7 +1430,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             }
 
             const auto execution_result = co_await EVMExecutor::call(
-                *chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num, auto& storage) {
+                chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num, auto& storage) {
                     return tx->create_state(io_executor, storage, block_num);
                 });
             if (execution_result.pre_check_error) {
@@ -2097,10 +2090,8 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
             return core::get_block_number(core::kLatestBlockId, *tx);
         };
 
-        auto chain_config = co_await chain_storage->read_chain_config();
-        ensure(chain_config.has_value(), "cannot read chain config");
-
-        rpc::fee_history::FeeHistoryOracle oracle{*chain_config, block_provider, receipts_provider, latest_block_provider};
+        const auto chain_config = co_await chain_storage->read_chain_config();
+        rpc::fee_history::FeeHistoryOracle oracle{chain_config, block_provider, receipts_provider, latest_block_provider};
 
         const auto block_number = co_await core::get_block_number(newest_block, *tx);
         const auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentiles);

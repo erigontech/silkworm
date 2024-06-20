@@ -32,9 +32,7 @@ namespace silkworm::rpc::test {
 
 class MockChainStorage : public silkworm::rpc::ChainStorage {
   public:
-    MOCK_METHOD((Task<std::optional<silkworm::ChainConfig>>), read_chain_config, (), (const override));
-
-    MOCK_METHOD((Task<std::optional<ChainId>>), read_chain_id, (), (const override));
+    MOCK_METHOD((Task<silkworm::ChainConfig>), read_chain_config, (), (const override));
 
     MOCK_METHOD((Task<BlockNum>), highest_block_number, (), (const override));
 

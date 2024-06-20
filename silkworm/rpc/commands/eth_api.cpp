@@ -45,8 +45,8 @@
 #include <silkworm/rpc/core/gas_price_oracle.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/core/state_reader.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
+#include <silkworm/rpc/state/state_reader.hpp>
 
 namespace silkworm::rpc::commands {
 

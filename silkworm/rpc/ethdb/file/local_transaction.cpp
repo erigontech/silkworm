@@ -16,7 +16,7 @@
 
 #include "local_transaction.hpp"
 
-#include <silkworm/rpc/core/local_state.hpp>
+#include <silkworm/rpc/state/local_state.hpp>
 #include <silkworm/rpc/storage/local_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::file {

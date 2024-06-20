@@ -35,7 +35,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/core/state_reader.hpp>
+#include <silkworm/rpc/state/state_reader.hpp>
 #include <silkworm/rpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc {

@@ -31,6 +31,7 @@
 
 namespace silkworm::rpc::fee_history {
 
+using BlockHeaderProvider = std::function<Task<std::optional<silkworm::BlockHeader>>(BlockNum)>;
 using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)>;
 using ReceiptsProvider = std::function<Task<rpc::Receipts>(const BlockWithHash&)>;
 using LatestBlockProvider = std::function<Task<uint64_t>()>;
@@ -56,7 +57,8 @@ struct BlockRange {
 
 struct BlockFees {
     BlockNum block_number{0};
-    std::shared_ptr<BlockWithHash> block;
+    std::optional<BlockHeader> block_header;
+    std::shared_ptr<BlockWithHash> block;  // only set if reward percentiles are requested
     rpc::Receipts receipts;
     Rewards rewards;
     intx::uint256 base_fee;
@@ -66,9 +68,9 @@ struct BlockFees {
 
 class FeeHistoryOracle {
   public:
-    explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider,
+    explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockHeaderProvider& header_provider, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider,
                               LatestBlockProvider& latest_block_provider)
-        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider), latest_block_provider_{latest_block_provider} {}
+        : config_{config}, block_header_provider_(header_provider), block_provider_(block_provider), receipts_provider_(receipts_provider), latest_block_provider_{latest_block_provider} {}
     virtual ~FeeHistoryOracle() = default;
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
@@ -85,6 +87,7 @@ class FeeHistoryOracle {
     Task<void> process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles);
 
     const silkworm::ChainConfig& config_;
+    const BlockHeaderProvider& block_header_provider_;
     const BlockProvider& block_provider_;
     const ReceiptsProvider& receipts_provider_;
     const LatestBlockProvider& latest_block_provider_;

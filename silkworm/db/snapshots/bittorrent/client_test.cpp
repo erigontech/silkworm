@@ -109,7 +109,8 @@ static inline std::vector<char> test_resume_data() {
 
 TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent]") {
     SECTION("default settings") {
-        CHECK_NOTHROW(BitTorrentClient{BitTorrentSettings{}});
+        TemporaryDirectory tmp_dir;
+        CHECK_NOTHROW(BitTorrentClient{BitTorrentSettings{.repository_path = tmp_dir.path()}});
     }
 
     TestRepository repo;

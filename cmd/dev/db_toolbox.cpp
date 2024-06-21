@@ -2347,7 +2347,7 @@ int main(int argc, char* argv[]) {
         DataDirectory data_dir{data_dir_factory()};
 
         if (!*cmd_initgenesis) {
-            if (!data_dir.chaindata().exists() || data_dir.is_pristine()) {
+            if (!data_dir.chaindata().exists() || data_dir.chaindata().is_empty()) {
                 std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty\n";
                 return -1;
             }

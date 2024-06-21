@@ -41,21 +41,27 @@ static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
 
 TEST_CASE("SnapshotSync::SnapshotSync", "[db][snapshot][sync]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    SnapshotRepository repository{SnapshotSettings{}, bundle_factory()};
+    TemporaryDirectory tmp_dir;
+    SnapshotSettings settings{
+        .bittorrent_settings = bittorrent::BitTorrentSettings{
+            .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
+        },
+    };
+    SnapshotRepository repository{settings, bundle_factory()};
     CHECK_NOTHROW(SnapshotSync{&repository, kMainnetConfig});
 }
 
 TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     db::test_util::TempChainData context;
-    const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
+    TemporaryDirectory tmp_dir;
     bittorrent::BitTorrentSettings bittorrent_settings{
-        .repository_path = tmp_dir / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
+        .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
     };
 
     SECTION("snapshots disabled") {
         SnapshotSettings settings{
-            .repository_dir = tmp_dir,
+            .repository_dir = tmp_dir.path(),
             .enabled = false,
             .bittorrent_settings = bittorrent_settings,
         };
@@ -66,7 +72,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 
     SECTION("no download, just reopen") {
         SnapshotSettings settings{
-            .repository_dir = tmp_dir,
+            .repository_dir = tmp_dir.path(),
             .no_downloader = true,
             .bittorrent_settings = bittorrent_settings,
         };
@@ -77,7 +83,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 
     SECTION("no download, just reopen and verify") {
         SnapshotSettings settings{
-            .repository_dir = tmp_dir,
+            .repository_dir = tmp_dir.path(),
             .no_downloader = true,
             .bittorrent_settings = bittorrent_settings,
         };
@@ -101,7 +107,12 @@ struct SnapshotSync_ForTest : public SnapshotSync {
 TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
+    SnapshotSettings settings{
+        .repository_dir = tmp_dir.path(),
+        .bittorrent_settings = bittorrent::BitTorrentSettings{
+            .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
+        },
+    };
     SnapshotRepository repository{settings, bundle_factory()};
     db::test_util::TempChainData tmp_db;
 

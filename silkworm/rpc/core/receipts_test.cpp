@@ -86,7 +86,6 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto cursor{std::make_shared<test::MockCursor>()};
         EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
@@ -128,7 +127,6 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto cursor{std::make_shared<test::MockCursor>()};
         EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key1{*silkworm::from_hex("000000000035db8400000000")};
@@ -187,7 +185,6 @@ TEST_CASE("read_raw_receipts") {
         }));
         auto cursor{std::make_shared<test::MockCursor>()};
         EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke(
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             [&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{};

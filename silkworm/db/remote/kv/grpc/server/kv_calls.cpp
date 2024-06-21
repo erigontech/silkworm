@@ -110,7 +110,6 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
         remote::Cursor request;
         read_stream.initiate(agrpc::read, responder_, request);
 
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto read = [&]() -> Task<void> {
             try {
                 while (co_await read_stream.next()) {
@@ -139,12 +138,10 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
                 status = ::grpc::Status{::grpc::StatusCode::INTERNAL, exc.what()};
             }
         };
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto write = [&]() -> Task<void> {
             while (co_await write_stream.next()) {
             }
         };
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto max_idle_timer = [&]() -> Task<void> {
             while (true) {
                 const auto [ec] = co_await max_idle_alarm.async_wait(as_tuple(use_awaitable));
@@ -156,7 +153,6 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
                 }
             }
         };
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         const auto max_ttl_timer = [&]() -> Task<void> {
             while (true) {
                 const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));

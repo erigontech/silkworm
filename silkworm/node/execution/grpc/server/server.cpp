@@ -50,7 +50,6 @@ class ServerImpl final : public rpc::Server {
         auto async_service = &async_service_;
         auto& service = service_;
         // Registering repeatedly in asio-grpc will guarantee the RequestHandler lambda lifetime
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         rpc::request_repeatedly(*grpc_context, async_service, rpc, [&service](auto&&... args) -> Task<void> {
             co_await RequestHandler{std::forward<decltype(args)>(args)...}(*service);
         });

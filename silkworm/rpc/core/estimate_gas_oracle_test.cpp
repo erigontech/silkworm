@@ -86,12 +86,10 @@ TEST_CASE("estimate gas") {
 
     silkworm::Account kAccount{0, kBalance};
 
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     BlockHeaderProvider block_header_provider = [&kBlockHeader](BlockNum /*block_number*/) -> Task<std::optional<BlockHeader>> {
         co_return kBlockHeader;
     };
 
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, BlockNum /*block_number*/) -> Task<std::optional<silkworm::Account>> {
         co_return kAccount;
     };

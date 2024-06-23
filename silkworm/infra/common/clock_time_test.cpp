@@ -18,13 +18,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace silkworm::db::clock_time {
+namespace silkworm::clock_time {
 
 using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 using std::chrono::steady_clock;
 
-TEST_CASE("check current time", "[rpc][common][clock_time]") {
+TEST_CASE("check current time", "[infra][common][clock_time]") {
     const auto now_before{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
     const auto now_current{now()};
     const auto now_after{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
@@ -32,7 +32,7 @@ TEST_CASE("check current time", "[rpc][common][clock_time]") {
     CHECK(now_current <= now_after);
 }
 
-TEST_CASE("check elapsed time", "[rpc][common][clock_time]") {
+TEST_CASE("check elapsed time", "[infra][common][clock_time]") {
     const auto start{now()};
     const auto elapsed{since(start)};
     const auto end{now()};
@@ -40,4 +40,4 @@ TEST_CASE("check elapsed time", "[rpc][common][clock_time]") {
     CHECK(elapsed <= window);
 }
 
-}  // namespace silkworm::db::clock_time
+}  // namespace silkworm::clock_time

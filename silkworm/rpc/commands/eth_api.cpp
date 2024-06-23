@@ -31,9 +31,9 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/db/common/clock_time.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -51,7 +51,6 @@
 
 namespace silkworm::rpc::commands {
 
-namespace clock_time = db::clock_time;
 using db::state::StateReader;
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber

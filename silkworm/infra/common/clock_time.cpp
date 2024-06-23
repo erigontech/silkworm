@@ -16,7 +16,7 @@
 
 #include "clock_time.hpp"
 
-namespace silkworm::db::clock_time {
+namespace silkworm::clock_time {
 
 uint64_t now() {
     return static_cast<uint64_t>(
@@ -29,4 +29,4 @@ uint64_t since(uint64_t start) {
     return now() - start;
 }
 
-}  // namespace silkworm::db::clock_time
+}  // namespace silkworm::clock_time

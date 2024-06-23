@@ -22,7 +22,7 @@
 
 #include <evmc/instructions.h>
 
-#include <silkworm/db/common/clock_time.hpp>
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
@@ -33,8 +33,6 @@
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::call {
-
-namespace clock_time = db::clock_time;
 
 CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& config,
                                                   const ChainStorage& storage,

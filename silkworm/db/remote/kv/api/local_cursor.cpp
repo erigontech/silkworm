@@ -16,7 +16,7 @@
 
 #include "local_cursor.hpp"
 
-#include <silkworm/db/common/clock_time.hpp>
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 #include "../api/util.hpp"

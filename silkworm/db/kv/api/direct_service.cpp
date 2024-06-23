@@ -25,6 +25,12 @@ Task<Version> DirectService::version() {
     co_return kCurrentVersion;
 }
 
+// rpc Tx(stream Cursor) returns (stream Pair);
+Task<std::unique_ptr<db::kv::api::Transaction>> DirectService::begin_transaction() {
+    // TODO(canepat) implement
+    co_return nullptr;
+}
+
 /** Temporal Point Queries **/
 
 // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);

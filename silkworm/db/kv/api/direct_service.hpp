@@ -36,6 +36,9 @@ class DirectService : public Service {
     // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
     Task<Version> version() override;
 
+    // rpc Tx(stream Cursor) returns (stream Pair);
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() override;
+
     /** Temporal Point Queries **/
 
     // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);

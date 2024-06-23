@@ -53,6 +53,12 @@ class RemoteClientImpl final : public api::Service {
         co_return api::kCurrentVersion;
     }
 
+    // rpc Tx(stream Cursor) returns (stream Pair);
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() override {
+        // TODO(canepat) implement
+        co_return nullptr;
+    }
+
     /** Temporal Point Queries **/
 
     // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);

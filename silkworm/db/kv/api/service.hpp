@@ -31,6 +31,9 @@ struct Service {
     // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
     virtual Task<Version> version() = 0;
 
+    // rpc Tx(stream Cursor) returns (stream Pair);
+    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() = 0;
+
     /** Temporal Point Queries **/
 
     // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
